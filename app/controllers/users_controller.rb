@@ -7,12 +7,16 @@ class UsersController < SessionsController
   def create
     @user = User.new(user_params)
     @user.pword = params[:user][:password] if @user.valid?
-
-    if @user.save
-      session[:user_id], cookies[:user_id] = @user.id, @user.id
-      redirect_to root_path
-    else
-      render 'new'
+    
+    respond_to do |format|
+      if @user.save
+        session[:user_id], cookies[:user_id] = @user.id, @user.id
+        format.html { redirect_to root_path, status: :ok }
+        format.json { render nothing: true, status: :ok }
+      else
+        format.html { render 'new', status: :unprocessable_entity }
+        format.json { render json: @user.errors, status: :unprocessable_entity }
+      end
     end
   end
 
