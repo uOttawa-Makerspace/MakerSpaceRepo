@@ -1,0 +1,180 @@
+/* PROFILE LAYOUT */
+
+@import "lib";
+
+section#profile{
+	position: absolute;
+	top: 51px;
+	width: 100vw;
+	background-color: rgba(119,136,153,0.1);
+}
+
+div.profile-title{
+	line-height: 5rem !important;
+  font: 400 3rem 'Raleway', sans-serif;
+  color: #555;
+}
+
+div.profile-grid{
+	clear: both;
+	display: table;
+	content: "";
+	width: 64rem;
+	margin: 0 auto;
+	background-color: #fff;
+	padding: 0 1rem;
+	padding-bottom: 5rem;
+	position: relative;
+}
+
+div.profile-side-panel{
+	@include span-columns(2.5, 0);
+	position: relative;
+	padding: 3rem 1rem 0;
+  color: #333;
+  font: 400 1.2rem 'Raleway', helvetica, sans-serif;
+
+  li{
+  	display: block;
+  	height: 2.5rem;
+  	
+  	a {
+  		@include transition(100);
+
+  	  &:hover:not(.vp-button){
+	  		padding-left: 0.4rem;
+	  		border-left: 5px solid #5f9ea0;
+  		}
+  	}
+
+  	&:nth-last-child(1){
+	  	margin-top: 1.5rem;
+	  }
+  }
+
+}
+
+label.profile-label{
+	font-size: 0.8rem;
+	font-weight: 400;
+	display: block;
+	margin: 10px 0 5px;
+}
+
+input.profile-text{
+  font: 300 0.9em 'Raleway', sans-serif;
+  color: #555;
+  padding: 0.5rem;
+  margin-bottom: 20px;
+  width: 400px;
+  border-radius: 3px;
+  border: 1px solid #aaa;
+  display: block;
+}
+
+textarea.profile-text{
+  font: 300 0.9em 'Raleway', sans-serif;
+  color: #555;
+  padding: 0.5rem;
+  margin-bottom: 20px;
+  width: 400px;
+  border-radius: 3px;
+  border: 1px solid #aaa;
+  display: block;
+  height: 120px;	
+}
+
+div.section-desc{
+  font: 400 1rem 'Raleway', sans-serif;
+	width: 400px;
+	padding: 10px 0;
+	margin: 10px 0;
+	color: #5f9ea0;
+
+	& span{
+	  font: 400 0.75rem 'Raleway', helvetica, sans-serif;
+ 	  color: #aaa;
+	}
+
+}
+
+input.save-button{
+  display: block;
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #5f9ea0;
+  color: #fff;
+
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+/* EDIT PROFILE PAGE */
+
+a.vp-button{
+	font-size: 1rem;
+	text-align: center;
+	margin-top: 1rem;
+	border: 1px solid #ddd;
+	padding: 0.6rem 2.25rem;
+
+	&:hover{
+		background-color: rgba(238,238,238,0.2);
+	}
+}
+
+div.avatar-column{
+	position: relative;
+  color: #333;
+  font: 400 1rem 'Raleway', sans-serif;
+}
+
+div.edit-column{
+	@include span-columns(6, 0);
+	border-left: 1px solid #ddd;
+	padding-left: 2rem;
+  color: #333;
+  font: 400 1rem 'Raleway', sans-serif;
+}
+
+img.edit-avatar{
+	height: 150px;
+	width: 150px;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+label.custom-file-upload{
+	@include transition(100);
+	font-size: 10px;
+	background-color: #eee;
+	padding: 5px 10px;
+	border-radius: 3px;
+	position: absolute;
+	top: 120px;
+	left: 20px;
+
+
+	&:hover{
+		background-color: rgba(119,136,153,0.95);
+		cursor:pointer;
+	}
+}
+
+/* CHANGE PASSWORD */
+
+div.cp-column{
+	@include span-columns(9, 0);
+	border-right: 1px solid #ddd;
+	padding-left: 2rem;
+  color: #333;
+  font: 400 1rem 'Raleway', sans-serif;
+}

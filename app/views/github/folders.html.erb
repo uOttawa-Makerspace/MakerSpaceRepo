@@ -1,0 +1,12 @@
+<section id="dropbox-folders">
+  <ul>
+    <%= content_tag(:li, fa_icon("folder-open", text: @root )) %>
+    <% @folder.each do |f| %>
+      <% if f.values.first == "directory" %>
+        <%= content_tag(:li, fa_icon("folder", text: f.keys.first)) %>
+      <% else %>
+        <%= content_tag(:li, fa_icon("file-text-o", text: f.keys.first)) %>
+      <% end %>
+    <% end %>
+  </ul>
+</section>

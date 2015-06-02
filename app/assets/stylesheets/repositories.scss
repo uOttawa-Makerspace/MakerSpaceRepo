@@ -1,0 +1,152 @@
+@import "lib";
+
+section#new-repo{
+  @include outer-container(50rem);
+  background-color: #fff;
+  height: calc(100vh - 50px);
+  padding: 5rem;
+
+  form{
+    @include span-columns(12, 20);
+  }
+
+  label{
+    display: block;
+    font: 400 1em 'Raleway', sans-serif;
+    margin: 10px 0 5px;
+    color: #5f9ea0;
+  }
+
+  label + div{
+    font: 400 0.75rem 'Raleway', helvetica, sans-serif;
+    color: #aaa;
+    margin-bottom: 0.5rem;
+  }
+
+  input.repo, textarea.repo{
+    font: 300 0.9em 'Raleway', sans-serif;
+    color: #555;
+    width: 400px;
+    padding: 0.5rem;
+    position: relative;
+    margin-bottom: 20px;
+    border-radius: 3px;
+    border: 1px solid #aaa;
+    display: block;
+  }
+
+  input.repo{
+    border-radius: initial;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+  }
+
+}
+
+.ui-selectmenu-button {
+    cursor:pointer;
+    display:inline-block;
+    position:relative;
+    border: 1px solid #aaa;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    font: 300 0.9em 'Raleway', sans-serif;
+    padding: 10px;
+    margin-bottom: 20px;
+    @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+
+    &:after {
+      content: "";
+      border: 5px solid transparent;
+      border-color: #555 transparent transparent transparent;
+      position: absolute;
+      top: 15px;
+      right: 20px;
+    }
+
+    &:focus{
+      outline-style: none;
+    }
+}
+
+.ui-state-focus:not(.ui-selectmenu-button){
+  background-color: #5f9ea0;
+  color: #fff;
+}
+
+[aria-hidden="true"] { display: none; }
+
+ul.ui-menu {
+    width: 400px;
+    border: 1px solid #aaa;
+    background-color: #fff;
+    @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+li.ui-menu-item {
+    padding: 0.5rem;
+    font: 300 0.9em 'Raleway', sans-serif;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #5f9ea0;
+      color: #fff;
+    }
+}
+
+.ui-autocomplete-input{
+  font: 300 0.9em 'Raleway', sans-serif;
+  background-color: #fff;
+  width: calc(400px + 1rem);
+  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+  border: 1px solid #aaa;
+
+  & li{
+    padding: 0.5rem;
+
+    &:hover{
+      background-color: #5f9ea0;
+      color: #fff; 
+    }
+  }
+}
+
+/*section#dropbox-folders{
+  display: none;
+  li{
+    font: 400 0.9em 'Raleway', sans-serif;
+    padding-bottom: 4px;
+    color: #888;
+    padding-left: 15px;
+
+    i{
+      color: #789;
+    }
+
+    &:nth-child(1){
+      font-size: 1.1rem;
+      padding-left: 0;
+    }
+  }
+}*/
+/*
+span.autocomplete-wrapper{
+ display: block;
+ position: relative;
+ max-width: 400px;
+}
+*/
+/*span.loader{
+  display: none;
+  height: 1rem;
+  width: 1rem;
+  position: absolute;
+  background-image: image-url('loader.gif');
+  background-size: cover;
+  right: 0;
+  top: 10px;
+}*/
+
+span.ui-helper-hidden-accessible div{
+  display: none;
+}

@@ -1,0 +1,89 @@
+@import "lib";
+
+section#home-1{
+  background-image: image-url('face.jpg');
+  background-size: cover;
+  background-attachment: fixed;
+  width: 100vw;
+  height: 80vh;
+  font: 300 10vw 'Raleway', helvetica, sans-serif;
+  text-align: center;
+  position: relative;
+
+  div{
+    @include center-vertically;
+    height: 25vw;
+    color: #fff;
+    opacity: 0.85;
+  }
+
+}
+
+section.platform-title{
+  height: 10rem;
+  line-height: 10rem !important;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font: 300 1rem 'Raleway', serif;
+  color: #5f9ea0;
+}
+
+section#home-2{
+  @include outer-container(80rem);
+}
+
+div.col{
+  @include span-columns(6, 0.25);
+  display: inline-block;
+}
+
+span.platform-item a img{
+  @include transition(200);
+  background-color: black;
+  width: 100%;
+  display: block;
+
+  &:hover{
+    pointer: cursor;
+    opacity: 0;
+  }
+}
+
+span.platform-item{
+  position: relative;
+  display: block;
+  margin-bottom: 1%;
+
+  a{
+    vertical-align: top;
+  }
+
+  div{
+    top: 0;
+    left: 0;
+    position: absolute;
+    z-index: -1;
+    background-color: #13686b;
+    font: 300 2vw 'Raleway', helvetica, sans-serif;
+    color: #fff;
+    display: block;
+    height: 100%;
+    width: 100%;
+
+    div {
+      @include center-vertically;
+      height: 2vw;
+      text-align: center;
+    }
+  }
+}
+
+@media screen and (max-width: 600px){
+ 
+  div.col{
+    @include span-columns(12, 1);
+    display: inline-block;
+  }
+
+}

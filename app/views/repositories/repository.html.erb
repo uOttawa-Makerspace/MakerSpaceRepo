@@ -1,0 +1,12 @@
+<section id="dropbox-folders">
+  <ul>
+    <li class="directory" ><span class="repo-glyphs open-folder"></span><%= @root %></li>
+    <% @folder.each do |f| %>
+      <% if f.values.first == "directory" %>
+        <li><span class="repo-glyphs closed-folder"></span><%= f.keys.first %></li>
+      <% else %>
+        <li><span class="repo-glyphs file"></span><%= f.keys.first %></li>
+      <% end %>
+    <% end %>
+  </ul>
+</section>

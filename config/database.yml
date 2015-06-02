@@ -1,0 +1,17 @@
+default: &default
+  adapter: postgresql
+  database: makerspacerepo
+  username: postgres
+  password: postgres
+  host: localhost
+
+development:
+  <<: *default
+  port: 5432
+
+test:
+  <<: *default
+
+production:
+  <<: *default
+  port: 5432

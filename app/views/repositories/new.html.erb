@@ -1,0 +1,31 @@
+<section id="new-repo">
+  <%= form_for @repository, url: {controller: "repositories", action: "create"} do |f| %>
+    <%= f.label :title, "Name" %>
+    <div>Great repository names are short and memorable.</div>
+    <span class="autocomplete-wrapper">
+      <%= f.text_field :title, class: 'repo repo-autocomplete' %>
+      <span class="loader"></span> 
+    </span>
+
+    <%= f.label :github, fa_icon('github', text: 'Github Repository Name', style: 'padding-right: 0px;') %>
+    <span class="autocomplete-wrapper">
+      <%= f.text_field :github, class: 'repo repo-autocomplete' %>
+      <span class="loader"></span> 
+    </span>
+    
+    <%= f.label :description %>
+    <div>A description is optional.</div>
+    <%= f.text_area :description, class: 'repo' %>
+
+   <%= f.label :category %> 
+    <div>Choose a category that best fits your project.</div>
+    <%= f.select :category, @repository.class.category_options, prompt: "Select a category..." %>
+
+   <%= f.label :license %> 
+    <div>Choose how you want your project to be used by others.</div>
+    <%= f.select :license, @repository.class.license_options %>
+
+  <%= f.submit "Create Repository", class: "save-button" %>
+
+  <% end %>
+</section>

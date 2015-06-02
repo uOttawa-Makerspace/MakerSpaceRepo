@@ -1,0 +1,14 @@
+<section id="login">
+  
+  <div class="login-title">Sign In</div>
+
+  <%= form_tag url_for(controller: 'sessions', action: 'login_authentication'), method: :post do %>
+
+    <%= text_field_tag 'username', nil, placeholder: 'Username or Email' %>     
+    <%= password_field_tag 'password', nil, placeholder: 'Password' %> 
+    
+    <%= submit_tag "Sign In", class: 'login-button' %>
+  
+  <% end %>
+
+</section>

@@ -1,0 +1,65 @@
+@import "lib";
+
+section#header{
+  width: 96vw;
+  height: 50px;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 0 2vw;
+}
+
+span.msr-logo a{
+  @include transition(200ms);
+  display: block;
+  height: 50px;
+  line-height: 50px !important;
+  font: 300 2rem 'Raleway', helvetica, sans-serif;
+  float: left;
+  color: #5f9ea0;
+}
+
+span.header-menu-item {
+  width: auto;
+  display: inline-block;
+  padding: 0 10px;
+  float: right;
+  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+  color: #333;
+  line-height: 50px !important;
+
+  &.not-signed-in {
+    padding: 0;
+    a{
+      color: #5f9ea0;
+      width: 100px;
+      line-height: 50px !important;
+      padding: 0;
+      font: 300 1rem 'Raleway', helvetica, sans-serif;
+
+      &:hover{
+        border-bottom: 5px solid #5f9ea0;
+        cursor: pointer;
+      }
+    }
+  }
+
+  a{
+    @include transition(200ms);
+    display: block;
+    float: right;
+    height: 46px;
+    text-align: center;
+
+    img{
+      height: 30px;
+      border-radius: 5px;
+      vertical-align: middle;
+    }
+  }
+
+
+  :hover{
+    color: #5f9ea0;
+  } 
+}
+

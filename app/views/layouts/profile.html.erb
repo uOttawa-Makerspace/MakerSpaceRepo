@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MSR | Edit Profile </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+  <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+  <%= csrf_meta_tags %>
+  <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
+  <link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400' rel='stylesheet' type='text/css'>
+</head>
+<body>
+	<%= render 'layouts/header' %>
+	<section id="profile">
+		<div class="profile-grid">
+			<div class="profile-title"><%= yield(:profile_title) %></div>
+			<div class="profile-side-panel">
+				<ul>
+		      <li class="profile-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
+            current_page?(action: 'edit') %> >
+		      	<%= link_to 'Edit Profile', edit_user_path(@user) %>
+		      </li>
+		      <li class="profile-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
+            current_page?(action: 'account_setting') %> >
+		      	<%= link_to 'Account Setting', account_setting_user_path(@user) %>
+		      </li>
+		      <li>
+		      <%= link_to "View Profile", user_path, class: 'vp-button' if @ep %>
+		      </li>
+				</ul>
+			</div>
+			<%= yield %>
+
+		</div>
+	</section>
+</body>
+</html>

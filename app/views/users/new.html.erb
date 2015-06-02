@@ -1,0 +1,33 @@
+<section id="signup">
+  
+  <div class="signup-title">Create your personal account</div>
+
+  <%= form_for @user do |f| %>
+
+    <%= f.label :first_name, "First Name" %>
+    <%= f.text_field :first_name, autofocus: true %>
+
+    <%= f.label :last_name, "Last Name" %>
+    <%= f.text_field :last_name %>
+
+    <%= f.label :email %>
+    <div>You will occasionally receive account related emails. 
+    We promise not to share your email with anyone.</div>
+    <%= f.email_field :email %>     
+
+    <%= f.label :username %>
+    <%= f.text_field :username %>      
+
+    <%= f.label :password %>
+    <div>Use at least one uppercase letter, one lowercase letter, 
+      one numeral and eight characters</div>
+    <%= f.password_field :password %>
+
+    <%= f.label :password_confirmation, "Password Confirmation" %>
+    <%= f.password_field :password_confirmation %>
+
+    <%= f.submit "Create Account", class: 'signup-button' %>
+  
+  <% end %>
+
+</section>
