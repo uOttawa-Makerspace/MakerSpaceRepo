@@ -31,12 +31,14 @@ section.platform-title{
 
 section#home-2{
   @include outer-container(80rem);
+  
+  div.col{
+    @include span-columns(6, 0.25);
+    display: inline-block;
+  }
 }
 
-div.col{
-  @include span-columns(6, 0.25);
-  display: inline-block;
-}
+
 
 span.platform-item a img{
   @include transition(200);
@@ -55,10 +57,6 @@ span.platform-item{
   display: block;
   margin-bottom: 1%;
 
-  a{
-    vertical-align: top;
-  }
-
   div{
     top: 0;
     left: 0;
@@ -71,17 +69,18 @@ span.platform-item{
     height: 100%;
     width: 100%;
 
-    div {
+    &:after{
       @include center-vertically;
       height: 2vw;
       text-align: center;
+      content: attr(data-platform);
     }
   }
 }
 
 @media screen and (max-width: 600px){
  
-  div.col{
+  section#home-2 div.col{
     @include span-columns(12, 1);
     display: inline-block;
   }

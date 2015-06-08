@@ -1,5 +1,5 @@
 <section id="new-repo">
-  <%= form_for @repository, url: {controller: "repositories", action: "create"} do |f| %>
+  <%= form_for @repository, url: {controller: "repositories", action: "create"}, :html => { :multipart => true } do |f| %>
     <%= f.label :title, "Name" %>
     <div>Great repository names are short and memorable.</div>
     <span class="autocomplete-wrapper">
@@ -17,6 +17,45 @@
     <div>A description is optional.</div>
     <%= f.text_area :description, class: 'repo' %>
 
+    <%= f.fields_for :photos do |photo| %>
+      <%= photo.label :photo, "Gallery" %>
+      <div>A maximum of six photos can be uploaded per repository.</div>
+      <div class="repo-image">
+        <div id="dragndrop">
+          <%= fa_icon 'cloud-upload'%>
+          <p>Drag &amp; Drop</p>
+        </div>
+        <label class="custom-image-upload">
+          <%= photo.file_field :image, multiple: true %>
+          or choose an image...
+        </label>
+      </div>
+      <div id="image-container">
+      <div class="col">
+        <span class="image-item">
+          <%= image_tag "bio-medical.jpg", class: "one" %>
+        </span>
+        <span class="image-item">
+          <%= image_tag "biomedical.jpg", class: "three" %>
+        </span>
+        <span class="image-item">
+          <%= image_tag "motherboard.jpg", class: "five" %>
+        </span>
+      </div>
+      <div class="col">
+        <span class="image-item">
+          <%= image_tag "vr.jpg", class: "two" %>
+        </span>
+        <span class="image-item">
+          <%= image_tag "wearables.jpg", class: "four" %>
+        </span>
+        <span class="image-item">
+          <%= image_tag "three-d.jpg", class: "six" %>
+        </span>
+      </div>
+      </div>
+    <% end %>
+
    <%= f.label :category %> 
     <div>Choose a category that best fits your project.</div>
     <%= f.select :category, @repository.class.category_options, prompt: "Select a category..." %>
@@ -29,3 +68,5 @@
 
   <% end %>
 </section>
+
+<%= render 'photoswipe'%>

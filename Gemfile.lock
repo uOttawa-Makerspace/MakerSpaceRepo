@@ -118,6 +118,7 @@ GEM
       cocaine (~> 0.5.3)
       mime-types
     pg (0.18.2)
+    photoswipe-rails (4.0.8a)
     pry (0.10.1)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
@@ -216,6 +217,7 @@ DEPENDENCIES
   jquery-ui-rails (~> 5.0.5)
   paperclip (~> 4.2)
   pg (~> 0.18.2)
+  photoswipe-rails (~> 4.0.8a)
   pry (~> 0.10.1)
   rails (~> 4.2.1)
   rails_12factor

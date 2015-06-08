@@ -3,7 +3,6 @@
 section#new-repo{
   @include outer-container(50rem);
   background-color: #fff;
-  height: calc(100vh - 50px);
   padding: 5rem;
 
   form{
@@ -26,7 +25,8 @@ section#new-repo{
   input.repo, textarea.repo{
     font: 300 0.9em 'Raleway', sans-serif;
     color: #555;
-    width: 400px;
+    width: 100%;
+    max-width: 400px;
     padding: 0.5rem;
     position: relative;
     margin-bottom: 20px;
@@ -110,6 +110,73 @@ li.ui-menu-item {
     }
   }
 }
+
+div#dragndrop{
+  position: absolute;
+  top:0;left:0;
+  width: 100%;
+  height: 100%;
+  color: #aaa;
+  padding-top: 20px; 
+  font: 300 2em 'Raleway', sans-serif;
+  text-align: center;
+
+  p{
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+div.repo-image{
+  height: 150px;
+  max-width: calc(400px + 1rem);
+  border-radius: 3px;
+  background-color: rgba(250,250,250,0.7);
+  border: 1px dashed #aaa;
+  position: relative;
+  background-size: cover;
+}
+
+label.custom-image-upload{
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-top: 1px solid #bbb;
+  padding: 10px 0;
+  text-align: center;
+  background-color: #eee;
+  font: 300 0.8em 'Raleway', sans-serif !important;
+  color: #4682b4 !important;
+  margin: 0 !important; 
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+div#image-container{
+  @include outer-container(calc(400px + 1rem));
+  margin: 0.5rem 0;
+
+
+  div.col{
+    @include span-columns(6, 0.5);
+    display: inline-block;
+
+    span.image-item{
+      position: relative;
+      display: block;
+      margin-bottom: 0;
+
+      img{
+        display: none;
+        width: 100%;
+
+      }
+    }
+  }
+}
+
+
 
 /*section#dropbox-folders{
   display: none;

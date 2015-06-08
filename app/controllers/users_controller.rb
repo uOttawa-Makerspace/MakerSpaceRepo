@@ -12,7 +12,7 @@ class UsersController < SessionsController
       if @user.save
         session[:user_id], cookies[:user_id] = @user.id, @user.id
         format.html { redirect_to root_path, status: :ok }
-        format.json { render json: "Success registration", status: :ok }
+        format.json { render json: @user, status: :ok }
       else
         format.html { render 'new', status: :unprocessable_entity }
         format.json { render json: @user.errors, status: :unprocessable_entity }

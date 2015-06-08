@@ -1,6 +1,6 @@
 class RepositoriesController < SessionsController
   before_action :current_user
-  before_action :signed_in
+  before_action :signed_in, except: [:index]
 
   def index
     @repositories = Repository.all
@@ -12,6 +12,7 @@ class RepositoriesController < SessionsController
   def new
     @client = github_client
     @repository = Repository.new
+    @repository.photos.build
   end
   
   def edit

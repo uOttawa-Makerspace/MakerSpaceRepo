@@ -14,5 +14,6 @@
 //= require jquery_ujs
 //= require jquery-ui/autocomplete
 //= require jquery-ui/selectmenu
+//= require photoswipe
 //= require turbolinks
 //= require_tree .
