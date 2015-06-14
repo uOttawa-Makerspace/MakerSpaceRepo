@@ -5,18 +5,27 @@ Rails.application.routes.draw do
   # USER RESOURCES
   resources :users do
     resources :repositories do
-      resources :photos, shallow: true
+      member do
+        post 'add_like'
+      end
     end
+    resources :photos, shallow: true
     member do
       patch 'change_password'
       get 'account_setting'
     end
   end
 
+
   # STATIC PAGES
   namespace :static_pages, path: '/', as: nil do
     get 'about'
     get 'contact'
+    get 'search' 
+  end
+
+  namespace :template do
+    get 'file'
   end
 
   # SESSION 

@@ -8,7 +8,7 @@ module ApplicationHelper
   end
 
   def github_client
-    @github = Github.new(oauth_token: @user.access_token) if github?
+    @github_client ||= Octokit::Client.new(access_token: @user.access_token) if github?
   end
 
   def signed_in?

@@ -1,0 +1,32 @@
+@import 'lib';
+
+/* ADDING A FILE */
+div#file-container{
+	padding: 0.5rem;
+}
+
+div.file-item{
+	@include transition(200ms);
+	font-size: 0.8rem;
+	color: #666;
+	padding: 0.1rem;
+	max-width: 400px;
+
+	u{
+		width: 80%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	i{
+		padding-right: 10px;
+	}
+}
+
+span.delete-file-item{
+	font-size: 0.7rem;
+	color:#b22222;
+	cursor: pointer;
+	float: right;
+}

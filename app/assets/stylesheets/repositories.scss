@@ -154,65 +154,55 @@ label.custom-image-upload{
 }
 
 div#image-container{
-  @include outer-container(calc(400px + 1rem));
+  @include outer-container(calc(420px + 1rem));
   margin: 0.5rem 0;
 
 
-  div.col{
-    @include span-columns(6, 0.5);
+  div.image-item{
     display: inline-block;
+    margin-right: 1%;
+    position: relative;
+    height: 70px;
+    min-width: 65px;
 
-    span.image-item{
-      position: relative;
+    img{
+      height: 100%;
+      max-width: 100%;
       display: block;
-      margin-bottom: 0;
+    }
 
-      img{
-        display: none;
-        width: 100%;
-
+    span.image-remove{
+      position: absolute;
+      top:5%;
+      right: 5%;
+      padding: 1% 5%;
+      color: #fff;
+      background-color: #222;
+      cursor: pointer;
+      &:after{
+        font: 300 1em 'Raleway', sans-serif !important;
+        content: "remove";
       }
     }
   }
 }
 
+label.custom-instructable-upload{
+  @include transition(100);
+  font-size: 10px;
+  display: inline-block !important;
+  background-color: rgba(238,238,238,0.3);
+  font: 300 0.8em 'Raleway', sans-serif !important;
+  color: #4682b4 !important;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor:pointer;
+  border: 1px solid #aaa;
 
-
-/*section#dropbox-folders{
-  display: none;
-  li{
-    font: 400 0.9em 'Raleway', sans-serif;
-    padding-bottom: 4px;
-    color: #888;
-    padding-left: 15px;
-
-    i{
-      color: #789;
-    }
-
-    &:nth-child(1){
-      font-size: 1.1rem;
-      padding-left: 0;
-    }
+  &:hover{
+    background-color: rgba(119,136,153,0.2);
   }
-}*/
-/*
-span.autocomplete-wrapper{
- display: block;
- position: relative;
- max-width: 400px;
 }
-*/
-/*span.loader{
-  display: none;
-  height: 1rem;
-  width: 1rem;
-  position: absolute;
-  background-image: image-url('loader.gif');
-  background-size: cover;
-  right: 0;
-  top: 10px;
-}*/
 
 span.ui-helper-hidden-accessible div{
   display: none;

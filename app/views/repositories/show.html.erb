@@ -1,1 +1,112 @@
-SHOW PAGE
+<section id="show-repository">
+  <section id="repository-photos">
+
+    <div id="show-photo">
+      <%= image_tag @photos.first.image.url, data: { width: @photos.first.width, height: @photos.first.height} %>
+    </div>
+    <div id="photo-slide">
+      <% @photos.each do |p| %> 
+        <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
+      <% end %>
+    </div>
+  </section>
+
+  <section id="info">
+    <div id="repo-title">
+      <%= @repository.title %>
+    </div>
+    <div id="misc">
+      <span class="misc-item"><%= fa_icon "heart", text: @repository.likes %></span>
+      <span class="misc-item"><%= fa_icon "code-fork", text: '50' %></span>
+      <span class="misc-item"><%= fa_icon "comments", text: '41' %></span>
+    </div>
+    <div id="repo-info">
+      <div class="repo-info-item">
+        <div class="title">PROJECT BY</div>
+        <div class="name"><%= link_to @repository.user.username, '#' %></div>
+        <div class="reputation">1530 pts</div>
+      </div>
+      <div class="repo-info-item">
+        <div class="title">PUBLISHED</div>
+        <div class="date"><%= @repository.created_at.strftime("%b %e %Y") %></div>
+      </div>
+      <div class="repo-info-item">
+        <div class="title">GITHUB</div>
+        <div class="name"><%= link_to(fa_icon('github-alt', text: @repository.github), "#" )%></div>
+      </div>
+      <div class="repo-info-item">
+        <div class="title">DESCRIPTION</div>
+        <div class="description"><%= @repository.description %></div>
+      </div>
+      <div class="repo-info-item">
+        <div class="title">PLATFORM</div>
+        <span class="platform"><%= @repository.category%></span>
+      </div>
+      <div class="repo-info-item">
+        <div class="title">TAGS</div>
+        <span class="tags">robots</span>
+        <span class="tags">hella-cool</span>
+        <span class="tags">randomness</span>
+      </div>
+      <div class="repo-info-item">
+        <span class="like">
+          <%= link_to(fa_icon('heart', text: 'Like'), add_like_user_repository_path, remote: true, method: :post) %>
+        </span>
+        <span class="make">
+          <%= link_to(fa_icon('code-fork', text: 'Make'), "#") %>
+        </span>
+      </div>
+      <div class="repo-info-item">
+      <div class="report"><%= fa_icon 'flag', text: 'Report inapropriate'%></div>
+      </div>
+    </div>
+
+  </section>
+
+  <section id="repo-comments">
+    <div class="title">Comments</div>
+    <%= form_tag "#", method: :post do %>
+      <%= text_area_tag 'comment', nil, rows: 5, placeholder: 'Add a new comment' %>
+      <%= submit_tag 'Post comment' %>
+    <% end %>
+  </section>
+
+</section>
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="pswp__bg"></div>
+    <div class="pswp__scroll-wrap">
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+        <div class="pswp__ui pswp__ui--hidden">
+            <div class="pswp__top-bar">
+                <div class="pswp__counter"></div>
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+        </div>
+    </div>
+</div>
+

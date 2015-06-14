@@ -11,9 +11,10 @@
  * file per style scope.
  *
  *= require_tree .
- *= require photoswipe
  *= require_self
+ *= require photoswipe
  */
+ 
 @import "lib";
 @import "font-awesome";
 
@@ -22,11 +23,6 @@ body{
   overflow-x: hidden;
   background-color: rgba(238,238,238,0.5);
 }
-
-/**{
-  color: #5f9ea0;
-  color: #13686b;
-}*/
 
 a{
   text-decoration: none;
@@ -38,6 +34,11 @@ a{
   &:focus{
     outline-style: none;
   }
+}
+
+u{
+  display: inline-block;
+  text-decoration: none;
 }
 
 ul{

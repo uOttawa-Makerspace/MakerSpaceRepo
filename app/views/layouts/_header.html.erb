@@ -1,20 +1,33 @@
 <section id="header">
+  <div class="inner">
   <% unless signed_in? %>
     <span class="header-menu-item not-signed-in"><%= link_to 'Sign Up', new_user_path %></span>
     <span class="header-menu-item not-signed-in"><%= link_to 'Log In', login_path %></span>
   <% else %>
-    <span class="header-menu-item"><%= link_to 'Log Out', logout_path %></span>
-    <span class="header-menu-item"><%= link_to 'Settings', edit_user_path(@user) %></span>
-    <span class="header-menu-item"><%= link_to 'Create New Repo', new_user_repository_path(user_id: @user.id) %></span>
-    <span class="header-menu-item">
+    <span class="header-menu-item menu-button">
       <%= link_to user_path(@user) do %>
       <%= image_tag @user.avatar.url, class: 'main-avatar-thumbnail', alt: 'Avatar' %> 
       <%= @user.username %>
       <% end %>
+      <ul class="menu">
+        <li><%= link_to 'Profile', user_path(@user) %></li>
+        <li><%= link_to 'Liked', '#' %></li>
+        <li><%= link_to 'Settings', edit_user_path(@user)  %></li>
+        <li><%= link_to 'Sign Out', logout_path %></li>
+      </ul>
     </span>
+    <span class="header-menu-item"><%= link_to 'Create', new_user_repository_path(user_id: @user.id) %></span>
+    <span class="header-menu-item"><%= link_to 'Explore', '#' %></span>
   <% end %>
   <span class="msr-logo">
     <%= link_to root_path do %>MakerSpace<b>Repo</b><% end %>
+    <%= form_tag search_path, method: :get, class: 'header-search' do %>
+    <%= fa_icon('search') %>
+    <%= text_field_tag 'search', nil, placeholder: 'Search' %>
+    <% end %>
   </span>
+  </div>
 </section>
+
+
 

@@ -4,7 +4,7 @@
 
 section#profile{
 	position: absolute;
-	top: 51px;
+	top: 65px;
 	width: 100vw;
 	background-color: rgba(119,136,153,0.1);
 }
@@ -16,11 +16,7 @@ div.profile-title{
 }
 
 div.profile-grid{
-	clear: both;
-	display: table;
-	content: "";
-	width: 64rem;
-	margin: 0 auto;
+	@include outer-container(70rem);
 	background-color: #fff;
 	padding: 0 1rem;
 	padding-bottom: 5rem;
@@ -39,7 +35,7 @@ div.profile-side-panel{
   	height: 2.5rem;
   	
   	a {
-  		@include transition(100);
+  		@include transition(100ms);
 
   	  &:hover:not(.vp-button){
 	  		padding-left: 0.4rem;

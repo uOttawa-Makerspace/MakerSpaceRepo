@@ -1,25 +1,30 @@
 class GithubController < SessionsController
   before_action :current_user
-  before_action :signed_in
+  before_action :signed_in, except: [:callback]
+
+  CLIENT_ID = ENV['GITHUB_APP_KEY']
+  CLIENT_SECRET = ENV['GITHUB_APP_KEY_SECRET']
 
   def authorize
     session[:back] = request.referrer
-    address = github.authorize_url redirect_uri: "http://localhost:3000/github/callback", scope: 'repo'
+    address = github.authorize_url CLIENT_ID, scope: 'repo'
     redirect_to address
   end
 
   def repositories
-    @repos = github_client.repos.list.map { |r| r.name unless r.private}.compact
+    @repos = octokit_client.repos.list.map { |r| r.name unless r.private}.compact
   end
 
   def unauthorize
+    github.revoke_application_authorization(@user.access_token)
+    @user.update access_token: nil
+    redirect_to account_setting_user_path(@user) 
   end
 
   def callback
-    authorization_code = params[:code]
-    access_token = github.get_token authorization_code
-    @user.access_token = access_token.token
-    @user.save
+    code = params[:code]
+    access_token = Octokit.exchange_code_for_token(code, CLIENT_ID, CLIENT_SECRET).access_token
+    @user.update access_token: access_token
     redirect_to session[:back]
     session.delete :back
   end
@@ -27,7 +32,7 @@ class GithubController < SessionsController
   private
 
    def github
-    @github ||= Github.new
+    @github ||= Octokit::Client.new
    end
 
 end

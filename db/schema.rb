@@ -11,10 +11,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150602153153) do
+ActiveRecord::Schema.define(version: 20150614180938) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "likes", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "repository_id"
+    t.datetime "created_at",    null: false
+    t.datetime "updated_at",    null: false
+  end
+
+  add_index "likes", ["repository_id"], name: "index_likes_on_repository_id", using: :btree
+  add_index "likes", ["user_id"], name: "index_likes_on_user_id", using: :btree
 
   create_table "photos", force: :cascade do |t|
     t.integer  "repository_id"
@@ -24,6 +34,8 @@ ActiveRecord::Schema.define(version: 20150602153153) do
     t.string   "image_content_type"
     t.integer  "image_file_size"
     t.datetime "image_updated_at"
+    t.integer  "height"
+    t.integer  "width"
   end
 
   add_index "photos", ["repository_id"], name: "index_photos_on_repository_id", using: :btree
@@ -32,11 +44,12 @@ ActiveRecord::Schema.define(version: 20150602153153) do
     t.integer  "user_id"
     t.string   "title"
     t.string   "description"
-    t.datetime "created_at",  null: false
-    t.datetime "updated_at",  null: false
+    t.datetime "created_at",              null: false
+    t.datetime "updated_at",              null: false
     t.string   "category"
     t.string   "license"
     t.string   "github"
+    t.integer  "likes",       default: 0
   end
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree
@@ -59,6 +72,8 @@ ActiveRecord::Schema.define(version: 20150602153153) do
     t.string   "access_token"
   end
 
+  add_foreign_key "likes", "repositories"
+  add_foreign_key "likes", "users"
   add_foreign_key "photos", "repositories"
   add_foreign_key "repositories", "users"
 end

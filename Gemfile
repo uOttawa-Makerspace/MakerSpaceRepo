@@ -16,8 +16,9 @@ gem 'turbolinks', '~> 2.5.3'
 gem 'jbuilder', '~> 2.0'
 gem 'pry', '~> 0.10.1'
 gem 'photoswipe-rails', '~> 4.0.8a'
+gem 'fastimage', '~> 1.7.0'
 gem 'font-awesome-rails', '~> 4.3.0.0'
-gem 'github_api', '~> 0.12.3'
+gem "octokit", "~> 3.0"
 gem 'sdoc', '~> 0.4.0', group: :doc
 
 group :development, :test do

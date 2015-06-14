@@ -1,0 +1,218 @@
+@import "lib";
+
+section#show-repository{
+	@include outer-container(70rem);
+	left:0;right:0;
+	position: absolute;
+	top: 65px;
+	padding: 3rem 0 0;
+	background-color: #fff;
+}
+
+section#repository-photos{
+	@include span-columns(8, 4);
+	padding-bottom: 3rem;
+}
+
+div#show-photo img{
+	display: block;
+	width: 100%;
+	margin: 0 auto;
+	cursor: pointer;
+}
+
+div#photo-slide{
+	position: relative;
+	margin-top: 1rem;
+	max-height: 100px;
+	height: 10vw;
+	font-size: 0;
+	width: 100%;
+
+	img{
+		height: 100%;
+		cursor: pointer;
+		margin: 0 0.5%;
+		border: 0.3rem solid #ddd;
+		max-width: calc(19% - 0.6rem);
+	}
+
+
+}
+
+	span.forward{
+		display: inline-block;
+		height: 100px;
+		font-size: 3rem;
+		float: left;
+		color: #ddd;
+		margin: 0 0.2rem;
+		padding: 0 0.3rem;
+		line-height: 100px;
+	}
+
+section#info{
+	@include span-columns(4, 4);
+	padding-bottom: 3rem;
+}
+
+div#repo-title{
+	color: #366;
+	font: 600 1.6rem 'Raleway', sans-serif;
+}
+
+div#misc{
+	border-bottom: 3px solid #366;
+	padding-left: 5%;
+
+	span.misc-item{
+		@include transition(100ms);
+		display: inline-block;
+		height: 60px;
+		line-height: 60px !important;
+		width: 30%;
+		font: 300 1.1rem 'Raleway', sans-serif;
+		color: #19c1a5;
+		cursor: pointer;
+		i{
+			padding-right: 10px;
+		}
+
+		&:nth-last-child(1){
+			text-align: right;
+		}
+
+		&:nth-last-child(2){
+			text-align: center;
+		}
+
+		&:hover{
+			color: #5f9ea0;
+		}
+	}
+}
+
+div.repo-info-item{
+	@include span-columns(6, 0);
+	padding-top: 30px;
+	font: 300 0.9rem 'Raleway', sans-serif;
+
+	div.title{
+		font-size: 1rem;
+		color: #366;
+		padding-bottom: 5px;
+	}
+
+	div.name{
+		@include transition(100ms);
+		color: #19c1a5;
+		font-weight: 500;
+
+		i{
+			padding-right: 5px;
+			color: #aaa;
+		}
+
+		&:hover{
+			color: #5f9ea0;
+		}
+	}
+
+	div.reputation{
+		color: #aaa;
+		font-weight: 400;
+		font-size: 0.8rem;
+	}
+
+	div.description ,div.date{
+		color: #999;
+	}
+
+	span.platform{
+		color: #5f9ea0;
+	}
+
+	&:nth-child(1n + 3){
+		width: 100%;
+	}
+
+	span.tags{
+		display: inline-block;
+		padding: 0.25rem 0.7rem;
+		background-color: #4682b4;
+		color: #eee;
+		margin-top: 0.2rem;
+	}
+
+	span.like, span.make{
+		@include transition(100ms);
+		display: inline-block;
+		background-color: #5f9ea0;
+		font-size: 1rem;	
+		color: #eee;
+		border-radius: 1rem;
+		margin-top: 0.5rem;
+		margin-right: 0.75rem;
+
+		a{
+			display: block;
+			padding: 0.5rem 1.5rem;
+		}
+
+		i{
+			font-size: 1.1rem;
+			padding-right: 10px;
+		}
+
+		&:hover{
+			color: #a3e6db;
+		}
+	}
+
+	div.report{
+		@include transition(100ms);
+		color: #888;
+		cursor: pointer;
+
+		i{
+			padding-right: 10px;
+		}
+
+		&:hover{
+			color: #cd5c5c;
+		}
+	}
+
+}
+
+section#repo-comments{
+	width: 100%;
+	background-color: #eee;
+	float: left;	
+	padding: 3rem 0;
+
+	div.title{
+		font: 400 2rem 'Raleway', sans-serif;
+		color: #555;
+		padding: 0 2rem 2rem;
+	}
+
+	textarea#comment{
+		border: none;
+		display: block;
+		width: 70%;
+		padding: 0.5rem;
+		font: 400 1rem 'Raleway', sans-serif;
+		margin-left: 1rem;
+		border-radius: 3px;
+	}
+
+	input{
+		margin: 0.5rem 1rem;
+		font: 400 1rem 'Raleway', sans-serif;
+		padding: 0.5rem 0.7rem;
+		background-color: #19c1a5;
+		color: #eee;
+		border: none;
+	}
+}
