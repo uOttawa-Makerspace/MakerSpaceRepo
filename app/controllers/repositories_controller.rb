@@ -1,6 +1,6 @@
 class RepositoriesController < SessionsController
   before_action :current_user
-  before_action :signed_in, except: [:index]
+  before_action :signed_in, except: [:index, :show]
   before_action :github_client, only: [:create, :show]
   before_action :set_repository, only: [:show, :add_like]
 
@@ -11,6 +11,7 @@ class RepositoriesController < SessionsController
   def show
     @photos = @repository.photos.first(5)
     @tags = @repository.tags
+    @comments = @repository.comments.reverse
   end
 
   def new
@@ -71,8 +72,8 @@ class RepositoriesController < SessionsController
   def add_like
     like = Like.create({user_id: @user.id, repository_id: @repository.id})
     if like.valid?
-      @repository.increment!(:likes)
-      render 'template/add_like'
+      @repository.increment!(:like)
+      render json: { like: @repository.like }
     else
       render nothing: true
     end

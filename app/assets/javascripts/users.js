@@ -5,6 +5,37 @@ var photoArray = [];
 
 $(document).on('page:change', function(){
   console.log('change?');
+
+
+  $("form#comment").on("ajax:success", function(e, data, status, xhr) {
+      params = {
+        username: data.username,
+        user_id: data.user_id,
+        user_url: data.user_url,
+        content: data.comment,
+        comment_id: data.comment_id,
+        created_at: data.created_at
+      }
+
+      $.get('/template/comment', params, function(data){
+        console.log(params.comment_id);
+        $("div#comment-container").prepend(data);
+        $("textarea#content").val("");
+
+        $("a.upvote").on("ajax:success", function(e, data, status, xhr) {
+          $("div.upvote-" + data.comment_id ).text(data.upvote_count); 
+        });
+      }, 'html');
+  });
+
+  $("a.upvote").on("ajax:success", function(e, data, status, xhr) {
+    $("div.upvote-" + data.comment_id ).text(data.upvote_count); 
+  });
+
+  $("a.like").on("ajax:success", function(e, data, status, xhr) {
+    $("span.like-count").text(data.like); 
+  });
+
   photoArray = [];
   var gallery = photoSwipe();
 

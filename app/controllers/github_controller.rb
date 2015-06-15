@@ -6,7 +6,7 @@ class GithubController < SessionsController
   CLIENT_SECRET = ENV['GITHUB_APP_KEY_SECRET']
 
   def authorize
-    session[:back] = request.referrer
+    cookies[:back] = { value: request.referrer, expires: 30.minutes.from_now }
     address = github.authorize_url CLIENT_ID, scope: 'repo'
     redirect_to address
   end
@@ -22,11 +22,11 @@ class GithubController < SessionsController
   end
 
   def callback
-    code = params[:code]
-    access_token = Octokit.exchange_code_for_token(code, CLIENT_ID, CLIENT_SECRET).access_token
-    @user.update access_token: access_token
-    redirect_to root_path
-    session.delete :back
+    user = User.find cookies[:user_id]
+    access_token = Octokit.exchange_code_for_token(params[:code], CLIENT_ID, CLIENT_SECRET).access_token
+    user.update access_token: access_token
+    redirect_to cookies[:back]
+    cookies.delete :back
   end
 
   private

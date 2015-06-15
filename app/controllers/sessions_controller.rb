@@ -12,8 +12,9 @@ class SessionsController < ApplicationController
     @user = User.authenticate(username_email, password)
 
     if @user
-      session[:user_id], cookies[:user_id] = @user.id, @user.id
-      redirect_to root_path
+      session[:user_id], cookies[:user_id] = @user.id, { value: @user.id, expires: 1.day.from_now } 
+      redirect_to session[:back]
+      session.delete :back
     else
       render :login
     end
@@ -21,6 +22,7 @@ class SessionsController < ApplicationController
   end
 
   def login
+    session[:back] = request.referrer
   end
   
   def signed_in
@@ -30,7 +32,7 @@ class SessionsController < ApplicationController
   def logout
     disconnect_user
     @user = User.new
-    redirect_to root_path
+    redirect_to request.referrer
   end
 
   def disconnect_user

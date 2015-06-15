@@ -185,10 +185,10 @@ div.repo-info-item{
 }
 
 section#repo-comments{
-	width: 100%;
+	width: calc(100% - 6rem);
 	background-color: #eee;
 	float: left;	
-	padding: 3rem 0;
+	padding: 3rem;
 
 	div.title{
 		font: 400 2rem 'Raleway', sans-serif;
@@ -196,7 +196,7 @@ section#repo-comments{
 		padding: 0 2rem 2rem;
 	}
 
-	textarea#comment{
+	textarea{
 		border: none;
 		display: block;
 		width: 70%;
@@ -213,5 +213,63 @@ section#repo-comments{
 		background-color: #19c1a5;
 		color: #eee;
 		border: none;
+	}
+
+	div#comment-filters{
+		padding: 2rem;
+
+		a{
+			display: inline-block;
+			margin: 0 1%;
+			font: 400 1rem 'Raleway', sans-serif;
+			color: #555;
+
+			&:nth-child(1){
+				font-weight: 700;
+			}
+		}
+	}
+
+	div#comment-container{
+		font: 400 1rem 'Raleway', sans-serif;
+
+		div.comment{
+			@include outer-container(100%);
+			margin-bottom: 2rem;
+			div.comment-upvote{
+				@include span-columns(0.5, 0);
+				text-align: center;
+				font-size: 1.5rem;
+				font-weight: 300;
+				color: #555;
+				div{
+					font-size: 1.2rem;
+				}
+			}
+			div.comment-content{
+				@include span-columns(11.5, 2);
+				color: #777;
+				font-weight: 300;
+				max-width: 65%;
+			}
+
+			div.comment-header{
+				@include span-columns(11.5, 2);
+
+				color: #aaa;
+				font-weight: 300;
+
+				a{
+					display: inline-block;
+					color: #366;
+					font-weight: 500;
+				}
+
+				div.rep{
+					display: inline-block;
+					padding: 0 3rem 0.5rem;
+				}
+			}
+		}	
 	}
 }

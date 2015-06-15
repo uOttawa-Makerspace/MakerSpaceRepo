@@ -66,6 +66,17 @@ class UsersController < SessionsController
     redirect_to root_path
   end
 
+  def add_upvote
+    comment = Comment.find params[:comment_id]
+    upvote = Upvote.create({user_id: @user.id, comment_id: comment.id})
+    if upvote.valid?
+      comment.increment!(:upvote)
+      render json: { upvote_count: comment.upvote, comment_id: comment.id }
+    else
+      render nothing: true
+    end
+  end
+
 private
 
   def user_params

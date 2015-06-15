@@ -16,7 +16,7 @@
       <%= @repository.title %>
     </div>
     <div id="misc">
-      <span class="misc-item"><%= fa_icon "heart", text: @repository.likes %></span>
+      <span class="misc-item"><%= fa_icon "heart" %><span class="like-count"><%= @repository.like %></span></span>
       <span class="misc-item"><%= fa_icon "code-fork", text: '50' %></span>
       <span class="misc-item"><%= fa_icon "comments", text: '41' %></span>
     </div>
@@ -50,7 +50,8 @@
       </div>
       <div class="repo-info-item">
         <span class="like">
-          <%= link_to(fa_icon('heart', text: 'Like'), add_like_user_repository_path, remote: true, method: :post) %>
+          <%= link_to(fa_icon('heart', text: 'Like'), 
+            add_like_user_repository_path, class: 'like', remote: true, method: :post) %>
         </span>
         <span class="make">
           <%= link_to(fa_icon('code-fork', text: 'Make'), "#") %>
@@ -65,48 +66,36 @@
 
   <section id="repo-comments">
     <div class="title">Comments</div>
-    <%= form_tag "#", method: :post do %>
-      <%= text_area_tag 'comment', nil, rows: 5, placeholder: 'Add a new comment' %>
+    <%= form_tag user_repository_comments_path(repository_id: @repository.id), id: 'comment', remote: true do %>
+      <%= text_area_tag 'content', nil, rows: 5, placeholder: 'Add a new comment' %>
       <%= submit_tag 'Post comment' %>
     <% end %>
-  </section>
 
+    <div id="comment-filters">
+      <%= link_to "Newest", "#" %>
+      <%= link_to "Top votes", "#" %>
+    </div>
+    <div id="comment-container">
+      <% @comments.each do |comment|%>
+      <div class="comment">
+        <div class="comment-upvote">
+          <%= link_to fa_icon('angle-up'), 
+            add_upvote_user_path(id: comment.user.id, comment_id: comment.id), class: 'upvote', remote: true, method: :post %>
+          <div class="upvote upvote-<%= comment.id %>"><%= comment.upvote %></div>
+          <%= fa_icon 'angle-down' %>
+        </div>
+        <div class="comment-header">
+          <%= link_to comment.user.username, user_path(id: comment.user.id)%>
+          <div class="rep">1530pts</div>
+          <%= time_ago_in_words(comment.created_at) << " ago" %>
+        </div>
+        <div class="comment-content">
+          <%= comment.content %>
+        </div>
+      </div> 
+      <% end %>
+    </div>
+  </section>
 </section>
 
-<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="pswp__bg"></div>
-    <div class="pswp__scroll-wrap">
-        <div class="pswp__container">
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-        </div>
-        <div class="pswp__ui pswp__ui--hidden">
-            <div class="pswp__top-bar">
-                <div class="pswp__counter"></div>
-                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-                <button class="pswp__button pswp__button--share" title="Share"></button>
-                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
-                <div class="pswp__preloader">
-                    <div class="pswp__preloader__icn">
-                      <div class="pswp__preloader__cut">
-                        <div class="pswp__preloader__donut"></div>
-                      </div>
-                    </div>
-                </div>
-            </div>
-            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-                <div class="pswp__share-tooltip"></div> 
-            </div>
-            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-            </button>
-            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-            </button>
-            <div class="pswp__caption">
-                <div class="pswp__caption__center"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
+<%= render 'layouts/photoswipe' %>

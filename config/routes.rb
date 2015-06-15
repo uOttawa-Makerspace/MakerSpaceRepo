@@ -5,13 +5,13 @@ Rails.application.routes.draw do
   # USER RESOURCES
   resources :users do
     resources :repositories do
-      member do
-        post 'add_like'
-      end
+      resources :comments
+      post 'add_like', on: :member
     end
     member do
       patch 'change_password'
       get 'account_setting'
+      post 'add_upvote', path: 'add_upvote/:comment_id'
     end
   end
 
@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   namespace :template do
     get 'file'
     get 'tag'
+    get 'comment'
   end
 
   # SESSION 

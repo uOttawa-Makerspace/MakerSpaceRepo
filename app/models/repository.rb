@@ -3,7 +3,9 @@ class Repository < ActiveRecord::Base
 
   has_many :photos, dependent: :destroy
   has_many :tags, dependent: :destroy
-  
+  has_many :comments, dependent: :destroy
+  has_many :likes, dependent: :destroy
+
   def self.category_options
     ["3D-Model", "Wearables", "Mobile", "Internet of Things", 
      "Bio-Medical", "Virtual Reality" ]
@@ -20,7 +22,8 @@ class Repository < ActiveRecord::Base
   end
 
   validates :title, 
-    presence: { message: "Repository name is required."}
+    presence: { message: "Repository name is required."},
+    uniqueness: { message: "Repository name is already in use." }   
 
   validates :category,
     inclusion: { within: category_options },
