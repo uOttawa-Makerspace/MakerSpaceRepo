@@ -11,7 +11,7 @@ class UsersController < SessionsController
     respond_to do |format|
       if @user.save
         session[:user_id], cookies[:user_id] = @user.id, @user.id
-        format.html { redirect_to root_path, status: :ok }
+        format.html { redirect_to root_path }
         format.json { render json: { success: @user.id }, status: :ok }
       else
         format.html { render 'new', status: :unprocessable_entity }
@@ -28,6 +28,7 @@ class UsersController < SessionsController
   end
 
   def account_setting
+    @client = github_client if github?
     render layout: "profile"
   end
 

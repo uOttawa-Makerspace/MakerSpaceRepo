@@ -19,12 +19,13 @@ div#show-photo img{
 	width: 100%;
 	margin: 0 auto;
 	cursor: pointer;
+	border: 0.4rem solid #eee;
 }
 
 div#photo-slide{
 	position: relative;
 	margin-top: 1rem;
-	max-height: 100px;
+	max-height: 65px;
 	height: 10vw;
 	font-size: 0;
 	width: 100%;
@@ -32,11 +33,9 @@ div#photo-slide{
 	img{
 		height: 100%;
 		cursor: pointer;
-		margin: 0 0.5%;
+		margin: 0 0.5% 1%;
 		border: 0.3rem solid #ddd;
-		max-width: calc(19% - 0.6rem);
 	}
-
 
 }
 

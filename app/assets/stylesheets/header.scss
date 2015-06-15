@@ -5,7 +5,8 @@ section#header{
   height: 60px;
   background-color: #5f9ea0;
   border-bottom: 5px solid #366;
-
+  overflow: hidden;
+  
   .inner{
     max-width: 70rem;
     margin: 0 auto;

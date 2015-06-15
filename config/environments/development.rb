@@ -41,10 +41,10 @@ Rails.application.configure do
 
   config.console = Pry
 
-  # Octokit.configure do |c|
-  #   c.client_id        = ENV['GITHUB_APP_KEY']
-  #   c.client_secret    = ENV['GITHUB_APP_KEY_SECRET']
-  # end
+  Octokit.configure do |c|
+    c.client_id        = ENV['GITHUB_APP_KEY']
+    c.client_secret    = ENV['GITHUB_APP_KEY_SECRET']
+  end
 
   # config.force_ssl = true
 

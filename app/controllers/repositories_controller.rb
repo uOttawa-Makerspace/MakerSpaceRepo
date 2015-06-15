@@ -10,6 +10,7 @@ class RepositoriesController < SessionsController
 
   def show
     @photos = @repository.photos.first(5)
+    @tags = @repository.tags
   end
 
   def new
@@ -24,7 +25,12 @@ class RepositoriesController < SessionsController
     @client = github_client
     @files = params['files']
 
+
     if @repository.github.present?
+      githubatize = @repository.github.gsub(/\s+/, '-') #github replaces spaces with dashes in repo names
+      @repository.github = githubatize
+      @repository.github_url = "https://github.com/#{@client.login}/#{githubatize}"
+
       @client.create @repository.github, {description: @repository.description}
       @client.create_contents("#{@client.login}/#{@repository.github}", 
                               "README.md",
@@ -35,6 +41,7 @@ class RepositoriesController < SessionsController
 
     if @repository.save
       create_photos
+      create_tags
       render json: { redirect_uri: "#{user_repository_path(user_id: @user.id, id: @repository.id)}" }
     else
       render :new, alert: "Something went wrong"
@@ -62,7 +69,6 @@ class RepositoriesController < SessionsController
   end
 
   def add_like
-
     like = Like.create({user_id: @user.id, repository_id: @repository.id})
     if like.valid?
       @repository.increment!(:likes)
@@ -70,7 +76,6 @@ class RepositoriesController < SessionsController
     else
       render nothing: true
     end
-
   end
 
   private
@@ -88,6 +93,12 @@ class RepositoriesController < SessionsController
         dimension = FastImage.size(i.tempfile)
         Photo.create(image: i, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end if params['images'].present?
+    end
+
+    def create_tags
+      params['tags'].each do |t|
+        Tag.create(name: t, repository_id: @repository.id)
+      end if params['tags'].present?
     end
 
     def commit

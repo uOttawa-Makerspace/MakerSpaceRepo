@@ -25,7 +25,7 @@ class GithubController < SessionsController
     code = params[:code]
     access_token = Octokit.exchange_code_for_token(code, CLIENT_ID, CLIENT_SECRET).access_token
     @user.update access_token: access_token
-    redirect_to session[:back]
+    redirect_to root_path
     session.delete :back
   end
 

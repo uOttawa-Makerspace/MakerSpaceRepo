@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150614180938) do
+ActiveRecord::Schema.define(version: 20150615051727) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -50,9 +50,19 @@ ActiveRecord::Schema.define(version: 20150614180938) do
     t.string   "license"
     t.string   "github"
     t.integer  "likes",       default: 0
+    t.string   "github_url"
   end
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree
+
+  create_table "tags", force: :cascade do |t|
+    t.integer  "repository_id"
+    t.string   "name"
+    t.datetime "created_at",    null: false
+    t.datetime "updated_at",    null: false
+  end
+
+  add_index "tags", ["repository_id"], name: "index_tags_on_repository_id", using: :btree
 
   create_table "users", force: :cascade do |t|
     t.string   "username"
@@ -76,4 +86,5 @@ ActiveRecord::Schema.define(version: 20150614180938) do
   add_foreign_key "likes", "users"
   add_foreign_key "photos", "repositories"
   add_foreign_key "repositories", "users"
+  add_foreign_key "tags", "repositories"
 end

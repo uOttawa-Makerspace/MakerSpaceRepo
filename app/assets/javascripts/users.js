@@ -1,5 +1,6 @@
 var instructableFiles = [];
 var photoFiles = [];
+var tagArray = [];
 var photoArray = [];
 
 $(document).on('page:change', function(){
@@ -26,6 +27,32 @@ $(document).on('page:change', function(){
     gallery.init();
   });
 
+  $("input#tag").keypress(function (e) {
+    var tag = $(this);
+    var val = tag.val();
+
+    if (e.keyCode == 13) {
+      tag.val("");
+      if($("div#tag-container").children().length === 6){
+        return false;
+      }
+      e.preventDefault();
+      $(this).css('margin-bottom', '10px');
+      tagArray.push(val);
+      $.get('/template/tag', { 'tag' : val }, function(data){
+        $("div#tag-container").append(data);
+        var last = $("div#tag-container")[0].children.length - 1;
+        var child = $("div#tag-container")[0].children[last];
+
+        $(child).click(function(){
+          var index = $(child).index();
+          tagArray.splice(index, 1);
+          $(child).remove();
+        });
+
+      }, 'html');
+    }
+  });
 
 
   $("span.menu-button").hover(function(){
@@ -78,6 +105,10 @@ $(document).on('page:change', function(){
 
     for (var i = 0; i < photoFiles.length; i++) {
       form.append("images[]", photoFiles[i]);
+    };
+
+    for (var i = 0; i < tagArray.length; i++) {
+      form.append("tags[]", tagArray[i]);
     };
 
     $.ajax({
@@ -207,22 +238,3 @@ function photoSwipe(){
   return gallery;
 }
 
-function getImages(){
-  console.log($("div#photo-slide").children);
-};
-
-
-
-// function directories(){
-//   var url = "/github/repositories.json";
-//   $.getJSON(url).done( function(data){ 
-//     setAutoComplete(data);
-//   });
-// }
-
-// function setAutoComplete(data){
-//   $( "input#repository_github" ).autocomplete({
-//     position: { my : "left top+5", at: "left bottom" },
-//     source: Object.keys(data),
-//   });
-// }

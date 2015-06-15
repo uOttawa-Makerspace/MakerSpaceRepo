@@ -26,11 +26,15 @@ section#signup {
 	  font: 300 1rem 'Raleway', helvetica, sans-serif;
   }
 
-  form div{
- 	  font: 400 0.75rem 'Raleway', helvetica, sans-serif;
- 	  color: #aaa;
- 	  width: 420px;
- 	  padding-top: 0.5rem;
+  form {
+    margin: 0 20%;
+    max-width: 60%;
+    div{
+   	  font: 400 0.75rem 'Raleway', helvetica, sans-serif;
+   	  color: #aaa;
+   	  width: 420px;
+   	  padding-top: 0.5rem;
+    }
   }
 }
 
@@ -38,6 +42,8 @@ div.signup-title, div.login-title{
   font: 400 2rem 'Raleway', helvetica, sans-serif;
   color: #333;
   padding: 2rem 0;
+  max-width: 60%;
+  margin: 0 auto; 
 }
 
 input.signup-button{

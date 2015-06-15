@@ -9,13 +9,11 @@ Rails.application.routes.draw do
         post 'add_like'
       end
     end
-    resources :photos, shallow: true
     member do
       patch 'change_password'
       get 'account_setting'
     end
   end
-
 
   # STATIC PAGES
   namespace :static_pages, path: '/', as: nil do
@@ -26,6 +24,7 @@ Rails.application.routes.draw do
 
   namespace :template do
     get 'file'
+    get 'tag'
   end
 
   # SESSION 

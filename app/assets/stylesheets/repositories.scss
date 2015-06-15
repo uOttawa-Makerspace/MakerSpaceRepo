@@ -3,10 +3,12 @@
 section#new-repo{
   @include outer-container(50rem);
   background-color: #fff;
-  padding: 5rem;
+  padding: 2rem 5rem;
 
   form{
-    @include span-columns(12, 20);
+    max-width: 60%;
+    float: left;
+    margin: 0 20%;
   }
 
   label{
@@ -22,7 +24,7 @@ section#new-repo{
     margin-bottom: 0.5rem;
   }
 
-  input.repo, textarea.repo{
+  input.repo, textarea.repo, input#tag {
     font: 300 0.9em 'Raleway', sans-serif;
     color: #555;
     width: 100%;
@@ -184,6 +186,18 @@ div#image-container{
         content: "remove";
       }
     }
+  }
+}
+
+div#tag-container{
+  span.tag{
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    background-color: #4682b4;
+    color: #eee;
+    font: 300 0.8em 'Raleway', sans-serif !important;
+    margin-right: 0.2rem;
+    margin-top: 0.2rem;
   }
 }
 

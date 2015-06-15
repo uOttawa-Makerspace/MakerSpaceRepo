@@ -31,7 +31,7 @@
         github_authorize_path, class: 'github-auth' %>
     <% else %>
       <div class="github-info">
-        Connected as: <%= link_to "@mtuck063", "#"%> (Menelik Tucker)
+        Connected as: <%= link_to "@#{@client.login}", @client.user.html_url %> <%= "(#{@client.user.name})" if @client.user.name %>
 
                 <%= link_to fa_icon("github", text: ' Revoke access...'), 
           github_unauthorize_path, class: 'github-unauth' %>

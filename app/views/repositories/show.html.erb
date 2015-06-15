@@ -23,7 +23,7 @@
     <div id="repo-info">
       <div class="repo-info-item">
         <div class="title">PROJECT BY</div>
-        <div class="name"><%= link_to @repository.user.username, '#' %></div>
+        <div class="name"><%= link_to @repository.user.username, user_path(id: @repository.user.id) %></div>
         <div class="reputation">1530 pts</div>
       </div>
       <div class="repo-info-item">
@@ -32,7 +32,7 @@
       </div>
       <div class="repo-info-item">
         <div class="title">GITHUB</div>
-        <div class="name"><%= link_to(fa_icon('github-alt', text: @repository.github), "#" )%></div>
+        <div class="name"><%= link_to(fa_icon('github-alt', text: @repository.github), @repository.github_url )%></div>
       </div>
       <div class="repo-info-item">
         <div class="title">DESCRIPTION</div>
@@ -44,9 +44,9 @@
       </div>
       <div class="repo-info-item">
         <div class="title">TAGS</div>
-        <span class="tags">robots</span>
-        <span class="tags">hella-cool</span>
-        <span class="tags">randomness</span>
+        <% @tags.each do |t| %>
+          <span class="tags"><%= t.name %></span>
+        <% end %>
       </div>
       <div class="repo-info-item">
         <span class="like">

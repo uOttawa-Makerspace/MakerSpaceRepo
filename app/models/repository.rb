@@ -2,7 +2,7 @@ class Repository < ActiveRecord::Base
   belongs_to :user
 
   has_many :photos, dependent: :destroy
-    accepts_nested_attributes_for :photos
+  has_many :tags, dependent: :destroy
   
   def self.category_options
     ["3D-Model", "Wearables", "Mobile", "Internet of Things", 

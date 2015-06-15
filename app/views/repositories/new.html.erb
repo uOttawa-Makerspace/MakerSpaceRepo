@@ -8,7 +8,7 @@
     </span>
 
     <%= f.label :github, fa_icon('github', text: 'Github Repository Name', style: 'padding-right: 0px;') %>
-    <div>Github repository names can not contain spaces.</div>
+    <div>Github will replaces spaces in repository names with dashes.</div>
     <span class="autocomplete-wrapper">
       <%= f.text_field :github, class: 'repo repo-autocomplete' %>
       <span class="loader"></span> 
@@ -45,7 +45,13 @@
     <div>Choose a category that best fits your project.</div>
     <%= f.select :category, @repository.class.category_options, prompt: "Select a category..." %>
 
-   <%= f.label :license %> 
+    <%= label_tag :tag %> 
+    <div>A maximum of five tags per repository</div>
+    <%= text_field_tag :tag, nil, placeholder: 'Type a tag, then hit enter' %>
+
+    <div id="tag-container"></div>
+
+    <%= f.label :license %> 
     <div>Choose how you want your project to be used by others.</div>
     <%= f.select :license, @repository.class.license_options %>
 
@@ -53,4 +59,3 @@
 
   <% end %>
 </section>
-
