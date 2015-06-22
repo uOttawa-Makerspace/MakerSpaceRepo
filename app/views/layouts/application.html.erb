@@ -3,7 +3,9 @@
 	<head>
 	  <title>MakerSpaceRepo</title>
 	  <%= favicon_link_tag 'site-icon.jpg' %>
+	  <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
 	  <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+	  <%= javascript_include_tag "vendor",      :debug => false %>
 	  <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
 	  <%= csrf_meta_tags %>
 	  <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400,600,500' rel='stylesheet' type='text/css'>

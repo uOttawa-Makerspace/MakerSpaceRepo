@@ -26,7 +26,11 @@ class SessionsController < ApplicationController
   end
   
   def signed_in
-    return redirect_to root_path unless signed_in?
+    return if signed_in?
+    respond_to do |format|
+      format.html { redirect_to new_user_path }
+      format.js { render :js => "window.location.href = '#{new_user_path}'" }
+    end
   end
   
   def logout

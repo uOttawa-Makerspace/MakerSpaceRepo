@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150615190559) do
+ActiveRecord::Schema.define(version: 20150620153444) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -23,6 +23,7 @@ ActiveRecord::Schema.define(version: 20150615190559) do
     t.integer  "upvote",        default: 0
     t.datetime "created_at",                null: false
     t.datetime "updated_at",                null: false
+    t.string   "username"
   end
 
   add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
@@ -56,14 +57,15 @@ ActiveRecord::Schema.define(version: 20150615190559) do
     t.integer  "user_id"
     t.string   "title"
     t.string   "description"
-    t.datetime "created_at",              null: false
-    t.datetime "updated_at",              null: false
+    t.datetime "created_at",                null: false
+    t.datetime "updated_at",                null: false
     t.string   "category"
     t.string   "license"
     t.string   "github"
-    t.integer  "likes",       default: 0
+    t.integer  "likes",         default: 0
     t.string   "github_url"
-    t.integer  "like",        default: 0
+    t.integer  "like",          default: 0
+    t.string   "user_username"
   end
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree
@@ -82,6 +84,7 @@ ActiveRecord::Schema.define(version: 20150615190559) do
     t.integer  "comment_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean  "downvote"
   end
 
   add_index "upvotes", ["comment_id"], name: "index_upvotes_on_comment_id", using: :btree

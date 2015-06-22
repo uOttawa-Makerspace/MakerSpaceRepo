@@ -52,7 +52,7 @@ span.header-menu-item {
 
 span.menu-button{
   position: relative;
-
+  z-index: 10;
   ul{
     display: none;
     background-color: #fff;

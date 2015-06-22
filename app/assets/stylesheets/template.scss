@@ -30,3 +30,50 @@ span.delete-file-item{
 	cursor: pointer;
 	float: right;
 }
+
+nav.pagination{
+	text-align: center;
+	color: #eee;
+
+	span.current.page, span.page.gap{
+		color: #a3e6db;
+		padding: 0.5rem;
+		text-align: center;
+	  background-color: #19c1a5;
+		vertical-align: middle;
+		display: inline-block;
+	}
+
+	span.page.gap{
+		color: #eee;
+	}
+
+	span.page a{
+		padding: 0.5rem;
+		vertical-align: middle;
+	  background-color: #19c1a5;
+	}
+
+	span.prev, span.next{
+	  background-color: #19c1a5;
+		vertical-align: middle;
+		font-size: 1.2rem;
+		text-align: center;
+		display: inline-block; 
+
+		i{
+			text-align: center;
+			padding: 0.5rem;
+			display: inline-block;
+		}
+	}
+	span.prev{
+		border-bottom-left-radius: 3px;
+		border-top-left-radius: 3px;
+	}
+
+	span.next{
+		border-bottom-right-radius: 3px;
+		border-top-right-radius: 3px;
+	}
+}

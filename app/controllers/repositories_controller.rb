@@ -5,13 +5,14 @@ class RepositoriesController < SessionsController
   before_action :set_repository, only: [:show, :add_like]
 
   def index
-    @repositories = Repository.all
+    @repositories = Repository.order('created_at DESC').first(5)
   end
-
+  
   def show
     @photos = @repository.photos.first(5)
     @tags = @repository.tags
-    @comments = @repository.comments.reverse
+    @comments = @repository.comments.order(comment_filter).page params[:page]
+    @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
   end
 
   def new
@@ -23,9 +24,8 @@ class RepositoriesController < SessionsController
 
   def create
     @repository = @user.repositories.build(repository_params)
+    @repository.user_username = @user.username
     @client = github_client
-    @files = params['files']
-
 
     if @repository.github.present?
       githubatize = @repository.github.gsub(/\s+/, '-') #github replaces spaces with dashes in repo names
@@ -37,13 +37,13 @@ class RepositoriesController < SessionsController
                               "README.md",
                               "Commit README.md",
                               "##{@repository.github}")
-      commit if @files.present?
+      commit if params['files'].present?
     end
 
     if @repository.save
       create_photos
       create_tags
-      render json: { redirect_uri: "#{user_repository_path(user_id: @user.id, id: @repository.id)}" }
+      render json: { redirect_uri: "#{repository_path(@user.username, @repository.title)}" }
     else
       render :new, alert: "Something went wrong"
     end
@@ -70,23 +70,28 @@ class RepositoriesController < SessionsController
   end
 
   def add_like
-    like = Like.create({user_id: @user.id, repository_id: @repository.id})
-    if like.valid?
-      @repository.increment!(:like)
-      render json: { like: @repository.like }
-    else
-      render nothing: true
-    end
+    @repository.likes.create!(user_id: @user.id)
+    render json: { like: @repository.like }
+    rescue
+      render json: { failed: true}
   end
 
   private
 
     def set_repository
-      @repository = Repository.find(params[:id])
+      @repository = Repository.find_by(title: params[:title])
     end
 
     def repository_params
       params.require(:repository).permit(:title, :description, :category, :license, :user_id, :github)
+    end
+
+    def comment_filter
+      case params['comment_filter']
+        when 'newest' then 'created_at DESC'
+        when 'top' then 'upvote DESC'
+        else 'upvote DESC'
+      end
     end
 
     def create_photos
@@ -110,7 +115,7 @@ class RepositoriesController < SessionsController
       sha_latest_commit = @client.ref(repo, ref).object.sha
       sha_base_tree = @client.commit(repo, sha_latest_commit).commit.tree.sha
 
-      @files.each do |f|
+      params['files'].each do |f|
         blob_sha = @client.create_blob(repo, Base64.encode64(f.tempfile.read), "base64")
         blob_hash_array.push({ path: f.original_filename, mode: "100644", type: "blob", sha: blob_sha })
       end

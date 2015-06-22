@@ -19,6 +19,7 @@ gem 'photoswipe-rails', '~> 4.0.8a'
 gem 'fastimage', '~> 1.7.0'
 gem 'font-awesome-rails', '~> 4.3.0.0'
 gem "octokit", "~> 3.0"
+gem 'kaminari', "~> 0.16.3"
 gem 'sdoc', '~> 0.4.0', group: :doc
 
 group :development, :test do

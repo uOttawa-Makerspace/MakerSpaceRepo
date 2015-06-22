@@ -1,14 +1,20 @@
 <div class="comment">
   <div class="comment-upvote">
-    <%= link_to fa_icon('angle-up'), 
-      add_upvote_user_path(id: params['user_id'], comment_id: params['comment_id']), class: 'upvote', remote: true, method: :post %>
-    <div class="upvote upvote-<%= params['comment_id']%>">0</div>
-    <%= fa_icon 'angle-down' %>
+    <%=
+      link_to fa_icon('angle-up'), vote_path(comment_id: params['comment_id'], 
+      voted: false, downvote: 'f'), class: 'vote upvote', remote: true, method: :post 
+    %>
+    <div class="upvote upvote-<%= params['comment_id'] %>">0</div>
+    <%=
+      link_to fa_icon('angle-down'), vote_path(comment_id: params['comment_id'], 
+      voted: false, downvote: 't'), class: 'vote downvote', remote: true, method: :post
+    %>
   </div>
   <div class="comment-header">
-    <%= link_to params['username'], params['user_url']%>
-    <div class="rep">1530pts</div>
-    <%= time_ago_in_words(params['created_at'].to_datetime) << " ago" %>
+    <%= link_to params['user_url'] do %>
+      <div><%= params['username'] %><div class="rep">1530</div> </div>
+     <% end %>
+    <%= content_tag :div, time_ago_in_words(params['created_at'].to_datetime) << " ago", class: 'time' %>
   </div>
   <div class="comment-content">
     <%= params['content'] %>

@@ -1,5 +1,21 @@
 @import "lib";
 
+div#repository_report{
+	display: none;
+	position: absolute;
+	top: 65px;
+	width: 100vw;
+	left:0;right:0;
+	margin: 0 auto;
+	height: 2rem;
+	line-height: 2rem !important;
+	font: 300 1.1rem 'Raleway', sans-serif;
+	background-color: #cd5c5c;
+	color: #fff;
+	z-index: 2;
+	text-align: center;
+}
+
 section#show-repository{
 	@include outer-container(70rem);
 	left:0;right:0;
@@ -20,6 +36,8 @@ div#show-photo img{
 	margin: 0 auto;
 	cursor: pointer;
 	border: 0.4rem solid #eee;
+	border-right-color: #ddd;
+	border-left-color: #ddd;
 }
 
 div#photo-slide{
@@ -34,7 +52,9 @@ div#photo-slide{
 		height: 100%;
 		cursor: pointer;
 		margin: 0 0.5% 1%;
-		border: 0.3rem solid #ddd;
+		border: 0.3rem solid #eee;
+		border-top-color: #ddd;
+		border-bottom-color: #ddd;
 	}
 
 }
@@ -120,7 +140,7 @@ div.repo-info-item{
 	div.reputation{
 		color: #aaa;
 		font-weight: 400;
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 	}
 
 	div.description ,div.date{
@@ -223,25 +243,26 @@ section#repo-comments{
 			margin: 0 1%;
 			font: 400 1rem 'Raleway', sans-serif;
 			color: #555;
-
-			&:nth-child(1){
-				font-weight: 700;
-			}
 		}
 	}
 
 	div#comment-container{
+		@include outer-container(75%);
 		font: 400 1rem 'Raleway', sans-serif;
-
+		margin: 0;
 		div.comment{
 			@include outer-container(100%);
-			margin-bottom: 2rem;
+			margin: 0;
+			padding: 1rem 0;
+			background-color: #fff;
+			margin-bottom: 1rem;
+
 			div.comment-upvote{
 				@include span-columns(0.5, 0);
 				text-align: center;
 				font-size: 1.5rem;
 				font-weight: 300;
-				color: #555;
+				color: #999;
 				div{
 					font-size: 1.2rem;
 				}
@@ -250,12 +271,12 @@ section#repo-comments{
 				@include span-columns(11.5, 2);
 				color: #777;
 				font-weight: 300;
-				max-width: 65%;
+				padding-top: 0.5rem;
 			}
 
 			div.comment-header{
 				@include span-columns(11.5, 2);
-
+				font-size: 0.7rem;
 				color: #aaa;
 				font-weight: 300;
 
@@ -263,13 +284,20 @@ section#repo-comments{
 					display: inline-block;
 					color: #366;
 					font-weight: 500;
+					font-size: 1rem;
 				}
 
 				div.rep{
-					display: inline-block;
-					padding: 0 3rem 0.5rem;
+					font-size: 0.7rem;
+					color: #5f9ea0;
+					font-weight: 300;
+				}
+
+				div.time{
+					float: right;
 				}
 			}
 		}	
 	}
 }
+

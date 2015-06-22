@@ -1,0 +1,53 @@
+  <div class="edit-column">
+    <div class="setting-title">Account Setting</div>
+    <div class="section-desc">Changing Password</div>
+
+    <%= form_for @user, url: change_password_user_path(@user.username) do |f| %>
+
+      <%= label_tag :old_password, "Old Password", class: "profile-label" %>
+      <%= password_field_tag :old_password, nil, class: "profile-text", autofocus: true %>
+        
+      <%= f.label :password, "New Password", class: "profile-label" %>
+      <%= f.password_field :password, value: nil, class: "profile-text" %>
+
+      <%= f.label :password_confirmation, "New Password Confirmation", class: "profile-label" %>
+      <%= f.password_field :password_confirmation, class: "profile-text" %> 
+
+      <%= f.submit "Update Password", class: "save-button" %>
+    
+    <% end %>
+    
+    <div class="seperator"></div>
+    
+    <div class="section-desc">
+      Github Account<br>
+      <span>Link your Github account to MakerSpaceRepo for additional functionality.</span>
+    </div>
+    <% unless github? %>
+      <div class="info">
+        You currently do not have a github account linked to MakerSpaceRepo.
+      </div>
+      <%= link_to fa_icon("github", text: 'Authorize access to your Github'), 
+        github_authorize_path, class: 'github-auth' %>
+    <% else %>
+      <div class="github-info">
+        Connected as: <%= link_to "@#{@client.login}", @client_info.html_url %> <%= "(#{@client.user.name})" if @client_info.name %>
+
+                <%= link_to fa_icon("github", text: ' Revoke access...'), 
+          github_unauthorize_path, class: 'github-unauth' %>
+      </div>
+    <% end %>
+
+    <div class="seperator"></div>
+    
+    <div class="section-desc">
+      Delete Account<br>
+      <span>Once you delete your account there is no going back. It is deleted permanently.</span>
+    </div>
+    <br>
+
+    <%= link_to 'Delete your account', @user, method: :delete, data: 
+      { confirm: 'Are you positive that you want to delete your account?' }, 
+      class: 'delete' %>
+
+  </div>

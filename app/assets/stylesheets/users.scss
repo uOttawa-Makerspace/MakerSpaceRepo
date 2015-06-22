@@ -7,9 +7,10 @@ input{
 /* SIGNUP PAGE */
 
 section#signup {
-  @include outer-container(50rem);
+  @include outer-container(60rem);
   background-color: #fff;
   padding: 0 5rem 2rem;
+  min-height: calc(100vh - 50px);
 
   label{
 	  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
@@ -61,9 +62,9 @@ input.signup-button{
 /* LOGIN PAGE */
 
 section#login{
-  @include outer-container(50rem);
+  @include outer-container(60rem);
   background-color: #fff;
-  height: calc(100vh - 50px);
+  min-height: calc(100vh - 50px);
   padding: 0 5rem;
 
  	input{

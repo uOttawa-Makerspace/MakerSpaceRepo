@@ -1,8 +1,8 @@
 class UsersController < SessionsController
 
   skip_before_action :session_expiry, only: [:create]
-  before_action :current_user, except: [:create]
-  before_action :signed_in, except: [:new, :create]
+  before_action :current_user, except: [:create, :new]
+  before_action :signed_in, except: [:new, :create, :show]
     
   def create
     @user = User.new(user_params)
@@ -21,16 +21,9 @@ class UsersController < SessionsController
   end
 
   def new
-  end
-
-  def edit
-    render layout: "profile"
-  end
-
-  def account_setting
-    @client = github_client if github?
-    render layout: "profile"
-  end
+    return redirect_to root_path if signed_in?
+    @new_user = User.new
+   end
 
   def update
     if @user.update(user_params)
@@ -53,7 +46,7 @@ class UsersController < SessionsController
         @user.save
         redirect_to action: :account_setting, notice: 'Password changed successfully'
       else
-        render :account_setting, alert: 'Something went wrong!', layout: "profile"
+        render :account_setting, alert: 'Something went wrong!', layout: "setting"
       end
   end
 
@@ -62,20 +55,33 @@ class UsersController < SessionsController
 
   def destroy
     @user.destroy
-    session[:user_id] = nil
+    disconnect_user
     redirect_to root_path
   end
 
-  def add_upvote
+  def vote
+    downvote = if params['downvote'].eql?('t') then true else false end
     comment = Comment.find params[:comment_id]
-    upvote = Upvote.create({user_id: @user.id, comment_id: comment.id})
-    if upvote.valid?
-      comment.increment!(:upvote)
-      render json: { upvote_count: comment.upvote, comment_id: comment.id }
+    if params[:voted].eql?('true')
+      upvote = @user.upvotes.where(comment_id: comment.id).take
+      if (!upvote.downvote && downvote) || (upvote.downvote && !downvote)
+        upvote.update! downvote: downvote
+        count = downvote ? comment.upvote - 2 : comment.upvote + 2
+        render json: { upvote_count: count, comment_id: comment.id, voted: 'true', color: '#19c1a5' }
+      else
+        upvote.destroy!
+        count = downvote ? comment.upvote + 1 : comment.upvote - 1
+        render json: { upvote_count: count, comment_id: comment.id, voted: 'false', color: '#999' }
+      end
     else
-      render nothing: true
+      @user.upvotes.create!(comment_id: comment.id, downvote: downvote)
+      count = downvote ? comment.upvote - 1 : comment.upvote + 1
+      render json: { upvote_count: count, comment_id: comment.id, voted: 'true', color: '#19c1a5' }
     end
+    rescue
+      render nothing: true
   end
+
 
 private
 

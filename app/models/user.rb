@@ -1,6 +1,9 @@
 class User < ActiveRecord::Base
   include BCrypt
-
+  include ActiveModel::Serialization
+  
+  has_many :upvotes
+  has_many :comments
   has_many :repositories, dependent: :destroy
     accepts_nested_attributes_for :repositories
 
@@ -30,6 +33,7 @@ class User < ActiveRecord::Base
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
+
 
   def self.authenticate(username_email, password)
     a = self.arel_table
