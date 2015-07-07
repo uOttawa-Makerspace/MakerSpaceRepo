@@ -1,0 +1,171 @@
+@import "lib";
+
+section#repositories-index{
+	@include outer-container(64rem);
+	min-height: calc(100vh - 65px - 6rem);
+	left:0;right:0;
+	position: absolute;
+	top: 65px;
+	padding: 3rem 3rem;
+	background-color: #fff;
+
+	span.found{
+		float: right;
+		/*color: #4682b4;*/
+		color: #999;
+		font-size: 1rem;
+	}
+
+	div.like-title{
+		font-size: 4rem;
+		color: #5f9ea0;
+		text-align: center;
+		border-bottom: 1px solid #eee;
+		padding-bottom: 2rem;
+		margin-bottom: 2rem;
+	}
+}
+
+
+
+section#repository-filter{
+	margin-bottom: 2rem;
+	display: inline-block;
+
+	div.sort{
+		text-transform: uppercase;
+		display: inline-block;
+		color: #999;
+    font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+    margin-right: 1.5rem;
+	}
+
+	nav{
+		display: inline-block;
+		position: relative;
+    color: #777;
+    font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+
+		div#filter-header{
+	    display: inline-block;
+	    padding-left: 0.5rem;
+	    border: 1px solid #ccc;
+	    border-top-left-radius: 3px;
+	    border-top-right-radius: 3px;
+	    letter-spacing: 1px;
+    	padding-left: 0.5rem;
+    	vertical-align: middle;
+    	cursor: pointer;
+		  @include prefixer(box-shadow, 0 0 3px rgba(0, 0, 0, 0.2));
+
+	    i{
+	    	font-size: 1.3rem;
+	    	border-left: 1px solid #aaa;
+	    	margin-left: 0.5rem;
+	    	padding: 0.35rem 0.5rem;
+	    	vertical-align: middle;
+	    }
+
+		}
+
+		ul{
+			display: none;
+			position: absolute;
+			top: 2.5rem;
+		  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+			left: 0;
+			background-color: #fff;
+			li{
+
+				border-top: 1px solid #eee;
+				width: 200px;
+				font-size: 0.8rem;
+				a{
+					display: block;
+					height: 100%;
+					padding: 0.5rem 0.5rem;
+				}
+
+				&:hover{
+					background-color: #5f9ea0;
+					color: #fff;
+				}
+			}
+		}
+	}
+
+}
+
+section#repositories-container{
+	@include outer-container(100%);
+	div.repository-container{
+		@include span-columns(4, 2);
+		margin-left: calc(2% - 1px);
+		margin-right: calc(2% - 1px);
+		border: 1px solid #eee;
+	 	margin-bottom: 2rem;
+
+		div.repo-display-wrapper{
+		  background-size: cover;
+			height: 225px;
+			background-color: black;
+			a{
+				display: block;
+				height: 100%;
+			}
+		}
+
+		img{
+			display: block;
+			width: 100%;
+		}
+
+		div.repo-info{
+	    font: 400 0.7rem 'Raleway', helvetica, sans-serif;
+			padding: 5%;
+			@include outer-container(90%);
+		 	background-color: #fff;
+		 	color: #aaa;
+
+		 	div.left{
+		 		float: left;
+		 	}
+
+		 	div a{
+		 		color: #5f9ea0;
+		 		font-size: 0.9rem;
+
+		 		&:hover{
+			 		text-decoration: underline;
+		 		}
+		 	}
+
+		 	div.likes{
+		 		float: right;
+		 		color: #5f9ea0;
+		 		font-size: 1rem;
+		 		text-align: center;
+		 	}
+		}
+	}
+}
+
+@media screen and (max-width: 900px){
+ 
+  section#repositories-container div.repository-container{
+    @include span-columns(6, 2);
+		margin-left: calc(2% - 1px);
+		margin-right: calc(2% - 1px);
+    display: inline-block;
+  }
+
+}
+
+@media screen and (max-width: 550px){
+ 
+  section#repositories-container div.repository-container{
+    @include span-columns(12, 0);
+    display: inline-block;
+  }
+
+}

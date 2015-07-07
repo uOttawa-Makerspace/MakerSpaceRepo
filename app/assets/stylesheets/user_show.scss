@@ -1,0 +1,91 @@
+@import "lib";
+
+section#user-show{
+	@include outer-container(70rem);
+	left:0;right:0;
+	position: absolute;
+	top: 65px;
+	background-color: #fff;
+	padding-bottom: 3rem;
+
+	img{
+		@include span-columns(4.5,5);
+		padding: 3rem 0;
+	}
+
+	div#user-info{
+		@include span-columns(7.5,3);
+		padding: 3rem 0;
+		margin: 0;
+
+		div.fullname{
+			@include span-columns(12,0);
+			font-size: 3rem;
+			color: #333;
+		}
+
+		div.username{
+			@include span-columns(12,0);
+			font-size: 1.75rem;
+			color: #555;
+			padding-bottom: 2rem;
+		}
+
+		div.user-info{
+			@include span-columns(6,0);
+			color: #777;
+			padding-bottom: 2rem;
+
+			i{
+				color: #366;
+				padding-right: 5%;
+				font-size: 1.5rem;
+			}
+
+			a:hover{
+				color: #4682b4;
+			}
+
+			span{
+				color: #366;
+				padding-right: 5%;
+				font-size: 1.5rem;			
+			}
+
+			span.date{
+				font-size: 1rem;			
+			}
+		}
+
+	}
+}
+
+section#user-show-links{
+	width: 90%;
+	background-color: #eee;
+	float: left;
+	padding: 0 5%;
+	margin-bottom: 3rem;
+	a{
+		display: inline-block;
+		font-size: 1.25rem;
+		height: 4rem;
+		line-height: 4rem;
+		color: #555;
+		padding: 0 2%;
+		text-align: center;
+		border-bottom: 5px solid #eee;
+
+		span {
+			font-size: 2rem;
+		}
+	}
+}
+
+div.empty-repo{
+	float: left;
+	width: 100%;
+	text-align: center;
+	font-size: 2rem;
+	color: #333;
+}

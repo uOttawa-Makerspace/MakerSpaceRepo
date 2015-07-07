@@ -5,12 +5,12 @@ class UsersController < SessionsController
   before_action :signed_in, except: [:new, :create, :show]
     
   def create
-    @user = User.new(user_params)
-    @user.pword = params[:user][:password] if @user.valid?
+    @new_user = User.new(user_params)
+    @new_user.pword = params[:user][:password] if @new_user.valid?
     
     respond_to do |format|
-      if @user.save
-        session[:user_id], cookies[:user_id] = @user.id, @user.id
+      if @new_user.save
+        session[:user_id], cookies[:user_id] = @new_user.id, @new_user.id
         format.html { redirect_to root_path }
         format.json { render json: { success: @user.id }, status: :ok }
       else
@@ -27,7 +27,7 @@ class UsersController < SessionsController
 
   def update
     if @user.update(user_params)
-      redirect_to edit_user_path(@user), notice: 'Profile updated!'
+      redirect_to settings_profile_path
     else
       render 'edit', alert: 'Something went wrong!'
     end
@@ -51,6 +51,18 @@ class UsersController < SessionsController
   end
 
   def show
+    @repo_user = User.find_by username: params[:username]
+    @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
+    @repositories = @repo_user.repositories.where(make_id: nil).page params[:page]
+    @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
+
+    # @repositories = @repo_user.repositories.page params[:page]
+  end
+
+  def likes
+    repo_ids = Like.where(user_id: @user.id).pluck(:repository_id)
+    @repositories = Repository.order([sort_order].to_h).where(id: repo_ids).page params[:page]
+    @photos = photo_hash
   end
 
   def destroy
@@ -59,7 +71,7 @@ class UsersController < SessionsController
     redirect_to root_path
   end
 
-  def vote
+  def vote # MAKE A UPVOTE CONTROLLER TO PUT THIS IN
     downvote = if params['downvote'].eql?('t') then true else false end
     comment = Comment.find params[:comment_id]
     if params[:voted].eql?('true')
@@ -89,6 +101,23 @@ private
     params.require(:user).permit(:password, :password_confirmation, :url, 
       :location, :email, :first_name, :last_name, :username, :avatar, 
       :description)
+  end
+
+  def sort_order
+    case params[:sort]
+      when 'newest' then [:created_at, :desc]
+      when 'most_likes' then [:like, :desc]
+      when 'most_makes' then [:make, :desc]
+      when 'recently_updated' then [:updated_at, :desc]
+      else [:created_at, :desc]
+    end     
+  end
+
+  def photo_hash
+    repository_ids = @repositories.map(&:id)
+    photo_ids = Photo.where(repository_id: repository_ids).group(:repository_id).minimum(:id)
+    photos = Photo.find(photo_ids.values)
+    photos.inject({}) { |h,e| h.merge!(e.repository_id => e) }
   end
 
 end

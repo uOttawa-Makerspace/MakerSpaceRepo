@@ -30,10 +30,11 @@ section#signup {
   form {
     margin: 0 20%;
     max-width: 60%;
-    div{
+    u{
    	  font: 400 0.75rem 'Raleway', helvetica, sans-serif;
    	  color: #aaa;
    	  width: 420px;
+      display: block;
    	  padding-top: 0.5rem;
     }
   }

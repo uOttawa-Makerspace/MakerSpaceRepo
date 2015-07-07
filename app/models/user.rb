@@ -6,6 +6,7 @@ class User < ActiveRecord::Base
   has_many :comments
   has_many :repositories, dependent: :destroy
     accepts_nested_attributes_for :repositories
+  has_many :makes, dependent: :destroy
 
   validates :first_name, 
     presence: { message: "First name is required."}
@@ -24,7 +25,9 @@ class User < ActiveRecord::Base
   validates :password, 
     presence: { message: "Password is required." },
     confirmation: {message: "Passwords do not match."},
-    format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/},
+    # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
+    format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}/,
+             message: "Passwords must have one lowercase letter, one uppercase letter and be 8 characters long."},
     on: :create
 
   validates :password_confirmation, 

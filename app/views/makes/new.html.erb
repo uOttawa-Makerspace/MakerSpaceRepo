@@ -1,0 +1,32 @@
+<section id="new-repo">
+
+  <%= form_for @repository, url: {controller: "makes", action: "create"}, html: { multipart: true } do |f| %>
+    <%= f.label :title, "Name" %>
+    <div>Great repository names are short and memorable.</div>
+    <span class="autocomplete-wrapper">
+      <%= f.text_field :title, class: 'repo repo-autocomplete' %>
+      <span class="loader"></span> 
+    </span>
+    
+    <%= f.label :description %>
+    <%= f.text_area :description, class: 'repo' %>
+
+    <%= label_tag :photo, "Gallery" %>
+    <div>A maximum of five photos can be uploaded per repository.</div>
+    <div class="repo-image">
+      <div id="dragndrop">
+        <%= fa_icon 'cloud-upload'%>
+        <p>Drag &amp; Drop</p>
+      </div>
+      <label class="custom-image-upload">
+        <%= file_field_tag 'images[]', type: :files, multiple: true %>
+        or choose an image...
+      </label>
+    </div>
+
+    <div id="image-container"></div>
+
+  <%= f.submit "Create Repository", class: "save-button" %>
+
+  <% end %>
+</section>

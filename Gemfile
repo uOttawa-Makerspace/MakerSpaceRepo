@@ -18,8 +18,11 @@ gem 'pry', '~> 0.10.1'
 gem 'photoswipe-rails', '~> 4.0.8a'
 gem 'fastimage', '~> 1.7.0'
 gem 'font-awesome-rails', '~> 4.3.0.0'
-gem "octokit", "~> 3.0"
-gem 'kaminari', "~> 0.16.3"
+gem "octokit", '~> 3.0'
+gem 'kaminari', '~> 0.16.3'
+gem 'sunspot_rails', '~> 2.2.0'
+gem 'sunspot_solr', '~> 2.2.0'
+gem 'progress_bar', '~> 1.0.3'
 gem 'sdoc', '~> 0.4.0', group: :doc
 
 group :development, :test do

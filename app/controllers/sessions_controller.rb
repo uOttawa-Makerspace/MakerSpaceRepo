@@ -11,14 +11,18 @@ class SessionsController < ApplicationController
 
     @user = User.authenticate(username_email, password)
 
-    if @user
-      session[:user_id], cookies[:user_id] = @user.id, { value: @user.id, expires: 1.day.from_now } 
-      redirect_to session[:back]
-      session.delete :back
-    else
-      render :login
+    respond_to do |format|
+      if @user
+        session[:user_id], cookies[:user_id] = @user.id, { value: @user.id, expires: 1.day.from_now }
+        format.html { redirect_to session[:back] }
+        format.json { render json: { role: :guest }, status: :ok }
+      else
+        flash.now[:alert] = "Incorrect username or password."
+        format.html { render :login }
+        format.json { render json: @user.errors, status: :unprocessable_entity }
+      end
     end
-    
+    session.delete :back
   end
 
   def login
@@ -36,7 +40,7 @@ class SessionsController < ApplicationController
   def logout
     disconnect_user
     @user = User.new
-    redirect_to request.referrer
+    redirect_to root_path
   end
 
   def disconnect_user
@@ -50,7 +54,7 @@ class SessionsController < ApplicationController
   end
 
   def update_activity_time
-    session[:expires_at] = 30.minutes.from_now
+    session[:expires_at] = 6.hours.from_now
   end
 
 private

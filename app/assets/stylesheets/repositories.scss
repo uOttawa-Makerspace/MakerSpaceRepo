@@ -4,9 +4,11 @@ section#new-repo{
   @include outer-container(60rem);
   background-color: #fff;
   padding: 2rem 5rem;
-
+  min-height: calc(100vh - 65px);
+  
   form{
     max-width: 60%;
+    width: 100%;
     float: left;
     margin: 0 20%;
   }
@@ -198,7 +200,7 @@ div#tag-container{
     font: 300 0.8em 'Raleway', sans-serif !important;
     margin-right: 0.2rem;
     margin-top: 0.2rem;
-    cursor: pointer;
+    cursor: not-allowed;
   }
 }
 

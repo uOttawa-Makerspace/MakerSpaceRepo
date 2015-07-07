@@ -1,1 +1,75 @@
-SHOW USER
+<section id="user-show">
+  <%= image_tag @repo_user.avatar.url %>
+
+  <div id="user-info">
+    <div class="fullname">
+      <%= "#{@repo_user.first_name} #{@repo_user.last_name}"%>
+    </div>
+    <div class="username">
+      <%= @repo_user.username %>
+    </div>
+    <% if @github_username.present? %>
+    <div class="user-info">
+      <%= fa_icon "github-alt" %>
+      <%= link_to @github_username, "https://github.com/#{@github_username}" %>
+    </div>
+    <% end %>
+    <% if @repo_user.url.present? %>
+    <div class="user-info">
+      <%= fa_icon("link") %>
+      <%= link_to "#{@repo_user.url.gsub(/\Ahttps?:\/\//,'')}", @repo_user.url %>
+    </div>
+    <% end %>
+    <% if @repo_user.location.present? %>
+    <div class="user-info">
+      <%= fa_icon "location-arrow", text: @repo_user.location %>
+    </div>
+    <% end %>
+    <div class="user-info">
+      <span>224</span> REPUTATION
+    </div>
+    <div class="user-info">
+      <%= fa_icon "clock-o", text: "Joined on #{@repo_user.created_at.strftime("%B %d %Y")}"%>
+    </div>  
+
+  </div>
+
+  <section id="user-show-links">
+    <% active = params[:show].eql?("makes") ? ["#eee", "#5f9ea0"] : ["#5f9ea0", "#eee"] %>
+    <%= link_to "#{user_path(show: :repositories)}#user-show-links", style: 'border-color:'<< active.first do %>
+      <span class="number"><%= @repositories.total_count %></span> REPOS
+    <% end %>
+    <%= link_to "#{user_path(show: :makes)}#user-show-links", style: 'border-color:'<< active.last  do %>
+      <span class="number"><%= @makes.total_count %></span> MAKES
+    <% end %>
+  </section>
+
+  <section id="repositories-container">
+
+  <% if @repositories.empty? %>
+    <div class="empty-repo">
+      <%= @repo_user.username %> doesn't have any repositories yet.
+    </div>
+  <% end %>
+  <% repos = params[:show].eql?('makes') ? @makes : @repositories %>
+  <% repos.each do |repository| %>
+    <div class="repository-container">
+
+      <div class="repo-display-wrapper" <%= "style=background-image:url('#{repository.photos.first.image.url}')"  %> >
+        <%= link_to "", repository_path(repository.user_username, repository.title) %>
+      </div>
+
+      <div class="repo-info">
+        <div class="left">
+          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.title) %></div> 
+          <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div> 
+          <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+        </div>
+        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div> 
+      </div>
+    </div>
+  <% end %>
+  </section>
+  <%= paginate repos %> 
+</section>
+

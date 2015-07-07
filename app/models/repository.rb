@@ -5,6 +5,23 @@ class Repository < ActiveRecord::Base
   has_many :tags, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
+  has_many :makes, class_name: "Repository", foreign_key: "make_id"
+  belongs_to :parent, class_name: "Repository", foreign_key: "make_id"
+
+  paginates_per 12
+
+  searchable do
+    text    :title, :boost => 5.0
+    text    :description
+    text    :category
+    text    :tags do
+              tags.map { |tag| tag.name }
+            end
+    
+    integer :like
+    time    :created_at
+    time    :updated_at
+  end
 
   def self.category_options
     ["3D-Model", "Wearables", "Mobile", "Internet of Things", 
@@ -21,16 +38,17 @@ class Repository < ActiveRecord::Base
      "GNU - GPL", "GNU - LGPL", "BSD License" ]
   end
 
-  validates :title, 
-    presence: { message: "Repository name is required."},
+  validates :title,
+    format:     { with:    /\A[-a-zA-Z\d\s]*\z/ },
+    presence:   { message: "Repository name is required."},
     uniqueness: { message: "Repository name is already in use." }   
 
-  validates :category,
-    inclusion: { within: category_options },
-    presence: { message: "A category is required."}
+  # validates :category,
+  #   inclusion: { within: category_options },
+  #   presence: { message: "A category is required."}
 
-  validates :license, 
-    inclusion: { within: license_options },
-    presence: { message: "A license is required."}
+  # validates :license, 
+  #   inclusion: { within: license_options },
+  #   presence: { message: "A license is required."}
 
 end

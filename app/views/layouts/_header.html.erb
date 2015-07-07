@@ -3,6 +3,7 @@
   <% unless signed_in? %>
     <span class="header-menu-item not-signed-in"><%= link_to 'Sign Up', new_user_path %></span>
     <span class="header-menu-item not-signed-in"><%= link_to 'Log In', login_path %></span>
+    <span class="header-menu-item"><%= link_to 'Explore', explore_path %></span>
   <% else %>
     <span class="header-menu-item menu-button">
       <%= link_to user_path(@user.username) do %>
@@ -11,19 +12,19 @@
       <% end %>
       <ul class="menu">
         <li><%= link_to 'Profile', user_path(@user.username) %></li>
-        <li><%= link_to 'Liked', '#' %></li>
+        <li><%= link_to 'Liked', likes_user_path(@user.username) %></li>
         <li><%= link_to 'Settings', settings_profile_path  %></li>
         <li><%= link_to 'Sign Out', logout_path %></li>
       </ul>
     </span>
     <span class="header-menu-item"><%= link_to 'Create', new_repository_path(@user.username) %></span>
-    <span class="header-menu-item"><%= link_to 'Explore', repositories_path %></span>
+    <span class="header-menu-item"><%= link_to 'Explore', explore_path %></span>
   <% end %>
   <span class="msr-logo">
     <%= link_to root_path do %>MakerSpace<b>Repo</b><% end %>
     <%= form_tag search_path, method: :get, class: 'header-search' do %>
     <%= fa_icon('search') %>
-    <%= text_field_tag 'search', nil, placeholder: 'Search' %>
+    <%= text_field_tag 'q', nil, placeholder: 'Search' %>
     <% end %>
   </span>
   </div>

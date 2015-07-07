@@ -22,7 +22,7 @@
     </div>
     <div id="misc">
       <span class="misc-item"><%= fa_icon "heart" %><span class="like-count"><%= @repository.like %></span></span>
-      <span class="misc-item"><%= fa_icon "code-fork", text: '50' %></span>
+      <span class="misc-item"><%= fa_icon "code-fork", text: @repository.makes.count %></span>
       <span class="misc-item"><%= fa_icon "comments"%><span class="comment-count"><%= @repository.comments.count %></span></span>
     </div>
     <div id="repo-info">
@@ -35,33 +35,40 @@
         <div class="title">PUBLISHED</div>
         <div class="date"><%= @repository.created_at.strftime("%b %e %Y") %></div>
       </div>
-      <% if github? %>
+      <% if @repository.github.present? %>
       <div class="repo-info-item">
         <div class="title">GITHUB</div>
         <div class="name"><%= link_to(fa_icon('github-alt', text: @repository.github), @repository.github_url )%></div>
       </div>
       <% end %>
+      <% if @repository.description.present? %>
       <div class="repo-info-item">
         <div class="title">DESCRIPTION</div>
         <div class="description"><%= @repository.description %></div>
       </div>
+      <% end %>
+      <% if @repository.category.present? %>
       <div class="repo-info-item">
         <div class="title">PLATFORM</div>
-        <span class="platform"><%= @repository.category%></span>
+        <span class="platform"><%= link_to @repository.category, platform_path(platform: @repository.category) %></span>
       </div>
+      <% end %>
+      <% if @tags.present? %>
       <div class="repo-info-item">
         <div class="title">TAGS</div>
         <% @tags.each do |t| %>
-          <span class="tags"><%= t.name %></span>
+          <span class="tags"><%= link_to t.name, search_path(q: t.name) %></span>
         <% end %>
       </div>
+      <% end %>
       <div class="repo-info-item">
         <span class="like">
           <%= link_to(fa_icon('heart', text: 'Like'), 
             add_like_repository_path, class: 'like', remote: true, method: :post) %>
         </span>
         <span class="make">
-          <%= link_to(fa_icon('code-fork', text: 'Make'), "#") %>
+          <%= link_to(fa_icon('code-fork', text: 'Make'),
+            makes_new_path(@repository.user_username, @repository.title)) %>
         </span>
       </div>
       <div class="repo-info-item">

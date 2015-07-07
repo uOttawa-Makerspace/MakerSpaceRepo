@@ -130,6 +130,7 @@ div.avatar-column{
 	position: relative;
   color: #333;
   font: 400 1rem 'Raleway', sans-serif;
+  display: inline-block;
 }
 
 div.edit-column{
@@ -142,7 +143,6 @@ div.edit-column{
 
 img.edit-avatar{
 	height: 150px;
-	width: 150px;
 }
 
 input[type="file"] {
@@ -157,7 +157,10 @@ label.custom-file-upload{
 	border-radius: 3px;
 	position: absolute;
 	top: 120px;
-	left: 20px;
+	left: 0;right: 0;
+	margin: 0 auto;
+	width: 100px;
+	text-align: center;
 
 
 	&:hover{

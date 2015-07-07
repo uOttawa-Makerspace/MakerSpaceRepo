@@ -6,8 +6,14 @@ Rails.application.routes.draw do
   namespace :static_pages, path: '/', as: nil do
     get 'about'
     get 'contact'
-    get 'search'
     get 'report_repository', path: 'report_repository/:repository_id' 
+  end
+
+  # SEARCH PAGES
+  namespace :search, path: '/', as: nil do
+    get 'explore'
+    get 'search'
+    get 'platform'
   end
 
   # TEMPLATE
@@ -43,13 +49,18 @@ Rails.application.routes.draw do
 
    # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
+    get 'likes', on: :member
     patch 'change_password', on: :member
   end
 
   # REPOSITORY RESOURCES
   resources :repositories, path: '/:user_username', param: :title, except: :index do
-    get 'index', path: 'repositories', on: :collection
     post 'add_like', on: :member
+  end
+
+  namespace :makes, path: 'makes/:user_name/:title' do
+    post 'create'
+    get 'new'
   end
 
   namespace :comments do

@@ -4,9 +4,9 @@ class RepositoriesController < SessionsController
   before_action :github_client, only: [:create, :show]
   before_action :set_repository, only: [:show, :add_like]
 
-  def index
-    @repositories = Repository.order('created_at DESC').first(5)
-  end
+  # def index
+  #   @repositories = Repository.order('created_at DESC').first(5)
+  # end
   
   def show
     @photos = @repository.photos.first(5)
@@ -69,7 +69,7 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def add_like
+  def add_like # MAKE A LIKE CONTROLLER TO PUT THIS IN
     @repository.likes.create!(user_id: @user.id)
     render json: { like: @repository.like }
     rescue
@@ -95,9 +95,9 @@ class RepositoriesController < SessionsController
     end
 
     def create_photos
-      params['images'].each do |i|
-        dimension = FastImage.size(i.tempfile)
-        Photo.create(image: i, repository_id: @repository.id, width: dimension.first, height: dimension.last)
+      params['images'].each do |img|
+        dimension = FastImage.size(img.tempfile)
+        Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end if params['images'].present?
     end
 

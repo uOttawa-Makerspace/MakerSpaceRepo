@@ -30,15 +30,13 @@ section.platform-title{
 }
 
 section#home-2{
-  @include outer-container(80rem);
+  @include outer-container(70rem);
   
   div.col{
     @include span-columns(6, 0.25);
     display: inline-block;
   }
 }
-
-
 
 span.platform-item a img{
   @include transition(200);

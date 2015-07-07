@@ -1,5 +1,9 @@
 <section id="login">
-  
+
+  <% if flash[:alert] %>
+    <div id="repository_report"><%= flash[:alert] %></div>
+  <% end %>
+
   <div class="login-title">Sign In</div>
 
   <%= form_tag url_for(controller: 'sessions', action: 'login_authentication'), method: :post do %>

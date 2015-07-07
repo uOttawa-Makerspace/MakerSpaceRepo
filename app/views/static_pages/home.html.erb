@@ -7,29 +7,29 @@
 <section id="home-2">
 	<div class="col">
 		<span class="platform-item">
-			<%= link_to(image_tag("three-d.jpg"), "#", class: 'platform-link' )%>
+			<%= link_to(image_tag("three-d.jpg"), platform_path(platform: "3D-Model"), class: 'platform-link' )%>
 			<div data-platform="3-D Modelling"></div>
 		</span>
 		<span class="platform-item">
-			<%= link_to(image_tag("bio-medical.jpg"), "#", class: 'platform-link' )%>
+			<%= link_to(image_tag("bio-medical.jpg"), platform_path(platform: 'Bio-Medical'), class: 'platform-link' )%>
 			<div data-platform="Bio-Medical"></div>
 		</span>
 		<span class="platform-item">
-			<%= link_to(image_tag("iot.png"), "#", class: 'platform-link' )%>
+			<%= link_to(image_tag("iot.png"), platform_path(platform: "Internet Of Things"), class: 'platform-link' )%>
 			<div data-platform="Internet of Things"></div>
 		</span>
 	</div>
 	<div class="col">
 		<span class="platform-item">
-			<%= link_to(image_tag("vr.jpg"), "#", class: 'platform-link' )%>
+			<%= link_to(image_tag("vr.jpg"), platform_path(platform: "Virtual Reality"), class: 'platform-link' )%>
 			<div data-platform="Virtual Reaility"></div>
 		</span>
 		<span class="platform-item">
-			<%= link_to(image_tag("wearables.jpg"), "#", class: 'platform-link' )%>
+			<%= link_to(image_tag("wearables.jpg"), platform_path(platform: "Wearables"), class: 'platform-link' )%>
 			<div data-platform="Wearables"></div>
 		</span>
 		<span class="platform-item">
-			<%= link_to(image_tag("motherboard.jpg"), "#", class: 'platform-link' )%>
+			<%= link_to(image_tag("motherboard.jpg"), platform_path(platform: "Mobile"), class: 'platform-link' )%>
 			<div data-platform="Mobile"></div>
 		</span>
 	</div>

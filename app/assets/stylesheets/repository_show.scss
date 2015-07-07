@@ -32,7 +32,8 @@ section#repository-photos{
 
 div#show-photo img{
 	display: block;
-	width: 100%;
+	max-width: 100%;
+	max-height: 500px;
 	margin: 0 auto;
 	cursor: pointer;
 	border: 0.4rem solid #eee;
@@ -157,10 +158,14 @@ div.repo-info-item{
 
 	span.tags{
 		display: inline-block;
-		padding: 0.25rem 0.7rem;
 		background-color: #4682b4;
 		color: #eee;
 		margin-top: 0.2rem;
+
+		a{
+			display: block;
+			padding: 0.25rem 0.7rem;
+		}
 	}
 
 	span.like, span.make{

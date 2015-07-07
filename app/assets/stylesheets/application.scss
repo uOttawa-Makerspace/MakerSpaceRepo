@@ -21,6 +21,7 @@ body{
   position: relative;
   overflow-x: hidden;
   background-color: rgba(238,238,238,0.5);
+  font-family: 'Raleway', helvetica, sans-serif;
 }
 
 a{
@@ -62,4 +63,9 @@ div.seperator{
   width: 100%;
   padding-top: 20px;
   border-bottom: 1px solid #ddd;
+}
+
+span.form-error{
+  color: #cd5c5c;
+  font-size: 0.6rem;
 }

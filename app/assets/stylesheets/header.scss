@@ -40,6 +40,7 @@ span.header-menu-item {
 
     img{
       height: 40px;
+      width: 40px;
       border-radius: 20px;
       vertical-align: middle;
       margin-right: 10px;
@@ -99,24 +100,26 @@ form.header-search{
     border-radius: 5px;
     font-size: 0.9rem;
     padding: 0.3rem 0.5rem;
-    color: #366;
+    color: #333;
     font-weight: 300;
     width: 100px;
     @include prefixer(box-shadow, none);
 
     &::-webkit-input-placeholder { 
         color:    #366;
+        opacity: 0.5;
     }
     &:-moz-placeholder { 
        color:    #366;
-       opacity:  1;
+       opacity:  0.5;
     }
     &::-moz-placeholder { 
        color:    #366;
-       opacity:  1;
+       opacity:  0.5;
     }
     &:-ms-input-placeholder { 
        color:    #366;
+      opacity: 0.5;
     }
 
     &:focus{

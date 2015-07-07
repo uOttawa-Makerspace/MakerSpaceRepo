@@ -11,14 +11,10 @@ class GithubController < SessionsController
     redirect_to address
   end
 
-  def repositories
-    @repos = octokit_client.repos.list.map { |r| r.name unless r.private}.compact
-  end
-
   def unauthorize
     github.revoke_application_authorization(@user.access_token)
     @user.update access_token: nil
-    redirect_to account_setting_user_path(@user) 
+    redirect_to settings_admin_path 
   end
 
   def callback
