@@ -8,7 +8,6 @@ class SessionsController < ApplicationController
 
     username_email = params[:username]
     password = params[:password]
-
     @user = User.authenticate(username_email, password)
 
     respond_to do |format|

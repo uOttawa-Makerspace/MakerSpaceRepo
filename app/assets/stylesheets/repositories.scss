@@ -11,7 +11,17 @@ section#new-repo{
     width: 100%;
     float: left;
     margin: 0 20%;
+
+    div.title{
+      color: #366;
+      font-size: 2rem;
+      padding-bottom: 0.5rem; 
+      margin-bottom: 1rem; 
+      border-bottom: 2px solid #eee;
+    }
+
   }
+
 
   label{
     display: block;
