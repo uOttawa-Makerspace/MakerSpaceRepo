@@ -54,17 +54,16 @@ div.setting-side-panel{
 /* EDIT PROFILE PAGE */
 
 label.profile-label{
-	font-size: 0.8rem;
-	font-weight: 400;
 	display: block;
-	margin: 10px 0 5px;
+  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+  color: #777;
 }
 
 input.profile-text{
   font: 300 0.9em 'Raleway', sans-serif;
   color: #555;
   padding: 0.5rem;
-  margin-bottom: 20px;
+	margin: 0.5rem 0 1rem;
   width: 400px;
   border-radius: 3px;
   border: 1px solid #aaa;
@@ -75,7 +74,7 @@ textarea.profile-text{
   font: 300 0.9em 'Raleway', sans-serif;
   color: #555;
   padding: 0.5rem;
-  margin-bottom: 20px;
+	margin: 0.5rem 0 1rem;
   width: 400px;
   border-radius: 3px;
   border: 1px solid #aaa;
@@ -131,6 +130,7 @@ div.avatar-column{
   color: #333;
   font: 400 1rem 'Raleway', sans-serif;
   display: inline-block;
+  margin: 0.5rem 0;
 }
 
 div.edit-column{
@@ -139,6 +139,7 @@ div.edit-column{
 	padding-left: 2rem;
   color: #333;
   font: 400 1rem 'Raleway', sans-serif;
+  padding-top: 2rem;
 }
 
 img.edit-avatar{

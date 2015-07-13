@@ -21,7 +21,6 @@ class SessionsController < ApplicationController
         format.json { render json: @user.errors, status: :unprocessable_entity }
       end
     end
-    session.delete :back
   end
 
   def login

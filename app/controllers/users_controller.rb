@@ -27,26 +27,30 @@ class UsersController < SessionsController
 
   def update
     if @user.update(user_params)
+      flash[:notice] = "Profile updated successfully."
       redirect_to settings_profile_path
     else
-      render 'edit', alert: 'Something went wrong!'
+      render 'settings/profile', layout: 'setting'
     end
   end
 
   def change_password
-      flag = false
-
-      if @user.pword == params[:old_password] and
-        params[:user][:password] == params[:user][:password_confirmation] then
-          @user.pword = params[:user][:password]
-          flag = true
+      if github?
+        @client = github_client 
+        @client_info = @client.user
       end
 
-      if flag
+      if @user.pword != params[:user][:old_password] then
+        flash.now[:alert] = "Incorrect password."
+        render 'settings/admin', layout: "setting" and return
+      end
+
+      if @user.update(user_params)
+        @user.pword = @user.password
         @user.save
-        redirect_to action: :account_setting, notice: 'Password changed successfully'
+        redirect_to settings_admin_path, notice: 'Password changed successfully'
       else
-        render :account_setting, alert: 'Something went wrong!', layout: "setting"
+        render 'settings/admin', layout: "setting"
       end
   end
 

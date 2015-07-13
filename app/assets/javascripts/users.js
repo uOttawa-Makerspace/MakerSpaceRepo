@@ -12,6 +12,7 @@ $(document).on('page:change', function(){
   });
 
   $("div#repository_report").fadeIn(500).delay(5000).fadeOut(300);
+  $("div#profile_notice").fadeIn(500).delay(5000).fadeOut(300);
 
   $("form#comment").on("ajax:success", function(e, data, status, xhr) {
 

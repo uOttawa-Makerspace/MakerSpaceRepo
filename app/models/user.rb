@@ -22,17 +22,15 @@ class User < ActiveRecord::Base
     presence: { message: "Email is required." },
     uniqueness: { message: "Email is already in use." }
 
+  validates :description, 
+    length: { maximum: 250, message: 'Maximum of 250 characters.' }
+
   validates :password, 
     presence: { message: "Password is required." },
     confirmation: {message: "Passwords do not match."},
     # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
     format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}/,
-             message: "Passwords must have one lowercase letter, one uppercase letter and be 8 characters long."},
-    on: :create
-
-  validates :password_confirmation, 
-    presence: { message: "Password confirmation is required." },
-    on: :create
+             message: "Passwords must have one lowercase letter, one uppercase letter and be 8 characters long."}
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/

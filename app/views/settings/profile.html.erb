@@ -1,3 +1,7 @@
+<% if flash[:notice] %>
+  <div id="profile_notice"><%= flash[:notice] %></div>
+<% end %>
+
 <%= form_for @user, url: user_path(@user.username), method: :patch do |f| %>
 
   <div class="edit-column">
@@ -18,12 +22,15 @@
     </div>
 
     <%= f.label :first_name, "First Name", class: "profile-label" %>
+    <%= content_tag :span, @user.errors[:first_name].first, class: 'form-error' %>
     <%= f.text_field :first_name, class: "profile-text", autofocus: true %>
 
     <%= f.label :last_name, "Last Name", class: "profile-label" %>
+    <%= content_tag :span, @user.errors[:last_name].first, class: 'form-error' %>
     <%= f.text_field :last_name, class: "profile-text" %> 
 
     <%= f.label :email, class: "profile-label" %>
+    <%= content_tag :span, @user.errors[:email].first, class: 'form-error' %>
     <%= f.email_field :email, class: "profile-text" %> 
 
     <%= f.label :location, class: "profile-label" %>
@@ -33,6 +40,7 @@
     <%= f.url_field :url, class: "profile-text" %> 
 
     <%= f.label :description, class: "profile-label" %>
+    <%= content_tag :span, @user.errors[:description].first, class: 'form-error' %>
     <%= f.text_area :description, class: "profile-text" %>   
 
     <%= f.submit "Save", class: "save-button" %>

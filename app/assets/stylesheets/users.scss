@@ -142,3 +142,18 @@ a.delete{
   font-size: 0.85rem;
 
 }
+
+div#profile_notice{
+  display: none;
+  position: absolute;
+  width: 100%;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 2rem;
+  line-height: 2rem !important;
+  font: 300 1.1rem 'Raleway', sans-serif;
+  background-color: #5cb85c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}
