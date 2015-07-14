@@ -44,9 +44,11 @@ class RepositoriesController < SessionsController
       create_photos
       create_tags
       render json: { redirect_uri: "#{repository_path(@user.username, @repository.title)}" }
+      Repository.reindex
     else
       render :new, alert: "Something went wrong"
     end
+
   end
 
   def update

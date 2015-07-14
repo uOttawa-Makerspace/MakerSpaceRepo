@@ -2,6 +2,7 @@ var instructableFiles = [];
 var photoFiles = [];
 var tagArray = [];
 var photoArray = [];
+var error_message = {};
 
 $(document).on('page:change', function(){
 
@@ -140,10 +141,11 @@ $(document).on('page:change', function(){
 
   $("form#new_repository").submit(function(e){
     e.preventDefault();
+    var validate = validation();
 
     var _this = $(this),
-        uri = _this[0].action,
-        form = new FormData(_this[0]);
+        uri   = _this[0].action,
+        form  = new FormData(_this[0]);
 
     for (var i = 0; i < instructableFiles.length; i++) {
       form.append("files[]", instructableFiles[i]);
@@ -157,20 +159,22 @@ $(document).on('page:change', function(){
       form.append("tags[]", tagArray[i]);
     };
 
-    $.ajax({
-      url: uri,
-      type: "POST",
-      data: form,
-      dataType: 'json',
-      processData: false,
-      contentType: false
+    if( validate ){
+      $.ajax({
+        url: uri,
+        type: "POST",
+        data: form,
+        dataType: 'json',
+        processData: false,
+        contentType: false
       }).done(function(e) {
         window.location.pathname = e.redirect_uri 
       })
       .fail(function(e) {
-        console.log( 'error');
+        console.log('error');
       });
-
+    }
+    
   });
 
 

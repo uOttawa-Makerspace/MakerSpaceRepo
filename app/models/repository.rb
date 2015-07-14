@@ -17,8 +17,8 @@ class Repository < ActiveRecord::Base
     text    :tags do
               tags.map { |tag| tag.name }
             end
-    
     integer :like
+    integer :make
     time    :created_at
     time    :updated_at
   end

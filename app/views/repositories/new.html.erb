@@ -3,30 +3,29 @@
 
   <%= form_for @repository, url: {controller: "repositories", action: "create"}, html: { multipart: true } do |f| %>
     <div class="title">Create a Repository</div>
-    <%= content_tag :span, @repository.errors[:title].first, class: 'form-error' %>
     <%= f.label :title, "Name" %>
     <div>Great repository names are short and memorable.</div>
-    <span class="autocomplete-wrapper">
-      <%= f.text_field :title, class: 'repo repo-autocomplete' %>
-      <span class="loader"></span> 
-    </span>
+    <%= f.text_field :title, class: 'repo' %>
 
-    <%= f.label :github, fa_icon('github', text: 'Github Repository Name', style: 'padding-right: 0px;') %>
-    <div>Github will replaces spaces in repository names with dashes.</div>
-    <span class="autocomplete-wrapper">
-      <%= f.text_field :github, class: 'repo repo-autocomplete' %>
-      <span class="loader"></span> 
-    </span>
-    
     <%= f.label :description %>
     <%= f.text_area :description, class: 'repo' %>
 
-    <%= label_tag "Source files"%>
-    <div>This designs needed to make your project.</div>
-    <label class="custom-instructable-upload">
-      <%= file_field_tag 'files[]', type: :files, multiple: true %>
-      Upload Files
-    </label>
+    <% if github? %>
+      <%= f.label :github, fa_icon('github', text: 'Github Repository Name', style: 'padding-right: 0px;') %>
+      <div>Github will replaces spaces in repository names with dashes.</div>
+      <span class="autocomplete-wrapper">
+        <%= f.text_field :github, class: 'repo repo-autocomplete' %>
+        <span class="loader"></span> 
+      </span>
+
+      <%= label_tag "Source files"%>
+      <div>This designs needed to make your project.</div>
+      <label class="custom-instructable-upload">
+        <%= file_field_tag 'files[]', type: :files, multiple: true %>
+        Upload Files
+      </label>
+    
+    <% end %>
 
     <div id="file-container"></div>
 
