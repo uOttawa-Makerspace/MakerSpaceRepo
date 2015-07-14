@@ -9,14 +9,8 @@ section#home-1{
   font: 300 10vw 'Raleway', helvetica, sans-serif;
   text-align: center;
   position: relative;
-
-  div{
-    @include center-vertically;
-    height: 25vw;
-    color: #fff;
-    opacity: 0.85;
-  }
-
+  line-height: 80vh;
+  color: rgba(255,255,255,0.8);
 }
 
 section.platform-title{

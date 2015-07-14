@@ -21,7 +21,7 @@
     <span class="header-menu-item"><%= link_to 'Explore', explore_path %></span>
   <% end %>
   <span class="msr-logo">
-    <%= link_to root_path do %>MakerSpace<b>Repo</b><% end %>
+    <%= link_to root_path do %>Maker<b>Repo</b><% end %>
     <%= form_tag search_path, method: :get, class: 'header-search' do %>
     <%= fa_icon('search') %>
     <%= text_field_tag 'q', nil, placeholder: 'Search' %>

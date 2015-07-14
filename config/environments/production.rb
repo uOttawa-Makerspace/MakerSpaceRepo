@@ -78,4 +78,25 @@ Rails.application.configure do
   config.active_record.dump_schema_after_migration = false
 
   config.assets.precompile += %w( vendor.js vendor.css )
+
+  Octokit.configure do |c|
+    c.client_id        = ENV['GITHUB_APP_KEY']
+    c.client_secret    = ENV['GITHUB_APP_KEY_SECRET']
+  end
+
+  #SMTP GMail Settings
+  config.action_mailer.default_url_options = { :host => 'makerepo.com'}
+
+  config.action_mailer.delivery_method = :smtp
+
+  #GMAIL SETUP
+  config.action_mailer.smtp_settings = {
+    :address => "smtp.gmail.com",
+    :port => 587,
+    :user_name => ENV['SMTP_USER'],
+    :password => ENV['SMTP_PASSWORD'],
+    :authentication => 'plain',
+    :enable_starttls_auto => true
+  }
+
 end
