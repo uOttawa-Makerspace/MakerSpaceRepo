@@ -132,3 +132,9 @@ form.header-search{
     padding-right: 10px;
   }
 }
+
+@media screen and (max-width: 700px){
+  form.header-search{
+    display: none;
+  }
+}

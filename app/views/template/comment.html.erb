@@ -12,7 +12,7 @@
   </div>
   <div class="comment-header">
     <%= link_to params['user_url'] do %>
-      <div><%= params['username'] %><div class="rep">1530</div> </div>
+      <div><%= params['username'] %><div class="rep"><%= params['rep'] %></div> </div>
      <% end %>
     <%= content_tag :div, time_ago_in_words(params['created_at'].to_datetime) << " ago", class: 'time' %>
   </div>

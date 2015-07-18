@@ -25,9 +25,11 @@
       <%= fa_icon "location-arrow", text: @repo_user.location %>
     </div>
     <% end %>
-    <div class="user-info">
-      <span>224</span> REPUTATION
-    </div>
+    <% unless @repo_user.reputation.eql? 0 %>
+      <div class="user-info">
+        <%= content_tag :span, @repo_user.reputation %> REPUTATION
+      </div>
+    <% end %>
     <div class="user-info">
       <%= fa_icon "clock-o", text: "Joined on #{@repo_user.created_at.strftime("%B %d %Y")}"%>
     </div>  

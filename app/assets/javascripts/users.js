@@ -31,6 +31,7 @@ $(document).on('page:change', function(){
         user_id: data.user_id,
         user_url: data.user_url,
         content: data.comment,
+        rep: data.rep,
         comment_id: data.comment_id,
         created_at: data.created_at
       }

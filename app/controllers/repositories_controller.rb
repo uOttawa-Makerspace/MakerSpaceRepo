@@ -4,10 +4,6 @@ class RepositoriesController < SessionsController
   before_action :github_client, only: [:create, :show]
   before_action :set_repository, only: [:show, :add_like]
 
-  # def index
-  #   @repositories = Repository.order('created_at DESC').first(5)
-  # end
-  
   def show
     @photos = @repository.photos.first(5)
     @tags = @repository.tags
@@ -43,8 +39,9 @@ class RepositoriesController < SessionsController
     if @repository.save
       create_photos
       create_tags
-      render json: { redirect_uri: "#{repository_path(@user.username, @repository.title)}" }
+      render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
       Repository.reindex
+      @user.increment!(:reputation, 25)
     else
       render :new, alert: "Something went wrong"
     end
@@ -73,6 +70,7 @@ class RepositoriesController < SessionsController
 
   def add_like # MAKE A LIKE CONTROLLER TO PUT THIS IN
     @repository.likes.create!(user_id: @user.id)
+    @repository.user.increment!(:reputation, 5)
     render json: { like: @repository.like }
     rescue
       render json: { failed: true}

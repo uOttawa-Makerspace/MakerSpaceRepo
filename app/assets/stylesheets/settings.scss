@@ -2,12 +2,12 @@
 
 @import "lib";
 
-section#setting{
+/*section#setting{
 	position: absolute;
 	top: 65px;
 	width: 100vw;
 	background-color: rgba(238, 238, 238, 0.5);
-}
+}*/
 
 div.setting-title{
 	line-height: 5rem !important;
@@ -21,7 +21,7 @@ div.setting-grid{
 	background-color: #fff;
 	padding: 0 1rem;
 	padding-bottom: 5rem;
-	position: relative;
+	/*position: relative;*/
 }
 
 div.setting-side-panel{
@@ -64,7 +64,8 @@ input.profile-text{
   color: #555;
   padding: 0.5rem;
 	margin: 0.5rem 0 1rem;
-  width: 400px;
+  max-width: 400px;
+  width: calc(100% - 1rem);
   border-radius: 3px;
   border: 1px solid #aaa;
   display: block;
@@ -75,7 +76,8 @@ textarea.profile-text{
   color: #555;
   padding: 0.5rem;
 	margin: 0.5rem 0 1rem;
-  width: 400px;
+  max-width: 400px;
+  width: calc(100% - 1rem);
   border-radius: 3px;
   border: 1px solid #aaa;
   display: block;
@@ -84,7 +86,8 @@ textarea.profile-text{
 
 div.section-desc{
   font: 400 1rem 'Raleway', sans-serif;
-	width: 400px;
+  width: 100%;
+	max-width: 400px;
 	padding: 10px 0;
 	margin: 10px 0;
 	color: #5f9ea0;
@@ -178,4 +181,22 @@ div.cp-column{
 	padding-left: 2rem;
   color: #333;
   font: 400 1rem 'Raleway', sans-serif;
+}
+
+@media screen and (max-width: 700px){
+ 
+  div.setting-side-panel{
+    display: none;
+  }
+
+  div.edit-column{
+    @include span-columns(12, 3);
+    padding: 0;
+    border: none;
+    
+    div.title{
+      padding-top: 0;
+    }
+  }
+
 }

@@ -29,7 +29,7 @@
       <div class="repo-info-item">
         <div class="title">PROJECT BY</div>
         <div class="name"><%= link_to @repository.user_username, user_path(@repository.user_username) %></div>
-        <div class="reputation">1530</div>
+        <%= content_tag :div, @repository.user.reputation, class: 'reputation' %>
       </div>
       <div class="repo-info-item">
         <div class="title">PUBLISHED</div>
@@ -128,7 +128,7 @@
         </div>
         <div class="comment-header">
           <%= link_to user_path(comment.username) do %>
-            <div><%= comment.username %><div class="rep">1530</div> </div>
+            <div><%= comment.username %><%= content_tag :div, comment.user.reputation, class: 'rep' %> </div>
            <% end %>
           <%= content_tag :div, time_ago_in_words(comment.created_at) << " ago", class: 'time' %>
         </div>

@@ -67,7 +67,6 @@ class UsersController < SessionsController
     @repositories = @repo_user.repositories.where(make_id: nil).page params[:page]
     @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
     @photos = photo_hash
-    # @repositories = @repo_user.repositories.page params[:page]
   end
 
   def likes
@@ -85,20 +84,24 @@ class UsersController < SessionsController
   def vote # MAKE A UPVOTE CONTROLLER TO PUT THIS IN
     downvote = if params['downvote'].eql?('t') then true else false end
     comment = Comment.find params[:comment_id]
+    comment_user = comment.user
     if params[:voted].eql?('true')
       upvote = @user.upvotes.where(comment_id: comment.id).take
       if (!upvote.downvote && downvote) || (upvote.downvote && !downvote)
         upvote.update! downvote: downvote
         count = downvote ? comment.upvote - 2 : comment.upvote + 2
+        downvote ? comment_user.decrement!(:reputation, 4) : comment_user.increment!(:reputation, 4)
         render json: { upvote_count: count, comment_id: comment.id, voted: 'true', color: '#19c1a5' }
       else
         upvote.destroy!
         count = downvote ? comment.upvote + 1 : comment.upvote - 1
+        downvote ? comment_user.increment!(:reputation, 2) : comment_user.decrement!(:reputation, 2)
         render json: { upvote_count: count, comment_id: comment.id, voted: 'false', color: '#999' }
       end
     else
       @user.upvotes.create!(comment_id: comment.id, downvote: downvote)
       count = downvote ? comment.upvote - 1 : comment.upvote + 1
+      downvote ? comment_user.decrement!(:reputation, 2) : comment_user.increment!(:reputation, 2)
       render json: { upvote_count: count, comment_id: comment.id, voted: 'true', color: '#19c1a5' }
     end
     rescue

@@ -1,9 +1,9 @@
 @import "lib";
 
 section#license{
-  @include span-columns(7.25, 0);
+  @include span-columns(8, 3);
   background-color: #fff;
-  padding: 2rem 2rem;
+  /*padding: 2rem 0;*/
   min-height: calc(100vh - 65px);
   color: #777;
 
@@ -11,7 +11,7 @@ section#license{
   div.title{
 	  font: 400 2rem 'Raleway', helvetica, sans-serif;
 	  color: #366;
-	  padding: 2rem 0 0;
+    padding-top: 3rem;
 	  text-decoration: underline;
   }
 
@@ -30,9 +30,7 @@ div.license-grid{
   @include outer-container(68rem);
   min-height: calc(100vh - 50px);
   background-color: #fff;
-  padding-left: 1rem;
   padding-bottom: 5rem;
-  position: relative;
 }
 
 div.license-side-panel{
@@ -64,6 +62,23 @@ div.license-side-panel{
     &:last-child{
       border-bottom: 1px solid #aaa;
       padding-bottom: 1.2rem;
+    }
+  }
+
+}
+
+@media screen and (max-width: 700px){
+ 
+  div.license-side-panel{
+    display: none;
+  }
+
+  section#license{
+    @include span-columns(12, 3);
+    padding: 0;
+
+    div.title{
+      padding-top: 0;
     }
   }
 
