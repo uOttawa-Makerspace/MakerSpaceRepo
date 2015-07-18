@@ -19,6 +19,15 @@ module ApplicationHelper
     current_user.access_token.present?
   end
 
+  def license_url
+    {"Creative Commons - Attribution" => licenses_cca_path,
+     "Creative Commons - Attribution - Share Alike" => licenses_ccasa_path,
+     "Creative Commons - Attribution - No Derivatives" => licenses_ccand_path,
+     "Creative Commons - Attribution - Non-Commercial" => licenses_ccanc_path,
+     "Attribution - Non-Commercial - Share Alike" => licenses_ancsa_path,
+     "Attribution - Non-Commercial - No Derivatives" => licenses_ancnd_path}
+  end
+
   # def file_system(path="/", full=false)
   #   github_client
   #   root = @github.metadata(path)["contents"]

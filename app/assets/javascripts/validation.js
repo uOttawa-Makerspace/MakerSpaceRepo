@@ -20,6 +20,10 @@ function validation(){
 		ret = false;
 	}
 
+	console.log(github);
+	
+	if(github[0] === undefined){ return ret; }
+
 	var span = $('<span>').addClass('form-error repo-form');
 
 	if( github.val().length === 0 && instructableFiles.length !== 0 ){

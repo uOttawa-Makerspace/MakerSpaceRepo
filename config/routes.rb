@@ -44,17 +44,27 @@ Rails.application.routes.draw do
     get :admin
   end 
 
-  get 'repositories', to: 'repositories#index'
+  namespace :licenses do
+    get 'common-creative-attribution', as: 'cca'
+    get 'common-creative-attribution-share-alike', as: 'ccasa'
+    get 'common-creative-attribution-no-derivatives', as: 'ccand'
+    get 'common-creative-attribution-non-commercial', as: 'ccanc'
+    get 'attribution-non-commercial-share-alike', as: 'ancsa'
+    get 'attribution-non-commercial-no-derivatives', as: 'ancnd'
+  end
+
+  # get 'repositories', to: 'repositories#index'
   post 'vote', to: 'users#vote', path: 'vote/:comment_id'
 
    # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
     get 'likes', on: :member
+    match 'additional_info', on: :member, via: [:get, :patch]
     patch 'change_password', on: :member
   end
 
   # REPOSITORY RESOURCES
-  resources :repositories, path: '/:user_username', param: :title, except: :index do
+  resources :repositories, path: '/:user_username', param: :slug, except: :index do
     post 'add_like', on: :member
   end
 
@@ -64,7 +74,7 @@ Rails.application.routes.draw do
   end
 
   namespace :comments do
-    post :create, path: '/:title'
+    post :create, path: '/:slug'
   end
 
 end

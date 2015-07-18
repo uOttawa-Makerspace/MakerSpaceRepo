@@ -11,12 +11,19 @@ class UsersController < SessionsController
     respond_to do |format|
       if @new_user.save
         session[:user_id], cookies[:user_id] = @new_user.id, @new_user.id
-        format.html { redirect_to root_path }
+        format.html { redirect_to additional_info_user_path(@new_user.username) }
         format.json { render json: { success: @new_user.id }, status: :ok }
       else
         format.html { render 'new', status: :unprocessable_entity }
         format.json { render json: @new_user.errors, status: :unprocessable_entity }
       end
+    end
+  end
+
+  def additional_info
+    if request.patch?
+      user_params[:use] = params[:use] if user_params[:use].eql?("Other")
+      redirect_to root_path if @user.update(user_params)
     end
   end
 
@@ -41,7 +48,7 @@ class UsersController < SessionsController
       end
 
       if @user.pword != params[:user][:old_password] then
-        flash.now[:alert] = "Incorrect password."
+        flash.now[:alert] = "Incorrect old password."
         render 'settings/admin', layout: "setting" and return
       end
 
@@ -59,7 +66,7 @@ class UsersController < SessionsController
     @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
     @repositories = @repo_user.repositories.where(make_id: nil).page params[:page]
     @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
-
+    @photos = photo_hash
     # @repositories = @repo_user.repositories.page params[:page]
   end
 
@@ -103,7 +110,7 @@ private
 
   def user_params
     params.require(:user).permit(:password, :password_confirmation, :url, 
-      :location, :email, :first_name, :last_name, :username, :avatar, 
+      :location, :email, :name, :username, :avatar, :gender, :faculty, :use, 
       :description)
   end
 

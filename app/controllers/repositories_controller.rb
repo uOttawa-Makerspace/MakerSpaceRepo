@@ -81,7 +81,7 @@ class RepositoriesController < SessionsController
   private
 
     def set_repository
-      @repository = Repository.find_by(title: params[:title])
+      @repository = Repository.find_by(slug: params[:slug])
     end
 
     def repository_params

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150706165749) do
+ActiveRecord::Schema.define(version: 20150718025831) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -67,6 +67,7 @@ ActiveRecord::Schema.define(version: 20150706165749) do
     t.string   "user_username"
     t.integer  "make_id"
     t.integer  "make",          default: 0
+    t.string   "slug"
   end
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree
@@ -93,8 +94,6 @@ ActiveRecord::Schema.define(version: 20150706165749) do
 
   create_table "users", force: :cascade do |t|
     t.string   "username"
-    t.string   "first_name"
-    t.string   "last_name"
     t.string   "password"
     t.string   "url"
     t.string   "location"
@@ -107,6 +106,10 @@ ActiveRecord::Schema.define(version: 20150706165749) do
     t.integer  "avatar_file_size"
     t.datetime "avatar_updated_at"
     t.string   "access_token"
+    t.string   "name"
+    t.string   "gender"
+    t.string   "faculty"
+    t.string   "use"
   end
 
   add_foreign_key "comments", "repositories"

@@ -148,10 +148,11 @@ div.repo-info-item{
 		color: #999;
 	}
 
-	span.platform{
+	span.platform, span.license{
 		color: #5f9ea0;
+		font-size: 0.8rem;
 	}
-
+	
 	&:nth-child(1n + 3){
 		width: 100%;
 	}

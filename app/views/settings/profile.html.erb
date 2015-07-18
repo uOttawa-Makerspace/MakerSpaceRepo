@@ -21,13 +21,9 @@
       </label>
     </div>
 
-    <%= f.label :first_name, "First Name", class: "profile-label" %>
-    <%= content_tag :span, @user.errors[:first_name].first, class: 'form-error' %>
-    <%= f.text_field :first_name, class: "profile-text", autofocus: true %>
-
-    <%= f.label :last_name, "Last Name", class: "profile-label" %>
-    <%= content_tag :span, @user.errors[:last_name].first, class: 'form-error' %>
-    <%= f.text_field :last_name, class: "profile-text" %> 
+    <%= f.label :name, "Name", class: "profile-label" %>
+    <%= content_tag :span, @user.errors[:name].first, class: 'form-error' %>
+    <%= f.text_field :name, class: "profile-text", autofocus: true %>
 
     <%= f.label :email, class: "profile-label" %>
     <%= content_tag :span, @user.errors[:email].first, class: 'form-error' %>
@@ -39,9 +35,9 @@
     <%= f.label :url, "URL", class: "profile-label" %>
     <%= f.url_field :url, class: "profile-text" %> 
 
-    <%= f.label :description, class: "profile-label" %>
+<!--     <%= f.label :description, class: "profile-label" %>
     <%= content_tag :span, @user.errors[:description].first, class: 'form-error' %>
-    <%= f.text_area :description, class: "profile-text" %>   
+    <%= f.text_area :description, class: "profile-text" %>    -->
 
     <%= f.submit "Save", class: "save-button" %>
 

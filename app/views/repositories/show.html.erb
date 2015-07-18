@@ -61,6 +61,7 @@
         <% end %>
       </div>
       <% end %>
+
       <div class="repo-info-item">
         <span class="like">
           <%= link_to(fa_icon('heart', text: 'Like'), 
@@ -83,6 +84,12 @@
           </div>
         </div>
       </div>
+      <% if @repository.license.present? %>
+      <div class="repo-info-item">
+        <div class="title">LICENSE</div>
+        <span class="license"><%= link_to @repository.license, license_url[@repository.license] %></span>
+      </div>
+      <% end %>
     </div>
 
   </section>

@@ -8,29 +8,27 @@ class User < ActiveRecord::Base
     accepts_nested_attributes_for :repositories
   has_many :makes, dependent: :destroy
 
-  validates :first_name, 
-    presence: { message: "First name is required."}
-
-  validates :last_name, 
-    presence: { message: "Last name is required."}
+  validates :name, 
+    length: { maximum: 50, message: 'Your name mus be less than 50 characters.' }
 
   validates :username,
-    presence: { message: "Username is required." },
-    uniqueness: { message: "Username is already in use." }   
+    presence: { message: "Your username is required." },
+    uniqueness: { message: "Your username is already in use." },   
+    length: { maximum: 20, message: 'Your username must be less than 20 characters.' }
 
   validates :email, 
-    presence: { message: "Email is required." },
-    uniqueness: { message: "Email is already in use." }
+    presence: { message: "Your email is required." },
+    uniqueness: { message: "Your email is already in use." }
 
   validates :description, 
     length: { maximum: 250, message: 'Maximum of 250 characters.' }
 
   validates :password, 
-    presence: { message: "Password is required." },
-    confirmation: {message: "Passwords do not match."},
+    presence: { message: "Your password is required." },
+    confirmation: {message: "Your passwords do not match."},
     # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
     format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}/,
-             message: "Passwords must have one lowercase letter, one uppercase letter and be 8 characters long."}
+             message: "Your passwords must have one lowercase letter, one uppercase letter and be 8 characters long."}
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/

@@ -6,7 +6,7 @@ section#setting{
 	position: absolute;
 	top: 65px;
 	width: 100vw;
-	background-color: rgba(119,136,153,0.1);
+	background-color: rgba(238, 238, 238, 0.5);
 }
 
 div.setting-title{
@@ -16,7 +16,7 @@ div.setting-title{
 }
 
 div.setting-grid{
-	@include outer-container(70rem);
+	@include outer-container(68rem);
   min-height: calc(100vh - 50px);
 	background-color: #fff;
 	padding: 0 1rem;

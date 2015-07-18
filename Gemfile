@@ -23,6 +23,7 @@ gem 'kaminari', '~> 0.16.3'
 gem 'sunspot_rails', '~> 2.2.0'
 gem 'sunspot_solr', '~> 2.2.0'
 gem 'progress_bar', '~> 1.0.3'
+gem "friendly_id", '~> 5.0.1'
 gem 'sdoc', '~> 0.4.0', group: :doc
 
 group :development, :test do

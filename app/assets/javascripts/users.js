@@ -6,6 +6,15 @@ var error_message = {};
 
 $(document).on('page:change', function(){
 
+  $('select#user_use').on('selectmenuchange', function(e,ui){
+    var _this = $(this);
+    if(_this.val() == "Other"){
+      $('span.other textarea').fadeIn(1);
+    }else{
+      $('span.other textarea').fadeOut(1);
+    }
+  });
+
   voting();
 
   $('a.repository_report').click(function(){

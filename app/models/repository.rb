@@ -1,6 +1,8 @@
 class Repository < ActiveRecord::Base
+  extend FriendlyId
+  friendly_id :title, use: [:slugged, :finders]
+ 
   belongs_to :user
-
   has_many :photos, dependent: :destroy
   has_many :tags, dependent: :destroy
   has_many :comments, dependent: :destroy
@@ -29,13 +31,12 @@ class Repository < ActiveRecord::Base
   end
 
   def self.license_options
-    ["Creative Commons - Attribution - Share Alike",
+    ["Creative Commons - Attribution",
+     "Creative Commons - Attribution - Share Alike",
      "Creative Commons - Attribution - No Derivatives",
      "Creative Commons - Attribution - Non-Commercial",
      "Attribution - Non-Commercial - Share Alike",
-     "Attribution - Non-Commercial - No Derivatives",
-     "Creative Commons - Public Domain Dedication",
-     "GNU - GPL", "GNU - LGPL", "BSD License" ]
+     "Attribution - Non-Commercial - No Derivatives"]
   end
 
   validates :title,

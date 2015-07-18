@@ -17,7 +17,7 @@ section#signup {
 	  color: #777;
   }
 
-  input{
+  input, textarea{
 		display: block;
 		padding: 0.5rem;
 		width: 400px;
@@ -40,9 +40,43 @@ section#signup {
   }
 }
 
+div.signup-breadcrumb{
+  padding-top: 5%;
+  @include outer-container(60%);
+
+  div{
+    float: left;
+    width: calc(50% - 4px);
+    padding: 2rem 0;
+    font: 400 1.25rem 'Raleway', helvetica, sans-serif;
+    text-align: center;
+    color: #366;
+    border: 1px solid #eee;
+    border-bottom: 5px solid #366;
+
+    &:nth-child(1){
+      border-right-color: #366;
+    }
+
+  }
+  
+}
+
+div.additional-info{
+  max-width: 60%;
+  margin: 0 auto;
+  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+  color: #555;
+  padding: 2rem 0;
+}
+
+span.other textarea#use{
+  display: none;
+}
+
 div.signup-title, div.login-title{
   font: 400 2rem 'Raleway', helvetica, sans-serif;
-  color: #333;
+  color: #366;
   padding: 2rem 0;
   max-width: 60%;
   margin: 0 auto; 
