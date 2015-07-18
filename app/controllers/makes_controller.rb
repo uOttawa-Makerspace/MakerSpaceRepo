@@ -19,7 +19,8 @@ class MakesController < SessionsController
       create_photos
       copy_tags
       @repository.increment!(:make)
-      render json: { redirect_uri: "#{repository_path(@user.username, @repo.title)}" }
+      render json: { redirect_uri: "#{repository_path(@user.username, @repo.slug)}" }
+      @user.increment!(:reputation, 15)
     else
       render :new, alert: "Something went wrong"
     end
@@ -27,10 +28,14 @@ class MakesController < SessionsController
   end
 
   def new
-    @repository = Repository.new(title: @repository.title)
+    @repository = Repository.new(title: Repository.find_by(slug: params[:slug]).title )
   end
 
   private
+    
+    def set_repository
+      @repository = Repository.find_by(slug: params[:slug])
+    end
 
     def create_photos
       params['images'].each do |img|
@@ -43,10 +48,6 @@ class MakesController < SessionsController
       @repository.tags.each do |t|
         Tag.create(name: t.name, repository_id: @repo.id)
       end
-    end
-
-    def set_repository
-      @repository = Repository.find_by(title: params[:title])
     end
 
 end

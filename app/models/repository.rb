@@ -1,6 +1,4 @@
 class Repository < ActiveRecord::Base
-  extend FriendlyId
-  friendly_id :title, use: [:slugged, :finders]
  
   belongs_to :user
   has_many :photos, dependent: :destroy
@@ -42,8 +40,16 @@ class Repository < ActiveRecord::Base
   validates :title,
     format:     { with:    /\A[-a-zA-Z\d\s]*\z/ },
     presence:   { message: "Repository name is required."},
-    uniqueness: { message: "Repository name is already in use." }   
+    uniqueness: { message: "Repository name is already in use.", scope: :user_username}  
 
+  before_save do 
+    self.slug = self.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
+  end 
+
+  before_destroy do
+    self.user.decrement!(:reputation, 25)
+  end
+  
   # validates :category,
   #   inclusion: { within: category_options },
   #   presence: { message: "A category is required."}

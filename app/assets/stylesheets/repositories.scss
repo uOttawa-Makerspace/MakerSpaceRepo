@@ -57,70 +57,57 @@ section#new-repo{
 
 }
 
-.ui-selectmenu-button {
-    cursor:pointer;
-    display:inline-block;
-    position:relative;
-    border: 1px solid #aaa;
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-    font: 300 0.9em 'Raleway', sans-serif;
-    padding: 10px;
-    margin-bottom: 20px;
-    @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
-
-    &:after {
-      content: "";
-      border: 5px solid transparent;
-      border-color: #555 transparent transparent transparent;
-      position: absolute;
-      top: 15px;
-      right: 20px;
-    }
-
-    &:focus{
-      outline-style: none;
-    }
+.select-hidden {
+  display: none;
+  visibility: hidden;
+  padding-right: 10px;
 }
 
-.ui-state-focus:not(.ui-selectmenu-button){
-  background-color: #5f9ea0;
-  color: #fff;
+.select {
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  color: #555;
+  width: 100%;
+  max-width: calc(400px + 1rem);
+  height: 2.4rem;
+  font: 300 0.9em 'Raleway', sans-serif;
+  border: 1px solid #aaa;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
 }
 
-[aria-hidden="true"] { display: none; }
-
-ul.ui-menu {
-    width: 400px;
-    border: 1px solid #aaa;
-    background-color: #fff;
-    @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+.select-styled {
+  position: absolute; 
+  top: 0;right:0;bottom:0;left:0;
+  padding: 10px;
+  @include transition(0.2s);
+  &:after {
+    content: "";
+    border: 5px solid transparent;
+    border-color: #555 transparent transparent transparent;
+    position: absolute;
+    top: 15px;
+    right: 20px;
+  }
 }
 
-li.ui-menu-item {
+.select-options {
+  display: none; 
+  position: absolute;
+  top: 115%;right: 0;left: 0;
+  z-index: 1;
+  background-color: #fff;
+  border: 1px solid #aaa;
+  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+  li {
     padding: 0.5rem;
-    font: 300 0.9em 'Raleway', sans-serif;
-    cursor: pointer;
-
     &:hover {
       background-color: #5f9ea0;
       color: #fff;
     }
-}
-
-.ui-autocomplete-input{
-  font: 300 0.9em 'Raleway', sans-serif;
-  background-color: #fff;
-  width: calc(400px + 1rem);
-  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
-  border: 1px solid #aaa;
-
-  & li{
-    padding: 0.5rem;
-
-    &:hover{
-      background-color: #5f9ea0;
-      color: #fff; 
+    &[rel="hide"] {
+      display: none;
     }
   }
 }

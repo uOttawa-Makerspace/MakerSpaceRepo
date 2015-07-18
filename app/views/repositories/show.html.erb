@@ -23,7 +23,9 @@
     <div id="misc">
       <span class="misc-item"><%= fa_icon "heart" %><span class="like-count"><%= @repository.like %></span></span>
       <span class="misc-item"><%= fa_icon "code-fork", text: @repository.makes.count %></span>
-      <span class="misc-item"><%= fa_icon "comments"%><span class="comment-count"><%= @repository.comments.count %></span></span>
+      <span class="misc-item"><%= link_to fa_icon("comments"), "#repo-comments" %>
+        <span class="comment-count"><%= link_to @repository.comments.count, "#repo-comments" %></span>
+      </span>
     </div>
     <div id="repo-info">
       <div class="repo-info-item">
@@ -69,7 +71,7 @@
         </span>
         <span class="make">
           <%= link_to(fa_icon('code-fork', text: 'Make'),
-            makes_new_path(@repository.user_username, @repository.title)) %>
+            makes_new_path(@repository.user_username, @repository.slug)) %>
         </span>
       </div>
       <div class="repo-info-item">

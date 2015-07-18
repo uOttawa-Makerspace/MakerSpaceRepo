@@ -68,7 +68,7 @@ Rails.application.routes.draw do
     post 'add_like', on: :member
   end
 
-  namespace :makes, path: 'makes/:user_name/:title' do
+  namespace :makes, path: 'makes/:user_name/:slug' do
     post 'create'
     get 'new'
   end

@@ -1,28 +1,36 @@
+$(document).on('page:change', function(){
+
+	// PAGE JUMPING JAVASCRIPT
+	$('a[href*=#]:not([href=#])').click(function() {
+    if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') 
+        && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+           if (target.length) {
+	             $('html,body').animate({
+	                 scrollTop: target.offset().top
+	            }, 500);	
+            return false;
+        }
+    }
+	});
+});
 var instructableFiles = [];
 var photoFiles = [];
 var tagArray = [];
 var photoArray = [];
+var error_message = {};
 
 $(document).on('page:change', function(){
 
-  // $("select").selectmenu({
-  //   width: 422,
-  //   position: { my : "left top+5", at: "left bottom" }
-  // });
+  $("select").selectmenu({
+    width: 422,
+    position: { my : "left top+5", at: "left bottom" }
+  });
   
-  // $('select#user_use').on('selectmenuchange', function(e,ui){
-  //   var _this = $(this);
-  //   if(_this.val() == "Other"){
-  //     $('span.other textarea').fadeIn(1);
-  //   }else{
-  //     $('span.other textarea').fadeOut(1);
-  //   }
-  // });
-
-  $('div.select-styled').change(function(){
-    console.log('something');
+  $('select#user_use').on('selectmenuchange', function(e,ui){
     var _this = $(this);
-    if(_this.text() == "Other"){
+    if(_this.val() == "Other"){
       $('span.other textarea').fadeIn(1);
     }else{
       $('span.other textarea').fadeOut(1);
@@ -324,4 +332,55 @@ function photoSwipe(){
 
   return gallery;
 }
+
+;
+function validation(){
+	var ret = true;
+	var title = $("input#repository_title");
+	var github = $("input#repository_github");
+	$('span.form-error.repo-form').remove();
+	var span = $('<span>').addClass('form-error repo-form');
+
+
+	if(title.val().length === 0 ){
+		span.text("Repository name is required.");
+		$('input#repository_title').before(span);
+		ret = false;
+	}
+
+	var span = $('<span>').addClass('form-error repo-form');
+
+	if(photoFiles.length === 0 ){
+		span.text("At least one photo is required.");
+		$('div.repo-image').before(span);
+		ret = false;
+	}
+
+	console.log(github);
+	
+	if(github[0] === undefined){ return ret; }
+
+	var span = $('<span>').addClass('form-error repo-form');
+
+	if( github.val().length === 0 && instructableFiles.length !== 0 ){
+		span.text("Github repository name required.");
+		$('input#repository_github').before(span);
+		ret = false;
+	}
+
+	return ret;	
+}
+;
+// This is a manifest file that'll be compiled into application.js, which will include all the files
+// listed below.
+//
+// Any JavaScript/Coffee file within this directory, lib/assets/javascripts, vendor/assets/javascripts,
+// or any plugin's vendor/assets/javascripts directory can be referenced here using a relative path.
+//
+// It's not advisable to add code directly here, but if you do, it'll appear at the bottom of the
+// compiled file.
+//
+// Read Sprockets README (https://github.com/rails/sprockets#sprockets-directives) for details
+// about supported directives.
+//
 
