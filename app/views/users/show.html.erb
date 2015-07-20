@@ -25,11 +25,9 @@
       <%= fa_icon "location-arrow", text: @repo_user.location %>
     </div>
     <% end %>
-    <% unless @repo_user.reputation.eql? 0 %>
-      <div class="user-info">
-        <%= content_tag :span, @repo_user.reputation %> REPUTATION
-      </div>
-    <% end %>
+    <div class="user-info">
+      <%= content_tag :span, @repo_user.reputation %> REPUTATION
+    </div>
     <div class="user-info">
       <%= fa_icon "clock-o", text: "Joined on #{@repo_user.created_at.strftime("%B %d %Y")}"%>
     </div>  
@@ -48,7 +46,7 @@
 
   <section id="repositories-container">
 
-  <% if @repositories.empty? %>
+  <% if @repositories.empty? or params[:show].eql?('makes') and @makes.empty? %>
     <div class="empty-repo">
       <%= @repo_user.username %> doesn't have any repositories yet.
     </div>

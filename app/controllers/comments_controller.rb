@@ -1,5 +1,6 @@
 class CommentsController < SessionsController
   before_action :current_user
+  before_action :signed_in, except: [:index, :show]
 
   def create
     repository = Repository.find_by slug: params[:slug]
@@ -7,7 +8,7 @@ class CommentsController < SessionsController
     comment.user_id = @user.id
   	comment.username = @user.username
     	
-  	if comment.save
+  	if comment.save!
 	  	render json: {
 	  		username: comment.username,
 	  		user_id: comment.id,
@@ -20,6 +21,7 @@ class CommentsController < SessionsController
 	  else
 	  	redirect_to root_path
 	  end
+
   end
 
   private

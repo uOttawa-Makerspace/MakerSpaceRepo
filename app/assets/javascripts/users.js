@@ -5,19 +5,6 @@ var photoArray = [];
 
 $(document).on('page:change', function(){
 
-  // $("select").selectmenu({
-  //   width: 422,
-  //   position: { my : "left top+5", at: "left bottom" }
-  // });
-  
-  // $('select#user_use').on('selectmenuchange', function(e,ui){
-  //   var _this = $(this);
-  //   if(_this.val() == "Other"){
-  //     $('span.other textarea').fadeIn(1);
-  //   }else{
-  //     $('span.other textarea').fadeOut(1);
-  //   }
-  // });
 
   $('div.select-styled').change(function(){
     console.log('something');

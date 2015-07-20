@@ -128,7 +128,8 @@ private
   end
 
   def photo_hash
-    repository_ids = @repositories.map(&:id)
+    repo = params[:show].eql?("makes") ? @makes : @repositories
+    repository_ids = repo.map(&:id)
     photo_ids = Photo.where(repository_id: repository_ids).group(:repository_id).minimum(:id)
     photos = Photo.find(photo_ids.values)
     photos.inject({}) { |h,e| h.merge!(e.repository_id => e) }

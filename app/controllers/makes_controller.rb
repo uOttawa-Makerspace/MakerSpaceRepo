@@ -28,13 +28,13 @@ class MakesController < SessionsController
   end
 
   def new
-    @repository = Repository.new(title: Repository.find_by(slug: params[:slug]).title )
+    @repo = @repository.title
   end
 
   private
     
     def set_repository
-      @repository = Repository.find_by(slug: params[:slug])
+      @repository = Repository.find_by(user_username: params[:user_username],slug: params[:slug])
     end
 
     def create_photos

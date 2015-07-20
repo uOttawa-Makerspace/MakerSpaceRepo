@@ -1,6 +1,6 @@
 <section id="new-repo">
 
-  <%= form_for @repository, url: {controller: "makes", action: "create"}, html: { multipart: true } do |f| %>
+  <%= form_for @repo, url: {controller: "makes", action: "create"}, html: { multipart: true } do |f| %>
     <%= f.label :title, "Name" %>
     <div>Great repository names are short and memorable.</div>
     <span class="autocomplete-wrapper">
