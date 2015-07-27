@@ -21,18 +21,20 @@ class RepositoriesController < SessionsController
   def create
     @repository = @user.repositories.build(repository_params)
     @repository.user_username = @user.username
-    @client = github_client
+    @repos = @github_client.repos.inject([]) { |a,e| a.push(e.name) }
 
     if @repository.github.present?
       githubatize = @repository.github.gsub(/\s+/, '-') #github replaces spaces with dashes in repo names
       @repository.github = githubatize
-      @repository.github_url = "https://github.com/#{@client.login}/#{githubatize}"
+      @repository.github_url = "https://github.com/#{@github_client.login}/#{githubatize}"
 
-      @client.create @repository.github, {description: @repository.description}
-      @client.create_contents("#{@client.login}/#{@repository.github}", 
-                              "README.md",
-                              "Commit README.md",
-                              "##{@repository.github}")
+      unless @repos.include? @repository.github
+        @github_client.create @repository.github, {description: @repository.description}
+        @github_client.create_contents("#{@github_client.login}/#{@repository.github}", 
+                                "README.md",
+                                "Commit README.md",
+                                "##{@repository.github}")
+      end
       commit if params['files'].present?
     end
 
@@ -43,7 +45,7 @@ class RepositoriesController < SessionsController
       Repository.reindex
       @user.increment!(:reputation, 25)
     else
-      render :new, alert: "Something went wrong"
+      render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
 
   end
@@ -109,22 +111,22 @@ class RepositoriesController < SessionsController
     end
 
     def commit
-      repo = "#{@client.login}/#{@repository.github}"
+      repo = "#{@github_client.login}/#{@repository.github}"
       ref = "heads/master"
       blob_hash_array = []
 
-      sha_latest_commit = @client.ref(repo, ref).object.sha
-      sha_base_tree = @client.commit(repo, sha_latest_commit).commit.tree.sha
+      sha_latest_commit = @github_client.ref(repo, ref).object.sha
+      sha_base_tree = @github_client.commit(repo, sha_latest_commit).commit.tree.sha
 
       params['files'].each do |f|
-        blob_sha = @client.create_blob(repo, Base64.encode64(f.tempfile.read), "base64")
+        blob_sha = @github_client.create_blob(repo, Base64.encode64(f.tempfile.read), "base64")
         blob_hash_array.push({ path: f.original_filename, mode: "100644", type: "blob", sha: blob_sha })
       end
 
-      sha_new_tree = @client.create_tree( repo, blob_hash_array, {base_tree: sha_base_tree } ).sha
+      sha_new_tree = @github_client.create_tree( repo, blob_hash_array, {base_tree: sha_base_tree } ).sha
       commit_message = "Committed via MakerSpaceRepo!"
-      sha_new_commit = @client.create_commit(repo, commit_message, sha_new_tree, sha_latest_commit).sha
-      updated_ref = @client.update_ref(repo, ref, sha_new_commit)
+      sha_new_commit = @github_client.create_commit(repo, commit_message, sha_new_tree, sha_latest_commit).sha
+      updated_ref = @github_client.update_ref(repo, ref, sha_new_commit)
     end
 
 end

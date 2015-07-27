@@ -4,24 +4,29 @@ function validation(){
 	var github = $("input#repository_github");
 	$('span.form-error.repo-form').remove();
 	var span = $('<span>').addClass('form-error repo-form');
+	var regex = /^[-a-zA-Z\d\s]*$/;
 
 
-	if(title.val().length === 0 ){
+	if( title.val().length === 0 ){
 		span.text("Repository name is required.");
+		$('input#repository_title').before(span);
+		ret = false;
+	}
+
+	if( !regex.test(title.val()) ){
+		span.text("Repository name may only contain letters and numbers");
 		$('input#repository_title').before(span);
 		ret = false;
 	}
 
 	var span = $('<span>').addClass('form-error repo-form');
 
-	if(photoFiles.length === 0 ){
+	if( photoFiles.length === 0 ){
 		span.text("At least one photo is required.");
 		$('div.repo-image').before(span);
 		ret = false;
 	}
 
-	console.log(github);
-	
 	if(github[0] === undefined){ return ret; }
 
 	var span = $('<span>').addClass('form-error repo-form');

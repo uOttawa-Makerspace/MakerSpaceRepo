@@ -38,7 +38,7 @@ class Repository < ActiveRecord::Base
   end
 
   validates :title,
-    format:     { with:    /\A[-a-zA-Z\d\s]*\z/ },
+    format:     { with:    /\A[-a-zA-Z\d\s]*\z/, message: "Invalid repository name" },
     presence:   { message: "Repository name is required."},
     uniqueness: { message: "Repository name is already in use.", scope: :user_username}  
 

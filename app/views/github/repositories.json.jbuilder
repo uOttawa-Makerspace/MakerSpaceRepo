@@ -1,2 +1,2 @@
-@repos.each { |r| json.set! r, "name" }
+json.array! @repos
 

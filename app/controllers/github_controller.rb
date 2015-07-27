@@ -1,6 +1,7 @@
 class GithubController < SessionsController
   before_action :current_user
   before_action :signed_in, except: [:callback]
+  before_action :github_client, only: [:repositories]
 
   CLIENT_ID = ENV['GITHUB_APP_KEY']
   CLIENT_SECRET = ENV['GITHUB_APP_KEY_SECRET']
@@ -23,6 +24,10 @@ class GithubController < SessionsController
     user.update access_token: access_token
     redirect_to cookies[:back]
     cookies.delete :back
+  end
+
+  def repositories
+    @repos = @github_client.repos.inject([]) { |a,e| a.push(e.name) }
   end
 
   private

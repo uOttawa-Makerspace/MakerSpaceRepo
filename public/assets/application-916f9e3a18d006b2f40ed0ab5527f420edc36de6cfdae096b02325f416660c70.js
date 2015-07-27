@@ -1,3 +1,76 @@
+$(document).on('page:change', function(){
+
+  // PAGE JUMPING JAVASCRIPT
+  $('a[href*=#]:not([href=#])').click(function() {
+    if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') 
+        && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+            if (target.length) {
+            if(target.selector == "#user-show-links" || 
+               target.selector == "#repo-comments" ){ return; }
+               $('html,body').animate({
+                   scrollTop: target.offset().top
+              }, 500);  
+            return false;
+        }
+    }
+  });
+});
+$(document).on('page:change', function(){
+
+
+$('select').each(function(){
+    var $this = $(this), numberOfOptions = $(this).children('option').length;
+  
+    $this.addClass('select-hidden'); 
+    $this.wrap('<div class="select"></div>');
+    $this.after('<div class="select-styled"></div>');
+
+    var $styledSelect = $this.next('div.select-styled');
+    $styledSelect.text($this.children('option').eq(0).text());
+  
+    var $list = $('<ul />', {
+        'class': 'select-options'
+    }).insertAfter($styledSelect);
+  
+    for (var i = 0; i < numberOfOptions; i++) {
+        $('<li />', {
+            text: $this.children('option').eq(i).text(),
+            rel: $this.children('option').eq(i).val()
+        }).appendTo($list);
+    }
+  
+    var $listItems = $list.children('li');
+  
+    $styledSelect.click(function(e) {
+        e.stopPropagation();
+        $('div.select-styled.active').each(function(){
+            $(this).removeClass('active').next('ul.select-options').hide();
+        });
+        $(this).toggleClass('active').next('ul.select-options').toggle();
+    });
+  
+    $listItems.click(function(e) {
+        e.stopPropagation();
+        $styledSelect.text($(this).text()).removeClass('active');
+        $this.val($(this).attr('rel'));
+        $list.hide();
+		    if($(this).text() == "Other"){
+		      $('span.other textarea').fadeIn(1);
+		    }else{
+		      $('span.other textarea').fadeOut(1);
+		    }
+    });
+  
+    $(document).click(function() {
+        $styledSelect.removeClass('active');
+        $list.hide();
+    });
+
+});
+
+});
 var instructableFiles = [];
 var photoFiles = [];
 var tagArray = [];
@@ -5,7 +78,9 @@ var photoArray = [];
 
 $(document).on('page:change', function(){
 
+
   $('div.select-styled').change(function(){
+    console.log('something');
     var _this = $(this);
     if(_this.text() == "Other"){
       $('span.other textarea').fadeIn(1);
@@ -16,20 +91,9 @@ $(document).on('page:change', function(){
 
   voting();
 
-  $('a div.user-avatar').mouseover(function(){
-    $('div.edit-avatar').slideDown(200);
-  });
-
-  $('a div.user-avatar').mouseleave(function(){
-    $('div.edit-avatar').fadeOut(200);
-  });
-
-
-
   $('a.repository_report').click(function(){
     $('div.spinner').css('display', 'inline-block');
   });
-
 
   $("div#repository_report").fadeIn(500).delay(5000).fadeOut(300);
   $("div#profile_notice").fadeIn(500).delay(5000).fadeOut(300);
@@ -58,21 +122,14 @@ $(document).on('page:change', function(){
   });
 
   $('span.misc-item').click(function(){
-    $("span.like-count").effect( "explode", "slow" );
+    $("span.like-count").effect( "clip", "slow" );
   });
 
-
   $("a.like").on("ajax:success", function(e, data, status, xhr) {
-    if(data.failed){ 
-      $(this).effect( "pulsate", { times: 1 },  "fast" );
-      return false; 
-    }
-    $("span.like-count").effect( "explode", 200, function(){
-      $(this).text(data.like);
-    });
+    if(data.failed){ return false; }
 
-    $("span.like-count").delay(200).effect( "fade", "slow");
-
+    $("span.like-count").text(data.like);
+    $(this).parent().effect( "bounce", "slow" );
     $("div.reputation").text(data.rep);
   });
 
@@ -200,9 +257,6 @@ $(document).on('page:change', function(){
         window.location.pathname = e.redirect_uri 
       })
       .fail(function(e) {
-        var span = $('<span>').addClass('form-error repo-form');
-        span.text(e.responseText);
-        $('input#repository_title').before(span); 
         console.log('error');
       });
     }
@@ -321,19 +375,6 @@ function dragndrop(){
   });
 
 }
- function directories(){
-  var url = "/github/repositories.json";
-  $.getJSON(url).done( function(data){ 
-    setAutoComplete(data);
-  });
-}
-
-function setAutoComplete(data){
-  $("input.repo-autocomplete").autocomplete({
-    position: { my : "left top+5", at: "left bottom" },
-    source: data
-  });
-};
 
 function photoSwipe(){
   var pswpElement = document.querySelectorAll('.pswp')[0];
@@ -347,4 +388,53 @@ function photoSwipe(){
 
   return gallery;
 }
+
+;
+function validation(){
+	var ret = true;
+	var title = $("input#repository_title");
+	var github = $("input#repository_github");
+	$('span.form-error.repo-form').remove();
+	var span = $('<span>').addClass('form-error repo-form');
+
+
+	if(title.val().length === 0 ){
+		span.text("Repository name is required.");
+		$('input#repository_title').before(span);
+		ret = false;
+	}
+
+	var span = $('<span>').addClass('form-error repo-form');
+
+	if(photoFiles.length === 0 ){
+		span.text("At least one photo is required.");
+		$('div.repo-image').before(span);
+		ret = false;
+	}
+
+	if(github[0] === undefined){ return ret; }
+
+	var span = $('<span>').addClass('form-error repo-form');
+
+	if( github.val().length === 0 && instructableFiles.length !== 0 ){
+		span.text("Github repository name required.");
+		$('input#repository_github').before(span);
+		ret = false;
+	}
+
+	return ret;	
+}
+;
+// This is a manifest file that'll be compiled into application.js, which will include all the files
+// listed below.
+//
+// Any JavaScript/Coffee file within this directory, lib/assets/javascripts, vendor/assets/javascripts,
+// or any plugin's vendor/assets/javascripts directory can be referenced here using a relative path.
+//
+// It's not advisable to add code directly here, but if you do, it'll appear at the bottom of the
+// compiled file.
+//
+// Read Sprockets README (https://github.com/rails/sprockets#sprockets-directives) for details
+// about supported directives.
+//
 

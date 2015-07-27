@@ -23,7 +23,7 @@ class UsersController < SessionsController
   def additional_info
     if request.patch?
       user_params[:use] = params[:use] if user_params[:use].eql?("Other")
-      redirect_to root_path if @user.update(user_params)
+      redirect_to settings_profile_path if @user.update(user_params)
     end
   end
 

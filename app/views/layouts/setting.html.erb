@@ -19,11 +19,11 @@
 				<ul>
 		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
             current_page?(action: 'profile') %> >
-		      	<%= link_to 'Edit setting', settings_profile_path %>
+		      	<%= link_to 'Edit settings', settings_profile_path %>
 		      </li>
 		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
             current_page?(action: 'admin') %> >
-		      	<%= link_to 'Account Setting', settings_admin_path %>
+		      	<%= link_to 'Account Settings', settings_admin_path %>
 		      </li>
 		      <li>
 		      <%= link_to "View Profile", user_path(@user.username), class: 'vp-button' if current_page?(action: 'profile') %>

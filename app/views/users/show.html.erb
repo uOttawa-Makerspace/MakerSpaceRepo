@@ -1,6 +1,23 @@
 <section id="user-show">
-  <%= image_tag @repo_user.avatar.url %>
 
+  <% if @repo_user.eql?(@user) %> 
+    <%= link_to "EDIT PROFILE", settings_profile_path, class: 'edit-user-profile' %>
+
+  <%= link_to settings_profile_path do %>
+    <div class="user-avatar">
+      <%= image_tag @repo_user.avatar.url %>
+      <div class="edit-avatar">
+        Change avatar
+      </div>
+    </div>
+  <% end %>
+  
+  <% else %>
+    <div class="user-avatar">
+      <%= image_tag @repo_user.avatar.url %>
+    </div>
+  <% end %>
+  
   <div id="user-info">
     <div class="fullname">
       <%= "#{@repo_user.name}"%>

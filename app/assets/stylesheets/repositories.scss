@@ -23,6 +23,7 @@ section#new-repo{
   }
 
 
+
   label{
     display: block;
     font: 400 1em 'Raleway', sans-serif;
@@ -55,6 +56,49 @@ section#new-repo{
     border-top-right-radius: 3px;
   }
 
+}
+
+.ui-state-focus:not(.ui-selectmenu-button){
+  background-color: #5f9ea0;
+  color: #fff;
+}
+
+[aria-hidden="true"] { display: none; }
+
+ul.ui-menu {
+    width: 400px;
+    border: 1px solid #aaa;
+    background-color: #fff;
+    position: absolute !important;
+    @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+li.ui-menu-item {
+    padding: 0.5rem;
+    font: 300 0.9em 'Raleway', sans-serif;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #5f9ea0;
+      color: #fff;
+    }
+}
+
+.ui-autocomplete-input{
+  font: 300 0.9em 'Raleway', sans-serif;
+  background-color: #fff;
+  width: calc(400px + 1rem);
+  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+  border: 1px solid #aaa;
+
+  & li{
+    padding: 0.5rem;
+
+    &:hover{
+      background-color: #5f9ea0;
+      color: #fff; 
+    }
+  }
 }
 
 .select-hidden {

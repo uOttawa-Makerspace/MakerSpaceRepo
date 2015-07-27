@@ -1,6 +1,5 @@
 <section id="new-repo">
 
-
   <%= form_for @repository, url: {controller: "repositories", action: "create"}, html: { multipart: true } do |f| %>
     <div class="title">Create a Repository</div>
     <%= f.label :title, "Name" %>
@@ -19,7 +18,7 @@
       </span>
 
       <%= label_tag "Source files"%>
-      <div>This designs needed to make your project.</div>
+      <div>The designs needed to make your project.</div>
       <label class="custom-instructable-upload">
         <%= file_field_tag 'files[]', type: :files, multiple: true %>
         Upload Files
@@ -65,3 +64,5 @@
 
   <% end %>
 </section>
+
+<%= javascript_tag "directories();" %>
