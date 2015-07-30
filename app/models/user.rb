@@ -1,12 +1,13 @@
 class User < ActiveRecord::Base
   include BCrypt
   include ActiveModel::Serialization
-  
-  has_many :upvotes
-  has_many :comments
+ 
+  has_one  :rfid ,        dependent: :destroy
+  has_many :upvotes,      dependent: :destroy
+  has_many :comments,     dependent: :destroy
+  has_many :makes,        dependent: :destroy
   has_many :repositories, dependent: :destroy
     accepts_nested_attributes_for :repositories
-  has_many :makes, dependent: :destroy
 
   validates :name, 
     length: { maximum: 50, message: 'Your name mus be less than 50 characters.' }
@@ -36,8 +37,7 @@ class User < ActiveRecord::Base
 
   def self.authenticate(username_email, password)
     a = self.arel_table
-    user = self.where(a[:username].eq(username_email)
-      .or(a[:email].eq(username_email))).first
+    user = self.where(a[:username].eq(username_email).or(a[:email].eq(username_email))).first
     user if user && user.pword == password
   end
 

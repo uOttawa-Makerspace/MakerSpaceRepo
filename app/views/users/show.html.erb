@@ -64,9 +64,7 @@
   <section id="repositories-container">
 
   <% if @repositories.empty? or params[:show].eql?('makes') and @makes.empty? %>
-    <div class="empty-repo">
-      <%= @repo_user.username %> doesn't have any repositories yet.
-    </div>
+    <%= content_tag :div, "#{@repo_user.username} doesn't have any repositories yet.", class: "empty-repo" %>
   <% end %>
   <% repos = params[:show].eql?('makes') ? @makes : @repositories %>
   <% repos.each do |repository| %>

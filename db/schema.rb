@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150718144227) do
+ActiveRecord::Schema.define(version: 20150730172449) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -72,6 +72,15 @@ ActiveRecord::Schema.define(version: 20150718144227) do
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree
 
+  create_table "rfids", force: :cascade do |t|
+    t.integer  "user_id"
+    t.string   "card_number"
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+  end
+
+  add_index "rfids", ["user_id"], name: "index_rfids_on_user_id", using: :btree
+
   create_table "tags", force: :cascade do |t|
     t.integer  "repository_id"
     t.string   "name"
@@ -119,6 +128,7 @@ ActiveRecord::Schema.define(version: 20150718144227) do
   add_foreign_key "likes", "users"
   add_foreign_key "photos", "repositories"
   add_foreign_key "repositories", "users"
+  add_foreign_key "rfids", "users"
   add_foreign_key "tags", "repositories"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"

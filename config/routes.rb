@@ -9,6 +9,11 @@ Rails.application.routes.draw do
     get 'report_repository', path: 'report_repository/:repository_id' 
   end
 
+  # RFID
+  resources :rfid, only: [:create, :destroy], param: :username do
+    post 'card_number', on: :collection
+  end
+
   # SEARCH PAGES
   namespace :search, path: '/', as: nil do
     get 'explore'

@@ -24,6 +24,7 @@ class SessionsController < ApplicationController
   end
 
   def login
+    return redirect_to root_path if signed_in?
     session[:back] = request.referrer
   end
   

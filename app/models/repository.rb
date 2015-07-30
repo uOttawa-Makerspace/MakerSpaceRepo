@@ -1,12 +1,11 @@
 class Repository < ActiveRecord::Base
- 
   belongs_to :user
-  has_many :photos, dependent: :destroy
-  has_many :tags, dependent: :destroy
-  has_many :comments, dependent: :destroy
-  has_many :likes, dependent: :destroy
-  has_many :makes, class_name: "Repository", foreign_key: "make_id"
-  belongs_to :parent, class_name: "Repository", foreign_key: "make_id"
+  has_many   :photos,   dependent: :destroy
+  has_many   :tags,     dependent: :destroy
+  has_many   :comments, dependent: :destroy
+  has_many   :likes,    dependent: :destroy
+  has_many   :makes,    class_name: "Repository", foreign_key: "make_id"
+  belongs_to :parent,   class_name: "Repository", foreign_key: "make_id"
 
   paginates_per 12
 

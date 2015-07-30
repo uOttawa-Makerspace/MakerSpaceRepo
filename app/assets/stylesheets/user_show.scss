@@ -40,21 +40,7 @@ section#user-show{
 		}
 	}
 
-  a.edit-user-profile{
-		@include transition(100ms);
-  	position: absolute;
-  	right: 3rem;
-  	top: 3rem;
-		background-color: #789;
-		color: #fff;
-		padding: 0.5rem 1rem;
-		border: 3px solid #789;
 
-		&:hover{
-			background-color: #fff;
-			color: #789;
-		}
-  }
 
 	div#user-info{
 		@include span-columns(7.5,3);
@@ -100,6 +86,22 @@ section#user-show{
 			}
 		}
 
+	}
+}
+
+a.edit-user-profile{
+	@include transition(100ms);
+	position: absolute;
+	right: 2rem;
+	top: 2rem;
+	background-color: #789;
+	color: #fff;
+	padding: 0.5rem 1rem;
+	border: 3px solid #789;
+
+	&:hover{
+		background-color: #fff;
+		color: #789;
 	}
 }
 

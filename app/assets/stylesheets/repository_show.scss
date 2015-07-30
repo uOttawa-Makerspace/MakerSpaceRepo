@@ -19,8 +19,7 @@ div#repository_report{
 section#show-repository{
 	@include outer-container(70rem);
 	left:0;right:0;
-	position: absolute;
-	top: 65px;
+	position: relative;
 	padding: 3rem 0 0;
 	background-color: #fff;
 }
