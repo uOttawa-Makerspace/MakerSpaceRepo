@@ -15,6 +15,7 @@ class User < ActiveRecord::Base
   validates :username,
     presence: { message: "Your username is required." },
     uniqueness: { message: "Your username is already in use." },   
+    format:     { with:    /\A[a-zA-Z\d]*\z/, message: "Your username may only contain alphanumeric characters" },
     length: { maximum: 20, message: 'Your username must be less than 20 characters.' }
 
   validates :email, 
