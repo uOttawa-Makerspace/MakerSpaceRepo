@@ -5,7 +5,6 @@ class User < ActiveRecord::Base
   has_one  :rfid ,        dependent: :destroy
   has_many :upvotes,      dependent: :destroy
   has_many :comments,     dependent: :destroy
-  has_many :makes,        dependent: :destroy
   has_many :repositories, dependent: :destroy
     accepts_nested_attributes_for :repositories
 
