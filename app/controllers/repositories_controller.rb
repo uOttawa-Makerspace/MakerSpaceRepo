@@ -21,7 +21,6 @@ class RepositoriesController < SessionsController
   def create
     @repository = @user.repositories.build(repository_params)
     @repository.user_username = @user.username
-    @repos = @github_client.repos.inject([]) { |a,e| a.push(e.name) }
 
     if @repository.github.present?
       githubatize = @repository.github.gsub(/\s+/, '-') #github replaces spaces with dashes in repo names
