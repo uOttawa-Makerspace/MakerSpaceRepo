@@ -22,8 +22,6 @@ section#new-repo{
 
   }
 
-
-
   label{
     display: block;
     font: 400 1em 'Raleway', sans-serif;
@@ -44,7 +42,7 @@ section#new-repo{
     max-width: 400px;
     padding: 0.5rem;
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     border-radius: 3px;
     border: 1px solid #aaa;
     display: block;
@@ -239,7 +237,7 @@ div#tag-container{
     background-color: #4682b4;
     color: #eee;
     font: 300 0.8em 'Raleway', sans-serif !important;
-    margin: 0.2rem 0 1rem;
+    margin-top: 0.2rem;
     margin-right: 0.2rem;
     cursor: not-allowed;
   }

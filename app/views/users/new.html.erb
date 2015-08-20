@@ -27,7 +27,7 @@
     <%= content_tag :span, @new_user.errors[:password][1], class: 'form-error', 
         style: 'display: block;' if @new_user.errors[:password][1] %>
     <u>Use at least one uppercase letter, one lowercase letter, 
-      one numeral and eight characters.</u>
+      one number and be eight characters long.</u>
     <%= f.password_field :password %>
 
     <%= f.label :password_confirmation, "Password Confirmation" %>

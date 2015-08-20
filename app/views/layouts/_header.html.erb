@@ -23,8 +23,8 @@
   <span class="msr-logo">
     <%= link_to root_path do %>Maker<b>Repo</b><% end %>
     <%= form_tag search_path, method: :get, class: 'header-search' do %>
-    <%= fa_icon('search') %>
-    <%= text_field_tag 'q', nil, placeholder: 'Search' %>
+      <%= fa_icon('search') %>
+      <%= text_field_tag 'q', nil, placeholder: 'Search' %>
     <% end %>
   </span>
   </div>

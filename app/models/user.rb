@@ -28,8 +28,9 @@ class User < ActiveRecord::Base
     presence: { message: "Your password is required." },
     confirmation: {message: "Your passwords do not match."},
     # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
-    format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}/,
-             message: "Your passwords must have one lowercase letter, one uppercase letter and be 8 characters long."}
+    format: {with: /(?=.*[a-z])(?=.*[A-Z]).{8,}/,
+             message: "Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."}
+
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/

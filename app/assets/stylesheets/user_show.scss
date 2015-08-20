@@ -40,8 +40,6 @@ section#user-show{
 		}
 	}
 
-
-
 	div#user-info{
 		@include span-columns(7.5,3);
 		padding: 3rem 0;
@@ -127,6 +125,81 @@ section#user-show-links{
 	}
 }
 
+section#repositories-container{
+	@include outer-container(100%);
+	div.repository-container{
+		@include span-columns(4, 2);
+		margin-left: calc(2% - 1px);
+		margin-right: calc(2% - 1px);
+		border: 1px solid #eee;
+	 	margin-bottom: 2rem;
+
+		div.repo-display-wrapper{
+			position: relative;
+		  background-size: cover;
+			height: 225px;
+			background-color: black;
+			a.link{
+				display: block;
+				height: 100%;
+			}
+		}
+
+		img{
+			display: block;
+			width: 100%;
+		}
+
+		div.repo-info{
+	    font: 400 0.7rem 'Raleway', helvetica, sans-serif;
+			padding: 5%;
+			@include outer-container(90%);
+		 	background-color: #fff;
+		 	color: #aaa;
+
+		 	div.left{
+		 		float: left;
+		 	}
+
+		 	div a{
+		 		color: #5f9ea0;
+		 		font-size: 0.9rem;
+
+		 		&:hover{
+			 		text-decoration: underline;
+		 		}
+		 	}
+
+		 	div.likes{
+		 		float: right;
+		 		color: #5f9ea0;
+		 		font-size: 1rem;
+		 		text-align: center;
+		 	}
+		}
+	}
+}
+
+@media screen and (max-width: 900px){
+ 
+  section#repositories-container div.repository-container{
+    @include span-columns(6, 2);
+		margin-left: calc(2% - 1px);
+		margin-right: calc(2% - 1px);
+    display: inline-block;
+  }
+
+}
+
+@media screen and (max-width: 550px){
+ 
+  section#repositories-container div.repository-container{
+    @include span-columns(12, 0);
+    display: inline-block;
+  }
+
+}
+
 div.empty-repo{
 	float: left;
 	width: 100%;
@@ -134,3 +207,31 @@ div.empty-repo{
 	font-size: 2rem;
 	color: #333;
 }
+
+a.edit-repo, a.delete-repo{
+	@include transition(100ms);
+  float: right;
+  margin: 5px 2.5px;
+  background-color: #008080;
+  color: #eee;
+  padding: 3px;
+  display: none;
+
+  &:hover{
+  	background-color: #366;
+  } 
+}
+
+/*a.delete-repo{
+	@include transition(100ms);
+  float: right;
+  margin: 5px 2.5px;
+  background-color: #008080;
+  color: #eee;
+  padding: 3px;
+  display: none;
+
+  &:hover{
+  	background-color: #366;
+  }
+}*/

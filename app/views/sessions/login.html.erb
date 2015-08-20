@@ -1,7 +1,7 @@
 <section id="login">
 
   <% if flash[:alert] %>
-    <div id="repository_report"><%= flash[:alert] %></div>
+    <div id="alert"><%= flash[:alert] %></div>
   <% end %>
 
   <div class="login-title">Sign In</div>
@@ -14,5 +14,7 @@
     <%= submit_tag "Sign In", class: 'login-button' %>
   
   <% end %>
+
+  <%= link_to "Forgot your password?", forgot_password_path, class: "forgot-password" %>
 
 </section>

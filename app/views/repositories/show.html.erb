@@ -1,6 +1,6 @@
 
 <% if flash[:notice] %>
-  <div id="repository_report"><%= flash[:notice] %></div>
+  <div id="notice"><%= flash[:notice] %></div>
 <% end %>
 
 <section id="show-repository">
@@ -18,6 +18,12 @@
   </section>
 
   <section id="info">
+
+  <% if @repository.user_username.eql?(@user.username) %>
+    <%= link_to fa_icon("cog", text: ' Edit'), 
+      edit_repository_path(@repository.user_username, @repository.slug), class: 'edit-repo-link' %>
+  <% end %>
+
     <div id="repo-title">
       <%= @repository.title %>
     </div>

@@ -48,7 +48,19 @@ class Repository < ActiveRecord::Base
   before_destroy do
     self.user.decrement!(:reputation, 25)
   end
-  
+ 
+  def remove_duplicate_photos(photos)
+    photo_names = photos.inject([]) { |a,e| a.push(e.original_filename) }
+    self.photos.each do |pho|
+      if photo_names.include?(pho.image_file_name)
+        index = photo_names.index(pho.image_file_name)
+        photos.delete_at(index)
+      else
+        pho.destroy
+      end
+    end
+  end
+
   # validates :category,
   #   inclusion: { within: category_options },
   #   presence: { message: "A category is required."}

@@ -94,6 +94,12 @@ input.signup-button{
   }
 }
 
+a.forgot-password{
+  text-align: center;
+  padding: 1rem 0;
+  display: block;
+  color: #366;
+}
 /* LOGIN PAGE */
 
 section#login{
@@ -174,10 +180,9 @@ a.delete{
 	padding: 0.5rem 1rem;
 	border-radius: 3px;
   font-size: 0.85rem;
-
 }
 
-div#profile_notice{
+div#notice{
   display: none;
   position: absolute;
   width: 100%;

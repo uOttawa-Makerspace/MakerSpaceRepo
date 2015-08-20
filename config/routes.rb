@@ -4,6 +4,8 @@ Rails.application.routes.draw do
 
   # STATIC PAGES
   namespace :static_pages, path: '/', as: nil do
+    get 'forgot_password'
+    get 'reset_password'
     get 'about'
     get 'contact'
     get 'report_repository', path: 'report_repository/:repository_id' 
@@ -45,8 +47,8 @@ Rails.application.routes.draw do
  
   # SETTING
   namespace :settings do
-    get :profile
-    get :admin
+    get 'profile'
+    get 'admin'
   end 
 
   namespace :licenses do

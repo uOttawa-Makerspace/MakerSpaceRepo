@@ -1,8 +1,8 @@
 class RepositoriesController < SessionsController
   before_action :current_user
   before_action :signed_in, except: [:index, :show]
-  before_action :github_client, only: [:create, :show]
-  before_action :set_repository, only: [:show, :add_like]
+  before_action :github_client, only: [:create, :show, :edit]
+  before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update]
 
   def show
     @photos = @repository.photos.first(5)
@@ -16,33 +16,22 @@ class RepositoriesController < SessionsController
   end
   
   def edit
+    @photos = @repository.photos.first(5)
+    @tags = @repository.tags
   end
 
   def create
     @repository = @user.repositories.build(repository_params)
     @repository.user_username = @user.username
-
-    if @repository.github.present?
-      githubatize = @repository.github.gsub(/\s+/, '-') #github replaces spaces with dashes in repo names
-      @repository.github = githubatize
-      @repository.github_url = "https://github.com/#{@github_client.login}/#{githubatize}"
-
-      unless @repos.include? @repository.github
-        @github_client.create @repository.github, {description: @repository.description}
-        @github_client.create_contents("#{@github_client.login}/#{@repository.github}", 
-                                "README.md",
-                                "Commit README.md",
-                                "##{@repository.github}")
-      end
-      commit if params['files'].present?
-    end
+    github
+    commit if params['files'].present?
 
     if @repository.save
+      @user.increment!(:reputation, 25)
       create_photos
       create_tags
       render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
       Repository.reindex
-      @user.increment!(:reputation, 25)
     else
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
@@ -50,21 +39,25 @@ class RepositoriesController < SessionsController
   end
 
   def update
-    respond_to do |format|
-      if @repository.update(repository_params)
-        format.html { redirect_to @repository, notice: 'Repository was successfully updated.' }
-        format.json { render :show, status: :ok, location: @repository }
-      else
-        format.html { render :edit }
-        format.json { render json: @repository.errors, status: :unprocessable_entity }
-      end
+    github if @repository.github_changed?
+    commit if params['files'].present?
+    @repository.remove_duplicate_photos(params['images'])
+    @repository.tags.destroy_all # this could have been done differently/more efficiently
+
+    if @repository.update(repository_params)
+      create_photos
+      create_tags
+      render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
+      Repository.reindex
+    else
+      render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
   end
 
   def destroy
     @repository.destroy
     respond_to do |format|
-      format.html { redirect_to repositories_url, notice: 'Repository was successfully destroyed.' }
+      format.html { redirect_to user_path(@repository.user_username), notice: 'Repository was successfully deleted.' }
       format.json { head :no_content }
     end
   end
@@ -81,7 +74,7 @@ class RepositoriesController < SessionsController
   private
 
     def set_repository
-      @repository = Repository.find_by(user_username: params[:user_username],slug: params[:slug])
+      @repository = Repository.find_by(user_username: params[:user_username], slug: params[:slug])
     end
 
     def repository_params
@@ -96,15 +89,32 @@ class RepositoriesController < SessionsController
       end
     end
 
+    def github
+      if @repository.github.present?
+        githubatize = @repository.github.strip.gsub(/\s+/, '-') #github replaces spaces with dashes in repo names
+        @repository.github = githubatize
+        @repository.github_url = "https://github.com/#{@github_client.login}/#{githubatize}"
+        @repos = @github_client.repos.inject([]) { |a,e| a.push(e.name) }
+
+        unless @repos.include? @repository.github
+          @github_client.create @repository.github, {description: @repository.description}
+          @github_client.create_contents("#{@github_client.login}/#{@repository.github}", 
+                                  "README.md",
+                                  "Commit README.md",
+                                  "##{@repository.github}")
+        end
+      end    
+    end
+
     def create_photos
-      params['images'].each do |img|
+      params['images'].first(5).each do |img|
         dimension = FastImage.size(img.tempfile)
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end if params['images'].present?
     end
 
     def create_tags
-      params['tags'].each do |t|
+      params['tags'].first(5).each do |t|
         Tag.create(name: t, repository_id: @repository.id)
       end if params['tags'].present?
     end

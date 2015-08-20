@@ -56,7 +56,6 @@ section#repository-filter{
     	padding-left: 0.5rem;
     	vertical-align: middle;
     	cursor: pointer;
-		  @include prefixer(box-shadow, 0 0 3px rgba(0, 0, 0, 0.2));
 
 	    i{
 	    	font-size: 1.3rem;
@@ -72,6 +71,7 @@ section#repository-filter{
 			display: none;
 			position: absolute;
 			top: 2.5rem;
+			z-index: 1;
 		  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
 			left: 0;
 			background-color: #fff;
@@ -96,76 +96,3 @@ section#repository-filter{
 
 }
 
-section#repositories-container{
-	@include outer-container(100%);
-	div.repository-container{
-		@include span-columns(4, 2);
-		margin-left: calc(2% - 1px);
-		margin-right: calc(2% - 1px);
-		border: 1px solid #eee;
-	 	margin-bottom: 2rem;
-
-		div.repo-display-wrapper{
-		  background-size: cover;
-			height: 225px;
-			background-color: black;
-			a{
-				display: block;
-				height: 100%;
-			}
-		}
-
-		img{
-			display: block;
-			width: 100%;
-		}
-
-		div.repo-info{
-	    font: 400 0.7rem 'Raleway', helvetica, sans-serif;
-			padding: 5%;
-			@include outer-container(90%);
-		 	background-color: #fff;
-		 	color: #aaa;
-
-		 	div.left{
-		 		float: left;
-		 	}
-
-		 	div a{
-		 		color: #5f9ea0;
-		 		font-size: 0.9rem;
-
-		 		&:hover{
-			 		text-decoration: underline;
-		 		}
-		 	}
-
-		 	div.likes{
-		 		float: right;
-		 		color: #5f9ea0;
-		 		font-size: 1rem;
-		 		text-align: center;
-		 	}
-		}
-	}
-}
-
-@media screen and (max-width: 900px){
- 
-  section#repositories-container div.repository-container{
-    @include span-columns(6, 2);
-		margin-left: calc(2% - 1px);
-		margin-right: calc(2% - 1px);
-    display: inline-block;
-  }
-
-}
-
-@media screen and (max-width: 550px){
- 
-  section#repositories-container div.repository-container{
-    @include span-columns(12, 0);
-    display: inline-block;
-  }
-
-}

@@ -1,7 +1,11 @@
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
 <section id="user-show">
 
   <% if @repo_user.eql?(@user) %> 
-    <%= link_to "EDIT PROFILE", settings_profile_path, class: 'edit-user-profile' %>
+    <%= link_to fa_icon("cog", text: ' Edit Profile'), settings_profile_path, class: 'edit-user-profile' %>
 
   <%= link_to settings_profile_path do %>
     <div class="user-avatar">
@@ -71,12 +75,15 @@
     <div class="repository-container">
 
       <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].image.url}')"  %> >
-        <%= link_to "", repository_path(repository.user_username, repository.slug) %>
+        <%= link_to "Delete", repository_path(repository.user_username, repository.slug),
+              method: :delete, data: { confirm: "Are you sure?" }, class: 'delete-repo' %>
+        <%= link_to "Edit", edit_repository_path(repository.user_username, repository.slug), class: 'edit-repo' %>
+        <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
       </div>
 
       <div class="repo-info">
         <div class="left">
-          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.title) %></div> 
+          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug)%></div> 
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div> 
           <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
         </div>
