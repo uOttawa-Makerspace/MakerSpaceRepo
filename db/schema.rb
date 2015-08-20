@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150730172449) do
+ActiveRecord::Schema.define(version: 20150820172731) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -106,8 +106,8 @@ ActiveRecord::Schema.define(version: 20150730172449) do
     t.string   "password"
     t.string   "url"
     t.string   "location"
-    t.datetime "created_at",                      null: false
-    t.datetime "updated_at",                      null: false
+    t.datetime "created_at",                                   null: false
+    t.datetime "updated_at",                                   null: false
     t.text     "description"
     t.string   "email"
     t.string   "avatar_file_name"
@@ -120,6 +120,7 @@ ActiveRecord::Schema.define(version: 20150730172449) do
     t.string   "faculty"
     t.string   "use"
     t.integer  "reputation",          default: 0
+    t.string   "role",                default: "regular_user"
   end
 
   add_foreign_key "comments", "repositories"

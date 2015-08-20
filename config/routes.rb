@@ -12,7 +12,7 @@ Rails.application.routes.draw do
   end
 
   # RFID
-  resources :rfid, only: [:create, :destroy], param: :username do
+  resources :rfid, only: [:new, :create, :destroy], param: :username do
     post 'card_number', on: :collection
   end
 
