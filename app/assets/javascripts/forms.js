@@ -108,7 +108,7 @@ $(document).on('page:change', function(){
       form.append("tags[]", tagArray[i]);
     };
 
-    if( validate ){
+    if( validate ){ 
       $.ajax({
         url: uri,
         type: "POST",
