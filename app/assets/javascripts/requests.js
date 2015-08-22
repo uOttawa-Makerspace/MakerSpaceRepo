@@ -19,6 +19,7 @@ $(document).on('page:change', function(){
         $("span.comment-count").text(parseInt(comment_count) + 1);
         $("div#comment-container").prepend(data);
         $("textarea#content").val("");
+        $("div.redactor-editor")[0].innerHTML = "<p></p>";
 
         voting();
         

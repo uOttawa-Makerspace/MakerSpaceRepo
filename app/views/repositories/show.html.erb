@@ -1,4 +1,3 @@
-
 <% if flash[:notice] %>
   <div id="notice"><%= flash[:notice] %></div>
 <% end %>
@@ -10,11 +9,19 @@
     <div id="show-photo">
       <%= image_tag @photos.first.image.url, data: { width: @photos.first.width, height: @photos.first.height} %>
     </div>
+
     <div id="photo-slide">
       <% @photos.each do |p| %> 
         <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
       <% end %>
     </div>
+
+      <% if @repository.description.present? %>
+      <div class="repo-desc">
+        <div class="title">DESCRIPTION</div>
+        <div class="description"><%= @repository.description.html_safe %></div>
+      </div>
+    <% end %>
   </section>
 
   <section id="info">
@@ -50,12 +57,7 @@
         <div class="name"><%= link_to(fa_icon('github-alt', text: @repository.github), @repository.github_url )%></div>
       </div>
       <% end %>
-      <% if @repository.description.present? %>
-      <div class="repo-info-item">
-        <div class="title">DESCRIPTION</div>
-        <div class="description"><%= @repository.description %></div>
-      </div>
-      <% end %>
+
       <% if @repository.category.present? %>
       <div class="repo-info-item">
         <div class="title">PLATFORM</div>
@@ -101,12 +103,16 @@
       <% end %>
     </div>
 
+
+
   </section>
 
   <section id="repo-comments">
     <div class="title">Comments</div>
     <%= form_tag comments_create_path, id: 'comment', remote: true do %>
-      <%= text_area_tag 'content', nil, rows: 5, placeholder: 'Add a new comment' %>
+      <div style="max-width: 50rem">
+        <%= text_area_tag 'content', nil, rows: 5, id: 'comment-redactor' %>
+      </div>
       <%= submit_tag 'Post comment' %>
     <% end %>
 
@@ -142,7 +148,7 @@
           <%= content_tag :div, time_ago_in_words(comment.created_at) << " ago", class: 'time' %>
         </div>
         <div class="comment-content">
-          <%= comment.content %>
+          <%= comment.content.html_safe %>
         </div>
       </div> 
       <% end %>

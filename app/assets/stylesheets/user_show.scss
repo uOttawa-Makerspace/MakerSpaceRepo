@@ -159,11 +159,19 @@ section#repositories-container{
 
 		 	div.left{
 		 		float: left;
+		 		width: 90%;
 		 	}
 
+		 	div.title{
+		    white-space: nowrap;
+		    overflow:hidden !important;
+		    text-overflow: ellipsis;
+		 	}
+		 	
 		 	div a{
 		 		color: #5f9ea0;
 		 		font-size: 0.9rem;
+
 
 		 		&:hover{
 			 		text-decoration: underline;

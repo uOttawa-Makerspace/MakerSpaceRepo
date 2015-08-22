@@ -4,6 +4,16 @@ var tagArray;
 
 $(document).on('page:change', function(){
 
+$('#redactor').redactor({
+  minHeight: 100,
+  buttons: ['formatting', 'bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist', 'link', 'horizontalrule']
+});
+
+$('#comment-redactor').redactor({
+  minHeight: 100,
+  buttons: ['bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist']
+});
+
   instructableFiles = [];
   photoFiles = [];
   tagArray = [];  

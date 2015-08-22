@@ -17,7 +17,7 @@
     <%= content_tag :div, time_ago_in_words(params['created_at'].to_datetime) << " ago", class: 'time' %>
   </div>
   <div class="comment-content">
-    <%= params['content'] %>
+    <%= params['content'].html_safe %>
   </div>
 </div> 
 

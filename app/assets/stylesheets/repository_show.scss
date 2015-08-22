@@ -144,9 +144,11 @@ div.repo-info-item{
 		font-size: 0.75rem;
 	}
 
-	div.description ,div.date{
+  div.date{
 		color: #999;
 	}
+
+
 
 	span.platform, span.license{
 		color: #5f9ea0;
@@ -209,6 +211,40 @@ div.repo-info-item{
 	}
 
 }
+
+div.repo-desc{
+	float: left;
+	width: 100%;
+	margin-top: 2rem;
+
+		div.title{
+		font-size: 1rem;
+		color: #366;
+		margin-bottom: 1rem;
+	}
+
+	div.description{
+		color: #999;
+
+		a{
+			color: #4682b4;
+			&:hover{
+				text-decoration: underline;
+			}
+		}
+
+	  & ul{
+	    list-style-type: circle;
+	    padding-left: 40px;
+	  }
+
+	  & li{
+	    display: list-item;
+	  }	
+	}
+
+}
+
 
 section#repo-comments{
 	width: calc(100% - 6rem);

@@ -35,7 +35,7 @@ section#new-repo{
     margin-bottom: 0.5rem;
   }
 
-  input.repo, textarea.repo, input#tag {
+  input.repo, textarea, input#tag {
     font: 300 0.9em 'Raleway', sans-serif;
     color: #555;
     width: 100%;
@@ -267,4 +267,34 @@ span.ui-helper-hidden-accessible div{
 .repo-form{
   display: block;
   padding-bottom: 0.5rem;
+}
+
+ul.redactor-toolbar{
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  border: 1px solid #aaa;
+  border-bottom: none;
+  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+div.redactor-editor{
+  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+  padding: 10px;
+  border: 1px solid #aaa;
+  border-top: 1px solid #eee;
+  font: 300 0.9em 'Raleway', sans-serif;
+  color: #555;
+
+  & h1, h2, h3, h4, h5, h6{
+    font-weight: 400;
+  }
+
+  & ul{
+    list-style-type: circle;
+  }
+
+  & li{
+    display: list-item;
+  }
+  
 }

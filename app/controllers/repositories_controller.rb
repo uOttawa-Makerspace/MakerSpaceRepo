@@ -57,7 +57,7 @@ class RepositoriesController < SessionsController
   def destroy
     @repository.destroy
     respond_to do |format|
-      format.html { redirect_to user_path(@repository.user_username), notice: 'Repository was successfully deleted.' }
+      format.html { redirect_to user_path(@repository.user_username), notice: 'Repository has been successfully deleted.' }
       format.json { head :no_content }
     end
   end

@@ -77,7 +77,7 @@
       <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].image.url}')"  %> >
         <% if repository.user_username.eql?(@user.username) %>
           <%= link_to "Delete", repository_path(repository.user_username, repository.slug),
-                method: :delete, data: { confirm: "Are you sure?" }, class: 'delete-repo' %>
+                method: :delete, data: { confirm: "Are you sure? Once you delete the repository there is no coming back!" }, class: 'delete-repo' %>
           <%= link_to "Edit", edit_repository_path(repository.user_username, repository.slug), class: 'edit-repo' %>
         <% end %>
         <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>

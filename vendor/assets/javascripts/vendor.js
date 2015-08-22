@@ -4,3 +4,4 @@
 //= require turbolinks
 //= require photoswipe
 //= require jquery-ui/effect.all
+//= require redactor-rails
