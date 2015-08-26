@@ -1,0 +1,39 @@
+@import "lib";
+
+footer{
+  @include outer-container(64rem);
+  padding: 1.5rem 3rem;
+  border-top: 1px solid #5f9ea0;
+  color: #5f9ea0;
+
+  div.copy-right{
+  	text-align: left;
+  }
+
+  ul{
+  	text-align: center;
+  	li{
+  		display: inline-block;
+  		padding: 0 1rem;
+  		border-right: 1px solid #5f9ea0;
+  		font-weight: 600;
+  		font-size: 0.9rem;
+  		text-transform: uppercase;
+
+  		a{
+			  @include transition(200ms);
+  		}
+
+  		a:hover{
+  			color: #366;
+  		}
+
+  		&:last-child{
+  			border-right: none;
+  		}
+  		&:first-child{
+  			text-align: left;
+  		}
+  	}
+  }
+}

@@ -24,15 +24,20 @@ class SessionsController < ApplicationController
   end
 
   def login
-    return redirect_to root_path if signed_in?
+    if signed_in?
+      flash[:alert] = "You are currently logged in, you can not make a new account."
+      redirect_to root_path
+    end
+    
     session[:back] = request.referrer
   end
   
   def signed_in
     return if signed_in?
     respond_to do |format|
-      format.html { redirect_to new_user_path }
-      format.js { render :js => "window.location.href = '#{new_user_path}'" }
+      format.html { redirect_to login_path }
+      format.js   { render js: "window.location.href = '#{login_path}'" }
+      format.json { render json: "redirect" }
     end
   end
   

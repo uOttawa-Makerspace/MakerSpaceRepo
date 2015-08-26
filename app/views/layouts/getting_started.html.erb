@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MR | License </title>
+  <title>MR | Getting Started </title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <%= favicon_link_tag 'site-icon.jpg' %>
     <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
@@ -16,15 +16,14 @@
   <div class="help-grid">
     <%= yield %>
     <div class="help-side-panel">
-      <div class="title"><%= link_to "Help Center", help_path %> / Licenses</div>
+      <div class="title"><%= link_to "Help Center", help_path %> / Getting Started </div>
       <ul>
-        <%= content_tag :li, link_to("Common Create - Attribution", licenses_cca_path) %>
-        <%= content_tag :li, link_to("Common Create - Attribution - Share Alike", licenses_ccasa_path) %>
-        <%= content_tag :li, link_to("Common Create - Attribution - No Derivatives", licenses_ccand_path) %>
-        <%= content_tag :li, link_to("Common Create - Attribution - Non-Commerical", licenses_ccanc_path) %>
-        <%= content_tag :li, link_to("Attribution - Non-Commerical - Share Alike", licenses_ancsa_path) %>
-        <%= content_tag :li, link_to("Attribution - Non-Commerical - No Derivatives", licenses_ancnd_path) %>
+        <%= content_tag :li, link_to("Setting up an account", getting_started_sua_path) %>
+        <%= content_tag :li, link_to("Creating a repository", getting_started_cr_path) %>
       </ul>
+    </div>
+    <div class="contact">
+      If any error occurs, or if you would like to make a suggestion, do not hesitate to <%= link_to "contact us", "#" %>.
     </div>
   </div>
   <%= render 'layouts/footer' %>

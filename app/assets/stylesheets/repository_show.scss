@@ -130,7 +130,7 @@ div.repo-info-item{
 
 		i{
 			padding-right: 5px;
-			color: #aaa;
+			color: #777;
 		}
 
 		&:hover{
@@ -139,13 +139,13 @@ div.repo-info-item{
 	}
 
 	div.reputation{
-		color: #aaa;
+		color: #777;
 		font-weight: 400;
 		font-size: 0.75rem;
 	}
 
   div.date{
-		color: #999;
+		color: #777;
 	}
 
 
@@ -224,7 +224,7 @@ div.repo-desc{
 	}
 
 	div.description{
-		color: #999;
+		color: #777;
 
 		a{
 			color: #4682b4;
@@ -304,7 +304,7 @@ section#repo-comments{
 				text-align: center;
 				font-size: 1.5rem;
 				font-weight: 300;
-				color: #999;
+				color: #777;
 				div{
 					font-size: 1.2rem;
 				}
@@ -319,7 +319,7 @@ section#repo-comments{
 			div.comment-header{
 				@include span-columns(11.5, 2);
 				font-size: 0.7rem;
-				color: #aaa;
+				color: #777;
 				font-weight: 300;
 
 				a{

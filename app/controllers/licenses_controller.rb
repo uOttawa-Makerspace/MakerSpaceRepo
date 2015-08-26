@@ -1,7 +1,7 @@
 class LicensesController < SessionsController
 
-  skip_before_action :session_expiry, only: [:create]
-  before_action :current_user, except: [:create, :new]
+  skip_before_action :session_expiry
+  before_action :current_user
 
   layout "license"
  

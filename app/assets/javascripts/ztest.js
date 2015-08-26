@@ -248,7 +248,7 @@
 //     // object
 //     var loader=new THREE.STLLoader();
 //     // loader.addEventListener('load', function (event){
-// 				loader.load( './assets/basic.stl', function ( geometry ) {
+// 				loader.load( './assets/Bear_Robots.stl', function ( geometry ) {
 //         // var geometry=event.content;
 //         var material;
 //            if (geometry.hasColors) {

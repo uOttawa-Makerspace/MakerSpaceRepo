@@ -48,6 +48,7 @@ p{
 a{
   text-decoration: none;
   color: inherit;
+
   &::visited{
     color: #789;
   }
@@ -91,3 +92,7 @@ span.form-error{
   font-size: 0.6rem;
 }
 
+html.turbolinks-progress-bar::before {
+  background-color: #fff !important;
+  height: 10px !important;
+}

@@ -51,6 +51,8 @@ Rails.application.routes.draw do
     get 'admin'
   end 
 
+  get 'help', to: 'help#main'
+
   namespace :licenses do
     get 'common-creative-attribution', as: 'cca'
     get 'common-creative-attribution-share-alike', as: 'ccasa'
@@ -60,6 +62,14 @@ Rails.application.routes.draw do
     get 'attribution-non-commercial-no-derivatives', as: 'ancnd'
   end
 
+  namespace :getting_started, path: 'getting-started' do
+    get 'setting-up-account', as: 'sua'
+    get 'creating-repository', as: 'cr'
+  end
+  
+  # namespace :help do
+  #   get 'main', path: '/'
+  # end
   # get 'repositories', to: 'repositories#index'
   post 'vote', to: 'users#vote', path: 'vote/:comment_id'
 

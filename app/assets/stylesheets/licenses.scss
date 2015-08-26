@@ -1,18 +1,20 @@
 @import "lib";
 
-section#license{
+section#help{
   @include span-columns(8, 3);
   background-color: #fff;
   /*padding: 2rem 0;*/
-  min-height: calc(100vh - 65px);
-  color: #777;
+  color: #555;
 
 
   div.title{
-	  font: 400 2rem 'Raleway', helvetica, sans-serif;
-	  color: #366;
-    padding-top: 3rem;
-	  text-decoration: underline;
+    color: #366;
+    max-width: 40vmax;
+    border-bottom: 2px solid #366;
+    font-size: 1.5rem;
+    font-weight: 700;
+    padding: 3rem 0 0.75rem;
+    margin-bottom: 2rem;
   }
 
   div.sub-title{
@@ -24,33 +26,65 @@ section#license{
   a{
   	color: #4682B4;
   }
+
+  div.content{
+
+    img{
+      max-width: 100%;
+      margin: 2rem 0;
+      border: 1px solid #366;
+    }
+  }
+
 }
 
-div.license-grid{
-  @include outer-container(68rem);
-  min-height: calc(100vh - 50px);
+div.help-grid{
+  @include outer-container(70rem);
   background-color: #fff;
-  padding-bottom: 5rem;
+  padding-bottom: 1rem;
+
+  div.contact{
+    float: left;
+    padding-top: 2rem;
+    margin-left: 3%;
+    font-size: 0.7rem;
+
+    a{
+      color: #4682B4;
+    }
+  }
 }
 
-div.license-side-panel{
+div.help-side-panel{
   @include span-columns(3.5, 0);
   position: relative;
   padding: 3rem 0;
   color: #333;
+  border-left: 1px solid #aaa;
 
   div.title{
     color: #555;
     font: 700 1.2rem 'Raleway', helvetica, sans-serif;
     border-bottom: 1px solid #aaa;
-    padding-bottom: 0.5rem; 
+    padding-left: 1rem;
+    padding-bottom: 1rem; 
     margin-bottom: 1rem; 
+
+    a{
+      @include transition(200ms);
+
+      &:hover{
+      color: #5f9ea0;
+      }
+    }
+
   }
 
   li{
     @include transition(200ms);
     font: 700 0.7rem 'Raleway', helvetica, sans-serif;
     padding: 0.5rem 0;
+    padding-left: 1rem;
     color: #777;
     text-transform: uppercase;
     display: block;
@@ -60,7 +94,7 @@ div.license-side-panel{
     }
 
     &:last-child{
-      border-bottom: 1px solid #aaa;
+      /*border-bottom: 1px solid #aaa;*/
       padding-bottom: 1.2rem;
     }
   }
@@ -69,11 +103,11 @@ div.license-side-panel{
 
 @media screen and (max-width: 700px){
  
-  div.license-side-panel{
+  div.help-side-panel{
     display: none;
   }
 
-  section#license{
+  section#help{
     @include span-columns(12, 3);
     padding: 0;
 

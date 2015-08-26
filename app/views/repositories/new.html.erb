@@ -1,7 +1,7 @@
 <section id="new-repo">
+    <div class="title">Create a Repository</div>
 
   <%= form_for @repository, url: {controller: "repositories", action: "create"}, html: { multipart: true } do |f| %>
-    <div class="title">Create a Repository</div>
     <%= f.label :title, "Name" %>
     <div>Great repository names are short and memorable.</div>
     <%= f.text_field :title, class: 'repo' %>

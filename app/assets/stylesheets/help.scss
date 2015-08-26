@@ -1,0 +1,75 @@
+@import "lib";
+
+section#help-center{
+  @include outer-container(60rem);
+  background-color: #fff;
+  padding: 0 5rem 2rem;
+
+  div.title{
+  	color: #366;
+  	max-width: 40vmax;
+  	border-bottom: 2px solid #366;
+  	font-size: 2rem;
+  	font-weight: 700;
+  	padding: 3rem 0 0.75rem;
+  	margin-bottom: 4rem;
+  }
+
+  div.container{
+	  @include outer-container(100%);
+  }
+
+  div.category{
+  	color: #366;
+  	font-weight: 500;
+  	margin-bottom: 0.5rem;
+  }
+
+  li{
+  	color: #666;
+  	font-size: 0.9rem;
+  }
+
+  div.col{
+    @include span-columns(4, 0.25);
+    display: inline-block;
+    margin-bottom: 2rem;
+
+    &:last-child{
+      white-space: nowrap;
+    }
+
+  }
+
+  a:hover{
+  	text-decoration: underline;
+  	color: teal;
+  }
+
+}
+
+.faq {
+  counter-reset: my-badass-counter;
+
+  img{
+    max-width: 100%;
+    border: 1px solid #366;
+  }
+}
+
+.faq dt{
+  position: relative;
+  padding: 1rem 0 1.5rem 3rem;
+}
+
+.faq dt:before {
+  content: counter(my-badass-counter);
+  counter-increment: my-badass-counter;
+  font-size: 3rem;
+  color: #366;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-block;
+}
+

@@ -6,7 +6,7 @@ $(document).on('page:change', function(){
 
 $('#redactor').redactor({
   minHeight: 100,
-  buttons: ['formatting', 'bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist', 'link', 'horizontalrule']
+  buttons: ['formatting', 'bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist', 'alignment', 'link', 'horizontalrule']
 });
 
 $('#comment-redactor').redactor({
@@ -130,6 +130,7 @@ $('#comment-redactor').redactor({
         window.location.pathname = e.redirect_uri 
       })
       .fail(function(e) {
+        if( e.responseText === "not signed in" ){ window.location.href = '/login' }
         var span = $('<span>').addClass('form-error repo-form');
         span.text(e.responseText);
         $('input#repository_title').before(span); 

@@ -3,9 +3,10 @@
 section#user-show{
 
 	@include outer-container(70rem);
-	left:0;right:0;
+/*	left:0;right:0;
 	position: absolute;
-	top: 65px;
+	top: 65px;*/
+	position: relative;
 	background-color: #fff;
 	padding-bottom: 3rem;
 
@@ -67,6 +68,13 @@ section#user-show{
 				color: #366;
 				padding-right: 5%;
 				font-size: 1.5rem;
+			}
+
+			a{
+		    white-space: nowrap;
+		    overflow:hidden !important;
+		    text-overflow: ellipsis;
+		    display: inline-block;
 			}
 
 			a:hover{

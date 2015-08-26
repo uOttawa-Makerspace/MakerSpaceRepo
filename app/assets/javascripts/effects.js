@@ -1,5 +1,6 @@
 $(document).on('page:change', function(){
 
+
   $('div.select-styled').change(function(){
     var _this = $(this);
     if(_this.text() == "Other"){

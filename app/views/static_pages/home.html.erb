@@ -2,6 +2,10 @@
   <div id="notice"><%= flash[:notice] %></div>
 <% end %>
 
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:alert] %></div>
+<% end %>
+
 <section id="home-1">
 	MakerRepo
 </section>
