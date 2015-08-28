@@ -48,7 +48,7 @@ class RfidController < SessionsController
 			render json: { success: "RFID exist" }, status: :ok
 		else
 			Rfid.create(card_number: params[:rfid])
-			render json: { success: "New RFID created" }, status: :ok
+			render json: { new_card: "New RFID created" }, status: :unprocessable_entity 
 		end
   end
 
