@@ -37,9 +37,13 @@ class User < ActiveRecord::Base
 
 
   def self.authenticate(username_email, password)
+    user = User.username_or_email(username_email)
+    user if user && user.pword == password
+  end
+
+  def self.username_or_email(username_email)
     a = self.arel_table
     user = self.where(a[:username].eq(username_email).or(a[:email].eq(username_email))).first
-    user if user && user.pword == password
   end
 
   def pword

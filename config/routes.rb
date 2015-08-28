@@ -6,6 +6,8 @@ Rails.application.routes.draw do
   namespace :static_pages, path: '/', as: nil do
     get 'forgot_password'
     get 'reset_password'
+    get 'terms-of-service', as: 'tos'
+    get 'privacy'
     get 'about'
     get 'contact'
     get 'report_repository', path: 'report_repository/:repository_id' 
@@ -14,6 +16,7 @@ Rails.application.routes.draw do
   # RFID
   resources :rfid, only: [:new, :create, :destroy], param: :username do
     post 'card_number', on: :collection
+    get  'new_card_number', on: :collection
   end
 
   # SEARCH PAGES

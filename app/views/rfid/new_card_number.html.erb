@@ -1,0 +1,10 @@
+<section id="login">
+
+  <div class="login-title">New RFIDs</div>
+
+  <% @rfids.each do |r| %>
+    <div style="text-align: center;"><%= r.card_number %></div>
+  <% end %>
+
+</section>
+

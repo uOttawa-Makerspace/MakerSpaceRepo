@@ -11,6 +11,12 @@ class StaticPagesController < SessionsController
   def contact
   end
 
+  def terms_of_service
+  end
+
+  def privacy
+  end
+  
   def forgot_password
   end
 

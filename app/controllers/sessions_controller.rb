@@ -6,8 +6,8 @@ class SessionsController < ApplicationController
 
   def login_authentication
 
-    username_email = params[:username]
-    password = params[:password]
+    username_email = params[:user][:username]
+    password = params[:user][:password]
     @user = User.authenticate(username_email, password)
 
     respond_to do |format|
@@ -16,6 +16,7 @@ class SessionsController < ApplicationController
         format.html { redirect_to session[:back] }
         format.json { render json: { role: :guest }, status: :ok }
       else
+        @user = User.username_or_email(username_email) || User.new 
         flash.now[:alert] = "Incorrect username or password."
         format.html { render :login }
         format.json { render json: @user.errors, status: :unprocessable_entity }
@@ -28,7 +29,7 @@ class SessionsController < ApplicationController
       flash[:alert] = "You are currently logged in, you can not make a new account."
       redirect_to root_path
     end
-    
+    @user = User.new 
     session[:back] = request.referrer
   end
   

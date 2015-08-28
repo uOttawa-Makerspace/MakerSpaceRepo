@@ -1,5 +1,45 @@
-// $(document).on('page:change', function(){
+$(document).on('page:change', function(){
+    var scene, camera, renderer;
+    var geometry, material, mesh, width, length;
 
+    init();
+    animate();
+
+    function init() {
+
+        scene = new THREE.Scene();
+        
+        width = 250;
+        height = 250;
+
+        camera = new THREE.PerspectiveCamera( 75, width / height, 1, 10000 );
+        camera.position.z = 900;
+
+        geometry = new THREE.SphereGeometry( 500, 5, 2 );
+        material = new THREE.MeshBasicMaterial( { color: 0x5f9ea0, wireframe: true } );
+
+        mesh = new THREE.Mesh( geometry, material );
+        scene.add( mesh );
+
+        renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize( width, height );
+
+        $("div.penta").append(renderer.domElement);	
+        // document.body.appendChild( renderer.domElement );
+
+    }
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        mesh.rotation.x += 0.02;
+        mesh.rotation.y += 0.02;
+
+        renderer.render( scene, camera );
+
+    }
+});
 // 			// var scene = new THREE.Scene();
 // // 			// var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
 

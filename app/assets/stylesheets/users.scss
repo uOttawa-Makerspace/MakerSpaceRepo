@@ -105,8 +105,7 @@ a.forgot-password{
 section#login{
   @include outer-container(60rem);
   background-color: #fff;
-  min-height: calc(100vh - 50px);
-  padding: 2rem 5rem 0;
+  padding: 4rem 5rem 8rem;
 
   label{
     text-align: center;

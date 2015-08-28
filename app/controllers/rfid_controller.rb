@@ -47,8 +47,13 @@ class RfidController < SessionsController
 		if rfid
 			render json: { success: "RFID exist" }, status: :ok
 		else
-			render json: { error: "RFID does not exist" }, status: :unprocessable_entity
+			Rfid.create(card_number: params[:rfid])
+			render json: { success: "New RFID created" }, status: :ok
 		end
+  end
+
+  def new_card_number
+  	@rfids = Rfid.where(user_id: nil).order("created_at DESC").first(25)
   end
 
   private

@@ -6,12 +6,12 @@
 
   <div class="login-title">Sign In</div>
 
-  <%= form_tag url_for(controller: 'sessions', action: 'login_authentication'), method: :post do %>
+  <%= form_for @user, url: {controller: 'sessions', action: 'login_authentication'} do |f| %>
 
-    <%= text_field_tag 'username', nil, placeholder: 'Username or Email' %>     
-    <%= password_field_tag 'password', nil, placeholder: 'Password' %> 
+    <%= f.text_field :username, placeholder: 'Username or Email' %>     
+    <%= f.password_field :password, placeholder: 'Password' %> 
     
-    <%= submit_tag "Sign In", class: 'login-button' %>
+    <%= f.submit "Sign In", class: 'login-button' %>
   
   <% end %>
 

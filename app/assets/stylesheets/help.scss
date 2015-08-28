@@ -3,7 +3,7 @@
 section#help-center{
   @include outer-container(60rem);
   background-color: #fff;
-  padding: 0 5rem 2rem;
+  padding: 0 5% 2rem;
 
   div.title{
   	color: #366;
@@ -73,3 +73,11 @@ section#help-center{
   display: inline-block;
 }
 
+@media screen and (max-width: 800px){
+
+  section#help-center div.col{
+    float: none;
+    width: 100%;
+  } 
+
+}
