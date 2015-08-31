@@ -1,6 +1,6 @@
 class RfidController < SessionsController
 
-  before_action :current_user, only: [:new, :admin?]
+  before_action :current_user, only: [:new, :admin?, :new_card_number]
   before_action :admin?, only: :new
 
   def new
@@ -9,7 +9,13 @@ class RfidController < SessionsController
 
 	def create
 		user = User.find_by username: params[:username]
+		temp_rfid = Rfid.find_by card_number: params[:rfid][:card_number]
+		temp_rfid.destroy if user.present? && temp_rfid.present?
+
+		byebug if temp_rfid.present?
 		rfid = user.build_rfid(card_number: params[:rfid][:card_number])
+
+
 
     respond_to do |format|
 			if rfid.save
@@ -44,11 +50,15 @@ class RfidController < SessionsController
   def card_number
   	rfid = Rfid.find_by card_number: params[:rfid]
 
-		if rfid
+		if rfid && rfid.user_id
 			render json: { success: "RFID exist" }, status: :ok
 		else
-			Rfid.create(card_number: params[:rfid])
-			render json: { new_card: "New RFID created" }, status: :unprocessable_entity 
+			new_rfid = Rfid.create(card_number: params[:rfid])
+			if new_rfid.valid?
+				render json: { new_rfid: "Temporary RFID created" }, status: :unprocessable_entity 
+			else
+				render json: { error: "Temporary RFID already exists" }, status: :unprocessable_entity 
+			end
 		end
   end
 

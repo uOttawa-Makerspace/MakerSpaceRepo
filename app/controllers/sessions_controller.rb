@@ -59,7 +59,7 @@ class SessionsController < ApplicationController
   end
 
   def update_activity_time
-    session[:expires_at] = 6.hours.from_now
+    session[:expires_at] = 72.hours.from_now
   end
 
 private
