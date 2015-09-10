@@ -8,6 +8,9 @@ class StaticPagesController < SessionsController
   def about
   end
 
+  def admin
+  end
+  
   def contact
   end
 

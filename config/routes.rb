@@ -9,6 +9,7 @@ Rails.application.routes.draw do
     get 'terms-of-service', as: 'tos'
     get 'privacy'
     get 'about'
+    get 'admin'
     get 'contact'
     get 'report_repository', path: 'report_repository/:repository_id' 
   end

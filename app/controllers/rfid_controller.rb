@@ -8,11 +8,9 @@ class RfidController < SessionsController
 	end
 
 	def create
-		user = User.find_by username: params[:username]
+		user = User.find_by! username: params[:username]
 		temp_rfid = Rfid.find_by card_number: params[:rfid][:card_number]
 		temp_rfid.destroy if user.present? && temp_rfid.present?
-
-		byebug if temp_rfid.present?
 		rfid = user.build_rfid(card_number: params[:rfid][:card_number])
 
 
