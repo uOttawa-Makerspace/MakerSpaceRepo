@@ -13,8 +13,6 @@ class RfidController < SessionsController
 		temp_rfid.destroy if user.present? && temp_rfid.present?
 		rfid = user.build_rfid(card_number: params[:rfid][:card_number])
 
-
-
     respond_to do |format|
 			if rfid.save
 				flash[:notice] = "Card number was saved to users account successfully!"
