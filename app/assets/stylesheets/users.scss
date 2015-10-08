@@ -99,6 +99,9 @@ a.forgot-password{
   padding: 1rem 0;
   display: block;
   color: #366;
+  &:focus{
+    text-decoration: underline;
+  }
 }
 /* LOGIN PAGE */
 

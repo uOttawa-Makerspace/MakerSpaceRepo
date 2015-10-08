@@ -6,17 +6,17 @@ class SessionsController < ApplicationController
 
   def login_authentication
 
-    username_email = params[:user][:username]
-    password = params[:user][:password]
-    @user = User.authenticate(username_email, password)
+    @user = User.authenticate(params[:username_email], params[:password])
 
     respond_to do |format|
       if @user
+        session[:back] = root_path if session[:back].nil?
         session[:user_id], cookies[:user_id] = @user.id, { value: @user.id, expires: 1.day.from_now }
         format.html { redirect_to session[:back] }
         format.json { render json: { role: :guest }, status: :ok }
       else
-        @user = User.username_or_email(username_email) || User.new 
+        @user = User.new
+        @placeholder =  params[:username_email]
         flash.now[:alert] = "Incorrect username or password."
         format.html { render :login }
         format.json { render json: @user.errors, status: :unprocessable_entity }
