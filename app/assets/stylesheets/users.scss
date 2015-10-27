@@ -36,6 +36,14 @@ section#signup {
       display: block;
    	  padding-top: 0.5rem;
     }
+
+    a{
+      color: teal;
+
+      &:hover{
+        text-decoration: underline;
+      }
+    }
   }
 }
 
