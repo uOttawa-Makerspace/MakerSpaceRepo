@@ -1,7 +1,7 @@
 class StaticPagesController < SessionsController
 
   before_action :current_user, except: [:reset_password]
-  
+
   def home
   end
 
@@ -10,7 +10,7 @@ class StaticPagesController < SessionsController
 
   def admin
   end
-  
+
   def contact
   end
 
@@ -19,23 +19,23 @@ class StaticPagesController < SessionsController
 
   def privacy
   end
-  
+
   def forgot_password
   end
 
   def reset_password
-    @user = User.find_by email: params[:email] 
+    @user = User.find_by email: params[:email]
 
     begin
       random_password = Array.new(10).map { (65 + rand(58)).chr }.join
       @user.pword = random_password
-      
+
       if @user.save!
         MsrMailer.reset_password_email(@user.email, random_password ).deliver
         flash[:notice] = "Check your email for your new password.";
         redirect_to root_path
       end
-      
+
     rescue
       flash[:alert] = "Somthing went wrong, try again.";
       redirect_to forgot_password_path
@@ -48,5 +48,5 @@ class StaticPagesController < SessionsController
   	flash[:alert] = "Repository has been reported"
   	redirect_to request.referrer
   end
-  
+
 end

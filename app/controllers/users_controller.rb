@@ -3,11 +3,11 @@ class UsersController < SessionsController
   skip_before_action :session_expiry, only: [:create]
   before_action :current_user, except: [:create, :new]
   before_action :signed_in, except: [:new, :create, :show]
-    
+
   def create
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
-    
+
     respond_to do |format|
       if @new_user.save
         session[:user_id], cookies[:user_id] = @new_user.id, @new_user.id
@@ -43,7 +43,7 @@ class UsersController < SessionsController
 
   def change_password
       if github?
-        @client = github_client 
+        @client = github_client
         @client_info = @client.user
       end
 
@@ -112,9 +112,9 @@ class UsersController < SessionsController
 private
 
   def user_params
-    params.require(:user).permit(:password, :password_confirmation, :url, 
-      :location, :email, :name, :username, :avatar, :gender, :faculty, :use, 
-      :description)
+    params.require(:user).permit(:password, :password_confirmation, :url,
+      :location, :email, :name, :username, :avatar, :gender, :faculty, :use,
+      :description, :terms_and_conditions)
   end
 
   def sort_order
@@ -124,7 +124,7 @@ private
       when 'most_makes' then [:make, :desc]
       when 'recently_updated' then [:updated_at, :desc]
       else [:created_at, :desc]
-    end     
+    end
   end
 
   def photo_hash

@@ -11,7 +11,7 @@ Rails.application.routes.draw do
     get 'about'
     get 'admin'
     get 'contact'
-    get 'report_repository', path: 'report_repository/:repository_id' 
+    get 'report_repository', path: 'report_repository/:repository_id'
   end
 
   # RFID
@@ -34,7 +34,7 @@ Rails.application.routes.draw do
     get 'comment'
   end
 
-  # SESSION 
+  # SESSION
   namespace :sessions, path: '/', as: nil do
     post 'login_authentication'
     get 'logout'
@@ -48,12 +48,12 @@ Rails.application.routes.draw do
     get 'unauthorize'
     get 'repositories'
   end
- 
+
   # SETTING
   namespace :settings do
     get 'profile'
     get 'admin'
-  end 
+  end
 
   get 'help', to: 'help#main'
 
@@ -70,7 +70,7 @@ Rails.application.routes.draw do
     get 'setting-up-account', as: 'sua'
     get 'creating-repository', as: 'cr'
   end
-  
+
   # namespace :help do
   #   get 'main', path: '/'
   # end

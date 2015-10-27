@@ -1,30 +1,33 @@
 class User < ActiveRecord::Base
   include BCrypt
   include ActiveModel::Serialization
- 
+
   has_one  :rfid ,        dependent: :destroy
   has_many :upvotes,      dependent: :destroy
   has_many :comments,     dependent: :destroy
   has_many :repositories, dependent: :destroy
     accepts_nested_attributes_for :repositories
 
-  validates :name, 
+  validates :name,
     length: { maximum: 50, message: 'Your name mus be less than 50 characters.' }
 
   validates :username,
     presence: { message: "Your username is required." },
-    uniqueness: { message: "Your username is already in use." },   
+    uniqueness: { message: "Your username is already in use." },
     format:     { with:    /\A[a-zA-Z\d]*\z/, message: "Your username may only contain alphanumeric characters" },
     length: { maximum: 20, message: 'Your username must be less than 20 characters.' }
 
-  validates :email, 
+  validates :email,
     presence: { message: "Your email is required." },
     uniqueness: { message: "Your email is already in use." }
 
-  validates :description, 
+  validates :description,
     length: { maximum: 250, message: 'Maximum of 250 characters.' }
 
-  validates :password, 
+  validates :terms_and_conditions,
+    inclusion: {in: [true], on: :create, message: 'You must agree to the terms and conditions' }
+
+  validates :password,
     presence: { message: "Your password is required." },
     confirmation: {message: "Your passwords do not match."},
     # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
