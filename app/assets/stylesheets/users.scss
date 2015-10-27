@@ -16,7 +16,7 @@ section#signup {
 	  color: #777;
   }
 
-  input, textarea{
+  input:not([type=checkbox]), textarea{
 		display: block;
 		padding: 0.5rem;
 		width: 400px;
@@ -58,7 +58,7 @@ div.signup-breadcrumb{
     }
 
   }
-  
+
 }
 
 div.additional-info{
@@ -79,7 +79,7 @@ div.signup-title, div.login-title{
   padding: 2rem 0;
   text-align: center;
   max-width: 60%;
-  margin: 0 auto; 
+  margin: 0 auto;
 }
 
 input.signup-button{
@@ -116,7 +116,7 @@ section#login{
     display: block;
   }
 
- 	input{
+ 	input:not([type=checkbox]){
 		display: block;
 		padding: 0.5rem;
 		width: 250px;
@@ -126,7 +126,7 @@ section#login{
 	  border-bottom: none;
 
 	  &:nth-last-child(3){
-		  border-top-left-radius: 3px;  
+		  border-top-left-radius: 3px;
 		  border-top-right-radius: 3px;
 	  }
  	}
