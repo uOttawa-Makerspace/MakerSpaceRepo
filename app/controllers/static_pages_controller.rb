@@ -44,7 +44,7 @@ class StaticPagesController < SessionsController
 
   def report_repository
   	repository = Repository.find params[:repository_id]
-  	MsrMailer.repo_report(repository).deliver
+  	# MsrMailer.repo_report(repository).deliver
   	flash[:alert] = "Repository has been reported"
   	redirect_to request.referrer
   end
