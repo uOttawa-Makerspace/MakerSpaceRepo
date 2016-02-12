@@ -1,0 +1,8 @@
+<p><%= flash[:notice] %></p>
+
+<%= form_tag do %>
+  <%= label_tag(:username, "Enter username:") %>
+  <%= text_field_tag(:username) %>
+  <%= submit_tag("Search") %>
+<% end %>
+

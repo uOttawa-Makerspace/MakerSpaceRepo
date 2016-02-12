@@ -9,7 +9,6 @@ Rails.application.routes.draw do
     get 'terms-of-service', as: 'tos'
     get 'privacy'
     get 'about'
-    get 'admin'
     get 'contact'
     get 'report_repository', path: 'report_repository/:repository_id'
   end
@@ -70,6 +69,15 @@ Rails.application.routes.draw do
     get 'setting-up-account', as: 'sua'
     get 'creating-repository', as: 'cr'
   end
+
+  namespace :admin do
+    get 'index', path: '/'
+
+    resources :users, only: [:index, :show] do
+      post 'make_admin', on: :member
+    end
+  end
+
 
   # namespace :help do
   #   get 'main', path: '/'

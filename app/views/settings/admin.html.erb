@@ -11,21 +11,21 @@
     <%= f.label :old_password, "Old Password", class: "profile-label" %>
     <%= content_tag :span, flash[:alert], class: 'form-error' if flash[:alert] %>
     <%= f.password_field :old_password, value: nil, class: "profile-text", autofocus: true %>
-      
+
     <%= f.label :password, "New Password", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:password].first, class: 'form-error' %>
     <%= f.password_field :password, value: nil, class: "profile-text" %>
 
     <%= f.label :password_confirmation, "New Password Confirmation", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:password_confirmation].first, class: 'form-error' %>
-    <%= f.password_field :password_confirmation, class: "profile-text" %> 
+    <%= f.password_field :password_confirmation, class: "profile-text" %>
 
     <%= f.submit "Update Password", class: "save-button" %>
-  
+
   <% end %>
-  
+
   <div class="seperator"></div>
-  
+
   <div class="section-desc">
     Github Account<br>
     <span>Link your Github account to MakerRepo for additional functionality.</span>
@@ -34,27 +34,27 @@
     <div class="info">
       You currently do not have a github account linked to MakerSpaceRepo.
     </div>
-    <%= link_to fa_icon("github", text: 'Authorize access to your Github'), 
+    <%= link_to fa_icon("github", text: 'Authorize access to your Github'),
       github_authorize_path, class: 'github-auth' %>
   <% else %>
     <div class="github-info">
-      Connected as: <%= link_to "@#{@client.login}", @client_info.html_url %> 
+      Connected as: <%= link_to "@#{@client.login}", @client_info.html_url %>
       <%= "(#{@client.user.name})" if @client.user.name.present? %>
-      <%= link_to fa_icon("github", text: ' Revoke access...'), 
+      <%= link_to fa_icon("github", text: ' Revoke access...'),
         github_unauthorize_path, class: 'github-unauth' %>
     </div>
   <% end %>
 
   <div class="seperator"></div>
-  
+
   <div class="section-desc">
     Delete Account<br>
     <span>Once you delete your account there is no going back. It is deleted permanently.</span>
   </div>
   <br>
 
-  <%= link_to 'Delete your account', @user, method: :delete, data: 
-    { confirm: 'Are you positive that you want to delete your account?' }, 
+  <%= link_to 'Delete your account', @user, method: :delete, data:
+    { confirm: 'Are you positive that you want to delete your account?' },
     class: 'delete' %>
 
 </div>

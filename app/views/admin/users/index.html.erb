@@ -1,0 +1,10 @@
+<section id="help-center">
+
+<div class="col">
+  <ul class="fa-ul">
+    <% @users.each do |user| %>
+      <li><%= link_to user.username, [:admin, user] %></li>
+    <% end %>
+  </ul>
+</div>
+</section>
