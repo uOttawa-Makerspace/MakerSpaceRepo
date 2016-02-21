@@ -1,0 +1,26 @@
+<h1>Name: <%= @user.name || @user.username %></h1>
+<%= form_for [:admin, @user] do |f| %>
+  <p>
+  <%= f.label(:gender) %>
+  <%= f.text_field(:gender) %>
+  </p>
+
+  <p>
+  <%= f.label(:faculty) %>
+  <%= f.text_field(:faculty) %>
+  </p>
+
+  <p>
+  <%= f.label(:use) %>
+  <%= f.text_field(:use) %>
+  </p>
+
+  <p>
+  <%= f.radio_button(:role, "regular_user") %>
+  <%= f.label(:role_none, "Regular User") %>
+  <%= f.radio_button(:role, "admin") %>
+  <%= f.label(:role_admin, "Admin") %>
+  </p>
+
+  <%= f.submit %>
+<% end %>

@@ -73,9 +73,7 @@ Rails.application.routes.draw do
   namespace :admin do
     get 'index', path: '/'
 
-    resources :users, only: [:index, :show] do
-      post 'make_admin', on: :member
-    end
+    resources :users, only: [:index, :edit, :update]
   end
 
 

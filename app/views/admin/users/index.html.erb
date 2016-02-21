@@ -3,7 +3,7 @@
 <div class="col">
   <ul class="fa-ul">
     <% @users.each do |user| %>
-      <li><%= link_to user.username, [:admin, user] %></li>
+      <li><%= link_to user.username, edit_admin_user_path(user) %></li>
     <% end %>
   </ul>
 </div>
