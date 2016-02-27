@@ -14,9 +14,8 @@ Rails.application.routes.draw do
   end
 
   # RFID
-  resources :rfid, only: [:new, :create, :destroy], param: :username do
-    post 'card_number', on: :collection
-    get  'new_card_number', on: :collection
+  namespace :rfid do
+    post 'card_number'
   end
 
   # SEARCH PAGES
