@@ -1,0 +1,16 @@
+<section id="help-center">
+
+<div class="col">
+  <h2>Results for <%= @query %></h2>
+  <% if @users.any? %>
+    <ul class="fa-ul">
+      <% @users.each do |user| %>
+        <li><%= link_to user.username, edit_admin_user_path(user) %></li>
+      <% end %>
+    </ul>
+  <% else %>
+    No results
+  <% end %>
+</div>
+
+</section>
