@@ -1,6 +1,6 @@
 production:
   solr:
-    hostname: 45.55.74.230
+    hostname: 127.0.0.1
     port: 8983
     log_level: DEBUG
     path: /solr/default
