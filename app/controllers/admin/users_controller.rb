@@ -6,10 +6,18 @@ class Admin::UsersController < AdminAreaController
   end
 
   def edit
+    @rfids = Rfid.recent_unset
   end
 
   def update
     @user.update!(user_params)
+    if rfid = Rfid.find(params[:user][:rfid])
+      if @user.rfid
+        @user.rfid.destroy!
+      end
+      rfid.user = @user
+      rfid.save!
+    end
     redirect_to edit_admin_user_path(@user)
   end
 
@@ -22,4 +30,5 @@ class Admin::UsersController < AdminAreaController
   def load_user
     @user = User.find(params[:id])
   end
+
 end

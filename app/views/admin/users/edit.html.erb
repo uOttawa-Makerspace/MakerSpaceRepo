@@ -16,10 +16,16 @@
   </p>
 
   <p>
+  <%= f.label(:role) %>
   <%= f.radio_button(:role, "regular_user") %>
-  <%= f.label(:role_none, "Regular User") %>
+  <%= f.label(:role_regular, "Regular User") %>
   <%= f.radio_button(:role, "admin") %>
   <%= f.label(:role_admin, "Admin") %>
+  </p>
+
+  <p>
+  <%= f.label(:rfid) %>
+  <%= f.select(:rfid, rfid_options_list(@rfids, @user)) %>
   </p>
 
   <%= f.submit %>

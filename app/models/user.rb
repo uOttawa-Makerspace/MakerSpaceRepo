@@ -2,11 +2,11 @@ class User < ActiveRecord::Base
   include BCrypt
   include ActiveModel::Serialization
 
-  has_one  :rfid ,        dependent: :destroy
+  has_one  :rfid,         dependent: :destroy
   has_many :upvotes,      dependent: :destroy
   has_many :comments,     dependent: :destroy
   has_many :repositories, dependent: :destroy
-    accepts_nested_attributes_for :repositories
+  accepts_nested_attributes_for :repositories
 
   validates :name,
     length: { maximum: 50, message: 'Your name mus be less than 50 characters.' }
