@@ -21,7 +21,7 @@ class Admin::UsersController < AdminAreaController
 
   def update
     @user.update!(user_params)
-    if rfid = Rfid.find(params[:user][:rfid])
+    if rfid = Rfid.where("id = ?", params[:user][rfid]).first
       if @user.rfid
         @user.rfid.destroy!
       end
