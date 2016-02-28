@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 ruby '2.2.2'
 
-gem 'rails', '~> 4.2.1'
+gem 'rails', '~> 4.2'
 gem 'thin', '~> 1.6.3'
 gem 'bcrypt', '~> 3.1.10'
 gem 'sass-rails', '~> 5.0.3'
