@@ -1,0 +1,21 @@
+<section id="help-center">
+
+<div class="col">
+  <div>
+    <h3>Search</h3>
+    <%= form_tag search_admin_users_path, method: :get do %>
+      Name: <%= text_field_tag 'q_name', nil, placeholder: 'Name' %>
+    OR
+      Email: <%= text_field_tag 'q_email', nil, placeholder: 'Email' %>
+    <%= submit_tag "search" %>
+    <% end %>
+  </div>
+  <h2>10 most recent users</h2>
+  <ul class="fa-ul">
+    <% @users.each do |user| %>
+      <li><%= link_to "#{user.username} (joined #{time_ago_in_words(user.created_at)} ago)", edit_admin_user_path(user) %></li>
+    <% end %>
+  </ul>
+</div>
+
+</section>

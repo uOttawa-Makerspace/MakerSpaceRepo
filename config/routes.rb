@@ -9,15 +9,13 @@ Rails.application.routes.draw do
     get 'terms-of-service', as: 'tos'
     get 'privacy'
     get 'about'
-    get 'admin'
     get 'contact'
     get 'report_repository', path: 'report_repository/:repository_id'
   end
 
   # RFID
-  resources :rfid, only: [:new, :create, :destroy], param: :username do
-    post 'card_number', on: :collection
-    get  'new_card_number', on: :collection
+  namespace :rfid do
+    post 'card_number'
   end
 
   # SEARCH PAGES
@@ -70,6 +68,17 @@ Rails.application.routes.draw do
     get 'setting-up-account', as: 'sua'
     get 'creating-repository', as: 'cr'
   end
+
+  namespace :admin do
+    get 'index', path: '/'
+
+    resources :users, only: [:index, :edit, :update] do
+      collection do
+        get 'search'
+      end
+    end
+  end
+
 
   # namespace :help do
   #   get 'main', path: '/'
