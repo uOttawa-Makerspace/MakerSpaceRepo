@@ -1,9 +1,11 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
-one:
-  user_id: 
-  card_number: MyString
+old:
+  user_id:
+  card_number: card_one
+  created_at: <%= Time.now - 30.days %>
+  updated_at: <%= Time.now - 30.days %>
 
-two:
-  user_id: 
-  card_number: MyString
+assigned:
+  user: bob
+  card_number: card_two
