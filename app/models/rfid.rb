@@ -2,7 +2,7 @@ class Rfid < ActiveRecord::Base
   belongs_to :user
 
   scope :recent_unset, -> {
-    where(user: nil).order("created_at desc")
+    where(user: nil).order("updated_at desc")
   }
 
   validates :card_number,
