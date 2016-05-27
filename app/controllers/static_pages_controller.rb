@@ -37,7 +37,7 @@ class StaticPagesController < SessionsController
       end
 
     rescue
-      flash[:alert] = "Somthing went wrong, try again.";
+      flash[:alert] = "Something went wrong, try again.";
       redirect_to forgot_password_path
     end
   end
