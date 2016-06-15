@@ -3,6 +3,8 @@
 section#header{
   width: 100vw;
   height: 60px;
+  position:fixed;
+  z-index:5;
   background-color: #5f9ea0;
   border-bottom: 5px solid #366;
   
@@ -10,6 +12,10 @@ section#header{
     max-width: 70rem;
     margin: 0 auto;
   }
+}
+
+section#header-end{
+  height:65px;
 }
 
 span.msr-logo a{
