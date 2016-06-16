@@ -1,5 +1,6 @@
+<% provide(:title, "#{@user.username}'s Likes") %>
 <section id="repositories-index">
-  <div class="like-title">Your Likes</div>
+  <div class="like-title"><%= yield(:title) %></div>
   <section id="repository-filter">
     <div class="sort">sort by</div>
     <nav>
