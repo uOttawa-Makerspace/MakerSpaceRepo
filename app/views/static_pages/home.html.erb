@@ -10,35 +10,43 @@
 	MakerRepo
 </section>
 
-<section class="platform-title">Platforms</section>
+<section class="platform-title">Project Categories</section>
 
 <section id="home-2">
 	<div class="col">
-		<span class="platform-item">
-			<%= link_to(image_tag("three-d.jpg"), platform_path(platform: "3D-Model"), class: 'platform-link' )%>
-			<div data-platform="3-D Modelling"></div>
+    <span class="platform-item">
+      <%= link_to(image_tag("wearables.jpg"), category_path(slug: "Wearables".gsub(' ', '-').downcase), class: 'platform-link' )%>
+      <div><%= link_to("Wearables", category_path(slug: 'Wearable'.gsub(' ', '-').downcase))%></div>
 		</span>
 		<span class="platform-item">
-			<%= link_to(image_tag("bio-medical.jpg"), platform_path(platform: 'Bio-Medical'), class: 'platform-link' )%>
-			<div data-platform="Bio-Medical"></div>
-		</span>
-		<span class="platform-item">
-			<%= link_to(image_tag("iot.png"), platform_path(platform: "Internet Of Things"), class: 'platform-link' )%>
-			<div data-platform="Internet of Things"></div>
+			<%= link_to(image_tag("motherboard.jpg"), category_path(slug: "Mobile Development"), class: 'platform-link' )%>
+      <div><%= link_to("Mobile Development", category_path(slug: 'Mobile Development'.gsub(' ', '-').downcase))%></div>
 		</span>
 	</div>
 	<div class="col">
 		<span class="platform-item">
-			<%= link_to(image_tag("vr.jpg"), platform_path(platform: "Virtual Reality"), class: 'platform-link' )%>
-			<div data-platform="Virtual Reality"></div>
+      <%= link_to(image_tag("bio-medical.jpg"), category_path(slug: 'Health Sciences'.gsub(' ', '-').downcase), class: 'platform-link' )%>
+      <div><%= link_to("Health Sciences", category_path(slug: 'Health Sciences'.gsub(' ', '-').downcase))%></div>
 		</span>
 		<span class="platform-item">
-			<%= link_to(image_tag("wearables.jpg"), platform_path(platform: "Wearables"), class: 'platform-link' )%>
-			<div data-platform="Wearables"></div>
-		</span>
-		<span class="platform-item">
-			<%= link_to(image_tag("motherboard.jpg"), platform_path(platform: "Mobile"), class: 'platform-link' )%>
-			<div data-platform="Mobile"></div>
+			<%= link_to(image_tag("three-d.jpg"), category_path(slug: "Course-related Projects".gsub(' ', '-').downcase), class: 'platform-link' )%>
+      <div><%= link_to("Course-related Projects", category_path(slug: 'Course-related Projects'.gsub(' ', '-').downcase))%></div>
 		</span>
 	</div>
+  <div class="col">
+    <span class="platform-item">
+			<%= link_to(image_tag("iot.png"), category_path(slug: "Internet of Things".gsub(' ', '-').downcase), class: 'platform-link' )%>
+      <div><%= link_to("Internet of Things", category_path(slug: 'Internet of Things'.gsub(' ', '-').downcase))%></div>
+		</span>
+    <span class="platform-item">
+			<%= link_to(image_tag("vr.jpg"), category_path(slug: "Virtual Reality".gsub(' ', '-').downcase), class: 'platform-link' )%>
+      <div><%= link_to("Virtual Reality", category_path(slug: 'Virtual Reality'.gsub(' ', '-').downcase))%></div>
+		</span>
+  </div>
+  <div class="col">
+    <span class="platform-item">
+			<%= link_to(image_tag("uoteams.png"), category_path(slug: "uOttawa Team Projects".gsub(' ', '-').downcase), class: 'platform-link' )%>
+      <div><%= link_to("uOttawa Team Projects", category_path(slug: 'uOttawa Team Projects'.gsub(' ', '-').downcase))%></div>
+		</span>
+  </div>
 </section>
