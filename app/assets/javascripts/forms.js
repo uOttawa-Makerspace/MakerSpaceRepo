@@ -1,22 +1,34 @@
 var instructableFiles;
 var photoFiles;
-var tagArray;
+var categoryArray;
+var equipmentArray;
 
-$(document).on('page:change', function(){
-
-$('#redactor').redactor({
-  minHeight: 100,
-  buttons: ['formatting', 'bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist', 'alignment', 'link', 'horizontalrule']
+$(document).on('page:load', function(){
+  load();
 });
 
-$('#comment-redactor').redactor({
-  minHeight: 100,
-  buttons: ['bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist']
+$(document).on('ready', function(){
+  load();
 });
+
+function load() {
+  
+  $('#redactor').redactor({
+    minHeight: 100,
+    buttons: ['formatting', 'bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist', 'alignment', 'link', 'horizontalrule'],
+    toolbarFixed: false
+  });
+
+  $('#comment-redactor').redactor({
+    minHeight: 100,
+    buttons: ['bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist'],
+    toolbarFixed: false
+  });
 
   instructableFiles = [];
   photoFiles = [];
-  tagArray = [];  
+  categoryArray = [];
+  equipmentArray = [];
 
   $('div#image-container').children().each(function(){
     var image_item = $(this);
@@ -34,18 +46,51 @@ $('#comment-redactor').redactor({
     });
 
   });
+  
+  var count=0;
 
-  $('div#tag-container').children().each(function(){
-    var tag = $(this);
-    tagArray.push(tag[0].innerText);
+  $('div#category-container').children().each(function(){
+    
+    //FIX - hack to make the select tag work properly
+    if (count==0) {
+      var x = document.getElementById("repository_categories");
+      var option = document.createElement("option");
+      option.text = "Select a category...";
+      x.add(option, 0);
+      x.value = "Select a category...";
+      var y = document.getElementById("repository_equipments");
+      var option2 = document.createElement("option");
+      option2.text = "Select a piece of equipment...";
+      y.add(option2, 0);
+      y.value = "Select a piece of equipment...";
+      document.getElementById("repository_license").value = "Creative Commons - Attribution";
+      count++;
+    }
+    
+    
+    var cat_item = $(this);
+    categoryArray.push(cat_item[0].innerText);
 
-    $(tag).click(function(){
-      var index = $(tag).index();
-      tagArray.splice(index, 1);
-      $(tag).remove();
+    $(cat_item).click(function(){
+      var index = $(cat_item).index();
+      categoryArray.splice(index, 1);
+      $(cat_item).remove();
     });
 
   });
+  
+  $('div#equipment-container').children().each(function(){
+    var equip_item = $(this);
+    equipmentArray.push(equip_item[0].innerText);
+
+    $(equip_item).click(function(){
+      var index = $(equip_item).index();
+      equipmentArray.splice(index, 1);
+      $(equip_item).remove();
+    });
+
+  });
+  
 
   dragndrop.call($("div#dragndrop"));
 
@@ -70,32 +115,65 @@ $('#comment-redactor').redactor({
     }
     resetFormElement(input);
   });
-
-  $("input#tag").keypress(function (e) {
-    var tag = $(this);
-    var val = tag.val();
-
-    if (e.keyCode == 13) {
-      if(val.length === 0){ return false; }
-      tag.val("");
-      if($("div#tag-container").children().length === 5){
+  
+//Get categories
+  $(document).ready(function() {
+    $('#repository_categories').on('change', function(e) {
+      var val = e.target.options[e.target.selectedIndex].value;
+      e.target.selectedIndex = 0;
+      if($("div#category-container").children().length === 5){
         return false;
       }
+      for (var i=0; i<categoryArray.length; i++) {
+        if (val==categoryArray[i]) {
+          return false;
+        }
+      }
       e.preventDefault();
-      tagArray.push(val);
-      $.get('/template/tag', { 'tag' : val }, function(data){
-        $("div#tag-container").append(data);
-        var last = $("div#tag-container")[0].children.length - 1;
-        var child = $("div#tag-container")[0].children[last];
-
+      categoryArray.push(val);
+      $.get('/template/category', { 'category' : val }, function(data){
+        $("div#category-container").append(data);
+        var last = $("div#category-container")[0].children.length - 1;
+        var child = $("div#category-container")[0].children[last];
+        
         $(child).click(function(){
           var index = $(child).index();
-          tagArray.splice(index, 1);
+          categoryArray.splice(index, 1);
           $(child).remove();
         });
-
+        
       }, 'html');
-    }
+    });
+  });
+  
+  //Get pieces of equipment
+  $(document).ready(function() {
+    $('#repository_equipments').on('change', function(e) {
+      var val = e.target.options[e.target.selectedIndex].value;
+      e.target.selectedIndex = 0;
+      if($("div#equipment-container").children().length === 5){
+        return false;
+      }
+      for (var i=0; i<equipmentArray.length; i++) {
+        if (val==equipmentArray[i]) {
+          return false;
+        }
+      }
+      e.preventDefault();
+      equipmentArray.push(val);
+      $.get('/template/equipment', { 'equipment' : val }, function(data){
+        $("div#equipment-container").append(data);
+        var last = $("div#equipment-container")[0].children.length - 1;
+        var child = $("div#equipment-container")[0].children[last];
+        
+        $(child).click(function(){
+          var index = $(child).index();
+          equipmentArray.splice(index, 1);
+          $(child).remove();
+        });
+        
+      }, 'html');
+    });
   });
 
   $("form#new_repository, form.edit_repository").submit(function(e){
@@ -114,8 +192,12 @@ $('#comment-redactor').redactor({
       form.append("images[]", photoFiles[i]);
     };
 
-    for (var i = 0; i < tagArray.length; i++) {
-      form.append("tags[]", tagArray[i]);
+    for (var i = 0; i < categoryArray.length; i++) {
+      form.append("categories[]", categoryArray[i]);
+    };
+    
+    for (var i = 0; i < equipmentArray.length; i++) {
+      form.append("equipments[]", equipmentArray[i]);
     };
 
     if( validate ){ 
@@ -140,7 +222,7 @@ $('#comment-redactor').redactor({
     
   });
 
-});
+}
 
 function resetFormElement(e) {
   var el = $(e);
