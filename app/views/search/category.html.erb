@@ -1,16 +1,16 @@
-<% provide(:title, "#{params[:platform]}") %>
+<% provide(:title, params[:slug].slug_to_title(params[:slug])) %>
 <section id="repositories-index">
-  <div class="like-title"><%= params[:platform] %></div>
+  <div class="like-title"><%= yield(:title)  %></div>
   <section id="repository-filter">
     <div class="sort">sort by</div>
     <nav>
       <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest' %>
       <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
       <ul class="filter">
-        <li><%= link_to 'Newest', search_path(sort: :newest, q: params[:q]) %></li>
-        <li><%= link_to 'Most Likes', search_path(sort: :most_likes, q: params[:q]) %></li>
-        <li><%= link_to 'Most Makes', search_path(sort: :most_makes, q: params[:q]) %></li>
-        <li><%= link_to 'Recently Updated', search_path(sort: :recently_updated, q: params[:q]) %></li>
+        <li><%= link_to 'Newest', category_path(sort: :newest, slug: params[:slug]) %></li>
+        <li><%= link_to 'Most Likes', category_path(sort: :most_likes, slug: params[:slug]) %></li>
+        <li><%= link_to 'Most Makes', category_path(sort: :most_makes, slug: params[:slug]) %></li>
+        <li><%= link_to 'Recently Updated', category_path(sort: :recently_updated, slug: params[:slug]) %></li>
       </ul>
     </nav>
   </section>

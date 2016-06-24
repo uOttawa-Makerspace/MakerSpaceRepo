@@ -22,13 +22,15 @@ Rails.application.routes.draw do
   namespace :search, path: '/', as: nil do
     get 'explore'
     get 'search'
-    get 'platform'
+    get 'category', path: 'category/:slug'
+    get 'equipment', path: 'equipment/:slug'
   end
-
+  
   # TEMPLATE
   namespace :template do
     get 'file'
-    get 'tag'
+    get 'category'
+    get 'equipment'
     get 'comment'
   end
 

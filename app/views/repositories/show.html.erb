@@ -1,3 +1,4 @@
+<% provide(:title, "#{@repository.title}") %>
 <% if flash[:notice] %>
   <div id="notice"><%= flash[:notice] %></div>
 <% end %>
@@ -48,7 +49,7 @@
         <%= content_tag :div, @repository.user.reputation, class: 'reputation' %>
       </div>
       <div class="repo-info-item">
-        <div class="title">PUBLISHED</div>
+        <div class="title">PUBLISHED ON</div>
         <div class="date"><%= @repository.created_at.strftime("%b %e %Y") %></div>
       </div>
       <% if @repository.github.present? %>
@@ -58,17 +59,19 @@
       </div>
       <% end %>
 
-      <% if @repository.category.present? %>
+      <% if @categories.present? %>
       <div class="repo-info-item">
-        <div class="title">PLATFORM</div>
-        <span class="platform"><%= link_to @repository.category, platform_path(platform: @repository.category) %></span>
+        <div class="title">CATEGORIES</div>
+        <% @categories.each do |t| %>
+          <span class="tags"><%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase) %></span>
+        <% end %>
       </div>
       <% end %>
-      <% if @tags.present? %>
+      <% if @equipments.present? %>
       <div class="repo-info-item">
-        <div class="title">TAGS</div>
-        <% @tags.each do |t| %>
-          <span class="tags"><%= link_to t.name, search_path(q: t.name) %></span>
+        <div class="title">EQUIPMENT</div>
+        <% @equipments.each do |t| %>
+          <span class="tags"><%= link_to t.name, equipment_path(slug: t.name.gsub(' ', '-').downcase) %></span>
         <% end %>
       </div>
       <% end %>

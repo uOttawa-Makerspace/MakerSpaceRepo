@@ -18,16 +18,28 @@ class SearchController < SessionsController
     @photos = photo_hash
   end
 
-  def platform
+  def category
     sort_arr = sort_order
     @repositories = Repository.search do
-      keywords params[:platform] 
+      keywords params[:slug]
       order_by sort_arr.first, sort_arr.last
       paginate :page => params[:page], :per_page => 12
     end.results
 
     @photos = photo_hash
   end
+  
+  def equipment
+    sort_arr = sort_order
+    @repositories = Repository.search do
+      keywords params[:slug] 
+      order_by sort_arr.first, sort_arr.last
+      paginate :page => params[:page], :per_page => 12
+    end.results
+
+    @photos = photo_hash
+  end
+  
 
 	private
 

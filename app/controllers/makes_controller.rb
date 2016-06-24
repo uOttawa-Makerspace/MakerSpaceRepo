@@ -7,7 +7,6 @@ class MakesController < SessionsController
     @repo = @repository.makes.build do |r|
       r.title = params[:repository][:title]
       r.description = params[:repository][:description]
-      r.category = @repository.category
       r.license = @repository.license
       r.github = @repository.github
       r.github_url = @repository.github_url

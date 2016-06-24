@@ -1,18 +1,20 @@
+<% provide(:title, "New Project") %>
 <section id="new-repo">
-    <div class="title">Create a Repository</div>
+    <div class="title">New Project</div>
 
   <%= form_for @repository, url: {controller: "repositories", action: "create"}, html: { multipart: true } do |f| %>
-    <%= f.label :title, "Name" %>
-    <div>Great repository names are short and memorable.</div>
+  <br>
+  <%= f.label :title, "Title" %>
+    <div>Great project titles are short and memorable.</div>
     <%= f.text_field :title, class: 'repo' %>
-
+    <br>
     <%= f.label :description %>
       <div style="width: 420px;">
         <%= f.text_area :description, class: 'repo', id: 'redactor' %>
       </div>
     <% if github? %>
       <%= f.label :github, fa_icon('github', text: 'Github Repository Name', style: 'padding-right: 0px;') %>
-      <div>Github will replaces spaces in repository names with dashes.</div>
+      <div>Github will replace spaces in repository names with dashes.</div>
       <span class="autocomplete-wrapper">
         <%= f.text_field :github, class: 'repo repo-autocomplete' %>
         <span class="loader"></span> 
@@ -41,25 +43,30 @@
     </div>
 
     <div id="image-container"></div>
-
-    <%= f.label :category %> 
-    <div>Choose a category that best fits your project.</div>
-    <%= f.select :category, @repository.class.category_options, prompt: "Select a category..." %>
-
-    <%= label_tag :tag %> 
-    <div>A maximum of five tags per repository</div>
-    <%= text_field_tag :tag, nil, placeholder: 'Type a tag, then hit enter' %>
-
-    <div id="tag-container"></div>
-
+    
+    <br>
+    <%= f.label :categories %> 
+    <div>Choose at most 5 categories that fit your project.</div>
+    <%= f.select :categories, @repository.class.category_options, prompt: "Select a category..." %>
+    
+    <div id="category-container"></div>
+  
+    <br>
+    <%= label_tag :equipment %> 
+    <div>Choose at most 5 pieces of equipment that are related to your project.</div>
+    <%= f.select :equipments, @repository.class.equipment_options, prompt: "Select a piece of equipment..." %>
+    
+    <div id="equipment-container"></div>
+  
+    <br>
     <%= f.label :license %> 
     <div>Choose how you want your project to be used by others.</div>
     <%= f.select :license, @repository.class.license_options %>
 
     <br>
     <br>
-    
-    <%= f.submit "Create Repository", class: "save-button" %>
+    <br>
+    <%= f.submit "Create Project", class: "save-button" %>
 
   <% end %>
 
