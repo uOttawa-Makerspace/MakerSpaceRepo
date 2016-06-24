@@ -8,13 +8,13 @@ function validation(){
 
 
 	if( title.val().length === 0 ){
-		span.text("Repository name is required.");
+		span.text("Project title is required.");
 		$('input#repository_title').before(span);
 		ret = false;
 	}
 
 	if( !regex.test(title.val()) ){
-		span.text("Repository name may only contain letters and numbers");
+		span.text("Project title may only contain letters and numbers.");
 		$('input#repository_title').before(span);
 		ret = false;
 	}
@@ -24,6 +24,22 @@ function validation(){
 	if( photoFiles.length === 0 ){
 		span.text("At least one photo is required.");
 		$('div.repo-image').before(span);
+		ret = false;
+	}
+
+	span = $('<span>').addClass('form-error repo-form');
+  
+	if( categoryArray.length === 0 ){
+		span.text("At least one category is required.");
+		$('select#repository_categories').before(span);
+		ret = false;
+	}
+
+	span = $('<span>').addClass('form-error repo-form');
+  
+	if( equipmentArray.length === 0 ){
+		span.text("At least one equipment is required.");
+		$('select#repository_equipments').before(span);
 		ret = false;
 	}
 
