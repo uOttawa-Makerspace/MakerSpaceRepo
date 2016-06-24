@@ -1,4 +1,4 @@
-$(document).on('page:change', function(){
+/*$(document).on('page:change', function(){
 
 	$('select').each(function(){
 		var $this = $(this), numberOfOptions = $(this).children('option').length;
@@ -50,4 +50,4 @@ $(document).on('page:change', function(){
 
 	});
 
-});
+});*/
