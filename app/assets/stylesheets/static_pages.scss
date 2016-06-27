@@ -18,17 +18,6 @@ section#home-1{
   color: rgba(255,255,255,0.8);
 }
 
-section.platform-title{
-  height: 10rem;
-  line-height: 10rem !important;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  font: 300 1.1rem 'Raleway', serif;
-  color: #5f9ea0;
-  display:none;
-}
-
 section#home-2{
   @include outer-container(80rem);
   margin-top:0.2rem;
