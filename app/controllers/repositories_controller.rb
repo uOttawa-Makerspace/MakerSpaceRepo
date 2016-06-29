@@ -16,8 +16,13 @@ class RepositoriesController < SessionsController
   end
   
   def edit
-    @photos = @repository.photos.first(5)
-    @tags = @repository.tags
+    if (@repository.user_username == @user.username) || (@user.role == "admin")
+      @photos = @repository.photos.first(5)
+      @tags = @repository.tags
+    else
+      flash[:alert] = "You are not allowed to perform this action!"
+      redirect_to repository_path(@repository.user_username, @repository.slug)
+    end
   end
 
   def create
@@ -47,7 +52,7 @@ class RepositoriesController < SessionsController
     if @repository.update(repository_params)
       create_photos
       create_tags
-      render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
+      render json: { redirect_uri: "#{repository_path(@repository.user_username, @repository.slug)}" }
       Repository.reindex
     else
       render json: @repository.errors["title"].first, status: :unprocessable_entity

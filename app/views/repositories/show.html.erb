@@ -1,5 +1,9 @@
+<% provide(:title, "#{@repository.title}") %>
 <% if flash[:notice] %>
   <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
 <% end %>
 
 <section id="show-repository">
@@ -26,7 +30,7 @@
 
   <section id="info">
 
-  <% if @repository.user_username.eql?(@user.username) %>
+  <% if @repository.user_username.eql?(@user.username) || @user.role.eql?("admin") %>
     <%= link_to fa_icon("cog", text: ' Edit'), 
       edit_repository_path(@repository.user_username, @repository.slug), class: 'edit-repo-link' %>
   <% end %>
