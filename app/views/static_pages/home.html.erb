@@ -13,38 +13,40 @@
 <section id="home-2">
 	<div class="col">
     <span class="platform-item">
-      <%= link_to(image_tag("wearables.jpg"), category_path(slug: "wearables"), class: 'platform-link' )%>
-      <div><%= link_to("Wearables", category_path(slug: 'wearables'))%></div>
+      <%= image_tag("wearables.jpg") %>
+      <div><%= link_to("Wearable", category_path(slug: 'wearable'))%></div>
 		</span>
 		<span class="platform-item">
-			<%= link_to(image_tag("motherboard.jpg"), category_path(slug: "mobile-development"), class: 'platform-link' )%>
+			<%= image_tag("motherboard.jpg") %>
       <div><%= link_to("Mobile Development", category_path(slug: 'mobile-development'))%></div>
+		</span>
+    <span class="platform-item">
+			<%= image_tag("uoteams.jpg") %>
+      <div><%= link_to("uOttawa Team Projects", category_path(slug: 'uottawa-team-projects'))%></div>
 		</span>
 	</div>
 	<div class="col">
 		<span class="platform-item">
-      <%= link_to(image_tag("bio-medical.jpg"), category_path(slug: 'health-sciences'), class: 'platform-link' )%>
+      <%= image_tag("bio-medical.jpg") %>
       <div><%= link_to("Health Sciences", category_path(slug: 'health-sciences'))%></div>
 		</span>
-		<span class="platform-item">
-			<%= link_to(image_tag("three-d.jpg"), category_path(slug: "course-related-projects"), class: 'platform-link' )%>
-      <div><%= link_to("Course-related Projects", category_path(slug: 'course-related-projects'))%></div>
+    <span class="platform-item">
+			<%= image_tag("iot.jpg") %>
+      <div><%= link_to("Internet of Things", category_path(slug: 'internet-of-things'))%></div>
+		</span>
+    <span class="platform-item">
+			<%= image_tag("other.jpg") %>
+      <div><%= link_to("Other Projects", category_path(slug: 'other-projects'))%></div>
 		</span>
 	</div>
   <div class="col">
     <span class="platform-item">
-			<%= link_to(image_tag("iot.png"), category_path(slug: "internet-of-things"), class: 'platform-link' )%>
-      <div><%= link_to("Internet of Things", category_path(slug: 'internet-of-things'))%></div>
-		</span>
-    <span class="platform-item">
-			<%= link_to(image_tag("vr.jpg"), category_path(slug: "virtual-reality"), class: 'platform-link' )%>
+			<%= image_tag("vr.jpg") %>
       <div><%= link_to("Virtual Reality", category_path(slug: 'virtual-reality'))%></div>
 		</span>
-  </div>
-  <div class="col">
     <span class="platform-item">
-			<%= link_to(image_tag("uoteams.png"), category_path(slug: "uottawa-team-projects"), class: 'platform-link' )%>
-      <div><%= link_to("uOttawa Team Projects", category_path(slug: 'uottawa-team-projects'))%></div>
+			<%= image_tag("three-d.jpg") %>
+      <div><%= link_to("Course-related Projects", category_path(slug: 'course-related-projects'))%></div>
 		</span>
   </div>
 </section>

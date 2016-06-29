@@ -19,7 +19,7 @@ function validation(){
 		ret = false;
 	}
 
-	var span = $('<span>').addClass('form-error repo-form');
+	span = $('<span>').addClass('form-error repo-form');
 
 	if( photoFiles.length === 0 ){
 		span.text("At least one photo is required.");
@@ -32,14 +32,6 @@ function validation(){
 	if( categoryArray.length === 0 ){
 		span.text("At least one category is required.");
 		$('select#repository_categories').before(span);
-		ret = false;
-	}
-
-	span = $('<span>').addClass('form-error repo-form');
-  
-	if( equipmentArray.length === 0 ){
-		span.text("At least one equipment is required.");
-		$('select#repository_equipments').before(span);
 		ret = false;
 	}
 

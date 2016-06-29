@@ -27,7 +27,8 @@ class Repository < ActiveRecord::Base
 
   def self.category_options
     ["Wearable", "Internet of Things", "Mobile Development", "Health Sciences", 
-      "Virtual Reality", "Course-related Projects", "uOttawa Team Projects" ]
+      "Virtual Reality", "Course-related Projects", "uOttawa Team Projects",
+      "Other Projects"]
   end
   
   def self.equipment_options
