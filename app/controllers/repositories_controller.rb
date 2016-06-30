@@ -19,12 +19,8 @@ class RepositoriesController < SessionsController
   def edit
     if (@repository.user_username == @user.username) || (@user.role == "admin")
       @photos = @repository.photos.first(5)
-<<<<<<< HEAD
       @categories = @repository.categories
       @equipments = @repository.equipments
-=======
-      @tags = @repository.tags
->>>>>>> master
     else
       flash[:alert] = "You are not allowed to perform this action!"
       redirect_to repository_path(@repository.user_username, @repository.slug)
@@ -59,12 +55,8 @@ class RepositoriesController < SessionsController
 
     if @repository.update(repository_params)
       create_photos
-<<<<<<< HEAD
       create_categories
       create_equipments
-=======
-      create_tags
->>>>>>> master
       render json: { redirect_uri: "#{repository_path(@repository.user_username, @repository.slug)}" }
       Repository.reindex
     else
