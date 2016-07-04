@@ -18,34 +18,24 @@ section#home-1{
   color: rgba(255,255,255,0.8);
 }
 
-section.platform-title{
-  height: 10rem;
-  line-height: 10rem !important;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  font: 300 1rem 'Raleway', serif;
-  color: #5f9ea0;
-}
-
 section#home-2{
-  @include outer-container(70rem);
+  @include outer-container(80rem);
+  margin-top:0.2rem;
   padding-bottom: 2rem; 
   div.col{
-    @include span-columns(6, 0.25);
+    @include span-columns(4, 0.15);
     display: inline-block;
   }
 }
 
-span.platform-item a img{
-  @include transition(200);
-  background-color: black;
+span.platform-item img{
+  
   width: 100%;
   display: block;
+  opacity:0.5;
 
   &:hover{
-    pointer: cursor;
-    opacity: 0;
+    cursor: pointer;
   }
 }
 
@@ -53,27 +43,39 @@ span.platform-item{
   position: relative;
   display: block;
   margin-bottom: 1%;
+  background-color: #333333;
 
   div{
-    top: 0;
-    left: 0;
-    position: absolute;
-    z-index: -1;
-    background-color: #13686b;
-    font: 300 2vw 'Raleway', helvetica, sans-serif;
-    color: #fff;
-    display: block;
-    height: 100%;
-    width: 100%;
-
-    &:after{
-      @include center-vertically;
-      height: 2vw;
-      text-align: center;
-      content: attr(data-platform);
+    width:100%;
+    height:100%;
+    
+    a{
+      top:0;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      font: 22px 'Raleway', helvetica, sans-serif;
+      font-weight: lighter;
+      color: #fff;
+      text-shadow: 0 0 10px black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity:0.9;
+      transition: background-color .2s ease-in-out;
+      -moz-transition: background-color .2s ease-in-out;
+      -webkit-transition: background-color .2s ease-in-out;
+      
+      
+      &:hover{
+        background-color: rgba(19, 104, 107, 0.6);
+      }
+      
     }
+      
   }
 }
+
 
 section#static_pages{
   @include outer-container(64rem);
@@ -99,10 +101,10 @@ div.penta canvas{
   display: block;
 }
 
-@media screen and (max-width: 600px){
+@media screen and (max-width: 800px){
  
   section#home-2 div.col{
-    @include span-columns(12, 1);
+    @include span-columns(12, 15);
     display: inline-block;
   }
 

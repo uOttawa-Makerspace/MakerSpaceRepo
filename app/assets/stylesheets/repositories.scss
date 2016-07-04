@@ -106,7 +106,7 @@ li.ui-menu-item {
   padding-right: 10px;
 }
 
-.select {
+.select, select {
   cursor: pointer;
   display: inline-block;
   position: relative;
@@ -231,8 +231,8 @@ div#image-container{
   }
 }
 
-div#tag-container{
-  span.tag{
+div#category-container, div#equipment-container{
+  span{
     display: inline-block;
     padding: 0.25rem 0.7rem;
     background-color: #4682b4;
@@ -271,6 +271,7 @@ span.ui-helper-hidden-accessible div{
 }
 
 ul.redactor-toolbar{
+  position: static;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px;
   border: 1px solid #aaa;

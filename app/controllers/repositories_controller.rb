@@ -6,7 +6,8 @@ class RepositoriesController < SessionsController
 
   def show
     @photos = @repository.photos.first(5)
-    @tags = @repository.tags
+    @categories = @repository.categories
+    @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
     @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
   end
@@ -18,7 +19,8 @@ class RepositoriesController < SessionsController
   def edit
     if (@repository.user_username == @user.username) || (@user.role == "admin")
       @photos = @repository.photos.first(5)
-      @tags = @repository.tags
+      @categories = @repository.categories
+      @equipments = @repository.equipments
     else
       flash[:alert] = "You are not allowed to perform this action!"
       redirect_to repository_path(@repository.user_username, @repository.slug)
@@ -34,7 +36,8 @@ class RepositoriesController < SessionsController
     if @repository.save
       @user.increment!(:reputation, 25)
       create_photos
-      create_tags
+      create_categories
+      create_equipments
       render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
       Repository.reindex
     else
@@ -47,11 +50,13 @@ class RepositoriesController < SessionsController
     github if @repository.github_changed?
     commit if params['files'].present?
     @repository.remove_duplicate_photos(params['images'])
-    @repository.tags.destroy_all # this could have been done differently/more efficiently
+    @repository.categories.destroy_all
+    @repository.equipments.destroy_all
 
     if @repository.update(repository_params)
       create_photos
-      create_tags
+      create_categories
+      create_equipments
       render json: { redirect_uri: "#{repository_path(@repository.user_username, @repository.slug)}" }
       Repository.reindex
     else
@@ -83,7 +88,7 @@ class RepositoriesController < SessionsController
     end
 
     def repository_params
-      params.require(:repository).permit(:title, :description, :category, :license, :user_id, :github)
+      params.require(:repository).permit(:title, :description, :license, :user_id, :github)
     end
 
     def comment_filter
@@ -117,11 +122,17 @@ class RepositoriesController < SessionsController
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end if params['images'].present?
     end
-
-    def create_tags
-      params['tags'].first(5).each do |t|
-        Tag.create(name: t, repository_id: @repository.id)
-      end if params['tags'].present?
+    
+    def create_categories
+      params['categories'].first(5).each do |c|
+        Category.create(name: c, repository_id: @repository.id)
+      end if params['categories'].present?
+    end
+        
+    def create_equipments
+      params['equipments'].first(5).each do |e|
+        Equipment.create(name: e, repository_id: @repository.id)
+      end if params['equipments'].present?
     end
 
     def commit

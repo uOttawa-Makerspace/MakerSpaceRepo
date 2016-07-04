@@ -10,35 +10,43 @@
 	MakerRepo
 </section>
 
-<section class="platform-title">Platforms</section>
-
 <section id="home-2">
 	<div class="col">
-		<span class="platform-item">
-			<%= link_to(image_tag("three-d.jpg"), platform_path(platform: "3D-Model"), class: 'platform-link' )%>
-			<div data-platform="3-D Modelling"></div>
+    <span class="platform-item">
+      <%= image_tag("wearables.jpg") %>
+      <div><%= link_to("Wearable", category_path(slug: 'wearable'))%></div>
 		</span>
 		<span class="platform-item">
-			<%= link_to(image_tag("bio-medical.jpg"), platform_path(platform: 'Bio-Medical'), class: 'platform-link' )%>
-			<div data-platform="Bio-Medical"></div>
+			<%= image_tag("motherboard.jpg") %>
+      <div><%= link_to("Mobile Development", category_path(slug: 'mobile-development'))%></div>
 		</span>
-		<span class="platform-item">
-			<%= link_to(image_tag("iot.png"), platform_path(platform: "Internet Of Things"), class: 'platform-link' )%>
-			<div data-platform="Internet of Things"></div>
+    <span class="platform-item">
+			<%= image_tag("uoteams.jpg") %>
+      <div><%= link_to("uOttawa Team Projects", category_path(slug: 'uottawa-team-projects'))%></div>
 		</span>
 	</div>
 	<div class="col">
 		<span class="platform-item">
-			<%= link_to(image_tag("vr.jpg"), platform_path(platform: "Virtual Reality"), class: 'platform-link' )%>
-			<div data-platform="Virtual Reality"></div>
+      <%= image_tag("bio-medical.jpg") %>
+      <div><%= link_to("Health Sciences", category_path(slug: 'health-sciences'))%></div>
 		</span>
-		<span class="platform-item">
-			<%= link_to(image_tag("wearables.jpg"), platform_path(platform: "Wearables"), class: 'platform-link' )%>
-			<div data-platform="Wearables"></div>
+    <span class="platform-item">
+			<%= image_tag("iot.jpg") %>
+      <div><%= link_to("Internet of Things", category_path(slug: 'internet-of-things'))%></div>
 		</span>
-		<span class="platform-item">
-			<%= link_to(image_tag("motherboard.jpg"), platform_path(platform: "Mobile"), class: 'platform-link' )%>
-			<div data-platform="Mobile"></div>
+    <span class="platform-item">
+			<%= image_tag("other.jpg") %>
+      <div><%= link_to("Other Projects", category_path(slug: 'other-projects'))%></div>
 		</span>
 	</div>
+  <div class="col">
+    <span class="platform-item">
+			<%= image_tag("vr.jpg") %>
+      <div><%= link_to("Virtual Reality", category_path(slug: 'virtual-reality'))%></div>
+		</span>
+    <span class="platform-item">
+			<%= image_tag("three-d.jpg") %>
+      <div><%= link_to("Course-related Projects", category_path(slug: 'course-related-projects'))%></div>
+		</span>
+  </div>
 </section>

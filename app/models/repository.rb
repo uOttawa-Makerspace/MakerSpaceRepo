@@ -1,7 +1,8 @@
 class Repository < ActiveRecord::Base
   belongs_to :user
   has_many   :photos,   dependent: :destroy
-  has_many   :tags,     dependent: :destroy
+  has_many   :categories,     dependent: :destroy
+  has_many   :equipments,     dependent: :destroy
   has_many   :comments, dependent: :destroy
   has_many   :likes,    dependent: :destroy
   has_many   :makes,    class_name: "Repository", foreign_key: "make_id"
@@ -12,9 +13,11 @@ class Repository < ActiveRecord::Base
   searchable do
     text    :title, :boost => 5.0
     text    :description
-    text    :category
-    text    :tags do
-              tags.map { |tag| tag.name }
+    text    :categories do
+              categories.map { |category| category.name }
+            end
+    text    :equipments do
+              equipments.map { |equipment| equipment.name }
             end
     integer :like
     integer :make
@@ -23,8 +26,15 @@ class Repository < ActiveRecord::Base
   end
 
   def self.category_options
-    ["3D-Model", "Wearables", "Mobile", "Internet of Things", 
-     "Bio-Medical", "Virtual Reality" ]
+    ["Wearable", "Internet of Things", "Mobile Development", "Health Sciences", 
+      "Virtual Reality", "Course-related Projects", "uOttawa Team Projects",
+      "Other Projects"]
+  end
+  
+  def self.equipment_options
+    ["3D Printer", "Laser Cutter", "Oculus Rift", "Next Engine 3D Scanner", 
+      "Arduino Microcontroller", "Soldering", "Silverbullet Vinyl Cutter",
+      "Handibot CNC Mill", "Go Pro", "iPad", "PCB Machine"]
   end
 
   def self.license_options
@@ -37,9 +47,9 @@ class Repository < ActiveRecord::Base
   end
 
   validates :title,
-    format:     { with:    /\A[-a-zA-Z\d\s]*\z/, message: "Invalid repository name" },
-    presence:   { message: "Repository name is required."},
-    uniqueness: { message: "Repository name is already in use.", scope: :user_username}  
+    format:     { with:    /\A[-a-zA-Z\d\s]*\z/, message: "Invalid project title" },
+    presence:   { message: "Project title is required."},
+    uniqueness: { message: "Project title is already in use.", scope: :user_username}  
 
   before_save do 
     self.slug = self.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')

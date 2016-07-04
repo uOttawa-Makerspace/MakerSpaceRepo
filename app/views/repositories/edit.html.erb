@@ -1,11 +1,13 @@
 <section id="new-repo">
-
+  <div class="title">Edit Project</div>
   <%= form_for @repository, url: {controller: "repositories", action: "update"}, html: { multipart: true } do |f| %>
-    <div class="title">Edit Repository</div>
-    <%= f.label :title, "Name" %>
-    <div>Great repository names are short and memorable.</div>
+    
+    <br>
+    <%= f.label :title, "Title" %>
+    <div>Great project titles are short and memorable.</div>
     <%= f.text_field :title, class: 'repo' %>
-
+  
+    <br>
     <%= f.label :description %>
     <div style="width: 420px;">
       <%= f.text_area :description, class: 'repo', id: 'redactor' %>
@@ -52,28 +54,38 @@
     
     </div>
 
-    <%= f.label :category %> 
-    <div>Choose a category that best fits your project.</div>
-    <%= f.select :category, @repository.class.category_options, prompt: "Select a category..." %>
-
-    <%= label_tag :tag %> 
-    <div>A maximum of five tags per repository</div>
-    <%= text_field_tag :tag, nil, placeholder: 'Type a tag, then hit enter' %>
-
-    <div id="tag-container">
-    <% @tags.each do |tag| %>
-      <span class="tag"><%= tag.name %></span>
+    <br>
+    <%= f.label :categories %> 
+    <div>Choose at most 5 categories that fit your project.</div>
+    <%= f.select :categories, @repository.class.category_options, prompt: "Select a category..." %>
+    
+    <div id="category-container">
+      <% @categories.each do |category| %>
+        <span class="category"><%= category.name %></span>
+      <% end %>
+    </div>
+  
+    <br>
+    <%= label_tag :equipment %> 
+    <div>Choose at most 5 pieces of equipment that are related to your project.</div>
+    <%= f.select :equipments, @repository.class.equipment_options, prompt: "Select a piece of equipment..." %>
+    
+    <div id="equipment-container">
+    <% @equipments.each do |equipment| %>
+      <span class="equipment"><%= equipment.name %></span>
     <% end %>
     </div>
-
+    
+    <br>
     <%= f.label :license %> 
     <div>Choose how you want your project to be used by others.</div>
     <%= f.select :license, @repository.class.license_options %>
 
     <br>
     <br>
-    
-    <%= f.submit "Update Repository", class: "save-button" %>
+    <br>
+  
+    <%= f.submit "Update Project", class: "save-button" %>
 
   <% end %>
 </section>
