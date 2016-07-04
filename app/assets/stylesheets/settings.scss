@@ -2,13 +2,6 @@
 
 @import "lib";
 
-/*section#setting{
-	position: absolute;
-	top: 65px;
-	width: 100vw;
-	background-color: rgba(238, 238, 238, 0.5);
-}*/
-
 div.setting-title{
 	line-height: 5rem !important;
   font: 400 3rem 'Raleway', sans-serif;
@@ -24,12 +17,19 @@ div.setting-grid{
 	/*position: relative;*/
 }
 
+div.panel-title {
+  color: #366;
+  font-size: 35px;
+}
+
 div.setting-side-panel{
 	@include span-columns(2.5, 0);
 	position: relative;
+  background-color: #f0f5f5;
 	padding: 3rem 1rem 0;
   color: #333;
   font: 400 1.2rem 'Raleway', helvetica, sans-serif;
+  height:800px;
 
   li{
   	display: block;
@@ -59,6 +59,12 @@ label.profile-label{
   color: #777;
 }
 
+label.radio-label{
+  padding-top:-10px;
+  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+  color: #777;
+}
+
 input.profile-text{
   font: 300 0.9em 'Raleway', sans-serif;
   color: #555;
@@ -82,6 +88,18 @@ textarea.profile-text{
   border: 1px solid #aaa;
   display: block;
   height: 120px;	
+}
+
+select.profile-select{
+  font: 300 0.9em 'Raleway', sans-serif;
+  color: #555;
+  padding: 0.5rem;
+	margin: 0.5rem 0 1rem;
+  max-width: 400px;
+  width: calc(100% - 1rem);
+  border-radius: 3px;
+  border: 1px solid #aaa;
+  display: block;
 }
 
 div.section-desc{
@@ -143,6 +161,17 @@ div.edit-column{
   color: #333;
   font: 400 1rem 'Raleway', sans-serif;
   padding-top: 2rem;
+  
+  input#q{
+    display:inline;
+    width:300px;
+  }
+
+  select#filter{
+    display:inline;
+    width:120px;
+    height:35px;
+  }
 }
 
 img.edit-avatar{

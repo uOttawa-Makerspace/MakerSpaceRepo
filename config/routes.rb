@@ -31,6 +31,7 @@ Rails.application.routes.draw do
     get 'file'
     get 'category'
     get 'equipment'
+    get 'certification'
     get 'comment'
   end
 
