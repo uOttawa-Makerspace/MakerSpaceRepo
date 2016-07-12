@@ -4,17 +4,20 @@
 <% end %>
 
 <div class="edit-column">
-  <div class="setting-title">Manage users</div>
-    <br>
+  <div class="setting-title">Manage Users</div>
+  <br>
+  <div class="search-form">
     <%= form_tag search_admin_users_path, method: :get do %>
       <%= select_tag 'filter', options_for_select(["Name", "Email", "Username"]), prompt:'Search by...' %>
       <%= text_field_tag 'q', nil, placeholder: 'Search users...', class:'profile-text' %>
+      <%= submit_tag "Go", class: 'save-button' %>
     <% end %>
+  </div>
   <br><br>
   <h2>Search results for "<%= @query %>"</h2>
-  <% if @edit_users.any? %>
+  <% if @edit_admin_users.any? %>
   <ul class="fa-ul">
-    <% @edit_users.each do |user| %>
+    <% @edit_admin_users.each do |user| %>
       <li><%= link_to user.username, edit_admin_user_path(user) %></li>
     <% end %>
   </ul>

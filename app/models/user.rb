@@ -59,11 +59,5 @@ class User < ActiveRecord::Base
     self.password = @pword
     self.password_confirmation = @pword
   end
-  
-  def self.certification_options
-    ["3D Printer", "Arduino Microcontroller", "Go Pro", "Handibot CNC Mill",
-      "iPad", "Laser Cutter", "Next Engine 3D Scanner", "Oculus Rift",
-      "PCB Machine", "Silverbullet Vinyl Cutter", "Soldering"]
-  end
 
 end

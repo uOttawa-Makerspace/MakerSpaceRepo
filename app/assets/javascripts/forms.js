@@ -49,7 +49,6 @@ function load() {
 
   });
   
-  var count=0;
   dragndrop.call($("div#dragndrop"));
 
   $("input#user_avatar").change(function(){
@@ -77,28 +76,21 @@ function load() {
   //CATEGORY-EQUIPMENT-CERTIFICATION STUFF (START)
   
   $('div#category-container').children().each(function(){
-    
-    //FIX - hack to make the select tag work properly
-    if (count==0) {
-      var x = document.getElementById("repository_categories");
-      var option = document.createElement("option");
-      option.text = "Select a category...";
-      x.add(option, 0);
-      x.value = "Select a category...";
-      var y = document.getElementById("repository_equipments");
-      var option2 = document.createElement("option");
-      option2.text = "Select a piece of equipment...";
-      y.add(option2, 0);
-      y.value = "Select a piece of equipment...";
-      document.getElementById("repository_license").value = "Creative Commons - Attribution";
-      count++;
-    }
-    
-    
     var cat_item = $(this);
+    var x = document.getElementById("repository_categories");
+    
+    for (var i=0; i<x.options.length;i++) {
+        if (x.options[i].childNodes[0].nodeValue === cat_item[0].childNodes[0].nodeValue){
+            x.remove(i);
+        }
+    }
     categoryArray.push(cat_item[0].innerText);
 
     $(cat_item).click(function(){
+      var option = document.createElement("option");
+      option.text = cat_item[0].innerText;
+      x.add(option);
+      sort_options("repository_categories");
       var index = $(cat_item).index();
       categoryArray.splice(index, 1);
       $(cat_item).remove();
@@ -108,9 +100,20 @@ function load() {
   
   $('div#equipment-container').children().each(function(){
     var equip_item = $(this);
+    var x = document.getElementById("repository_equipments");
+    
+    for (var i=0; i<x.options.length;i++) {
+        if (x.options[i].childNodes[0].nodeValue === equip_item[0].childNodes[0].nodeValue){
+            x.remove(i);
+        }
+    }
     equipmentArray.push(equip_item[0].innerText);
 
     $(equip_item).click(function(){
+      var option = document.createElement("option");
+      option.text = equip_item[0].innerText;
+      x.add(option);
+      sort_options("repository_equipments");
       var index = $(equip_item).index();
       equipmentArray.splice(index, 1);
       $(equip_item).remove();
@@ -143,10 +146,13 @@ function load() {
 
   });
   
+  
+  
 //Get categories
   $(document).ready(function() {
     $('#repository_categories').on('change', function(e) {
-      var val = e.target.options[e.target.selectedIndex].value;
+      var val = e.target.options[e.target.selectedIndex].text;
+      e.target.remove(e.target.selectedIndex);
       e.target.selectedIndex = 0;
       if($("div#category-container").children().length === 5){
         return false;
@@ -165,6 +171,10 @@ function load() {
         
         $(child).click(function(){
           var index = $(child).index();
+          var option = document.createElement("option");
+          option.text = categoryArray[index];
+          document.getElementById("repository_categories").add(option);
+          sort_options("repository_categories");
           categoryArray.splice(index, 1);
           $(child).remove();
         });
@@ -176,7 +186,8 @@ function load() {
   //Get pieces of equipment
   $(document).ready(function() {
     $('#repository_equipments').on('change', function(e) {
-      var val = e.target.options[e.target.selectedIndex].value;
+      var val = e.target.options[e.target.selectedIndex].text;
+      e.target.remove(e.target.selectedIndex);
       e.target.selectedIndex = 0;
       if($("div#equipment-container").children().length === 5){
         return false;
@@ -195,6 +206,10 @@ function load() {
         
         $(child).click(function(){
           var index = $(child).index();
+          var option = document.createElement("option");
+          option.text = equipmentArray[index];
+          document.getElementById("repository_equipments").add(option);
+          sort_options("repository_equipments");
           equipmentArray.splice(index, 1);
           $(child).remove();
         });
@@ -208,7 +223,7 @@ function load() {
   //Get certifications
   $(document).ready(function() {
     $('#user_certifications').on('change', function(e) {
-      var val = e.target.options[e.target.selectedIndex].value;
+      var val = e.target.options[e.target.selectedIndex].text;
       e.target.remove(e.target.selectedIndex);
       e.target.selectedIndex = 0;
       
@@ -243,9 +258,8 @@ function load() {
   
    //CATEGORY-EQUIPMENT-CERTIFICATION STUFF (END)
   
-  $("form.edit_user").submit(function(e){
+  $("form.edit_admin_user").submit(function(e){
     e.preventDefault();
-    var validate = true;
     
     var _this = $(this),
         uri   = _this[0].action,
@@ -255,25 +269,23 @@ function load() {
       form.append("certifications[]", certificationArray[i]);
     };
     
-    if( validate ){ 
-      $.ajax({
-        url: uri,
-        type: "POST",
-        data: form,
-        dataType: 'json',
-        processData: false,
-        contentType: false
-      }).done(function(e) {
-        window.location.pathname = e.redirect_uri 
-      })
-      .fail(function(e) {
-        if( e.responseText === "not signed in" ){ window.location.href = '/login' }
-        var span = $('<span>').addClass('form-error repo-form');
-        span.text(e.responseText);
-        $('input#repository_title').before(span); 
-        console.log('error');
-      });
-    }
+    $.ajax({
+      url: uri,
+      type: "POST",
+      data: form,
+      dataType: 'json',
+      processData: false,
+      contentType: false
+    }).done(function(e) {
+      window.location.pathname = e.redirect_uri 
+    })
+    .fail(function(e) {
+      if( e.responseText === "not signed in" ){ window.location.href = '/login' }
+      var span = $('<span>').addClass('form-error repo-form');
+      span.text(e.responseText);
+      $('input#repository_title').before(span); 
+      console.log('error');
+    });
     
     
   });
@@ -454,7 +466,9 @@ function dataURItoBlob(dataURI, name) {
 
 function sort_options (id) {
   $("#" + id).html($("#" + id + " option").sort(function (a, b) {
-    return a.value.toLowerCase() == b.value.toLowerCase() ? 0 : a.value.toLowerCase() < b.value.toLowerCase() ? -1 : 1
+    if (!(a.text.includes("Select"))&&!(b.text.includes("Select"))) {
+      return a.text.toLowerCase() == b.text.toLowerCase() ? 0 : a.text.toLowerCase() < b.text.toLowerCase() ? -1 : 1
+    } 
   }));
   document.getElementById(id).selectedIndex = 0;
 }

@@ -80,6 +80,17 @@ Rails.application.routes.draw do
         get 'search'
       end
     end
+    
+    resources :settings, only: [:index] do
+      collection do
+        post 'add_category'
+        post 'rename_category'
+        post 'remove_category'
+        post 'add_equipment'
+        post 'rename_equipment'
+        post 'remove_equipment'
+      end
+    end
   end
 
 

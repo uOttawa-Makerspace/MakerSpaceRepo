@@ -4,42 +4,42 @@ class Admin::UsersController < AdminAreaController
   layout 'admin_area'
 
   def index
-    @edit_users = User.all.order("created_at desc").limit(15)
+    @edit_admin_users = User.all.order("created_at desc").limit(15)
   end
 
   def search
     if !params[:q].blank?
       @query = params[:q]
       if params[:filter] == "Name"
-        @edit_users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%")
+        @edit_admin_users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%")
       elsif params[:filter] == "Email"
-        @edit_users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%")
+        @edit_admin_users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%")
       elsif params[:filter] == "Username"
-        @edit_users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%")
+        @edit_admin_users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%")
       else
-        @edit_users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%")
+        @edit_admin_users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%")
       end
     end
   end
 
   def edit
     @rfids = Rfid.recent_unset
-    @certifications = @edit_user.certifications
+    @certifications = @edit_admin_user.certifications
   end
 
   def update
-    @edit_user.certifications.destroy_all
-    @edit_user.update!(user_params)
+    @edit_admin_user.certifications.destroy_all
+    @edit_admin_user.update!(user_params)
     if !params[:user][:rfid].blank? && rfid = Rfid.where("id = ?", params[:user][:rfid]).first
-      if @edit_user.rfid
-        @edit_user.rfid.destroy!
+      if @edit_admin_user.rfid
+        @edit_admin_user.rfid.destroy!
       end
-      rfid.user = @edit_user
+      rfid.user = @edit_admin_user
       rfid.save!
     end
-    if @edit_user.update(user_params)
+    if @edit_admin_user.update(user_params)
       create_certifications
-      render json: { redirect_uri: "#{admin_users_path}" }
+      render json: { redirect_uri: "#{edit_admin_user_path(@edit_admin_user)}" }
       flash[:notice] = "User information updated!"
       
     end
@@ -52,12 +52,12 @@ class Admin::UsersController < AdminAreaController
   end
 
   def load_user
-    @edit_user = User.find(params[:id])
+    @edit_admin_user = User.find(params[:id])
   end
   
   def create_certifications
     params['certifications'].first(5).each do |c|
-      Certification.create(name: c, user_id: @edit_user.id)
+      Certification.create(name: c, user_id: @edit_admin_user.id)
     end if params['certifications'].present?
   end
 

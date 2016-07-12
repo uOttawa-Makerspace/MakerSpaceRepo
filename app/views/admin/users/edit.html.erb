@@ -3,10 +3,10 @@
   <div id="notice"><%= flash[:notice] %></div>
 <% end %>
 
-<%= form_for [:admin, @edit_user] do |f| %>
+<%= form_for @edit_admin_user, url: {controller: "admin/users", action: "update"}, html: { class: "edit_admin_user" } do |f| %>
 
   <div class="edit-column">
-    <div class="setting-title">Edit user: <%= @edit_user.username %></div>
+    <div class="setting-title">Edit user: <%= @edit_admin_user.username %></div>
     <br>
     <%= f.label :gender, class: "profile-label" %>
     <%= f.text_field :gender, class: "profile-text" %>
@@ -25,16 +25,16 @@
     
     <br><br>
     <%= f.label :rfid, class: "profile-label" %>
-    <%= f.select :rfid, rfid_options_list(@rfids, @edit_user), class: "profile-text" %>
+    <%= f.select :rfid, rfid_options_list(@rfids, @edit_admin_user), class: "profile-text" %>
     
     <br><br>
     <%= f.label :certifications, class: "profile-label" %>
-    <%= f.select :certifications, @edit_user.class.certification_options.unshift(["Select a certification...", nil]), class: "profile-text" %>
-    <br><br>
+    <%= f.select :certifications, options_from_collection_for_select(EquipmentOption.order("lower(name) ASC").all, :id, :name), class: "profile-text", include_blank: "Select a certification..." %>
+    <br>
     <div id="certification-container">
-        <% @certifications.each do |certification| %>
-          <span class="certification"><%= certification.name %></span>
-        <% end %>
+      <% @certifications.each do |certification| %>
+        <span class="certification"><%= certification.name %></span>
+      <% end %>
     </div>
     <br>
     <br>

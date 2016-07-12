@@ -134,6 +134,37 @@ input.save-button{
   }
 }
 
+div.general-settings {
+  select {
+    display:inline;
+  }
+  input#equipment_option_name, input#category_option_name {
+    width:400px;
+    display:inline;
+  }
+  input {
+    display:inline;
+  }
+  select.profile-select{
+    width:378px;
+  }
+  select#rename_equipment, select#rename_category{
+    width:170px;
+  }
+  input#rename_equipment_text, input#rename_category_text{
+    width:185px;
+  }
+}
+
+div.search-form{
+  select {
+    display:inline;
+  }
+  input{
+    display:inline;
+  }
+}
+
 a.vp-button{
 	font-size: 1rem;
 	text-align: center;

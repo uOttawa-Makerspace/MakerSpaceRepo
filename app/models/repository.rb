@@ -25,18 +25,6 @@ class Repository < ActiveRecord::Base
     time    :updated_at
   end
 
-  def self.category_options
-    ["Wearable", "Internet of Things", "Mobile Development", "Health Sciences", 
-      "Virtual Reality", "Course-related Projects", "uOttawa Team Projects",
-      "Other Projects"]
-  end
-  
-  def self.equipment_options
-    ["3D Printer", "Laser Cutter", "Oculus Rift", "Next Engine 3D Scanner", 
-      "Arduino Microcontroller", "Soldering", "Silverbullet Vinyl Cutter",
-      "Handibot CNC Mill", "Go Pro", "iPad", "PCB Machine"]
-  end
-
   def self.license_options
     ["Creative Commons - Attribution",
      "Creative Commons - Attribution - Share Alike",
