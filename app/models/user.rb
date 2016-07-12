@@ -6,6 +6,7 @@ class User < ActiveRecord::Base
   has_many :upvotes,      dependent: :destroy
   has_many :comments,     dependent: :destroy
   has_many :repositories, dependent: :destroy
+  has_many :certifications, dependent: :destroy
   accepts_nested_attributes_for :repositories
 
   validates :name,
@@ -57,6 +58,12 @@ class User < ActiveRecord::Base
     @pword = Password.create(new_password)
     self.password = @pword
     self.password_confirmation = @pword
+  end
+  
+  def self.certification_options
+    ["3D Printer", "Arduino Microcontroller", "Go Pro", "Handibot CNC Mill",
+      "iPad", "Laser Cutter", "Next Engine 3D Scanner", "Oculus Rift",
+      "PCB Machine", "Silverbullet Vinyl Cutter", "Soldering"]
   end
 
 end

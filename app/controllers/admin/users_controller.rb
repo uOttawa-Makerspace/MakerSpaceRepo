@@ -1,34 +1,48 @@
 class Admin::UsersController < AdminAreaController
   before_action :load_user, only: [:show, :edit, :update]
+  
+  layout 'admin_area'
 
   def index
-    @users = User.all.order("created_at desc").limit(10)
+    @edit_users = User.all.order("created_at desc").limit(15)
   end
 
   def search
-    if !params[:q_name].blank?
-      @query = params[:q_name]
-      @users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%")
-    elsif !params[:q_email].blank?
-      @query = params[:q_email]
-      @users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%")
+    if !params[:q].blank?
+      @query = params[:q]
+      if params[:filter] == "Name"
+        @edit_users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%")
+      elsif params[:filter] == "Email"
+        @edit_users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%")
+      elsif params[:filter] == "Username"
+        @edit_users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%")
+      else
+        @edit_users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%")
+      end
     end
   end
 
   def edit
     @rfids = Rfid.recent_unset
+    @certifications = @edit_user.certifications
   end
 
   def update
-    @user.update!(user_params)
+    @edit_user.certifications.destroy_all
+    @edit_user.update!(user_params)
     if !params[:user][:rfid].blank? && rfid = Rfid.where("id = ?", params[:user][:rfid]).first
-      if @user.rfid
-        @user.rfid.destroy!
+      if @edit_user.rfid
+        @edit_user.rfid.destroy!
       end
-      rfid.user = @user
+      rfid.user = @edit_user
       rfid.save!
     end
-    redirect_to edit_admin_user_path(@user)
+    if @edit_user.update(user_params)
+      create_certifications
+      render json: { redirect_uri: "#{admin_users_path}" }
+      flash[:notice] = "User information updated!"
+      
+    end
   end
 
   private
@@ -38,7 +52,13 @@ class Admin::UsersController < AdminAreaController
   end
 
   def load_user
-    @user = User.find(params[:id])
+    @edit_user = User.find(params[:id])
+  end
+  
+  def create_certifications
+    params['certifications'].first(5).each do |c|
+      Certification.create(name: c, user_id: @edit_user.id)
+    end if params['certifications'].present?
   end
 
 end

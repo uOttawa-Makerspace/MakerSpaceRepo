@@ -1,3 +1,72 @@
-// Place all the styles related to the admin/users controller here.
-// They will automatically be included in application.css.
-// You can use Sass (SCSS) here: http://sass-lang.com/
+@import "lib";
+
+section#edit-user{
+  @include outer-container(60rem);
+  background-color: #fff;
+  padding: 2rem 5rem;
+  min-height: calc(100vh - 65px);
+
+  div.title{
+    color: #366;
+    font-size: 2rem;
+    padding-bottom: 0.5rem; 
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto;
+    margin-bottom: 1rem; 
+    border-bottom: 2px solid #366;
+  }
+
+  form{
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  label{
+    font: 400 1em 'Raleway', sans-serif;
+    margin: 10px 0 5px;
+    color: #5f9ea0;
+  }
+
+  input[type="text"] {
+    font: 300 0.9em 'Raleway', sans-serif;
+    color: #555;
+    width: 100%;
+    max-width: 400px;
+    padding: 0.5rem;
+    position: relative;
+    margin-bottom: 15px;
+    border-radius: 3px;
+    border: 1px solid #aaa;
+    display: block;
+  }
+
+  input[type="text"]{
+    border-radius: initial;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+  }
+  
+  p{
+    padding-top: 12px;
+  }
+
+}
+
+div#certification-container{
+  span{
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    background-color: #4682b4;
+    color: #eee;
+    font: 300 0.8em 'Raleway', sans-serif !important;
+    margin-top: 0.2rem;
+    margin-right: 0.2rem;
+    cursor: not-allowed;
+  }
+  span:hover{
+    background-color: darkred;
+    cursor: not-allowed;
+  }
+}

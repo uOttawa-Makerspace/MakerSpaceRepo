@@ -2,6 +2,7 @@ var instructableFiles;
 var photoFiles;
 var categoryArray;
 var equipmentArray;
+var certificationArray;
 
 $(document).on('page:load', function(){
   load();
@@ -29,6 +30,7 @@ function load() {
   photoFiles = [];
   categoryArray = [];
   equipmentArray = [];
+  certificationArray = [];
 
   $('div#image-container').children().each(function(){
     var image_item = $(this);
@@ -48,7 +50,32 @@ function load() {
   });
   
   var count=0;
+  dragndrop.call($("div#dragndrop"));
 
+  $("input#user_avatar").change(function(){
+    readURL(this);
+  });
+
+  $("input#images_").change(function(){
+    var input = $(this)[0];
+    if (input.files && input.files[0]) {
+      var files = $.extend(true, [], input.files);
+      addPhotos(photoFiles, files, 0);
+    }
+    resetFormElement(input);
+  });
+
+  $("input#files_").change(function(){
+    var input = $(this)[0];
+    if (input.files && input.files[0]) {
+      var files = $.extend(true, [], input.files);
+      addFiles(instructableFiles, files, 0);
+    }
+    resetFormElement(input);
+  });
+  
+  //CATEGORY-EQUIPMENT-CERTIFICATION STUFF (START)
+  
   $('div#category-container').children().each(function(){
     
     //FIX - hack to make the select tag work properly
@@ -91,29 +118,29 @@ function load() {
 
   });
   
-
-  dragndrop.call($("div#dragndrop"));
-
-  $("input#user_avatar").change(function(){
-    readURL(this);
-  });
-
-  $("input#images_").change(function(){
-    var input = $(this)[0];
-    if (input.files && input.files[0]) {
-      var files = $.extend(true, [], input.files);
-      addPhotos(photoFiles, files, 0);
+  $('div#certification-container').children().each(function(){
+    var certif_item = $(this);
+    var x = document.getElementById("user_certifications");
+    
+    for (var i=0; i<x.options.length;i++) {
+        if (x.options[i].childNodes[0].nodeValue === certif_item[0].childNodes[0].nodeValue){
+            x.remove(i);
+        }
     }
-    resetFormElement(input);
-  });
+    certificationArray.push(certif_item[0].innerText);
+    
+    
 
-  $("input#files_").change(function(){
-    var input = $(this)[0];
-    if (input.files && input.files[0]) {
-      var files = $.extend(true, [], input.files);
-      addFiles(instructableFiles, files, 0);
-    }
-    resetFormElement(input);
+    $(certif_item).click(function(){
+      var option = document.createElement("option");
+      option.text = certif_item[0].innerText;
+      x.add(option);
+      sort_options("user_certifications");
+      var index = $(certif_item).index();
+      certificationArray.splice(index, 1);
+      $(certif_item).remove();
+    });
+
   });
   
 //Get categories
@@ -174,6 +201,81 @@ function load() {
         
       }, 'html');
     });
+  });
+  
+  
+  
+  //Get certifications
+  $(document).ready(function() {
+    $('#user_certifications').on('change', function(e) {
+      var val = e.target.options[e.target.selectedIndex].value;
+      e.target.remove(e.target.selectedIndex);
+      e.target.selectedIndex = 0;
+      
+      
+      for (var i=0; i<certificationArray.length; i++) {
+        if (val==certificationArray[i]) {
+          return false;
+        }
+      }
+      
+      e.preventDefault();
+      certificationArray.push(val);
+      $.get('/template/certification', { 'certification' : val }, function(data){
+        $("div#certification-container").append(data);
+        var last = $("div#certification-container")[0].children.length - 1;
+        var child = $("div#certification-container")[0].children[last];
+        
+        $(child).click(function(){
+          var index = $(child).index();
+          var option = document.createElement("option");
+          option.text = certificationArray[index];
+          document.getElementById("user_certifications").add(option);
+          sort_options("user_certifications");
+          certificationArray.splice(index, 1);
+          $(child).remove();
+          
+          
+        });
+      }, 'html');
+    });
+  });
+  
+   //CATEGORY-EQUIPMENT-CERTIFICATION STUFF (END)
+  
+  $("form.edit_user").submit(function(e){
+    e.preventDefault();
+    var validate = true;
+    
+    var _this = $(this),
+        uri   = _this[0].action,
+        form  = new FormData(_this[0]);
+  
+    for (var i = 0; i < certificationArray.length; i++) {
+      form.append("certifications[]", certificationArray[i]);
+    };
+    
+    if( validate ){ 
+      $.ajax({
+        url: uri,
+        type: "POST",
+        data: form,
+        dataType: 'json',
+        processData: false,
+        contentType: false
+      }).done(function(e) {
+        window.location.pathname = e.redirect_uri 
+      })
+      .fail(function(e) {
+        if( e.responseText === "not signed in" ){ window.location.href = '/login' }
+        var span = $('<span>').addClass('form-error repo-form');
+        span.text(e.responseText);
+        $('input#repository_title').before(span); 
+        console.log('error');
+      });
+    }
+    
+    
   });
 
   $("form#new_repository, form.edit_repository").submit(function(e){
@@ -348,4 +450,11 @@ function dataURItoBlob(dataURI, name) {
       ia[i] = byteString.charCodeAt(i);
   }
   return new File([ab], name, { type: 'image/jpeg' });
+}
+
+function sort_options (id) {
+  $("#" + id).html($("#" + id + " option").sort(function (a, b) {
+    return a.value.toLowerCase() == b.value.toLowerCase() ? 0 : a.value.toLowerCase() < b.value.toLowerCase() ? -1 : 1
+  }));
+  document.getElementById(id).selectedIndex = 0;
 }
