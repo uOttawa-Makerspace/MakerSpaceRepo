@@ -52,7 +52,7 @@
     <div id="category-container"></div>
   
     <br>
-    <%= label_tag :equipment %> 
+    <%= f.label :equipment %> 
     <div>Choose at most 5 pieces of equipment that are related to your project.</div>
     <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.order("lower(name) ASC").all, :id, :name), class: "profile-text", include_blank: "Select a piece of equipment..." %>
   
