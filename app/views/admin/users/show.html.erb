@@ -1,0 +1,56 @@
+<% provide(:title, "Show user") %>
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+<section id="user-show-admin">
+  <%= link_to fa_icon("cog", text: ' Edit user'), edit_admin_user_path(@edit_admin_user), class: 'edit-user-link' %>
+  <div id="user-info">
+      <div class="user-avatar">
+        <%= image_tag @edit_admin_user.avatar.url, class: 'edit-avatar'%>
+      </div>
+      <div class="fullname">
+        <%= "#{@edit_admin_user.name}"%>
+      </div>
+      <div class="username">
+        <%= @edit_admin_user.username %>
+      </div>
+      <% if @github_username.present? %>
+      <div class="user-info">
+        <%= fa_icon "github-alt" %>
+        <%= link_to @github_username, "https://github.com/#{@github_username}" %>
+      </div>
+      <% end %>
+      <% if @edit_admin_user.url.present? %>
+      <div class="user-info">
+        <%= fa_icon("link") %>
+        <%= link_to "#{@edit_admin_user.url.gsub(/\Ahttps?:\/\//,'')}", @edit_admin_user.url %>
+      </div>
+      <% end %>
+      <% if @edit_admin_user.location.present? %>
+      <div class="user-info">
+        <%= fa_icon "location-arrow", text: @edit_admin_user.location %>
+      </div>
+      <% end %>
+      <div class="user-info">
+        <%= content_tag :span, @edit_admin_user.reputation %> REPUTATION
+      </div>
+      <div class="user-info">
+        <%= fa_icon "clock-o", text: "Joined on #{@edit_admin_user.created_at.strftime("%B %d, %Y")}"%>
+      </div>
+      <div class="user-info">
+        <% if @show_user.present? %>
+          <%= fa_icon "clock-o", text: "Last seen in lab on #{@show_user.sign_in_time.strftime("%B %d, %Y")}"%>
+        <% else %>
+          <%= fa_icon "clock-o", text: "Never seen in lab" %>
+        <% end %>
+      </div> 
+      <div class="user-info">
+        <% if @show_user.present? %>
+          <%= fa_icon "clock-o", text: "Average time in lab: #{@average_time} minutes"%>
+        <% end %>
+      </div>
+    
+    
+
+    </div>
+</section>

@@ -4,7 +4,18 @@ class Admin::UsersController < AdminAreaController
   layout 'admin_area'
 
   def index
-    @edit_admin_users = User.all.order("created_at desc").limit(15)
+    @edit_admin_users = User.all.order("created_at desc").limit(10)
+    @active_sessions = LabSession.where("sign_out_time > ?", Time.now)
+    @active_rfids = Array.new
+    @active_sessions.each do |active_session|
+        @active_rfids.append(Rfid.find_by(card_number: active_session.card_number))
+    end
+    @active_users = Array.new
+    @active_rfids.each do |active_rfid|
+      if active_rfid.user_id.present?
+        @active_users.append(User.find_by(id: active_rfid.user_id))
+      end
+    end
   end
 
   def search
@@ -19,6 +30,24 @@ class Admin::UsersController < AdminAreaController
       else
         @edit_admin_users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%")
       end
+    end
+  end
+  
+  def show
+    @show_user = LabSession.order("sign_in_time DESC").find_by(card_number: Rfid.find_by(user_id: @edit_admin_user).card_number)
+    @all_sessions = LabSession.where("sign_out_time < ?", Time.now).where(card_number: Rfid.find_by(user_id: @edit_admin_user).card_number)
+    each_session = 0
+    count = 0
+    @all_sessions.each do |session|
+        if session.present?
+          each_session = each_session + (session.sign_out_time - session.sign_in_time)/60
+          count = count + 1
+        end
+    end
+    if count>0
+      @average_time = (each_session/count).round
+    else
+      @average_time = each_session
     end
   end
 
