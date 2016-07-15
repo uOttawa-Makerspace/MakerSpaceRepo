@@ -3,6 +3,7 @@ class User < ActiveRecord::Base
   include ActiveModel::Serialization
 
   has_one  :rfid,         dependent: :destroy
+  has_one  :lab_session,  dependent: :destroy
   has_many :upvotes,      dependent: :destroy
   has_many :comments,     dependent: :destroy
   has_many :repositories, dependent: :destroy
