@@ -19,13 +19,13 @@
     <br>
     <%= form_for @cat_option, url: {controller: "admin/settings", action: "remove_category"} do |f| %>
       <%= f.label :remove_a_category, class: "profile-label" %>
-      <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.order("lower(name) ASC").all, :id, :name), class: "profile-select", include_blank: "Select a category..." %>
+      <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-select", include_blank: "Select a category..." %>
       <%= f.submit "Remove", class: 'save-button' %>
     <% end %>
     <br>
     <%= form_for @cat_option, url: {controller: "admin/settings", action: "rename_category"} do |f| %>
       <%= f.label :rename_a_category, class: "profile-label" %>
-      <%= select_tag :rename_category, options_from_collection_for_select(CategoryOption.order("lower(name) ASC").all, :id, :name), class: "profile-select", include_blank: "Select..." %>
+      <%= select_tag :rename_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-select", include_blank: "Select..." %>
       <%= f.text_field :name, class: "profile-text", id:"rename_category_text" %>
       <%= f.submit "Rename", class: 'save-button' %>
     <% end %>
@@ -40,13 +40,13 @@
     <br>
     <%= form_for @equip_option, url: {controller: "admin/settings", action: "remove_equipment"} do |f| %>
       <%= f.label :remove_equipment, class: "profile-label" %>
-      <%= select_tag :remove_equipment, options_from_collection_for_select(EquipmentOption.order("lower(name) ASC").all, :id, :name), class: "profile-select", include_blank: "Select a piece of equipment..." %>
+      <%= select_tag :remove_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-select", include_blank: "Select a piece of equipment..." %>
       <%= f.submit "Remove", class: 'save-button' %>
     <% end %>
     <br>
     <%= form_for @equip_option, url: {controller: "admin/settings", action: "rename_equipment"} do |f| %>
       <%= f.label :rename_equipment, class: "profile-label" %>
-      <%= select_tag :rename_equipment, options_from_collection_for_select(EquipmentOption.order("lower(name) ASC").all, :id, :name), class: "profile-select", include_blank: "Select..." %>
+      <%= select_tag :rename_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-select", include_blank: "Select..." %>
       <%= f.text_field :name, class: "profile-text", id:"rename_equipment_text" %>
       <%= f.submit "Rename", class: 'save-button' %>
     <% end %>

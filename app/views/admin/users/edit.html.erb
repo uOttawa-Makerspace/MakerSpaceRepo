@@ -29,7 +29,7 @@
     
     <br><br>
     <%= f.label :certifications, class: "profile-label" %>
-    <%= f.select :certifications, options_from_collection_for_select(EquipmentOption.order("lower(name) ASC").all, :id, :name), class: "profile-text", include_blank: "Select a certification..." %>
+    <%= f.select :certifications, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a certification..." %>
     <br>
     <div id="certification-container">
       <% @certifications.each do |certification| %>

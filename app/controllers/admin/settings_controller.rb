@@ -1,6 +1,4 @@
-class Admin::SettingsController < ApplicationController
-  before_action :current_user
-  
+class Admin::SettingsController < AdminAreaController
   layout 'admin_area'
   
   def index
