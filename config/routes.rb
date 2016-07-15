@@ -31,6 +31,7 @@ Rails.application.routes.draw do
     get 'file'
     get 'category'
     get 'equipment'
+    get 'certification'
     get 'comment'
   end
 
@@ -77,6 +78,17 @@ Rails.application.routes.draw do
     resources :users, only: [:index, :edit, :update] do
       collection do
         get 'search'
+      end
+    end
+    
+    resources :settings, only: [:index] do
+      collection do
+        post 'add_category'
+        post 'rename_category'
+        post 'remove_category'
+        post 'add_equipment'
+        post 'rename_equipment'
+        post 'remove_equipment'
       end
     end
   end

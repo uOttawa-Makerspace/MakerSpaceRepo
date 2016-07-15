@@ -6,6 +6,7 @@ class User < ActiveRecord::Base
   has_many :upvotes,      dependent: :destroy
   has_many :comments,     dependent: :destroy
   has_many :repositories, dependent: :destroy
+  has_many :certifications, dependent: :destroy
   accepts_nested_attributes_for :repositories
 
   validates :name,

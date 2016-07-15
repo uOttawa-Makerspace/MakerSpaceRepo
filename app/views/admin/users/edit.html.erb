@@ -1,32 +1,45 @@
-<h1>Name: <%= @user.name || @user.username %></h1>
-<%= form_for [:admin, @user] do |f| %>
-  <p>
-  <%= f.label(:gender) %>
-  <%= f.text_field(:gender) %>
-  </p>
+<% provide(:title, "Edit user") %>
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
 
-  <p>
-  <%= f.label(:faculty) %>
-  <%= f.text_field(:faculty) %>
-  </p>
+<%= form_for @edit_admin_user, url: {controller: "admin/users", action: "update"}, html: { class: "edit_admin_user" } do |f| %>
 
-  <p>
-  <%= f.label(:use) %>
-  <%= f.text_field(:use) %>
-  </p>
+  <div class="edit-column">
+    <div class="setting-title">Edit user: <%= @edit_admin_user.username %></div>
+    <br>
+    <%= f.label :gender, class: "profile-label" %>
+    <%= f.text_field :gender, class: "profile-text" %>
+    
+    <%= f.label :faculty, class: "profile-label" %>
+    <%= f.text_field :faculty, class: "profile-text" %>
+    
+    <%= f.label :use, class: "profile-label" %>
+    <%= f.text_field :use, class: "profile-text" %>
+    
+    <%= f.label :role, class: "profile-label" %><br>
+    <%= f.radio_button(:role, "regular_user") %>
+    <%= f.label :role_regular, "Regular User", class: "radio-label" %>
+    <%= f.radio_button(:role, "admin") %>
+    <%= f.label :role_admin, "Admin", class: "radio-label" %>
+    
+    <br><br>
+    <%= f.label :rfid, class: "profile-label" %>
+    <%= f.select :rfid, rfid_options_list(@rfids, @edit_admin_user), class: "profile-text" %>
+    
+    <br><br>
+    <%= f.label :certifications, class: "profile-label" %>
+    <%= f.select :certifications, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a certification..." %>
+    <br>
+    <div id="certification-container">
+      <% @certifications.each do |certification| %>
+        <span class="certification"><%= certification.name %></span>
+      <% end %>
+    </div>
+    <br>
+    <br>
+    <%= f.submit "Update User", class: "save-button" %>
 
-  <p>
-  <%= f.label(:role) %>
-  <%= f.radio_button(:role, "regular_user") %>
-  <%= f.label(:role_regular, "Regular User") %>
-  <%= f.radio_button(:role, "admin") %>
-  <%= f.label(:role_admin, "Admin") %>
-  </p>
+  </div>
 
-  <p>
-  <%= f.label(:rfid) %>
-  <%= f.select(:rfid, rfid_options_list(@rfids, @user)) %>
-  </p>
-
-  <%= f.submit %>
 <% end %>

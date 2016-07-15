@@ -240,6 +240,11 @@ div#category-container, div#equipment-container{
     font: 300 0.8em 'Raleway', sans-serif !important;
     margin-top: 0.2rem;
     margin-right: 0.2rem;
+    cursor: default;
+  }
+  
+  span:hover{
+    background-color: darkred;
     cursor: not-allowed;
   }
 }
