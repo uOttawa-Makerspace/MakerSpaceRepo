@@ -18,7 +18,7 @@
     <h2>Most recently created users</h2>
     <ul class="fa-ul">
       <% @edit_admin_users.each do |user| %>
-        <li><% check_box_tag 'user.username' %> <%= link_to "#{user.username} (joined #{time_ago_in_words(user.created_at)} ago)", admin_user_path(user) %></li>
+        <li><%= link_to "#{user.username} (joined #{time_ago_in_words(user.created_at)} ago)", admin_user_path(user) %></li>
       <% end %>
     </ul>
   </div>

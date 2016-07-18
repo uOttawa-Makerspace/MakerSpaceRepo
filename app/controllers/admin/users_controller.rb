@@ -49,11 +49,12 @@ class Admin::UsersController < AdminAreaController
     else
       @average_time = each_session
     end
+    @certifications = @edit_admin_user.certifications.order("lower(name) ASC")
   end
 
   def edit
     @rfids = Rfid.recent_unset
-    @certifications = @edit_admin_user.certifications
+    @certifications = @edit_admin_user.certifications.order("lower(name) ASC")
   end
 
   def update

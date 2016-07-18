@@ -2,55 +2,122 @@
 <% if flash[:notice] %>
   <div id="notice"><%= flash[:notice] %></div>
 <% end %>
+<div class="user-show-admin">
 <section id="user-show-admin">
-  <%= link_to fa_icon("cog", text: ' Edit user'), edit_admin_user_path(@edit_admin_user), class: 'edit-user-link' %>
+  <%= link_to fa_icon("pencil", text: 'Edit user'), edit_admin_user_path(@edit_admin_user), class: 'edit-user-link' %>
   <div id="user-info">
       <div class="user-avatar">
         <%= image_tag @edit_admin_user.avatar.url, class: 'edit-avatar'%>
+        <% if LabSession.where("sign_out_time > ?", Time.now).find_by(card_number: Rfid.find_by(user_id: @edit_admin_user.id).card_number).present? %>
+          <div class="status-online">
+            <%= fa_icon "check-circle-o" %>
+            <%= "Currently signed in" %>
+          </div>
+        <% else %>
+          <div class="status-offline">
+            <%= fa_icon "times-circle-o" %>
+            <%= "Currently signed out" %>
+          </div>
+        <% end %>
       </div>
       <div class="fullname">
-        <%= "#{@edit_admin_user.name}"%>
+        <%= "#{@edit_admin_user.name}"%> 
       </div>
       <div class="username">
         <%= @edit_admin_user.username %>
       </div>
-      <% if @github_username.present? %>
-      <div class="user-info">
-        <%= fa_icon "github-alt" %>
-        <%= link_to @github_username, "https://github.com/#{@github_username}" %>
-      </div>
+      <% if @edit_admin_user.gender.present? %>
+        <div class="user-info">
+          <%= fa_icon "transgender", text: @edit_admin_user.gender %>
+        </div>
       <% end %>
-      <% if @edit_admin_user.url.present? %>
+      <% if @edit_admin_user.faculty.present? %>
+        <div class="user-info">
+          <%= fa_icon "book", text: "Faculty of #{@edit_admin_user.faculty}" %>
+        </div>
+      <% end %>
+      <% if @edit_admin_user.use.present? %>
+        <div class="user-info">
+          <%= fa_icon "sticky-note-o", text: "Use: #{@edit_admin_user.use}" %>
+        </div>
+      <% end %>
       <div class="user-info">
-        <%= fa_icon("link") %>
-        <%= link_to "#{@edit_admin_user.url.gsub(/\Ahttps?:\/\//,'')}", @edit_admin_user.url %>
+        <%= fa_icon "envelope" %>
+        <%= mail_to @edit_admin_user.email %>
       </div>
+      <% if @edit_admin_user.url.present? %>
+        <div class="user-info">
+          <%= fa_icon("link") %>
+          <%= link_to "#{@edit_admin_user.url.gsub(/\Ahttps?:\/\//,'')}", @edit_admin_user.url %>
+        </div>
+      <% end %>
+      <% if @github_username.present? %>
+        <div class="user-info">
+          <%= fa_icon "github-alt" %>
+          <%= link_to @github_username, "https://github.com/#{@github_username}" %>
+        </div>
       <% end %>
       <% if @edit_admin_user.location.present? %>
       <div class="user-info">
-        <%= fa_icon "location-arrow", text: @edit_admin_user.location %>
+        <%= fa_icon "location-arrow" %>
+        <%= link_to @edit_admin_user.location, "http://maps.google.com/?q=#{@edit_admin_user.location}" %>
       </div>
       <% end %>
       <div class="user-info">
-        <%= content_tag :span, @edit_admin_user.reputation %> REPUTATION
+        <%= fa_icon "calendar", text: "Joined on #{@edit_admin_user.created_at.strftime("%B %d, %Y")}"%>
       </div>
-      <div class="user-info">
-        <%= fa_icon "clock-o", text: "Joined on #{@edit_admin_user.created_at.strftime("%B %d, %Y")}"%>
-      </div>
-      <div class="user-info">
-        <% if @show_user.present? %>
-          <%= fa_icon "clock-o", text: "Last seen in lab on #{@show_user.sign_in_time.strftime("%B %d, %Y")}"%>
-        <% else %>
-          <%= fa_icon "clock-o", text: "Never seen in lab" %>
-        <% end %>
-      </div> 
-      <div class="user-info">
-        <% if @show_user.present? %>
-          <%= fa_icon "clock-o", text: "Average time in lab: #{@average_time} minutes"%>
+  </div>
+  <div id="user-show-admin" class="certifications">
+    <hr>
+    <div class="title">Certifications</div>
+    <% if @certifications.present? %>
+      <div>This user is currently certified to use the following pieces of equipment:</div>
+      <div id="certification-container">
+        <% @certifications.each do |certification| %>
+          <span class="certification"><%= certification.name %></span>
         <% end %>
       </div>
-    
-    
-
+    <% else %>
+      <div>This user has no certifications so far.</div>
+    <% end %>
+  </div>
+  <div id="user-show-admin" class="sessions">
+    <hr>
+    <div class="title">Lab session statistics</div>
+    <div id="user-info">
+      <% if @show_user.present? %>
+        <div class="user-info">
+          <%= fa_icon "calendar-check-o", text: "Last seen on #{@show_user.sign_in_time.strftime("%B %d, %Y")}"%>
+        </div>
+        <div class="user-info">
+            <%= fa_icon "calendar-plus-o", text: "Been in lab #{@all_sessions.count} times"%>
+        </div>
+        <div class="user-info">
+            <%= fa_icon "clock-o", text: "Average time spent in lab: #{@average_time} minutes"%>
+        </div>
+      <% else %>
+        <div class="user-info">
+          <%= fa_icon "calendar-times-o", text: "Never seen in lab" %>
+        </div>
+      <% end %>
     </div>
+    <div class="subtitle">Most recent finished sessions:</div>
+    <table>
+      <thead>
+        <th>Sign In Time</th>
+        <th>Sign Out Time</th>
+        <th>Time Spent</th>
+        <th>RFID</th>
+      </thead>
+      <% @all_sessions.limit(10).order("sign_in_time DESC").each do |session| %>
+        <tr>
+          <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
+          <td><%= session.sign_out_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
+          <td><%= ((session.sign_out_time - session.sign_in_time)/60).round %> minutes</td>
+          <td><%= session.card_number %></td>
+        </tr>
+      <% end %>
+    </table>
+  </div>
 </section>
+</div>

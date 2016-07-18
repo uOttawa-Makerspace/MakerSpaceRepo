@@ -13,7 +13,6 @@ div.setting-grid{
   min-height: calc(100vh - 50px);
 	background-color: #fff;
 	padding: 0 1rem;
-	padding-bottom: 3rem;
 	/*position: relative;*/
 }
 
@@ -25,11 +24,9 @@ div.panel-title {
 div.setting-side-panel{
 	@include span-columns(2.5, 0);
 	position: relative;
-  background-color: #f0f5f5;
 	padding: 3rem 1rem 0;
   color: #333;
   font: 400 1.2rem 'Raleway', helvetica, sans-serif;
-  height:800px;
 
   li{
   	display: block;
@@ -187,11 +184,13 @@ div.avatar-column{
 
 div.edit-column{
 	@include span-columns(6, 0);
-	border-left: 1px solid #ddd;
+  border-left: 260px solid #f0f5f5;
+  margin-left: -260px;
 	padding-left: 2rem;
   color: #333;
   font: 400 1rem 'Raleway', sans-serif;
   padding-top: 2rem;
+  min-height: calc(100vh - 50px);
   
   input#q{
     display:inline;
