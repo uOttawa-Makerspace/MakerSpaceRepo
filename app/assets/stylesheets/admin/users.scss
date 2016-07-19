@@ -1,238 +1,210 @@
 @import "lib";
-
-section#edit-user{
-  @include outer-container(60rem);
-  background-color: #fff;
-  padding: 2rem 5rem;
-  min-height: calc(100vh - 65px);
-
-  div.title{
-    color: #366;
-    font-size: 2rem;
-    padding-bottom: 0.5rem; 
-    text-align: center;
-    max-width: 500px;
-    margin: 0 auto;
-    margin-bottom: 1rem; 
-    border-bottom: 2px solid #366;
-  }
-
-  form{
-    max-width: 420px;
-    width: 100%;
-    margin: 0 auto;
-  }
-
-  label{
-    font: 400 1em 'Raleway', sans-serif;
-    margin: 10px 0 5px;
-    color: #5f9ea0;
-  }
-
-  input[type="text"] {
-    font: 300 0.9em 'Raleway', sans-serif;
-    color: #555;
-    width: 100%;
-    max-width: 400px;
-    padding: 0.5rem;
-    position: relative;
-    margin-bottom: 15px;
-    border-radius: 3px;
-    border: 1px solid #aaa;
-    display: block;
-  }
-
-  input[type="text"]{
-    border-radius: initial;
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-  }
-  
-  p{
-    padding-top: 12px;
-  }
-
-}
-
-div#certification-container{
-  span{
-    display: inline-block;
-    padding: 0.25rem 0.7rem;
-    background-color: #4682b4;
-    color: #eee;
-    font: 300 0.8em 'Raleway', sans-serif !important;
-    margin-top: 0.2rem;
-    margin-right: 0.2rem;
-    cursor: not-allowed;
-  }
-  span:hover{
-    background-color: darkred;
-    cursor: not-allowed;
-  }
-}
-
-a.edit-user-link{
-  @include transition(100ms);
-  position: absolute;
-  right: 5rem;
-  top: 4rem;
-  background-color: #789;
-  color: #fff;
-  padding: 0.25rem 0.5rem;
-  border: 3px solid #789;
-
-  &:hover{
+section#edit-user {
+    @include outer-container(60rem);
     background-color: #fff;
-    color: #789;
-  }
-}
-
-div.user-show-admin {
-  @include span-columns(6, 0);
-  border-left: 260px solid #f0f5f5;
-  margin-left: -260px;
-  min-height: calc(100vh - 50px);
-}
-
-section#user-show-admin{
-	background-color: #fff;
-	padding-bottom: 2rem;
-  width:800px;
-
-	div.user-avatar{
-		@include span-columns(2,5);
-    width: 250px;
-    margin-bottom:50px;
-    text-align: center;
-    
-    img {
-      width:250px;
-      height:250px;
-    }
-    
-    div.status-online {
-      background-color: lightgreen;
-      color:darkgreen;
-      height:30px;
-      width:250px;
-      vertical-align: middle;
-      display:table-cell;
-    }
-    
-    div.status-offline {
-      background-color: lightpink;
-      color:darkred;
-      height:30px;
-      width:250px;
-      vertical-align: middle;
-      display:table-cell;
-    }
-	}
-
-	div#user-info{
-		padding: 3rem 0;
-    min-height:300px;
-
-		div.fullname{
-			font-size: 2rem;
-			color: #333;
-		}
-
-		div.username{
-			font-size: 1.25rem;
-			color: #555;
-			padding-bottom: 1rem;
-		}
-
-		div.user-info{
-			color: #777;
-			padding-bottom: 1rem;
-
-			i{
-        width:28px;
-				color: #366;
-				padding-right: 2%;
-				font-size: 1.5rem;
-			}
-
-			a{
-		    white-space: nowrap;
-		    overflow:hidden !important;
-		    text-overflow: ellipsis;
-		    display: inline-block;
-			}
-
-			a:hover{
-				color: #4682b4;
-			}
-
-			span{
-				color: #366;
-				padding-right: 2%;
-				font-size: 1.5rem;			
-			}
-
-			span.date{
-				font-size: 1rem;			
-			}
-		}
-	}
-  hr {
-    margin-left:50px;
-  }
-  div.certifications {
-    display: table-row;
-    .title {
-      font-size:28px;
-      color: #366;
-      margin-bottom:40px;
-    }
-    div {
-      margin-left: 50px;
-      color: #777;
-    }
-    #certification-container {
-      margin-top:10px;
-    }
-    .certification:hover {
-      cursor: default;
-      background-color: #4682b4;
-    }
-  }
-  div.sessions {
-    display:table-cell;
-    margin-left: 50px;
-    padding-top:40px;
-    margin-bottom:500px;
-    width:1000px;
-    .title {
-      font-size:28px;
-      color: #366;
-      margin-left: 50px;
-    }
-    i {
-      margin-left: 50px;
-    }
-    .subtitle {
-      margin-top:-200px;
-      font-size:22px;
-      color: #366;
-      margin-left: 50px;
-      margin-bottom:10px;
-    }
-    table {
-      margin-left: 50px;
-      width:94%;
-      text-align: center;
-      
-      thead {
-        background-color: #e0ebeb;
+    padding: 2rem 5rem;
+    min-height: calc(100vh - 65px);
+    div.title {
         color: #366;
-      }
-      td {
-        background-color: #f0f5f5;
-      }
+        font-size: 2rem;
+        padding-bottom: 0.5rem;
+        text-align: center;
+        max-width: 500px;
+        margin: 0 auto;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #366;
     }
-    
-  }
+    form {
+        max-width: 420px;
+        width: 100%;
+        margin: 0 auto;
+    }
+    label {
+        font: 400 1em 'Raleway', sans-serif;
+        margin: 10px 0 5px;
+        color: #5f9ea0;
+    }
+    input[type="text"] {
+        font: 300 0.9em 'Raleway', sans-serif;
+        color: #555;
+        width: 100%;
+        max-width: 400px;
+        padding: 0.5rem;
+        position: relative;
+        margin-bottom: 15px;
+        border-radius: 3px;
+        border: 1px solid #aaa;
+        display: block;
+    }
+    input[type="text"] {
+        border-radius: initial;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+    }
+    p {
+        padding-top: 12px;
+    }
+}
+div#certification-container {
+    span {
+        display: inline-block;
+        padding: 0.25rem 0.7rem;
+        background-color: #4682b4;
+        color: #eee;
+        font: 300 0.8em 'Raleway', sans-serif !important;
+        margin-top: 0.2rem;
+        margin-right: 0.2rem;
+        cursor: not-allowed;
+    }
+    span:hover {
+        background-color: darkred;
+        cursor: not-allowed;
+    }
+}
+a.edit-user-link {
+    @include transition(100ms);
+    position: absolute;
+    right: 5rem;
+    top: 4rem;
+    background-color: #789;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border: 3px solid #789;
+    &:hover {
+        background-color: #fff;
+        color: #789;
+    }
+}
+div.user-show-admin {
+    @include span-columns(6, 0);
+    border-left: 260px solid #f0f5f5;
+    margin-left: -260px;
+    min-height: calc(100vh - 50px);
+}
+section#user-show-admin {
+    background-color: #fff;
+    padding-bottom: 2rem;
+    width: 800px;
+    div.user-avatar {
+        @include span-columns(2, 5);
+        width: 250px;
+        margin-bottom: 50px;
+        text-align: center;
+        img {
+            width: 250px;
+            height: 250px;
+        }
+        div.status-online {
+            background-color: lightgreen;
+            color: darkgreen;
+            height: 30px;
+            width: 250px;
+            vertical-align: middle;
+            display: table-cell;
+        }
+        div.status-offline {
+            background-color: lightpink;
+            color: darkred;
+            height: 30px;
+            width: 250px;
+            vertical-align: middle;
+            display: table-cell;
+        }
+    }
+    div#user-info {
+        padding: 3rem 0;
+        min-height: 300px;
+        div.fullname {
+            font-size: 2rem;
+            color: #333;
+        }
+        div.username {
+            font-size: 1.25rem;
+            color: #555;
+            padding-bottom: 1rem;
+        }
+        div.user-info {
+            color: #777;
+            padding-bottom: 1rem;
+            i {
+                width: 28px;
+                color: #366;
+                padding-right: 2%;
+                font-size: 1.5rem;
+            }
+            a {
+                white-space: nowrap;
+                overflow: hidden !important;
+                text-overflow: ellipsis;
+                display: inline-block;
+            }
+            a:hover {
+                color: #4682b4;
+            }
+            span {
+                color: #366;
+                padding-right: 2%;
+                font-size: 1.5rem;
+            }
+            span.date {
+                font-size: 1rem;
+            }
+        }
+    }
+    hr {
+        margin-left: 50px;
+    }
+    div.certifications {
+        display: table-row;
+        .title {
+            font-size: 28px;
+            color: #366;
+            margin-bottom: 40px;
+        }
+        div {
+            margin-left: 50px;
+            color: #777;
+        }
+        #certification-container {
+            margin-top: 10px;
+        }
+        .certification:hover {
+            cursor: default;
+            background-color: #4682b4;
+        }
+    }
+    div.sessions {
+        display: table-cell;
+        margin-left: 50px;
+        padding-top: 40px;
+        margin-bottom: 500px;
+        width: 1000px;
+        .title {
+            font-size: 28px;
+            color: #366;
+            margin-left: 50px;
+        }
+        i {
+            margin-left: 50px;
+        }
+        .subtitle {
+            margin-top: -200px;
+            font-size: 22px;
+            color: #366;
+            margin-left: 50px;
+            margin-bottom: 10px;
+        }
+        table {
+            margin-left: 50px;
+            width: 94%;
+            text-align: center;
+            thead {
+                background-color: #e0ebeb;
+                color: #366;
+            }
+            td {
+                background-color: #f0f5f5;
+            }
+        }
+    }
 }
