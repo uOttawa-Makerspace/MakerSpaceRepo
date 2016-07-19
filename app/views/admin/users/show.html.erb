@@ -8,7 +8,7 @@
   <div id="user-info">
       <div class="user-avatar">
         <%= image_tag @edit_admin_user.avatar.url, class: 'edit-avatar'%>
-        <% if LabSession.where("sign_out_time > ?", Time.now).find_by(card_number: Rfid.find_by(user_id: @edit_admin_user.id).card_number).present? %>
+        <% if @all_sessions.where("sign_out_time > ?", Time.now).present? %>
           <div class="status-online">
             <%= fa_icon "check-circle-o" %>
             <%= "Currently signed in" %>
@@ -72,7 +72,7 @@
     <div class="title">Certifications</div>
     <% if @certifications.present? %>
       <div>This user is currently certified to use the following pieces of equipment:</div>
-      <div id="certification-container">
+      <div id="cert-container">
         <% @certifications.each do |certification| %>
           <span class="certification"><%= certification.name %></span>
         <% end %>
@@ -85,9 +85,15 @@
     <hr>
     <div class="title">Lab session statistics</div>
     <div id="user-info">
-      <% if @show_user.present? %>
+      <% if @all_sessions.present? %>
         <div class="user-info">
-          <%= fa_icon "calendar-check-o", text: "Last seen on #{@show_user.sign_in_time.strftime("%B %d, %Y")}"%>
+          <% if @all_sessions.first.sign_out_time > Time.now %>
+            <%= fa_icon "calendar-check-o", text: "Currently in lab" %>
+          <% elsif (@all_sessions.first.sign_out_time < (Time.now - 7.days)) %>
+            <%= fa_icon "calendar-check-o", text: "Last seen in lab on #{@all_sessions.first.sign_out_time.strftime("%B %d, %Y")}" %>
+          <% else %>
+            <%= fa_icon "calendar-check-o", text: "Last seen in lab #{time_ago_in_words(@all_sessions.first.sign_out_time)} ago" %>
+          <% end %>
         </div>
         <div class="user-info">
             <%= fa_icon "calendar-plus-o", text: "Been in lab #{@all_sessions.count} times"%>
@@ -95,29 +101,35 @@
         <div class="user-info">
             <%= fa_icon "clock-o", text: "Average time spent in lab: #{@average_time} minutes"%>
         </div>
+        <div class="subtitle">Most recent finished sessions:</div>
+        <table>
+          <thead>
+            <th>Sign In Time</th>
+            <th>Sign Out Time</th>
+            <th>Time Spent</th>
+          </thead>
+          <% @all_sessions.limit(10).each do |session| %>
+            <% if session.sign_out_time > Time.now %>
+              <tr class="current-session">
+                <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
+                <td>Current session</td>
+                <td><%= ((Time.now - session.sign_in_time)/60).round %> min. so far</td>
+              </tr>
+             <% else %>
+              <tr>
+                <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
+                <td><%= session.sign_out_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
+                <td><%= ((session.sign_out_time - session.sign_in_time)/60).round %> minutes</td>
+              </tr>
+            <% end %>
+          <% end %>
+        </table>
       <% else %>
         <div class="user-info">
           <%= fa_icon "calendar-times-o", text: "Never seen in lab" %>
         </div>
       <% end %>
     </div>
-    <div class="subtitle">Most recent finished sessions:</div>
-    <table>
-      <thead>
-        <th>Sign In Time</th>
-        <th>Sign Out Time</th>
-        <th>Time Spent</th>
-        <th>RFID</th>
-      </thead>
-      <% @all_sessions.limit(10).order("sign_in_time DESC").each do |session| %>
-        <tr>
-          <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
-          <td><%= session.sign_out_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
-          <td><%= ((session.sign_out_time - session.sign_in_time)/60).round %> minutes</td>
-          <td><%= session.card_number %></td>
-        </tr>
-      <% end %>
-    </table>
   </div>
 </section>
 </div>

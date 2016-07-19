@@ -165,12 +165,18 @@ section#user-show-admin {
             margin-left: 50px;
             color: #777;
         }
-        #certification-container {
+        #show_certification {
             margin-top: 10px;
         }
-        .certification:hover {
-            cursor: default;
-            background-color: #4682b4;
+        span.certification {
+          display: inline-block;
+          padding: 0.25rem 0.7rem;
+          background-color: #4682b4;
+          color: #eee;
+          font: 300 0.8em 'Raleway', sans-serif !important;
+          margin-top: 0.2rem;
+          margin-right: 0.2rem;
+          cursor: default;
         }
     }
     div.sessions {
@@ -188,7 +194,7 @@ section#user-show-admin {
             margin-left: 50px;
         }
         .subtitle {
-            margin-top: -200px;
+            margin-top: 25px;
             font-size: 22px;
             color: #366;
             margin-left: 50px;
@@ -198,12 +204,15 @@ section#user-show-admin {
             margin-left: 50px;
             width: 94%;
             text-align: center;
-            thead {
-                background-color: #e0ebeb;
+            th {
+                background-color: #c2d6d6;
                 color: #366;
             }
-            td {
+            tr {
                 background-color: #f0f5f5;
+            }
+            tr.current-session {
+                background-color: #b3e6cc;
             }
         }
     }

@@ -4,17 +4,11 @@ class Admin::UsersController < AdminAreaController
   layout 'admin_area'
 
   def index
-    @edit_admin_users = User.all.order("created_at desc").limit(10)
-    @active_sessions = LabSession.where("sign_out_time > ?", Time.now)
-    @active_rfids = Array.new
-    @active_sessions.each do |active_session|
-        @active_rfids.append(Rfid.find_by(card_number: active_session.card_number))
-    end
+    @edit_admin_users = User.all.order("created_at DESC").limit(10)
+    @active_sessions = LabSession.where("sign_out_time > ?", Time.now).order("sign_in_time DESC")
     @active_users = Array.new
-    @active_rfids.each do |active_rfid|
-      if active_rfid.user_id.present?
-        @active_users.append(User.find_by(id: active_rfid.user_id))
-      end
+    @active_sessions.each do |session|
+      @active_users.append(User.find(session.user_id))
     end
   end
 
@@ -34,13 +28,16 @@ class Admin::UsersController < AdminAreaController
   end
   
   def show
-    @show_user = LabSession.order("sign_in_time DESC").find_by(card_number: Rfid.find_by(user_id: @edit_admin_user).card_number)
-    @all_sessions = LabSession.where("sign_out_time < ?", Time.now).where(card_number: Rfid.find_by(user_id: @edit_admin_user).card_number)
+    @all_sessions = @edit_admin_user.lab_sessions.order("sign_in_time DESC")
     each_session = 0
     count = 0
     @all_sessions.each do |session|
         if session.present?
-          each_session = each_session + (session.sign_out_time - session.sign_in_time)/60
+          if session.sign_out_time < Time.now
+            each_session = each_session + (session.sign_out_time - session.sign_in_time)/60
+          else
+            each_session = each_session + (Time.now - session.sign_in_time)/60
+          end
           count = count + 1
         end
     end

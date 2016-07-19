@@ -30,7 +30,7 @@
         <p style="color:gray">There are no users signed in.</p>
       <% end %>
       <% @active_users.each do |user| %>
-        <li><%= link_to "#{user.username} (signed in #{time_ago_in_words(LabSession.where("sign_out_time > ?", Time.now).find_by(card_number: Rfid.find_by(user_id: user.id).card_number).sign_in_time)} ago)", admin_user_path(user) %></li>
+        <li><%= link_to "#{user.username} (signed in #{time_ago_in_words(@active_sessions.find_by(user_id: user.id).sign_in_time)} ago)", admin_user_path(user) %></li>
       <% end %>
     </ul>
   </div>
