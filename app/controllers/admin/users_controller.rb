@@ -6,10 +6,7 @@ class Admin::UsersController < AdminAreaController
   def index
     @edit_admin_users = User.all.order("created_at DESC").limit(10)
     @active_sessions = LabSession.where("sign_out_time > ?", Time.now).order("sign_in_time DESC")
-    @active_users = Array.new
-    @active_sessions.each do |session|
-      @active_users.append(User.find(session.user_id))
-    end
+    @active_users = @active_sessions.includes(:user).map{|session| session.user}
   end
 
   def search

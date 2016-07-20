@@ -201,19 +201,29 @@ section#user-show-admin {
             margin-bottom: 10px;
         }
         table {
-            margin-left: 50px;
-            width: 94%;
-            text-align: center;
-            th {
-                background-color: #c2d6d6;
-                color: #366;
-            }
-            tr {
-                background-color: #f0f5f5;
-            }
-            tr.current-session {
-                background-color: #b3e6cc;
-            }
+          margin-left: 50px;
         }
+    }
+}
+
+table {
+    width:92%;
+    th {
+        background-color: #c2d6d6;
+        color: #366;
+        padding:5px;
+    }
+    td{
+        padding:5px 10px;
+    }
+    tr {
+        background-color: #f0f5f5;
+    }
+    tr.current-session {
+        background-color: #b3e6cc;
+    }
+    .link-table {
+    	color: #366;
+	  	text-align:center;
     }
 }
