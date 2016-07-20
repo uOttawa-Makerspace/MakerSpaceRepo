@@ -4,7 +4,9 @@ class Admin::UsersController < AdminAreaController
   layout 'admin_area'
 
   def index
-    @edit_admin_users = User.all.order("created_at desc").limit(15)
+    @edit_admin_users = User.all.order("created_at DESC").limit(10)
+    @active_sessions = LabSession.where("sign_out_time > ?", Time.now).order("sign_in_time DESC")
+    @active_users = @active_sessions.includes(:user).map{|session| session.user}
   end
 
   def search
@@ -21,10 +23,32 @@ class Admin::UsersController < AdminAreaController
       end
     end
   end
+  
+  def show
+    @all_sessions = @edit_admin_user.lab_sessions.order("sign_in_time DESC")
+    each_session = 0
+    count = 0
+    @all_sessions.each do |session|
+        if session.present?
+          if session.sign_out_time < Time.now
+            each_session = each_session + (session.sign_out_time - session.sign_in_time)/60
+          else
+            each_session = each_session + (Time.now - session.sign_in_time)/60
+          end
+          count = count + 1
+        end
+    end
+    if count>0
+      @average_time = (each_session/count).round
+    else
+      @average_time = each_session
+    end
+    @certifications = @edit_admin_user.certifications.order("lower(name) ASC")
+  end
 
   def edit
     @rfids = Rfid.recent_unset
-    @certifications = @edit_admin_user.certifications
+    @certifications = @edit_admin_user.certifications.order("lower(name) ASC")
   end
 
   def update

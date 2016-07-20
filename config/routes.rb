@@ -75,7 +75,7 @@ Rails.application.routes.draw do
   namespace :admin do
     get 'index', path: '/'
 
-    resources :users, only: [:index, :edit, :update] do
+    resources :users, only: [:index, :edit, :update, :show] do
       collection do
         get 'search'
       end

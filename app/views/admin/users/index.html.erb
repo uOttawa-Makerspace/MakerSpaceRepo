@@ -14,11 +14,24 @@
     <% end %>
   </div>
   <br><br>
-  <h2>15 most recent users</h2>
-  <ul class="fa-ul">
-    <% @edit_admin_users.each do |user| %>
-      <li><%= link_to "#{user.username} (joined #{time_ago_in_words(user.created_at)} ago)", edit_admin_user_path(user) %></li>
-    <% end %>
-  </ul>
-</div>
+  <div>
+    <h2>Most recently created users</h2>
+    <ul class="fa-ul">
+      <% @edit_admin_users.each do |user| %>
+        <li><%= link_to "#{user.username} (joined #{time_ago_in_words(user.created_at)} ago)", admin_user_path(user) %></li>
+      <% end %>
+    </ul>
+  </div>
+  <br><br>
+  <div>
+    <h2>Users currently signed in</h2>
+    <ul class="fa-ul">
+      <% if !@active_users.present? %>
+        <p style="color:gray">There are no users signed in.</p>
+      <% end %>
+      <% @active_users.each do |user| %>
+        <li><%= link_to "#{user.username} (signed in #{time_ago_in_words(@active_sessions.find_by(user_id: user.id).sign_in_time)} ago)", admin_user_path(user) %></li>
+      <% end %>
+    </ul>
+  </div>
 </div>
