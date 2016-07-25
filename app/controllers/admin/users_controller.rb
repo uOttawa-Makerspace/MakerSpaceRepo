@@ -4,13 +4,24 @@ class Admin::UsersController < AdminAreaController
   layout 'admin_area'
 
   def index
-    if params[:p] == "signed_in_users"
-      @users = LabSession.where("sign_out_time > ?", Time.now).order("#{params[:sort]} #{params[:direction]}").includes(:user).map{|session| session.user}
+    if sort_params
+      if params[:p] == "signed_in_users"
+        @users = LabSession.joins(:user).where("sign_out_time > ?", Time.now).order("#{params[:sort]} #{params[:direction]}").includes(:user).map{|session| session.user}
+      elsif params[:p] == "new_users" || !params[:p].present?
+        @users = User.newest_users.order("#{params[:sort]} #{params[:direction]}")
+      end
     else
-      @users = User.limit(25).joins("LEFT JOIN lab_sessions ON users.id = lab_sessions.user_id").where('lab_sessions.sign_in_time = (SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id) OR (SELECT COUNT(*) FROM lab_sessions WHERE lab_sessions.user_id = users.id)=0').order("#{params[:sort]} #{params[:direction]}") 
+      redirect_to admin_users_path
+      flash[:alert] = "Invalid parameters!"
     end
   end
   
+  def sort_params
+    if (((["username","name","sign_in_time","users.created_at"].include? params[:sort]) && (["desc","asc"].include? params[:direction])) || (!params[:sort].present? && !params[:direction].present?))
+      return true
+    end
+  end
+
   def bulk_add_certifications
     if params['bulk_cert_users'].present? && params['bulk_certifications'].present?
       params['bulk_cert_users'].each do |user|
@@ -27,19 +38,24 @@ class Admin::UsersController < AdminAreaController
   end
 
   def search
-    if !params[:q].blank?
-      @query = params[:q]
-      if params[:filter] == "Name"
-        @users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%").joins("LEFT JOIN lab_sessions ON users.id = lab_sessions.user_id").where('lab_sessions.sign_in_time = (SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id) OR (SELECT COUNT(*) FROM lab_sessions WHERE lab_sessions.user_id = users.id)=0').order("#{params[:sort]} #{params[:direction]}")
-      elsif params[:filter] == "Email"
-        @users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%").order("#{params[:sort]} #{params[:direction]}").joins("LEFT JOIN lab_sessions ON users.id = lab_sessions.user_id").where('lab_sessions.sign_in_time = (SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id) OR (SELECT COUNT(*) FROM lab_sessions WHERE lab_sessions.user_id = users.id)=0').order("#{params[:sort]} #{params[:direction]}")
-      elsif params[:filter] == "Username"
-        @users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%").order("#{params[:sort]} #{params[:direction]}").joins("LEFT JOIN lab_sessions ON users.id = lab_sessions.user_id").where('lab_sessions.sign_in_time = (SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id) OR (SELECT COUNT(*) FROM lab_sessions WHERE lab_sessions.user_id = users.id)=0').order("#{params[:sort]} #{params[:direction]}")
+    if sort_params
+      if !params[:q].blank?
+        @query = params[:q]
+        if params[:filter] == "Name"
+          @users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%").newest_users.order("#{params[:sort]} #{params[:direction]}")
+        elsif params[:filter] == "Email"
+          @users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%").newest_users.order("#{params[:sort]} #{params[:direction]}")
+        elsif params[:filter] == "Username"
+          @users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%").newest_users.order("#{params[:sort]} #{params[:direction]}")
+        else
+          @users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%").newest_users.order("#{params[:sort]} #{params[:direction]}")
+        end
       else
-        @users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%").order("#{params[:sort]} #{params[:direction]}").joins("LEFT JOIN lab_sessions ON users.id = lab_sessions.user_id").where('lab_sessions.sign_in_time = (SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id) OR (SELECT COUNT(*) FROM lab_sessions WHERE lab_sessions.user_id = users.id)=0').order("#{params[:sort]} #{params[:direction]}")
+        redirect_to (:back)
+        flash[:alert] = "Invalid parameters!"
       end
     else
-      redirect_to (:back)
+      redirect_to admin_users_path
       flash[:alert] = "Invalid parameters!"
     end
   end

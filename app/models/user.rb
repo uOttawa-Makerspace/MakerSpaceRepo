@@ -61,4 +61,7 @@ class User < ActiveRecord::Base
     self.password_confirmation = @pword
   end
 
+  
+  scope :newest_users, -> { includes(:lab_sessions).limit(25).joins("LEFT JOIN lab_sessions ON users.id = lab_sessions.user_id").where('lab_sessions.sign_in_time = (SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id) OR (SELECT COUNT(*) FROM lab_sessions WHERE lab_sessions.user_id = users.id)=0') }
+  
 end
