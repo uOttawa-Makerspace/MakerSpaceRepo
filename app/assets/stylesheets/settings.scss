@@ -115,7 +115,6 @@ div.section-desc{
 }
 
 input.save-button{
-  display: block;
   font: 300 1em 'Raleway', sans-serif;
   padding: 0.5rem 1rem;
   border: none;
@@ -125,6 +124,7 @@ input.save-button{
   border-radius: 2px;
   background-color: #5f9ea0;
   color: #fff;
+  margin-bottom: 20px;
 
   &:hover{
     cursor: pointer;
@@ -183,7 +183,7 @@ div.avatar-column{
 }
 
 div.edit-column{
-	@include span-columns(6, 0);
+	@include span-columns(8, 0);
   border-left: 260px solid #f0f5f5;
   margin-left: -260px;
 	padding-left: 2rem;
@@ -194,7 +194,7 @@ div.edit-column{
   
   input#q{
     display:inline;
-    width:300px;
+    width:400px;
   }
 
   select#filter{

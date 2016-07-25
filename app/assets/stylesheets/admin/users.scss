@@ -200,18 +200,34 @@ section#user-show-admin {
             margin-left: 50px;
             margin-bottom: 10px;
         }
-        table {
+        table.admin-table {
           margin-left: 50px;
         }
     }
 }
 
-table {
+table.admin-table {
     width:92%;
     th {
         background-color: #c2d6d6;
         color: #366;
         padding:5px;
+        a {
+            text-decoration: underline;
+        }
+        i {
+            margin-left:1px;
+            line-height: 10px;
+            width: 10px;
+            height: 13px;
+            text-align: center;
+        }
+        i.fa-sort-asc {
+            vertical-align: bottom;
+        }
+        i.fa-sort-desc {
+            vertical-align: top;
+        }
     }
     td{
         padding:5px 10px;
@@ -226,4 +242,16 @@ table {
     	color: #366;
 	  	text-align:center;
     }
+}
+
+div.subtitle {
+  width:91.4%;
+  margin:2px;
+}
+
+table {
+  width:92%;
+  td.right {
+    text-align: right;
+  }
 }
