@@ -34,7 +34,7 @@
         <p style="color:gray">There are no users signed in.</p>
       <% else %>
         <% direction = params[:direction] == "asc" ? "desc" : "asc" %>
-        <table class="admin-table">
+        <table class="admin-table" id="admin-index">
           <thead>
             <th><%= check_box_tag 'select-all' %></th>
             <th>
