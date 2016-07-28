@@ -50,8 +50,8 @@
               <% end %>
             </th>
             <th>
-              <%= link_to "Signed in", :sort => "sign_in_time", :direction => direction, :p => params[:p] %>
-              <% if params[:sort] == "sign_in_time" %>
+              <%= link_to "Signed in", :sort => "lab_sessions.sign_in_time", :direction => direction, :p => params[:p] %>
+              <% if params[:sort] == "lab_sessions.sign_in_time" %>
                 <%= fa_icon "sort-#{direction}" %>
               <% end %>
             </th>

@@ -8,7 +8,7 @@ class Admin::UsersController < AdminAreaController
       if params[:p] == "signed_in_users"
         @users = LabSession.joins(:user).where("sign_out_time > ?", Time.now).order("#{params[:sort]} #{params[:direction]}").includes(:user).map{|session| session.user}
       elsif params[:p] == "new_users" || !params[:p].present?
-        @users = User.newest_users.order("#{params[:sort]} #{params[:direction]}")
+        @users = User.limit(25).includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
       end
     else
       redirect_to admin_users_path
@@ -17,7 +17,7 @@ class Admin::UsersController < AdminAreaController
   end
   
   def sort_params
-    if (((["username","name","sign_in_time","users.created_at"].include? params[:sort]) && (["desc","asc"].include? params[:direction])) || (!params[:sort].present? && !params[:direction].present?))
+    if (((["username","name","lab_sessions.sign_in_time","users.created_at"].include? params[:sort]) && (["desc","asc"].include? params[:direction])) || (!params[:sort].present? && !params[:direction].present?))
       return true
     end
   end
@@ -42,13 +42,13 @@ class Admin::UsersController < AdminAreaController
       if !params[:q].blank?
         @query = params[:q]
         if params[:filter] == "Name"
-          @users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%").newest_users.order("#{params[:sort]} #{params[:direction]}")
+          @users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
         elsif params[:filter] == "Email"
-          @users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%").newest_users.order("#{params[:sort]} #{params[:direction]}")
+          @users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
         elsif params[:filter] == "Username"
-          @users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%").newest_users.order("#{params[:sort]} #{params[:direction]}")
-        else
-          @users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%").newest_users.order("#{params[:sort]} #{params[:direction]}")
+          @users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
+        elsif !params[:filter].present?
+          @users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
         end
       else
         redirect_to (:back)
