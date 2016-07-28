@@ -60,5 +60,6 @@ class User < ActiveRecord::Base
     self.password = @pword
     self.password_confirmation = @pword
   end
-
+  
+  
 end

@@ -78,6 +78,7 @@ Rails.application.routes.draw do
     resources :users, only: [:index, :edit, :update, :show] do
       collection do
         get 'search'
+        post 'bulk_add_certifications'
       end
     end
     

@@ -4,23 +4,59 @@ class Admin::UsersController < AdminAreaController
   layout 'admin_area'
 
   def index
-    @edit_admin_users = User.all.order("created_at DESC").limit(10)
-    @active_sessions = LabSession.where("sign_out_time > ?", Time.now).order("sign_in_time DESC")
-    @active_users = @active_sessions.includes(:user).map{|session| session.user}
+    if sort_params
+      if params[:p] == "signed_in_users"
+        @users = LabSession.joins(:user).where("sign_out_time > ?", Time.now).order("#{params[:sort]} #{params[:direction]}").includes(:user).map{|session| session.user}
+      elsif params[:p] == "new_users" || !params[:p].present?
+        @users = User.limit(25).includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
+      end
+    else
+      redirect_to admin_users_path
+      flash[:alert] = "Invalid parameters!"
+    end
+  end
+  
+  def sort_params
+    if (((["username","name","lab_sessions.sign_in_time","users.created_at"].include? params[:sort]) && (["desc","asc"].include? params[:direction])) || (!params[:sort].present? && !params[:direction].present?))
+      return true
+    end
+  end
+
+  def bulk_add_certifications
+    if params['bulk_cert_users'].present? && params['bulk_certifications'].present?
+      params['bulk_cert_users'].each do |user|
+        if !User.find(user).certifications.where(name: params['bulk_certifications']).present?
+          Certification.create(name: params['bulk_certifications'], user_id: user)
+        end
+      end
+      redirect_to (:back)
+      flash[:notice] = "Certifications added succesfully!"
+    else
+      redirect_to (:back)
+      flash[:alert] = "Invalid parameters!"
+    end
   end
 
   def search
-    if !params[:q].blank?
-      @query = params[:q]
-      if params[:filter] == "Name"
-        @edit_admin_users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%")
-      elsif params[:filter] == "Email"
-        @edit_admin_users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%")
-      elsif params[:filter] == "Username"
-        @edit_admin_users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%")
+    if sort_params
+      if !params[:q].blank?
+        @query = params[:q]
+        if params[:filter] == "Name"
+          @users = User.where("LOWER(name) like LOWER(?)", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
+        elsif params[:filter] == "Email"
+          @users = User.where("LOWER(email) like LOWER(?)", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
+        elsif params[:filter] == "Username"
+          @users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
+        elsif !params[:filter].present?
+          @users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
+        end
       else
-        @edit_admin_users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%")
+        redirect_to (:back)
+        flash[:alert] = "Invalid parameters!"
       end
+    else
+      redirect_to admin_users_path
+      flash[:alert] = "Invalid parameters!"
     end
   end
   
@@ -62,7 +98,6 @@ class Admin::UsersController < AdminAreaController
       rfid.save!
     end
     if @edit_admin_user.update(user_params)
-      create_certifications
       render json: { redirect_uri: "#{edit_admin_user_path(@edit_admin_user)}" }
       flash[:notice] = "User information updated!"
       
