@@ -6,8 +6,16 @@ class Admin::UsersController < AdminAreaController
   def index
     if sort_params
       if params[:p] == "signed_in_users"
+        if !params[:sort].present? && !params[:direction].present?
+          params[:sort] = "lab_sessions.sign_in_time"
+          params[:direction] = "desc"
+        end
         @users = LabSession.joins(:user).where("sign_out_time > ?", Time.now).order("#{params[:sort]} #{params[:direction]}").includes(:user).map{|session| session.user}
       elsif params[:p] == "new_users" || !params[:p].present?
+        if !params[:sort].present? && !params[:direction].present?
+          params[:sort] = "users.created_at"
+          params[:direction] = "desc"
+        end
         @users = User.limit(25).includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}")
       end
     else
