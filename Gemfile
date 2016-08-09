@@ -7,7 +7,7 @@ gem 'bcrypt', '~> 3.1.10'
 gem 'sass-rails', '~> 5.0.3'
 gem 'unicorn-worker-killer', '~> 0.4.3'
 gem 'pg', '~> 0.18.2'
-gem 'paperclip', '~> 4.2'
+gem 'paperclip', '~> 5.0.0'
 gem 'uglifier', '>= 1.3.0'
 gem 'coffee-rails', '~> 4.1.0'
 gem 'jquery-rails', '~> 4.0.3'
@@ -25,6 +25,8 @@ gem 'sunspot_solr', '~> 2.2.0'
 gem 'progress_bar', '~> 1.0.3'
 gem 'redactor-rails', '~> 0.5.0'
 gem 'sdoc', '~> 0.4.0', group: :doc
+gem 'aws-sdk', '~> 2.0'
+gem 'rubyzip', '~> 1.1.7'
 
 group :development, :test do
 	gem 'rspec-rails', '~> 2.14.0'
