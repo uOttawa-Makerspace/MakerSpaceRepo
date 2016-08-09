@@ -1,15 +1,36 @@
 class RepositoriesController < SessionsController
   before_action :current_user
   before_action :signed_in, except: [:index, :show]
-  before_action :github_client, only: [:create, :show, :edit]
-  before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update]
+  before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
 
   def show
     @photos = @repository.photos.first(5)
+    @files = @repository.repo_files.order("LOWER(file_file_name)")
     @categories = @repository.categories
     @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
     @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+  end
+  
+  def download
+    url = "http://s3-us-west-2.amazonaws.com/makerspace-testing#{params[:file]}.#{params[:format]}"
+    data = open(url)
+    send_data data.read, :type => data.content_type, :filename => File.basename(url), :x_sendfile => true
+  end
+  
+  def download_files
+    require 'zip'
+    @files = @repository.repo_files.order("LOWER(file_file_name)")
+    tmp_filename = "#{Rails.root}/tmp/tmp_zip_#{@repository.title}" << Time.now.strftime("%Y%m%d%H%M%S").to_s << ".zip"
+    Zip::File.open(tmp_filename, Zip::File::CREATE) do |zip|
+      @files.each do |f|
+        attachment = Paperclip.io_adapters.for(f.file)
+        zip.add("#{f.file_file_name}", attachment.path)
+      end
+    end
+
+    send_data(File.open(tmp_filename).read, :type => 'application/zip', :disposition => 'attachment', :filename =>"#{@repository.title}_files_MakerRepo.zip")
+    File.delete tmp_filename
   end
 
   def new
@@ -19,6 +40,7 @@ class RepositoriesController < SessionsController
   def edit
     if (@repository.user_username == @user.username) || (@user.role == "admin")
       @photos = @repository.photos.first(5)
+      @files = @repository.repo_files.order("LOWER(file_file_name)")
       @categories = @repository.categories
       @equipments = @repository.equipments
     else
@@ -30,12 +52,11 @@ class RepositoriesController < SessionsController
   def create
     @repository = @user.repositories.build(repository_params)
     @repository.user_username = @user.username
-    github
-    commit if params['files'].present?
 
     if @repository.save
       @user.increment!(:reputation, 25)
       create_photos
+      create_files
       create_categories
       create_equipments
       render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
@@ -47,16 +68,16 @@ class RepositoriesController < SessionsController
   end
 
   def update
-    github if @repository.github_changed?
-    commit if params['files'].present?
     @repository.remove_duplicate_photos(params['images'])
     @repository.categories.destroy_all
     @repository.equipments.destroy_all
 
     if @repository.update(repository_params)
       create_photos
+      update_files
       create_categories
       create_equipments
+      flash[:notice] = "Project updated successfully!"
       render json: { redirect_uri: "#{repository_path(@repository.user_username, @repository.slug)}" }
       Repository.reindex
     else
@@ -88,7 +109,7 @@ class RepositoriesController < SessionsController
     end
 
     def repository_params
-      params.require(:repository).permit(:title, :description, :license, :user_id, :github)
+      params.require(:repository).permit(:title, :description, :license, :user_id)
     end
 
     def comment_filter
@@ -99,28 +120,33 @@ class RepositoriesController < SessionsController
       end
     end
 
-    def github
-      if @repository.github.present?
-        githubatize = @repository.github.strip.gsub(/\s+/, '-') #github replaces spaces with dashes in repo names
-        @repository.github = githubatize
-        @repository.github_url = "https://github.com/#{@github_client.login}/#{githubatize}"
-        @repos = @github_client.repos.inject([]) { |a,e| a.push(e.name) }
-
-        unless @repos.include? @repository.github
-          @github_client.create @repository.github, {description: @repository.description}
-          @github_client.create_contents("#{@github_client.login}/#{@repository.github}", 
-                                  "README.md",
-                                  "Commit README.md",
-                                  "##{@repository.github}")
-        end
-      end    
-    end
-
     def create_photos
       params['images'].first(5).each do |img|
         dimension = FastImage.size(img.tempfile)
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end if params['images'].present?
+    end
+    
+    def create_files
+      params['files'].each do |f|
+        RepoFile.create(file: f, repository_id: @repository.id)
+      end if params['files'].present?
+    end
+        
+    def update_files
+      @repository.repo_files.each do |f|
+        if params['deletefiles'].include?(f.file_file_name) #checks if the file should be deleted
+          RepoFile.destroy_all(file_file_name: f.file_file_name, repository_id: @repository.id)
+        end
+      end if params['deletefiles'].present?
+      params['files'].each do |f|
+        if RepoFile.all.where(file_file_name: f.original_filename, repository_id: @repository.id).blank? #prevents duplicates
+          RepoFile.create(file: f, repository_id: @repository.id)
+        else #updates duplicate files
+          RepoFile.destroy_all(file_file_name: f.original_filename, repository_id: @repository.id)
+          RepoFile.create(file: f, repository_id: @repository.id)
+        end
+      end if params['files'].present?
     end
     
     def create_categories
@@ -134,25 +160,5 @@ class RepositoriesController < SessionsController
         Equipment.create(name: e, repository_id: @repository.id)
       end if params['equipments'].present?
     end
-
-    def commit
-      repo = "#{@github_client.login}/#{@repository.github}"
-      ref = "heads/master"
-      blob_hash_array = []
-
-      sha_latest_commit = @github_client.ref(repo, ref).object.sha
-      sha_base_tree = @github_client.commit(repo, sha_latest_commit).commit.tree.sha
-
-      params['files'].each do |f|
-        blob_sha = @github_client.create_blob(repo, Base64.encode64(f.tempfile.read), "base64")
-        blob_hash_array.push({ path: f.original_filename, mode: "100644", type: "blob", sha: blob_sha })
-      end
-
-      sha_new_tree = @github_client.create_tree( repo, blob_hash_array, {base_tree: sha_base_tree } ).sha
-      commit_message = "Committed via MakerSpaceRepo!"
-      sha_new_commit = @github_client.create_commit(repo, commit_message, sha_new_tree, sha_latest_commit).sha
-      updated_ref = @github_client.update_ref(repo, ref, sha_new_commit)
-    end
-
 end
 

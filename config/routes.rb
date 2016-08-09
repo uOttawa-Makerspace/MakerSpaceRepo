@@ -111,6 +111,10 @@ Rails.application.routes.draw do
   # REPOSITORY RESOURCES
   resources :repositories, path: '/:user_username', param: :slug, except: :index do
     post 'add_like', on: :member
+    collection do
+      get 'download_files', path: ':slug/download_files'
+      get 'download', path: ':slug/download/:file'
+    end
   end
 
   namespace :makes, path: 'makes/:user_username/:slug' do
