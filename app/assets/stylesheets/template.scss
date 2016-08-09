@@ -2,14 +2,16 @@
 
 /* ADDING A FILE */
 div#file-container{
-	padding: 0.5rem;
+	padding: 0.2rem;
+  max-height:115px;
+  overflow-y: scroll;
 }
 
 div.file-item{
 	@include transition(200ms);
 	font-size: 0.8rem;
 	color: #666;
-	padding: 0.1rem;
+	padding: 0.2rem;
 	max-width: 400px;
 
 	u{
@@ -24,11 +26,42 @@ div.file-item{
 	}
 }
 
-span.delete-file-item{
+span.delete-file-item, span.file-remove{
 	font-size: 0.7rem;
 	color:#b22222;
 	cursor: pointer;
 	float: right;
+}
+
+div.files-show {
+  padding: 0.15rem;
+  max-height:105px;
+  overflow-y: scroll;
+}
+
+div.file-item-show{
+	@include transition(200ms);
+	font-size: 0.8rem;
+	color: #666;
+	padding: 0.1rem;
+	max-width: 300px; 
+
+	u{
+		width: 80%;
+		overflow-x: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+  
+  span {
+    display: inline-block;
+    width:20%;
+    text-align: right;
+  }
+
+	i{
+		padding-right: 5px;
+	}
 }
 
 nav.pagination{
