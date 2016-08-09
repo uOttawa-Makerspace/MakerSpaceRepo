@@ -171,7 +171,7 @@ div#dragndrop{
   }
 }
 
-div.repo-image{
+div.repo-image, div.repo-file{
   height: 150px;
   max-width: calc(400px + 1rem);
   border-radius: 3px;
@@ -304,4 +304,9 @@ div.redactor-editor{
     display: list-item;
   }
   
+}
+
+#status-save {
+  padding-left:10px;
+  color:dimgray;
 }

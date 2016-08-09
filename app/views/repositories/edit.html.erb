@@ -1,5 +1,6 @@
 <section id="new-repo">
   <div class="title">Edit Project</div>
+  <%= link_to fa_icon("search", text: 'View project'), repository_path(@repository.user_username, @repository.slug), class: 'edit-repo-link', id: 'view-repo-link' %>
   <%= form_for @repository, url: {controller: "repositories", action: "update"}, html: { multipart: true } do |f| %>
     
     <br>
@@ -13,23 +14,22 @@
       <%= f.text_area :description, class: 'repo', id: 'redactor' %>
     </div>
 
-    <% if github? %>
-      <%= f.label :github, fa_icon('github', text: 'Github Repository Name', style: 'padding-right: 0px;') %>
-      <div>Github will replaces spaces in repository names with dashes.</div>
-      <span class="autocomplete-wrapper">
-        <%= f.text_field :github, class: 'repo repo-autocomplete' %>
-        <span class="loader"></span> 
-      </span>
+    <%= label_tag :file, "Project files" %>
+    <label class="custom-instructable-upload">
+      <%= file_field_tag 'files[]', type: :files, multiple: true %>
+      Choose files...
+    </label>
 
-      <label class="custom-instructable-upload">
-        <%= file_field_tag 'files[]', type: :files, multiple: true %>
-        Upload Files to Github
-      </label>
-    
+    <div id="file-container">
+    <% @files.each do |f| %>
+      <div class="file-item">
+        <u><%= fa_icon "file-text-o" %> <%= link_to f.file_file_name, f.file.url(:original, false) %></u>
+        <span id="<%= f.file_file_name %>" class="file-remove">remove file</span>
+      </div> 
     <% end %>
-
-    <div id="file-container"></div>
-
+    <%= hidden_field_tag 'deletefiles' %>
+    </div>
+    <br>
     <%= label_tag :photo, "Gallery" %>
     <div>A maximum of five photos can be uploaded per repository.</div>
     <div class="repo-image">
@@ -48,7 +48,7 @@
     <% @photos.each do |img| %>
       <div class="image-item">
         <span class="image-remove"></span>
-        <%= image_tag img.image.url, data: { name: img.image_file_name, width: img.width, height: img.height } %>
+        <%= image_tag img.image.url, crossOrigin: "Anonymous", data: { name: img.image_file_name, width: img.width, height: img.height } %>
       </div> 
     <% end %>
     
@@ -85,9 +85,8 @@
     <br>
     <br>
   
-    <%= f.submit "Update Project", class: "save-button" %>
+    <%= f.submit "Update Project", class: "save-button", id: "waiting-save-button" %>
+    <span id="status-save"></span>
 
   <% end %>
 </section>
-
-<%= javascript_tag "directories();" %>

@@ -33,7 +33,7 @@ function load() {
         });
     }
     else {
-      $(':checkbox').each(function() {
+        $(':checkbox').each(function() {
             this.checked = false;
         });
     }
@@ -327,7 +327,8 @@ function load() {
       form.append("equipments[]", equipmentArray[i]);
     };
 
-    if( validate ){ 
+    if( validate ){
+      document.getElementById("status-save").innerHTML = "<img src='/assets/loader.gif' height='15px'> Saving project...";
       $.ajax({
         url: uri,
         type: "POST",
@@ -348,6 +349,18 @@ function load() {
     }
     
   });
+  
+  $('div#file-container').children().each(function(){
+    var file_item = $(this);
+    
+    $("span.file-remove").click(function(e){
+      var index = $(file_item).index();
+      instructableFiles.splice(index, 1);
+      document.getElementById("deletefiles").value = document.getElementById("deletefiles").value + e.target.id + ",";
+      e.target.parentElement.remove();
+    });
+
+  });
 
 }
 
@@ -359,23 +372,43 @@ function resetFormElement(e) {
 
 function addFiles(fileArray, files, index){
   var file = files[index];
-    fileArray.push(file);
-    $.get('/template/file', { 'file' : file.name }, function(data){
-      $("div#file-container").append(data);
-      var last = $("div#file-container")[0].children.length - 1;
-      var child = $("div#file-container")[0].children[last];
-
-      $(child.children[1]).click(function(){
-        var index = $(child).index();
-        fileArray.splice(index, 1);
-        $(child).remove();
-      });
-
-      if( files.length !== ++index){
-        addFiles(fileArray, files, index);
+    if (true){
+      fileArray.push(file);
+      var reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = function (e) {
+        loadFile(file.name, fileArray);
+        if( files.length !== ++index){
+          addFiles(fileArray, files, index);
+        }
       }
-    }, 'html');
+    }
 };
+
+function loadFile(filename, fileArray){
+  var file_item = $('<div>').addClass('file-item');
+  var close_button = $('<span>').addClass('file-remove');
+  var span = $('<span>').textContent = filename;
+  file_item.append(span);
+  file_item.append(close_button);
+  $.get('/template/file', { 'file' : filename }, function(file_item){
+    $('div#file-container').append(file_item);
+    var last = $("div#file-container")[0].children.length - 1;
+    var child = $("div#file-container")[0].children[last];
+
+    $(child.children[1]).click(function(){
+      var index = $(child).index();
+      fileArray.splice(index, 1);
+      $(child).remove();
+    });
+  }, 'html');
+
+  close_button.click(function(){
+    var index = file_item.index();
+    fileArray.splice(index, 1);
+    file_item.remove();
+  });
+}
 
 function addPhotos(fileArray, files, index){
   var file = files[index];

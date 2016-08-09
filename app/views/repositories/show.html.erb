@@ -31,7 +31,7 @@
   <section id="info">
 
   <% if @repository.user_username.eql?(@user.username) || @user.role.eql?("admin") %>
-    <%= link_to fa_icon("cog", text: ' Edit'), 
+    <%= link_to fa_icon("pencil", text: 'Edit project'), 
       edit_repository_path(@repository.user_username, @repository.slug), class: 'edit-repo-link' %>
   <% end %>
 
@@ -49,16 +49,21 @@
       <div class="repo-info-item">
         <div class="title">PROJECT BY</div>
         <div class="name"><%= link_to @repository.user_username, user_path(@repository.user_username) %></div>
-        <%= content_tag :div, @repository.user.reputation, class: 'reputation' %>
       </div>
       <div class="repo-info-item">
         <div class="title">PUBLISHED ON</div>
         <div class="date"><%= @repository.created_at.strftime("%b %e %Y") %></div>
       </div>
-      <% if @repository.github.present? %>
+      <% if @files.present? %>
       <div class="repo-info-item">
-        <div class="title">GITHUB</div>
-        <div class="name"><%= link_to(fa_icon('github-alt', text: @repository.github), @repository.github_url )%></div>
+        <div class="title">PROJECT FILES <%= link_to fa_icon("download"), download_files_repositories_path(@repository.user_username, @repository.slug), :target => "_blank" %></div>
+        <div class="files-show">
+        <% @files.each do |f| %>
+          <div class="file-item-show">
+            <u><%= fa_icon "file-text-o" %> <%= link_to f.file.original_filename, download_repositories_path(@repository.user_username, @repository.slug, f.file.path), :target => "_blank" %></u><span><%= f.file.size/1000 %> KB</span>
+          </div> 
+        <% end %>
+        </div>
       </div>
       <% end %>
 

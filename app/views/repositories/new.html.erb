@@ -12,20 +12,12 @@
       <div style="width: 420px;">
         <%= f.text_area :description, class: 'repo', id: 'redactor' %>
       </div>
-    <% if github? %>
-      <%= f.label :github, fa_icon('github', text: 'Github Repository Name', style: 'padding-right: 0px;') %>
-      <div>Github will replace spaces in repository names with dashes.</div>
-      <span class="autocomplete-wrapper">
-        <%= f.text_field :github, class: 'repo repo-autocomplete' %>
-        <span class="loader"></span> 
-      </span>
-
-      <label class="custom-instructable-upload">
-        <%= file_field_tag 'files[]', type: :files, multiple: true %>
-        Upload Files to Github
-      </label>
-    
-    <% end %>
+  
+    <%= label_tag :file, "Project files" %>
+    <label class="custom-instructable-upload">
+      <%= file_field_tag 'files[]', type: :files, multiple: true %>
+      Choose files...
+    </label>
 
     <div id="file-container"></div>
 
@@ -66,12 +58,9 @@
     <br>
     <br>
     <br>
-    <%= f.submit "Create Project", class: "save-button" %>
+    <%= f.submit "Create Project", class: "save-button", id: "waiting-save-button" %>
+    <span id="status-save"></span>
 
   <% end %>
 
 </section>
-
-<% if github? %>
-  <%= javascript_tag "directories();" %>
-<% end %>
