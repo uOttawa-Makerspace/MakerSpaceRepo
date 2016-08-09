@@ -2,6 +2,8 @@ class RepositoriesController < SessionsController
   before_action :current_user
   before_action :signed_in, except: [:index, :show]
   before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
+  
+  require 'zip'
 
   def show
     @photos = @repository.photos.first(5)
@@ -19,7 +21,6 @@ class RepositoriesController < SessionsController
   end
   
   def download_files
-    require 'zip'
     @files = @repository.repo_files.order("LOWER(file_file_name)")
     tmp_filename = "#{Rails.root}/tmp/tmp_zip_#{@repository.title}" << Time.now.strftime("%Y%m%d%H%M%S").to_s << ".zip"
     Zip::File.open(tmp_filename, Zip::File::CREATE) do |zip|
