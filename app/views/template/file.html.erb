@@ -1,4 +1,7 @@
-<div class="file-item">
-  <u><%= fa_icon "file-text-o", text: params['file'] %></u>
-  <span class="delete-file-item">remove file</span>
-</div>  
+<table> 
+  <tr class="file-item">
+    <td><%= fa_icon "file-text-o", text: params['file'] %></td>
+    <td><span><%= params['size'] %> KB</span></td>
+    <td><span class="delete-file-item">remove</span></td>
+  </tr>
+</table>

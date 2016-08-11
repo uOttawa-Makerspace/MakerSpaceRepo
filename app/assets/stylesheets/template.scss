@@ -1,112 +1,107 @@
 @import 'lib';
-
 /* ADDING A FILE */
-div#file-container{
-	padding: 0.2rem;
-  max-height:115px;
-  overflow-y: scroll;
+
+div#file-container {
+    padding: 0.2rem;
+    max-height: 115px;
+    overflow-y: scroll;
 }
-
-div.file-item{
-	@include transition(200ms);
-	font-size: 0.8rem;
-	color: #666;
-	padding: 0.2rem;
-	max-width: 400px;
-
-	u{
-		width: 80%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	i{
-		padding-right: 10px;
-	}
+tr.file-item {
+    @include transition(200ms);
+    font-size: 0.8rem;
+    color: #666;
+    padding: 0.2rem;
+    max-width: 400px;
+    td: nth-child(1) {
+        width: 75%;
+        max-width: 280px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    td:nth-child(2) {
+        width: 15%;
+        text-align: right;
+        padding-right: 10px;
+    }
+    td:nth-child(3) {
+        width: 10%;
+    }
+    i {
+        padding-right: 10px;
+    }
 }
-
-span.delete-file-item, span.file-remove{
-	font-size: 0.7rem;
-	color:#b22222;
-	cursor: pointer;
-	float: right;
+span.delete-file-item,
+span.file-remove {
+    font-size: 0.7rem;
+    color: #b22222;
+    cursor: pointer;
+    float: right;
 }
-
 div.files-show {
-  padding: 0.15rem;
-  max-height:105px;
-  overflow-y: scroll;
+    padding: 0.2rem;
+    max-height: 105px;
+    overflow-y: scroll;
 }
-
-div.file-item-show{
-	@include transition(200ms);
-	font-size: 0.8rem;
-	color: #666;
-	padding: 0.1rem;
-	max-width: 300px; 
-
-	u{
-		width: 80%;
-		overflow-x: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-  
-  span {
-    display: inline-block;
-    width:20%;
-    text-align: right;
-  }
-
-	i{
-		padding-right: 5px;
-	}
+div.file-item-show {
+    @include transition(200ms);
+    font-size: 0.8rem;
+    color: #666;
+    padding: 0.1rem;
+    max-width: 300px;
+    u {
+        width: 80%;
+        overflow-x: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    span {
+        display: inline-block;
+        width: 20%;
+        text-align: right;
+    }
+    i {
+        padding-right: 5px;
+    }
 }
-
-nav.pagination{
-	text-align: center;
-	color: #eee;
-
-	span.current.page, span.page.gap{
-		color: #a3e6db;
-		padding: 0.5rem;
-		text-align: center;
-	  background-color: #19c1a5;
-		vertical-align: middle;
-		display: inline-block;
-	}
-
-	span.page.gap{
-		color: #eee;
-	}
-
-	span.page a{
-		padding: 0.5rem;
-		vertical-align: middle;
-	  background-color: #19c1a5;
-	}
-
-	span.prev, span.next{
-	  background-color: #19c1a5;
-		vertical-align: middle;
-		font-size: 1.2rem;
-		text-align: center;
-		display: inline-block; 
-
-		i{
-			text-align: center;
-			padding: 0.5rem;
-			display: inline-block;
-		}
-	}
-	span.prev{
-		border-bottom-left-radius: 3px;
-		border-top-left-radius: 3px;
-	}
-
-	span.next{
-		border-bottom-right-radius: 3px;
-		border-top-right-radius: 3px;
-	}
+nav.pagination {
+    text-align: center;
+    color: #eee;
+    span.current.page, span.page.gap {
+        color: #a3e6db;
+        padding: 0.5rem;
+        text-align: center;
+        background-color: #19c1a5;
+        vertical-align: middle;
+        display: inline-block;
+    }
+    span.page.gap {
+        color: #eee;
+    }
+    span.page a {
+        padding: 0.5rem;
+        vertical-align: middle;
+        background-color: #19c1a5;
+    }
+    span.prev,
+    span.next {
+        background-color: #19c1a5;
+        vertical-align: middle;
+        font-size: 1.2rem;
+        text-align: center;
+        display: inline-block;
+        i {
+            text-align: center;
+            padding: 0.5rem;
+            display: inline-block;
+        }
+    }
+    span.prev {
+        border-bottom-left-radius: 3px;
+        border-top-left-radius: 3px;
+    }
+    span.next {
+        border-bottom-right-radius: 3px;
+        border-top-right-radius: 3px;
+    }
 }
