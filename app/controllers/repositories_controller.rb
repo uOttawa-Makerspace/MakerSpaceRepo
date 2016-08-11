@@ -69,12 +69,11 @@ class RepositoriesController < SessionsController
   end
 
   def update
-    @repository.remove_duplicate_photos(params['images'])
     @repository.categories.destroy_all
     @repository.equipments.destroy_all
 
     if @repository.update(repository_params)
-      create_photos
+      update_photos
       update_files
       create_categories
       create_equipments
@@ -134,6 +133,25 @@ class RepositoriesController < SessionsController
       end if params['files'].present?
     end
         
+    def update_photos
+      @repository.photos.each do |img|
+        if params['deleteimages'].include?(img.image_file_name) #checks if the file should be deleted
+          Photo.destroy_all(image_file_name: img.image_file_name, repository_id: @repository.id)
+        end
+      end if params['deleteimages'].present?
+      params['images'].each do |img|
+        filename = img.original_filename.gsub(" ", "_");
+        if @repository.photos.where(image_file_name: filename).blank? #checks if file exists
+          dimension = FastImage.size(img.tempfile)
+          Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
+        else #updates existant files
+          Photo.destroy_all(image_file_name: filename, repository_id: @repository.id)
+          dimension = FastImage.size(img.tempfile)
+          Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
+        end
+      end if params['images'].present?
+    end
+        
     def update_files
       @repository.repo_files.each do |f|
         if params['deletefiles'].include?(f.file_file_name) #checks if the file should be deleted
@@ -141,10 +159,11 @@ class RepositoriesController < SessionsController
         end
       end if params['deletefiles'].present?
       params['files'].each do |f|
-        if RepoFile.all.where(file_file_name: f.original_filename, repository_id: @repository.id).blank? #prevents duplicates
+        filename = f.original_filename.gsub(" ", "_");
+        if @repository.repo_files.where(file_file_name: filename).blank? #checks if file exists
           RepoFile.create(file: f, repository_id: @repository.id)
-        else #updates duplicate files
-          RepoFile.destroy_all(file_file_name: f.original_filename, repository_id: @repository.id)
+        else #updates existant files
+          RepoFile.destroy_all(file_file_name: filename, repository_id: @repository.id)
           RepoFile.create(file: f, repository_id: @repository.id)
         end
       end if params['files'].present?

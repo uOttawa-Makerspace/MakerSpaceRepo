@@ -17,10 +17,12 @@ function validation(){
 		$('input#repository_title').before(span);
 		ret = false;
 	}
+  
+  var oldPhotosLength = document.querySelectorAll("#image-container > div").length;
 
 	span = $('<span>').addClass('form-error repo-form');
 
-	if( photoFiles.length === 0 ){
+	if( (photoFiles.length === 0) && (oldPhotosLength == 0) ){
 		span.text("At least one photo is required.");
 		$('div.repo-image').before(span);
 		ret = false;
