@@ -59,10 +59,10 @@
   <section id="user-show-links">
     <% active = params[:show].eql?("makes") ? ["#eee", "#5f9ea0"] : ["#5f9ea0", "#eee"] %>
     <%= link_to "#{user_path(show: :repositories)}#user-show-links", style: 'border-color:'<< active.first do %>
-      <span class="number"><%= @repositories.total_count %></span> REPOS
+      <span class="number"><%= @repositories.count %></span> REPOS
     <% end %>
     <%= link_to "#{user_path(show: :makes)}#user-show-links", style: 'border-color:'<< active.last  do %>
-      <span class="number"><%= @makes.total_count %></span> MAKES
+      <span class="number"><%= @makes.count %></span> MAKES
     <% end %>
   </section>
 

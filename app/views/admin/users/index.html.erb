@@ -23,7 +23,7 @@
         <td><h2>Users currently signed in</h2></td>
         <td class="right"><%= link_to "Show new users", :p => "new_users" %></td>
       </table>
-    <% else %>
+    <% elsif params[:p] == "new_users" || params[:p].nil? %>
       <table>
         <td><h2>Newest users</h2></td>
         <td class="right"><%= link_to "Show users currently signed in", :p => "signed_in_users" %></td>
@@ -31,7 +31,7 @@
     <% end %>
     <%= form_tag bulk_add_certifications_admin_users_path, method: :post do %>
       <% if !@users.any? %>
-        <p style="color:gray">There are no users signed in.</p>
+        <p style="color:gray">There are no users to show.</p>
       <% else %>
         <% direction = params[:direction] == "asc" ? "desc" : "asc" %>
         <table class="admin-table" id="admin-index">
@@ -84,6 +84,29 @@
           <% end %>
         </table>
       <% end %>
+      
+      <!-- pagination code starts -->
+      <% if params[:page].nil? %>
+        <% page_number = 1 %>
+      <% else %>
+        <% page_number = Integer(params[:page]) %>
+      <% end %>
+      <table class="pagination">
+        <tr>
+          <td>
+            <% if page_number>1 %>
+              <%= link_to "< Previous page", page: page_number - 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
+            <% end %>
+          </td>
+          <td>
+            <% if page_number<@total_pages %>
+              <%= link_to "Next page >", page: page_number + 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
+            <% end %>
+          </td>
+        </tr>
+      </table>
+      <!-- pagination code ends -->
+    
       <br><br>
       <%= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt:'Add a certification to selected users...' %>
       <%= submit_tag "Add", class: 'save-button' %>

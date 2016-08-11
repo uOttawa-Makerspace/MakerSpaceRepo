@@ -27,6 +27,7 @@ gem 'redactor-rails', '~> 0.5.0'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'aws-sdk', '~> 2.0'
 gem 'rubyzip', '~> 1.1.7'
+gem 'will_paginate'
 
 group :development, :test do
 	gem 'rspec-rails', '~> 2.14.0'
