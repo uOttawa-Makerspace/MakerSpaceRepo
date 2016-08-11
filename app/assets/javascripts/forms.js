@@ -44,19 +44,15 @@ function load() {
   categoryArray = [];
   equipmentArray = [];
   certificationArray = [];
-
+  
   $('div#image-container').children().each(function(){
     var image_item = $(this);
     var close_button = $($(this).children()[0]);
-    var image = image_item.children()[1];
-    var canvas = convertImageToCanvas(image);
-    var dataURL = canvas.toDataURL('image/jpeg', 0.5);
-    var blob = dataURItoBlob(dataURL, image.dataset.name);
-    photoFiles.push(blob);
-
-    close_button.click(function(){
-      var index = image_item.index();
+    
+    close_button.click(function(e){
+      var index = $(image_item).index();
       photoFiles.splice(index, 1);
+      document.getElementById("deleteimages").value = document.getElementById("deleteimages").value + e.target.id + ",";
       image_item.remove();
     });
 
@@ -328,7 +324,7 @@ function load() {
     };
 
     if( validate ){
-      document.getElementById("status-save").innerHTML = "<img src='/assets/loader.gif' height='15px'> Saving project...";
+      document.getElementById("status-save").innerHTML = "<img src='/assets/loader-65526d2bb686aee87b0257dcbc756449cffeebf62d6646ba9a9979de8b51111a.gif' height='15px'> Saving project...";
       $.ajax({
         url: uri,
         type: "POST",
@@ -357,7 +353,7 @@ function load() {
       var index = $(file_item).index();
       instructableFiles.splice(index, 1);
       document.getElementById("deletefiles").value = document.getElementById("deletefiles").value + e.target.id + ",";
-      e.target.parentElement.remove();
+      e.target.parentElement.parentElement.parentElement.remove();
     });
 
   });
@@ -377,7 +373,7 @@ function addFiles(fileArray, files, index){
       var reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = function (e) {
-        loadFile(file.name, fileArray);
+        loadFile(file.name, Math.round(file.size/1000), fileArray);
         if( files.length !== ++index){
           addFiles(fileArray, files, index);
         }
@@ -385,29 +381,24 @@ function addFiles(fileArray, files, index){
     }
 };
 
-function loadFile(filename, fileArray){
+function loadFile(filename, filesize, fileArray){
   var file_item = $('<div>').addClass('file-item');
   var close_button = $('<span>').addClass('file-remove');
   var span = $('<span>').textContent = filename;
   file_item.append(span);
   file_item.append(close_button);
-  $.get('/template/file', { 'file' : filename }, function(file_item){
+  $.get('/template/file', { 'file' : filename, 'size' : filesize }, function(file_item){
     $('div#file-container').append(file_item);
     var last = $("div#file-container")[0].children.length - 1;
     var child = $("div#file-container")[0].children[last];
 
-    $(child.children[1]).click(function(){
+    $(child.children[0].children[0].children[2].children[0]).click(function(){
+      var length = document.querySelectorAll("#file-container > table").length;
       var index = $(child).index();
-      fileArray.splice(index, 1);
+      fileArray.splice(index-length, 1);
       $(child).remove();
     });
   }, 'html');
-
-  close_button.click(function(){
-    var index = file_item.index();
-    fileArray.splice(index, 1);
-    file_item.remove();
-  });
 }
 
 function addPhotos(fileArray, files, index){
@@ -434,8 +425,9 @@ function loadImage(image, fileArray){
   $('div#image-container').append(image_item);
 
   close_button.click(function(){
+    var length = document.querySelectorAll("#image-container > div").length;
     var index = image_item.index();
-    fileArray.splice(index, 1);
+    fileArray.splice(index-length, 1);
     image_item.remove();
   });
 }
@@ -478,37 +470,12 @@ function dragndrop(){
 
 }
 
- function directories(){
-  var url = "/github/repositories.json";
-  $.getJSON(url).done( function(data){ 
-    setAutoComplete(data);
-  });
-}
-
 function setAutoComplete(data){
   $("input.repo-autocomplete").autocomplete({
     position: { my : "left top+5", at: "left bottom" },
     source: data
   });
 };
-
-function convertImageToCanvas(image) {
-  var canvas = document.createElement("canvas");
-  canvas.width = image.dataset.width;
-  canvas.height = image.dataset.height;
-  canvas.getContext("2d").drawImage(image, 0, 0);
-  return canvas;
-}
-
-function dataURItoBlob(dataURI, name) {
-  var byteString = atob(dataURI.split(',')[1]);
-  var ab = new ArrayBuffer(byteString.length);
-  var ia = new Uint8Array(ab);
-  for (var i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-  }
-  return new File([ab], name, { type: 'image/jpeg' });
-}
 
 function sort_options (id) {
   $("#" + id).html($("#" + id + " option").sort(function (a, b) {

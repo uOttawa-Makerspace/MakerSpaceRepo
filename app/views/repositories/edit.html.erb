@@ -21,13 +21,16 @@
     </label>
 
     <div id="file-container">
-    <% @files.each do |f| %>
-      <div class="file-item">
-        <u><%= fa_icon "file-text-o" %> <%= link_to f.file_file_name, f.file.url(:original, false) %></u>
-        <span id="<%= f.file_file_name %>" class="file-remove">remove file</span>
-      </div> 
-    <% end %>
-    <%= hidden_field_tag 'deletefiles' %>
+      <% @files.each do |f| %>
+        <table>
+          <tr class="file-item">
+            <td><%= fa_icon "file-text-o" %> <%= f.file_file_name %></td>
+            <td><span><%= f.file.size/1000 %> KB</span></td>
+            <td><span id="<%= f.file_file_name %>" class="file-remove">remove</span></td>
+          </tr>
+        </table>
+      <% end %>
+      <%= hidden_field_tag 'deletefiles' %>
     </div>
     <br>
     <%= label_tag :photo, "Gallery" %>
@@ -47,11 +50,11 @@
 
     <% @photos.each do |img| %>
       <div class="image-item">
-        <span class="image-remove"></span>
-        <%= image_tag img.image.url, crossOrigin: "Anonymous", data: { name: img.image_file_name, width: img.width, height: img.height } %>
+        <span id="<%= img.image_file_name %>" class="image-remove"></span>
+        <img src="<%= img.image.url %>">
       </div> 
     <% end %>
-    
+    <%= hidden_field_tag 'deleteimages' %>
     </div>
 
     <br>
