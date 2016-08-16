@@ -1,7 +1,9 @@
 @import "lib";
 
 footer{
-  @include outer-container(64rem);
+  display: inline-block;
+  text-align: center;
+  width:100%;
   padding: 1.5rem 3rem;
   border-top: 1px solid #5f9ea0;
   color: #5f9ea0;
