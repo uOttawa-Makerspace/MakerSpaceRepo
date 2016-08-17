@@ -2,8 +2,6 @@ class RepositoriesController < SessionsController
   before_action :current_user
   before_action :signed_in, except: [:index, :show]
   before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
-  
-  require 'zip'
 
   def show
     @photos = @repository.photos.first(5)
@@ -22,16 +20,22 @@ class RepositoriesController < SessionsController
   
   def download_files
     @files = @repository.repo_files.order("LOWER(file_file_name)")
-    tmp_filename = "#{Rails.root}/tmp/tmp_zip_#{@repository.title}" << Time.now.strftime("%Y%m%d%H%M%S").to_s << ".zip"
-    Zip::File.open(tmp_filename, Zip::File::CREATE) do |zip|
-      @files.each do |f|
-        attachment = Paperclip.io_adapters.for(f.file)
-        zip.add("#{f.file_file_name}", attachment.path)
+    tmp_filename = "tmp_zip_#{@repository.title}" << Time.now.strftime("%Y%m%d%H%M%S").to_s << ".zip"
+    temp_file  = Tempfile.new("#{tmp_filename}-#{@repository.title}")
+    Zip::OutputStream.open(temp_file.path) do |zos|
+      @files.each do |file|
+        zos.put_next_entry(file.file_file_name)
+        attachment = Paperclip.io_adapters.for(file.file)
+        zos.print IO.read(attachment.path)
       end
     end
-
-    send_data(File.open(tmp_filename).read, :type => 'application/zip', :disposition => 'attachment', :filename =>"#{@repository.title}_files_MakerRepo.zip")
-    File.delete tmp_filename
+    
+    filename = "#{@repository.title}_files_MakerRepo.zip"
+    send_file temp_file.path, :type => 'application/zip',
+                              :disposition => 'attachment',
+                              :filename => filename
+    temp_file.close
+    cookies[:downloadStarted] = { :value => 1, :expires => 60.seconds.from_now }
   end
 
   def new

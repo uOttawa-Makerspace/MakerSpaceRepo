@@ -308,7 +308,7 @@ DEPENDENCIES
   rails_12factor
   redactor-rails (~> 0.5.0)
   rspec-rails (~> 2.14.0)
-  rubyzip (~> 1.1.7)
+  rubyzip (~> 1.1)
   sass-rails (~> 5.0.3)
   sdoc (~> 0.4.0)
   selenium-webdriver (~> 2.39.0)

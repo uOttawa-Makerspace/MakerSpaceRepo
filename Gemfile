@@ -26,7 +26,7 @@ gem 'progress_bar', '~> 1.0.3'
 gem 'redactor-rails', '~> 0.5.0'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'aws-sdk', '~> 2.0'
-gem 'rubyzip', '~> 1.1.7'
+gem 'rubyzip', '~> 1.1', require: 'zip'
 gem 'will_paginate'
 
 group :development, :test do
