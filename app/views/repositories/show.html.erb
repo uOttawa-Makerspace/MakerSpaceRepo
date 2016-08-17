@@ -56,7 +56,7 @@
       </div>
       <% if @files.present? %>
       <div class="repo-info-item">
-        <div class="title">PROJECT FILES <%= link_to fa_icon("download"), download_files_repositories_path(@repository.user_username, @repository.slug), :target => "_blank" %></div>
+        <table><tr><td class="title">PROJECT FILES</td><td><span id="download-zip" class="bg-download"><%= link_to fa_icon("download", text: "Download"), download_files_repositories_path(@repository.user_username, @repository.slug), :id => "download-zip-link" %></span></td></tr></table>
         <div class="files-show">
         <% @files.each do |f| %>
           <div class="file-item-show">

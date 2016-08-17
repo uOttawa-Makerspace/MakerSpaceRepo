@@ -38,6 +38,17 @@ function load() {
         });
     }
   });
+  
+  $('#download-zip').click(function(event) {
+    $("#download-zip").attr('class', 'no-bg-download');
+    $("#download-zip").html("<img src='/assets/loader-65526d2bb686aee87b0257dcbc756449cffeebf62d6646ba9a9979de8b51111a.gif' height='15px'>");
+    $.ajax({url: location.href + "/download_files", type: "get", success: function(result){
+      window.location=location.href + "/download_files";
+      $("#download-zip").attr('class', 'bg-download');
+      $("#download-zip").html("<i class=\"fa fa-download\"></i> Download");
+    }});
+    event.preventDefault();
+  });
 
   instructableFiles = [];
   photoFiles = [];
@@ -154,8 +165,7 @@ function load() {
     });
 
   });
-  
-  
+
   
 //Get categories
   $(document).ready(function() {
@@ -379,7 +389,7 @@ function addFiles(fileArray, files, index){
         }
       }
     }
-};
+}
 
 function loadFile(filename, filesize, fileArray){
   var file_item = $('<div>').addClass('file-item');
@@ -414,7 +424,7 @@ function addPhotos(fileArray, files, index){
         }
       }
     }
-};
+}
 
 function loadImage(image, fileArray){
   var image_item = $('<div>').addClass('image-item');

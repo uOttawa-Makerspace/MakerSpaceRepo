@@ -202,6 +202,21 @@ div.edit-column{
     width:120px;
     height:35px;
   }
+  
+  a.edit-user-link {
+    @include transition(100ms);
+    position: relative;
+    left:700px;
+    top:50px;
+    background-color: #789;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border: 3px solid #789;
+    &:hover {
+        background-color: #fff;
+        color: #789;
+    }
+  }
 }
 
 img.edit-avatar{

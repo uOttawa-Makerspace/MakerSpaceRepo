@@ -45,6 +45,7 @@ section#edit-user {
         padding-top: 12px;
     }
 }
+
 div#certification-container {
     span {
         display: inline-block;
@@ -61,20 +62,7 @@ div#certification-container {
         cursor: not-allowed;
     }
 }
-a.edit-user-link {
-    @include transition(100ms);
-    position: absolute;
-    right: 5rem;
-    top: 4rem;
-    background-color: #789;
-    color: #fff;
-    padding: 0.25rem 0.5rem;
-    border: 3px solid #789;
-    &:hover {
-        background-color: #fff;
-        color: #789;
-    }
-}
+
 div.user-show-admin {
     @include span-columns(6, 0);
     border-left: 260px solid #f0f5f5;
@@ -85,6 +73,20 @@ section#user-show-admin {
     background-color: #fff;
     padding-bottom: 2rem;
     width: 800px;
+  
+    a.edit-user-link {
+      @include transition(100ms);
+      position: relative;
+      left:411px;
+      background-color: #789;
+      color: #fff;
+      padding: 0.25rem 0.5rem;
+      border: 3px solid #789;
+      &:hover {
+          background-color: #fff;
+          color: #789;
+      }
+    }
     div.user-avatar {
         @include span-columns(2, 5);
         width: 250px;
