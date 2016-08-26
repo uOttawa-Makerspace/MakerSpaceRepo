@@ -113,7 +113,7 @@ Rails.application.routes.draw do
     post 'add_like', on: :member
     collection do
       get 'download_files', path: ':slug/download_files'
-      get 'download', path: ':slug/download/:file'
+      get 'download', path: ':slug/download'
     end
   end
 

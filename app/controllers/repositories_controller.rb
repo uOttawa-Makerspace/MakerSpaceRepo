@@ -13,7 +13,7 @@ class RepositoriesController < SessionsController
   end
   
   def download
-    url = "http://s3-us-west-2.amazonaws.com/uottawa-makerspace#{params[:file]}.#{params[:format]}"
+    url = "http://s3-us-west-2.amazonaws.com/uottawa-makerspace#{params[:file]}"
     data = open(url)
     send_data data.read, :type => data.content_type, :filename => File.basename(url), :x_sendfile => true
   end

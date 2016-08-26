@@ -60,7 +60,7 @@
         <div class="files-show">
         <% @files.each do |f| %>
           <div class="file-item-show">
-            <u><%= fa_icon "file-text-o" %> <%= link_to f.file.original_filename, download_repositories_path(@repository.user_username, @repository.slug, f.file.path), :target => "_blank" %></u><span><%= f.file.size/1000 %> KB</span>
+            <u><%= fa_icon "file-text-o" %> <%= link_to f.file.original_filename, :action => 'download', :file => f.file.path %></u><span><%= f.file.size/1000 %> KB</span>
           </div> 
         <% end %>
         </div>
