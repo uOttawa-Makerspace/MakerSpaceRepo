@@ -107,6 +107,7 @@
             <th>Sign In Time</th>
             <th>Sign Out Time</th>
             <th>Time Spent</th>
+            <th>Location</th>
           </thead>
           <% @all_sessions.limit(10).each do |session| %>
             <% if session.sign_out_time > Time.now %>
@@ -114,12 +115,14 @@
                 <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
                 <td>Current session</td>
                 <td><%= ((Time.now - session.sign_in_time)/60).round %> min. so far</td>
+                <td><%= PiReader.find_by(pi_mac_address: session.mac_address).try(:pi_location) %></td>
               </tr>
              <% else %>
               <tr>
                 <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
                 <td><%= session.sign_out_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
                 <td><%= ((session.sign_out_time - session.sign_in_time)/60).round %> minutes</td>
+                <td><%= PiReader.find_by(pi_mac_address: session.mac_address).try(:pi_location) %></td>
               </tr>
             <% end %>
           <% end %>

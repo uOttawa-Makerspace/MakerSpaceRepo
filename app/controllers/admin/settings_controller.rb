@@ -4,6 +4,7 @@ class Admin::SettingsController < AdminAreaController
   def index
     @equip_option = EquipmentOption.new
     @cat_option = CategoryOption.new
+    @pi_option = PiReader.new
   end
   
   def add_category
@@ -80,5 +81,31 @@ class Admin::SettingsController < AdminAreaController
   
   def equip_params
     params.require(:equipment_option).permit(:name)
+  end
+  
+  def submit_pi
+    puts "aiai"
+    puts params
+    if (!params[:pi_reader][:pi_location].present?) || (params[:submit_pi].blank?)
+        flash[:alert] = "Invalid parameters."
+    else
+      PiReader.where(:id => params[:submit_pi]).update_all(pi_params)
+      flash[:notice] = "Card reader location updated successfully!"
+    end
+    redirect_to admin_settings_path
+  end
+  
+  def remove_pi
+    if params[:remove_pi]!=""
+      PiReader.where(:id => params[:remove_pi]).destroy_all
+      flash[:notice] = "Card reader removed successfully!"
+    else
+      flash[:alert] = "Please select a card reader."
+    end
+    redirect_to admin_settings_path
+  end
+  
+  def pi_params
+    params.require(:pi_reader).permit(:pi_location)
   end
 end
