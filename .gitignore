@@ -18,3 +18,5 @@ config.ru
 /log/*
 !/log/.keep
 /tmp
+
+config/environments/development.rb

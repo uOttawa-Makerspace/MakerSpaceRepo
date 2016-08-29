@@ -1,6 +1,12 @@
 class RfidController < SessionsController
 
   def card_number
+    
+    if !(PiReader.find_by(pi_mac_address: params[:mac_address]))
+      new_reader = PiReader.new(pi_mac_address: params[:mac_address])
+      new_reader.save
+    end
+    
     rfid = Rfid.find_by(card_number: params[:rfid])
 
     if rfid
@@ -12,7 +18,7 @@ class RfidController < SessionsController
         render json: { error: "Temporary RFID already exists" }, status: :unprocessable_entity
       end
     else
-      new_rfid = Rfid.create(card_number: params[:rfid])
+      new_rfid = Rfid.create(card_number: params[:rfid], mac_address: params[:mac_address])
       if new_rfid.valid?
         render json: { new_rfid: "Temporary RFID created" }, status: :unprocessable_entity
       else
@@ -25,11 +31,20 @@ class RfidController < SessionsController
     active_session = rfid.user.lab_sessions.where("sign_out_time > ?", Time.now)
     if active_session.present?
       active_session.update_all(sign_out_time: Time.now)
+      active_location = PiReader.find_by(pi_mac_address: active_session.first.try(:mac_address)).try(:pi_location)
+      new_location = PiReader.find_by(pi_mac_address: params[:mac_address]).try(:pi_location)
+      if active_location != new_location
+        new_session(rfid)
+      end   
     else
-      sign_in = Time.now
-      sign_out = sign_in + 3.hours
-      new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out)
-      new_session.save
+      new_session(rfid)
     end
+  end
+  
+  def new_session (rfid)
+    sign_in = Time.now
+    sign_out = sign_in + 3.hours
+    new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out, mac_address: params[:mac_address])
+    new_session.save
   end
 end

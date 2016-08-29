@@ -90,6 +90,8 @@ Rails.application.routes.draw do
         post 'add_equipment'
         post 'rename_equipment'
         post 'remove_equipment'
+        post 'submit_pi'
+        post 'remove_pi'
       end
     end
   end

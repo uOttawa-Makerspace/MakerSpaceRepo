@@ -23,6 +23,27 @@
         <td><h2>Users currently signed in</h2></td>
         <td class="right"><%= link_to "Show new users", :p => "new_users" %></td>
       </table>
+      
+      <div class="locations">
+      <table class="locations">
+        <% if params[:location].nil? %>
+            <td class="current">
+        <% else %>
+            <td>
+        <% end %>
+            <%= link_to "All locations", :sort => params[:sort], :direction => params[:direction], :p => params[:p] %></td>
+          <% PiReader.uniq.pluck(:pi_location).sort_by!{ |m| m.downcase }.each do |pi_location| %>
+            <% if !pi_location.nil? %>
+                <% if params[:location] == pi_location %>
+                    <td class="current">
+                <% else %>
+                    <td>
+                <% end %>
+                <%= link_to pi_location, :sort => params[:sort], :direction => params[:direction], :p => params[:p], :location => pi_location %></td>
+            <% end %>
+          <% end %>
+      </table>
+          </div>
     <% elsif params[:p] == "new_users" || params[:p].nil? %>
       <table>
         <td><h2>Newest users</h2></td>
@@ -31,32 +52,32 @@
     <% end %>
     <%= form_tag bulk_add_certifications_admin_users_path, method: :post do %>
       <% if !@users.any? %>
-        <p style="color:gray">There are no users to show.</p>
+        <p style="color:gray;text-align:center;padding-top:15px;">There are no users to show.</p>
       <% else %>
         <% direction = params[:direction] == "asc" ? "desc" : "asc" %>
         <table class="admin-table" id="admin-index">
           <thead>
             <th><%= check_box_tag 'select-all' %></th>
             <th>
-              <%= link_to "Username", :sort => "username", :direction => direction, :p => params[:p] %>
+              <%= link_to "Username", :sort => "username", :direction => direction, :p => params[:p], :location => params[:location] %>
               <% if params[:sort] == "username" %>
                 <%= fa_icon "sort-#{direction}" %>
               <% end %>
             </th>
             <th>
-              <%= link_to "Name", :sort => "name", :direction => direction, :p => params[:p] %>
+              <%= link_to "Name", :sort => "name", :direction => direction, :p => params[:p], :location => params[:location] %>
               <% if params[:sort] == "name" %>
                 <%= fa_icon "sort-#{direction}" %>
               <% end %>
             </th>
             <th>
-              <%= link_to "Signed in", :sort => "lab_sessions.sign_in_time", :direction => direction, :p => params[:p] %>
+              <%= link_to "Signed in", :sort => "lab_sessions.sign_in_time", :direction => direction, :p => params[:p], :location => params[:location] %>
               <% if params[:sort] == "lab_sessions.sign_in_time" %>
                 <%= fa_icon "sort-#{direction}" %>
               <% end %>
             </th>
             <th>
-              <%= link_to "Joined", :sort => "users.created_at", :direction => direction, :p => params[:p] %>
+              <%= link_to "Joined", :sort => "users.created_at", :direction => direction, :p => params[:p], :location => params[:location] %>
               <% if params[:sort] == "users.created_at" %>
                 <%= fa_icon "sort-#{direction}" %>
               <% end %>
@@ -108,8 +129,8 @@
       <!-- pagination code ends -->
     
       <br><br>
-      <%= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt:'Add a certification to selected users...' %>
-      <%= submit_tag "Add", class: 'save-button' %>
+      <center><%= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt:'Add a certification to selected users...' %>
+      <%= submit_tag "Add", class: 'save-button' %></center>
     <% end %>
   </div>
 </div>

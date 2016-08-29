@@ -10,7 +10,11 @@ class Admin::UsersController < AdminAreaController
           params[:sort] = "lab_sessions.sign_in_time"
           params[:direction] = "desc"
         end
-        @users_temp = LabSession.joins(:user).where("sign_out_time > ?", Time.now).order("#{params[:sort]} #{params[:direction]}").paginate(:page => params[:page], :per_page => 20)
+        @users_temp = LabSession.joins(:user).where("sign_out_time > ?", Time.now)
+        if params[:location].present?
+          @users_temp = @users_temp.joins("INNER JOIN pi_readers ON pi_mac_address = mac_address AND LOWER(pi_location) = LOWER('#{params[:location]}')")
+        end
+        @users_temp = @users_temp.order("#{params[:sort]} #{params[:direction]}").paginate(:page => params[:page], :per_page => 20)
         @users = @users_temp.includes(:user).map{|session| session.user}
         @total_pages = @users_temp.total_pages
       elsif params[:p] == "new_users" || !params[:p].present?
