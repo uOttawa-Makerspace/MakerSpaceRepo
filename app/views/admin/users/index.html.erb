@@ -31,8 +31,8 @@
         <% else %>
             <td>
         <% end %>
-            <%= link_to "All locations", :sort => params[:sort], :direction => params[:direction], :p => params[:p] %></td>
-          <% PiReader.uniq.pluck(:pi_location).sort_by!{ |m| m.downcase }.each do |pi_location| %>
+          <%= link_to "All locations", :sort => params[:sort], :direction => params[:direction], :p => params[:p] %></td>
+          <% PiReader.uniq.pluck(:pi_location).sort_by!{ |m| m }.each do |pi_location| %>
             <% if !pi_location.nil? %>
                 <% if params[:location] == pi_location %>
                     <td class="current">
@@ -43,7 +43,7 @@
             <% end %>
           <% end %>
       </table>
-          </div>
+      </div>
     <% elsif params[:p] == "new_users" || params[:p].nil? %>
       <table>
         <td><h2>Newest users</h2></td>
