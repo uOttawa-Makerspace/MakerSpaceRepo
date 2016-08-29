@@ -38,6 +38,13 @@
       <%= f.submit "Add", class: 'save-button' %>
     <% end %>
     <br>
+    <%= form_for @equip_option, url: {controller: "admin/settings", action: "rename_equipment"} do |f| %>
+      <%= f.label :rename_equipment, class: "profile-label" %>
+      <%= select_tag :rename_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-select", include_blank: "Select..." %>
+      <%= f.text_field :name, class: "profile-text", id:"rename_equipment_text" %>
+      <%= f.submit "Rename", class: 'save-button' %>
+    <% end %>
+    <br>
     <%= form_for @equip_option, url: {controller: "admin/settings", action: "remove_equipment"} do |f| %>
       <%= f.label :remove_equipment, class: "profile-label" %>
       <%= select_tag :remove_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-select", include_blank: "Select a piece of equipment..." %>
@@ -53,11 +60,6 @@
       <%= f.submit "Submit", class: 'save-button' %>
     <% end %>
     <br>
-    <%= form_for @equip_option, url: {controller: "admin/settings", action: "rename_equipment"} do |f| %>
-      <%= f.label :rename_equipment, class: "profile-label" %>
-      <%= select_tag :rename_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-select", include_blank: "Select..." %>
-      <%= f.text_field :name, class: "profile-text", id:"rename_equipment_text" %>
-      <%= f.submit "Rename", class: 'save-button' %>
     <%= form_for @pi_option, url: {controller: "admin/settings", action: "remove_pi"} do |f| %>
       <%= f.label :remove_card_reader, class: "profile-label" %>
       <%= select_tag :remove_pi, options_from_collection_for_select(PiReader.all, :id, :pi_mac_with_location), class: "profile-select", include_blank: "Select a card reader..." %>
@@ -66,6 +68,6 @@
     <br><br>
   
   </div>
-    <br><br>
+  <br><br>
   </div>
 </div>
