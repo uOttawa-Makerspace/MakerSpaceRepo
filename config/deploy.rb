@@ -66,6 +66,17 @@ namespace :solr do
     end
   end
 
+  desc "restart solr"
+  task :restart do
+    on roles(:app) do
+      within release_path do
+        with rails_env: fetch(:rails_env) do
+          execute :rake, "sunspot:solr:restart"
+        end
+      end
+    end
+  end
+
   before 'deploy:starting',  'solr:stop'
   after  'deploy:finishing', 'solr:start'
 end
