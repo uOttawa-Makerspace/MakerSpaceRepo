@@ -59,10 +59,8 @@ namespace :solr do
   task :stop do
     on roles(:app) do
       within release_path do
-        if test("[ -f solr/pids/production/sunspot-solr-production.pid]")
-          with rails_env: fetch(:rails_env) do
-            execute :rake, "sunspot:solr:stop"
-          end
+        with rails_env: fetch(:rails_env) do
+          execute :rake, "sunspot:solr:stop", raise_on_non_zero_exit: false
         end
       end
     end
