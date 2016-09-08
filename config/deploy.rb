@@ -8,7 +8,7 @@ set :application, 'Makerepo'
 set :repo_url,    'https://github.com/uOttawa-Makerspace/MakerSpaceRepo'
 set :user,        'deploy'
 
-set :branch, 'cap'
+set :branch, 'master'
 # Don't change these unless you know what you're doing
 set :pty,             true
 set :use_sudo,        false
