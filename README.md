@@ -1,4 +1,4 @@
-## Initial setup of postgresql database
+## Initial setup of postgresql database in linux
 ### Install libpq
 ```bash
 sudo apt-get install libpq-dev
