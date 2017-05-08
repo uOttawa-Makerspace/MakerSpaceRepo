@@ -26,35 +26,35 @@ Things you may want to cover:
 
 ## Initial DB setup
 ### Install libpq:
-'''bash
+```bash
 sudo apt-get install libpq-dev
-'''
+```
 
 ### Run bundle install:
-'''bash
+```bash
 bundle install
-'''
+```
 
 ### Install postgresql server:
-'''bash
+```bash
 sudo apt-get install postgresql
-'''
+```
 
 ### Set the password for postgres user:
 In a postgresql shell run the following query:
-'''SQL
+```SQL
 ALTER USER "postgres" WITH PASSWORD 'postgres';
-'''
+```
 
 ### Create the database:
 In a postgresql shell run the following query:
-'''SQL
+```SQL
 CREATE DATABASE makerspacerepo;
-'''
+```
 
 ### rake db setup:
 run the following command in a bash shell in the same directory as Rakefile (main project directory)
-'''bash
+```bash
 rake db:migrate
-'''
+```
 
