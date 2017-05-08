@@ -55,6 +55,10 @@ CREATE DATABASE makerspacerepo;
 ### rake db setup
 run the following command in a bash shell in the same directory as Rakefile (main project directory)
 ```bash
-rake db:migrate
+rake db:setup
 ```
 
+You should now be able to fire up the rails server with:
+```bash
+rails s
+```
