@@ -5,4 +5,4 @@ bob:
   name: MyString
   email: fake@fake.fake
   terms_and_conditions: true
-  password: #Password1
+  password: Password1
