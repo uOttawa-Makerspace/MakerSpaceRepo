@@ -35,6 +35,7 @@ group :development, :test do
   gem 'byebug', '~> 5.0.0'
   gem 'web-console', '~> 2.0'
   gem 'spring', '~> 1.3.4'
+  gem 'railroady'
 end
 
 group :development do
