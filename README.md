@@ -38,6 +38,6 @@ rails s
 ```
 
 Don't forget to fire up solr with:
-'''bash
+```bash
 sunspot-solr start
-'''
+```
