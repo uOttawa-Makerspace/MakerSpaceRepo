@@ -11,7 +11,7 @@ class User < ActiveRecord::Base
   accepts_nested_attributes_for :repositories
 
   validates :name,
-    length: { maximum: 50, message: 'Your name mus be less than 50 characters.' }
+    length: { maximum: 50, message: 'Your name must be less than 50 characters.' }
 
   validates :username,
     presence: { message: "Your username is required." },
@@ -29,11 +29,11 @@ class User < ActiveRecord::Base
   validates :terms_and_conditions,
     inclusion: {in: [true], on: :create, message: 'You must agree to the terms and conditions' }
 
-  validates :password,
+  validates :password, 
     presence: { message: "Your password is required." },
     confirmation: {message: "Your passwords do not match."},
     # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
-    format: {with: /(?=.*[a-z])(?=.*[A-Z]).{8,}/,
+    format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/,
              message: "Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."}
 
 
