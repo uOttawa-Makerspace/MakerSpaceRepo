@@ -1,16 +1,39 @@
 require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
-  test "should get create" do
-    get :create
-    assert_response :success
+
+  #this is unnecessary but feels like it's necessary
+  teardown do
+    User.where(username: "tom").destroy_all
   end
 
+  test "create should succeed or ask for input again" do
+    post :create, user: {
+                username: "bob",
+                name: "MyString",
+                email: "fake@fake.fake",
+                terms_and_conditions: true,
+                password: "Password1"}
+    assert_response :unprocessable_entity
+    assert User.exists?(username: "bob")
+
+    post :create, user: {
+                username: "tom",
+                name: "MyStringTom",
+                email: "tom@tom.tom",
+                terms_and_conditions: true,
+                password: "Password1"}
+    assert_response :found
+    assert User.exists?(username: "tom")
+  end
+
+=begin
   test "should get new" do
     get :new
-    assert_response :success
+    assert_response (@new_user = User.new)
   end
-
+=end
+=begin
   test "should get edit" do
     get :edit
     assert_response :success
@@ -35,5 +58,5 @@ class UsersControllerTest < ActionController::TestCase
     get :delete
     assert_response :success
   end
-
+=end
 end
