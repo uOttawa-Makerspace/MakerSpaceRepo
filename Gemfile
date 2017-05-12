@@ -50,7 +50,6 @@ group :test do
   gem 'database_cleaner', '~> 1.0.1'
   gem 'launchy', '~> 2.3.0'
   gem 'selenium-webdriver', '~> 2.39.0'
-  gem 'shoulda'
 end
 
 gem 'rails_12factor', group: :production
