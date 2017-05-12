@@ -2,7 +2,7 @@
 
 bob:
   username: bob
-  name: MyString
-  email: fake@fake.fake
+  name: Bob
+  email: bob@gmail.com
   terms_and_conditions: true
   password: Password1
