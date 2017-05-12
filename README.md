@@ -1,3 +1,7 @@
+## Rails 4.2
+
+## Ruby 2.3.4
+
 ## Initial setup of postgresql database in linux
 ### Install libpq
 ```bash
@@ -32,12 +36,12 @@ run the following command in a bash shell in the same directory as Rakefile (mai
 rake db:setup
 ```
 
-You should now be able to fire up the rails server with:
-```bash
-rails s
-```
-
-Don't forget to fire up solr with:
+### Fire up solr with:
 ```bash
 sunspot-solr start
+```
+
+### Fire up the rails server with:
+```bash
+rails s
 ```
