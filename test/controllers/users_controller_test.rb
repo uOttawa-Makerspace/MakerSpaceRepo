@@ -9,6 +9,7 @@ class UsersControllerTest < ActionController::TestCase
                 terms_and_conditions: true,
                 password: "Password1"}
     assert_response 422
+    assert User.exists?(username: "bob")
   end
 
 =begin
