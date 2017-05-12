@@ -1,16 +1,23 @@
 require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
+
   test "should get create" do
-    get :create
-    assert_response :success
+    post :create, user: {username: "bob",
+                name: "MyString",
+                email: "fakke@fake.fake",
+                terms_and_conditions: true,
+                password: "Password1"}
+    assert_response 422
   end
 
+=begin
   test "should get new" do
     get :new
-    assert_response :success
+    assert_response (@new_user = User.new)
   end
-
+=end
+=begin
   test "should get edit" do
     get :edit
     assert_response :success
@@ -35,5 +42,5 @@ class UsersControllerTest < ActionController::TestCase
     get :delete
     assert_response :success
   end
-
+=end
 end
