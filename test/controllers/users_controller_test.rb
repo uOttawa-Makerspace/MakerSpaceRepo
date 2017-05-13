@@ -2,14 +2,25 @@ require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
 
-  test "should get create" do
-    post :create, user: {username: "bob",
+
+  test "create should succeed or ask for input again" do
+    post :create, user: {
+                username: "bob",
                 name: "MyString",
-                email: "fakke@fake.fake",
+                email: "fake@fake.fake",
                 terms_and_conditions: true,
                 password: "Password1"}
-    assert_response 422
+    assert_response :unprocessable_entity
     assert User.exists?(username: "bob")
+
+    post :create, user: {
+                username: "toms",
+                name: "MyStringToms",
+                email: "toms@tom.tom",
+                terms_and_conditions: true,
+                password: "Password1"}
+    assert_response :found
+    #assert (User.exists?(username: "tom")==true)
   end
 
 =begin
