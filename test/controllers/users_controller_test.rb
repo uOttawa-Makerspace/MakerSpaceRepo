@@ -2,6 +2,10 @@ require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
 
+  #this is unnecessary but feels like it's necessary
+  teardown do
+    User.where(username: "tom").destroy_all
+  end
 
   test "create should succeed or ask for input again" do
     post :create, user: {
@@ -14,13 +18,13 @@ class UsersControllerTest < ActionController::TestCase
     assert User.exists?(username: "bob")
 
     post :create, user: {
-                username: "toms",
-                name: "MyStringToms",
-                email: "toms@tom.tom",
+                username: "tom",
+                name: "MyStringTom",
+                email: "tom@tom.tom",
                 terms_and_conditions: true,
                 password: "Password1"}
     assert_response :found
-    #assert (User.exists?(username: "tom")==true)
+    assert User.exists?(username: "tom")
   end
 
 =begin
