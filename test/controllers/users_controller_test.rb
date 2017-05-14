@@ -7,7 +7,7 @@ class UsersControllerTest < ActionController::TestCase
     User.where(username: "tom").destroy_all
   end
 
-  test "create should succeed or ask for input again" do
+  test "create should succeed or ask for user input again" do
     post :create, user: {
                 username: "bob",
                 name: "MyString",
@@ -15,7 +15,8 @@ class UsersControllerTest < ActionController::TestCase
                 terms_and_conditions: true,
                 password: "Password1"}
     assert_response :unprocessable_entity
-    assert User.exists?(username: "bob")
+    assert User.exists?(username: "bob"),
+          "\nFailed at reading users.yml \n\tOR \nFailed at finding bob in users.yml"
 
     post :create, user: {
                 username: "tom",
@@ -23,8 +24,8 @@ class UsersControllerTest < ActionController::TestCase
                 email: "tom@tom.tom",
                 terms_and_conditions: true,
                 password: "Password1"}
-    assert_response :found
-    assert User.exists?(username: "tom")
+    assert_response :found, "\nFailed at creating Tom"
+    assert User.exists?(username: "tom"), "\nFailed at saving Tom"
   end
 
 =begin
