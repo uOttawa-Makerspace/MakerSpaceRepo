@@ -7,28 +7,33 @@ class UsersControllerTest < ActionController::TestCase
     User.where(username: "tom").destroy_all
   end
 
-  test "create should succeed or ask for user input again" do
+  test "create doesn't not allow for the same username or email to be inputted again" do
+    #try to create bob again, bob is a fixture
     post :create, user: {
                 username: "bob",
                 name: "MyString",
                 email: "fake@fake.fake",
                 terms_and_conditions: true,
                 password: "Password1"}
+    #assert that bob wasn't created again
     assert_response :unprocessable_entity,
                     "How is bob processable when bob is a fixture"
-    assert User.exists?(username: "bob"),
-          "\nFailed at reading users.yml \n\tOR \nFailed at finding bob in users.yml"
+  end
 
+  test "create works and saves user in the database" do
+    #try to create tom for the first time
     post :create, user: {
                 username: "tom",
                 name: "MyStringTom",
                 email: "tom@tom.tom",
                 terms_and_conditions: true,
                 password: "Password1"}
+
+    #assert that creation passes
     assert_response :found, "\nFailed at creating Tom"
+    #assert that tom is in the database
     assert User.exists?(username: "tom"), "\nFailed at saving Tom"
   end
-
 
   test "new redirect_to home if user is signed in or to new if user is not" do
     get :new
