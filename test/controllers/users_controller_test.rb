@@ -28,13 +28,13 @@ class UsersControllerTest < ActionController::TestCase
     assert_response :found, "\nFailed at creating Tom"
     assert User.exists?(username: "tom"), "\nFailed at saving Tom"
   end
-  
-=begin
-  test "new should " do
+
+
+  test "new redirect_to home if user is signed in or to new if user is not" do
     get :new
-    assert_response (@new_user = User.new)
+    assert_response :success or
+    assert_redirected_to root_path
   end
-=end
 
 =begin
   test "should get edit" do
