@@ -14,7 +14,8 @@ class UsersControllerTest < ActionController::TestCase
                 email: "fake@fake.fake",
                 terms_and_conditions: true,
                 password: "Password1"}
-    assert_response :unprocessable_entity
+    assert_response :unprocessable_entity,
+                    "How is bob processable when bob is a fixture"
     assert User.exists?(username: "bob"),
           "\nFailed at reading users.yml \n\tOR \nFailed at finding bob in users.yml"
 
@@ -27,13 +28,14 @@ class UsersControllerTest < ActionController::TestCase
     assert_response :found, "\nFailed at creating Tom"
     assert User.exists?(username: "tom"), "\nFailed at saving Tom"
   end
-
+  
 =begin
-  test "should get new" do
+  test "new should " do
     get :new
     assert_response (@new_user = User.new)
   end
 =end
+
 =begin
   test "should get edit" do
     get :edit
