@@ -2,7 +2,7 @@ require 'test_helper'
 
 class RfidTest < ActiveSupport::TestCase
   
-	test "Card presence" do 
+	test "Card's presence" do 
 		rfid = rfids(:assigned)
 
 		rfid.card_number = "123456"
