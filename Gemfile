@@ -28,6 +28,7 @@ gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'aws-sdk', '~> 2.0'
 gem 'rubyzip', '~> 1.1', require: 'zip'
 gem 'will_paginate'
+gem 'sunspot_solr'
 
 group :development, :test do
   gem 'rspec-rails', '~> 2.14.0'
@@ -53,4 +54,3 @@ group :test do
 end
 
 gem 'rails_12factor', group: :production
-
