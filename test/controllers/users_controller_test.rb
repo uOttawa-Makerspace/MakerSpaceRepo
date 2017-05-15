@@ -30,9 +30,11 @@ class UsersControllerTest < ActionController::TestCase
     assert User.exists?(username: "tom"), "\nFailed at saving Tom"
   end
 
-  test "new redirect_to home if user is signed in or to new if user is not" do
+  test "new reditects to home if user is signed in or to new if user is not" do
     get :new
+    #assert success if user is not signed in
     assert_response :success or
+    #assert redirect to home if user is signed in
     assert_redirected_to root_path
   end
 
@@ -50,13 +52,21 @@ class UsersControllerTest < ActionController::TestCase
   test "should get show" do
     get :show
     assert_response :success
+=end
+
+  test "should be able to change password" do
+    @controller = SessionsController.new
+    get :login_authentication, user: {
+                            username_email: "bob",
+                            password: "fake@fake.fake" }
+    assert_response :success, "Failed at signing in as bob"
+  #Idk how to test patch
+    #@controller = UsersController.new
+    #@bob = users(:bob)
+    #patch :change_password, @bob
   end
 
-  test "should get change_password" do
-    get :change_password
-    assert_response :success
-  end
-
+=begin
   test "should get delete" do
     get :delete
     assert_response :success
