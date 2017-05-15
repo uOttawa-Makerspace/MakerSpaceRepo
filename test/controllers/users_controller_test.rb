@@ -7,7 +7,7 @@ class UsersControllerTest < ActionController::TestCase
     User.where(username: "tom").destroy_all
   end
 
-  test "create doesn't not allow for the same username or email to be inputted again" do
+  test "create doesn't allow for the same username or email to be inputted again" do
     #try to create bob again, bob is a fixture
     post :create, user: {
                 username: "bob",
