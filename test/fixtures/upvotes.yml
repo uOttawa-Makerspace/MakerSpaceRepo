@@ -1,9 +1,9 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  user_id: 
-  comment_id: 
+  user_id: 123123
+  comment_id: 456456 
 
 two:
-  user_id: 
-  comment_id: 
+  user_id: 456456
+  comment_id: 789789
