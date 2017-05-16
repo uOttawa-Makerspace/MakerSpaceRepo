@@ -34,7 +34,8 @@ class UsersControllerTest < ActionController::TestCase
     #assert success if user is not signed in
     assert_response :success or
     #assert redirect to home if user is signed in
-    assert_redirected_to root_path
+    assert_redirected_to root_path,
+                    "User isn't signed in and failed at trying to create new user"
   end
 
 =begin
