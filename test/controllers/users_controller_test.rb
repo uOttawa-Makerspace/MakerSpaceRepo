@@ -15,7 +15,7 @@ class UsersControllerTest < ActionController::TestCase
                     "How is bob processable when bob is a fixture"
   end
 
-  test "create returns :found and saves user in the database" do
+  test "creating a user returns :found and saves user in the database" do
     #try to create tom for the first time
     post :create, user: {
                 username: "tom",
