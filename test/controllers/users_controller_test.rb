@@ -2,7 +2,7 @@ require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
 
-  test "create doesn't allow for the same username or email to be inputted again" do
+  test "creating the same username or email again return unprocessable_entity" do
     #try to create bob again, bob is a fixture
     post :create, user: {
                 username: "bob",
@@ -15,7 +15,7 @@ class UsersControllerTest < ActionController::TestCase
                     "How is bob processable when bob is a fixture"
   end
 
-  test "create works and saves user in the database" do
+  test "create returns :found and saves user in the database" do
     #try to create tom for the first time
     post :create, user: {
                 username: "tom",
@@ -23,14 +23,13 @@ class UsersControllerTest < ActionController::TestCase
                 email: "tom@tom.tom",
                 terms_and_conditions: true,
                 password: "Password1"}
-
     #assert that creation passes
     assert_response :found, "\nFailed at creating Tom"
     #assert that tom is in the database
     assert User.exists?(username: "tom"), "\nFailed at saving Tom"
   end
 
-  test "new reditects to home if user is signed in or to new if user is not" do
+  test "new returns :success if user is not signed in and redirects to home if user is" do
     get :new
     #assert success if user is not signed in
     assert_response :success or
@@ -43,7 +42,8 @@ class UsersControllerTest < ActionController::TestCase
     get :edit
     assert_response :success
   end
-
+=end
+=begin
   test "should get update" do
     get :update
     assert_response :success
@@ -54,7 +54,7 @@ class UsersControllerTest < ActionController::TestCase
     assert_response :success
 =end
 
-  test "should be able to change password" do
+  test "users should be able sign in and change password" do
     @controller = SessionsController.new
     get :login_authentication, user: {
                             username_email: "bob",
@@ -62,8 +62,8 @@ class UsersControllerTest < ActionController::TestCase
     assert_response :success, "Failed at signing in as bob"
   #Idk how to test patch
     #@controller = UsersController.new
-    #@bob = users(:bob)
-    #patch :change_password, @bob
+    #patch :change_password, user: {username:"bob", password: "Password1"}
+    #assert_response :found
   end
 
 =begin
