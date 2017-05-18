@@ -1,13 +1,13 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  user_id: 
-  repository_id: 
-  content: MyText
+  user_id: 112233
+  repository_id: 998877
+  content: Content1
   upvote: 1
 
 two:
-  user_id: 
-  repository_id: 
-  content: MyText
+  user_id: 445566
+  repository_id: 112233
+  content: Content2
   upvote: 1

@@ -2,10 +2,10 @@
 
 one:
   user_id: 
-  title: MyString
-  description: MyString
+  title: Repository1
+  description: description1
 
 two:
   user_id: 
-  title: MyString
-  description: MyString
+  title: Repository2
+  description: description2

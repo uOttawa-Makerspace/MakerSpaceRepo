@@ -2,10 +2,10 @@
 
 old:
   user_id:
-  card_number: card_one
+  card_number: "123456789"
   created_at: <%= Time.now - 30.days %>
   updated_at: <%= Time.now - 30.days %>
 
 assigned:
   user: bob
-  card_number: card_two
+  card_number: "987654321"
