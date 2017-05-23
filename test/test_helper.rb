@@ -1,6 +1,5 @@
 ENV['RAILS_ENV'] ||= 'test'
 require File.expand_path('../../config/environment', __FILE__)
-require File.expand_path('../../app/helpers/application_helper')
 require 'rails/test_help'
 require "mocha/test_unit"
 

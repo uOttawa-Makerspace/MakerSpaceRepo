@@ -1,5 +1,4 @@
 require 'test_helper'
-require "mocha/test_unit"
 
 class UsersControllerTest < ActionController::TestCase
 
@@ -56,11 +55,10 @@ class UsersControllerTest < ActionController::TestCase
 =end
 
   test "users should be able sign in and change password" do
-    #Session.any_instance.stubs(:signed_in).returns(true)
-    #session = Session.new
-    #session.stubs(:signed_in).returns(true)
-    #ApplicationHelper.any_instance.stubs(:)
-    #helper.stubs(:current_user).returns(users.(:bob))
+    ApplicationHelper.stubs(:current_user).returns(users(:bob))
+    SessionsController.stubs(:signed_in).returns(true)
+    p ApplicationHelper.current_user.username
+    p SessionsController.signed_in
   end
 
 =begin
