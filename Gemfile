@@ -28,6 +28,7 @@ gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'aws-sdk', '~> 2.0'
 gem 'rubyzip', '~> 1.1', require: 'zip'
 gem 'will_paginate'
+gem 'mocha'
 
 group :development, :test do
   gem 'rspec-rails', '~> 2.14.0'
@@ -41,7 +42,7 @@ group :development do
   gem 'capistrano', '~> 3.6'
   gem 'capistrano-rails'
   gem 'capistrano3-unicorn'
-  gem 'web-console', '~> 2.0'  
+  gem 'web-console', '~> 2.0'
 end
 
 group :test do
