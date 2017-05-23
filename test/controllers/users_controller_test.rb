@@ -55,10 +55,10 @@ class UsersControllerTest < ActionController::TestCase
 =end
 
   test "users should be able sign in and change password" do
-    ApplicationHelper.stubs(:current_user).returns(users(:bob))
+    @user = users("bob")
+    ApplicationHelper.stubs(:current_user).returns(@user)
     SessionsController.stubs(:signed_in).returns(true)
-    p ApplicationHelper.current_user.username
-    p SessionsController.signed_in
+    #patch :change_password, path: '/settings/admin/'
   end
 
 =begin
