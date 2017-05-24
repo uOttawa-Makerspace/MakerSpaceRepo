@@ -1,11 +1,11 @@
 <% provide(:title, "New Project") %>
 <section id="new-repo">
-    <div class="title">New Project</div>
+    <div class="title">New Project/Nouveau Projet</div>
 
   <%= form_for @repository, url: {controller: "repositories", action: "create"}, html: { multipart: true } do |f| %>
   <br>
-  <%= f.label :title, "Title" %>
-    <div>Great project titles are short and memorable.</div>
+  <%= f.label :title, "Title/Titre" %>
+    <div>Great project titles are short and memorable./Des titres de projets génial sont court et mémorable.</div>
     <%= f.text_field :title, class: 'repo' %>
     <br>
     <%= f.label :description %>
@@ -13,16 +13,16 @@
         <%= f.text_area :description, class: 'repo', id: 'redactor' %>
       </div>
   
-    <%= label_tag :file, "Project files" %>
+    <%= label_tag :file, "Project files/Fichiers du Projet" %>
     <label class="custom-instructable-upload">
       <%= file_field_tag 'files[]', type: :files, multiple: true %>
-      Choose files...
+      Choose files.../Sélectionner des fichiers...
     </label>
 
     <div id="file-container"></div>
 
-    <%= label_tag :photo, "Gallery" %>
-    <div>A maximum of five photos can be uploaded per repository.</div>
+    <%= label_tag :photo, "Gallery/Galerie" %>
+    <div>A maximum of five photos can be uploaded per repository./Un maximum de cinq photos peuvent être téléchargés par répertoire.</div>
     <div class="repo-image">
       <div id="dragndrop">
         <%= fa_icon 'cloud-upload'%>
@@ -30,35 +30,35 @@
       </div>
       <label class="custom-image-upload">
         <%= file_field_tag 'images[]', type: :files, multiple: true %>
-        or choose an image...
+        or choose an image.../ou choisi une image...
       </label>
     </div>
 
     <div id="image-container"></div>
     
     <br>
-    <%= f.label :categories %> 
-    <div>Choose at most 5 categories that fit your project.</div>
-    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category..." %>
+    <%= f.label :categories "Categories/Catégories" %> 
+    <div>Choose at most 5 categories that fit your project./Choisi un maximum de 5 catégories qui convent à ton projet</div>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category.../Sélectionne une catégorie..." %>
     
     <div id="category-container"></div>
   
     <br>
-    <%= f.label :equipment %> 
-    <div>Choose at most 5 pieces of equipment that are related to your project.</div>
-    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a piece of equipment..." %>
+    <%= f.label :equipment , "Equipment/Équipement"%> 
+    <div>Choose at most 5 pieces of equipment that are related to your project./Choisi un maximum de 5 pièces d'équipment qui sont reliés à ton</div>
+    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a piece of equipment.../Sélectionne une piéce d'équipement..." %>
   
     <div id="equipment-container"></div>
   
     <br>
-    <%= f.label :license %> 
-    <div>Choose how you want your project to be used by others.</div>
+    <%= f.label :license "License/Licence" %> 
+    <div>Choose how you want your project to be used by others./Choisi comment tu veux que ton projet soit utilisé par les autres</div>
     <%= f.select :license, @repository.class.license_options %>
 
     <br>
     <br>
     <br>
-    <%= f.submit "Create Project", class: "save-button", id: "waiting-save-button" %>
+    <%= f.submit "Create Project/CRÉER TON PROJET", class: "save-button", id: "waiting-save-button" %>
     <span id="status-save"></span>
 
   <% end %>
