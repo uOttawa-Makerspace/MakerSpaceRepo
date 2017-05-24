@@ -1,0 +1,2 @@
+class StaffDashboardController < ApplicationController
+end
