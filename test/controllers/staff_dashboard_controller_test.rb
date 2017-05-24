@@ -19,4 +19,5 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert_response :found
    end
 =end
+
 end
