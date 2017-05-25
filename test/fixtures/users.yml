@@ -7,12 +7,14 @@ bob:
   terms_and_conditions: true
   password: Password1
 
+
 mary:
   username: mary
   name: Mary
   email: mary@gmail.com
   terms_and_conditions: true
   password: Password2
+
 
 tom:
   username: tom
