@@ -39,7 +39,7 @@
 
     <div id="terms_and_conditions_box" >
       <%= f.check_box :terms_and_conditions, :style => "float:right;" %>
-      <%= f.label :terms_and_conditions, :class => "checkbox inline" do "I agree to the #{link_to "terms and condition", "terms_and_conditions.pdf", target: "blank"}", "J\'accepte les #{link_to "termes et conditions", "terms_and_conditions.pdf", target: "blank"}".html_safe end %>
+      <%= f.label :terms_and_conditions, :class => "checkbox inline" do "I agree to the #{link_to "terms and condition", "terms_and_conditions.pdf", target: "blank"}/J\'accepte les #{link_to "termes et conditions", "terms_and_conditions.pdf", target: "blank"}".html_safe end %>
       <%= content_tag :span, @new_user.errors[:terms_and_conditions].first, class: 'form-error' %>
     </div>
 
