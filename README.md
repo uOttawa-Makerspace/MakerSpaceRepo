@@ -8,6 +8,11 @@
 sudo apt-get install libpq-dev
 ```
 
+### Get bundler
+```bash
+gem install bundler
+```
+
 ### Run bundle install
 ```bash
 bundle install
