@@ -6,65 +6,47 @@ class UsersControllerTest < ActionController::TestCase
     #try to create bob again, bob is a fixture
     post :create, user: {
                 username: "bob",
-                name: "MyString",
+                name: "Bob",
                 email: "fake@fake.fake",
                 terms_and_conditions: true,
                 password: "Password1"}
-    #assert that bob wasn't created again
     assert_response :unprocessable_entity,
                     "How is bob processable when bob is a fixture"
   end
 
   test "creating a user returns :found and saves user in the database" do
-    #try to create tom for the first time
+    #try to create sam for the first time
     post :create, user: {
-                username: "tom",
-                name: "MyStringTom",
-                email: "tom@tom.tom",
+                username: "sam",
+                name: "Sam",
+                email: "sam@sam.sam",
                 terms_and_conditions: true,
                 password: "Password1"}
-    #assert that creation passes
-    assert_response :found, "\nFailed at creating Tom"
-    #assert that tom is in the database
-    assert User.exists?(username: "tom"), "\nFailed at saving Tom"
+    assert_response :found, "\nFailed at creating Sam"
+    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
   end
 
   test "new returns :success if user is not signed in and redirects to home if user is" do
     get :new
-    #assert success if user is not signed in
     assert_response :success or
-    #assert redirect to home if user is signed in
     assert_redirected_to root_path,
                     "User is signed in and failed at redirecting to home"
   end
 
-=begin
-  test "should get edit" do
-    get :edit
-    assert_response :success
-  end
-=end
-=begin
-  test "should get update" do
-    get :update
-    assert_response :success
-  end
-  test "should get show" do
-    get :show
-    assert_response :success
-=end
-
   test "users should be able sign in and change password" do
-    @user = users("bob")
-    ApplicationHelper.stubs(:current_user).returns(@user)
-    SessionsController.stubs(:signed_in).returns(true)
-    #patch :change_password, path: '/settings/admin/'
+    post :create, user: {
+                username: "sam",
+                name: "Sam",
+                email: "sam@sam.sam",
+                terms_and_conditions: true,
+                password: "Password1"}
+    assert_response :found, "\nFailed at creating Sam"
+    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
+    @user = User.find_by(username: "sam")
+    #WORKING ON THIS
+    #patch :change_password, username: @user.username
+    #p response
   end
 
-=begin
-  test "should get delete" do
-    get :delete
-    assert_response :success
-  end
-=end
+
 end
