@@ -1,7 +1,7 @@
 <section id="header">
   <div class="inner">
   <% unless signed_in? %>
-    <span class="header-menu-item not-signed-in"><%= link_to 'Sign Up/Créer un compte', new_user_path %></span>
+    <span class="header-menu-item not-signed-in"><%= link_to 'Sign Up/Créer un Compte', new_user_path %></span>
     <span class="header-menu-item not-signed-in"><%= link_to 'Log In/Connexion', login_path %></span>
     <span class="header-menu-item"><%= link_to 'Explore/Explorer', explore_path %></span>
   <% else %>
