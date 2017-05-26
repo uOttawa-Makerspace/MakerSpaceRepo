@@ -31,7 +31,6 @@ gem 'will_paginate'
 gem 'mocha'
 
 group :development, :test do
-  gem 'rspec-rails', '~> 2.14.0'
   gem 'factory_girl_rails', '~> 4.2.1'
   gem 'byebug', '~> 5.0.0'
   gem 'spring', '~> 1.3.4'
