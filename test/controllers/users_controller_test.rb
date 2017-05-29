@@ -28,11 +28,12 @@ class UsersControllerTest < ActionController::TestCase
 
   ##########
   #new tests
-  test "new returns :success if user is not signed in and redirects to home if user is" do
+  test "new succeeds if user is not signed in and redirects to home if user is" do
     get :new
     assert_response :success or
-    assert_redirected_to root_path,
+    (assert_redirected_to root_path,
                     "User is signed in but failed at redirecting to home"
+     assert_response :found)
   end
 
   ##########
@@ -40,6 +41,7 @@ class UsersControllerTest < ActionController::TestCase
   test "should be able to get likes through controller" do
     @user = users(:bob)
     get :likes, username: @user.username
+    assert_response :found
   end
 
   ##########
@@ -47,6 +49,7 @@ class UsersControllerTest < ActionController::TestCase
   test "should be able to get additional_info" do
     @user = users(:bob)
     get :additional_info, username: @user.username, user: {}
+    assert_response :found
   end
 
   test "should be able to patch additional_info" do
@@ -62,11 +65,34 @@ class UsersControllerTest < ActionController::TestCase
     assert_nil User.find_by(username: "sam").faculty
     patch :additional_info, username: "sam", user: {faculty: "engineering"}
     assert_equal "engineering", User.find_by(username: "sam").faculty
+    assert_redirected_to settings_profile_path
+    assert_response :found
   end
 
   ##########
+  #update tests
+  test "user should be able to update profile with patch" do
+    post :create, user: {
+                username: "sam",
+                name: "Sam",
+                email: "sam@sam.sam",
+                terms_and_conditions: true,
+                password: "Password1"}
+    assert_response :found, "\nFailed at creating Sam"
+    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
+    @user = User.find_by(username: "sam")
+    assert_nil User.find_by(username: "sam").location
+    patch :update, username: "sam", user: {location: "Ottawa"}
+    assert_equal 'Profile updated successfully.', flash[:notice]
+    assert_equal "Ottawa", User.find_by(username: "sam").location
+    assert_redirected_to settings_profile_path
+    assert_response :found
+  end
+
+
+  ##########
   #change_password tests
-  test "users should be able to change password" do
+  test "user should be able to change password" do
     post :create, user: {
                 username: "sam",
                 name: "Sam",
@@ -82,9 +108,11 @@ class UsersControllerTest < ActionController::TestCase
     @newpass = User.find_by(username: "sam").password
     assert_equal 'Password changed successfully', flash[:notice]
     assert @oldpass != @newpass
+    assert_redirected_to settings_admin_path
+    assert_response :found
   end
 
-  test "users can't change password if old password is wrong" do
+  test "user can't change password if old password is wrong" do
     post :create, user: {
                 username: "sam",
                 name: "Sam",
@@ -100,9 +128,11 @@ class UsersControllerTest < ActionController::TestCase
     @newpass = User.find_by(username: "sam").password
     assert_equal 'Incorrect old password.', flash.now[:alert]
     assert @oldpass == @newpass
+    assert_response :ok
+
   end
 
-  test "users can't change password if passwords don't match" do
+  test "user can't change password if passwords don't match" do
     post :create, user: {
                 username: "sam",
                 name: "Sam",
@@ -118,6 +148,8 @@ class UsersControllerTest < ActionController::TestCase
     @newpass = User.find_by(username: "sam").password
     assert_nil flash.now[:alert]
     assert @oldpass == @newpass
+    assert_response :ok
+
   end
 
 end
