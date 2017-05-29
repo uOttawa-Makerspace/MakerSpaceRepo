@@ -36,6 +36,13 @@ class UsersControllerTest < ActionController::TestCase
   end
 
   ##########
+  #likes tests
+  test "should be able to get likes through controller" do
+    @user = users(:bob)
+    get :likes, username: @user.username
+  end
+
+  ##########
   #change_password tests
   test "users should be able sign in to change password" do
     post :create, user: {
@@ -90,7 +97,6 @@ class UsersControllerTest < ActionController::TestCase
     post :change_password, username: @user.username,
       user: {old_password: "Password1", password: "Password2", password_confirmation: "WrongConfirmationPass1"}
     @newpass = User.find_by(username: "sam").password
-    assert_equal nil, flash.now[:alert]
     assert @oldpass == @newpass
   end
 
