@@ -43,15 +43,36 @@ class UsersControllerTest < ActionController::TestCase
   end
 
   ##########
-  #change_password tests
-  test "users should be able sign in to change password" do
+  #additional_info tests
+  test "should be able to get additional_info" do
+    @user = users(:bob)
+    get :additional_info, username: @user.username, user: {}
+  end
+
+  test "should be able to patch additional_info" do
     post :create, user: {
                 username: "sam",
                 name: "Sam",
                 email: "sam@sam.sam",
                 terms_and_conditions: true,
-                password: "Password1",
-                role: "admin"}
+                password: "Password1"}
+    assert_response :found, "\nFailed at creating Sam"
+    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
+    @user = User.find_by(username: "sam")
+    assert_nil User.find_by(username: "sam").faculty
+    patch :additional_info, username: "sam", user: {faculty: "engineering"}
+    assert_equal "engineering", User.find_by(username: "sam").faculty
+  end
+
+  ##########
+  #change_password tests
+  test "users should be able to change password" do
+    post :create, user: {
+                username: "sam",
+                name: "Sam",
+                email: "sam@sam.sam",
+                terms_and_conditions: true,
+                password: "Password1"}
     assert_response :found, "\nFailed at creating Sam"
     assert User.exists?(username: "sam"), "\nFailed at saving Sam"
     @user = User.find_by(username: "sam")
@@ -69,8 +90,7 @@ class UsersControllerTest < ActionController::TestCase
                 name: "Sam",
                 email: "sam@sam.sam",
                 terms_and_conditions: true,
-                password: "Password1",
-                role: "admin"}
+                password: "Password1"}
     assert_response :found, "\nFailed at creating Sam"
     assert User.exists?(username: "sam"), "\nFailed at saving Sam"
     @user = User.find_by(username: "sam")
@@ -88,8 +108,7 @@ class UsersControllerTest < ActionController::TestCase
                 name: "Sam",
                 email: "sam@sam.sam",
                 terms_and_conditions: true,
-                password: "Password1",
-                role: "admin"}
+                password: "Password1"}
     assert_response :found, "\nFailed at creating Sam"
     assert User.exists?(username: "sam"), "\nFailed at saving Sam"
     @user = User.find_by(username: "sam")
@@ -97,6 +116,7 @@ class UsersControllerTest < ActionController::TestCase
     post :change_password, username: @user.username,
       user: {old_password: "Password1", password: "Password2", password_confirmation: "WrongConfirmationPass1"}
     @newpass = User.find_by(username: "sam").password
+    assert_nil flash.now[:alert]
     assert @oldpass == @newpass
   end
 
