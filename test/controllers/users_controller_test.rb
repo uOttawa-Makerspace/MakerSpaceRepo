@@ -33,19 +33,21 @@ class UsersControllerTest < ActionController::TestCase
                     "User is signed in and failed at redirecting to home"
   end
 
-  test "users should be able sign in and change password" do
+  test "users should be able sign in to change password" do
     post :create, user: {
                 username: "sam",
                 name: "Sam",
                 email: "sam@sam.sam",
                 terms_and_conditions: true,
-                password: "Password1"}
+                password: "Password1",
+                role: "admin"}
     assert_response :found, "\nFailed at creating Sam"
     assert User.exists?(username: "sam"), "\nFailed at saving Sam"
     @user = User.find_by(username: "sam")
-    #WORKING ON THIS
-    #patch :change_password, username: @user.username
-    #p response
+    post :change_password, username: @user.username,
+      user: {old_password: "Password1", password: "Password2", password_confirmation: "Password2"}
+    assert_equal 'Password changed successfully', flash[:notice]
+
   end
 
 
