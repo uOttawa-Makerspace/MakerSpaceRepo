@@ -28,12 +28,22 @@ class UsersControllerTest < ActionController::TestCase
 
   ##########
   #new tests
-  test "new succeeds if user is not signed in and redirects to home if user is" do
+  test "get new succeeds if user is not signed in" do
     get :new
-    assert_response :success or
-    (assert_redirected_to root_path,
-                    "User is signed in but failed at redirecting to home"
-     assert_response :found)
+    assert_response :success
+  end
+
+  test "new redirects to home if user is signed in" do
+    post :create, user: {
+                username: "sam",
+                name: "Sam",
+                email: "sam@sam.sam",
+                terms_and_conditions: true,
+                password: "Password1"}
+    assert_response :found, "\nFailed at creating Sam"
+    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
+    get :new
+    assert_redirected_to root_path, "User is signed in but failed at redirecting to home"
   end
 
   ##########
