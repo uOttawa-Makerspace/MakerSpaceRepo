@@ -18,19 +18,21 @@
   <% @repositories.each do |repository| %>
     <div class="repository-container">
 
-      <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')"  %> >
-        <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
-      </div>
+      <% if false %>
+        <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')"  %> >
+          <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
+        </div>
+      <% end %>
 
       <div class="repo-info">
         <div class="left">
           <div class="title">
             <%= link_to repository.title, repository_path(repository.user_username, repository.slug) %>
-          </div> 
-          <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div> 
+          </div>
+          <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
           <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
         </div>
-        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div> 
+        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
       </div>
     </div>
   <% end %>

@@ -9,7 +9,10 @@ class SearchController < SessionsController
 
   def search
   	sort_arr = sort_order
-  	@repositories = Repository.where("title LIKE ?", "%#{params[:q]}%").paginate(:per_page=>12,:page=>params[:page]) do
+  	@repositories = Repository.where("title LIKE ?
+                                  OR description LIKE ?
+                                  OR user_username LIKE ?",
+                                  "%#{params[:q]}%", "%#{params[:q]}%", "%#{params[:q]}%").paginate(:per_page=>12,:page=>params[:page]) do
 	    #keywords params[:q]
 	    order_by sort_arr.first, sort_arr.last
 	    paginate :page => params[:page], :per_page => 12
