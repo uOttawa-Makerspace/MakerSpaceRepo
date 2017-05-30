@@ -23,11 +23,11 @@
           <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
         </div>
       <% end %>
-
+      
       <div class="repo-info">
         <div class="left">
           <div class="title">
-            <%= link_to repository.title, repository_path(repository.user_username, repository.slug) %>
+            <%= link_to repository.title, repository_path(user_username: repository.user_username, slug: repository.slug) %>
           </div>
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
           <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
