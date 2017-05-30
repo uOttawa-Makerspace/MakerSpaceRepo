@@ -166,7 +166,6 @@ GEM
       mimemagic (~> 0.3.0)
     pg (0.18.4)
     photoswipe-rails (4.0.8a)
-    pr_geohash (1.0.0)
     progress_bar (1.0.5)
       highline (~> 1.6)
       options (~> 2.3.0)
@@ -217,9 +216,6 @@ GEM
     responders (2.4.0)
       actionpack (>= 4.2.0, < 5.3)
       railties (>= 4.2.0, < 5.3)
-    rsolr (2.0.1)
-      builder (>= 2.1.2)
-      faraday
     rspec-core (2.14.8)
     rspec-expectations (2.14.5)
       diff-lcs (>= 1.1.3, < 2.0)
@@ -263,14 +259,6 @@ GEM
     sshkit (1.13.1)
       net-scp (>= 1.1.2)
       net-ssh (>= 2.8.0)
-    sunspot (2.2.7)
-      pr_geohash (~> 1.0)
-      rsolr (>= 1.1.1, < 3)
-    sunspot_rails (2.2.7)
-      nokogiri
-      rails (>= 3)
-      sunspot (= 2.2.7)
-    sunspot_solr (2.2.7)
     thin (1.6.4)
       daemons (~> 1.0, >= 1.0.9)
       eventmachine (~> 1.0, >= 1.0.4)
@@ -340,8 +328,6 @@ DEPENDENCIES
   sdoc (~> 0.4.0)
   selenium-webdriver (~> 2.39.0)
   spring (~> 1.3.4)
-  sunspot_rails (~> 2.2.0)
-  sunspot_solr (~> 2.2.0)
   thin (~> 1.6.3)
   turbolinks (~> 2.5.3)
   uglifier (>= 1.3.0)
@@ -353,4 +339,4 @@ RUBY VERSION
    ruby 2.3.4p301
 
 BUNDLED WITH
-   1.14.6
+   1.15.0

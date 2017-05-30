@@ -11,8 +11,9 @@ class SearchController < SessionsController
   	sort_arr = sort_order
   	@repositories = Repository.where("title LIKE ?
                                   OR description LIKE ?
-                                  OR user_username LIKE ?",
-                                  "%#{params[:q]}%", "%#{params[:q]}%", "%#{params[:q]}%").paginate(:per_page=>12,:page=>params[:page]) do
+                                  OR user_username LIKE ?
+                                  OR category LIKE ?",
+                                  "%#{params[:q]}%", "%#{params[:q]}%", "%#{params[:q]}%", "%#{params[:q]}%").paginate(:per_page=>12,:page=>params[:page]) do
 	    order_by sort_arr.first, sort_arr.last
 	    paginate :page => params[:page], :per_page => 12
 	  end
@@ -22,7 +23,7 @@ class SearchController < SessionsController
 
   def category
     sort_arr = sort_order
-    @repositories = Repository.where("category LIKE ?", "%#{params[:q]}%").paginate(:per_page=>12,:page=>params[:page]) do
+    @repositories = Repository.where("category LIKE ?", "%#{params[:slug]}%").paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
       paginate :page => params[:page], :per_page => 12
     end
@@ -32,7 +33,7 @@ class SearchController < SessionsController
 
   def equipment
     sort_arr = sort_order
-    @repositories = Repository.where("equipment LIKE ?", "%#{params[:q]}%").paginate(:per_page=>12,:page=>params[:page]) do
+    @repositories = Repository.where("equipment LIKE ?", "%#{params[:slug]}%").paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
       paginate :page => params[:page], :per_page => 12
     end
