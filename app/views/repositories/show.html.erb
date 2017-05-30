@@ -10,12 +10,15 @@
 
   <section id="repository-photos">
 
-    <div id="show-photo">
-      <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.width, height: @photos.first.height} %>
-    </div>
+
+    <% if false %>
+      <div id="show-photo">
+        <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.width, height: @photos.first.height} %>
+      </div>
+    <% end %>
 
     <div id="photo-slide">
-      <% @photos.each do |p| %> 
+      <% @photos.each do |p| %>
         <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
       <% end %>
     </div>
@@ -31,7 +34,7 @@
   <section id="info">
 
   <% if @repository.user_username.eql?(@user.username) || @user.role.eql?("admin") %>
-    <%= link_to fa_icon("pencil", text: 'Edit project'), 
+    <%= link_to fa_icon("pencil", text: 'Edit project'),
       edit_repository_path(@repository.user_username, @repository.slug), class: 'edit-repo-link' %>
   <% end %>
 
@@ -61,7 +64,7 @@
         <% @files.each do |f| %>
           <div class="file-item-show">
             <u><%= fa_icon "file-text-o" %> <%= link_to f.file.original_filename, :action => 'download', :file => f.file.path %></u><span><%= f.file.size/1000 %> KB</span>
-          </div> 
+          </div>
         <% end %>
         </div>
       </div>
@@ -86,7 +89,7 @@
 
       <div class="repo-info-item">
         <span class="like">
-          <%= link_to(fa_icon('heart', text: 'Like'), 
+          <%= link_to(fa_icon('heart', text: 'Like'),
             add_like_repository_path, class: 'like', remote: true, method: :post) %>
         </span>
         <span class="make">
@@ -129,8 +132,8 @@
 
     <div id="comment-filters">
       <% if params['comment_filter'].eql?('newest')
-        then bold = %w(font-weight:700 font-weight:400) 
-        else bold = %w(font-weight:400 font-weight:700) 
+        then bold = %w(font-weight:700 font-weight:400)
+        else bold = %w(font-weight:400 font-weight:700)
         end %>
       <%= link_to "Top votes", repository_path(comment_filter: :top) + "#repo-comments", style: bold.last %>
       <%= link_to "Newest", repository_path(comment_filter: :newest) + "#repo-comments", style: bold.first %>
@@ -142,14 +145,14 @@
           <%=
             vote = @vote.flatten.include?(comment.id)
             color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999'
-            link_to fa_icon('angle-up'), vote_path(comment_id: comment.id, 
-            voted: vote, downvote: 'f'), class: 'vote upvote', remote: true, method: :post, style: "color: #{color}" 
+            link_to fa_icon('angle-up'), vote_path(comment_id: comment.id,
+            voted: vote, downvote: 'f'), class: 'vote upvote', remote: true, method: :post, style: "color: #{color}"
           %>
           <div class="upvote upvote-<%= comment.id %>"><%= comment.upvote %></div>
           <%=
             color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999'
-            link_to fa_icon('angle-down'), vote_path(comment_id: comment.id, 
-            voted: vote, downvote: 't'), class: 'vote downvote', remote: true, method: :post, style: "color: #{color}" 
+            link_to fa_icon('angle-down'), vote_path(comment_id: comment.id,
+            voted: vote, downvote: 't'), class: 'vote downvote', remote: true, method: :post, style: "color: #{color}"
           %>
         </div>
         <div class="comment-header">
@@ -161,7 +164,7 @@
         <div class="comment-content">
           <%= comment.content.html_safe %>
         </div>
-      </div> 
+      </div>
       <% end %>
       <%= paginate @comments %>
     </div>
