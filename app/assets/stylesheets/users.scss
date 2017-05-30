@@ -64,18 +64,21 @@ div.signup-breadcrumb{
     &:nth-child(1){
       border-right-color: #366;
     }
+  }
 
+  #additional-info{
+        padding-top: 3% ; 
+        padding-bottom: 4%;
+   }
+   
+  #create-account{
+    background-color:#eee;
   }
 
 }
 
-div.additional-info{
-  max-width: 60%;
-  margin: 0 auto;
-  font: 100 0.9rem 'Raleway', helvetica, sans-serif;
-  color: #555;
-  padding: 2rem 0;
-}
+
+
 
 span.other textarea#use{
   display: none;
@@ -89,6 +92,7 @@ div.signup-title, div.login-title{
   max-width: 60%;
   margin: 0 auto;
 }
+
 
 input.signup-button{
 	width: auto !important;
