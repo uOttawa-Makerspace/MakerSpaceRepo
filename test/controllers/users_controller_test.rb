@@ -66,7 +66,6 @@ class UsersControllerTest < ActionController::TestCase
     patch :additional_info, username: "sam", user: {faculty: "engineering"}
     assert_equal "engineering", User.find_by(username: "sam").faculty
     assert_redirected_to settings_profile_path
-    assert_response :found
   end
 
   ##########
@@ -86,7 +85,6 @@ class UsersControllerTest < ActionController::TestCase
     assert_equal 'Profile updated successfully.', flash[:notice]
     assert_equal "Ottawa", User.find_by(username: "sam").location
     assert_redirected_to settings_profile_path
-    assert_response :found
   end
 
 
@@ -107,9 +105,8 @@ class UsersControllerTest < ActionController::TestCase
       user: {old_password: "Password1", password: "Password2", password_confirmation: "Password2"}
     @newpass = User.find_by(username: "sam").password
     assert_equal 'Password changed successfully', flash[:notice]
-    assert @oldpass != @newpass
+    assert_not_equal @oldpass, @newpass
     assert_redirected_to settings_admin_path
-    assert_response :found
   end
 
   test "user can't change password if old password is wrong" do
@@ -127,9 +124,8 @@ class UsersControllerTest < ActionController::TestCase
       user: {old_password: "WrongOldPass1", password: "Password2", password_confirmation: "Password2"}
     @newpass = User.find_by(username: "sam").password
     assert_equal 'Incorrect old password.', flash.now[:alert]
-    assert @oldpass == @newpass
+    assert_equal @oldpass, @newpass
     assert_response :ok
-
   end
 
   test "user can't change password if passwords don't match" do
@@ -147,9 +143,8 @@ class UsersControllerTest < ActionController::TestCase
       user: {old_password: "Password1", password: "Password2", password_confirmation: "WrongConfirmationPass1"}
     @newpass = User.find_by(username: "sam").password
     assert_nil flash.now[:alert]
-    assert @oldpass == @newpass
+    assert_equal @oldpass, @newpass
     assert_response :ok
-
   end
 
 end
