@@ -64,18 +64,21 @@ div.signup-breadcrumb{
     &:nth-child(1){
       border-right-color: #366;
     }
+  }
 
+  #additional-info{
+        padding-top: 3% ; 
+        padding-bottom: 4%;
+   }
+   
+  #create-account{
+    background-color:#eee;
   }
 
 }
 
-div.additional-info{
-  max-width: 60%;
-  margin: 0 auto;
-  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
-  color: #555;
-  padding: 2rem 0;
-}
+
+
 
 span.other textarea#use{
   display: none;
@@ -89,6 +92,7 @@ div.signup-title, div.login-title{
   max-width: 60%;
   margin: 0 auto;
 }
+
 
 input.signup-button{
 	width: auto !important;
@@ -122,15 +126,17 @@ section#login{
     text-align: center;
     color: #366;
     display: block;
+
   }
 
  	input:not([type=checkbox]){
 		display: block;
 		padding: 0.5rem;
-		width: 250px;
+    height: 30px;
+		width: 400px;
 		border: 1px solid #aaa;
 		margin: 0 auto;
-	  font: 400 1rem 'Raleway', helvetica, sans-serif;
+	  font: 400 1.09rem 'Raleway', helvetica, sans-serif;
 	  border-bottom: none;
 
 	  &:nth-last-child(3){
@@ -145,7 +151,8 @@ div.login-title{
 }
 
 input.login-button{
-	width: calc(252px + 1rem) !important;
+	width: calc(400px + 1.09rem) !important;
+  height: calc(30px + 1.09rem) !important;
   letter-spacing: 1px;
   background-color: #4bbc9c;
   color: #fff;
