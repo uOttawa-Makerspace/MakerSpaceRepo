@@ -34,14 +34,8 @@ class UsersControllerTest < ActionController::TestCase
   end
 
   test "new redirects to home if user is signed in" do
-    post :create, user: {
-                username: "sam",
-                name: "Sam",
-                email: "sam@sam.sam",
-                terms_and_conditions: true,
-                password: "Password1"}
-    assert_response :found, "\nFailed at creating Sam"
-    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
     get :new
     assert_redirected_to root_path, "User is signed in but failed at redirecting to home"
   end
@@ -49,51 +43,35 @@ class UsersControllerTest < ActionController::TestCase
   ##########
   #likes tests
   test "should be able to get likes through controller" do
-    @user = users(:bob)
-    get :likes, username: @user.username
+    get :likes, username: "bob"
     assert_response :found
   end
 
   ##########
   #additional_info tests
   test "should be able to get additional_info" do
-    @user = users(:bob)
-    get :additional_info, username: @user.username, user: {}
-    assert_response :found
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    get :additional_info, username: "bob"
+    assert_response :ok
   end
 
   test "should be able to patch additional_info" do
-    post :create, user: {
-                username: "sam",
-                name: "Sam",
-                email: "sam@sam.sam",
-                terms_and_conditions: true,
-                password: "Password1"}
-    assert_response :found, "\nFailed at creating Sam"
-    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
-    @user = User.find_by(username: "sam")
-    assert_nil User.find_by(username: "sam").faculty
-    patch :additional_info, username: "sam", user: {faculty: "engineering"}
-    assert_equal "engineering", User.find_by(username: "sam").faculty
+    session[:user_id] = User.find_by(username: "mary").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    patch :additional_info, username: "mary", user: {faculty: "engineering"} #from science
+    assert_equal "engineering", User.find_by(username: "mary").faculty
     assert_redirected_to settings_profile_path
   end
 
   ##########
   #update tests
   test "user should be able to update profile with patch" do
-    post :create, user: {
-                username: "sam",
-                name: "Sam",
-                email: "sam@sam.sam",
-                terms_and_conditions: true,
-                password: "Password1"}
-    assert_response :found, "\nFailed at creating Sam"
-    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
-    @user = User.find_by(username: "sam")
-    assert_nil User.find_by(username: "sam").location
-    patch :update, username: "sam", user: {location: "Ottawa"}
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    patch :update, username: "bob", user: {gender: "female"} #from male
     assert_equal 'Profile updated successfully.', flash[:notice]
-    assert_equal "Ottawa", User.find_by(username: "sam").location
+    assert_equal "female", User.find_by(username: "bob").gender
     assert_redirected_to settings_profile_path
   end
 
@@ -101,57 +79,36 @@ class UsersControllerTest < ActionController::TestCase
   ##########
   #change_password tests
   test "user should be able to change password" do
-    post :create, user: {
-                username: "sam",
-                name: "Sam",
-                email: "sam@sam.sam",
-                terms_and_conditions: true,
-                password: "Password1"}
-    assert_response :found, "\nFailed at creating Sam"
-    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
-    @user = User.find_by(username: "sam")
-    @oldpass = @user.password
-    post :change_password, username: @user.username,
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    @oldpass = User.find_by(username: "bob").password
+    post :change_password, username: "bob.username",
       user: {old_password: "Password1", password: "Password2", password_confirmation: "Password2"}
-    @newpass = User.find_by(username: "sam").password
+    @newpass = User.find_by(username: "bob").password
     assert_equal 'Password changed successfully', flash[:notice]
     assert_not_equal @oldpass, @newpass
     assert_redirected_to settings_admin_path
   end
 
   test "user can't change password if old password is wrong" do
-    post :create, user: {
-                username: "sam",
-                name: "Sam",
-                email: "sam@sam.sam",
-                terms_and_conditions: true,
-                password: "Password1"}
-    assert_response :found, "\nFailed at creating Sam"
-    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
-    @user = User.find_by(username: "sam")
-    @oldpass = @user.password
-    post :change_password, username: @user.username,
-      user: {old_password: "WrongOldPass1", password: "Password2", password_confirmation: "Password2"}
-    @newpass = User.find_by(username: "sam").password
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    @oldpass = User.find_by(username: "bob").password
+    post :change_password, username: "bob.username",
+      user: {old_password: "WrongOldPass1", password: "Password2", password_confirmation: "Password2"}, pword: "Password1"
+    @newpass = User.find_by(username: "bob").password
     assert_equal 'Incorrect old password.', flash.now[:alert]
     assert_equal @oldpass, @newpass
     assert_response :ok
   end
 
   test "user can't change password if passwords don't match" do
-    post :create, user: {
-                username: "sam",
-                name: "Sam",
-                email: "sam@sam.sam",
-                terms_and_conditions: true,
-                password: "Password1"}
-    assert_response :found, "\nFailed at creating Sam"
-    assert User.exists?(username: "sam"), "\nFailed at saving Sam"
-    @user = User.find_by(username: "sam")
-    @oldpass = @user.password
-    post :change_password, username: @user.username,
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    @oldpass = User.find_by(username: "bob").password
+    post :change_password, username: "bob.username",
       user: {old_password: "Password1", password: "Password2", password_confirmation: "WrongConfirmationPass1"}
-    @newpass = User.find_by(username: "sam").password
+    @newpass = User.find_by(username: "bob").password
     assert_nil flash.now[:alert]
     assert_equal @oldpass, @newpass
     assert_response :ok
