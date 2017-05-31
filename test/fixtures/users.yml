@@ -27,3 +27,11 @@ mary:
   faculty: science
   use: null
   description: null
+
+adam:
+  username: adam
+  name: Adam
+  email: adam@adam.com
+  terms_and_conditions: true
+  password: Password3
+  role: admin
