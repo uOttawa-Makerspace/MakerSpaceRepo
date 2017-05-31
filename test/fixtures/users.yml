@@ -6,6 +6,7 @@ bob:
   email: bob@gmail.com
   terms_and_conditions: true
   password: Password1
+  role: "admin"
 
 
 
@@ -15,3 +16,11 @@ mary:
   email: mary@gmail.com
   terms_and_conditions: true
   password: Password2
+
+
+tom:
+  username: tom
+  name: Tom
+  email: tom@gmail.com
+  terms_and_conditions: true
+  password: Password1
