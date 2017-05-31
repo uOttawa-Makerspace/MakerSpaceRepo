@@ -114,7 +114,7 @@ private
   def user_params
     params.require(:user).permit(:password, :password_confirmation, :url,
       :location, :email, :name, :username, :avatar, :gender, :faculty, :use,
-      :description, :terms_and_conditions)
+      :description, :terms_and_conditions, :program, :studentID)
   end
 
   def sort_order
