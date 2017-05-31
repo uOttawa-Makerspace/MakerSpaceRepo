@@ -11,9 +11,7 @@ class Admin::UsersControllerTest < ActionController::TestCase
   test "admin should be able to add certifications in bulk" do
     @user1 = User.find_by(username: "mary")
     @user2 = User.find_by(username: "tom")
-    #binding.pry
     post :bulk_add_certifications, bulk_cert_users: [@user1, @user2], bulk_certifications: "lathe_may_4"
-    binding.pry
   end
 
 
