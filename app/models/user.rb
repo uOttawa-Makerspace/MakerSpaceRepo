@@ -12,7 +12,7 @@ class User < ActiveRecord::Base
 
   validates :name,
     length: { maximum: 50, message: 'Your name must be less than 50 characters.' }
-
+   
   validates :username,
     presence: { message: "Your username is required." },
     uniqueness: { message: "Your username is already in use." },
