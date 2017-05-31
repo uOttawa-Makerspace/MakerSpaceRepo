@@ -5,8 +5,14 @@ bob:
   name: Bob
   email: bob@gmail.com
   terms_and_conditions: true
-  password: Password1
-
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  #password: Password1
+  url: null
+  location: makerspace
+  gender: male
+  faculty: engineering
+  use: null
+  description: null
 
 
 mary:
@@ -15,3 +21,9 @@ mary:
   email: mary@gmail.com
   terms_and_conditions: true
   password: Password2
+  url: null
+  location: brunsfield
+  gender: female
+  faculty: science
+  use: null
+  description: null
