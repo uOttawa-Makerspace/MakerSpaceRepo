@@ -59,6 +59,12 @@
     <%= f.label :program, "Program (Optional)" %>
     <%= f.text_field :program, autofocus: true %>
 
+    <%= f.label :use, "What do you plan on using MakerRepo for?", style: 'margin-bottom: 0.5rem; display: block;' %>
+    <%= f.select :use, ["Course", "Personal Project", "Business", "Other"] , prompt: "Select a use case..." %>
+
+    <%= content_tag :span, text_area_tag(:use), class: 'other' %>
+
+
     <div id="terms_and_conditions_box" >
       <%= f.check_box :terms_and_conditions, :style => "float:right;" %>
       <%= f.label :terms_and_conditions, :class => "checkbox inline" do "I agree to the #{link_to "terms and condition", "terms_and_conditions.pdf", target: "blank"}".html_safe end %>
