@@ -1,15 +1,15 @@
 <% provide(:title, "Explore") %>
 <section id="repositories-index">
   <section id="repository-filter">
-    <div class="sort">sort by</div>
+    <div class="sort">sort by/classer par</div>
     <nav>
       <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest' %>
       <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
       <ul class="filter">
-        <li><%= link_to 'Newest', explore_path(sort: :newest) %></li>
-        <li><%= link_to 'Most Likes', explore_path(sort: :most_likes) %></li>
-        <li><%= link_to 'Most Makes', explore_path(sort: :most_makes) %></li>
-        <li><%= link_to 'Recently Updated', explore_path(sort: :recently_updated) %></li>
+        <li><%= link_to 'Newest/Plus récent', explore_path(sort: :newest) %></li>
+        <li><%= link_to 'Most Likes/Plus d\'Aimes', explore_path(sort: :most_likes) %></li>
+        <li><%= link_to 'Most Makes/Plus de fabrications', explore_path(sort: :most_makes) %></li>
+        <li><%= link_to 'Recently Updated/Récemment mis à jour', explore_path(sort: :recently_updated) %></li>
       </ul>
     </nav>
   </section>

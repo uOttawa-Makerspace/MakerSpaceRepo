@@ -6,10 +6,10 @@
       <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest' %>
       <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
       <ul class="filter">
-        <li><%= link_to 'Newest', search_path(sort: :newest, q: params[:q]) %></li>
-        <li><%= link_to 'Most Likes', search_path(sort: :most_likes, q: params[:q]) %></li>
-        <li><%= link_to 'Most Makes', search_path(sort: :most_makes, q: params[:q]) %></li>
-        <li><%= link_to 'Recently Updated', search_path(sort: :recently_updated, q: params[:q]) %></li>
+        <li><%= link_to 'Newest/Plus récent', search_path(sort: :newest, q: params[:q]) %></li>
+        <li><%= link_to 'Most Likes/Plus d\'Aimes', search_path(sort: :most_likes, q: params[:q]) %></li>
+        <li><%= link_to 'Most Makes/Plus de fabrications', search_path(sort: :most_makes, q: params[:q]) %></li>
+        <li><%= link_to 'Recently Updated/Récemment mis à jour', search_path(sort: :recently_updated, q: params[:q]) %></li>
       </ul>
     </nav>
   </section>
