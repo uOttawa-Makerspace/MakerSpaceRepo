@@ -16,10 +16,10 @@ mary:
   password: Password2
 
 
-tom:
-  username: tom
-  name: Tom
-  email: tom@tom.com
+adam:
+  username: adam
+  name: Adam
+  email: adam@adam.com
   terms_and_conditions: true
   password: Password3
   role: admin
