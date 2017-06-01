@@ -5,9 +5,6 @@
      <div style="background-color:#eee;">
          Create Account
      </div>
-     <div>
-         Additional Information
-     </div>
   </div>
   <div class="signup-title">Create your personal account</div>
 
@@ -72,6 +69,11 @@
     </div>
 
     <%= f.submit "Create Account", class: 'signup-button' %>
+    <% if flash[:notice] %>
+      <div id="notice"><%flash[:notice] %></div>
+    <% end %>
+    
+
 
   <% end %>
 
