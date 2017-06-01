@@ -10,20 +10,14 @@ class UsersController < SessionsController
 
     respond_to do |format|
       if @new_user.save
+        flash[:notice] = "Profile created successfully."
         session[:user_id], cookies[:user_id] = @new_user.id, @new_user.id
-        format.html { redirect_to additional_info_user_path(@new_user.username) }
+        format.html { redirect_to settings_profile_path(@new_user.username) }
         format.json { render json: { success: @new_user.id }, status: :ok }
       else
         format.html { render 'new', status: :unprocessable_entity }
         format.json { render json: @new_user.errors, status: :unprocessable_entity }
       end
-    end
-  end
-
-  def additional_info
-    if request.patch?
-      user_params[:use] = params[:use] if user_params[:use].eql?("Other")
-      redirect_to settings_profile_path if @user.update(user_params)
     end
   end
 
