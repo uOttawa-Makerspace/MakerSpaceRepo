@@ -106,9 +106,6 @@ Rails.application.routes.draw do
    # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
     get 'likes', on: :member
-    # get 'sign_up_successful', on: :member
-    # match 'additional_info', on: :member, via: [:get, :patch]
-
     patch 'change_password', on: :member
   end
 
