@@ -7,7 +7,7 @@ input{
 /* SIGNUP PAGE */
 
 section#signup {
-  @include outer-container(60rem);
+  @include outer-container(70rem);
   background-color: #fff;
   padding: 0 5rem 2rem;
 
@@ -50,7 +50,7 @@ section#signup {
 
 div.signup-breadcrumb{
   padding-top: 5%;
-  @include outer-container(60%);
+  @include outer-container(100%);
 
   div{
     float: left;
@@ -74,6 +74,12 @@ div.signup-breadcrumb{
    
   #create-account{
     background-color:#eee;
+    // width: calc(100% - 4px);
+    width: 100%;
+
+    float: center;
+    font: 600 1.8rem 'Raleway', helvetica, sans-serif;
+
   }
 
 }
@@ -90,9 +96,11 @@ div.signup-title, div.login-title{
   color: #366;
   padding: 2rem 0;
   text-align: center;
-  max-width: 60%;
+  max-width: 80%;
   margin: 0 auto;
 }
+
+
 
 
 input.signup-button{
