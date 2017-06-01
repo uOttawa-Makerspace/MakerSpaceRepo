@@ -7,49 +7,52 @@ input{
 /* SIGNUP PAGE */
 
 section#signup {
-  @include outer-container(70rem);
-  background-color: #fff;
-  padding: 0 5rem 2rem;
 
-  label{
-	  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
-	  color: #777;
-  }
+    @include outer-container(70rem);
+    background-color: #fff;
+    padding: 0 5rem 2rem;
 
-  #required:after{content:"*"; color: #F00; font-size: 25px;}
-
-
-
-  input:not([type=checkbox]), textarea{
-		display: block;
-		padding: 0.5rem;
-		width: 400px;
-		border-radius: 2px;
-		border: 1px solid #aaa;
-		margin: 0.5rem 0 1rem;
-	  font: 300 1rem 'Raleway', helvetica, sans-serif;
-  }
-
-  form {
-    margin: 0 auto;
-    max-width: 420px;
-    u{
-   	  font: 400 0.75rem 'Raleway', helvetica, sans-serif;
-   	  color: #aaa;
-   	  width: 420px;
-      display: block;
-   	  padding-top: 0.5rem;
+    label{
+  	  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+  	  color: #777;
     }
 
-    a{
-      color: teal;
+    #required:after{content:"*"; color: #F00; font-size: 25px;}
 
-      &:hover{
-        text-decoration: underline;
+    select{
+      width: 318px;
+      display: block;
+    }
+
+    input:not([type=checkbox]), textarea{
+  		display: block;
+  		padding: 0.5rem;
+  		width: 300px;
+  		border-radius: 2px;
+  		border: 1px solid #aaa;
+  		margin: 0.5rem 0 1rem;
+  	  font: 300 1rem 'Raleway', helvetica, sans-serif;
+    }
+
+    form {
+      margin: 0 auto;
+      max-width: 420px;
+      u{
+     	  font: 400 0.75rem 'Raleway', helvetica, sans-serif;
+     	  color: #aaa;
+     	  width: 420px;
+        display: block;
+     	  padding-top: 0.5rem;
+      }
+
+      a{
+        color: teal;
+
+        &:hover{
+          text-decoration: underline;
+        }
       }
     }
-  }
-
 }
 
 div.signup-breadcrumb{
@@ -71,11 +74,6 @@ div.signup-breadcrumb{
     }
   }
 
-  #additional-info{
-        padding-top: 3% ; 
-        padding-bottom: 4%;
-   }
-   
   #create-account{
     background-color:#eee;
     // width: calc(100% - 4px);
@@ -87,8 +85,6 @@ div.signup-breadcrumb{
   }
 
 }
-
-
 
 
 span.other textarea#use{
