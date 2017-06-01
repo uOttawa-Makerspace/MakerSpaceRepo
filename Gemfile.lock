@@ -139,6 +139,7 @@ GEM
       nokogiri (>= 1.5.9)
     mail (2.6.5)
       mime-types (>= 1.16, < 4)
+    metaclass (0.0.4)
     method_source (0.8.2)
     mime-types (3.1)
       mime-types-data (~> 3.2015)
@@ -146,6 +147,8 @@ GEM
     mimemagic (0.3.2)
     mini_portile2 (2.1.0)
     minitest (5.10.1)
+    mocha (1.2.1)
+      metaclass (~> 0.0.1)
     multi_json (1.12.1)
     multipart-post (2.0.0)
     net-scp (1.2.1)
@@ -311,6 +314,7 @@ DEPENDENCIES
   jquery-ui-rails (~> 5.0.5)
   kaminari (~> 0.16.3)
   launchy (~> 2.3.0)
+  mocha
   octokit (~> 3.0)
   paperclip (~> 5.0.0)
   pg (~> 0.18.2)
@@ -339,4 +343,4 @@ RUBY VERSION
    ruby 2.3.4p301
 
 BUNDLED WITH
-   1.14.6
+   1.15.0

@@ -25,7 +25,7 @@ Rails.application.routes.draw do
     get 'category', path: 'category/:slug'
     get 'equipment', path: 'equipment/:slug'
   end
-  
+
   # TEMPLATE
   namespace :template do
     get 'file'
@@ -81,7 +81,7 @@ Rails.application.routes.draw do
         post 'bulk_add_certifications'
       end
     end
-    
+
     resources :settings, only: [:index] do
       collection do
         post 'add_category'
@@ -94,6 +94,10 @@ Rails.application.routes.draw do
         post 'remove_pi'
       end
     end
+  end
+
+  namespace :staff_dashboard do
+    get 'index', path: '/'
   end
 
 

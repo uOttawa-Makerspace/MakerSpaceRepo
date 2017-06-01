@@ -2,15 +2,15 @@
 <section id="repositories-index">
   <div class="like-title"><%= yield(:title)  %></div>
   <section id="repository-filter">
-    <div class="sort">sort by</div>
+    <div class="sort">sort by/classer par</div>
     <nav>
       <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest' %>
       <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
       <ul class="filter">
-        <li><%= link_to 'Newest', equipment_path(sort: :newest, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Likes', equipment_path(sort: :most_likes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Makes', equipment_path(sort: :most_makes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Recently Updated', equipment_path(sort: :recently_updated, slug: params[:slug]) %></li>
+        <li><%= link_to 'Newest/Plus récent', equipment_path(sort: :newest, slug: params[:slug]) %></li>
+        <li><%= link_to 'Most Likes/Plus d\'Aimes', equipment_path(sort: :most_likes, slug: params[:slug]) %></li>
+        <li><%= link_to 'Most Makes/Plus de fabrications', equipment_path(sort: :most_makes, slug: params[:slug]) %></li>
+        <li><%= link_to 'Recently Updated/Récemment mis à jour', equipment_path(sort: :recently_updated, slug: params[:slug]) %></li>
       </ul>
     </nav>
   </section>
