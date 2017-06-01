@@ -16,6 +16,10 @@ section#signup {
 	  color: #777;
   }
 
+  #required:after{content:"*"; color: #F00; font-size: 25px;}
+
+
+
   input:not([type=checkbox]), textarea{
 		display: block;
 		padding: 0.5rem;
@@ -53,7 +57,7 @@ div.signup-breadcrumb{
   @include outer-container(100%);
 
   div{
-    float: left;
+    float: center;
     width: calc(50% - 4px);
     padding: 2rem 0;
     font: 400 1.25rem 'Raleway', helvetica, sans-serif;
@@ -95,7 +99,7 @@ div.signup-title, div.login-title{
   font: 400 2rem 'Raleway', helvetica, sans-serif;
   color: #366;
   padding: 2rem 0;
-  text-align: center;
+  text-align: left;
   max-width: 80%;
   margin: 0 auto;
 }
