@@ -4,17 +4,17 @@
     <div id="alert"><%= flash[:alert] %></div>
   <% end %>
 
-  <div class="login-title">Sign In</div>
+  <div class="login-title">Sign In/Connexion</div>
 
   <%= form_tag login_authentication_path do %>
 
-    <%= text_field_tag :username_email, nil, placeholder: 'Username or Email', value: @placeholder %>     
-    <%= password_field_tag :password, nil, placeholder: 'Password' %> 
+    <%= text_field_tag :username_email, nil, placeholder: 'Username or Email/Nom d\'utilisateur ou Courriel', value: @placeholder , class: 'input-mini' %>     
+    <%= password_field_tag :password, nil, placeholder: 'Password/Mot de passe' , :size=> 10 %> 
     
-    <%= submit_tag "Sign In", class: 'login-button', 'tab-index': "3" %>
+    <%= submit_tag "Sign In/Connexion", class: 'login-button', 'tab-index': "3" %>
   
   <% end %>
 
-  <%= link_to "Forgot your password?", forgot_password_path, class: "forgot-password" %>
+  <%= link_to "Forgot your password?/As-tu oublié ton mot de passe?", forgot_password_path, class: "forgot-password" %>
 
 </section>
