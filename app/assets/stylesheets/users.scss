@@ -57,7 +57,7 @@ div.signup-breadcrumb{
   @include outer-container(100%);
 
   div{
-    float: center;
+    float: left;
     width: calc(50% - 4px);
     padding: 2rem 0;
     font: 400 1.25rem 'Raleway', helvetica, sans-serif;
@@ -99,7 +99,7 @@ div.signup-title, div.login-title{
   font: 400 2rem 'Raleway', helvetica, sans-serif;
   color: #366;
   padding: 2rem 0;
-  text-align: left;
+  text-align: center;
   max-width: 80%;
   margin: 0 auto;
 }
