@@ -1,6 +1,7 @@
 <% provide(:title, "Sign Up") %>
 <section id="signup">
 
+
   <div class="signup-breadcrumb">
      <div id="create-account">
          Create Account/Créer le Compte 
@@ -9,7 +10,6 @@
   <div class="signup-title">Create your personal account/Créer le Compte Personel</div>
 
   <%= form_for @new_user do |f| %>
-
 
     <div id = "required" ><%= f.label :name , "Name/Nom" %></div>
     <%= content_tag :span, @new_user.errors[:name][0], class: 'form-error' %>
@@ -50,7 +50,7 @@
     <%= f.label :studentID , "Student Number (if applicable)" %>
     <%= f.text_field :studentID, autofocus: true %>
 
-    <%= f.label :faculty %>
+    <%= f.label :faculty , "Faculty (if applicable)"%>
     <%= f.select :faculty, ["Arts","Education","Engineering","Law","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %>
 
     <!-- Should make this a drop down list -->
@@ -61,6 +61,9 @@
     <%= f.select :use, ["Course", "Personal Project", "Business", "Other"] , prompt: "Select a use case..." %>
 
     <%= content_tag :span, text_area_tag(:use), class: 'other' %>
+
+    <%= f.label :how_heard_about_us, "How did you hear about us? (optional)" %>
+    <%= f.text_area :how_heard_about_us, class: "profile-text" %>
 
 
     <div id = "required" ><div id="terms_and_conditions_box" ></div>
