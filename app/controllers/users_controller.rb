@@ -11,6 +11,7 @@ class UsersController < SessionsController
     respond_to do |format|
       if @new_user.save
         flash[:notice] = "Profile created successfully."
+        MsrMailer.welcome_email(@user).deliver_later
         session[:user_id], cookies[:user_id] = @new_user.id, @new_user.id
         format.html { redirect_to settings_profile_path(@new_user.username) }
         format.json { render json: { success: @new_user.id }, status: :ok }
