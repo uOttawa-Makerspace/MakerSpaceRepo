@@ -11,6 +11,8 @@
 
   <%= form_for @new_user do |f| %>
 
+    <div id= "required2"><p id = "required_label">Required fields</p>
+
     <div id = "required" ><%= f.label :name , "Name/Nom" %></div>
     <%= content_tag :span, @new_user.errors[:name][0], class: 'form-error' %>
     <%= content_tag :span, @new_user.errors[:name][1], class: 'form-error',

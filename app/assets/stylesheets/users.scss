@@ -19,6 +19,14 @@ section#signup {
 
     #required:after{content:"*"; color: #F00; font-size: 25px;}
 
+    #required2:before{content:"*"; color: #F00; font-size: 25px;}
+
+    #required_label{
+      display: inline;
+      font-size: 12px;
+      color: #F00;
+    }
+
     // select{
     //   width: 318px;
     //   display: block;
