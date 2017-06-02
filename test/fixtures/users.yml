@@ -43,7 +43,7 @@ olivia:
   gender: female
   faculty: engineering
   use: null
-  description: shes_a_staff_member
+  description: null
 
 #administrator non-staff
 adam:
@@ -57,7 +57,7 @@ adam:
   gender: male
   faculty: arts
   use: null
-  description: hes_an_admin
+  description: null
   role: admin
 
 #administrator and staff
@@ -73,5 +73,5 @@ adele:
   gender: female
   faculty: engineering
   use: null
-  description: admin_and_staff
+  description: null
   role: admin
