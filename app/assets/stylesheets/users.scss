@@ -19,15 +19,15 @@ section#signup {
 
     #required:after{content:"*"; color: #F00; font-size: 25px;}
 
-    select{
-      width: 318px;
-      display: block;
-    }
+    // select{
+    //   width: 318px;
+    //   display: block;
+    // }
 
     input:not([type=checkbox]), textarea{
   		display: block;
   		padding: 0.5rem;
-  		width: 300px;
+  		width: 400px;
   		border-radius: 2px;
   		border: 1px solid #aaa;
   		margin: 0.5rem 0 1rem;
