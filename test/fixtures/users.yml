@@ -35,3 +35,17 @@ adam:
   terms_and_conditions: true
   password: Password3
   role: admin
+
+olivia:
+  id: 1337
+  username: olivia
+  name: Olivia
+  email: liv@liv.com
+  terms_and_conditions: true
+  password: Password4
+  url: null
+  location: makerspace
+  gender: female
+  faculty: engineering
+  use: null
+  description: null
