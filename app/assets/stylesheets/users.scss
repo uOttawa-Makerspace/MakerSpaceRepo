@@ -10,14 +10,14 @@ section#signup {
 
     @include outer-container(70rem);
     background-color: #fff;
-    padding: 0 5rem 2rem;
+    padding: 0 0.2rem 5rem;
 
     label{
   	  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
   	  color: #777;
     }
 
-    #required:after{content:"*"; color: #F00; font-size: 25px;}
+    #required:after{content:"*"; color: #F00; font-size: 25px; display: inline;}
 
     #required2:before{content:"*"; color: #F00; font-size: 25px;}
 
