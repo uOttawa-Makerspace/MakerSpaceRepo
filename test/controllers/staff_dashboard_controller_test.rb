@@ -2,11 +2,13 @@ require 'test_helper'
 
 class StaffDashboardControllerTest < ActionController::TestCase
 
+  setup do
+    session[:user_id] = User.find_by(username: "olivia").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+  end
+
    test "admins succeed at loading Staff Dashboard" do
-     session[:user_id] = users(:olivia).id
-     session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
      get :index
-     #binding.pry
      assert_response :success
    end
 
@@ -14,7 +16,6 @@ class StaffDashboardControllerTest < ActionController::TestCase
      session[:user_id] = users(:bob).id
      session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
      get :index
-     #binding.pry
      assert_redirected_to root_path
    end
 
