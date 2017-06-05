@@ -3,7 +3,7 @@ class MsrMailer < ApplicationMailer
 	def welcome_email(user)
 		@user = user
 		@url  = 'http://makerepo.com/login'
-		mail(to: @user.email, subject: 'Welcome to MakerRepo')
+		mail(to: @user.email, subject: "Welcome to MakerRepo")
 	end
 
 	def repo_report(repository)
