@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170602155231) do
+ActiveRecord::Schema.define(version: 20170605164515) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -159,6 +159,15 @@ ActiveRecord::Schema.define(version: 20170602155231) do
 
   add_index "staffs", ["user_id"], name: "index_staffs_on_user_id", using: :btree
 
+  create_table "training_sessions", force: :cascade do |t|
+    t.string   "name"
+    t.date     "date"
+    t.time     "time"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer  "staff_id"
+  end
+
   create_table "upvotes", force: :cascade do |t|
     t.integer  "user_id"
     t.integer  "comment_id"
@@ -191,6 +200,7 @@ ActiveRecord::Schema.define(version: 20170602155231) do
     t.integer  "reputation",           default: 0
     t.string   "role",                 default: "regular_user"
     t.boolean  "terms_and_conditions"
+    t.integer  "training_session_id"
   end
 
   add_foreign_key "categories", "repositories"
