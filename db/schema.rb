@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170605141505) do
+ActiveRecord::Schema.define(version: 20170602155231) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -36,7 +36,6 @@ ActiveRecord::Schema.define(version: 20170605141505) do
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string   "staff_id"
   end
 
   add_index "certifications", ["user_id"], name: "index_certifications_on_user_id", using: :btree
@@ -160,17 +159,6 @@ ActiveRecord::Schema.define(version: 20170605141505) do
 
   add_index "staffs", ["user_id"], name: "index_staffs_on_user_id", using: :btree
 
-  create_table "training_sessions", force: :cascade do |t|
-    t.string   "name"
-    t.integer  "staff_id"
-    t.date     "date"
-    t.time     "time"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  add_index "training_sessions", ["staff_id"], name: "index_training_sessions_on_staff_id", using: :btree
-
   create_table "upvotes", force: :cascade do |t|
     t.integer  "user_id"
     t.integer  "comment_id"
@@ -203,9 +191,6 @@ ActiveRecord::Schema.define(version: 20170605141505) do
     t.integer  "reputation",           default: 0
     t.string   "role",                 default: "regular_user"
     t.boolean  "terms_and_conditions"
-    t.integer  "studentID"
-    t.string   "program"
-    t.string   "how_heard_about_us"
   end
 
   add_foreign_key "categories", "repositories"
@@ -220,7 +205,6 @@ ActiveRecord::Schema.define(version: 20170605141505) do
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"
   add_foreign_key "staffs", "users"
-  add_foreign_key "training_sessions", "staffs"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
 end
