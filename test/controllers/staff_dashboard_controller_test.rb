@@ -28,10 +28,15 @@ class StaffDashboardControllerTest < ActionController::TestCase
      post :bulk_add_certifications, bulk_cert_users: [@user1,  @user2, @user3], bulk_certifications: "Lathe"
      assert_redirected_to :back
      assert_equal flash[:notice], "Certifications added succesfully!"
-     assert Certification.exists?(user_id: @user1, name: "Lathe", staff_id: @staff)
-     assert Certification.exists?(user_id: @user2, name: "Lathe", staff_id: @staff)
-     assert Certification.exists?(user_id: @user3, name: "Lathe", staff_id: @staff)
+     assert Certification.exists?(user_id: @user1, name: "Lathe", staff_id: @staff.id)
+     assert Certification.exists?(user_id: @user2, name: "Lathe", staff_id: @staff.id)
+     assert Certification.exists?(user_id: @user3, name: "Lathe", staff_id: @staff.id)
+   end
 
+   test "staff can create training sesssions"do
+     post :create_training_session, training_session_name: "Lathe"
+     assert_redirected_to :back
+     assert_equal flash[:notice], "Training session created succesfully"
    end
 
 end
