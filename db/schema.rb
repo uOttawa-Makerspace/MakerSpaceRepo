@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170605173657) do
+ActiveRecord::Schema.define(version: 20170605181228) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -162,11 +162,10 @@ ActiveRecord::Schema.define(version: 20170605173657) do
 
   create_table "training_sessions", force: :cascade do |t|
     t.string   "name"
-    t.date     "date"
-    t.time     "time"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
     t.string   "staff_id"
+    t.datetime "session_time"
   end
 
   create_table "upvotes", force: :cascade do |t|

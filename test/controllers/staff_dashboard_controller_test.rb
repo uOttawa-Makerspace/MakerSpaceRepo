@@ -21,6 +21,26 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert_redirected_to root_path
    end
 
+   test "staff can create training sesssions" do
+     post :create_training_session,
+        training_session_name: "Lathe"
+     assert_redirected_to :back
+     assert_equal flash[:notice], "Training session created succesfully"
+   end
+
+
+   test "staff can delete training sessions" do
+     patch :delete_training_session, training_session_name: "soldering"
+     assert_redirected_to :back
+     assert_equal flash[:notice], "Training session deleted succesfully"
+   end
+
+
+   test "staff can't own two sessions with the same name, date, and time" do
+
+   end
+
+
    test "staff can add certifications in bulk" do
      @user1 = User.find_by(username: "mary")
      @user2 = User.find_by(username: "bob")
@@ -33,10 +53,6 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert Certification.exists?(user_id: @user3, name: "Lathe", staff_id: @staff.id)
    end
 
-   test "staff can create training sesssions"do
-     post :create_training_session, training_session_name: "Lathe"
-     assert_redirected_to :back
-     assert_equal flash[:notice], "Training session created succesfully"
-   end
+
 
 end

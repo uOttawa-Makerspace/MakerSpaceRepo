@@ -7,12 +7,31 @@ class StaffDashboardController < ApplicationController
   def create_training_session
     @staff = current_user
     if params['training_session_name'].present?
-      TrainingSession.create(name: params['training_session_name'], staff_id: @staff)
-      redirect_to (:back)
-      flash[:notice] = "Training session created succesfully"
+      if !TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id).present?
+        TrainingSession.create(name: params['training_session_name'], staff_id: @staff.id)
+        redirect_to (:back)
+        flash[:notice] = "Training session created succesfully"
+      else
+        redirect_to (:back)
+        flash[:alert] = "This training session already exists!"
+      end
     else
       redirect_to (:back)
       flash[:alert] = "Enter a name!"
+    end
+  end
+
+  def delete_training_session
+    @staff = current_user
+    if params['training_session_name'].present?
+      if TrainingSession.find_by(name: params['training_session_name'], staff_id: @staff.id).present?
+        TrainingSession.find_by(name: params['training_session_name'], staff_id: @staff.id).destroy
+        redirect_to (:back)
+        flash[:notice] = "Training session deleted succesfully"
+      else
+        redirect_to (:back)
+        flash[:alert] = "No training session by that name!"
+      end
     end
   end
 
