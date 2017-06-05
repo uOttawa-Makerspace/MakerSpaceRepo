@@ -9,10 +9,12 @@ class StaffDashboardControllerTest < ActionController::TestCase
     @request.env['HTTP_REFERER'] = staff_dashboard_index_url
   end
 
+
    test "admins succeed at loading Staff Dashboard" do
      get :index
      assert_response :success
    end
+
 
    test "regular users are redirected to home" do
      session[:user_id] = users(:bob).id
@@ -21,18 +23,23 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert_redirected_to root_path
    end
 
+
    test "staff can create training sesssions" do
      post :create_training_session,
-        training_session_name: "Lathe"
+        training_session_name: "Lathe",
+        training_session_time: DateTime.parse("2010-02-11 11:02:57")
      assert_redirected_to :back
      assert_equal flash[:notice], "Training session created succesfully"
    end
 
 
    test "staff can delete training sessions" do
-     patch :delete_training_session, training_session_name: "soldering"
+     patch :delete_training_session, training_session_name: "soldering", training_session_time: DateTime.parse("2010-02-11 11:02:57")
      assert_redirected_to :back
      assert_equal flash[:notice], "Training session deleted succesfully"
+     patch :delete_training_session, training_session_name: "soldering", training_session_time: DateTime.parse("2010-02-11 11:02:57")
+     assert_redirected_to :back
+     assert_equal flash[:alert], "No training session by that name!"
    end
 
 
@@ -55,6 +62,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert Certification.exists?(user_id: @user2, name: "Lathe", staff_id: @staff.id)
      assert Certification.exists?(user_id: @user3, name: "Lathe", staff_id: @staff.id)
    end
+
 
 
 

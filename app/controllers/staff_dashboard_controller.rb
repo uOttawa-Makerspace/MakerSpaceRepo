@@ -4,11 +4,32 @@ class StaffDashboardController < ApplicationController
   def index
   end
 
+  def add_trainee_to_training_session
+    @staff = current_user
+    if params['training_session_name'].present? && params['training_session_new_trainee'].present? && params['training_session_time'].present?
+      if TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
+        @training_session = TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])
+        if !@training_session.users.include? params['training_session_new_trainee']
+          @training_session.users << params['training_session_new_trainee']
+        else
+          redirect_to (:back)
+          flash[:alert] = "User is already in this training session!"
+        end
+      else
+        redirect_to (:back)
+        flash[:alert] = "Invalid parameters!"
+      end
+    else
+      redirect_to (:back)
+      flash[:alert] = "Invalid parameters!"
+    end
+  end
+
   def create_training_session
     @staff = current_user
-    if params['training_session_name'].present?
+    if params['training_session_name'].present? && params['training_session_time'].present?
       if !TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
-        TrainingSession.create(name: params['training_session_name'], staff_id: @staff.id)
+        TrainingSession.create(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])
         redirect_to (:back)
         flash[:notice] = "Training session created succesfully"
       else
@@ -23,7 +44,7 @@ class StaffDashboardController < ApplicationController
 
   def delete_training_session
     @staff = current_user
-    if params['training_session_name'].present?
+    if params['training_session_name'].present? && params['training_session_time'].present?
       if TrainingSession.find_by(name: params['training_session_name'], staff_id: @staff.id).present?
         TrainingSession.find_by(name: params['training_session_name'], staff_id: @staff.id).destroy
         redirect_to (:back)
