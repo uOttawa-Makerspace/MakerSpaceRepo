@@ -7,7 +7,7 @@ class StaffDashboardController < ApplicationController
   def create_training_session
     @staff = current_user
     if params['training_session_name'].present?
-      if !TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id).present?
+      if !TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
         TrainingSession.create(name: params['training_session_name'], staff_id: @staff.id)
         redirect_to (:back)
         flash[:notice] = "Training session created succesfully"
