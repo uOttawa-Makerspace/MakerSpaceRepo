@@ -98,6 +98,7 @@ Rails.application.routes.draw do
 
   namespace :staff_dashboard do
     get 'index', path: '/'
+    post 'bulk_add_certifications'
   end
 
 
