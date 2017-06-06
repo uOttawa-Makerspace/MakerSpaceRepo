@@ -11,11 +11,9 @@
   <section id="repository-photos">
 
 
-    <% if false %>
       <div id="show-photo">
         <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.width, height: @photos.first.height} %>
       </div>
-    <% end %>
 
     <div id="photo-slide">
       <% @photos.each do |p| %>

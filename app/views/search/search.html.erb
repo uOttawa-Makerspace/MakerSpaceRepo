@@ -20,11 +20,7 @@
   <% @repositories.each_with_index do |repository, i| %>
     <div class="repository-container">
 
-      <% if false %>
-        <!-- <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].image.url}')"  %> > -->
-      <% end %>
-
-      <div class="repo-display-wrapper" <%= "LINK TO IMAGE HERE"  %> >
+      <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].image.url}')"  %> >
         <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
       </div>
 
