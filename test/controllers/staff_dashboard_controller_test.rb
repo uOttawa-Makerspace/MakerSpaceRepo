@@ -33,6 +33,16 @@ class StaffDashboardControllerTest < ActionController::TestCase
    end
 
 
+   test "staff can rename training sessions" do
+     patch :rename_training_session,
+        training_session_name: "soldering",
+        training_session_time: DateTime.parse("2010-02-11 11:02:57"),
+        training_session_new_name: "arduino"
+      assert_redirected_to :back
+      assert_equal flash[:notice], "Training session renamed succesfully"
+   end
+
+
    test "staff can delete training sessions" do
      patch :delete_training_session,
         training_session_name: "soldering",
@@ -43,7 +53,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
         training_session_name: "soldering",
         training_session_time: DateTime.parse("2010-02-11 11:02:57")
      assert_redirected_to :back
-     assert_equal flash[:alert], "No training session by that name!"
+     assert_equal flash[:alert], "No training session with the given parameters!"
    end
 
 
@@ -54,6 +64,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert_redirected_to :back
      assert_equal flash[:alert], "This training session already exists!"
    end
+
 
    test "staff can add new trainees to exisiting training sessions" do
      post :add_trainee_to_training_session,
