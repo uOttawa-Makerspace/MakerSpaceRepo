@@ -96,14 +96,17 @@ class StaffDashboardController < ApplicationController
        if TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
          @training_session = TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])[0]
          @training_session_users = @training_session.users
-         redirect_to (:back)
+         #redirect_to (:back)
        else
-         redirect_to (:back)
+         #redirect_to (:back)
          flash[:alert] = "No training session with the given parameters!"
+         @training_session_users = []
+         #render :index
        end
      else
-       redirect_to (:back)
        flash[:alert] = "Invalid parameters!"
+       @training_session_users = []
+       #render :index
      end
   end
 

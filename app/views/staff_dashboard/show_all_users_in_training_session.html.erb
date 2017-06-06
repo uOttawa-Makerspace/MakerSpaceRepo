@@ -1,0 +1,18 @@
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
+<% provide(:title, "Training Session Users") %>
+
+<table>
+  <tr>
+    <th>name</th>
+    <th>email</th>
+  </tr>
+<% @training_session_users.each do |user| %>
+  <tr>
+    <td><%= user.name %></td>
+    <td><%= user.email %></td>
+  </tr>
+<% end %>
+</table>

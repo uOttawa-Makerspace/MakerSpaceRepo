@@ -98,7 +98,7 @@ Rails.application.routes.draw do
 
   namespace :staff_dashboard do
     get 'index', path: '/'
-    get 'show_all_users_in_training_session'
+    get 'show_all_users_in_training_session', path: '/training_session_users'
 
     post 'create_training_session'
     post 'add_trainee_to_training_session'
