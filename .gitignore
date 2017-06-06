@@ -19,3 +19,9 @@ config.ru
 /tmp
 
 config/environments/development.rb
+
+#igore sunspot
+sunspot-solr.pid
+
+#macs
+.DS_Store
