@@ -11,21 +11,6 @@ class Repository < ActiveRecord::Base
 
   paginates_per 12
 
-  # searchable do
-  #   text    :title, :boost => 5.0
-  #   text    :description
-  #   text    :categories do
-  #             categories.map { |category| category.name }
-  #           end
-  #   text    :equipments do
-  #             equipments.map { |equipment| equipment.name }
-  #           end
-  #   integer :like
-  #   integer :make
-  #   time    :created_at
-  #   time    :updated_at
-  # end
-
   def self.license_options
     ["Creative Commons - Attribution",
      "Creative Commons - Attribution - Share Alike",
