@@ -26,7 +26,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
 
    test "staff can create training sesssions" do
      post :create_training_session,
-        training_session_name: "Lathe",
+        training_session_name: "lathe",
         training_session_time: DateTime.parse("2010-02-11 11:02:57")
      assert_redirected_to :back
      assert_equal flash[:notice], "Training session created succesfully"
@@ -58,6 +58,9 @@ class StaffDashboardControllerTest < ActionController::TestCase
      patch :delete_training_session,
         training_session_name: "soldering",
         training_session_time: DateTime.parse("2010-02-11 11:02:57")
+    assert !TrainingSession.where(name: "soldering",
+                                  session_time: DateTime.parse("2010-02-11 11:02:57"),
+                                  staff_id: "1337").present?
      assert_redirected_to :back
      assert_equal flash[:alert], "No training session with the given parameters!"
    end
