@@ -104,12 +104,12 @@ class StaffDashboardControllerTest < ActionController::TestCase
      @user1 = User.find_by(username: "mary")
      @user2 = User.find_by(username: "bob")
      @user3 = User.find_by(username: "adam")
-     post :bulk_add_certifications, bulk_cert_users: [@user1,  @user2, @user3], bulk_certifications: "Lathe"
+     post :bulk_add_certifications, bulk_cert_users: [@user1,  @user2, @user3], bulk_certifications: "soldering", certification_training_session: training_sessions(:soldering)
      assert_redirected_to :back
      assert_equal flash[:notice], "Certifications added succesfully!"
-     assert Certification.exists?(user_id: @user1, name: "Lathe", staff_id: @staff.id)
-     assert Certification.exists?(user_id: @user2, name: "Lathe", staff_id: @staff.id)
-     assert Certification.exists?(user_id: @user3, name: "Lathe", staff_id: @staff.id)
+     assert Certification.exists?(user_id: @user1, name: "soldering", staff_id: @staff.id)
+     assert Certification.exists?(user_id: @user2, name: "soldering", staff_id: @staff.id)
+     assert Certification.exists?(user_id: @user3, name: "soldering", staff_id: @staff.id)
    end
 
 

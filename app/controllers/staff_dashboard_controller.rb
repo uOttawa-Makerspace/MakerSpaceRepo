@@ -119,10 +119,15 @@ class StaffDashboardController < ApplicationController
   def bulk_add_certifications
     @staff = current_user
     if params['bulk_cert_users'].present? &&
-      params['bulk_certifications'].present?
+      params['bulk_certifications'].present? &&
       params['bulk_cert_users'].each do |user|
         if !User.find(user).certifications.where(name: params['bulk_certifications']).present?
           Certification.create(name: params['bulk_certifications'], user_id: user, staff_id: @staff.id)
+          @certification = Certification.where(name: params['bulk_certifications'], user_id: user, staff_id: @staff.id)[0]
+          if params['certification_training_session'].present? && TrainingSession.find(params['certification_training_session']).present?
+            @certification.training_session_id = params['certification_training_session']
+            @certification.save
+          end
         end
       end
       redirect_to (:back)
