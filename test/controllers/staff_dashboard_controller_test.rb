@@ -62,7 +62,6 @@ class StaffDashboardControllerTest < ActionController::TestCase
         training_session_new_trainee: User.find_by(username: "bob")
       assert_redirected_to :back
       assert_equal flash[:notice], "User successfuly added to the training session"
-
       post :add_trainee_to_training_session,
          training_session_name: "soldering",
          training_session_time: DateTime.parse("2010-02-11 11:02:57"),

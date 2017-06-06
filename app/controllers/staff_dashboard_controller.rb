@@ -44,7 +44,6 @@ class StaffDashboardController < ApplicationController
     if params['training_session_name'].present? && params['training_session_new_trainee'].present? && params['training_session_time'].present?
       if TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
         @training_session = TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])
-        #binding.pry
         if !@training_session[0].users.include? User.find(params['training_session_new_trainee'])
           @training_session[0].users << User.find(params['training_session_new_trainee'])
           redirect_to (:back)
