@@ -34,10 +34,14 @@ class StaffDashboardControllerTest < ActionController::TestCase
 
 
    test "staff can delete training sessions" do
-     patch :delete_training_session, training_session_name: "soldering", training_session_time: DateTime.parse("2010-02-11 11:02:57")
+     patch :delete_training_session,
+        training_session_name: "soldering",
+        training_session_time: DateTime.parse("2010-02-11 11:02:57")
      assert_redirected_to :back
      assert_equal flash[:notice], "Training session deleted succesfully"
-     patch :delete_training_session, training_session_name: "soldering", training_session_time: DateTime.parse("2010-02-11 11:02:57")
+     patch :delete_training_session,
+        training_session_name: "soldering",
+        training_session_time: DateTime.parse("2010-02-11 11:02:57")
      assert_redirected_to :back
      assert_equal flash[:alert], "No training session by that name!"
    end
@@ -45,9 +49,27 @@ class StaffDashboardControllerTest < ActionController::TestCase
 
    test "staff can't own two sessions with the same name, date, and time" do
      post :create_training_session,
-        training_session_name: "soldering", training_session_time: DateTime.parse("2010-02-11 11:02:57")
+        training_session_name: "soldering",
+        training_session_time: DateTime.parse("2010-02-11 11:02:57")
      assert_redirected_to :back
      assert_equal flash[:alert], "This training session already exists!"
+   end
+
+   test "staff can add new trainees to exisiting training sessions" do
+     post :add_trainee_to_training_session,
+        training_session_name: "soldering",
+        training_session_time: DateTime.parse("2010-02-11 11:02:57"),
+        training_session_new_trainee: User.find_by(username: "bob")
+      assert_redirected_to :back
+      assert_equal flash[:notice], "User successfuly added to the training session"
+
+      post :add_trainee_to_training_session,
+         training_session_name: "soldering",
+         training_session_time: DateTime.parse("2010-02-11 11:02:57"),
+         training_session_new_trainee: User.find_by(username: "bob")
+       assert_redirected_to :back
+       assert_equal flash[:alert], "User is already in this training session!"
+
    end
 
 
@@ -62,7 +84,6 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert Certification.exists?(user_id: @user2, name: "Lathe", staff_id: @staff.id)
      assert Certification.exists?(user_id: @user3, name: "Lathe", staff_id: @staff.id)
    end
-
 
 
 

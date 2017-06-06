@@ -100,8 +100,8 @@ Rails.application.routes.draw do
     get 'index', path: '/'
     post 'bulk_add_certifications'
     post 'create_training_session'
+    post 'add_trainee_to_training_session'
     patch 'delete_training_session'
-
   end
 
 

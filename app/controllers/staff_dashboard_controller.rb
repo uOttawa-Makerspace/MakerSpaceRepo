@@ -1,29 +1,10 @@
 class StaffDashboardController < ApplicationController
+
   before_action :current_user, :ensure_staff
 
   def index
   end
 
-  def add_trainee_to_training_session
-    @staff = current_user
-    if params['training_session_name'].present? && params['training_session_new_trainee'].present? && params['training_session_time'].present?
-      if TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
-        @training_session = TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])
-        if !@training_session.users.include? params['training_session_new_trainee']
-          @training_session.users << params['training_session_new_trainee']
-        else
-          redirect_to (:back)
-          flash[:alert] = "User is already in this training session!"
-        end
-      else
-        redirect_to (:back)
-        flash[:alert] = "Invalid parameters!"
-      end
-    else
-      redirect_to (:back)
-      flash[:alert] = "Invalid parameters!"
-    end
-  end
 
   def create_training_session
     @staff = current_user
@@ -42,6 +23,7 @@ class StaffDashboardController < ApplicationController
     end
   end
 
+
   def delete_training_session
     @staff = current_user
     if params['training_session_name'].present? && params['training_session_time'].present?
@@ -55,6 +37,32 @@ class StaffDashboardController < ApplicationController
       end
     end
   end
+
+
+  def add_trainee_to_training_session
+    @staff = current_user
+    if params['training_session_name'].present? && params['training_session_new_trainee'].present? && params['training_session_time'].present?
+      if TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
+        @training_session = TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])
+        #binding.pry
+        if !@training_session[0].users.include? User.find(params['training_session_new_trainee'])
+          @training_session[0].users << User.find(params['training_session_new_trainee'])
+          redirect_to (:back)
+          flash[:notice] = "User successfuly added to the training session"
+        else
+          redirect_to (:back)
+          flash[:alert] = "User is already in this training session!"
+        end
+      else
+        redirect_to (:back)
+        flash[:alert] = "Invalid parameters!"
+      end
+    else
+      redirect_to (:back)
+      flash[:alert] = "Invalid parameters!"
+    end
+  end
+
 
   def bulk_add_certifications
     @staff = current_user
@@ -71,6 +79,7 @@ class StaffDashboardController < ApplicationController
       flash[:alert] = "Invalid parameters!"
     end
   end
+
 
   private
 
