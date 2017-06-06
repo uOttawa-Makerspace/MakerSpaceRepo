@@ -38,6 +38,12 @@ class StaffDashboardControllerTest < ActionController::TestCase
         training_session_name: "soldering",
         training_session_time: DateTime.parse("2010-02-11 11:02:57"),
         training_session_new_name: "arduino"
+      assert !TrainingSession.where(name: "soldering",
+                                    session_time: DateTime.parse("2010-02-11 11:02:57"),
+                                    staff_id: "1337").present?
+      assert TrainingSession.where(name: "arduino",
+                                   session_time: DateTime.parse("2010-02-11 11:02:57"),
+                                   staff_id: "1337").present?
       assert_redirected_to :back
       assert_equal flash[:notice], "Training session renamed succesfully"
    end
