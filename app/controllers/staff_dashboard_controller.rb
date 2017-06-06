@@ -89,6 +89,25 @@ class StaffDashboardController < ApplicationController
   end
 
 
+  def show_all_users_in_training_session
+    @staff = current_user
+    if params['training_session_name'].present? &&
+       params['training_session_time'].present?
+       if TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
+         @training_session = TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])[0]
+         @training_session_users = @training_session.users
+         redirect_to (:back)
+       else
+         redirect_to (:back)
+         flash[:alert] = "No training session with the given parameters!"
+       end
+     else
+       redirect_to (:back)
+       flash[:alert] = "Invalid parameters!"
+     end
+  end
+
+
   def bulk_add_certifications
     @staff = current_user
     if params['bulk_cert_users'].present? &&

@@ -50,12 +50,12 @@ class StaffDashboardControllerTest < ActionController::TestCase
 
 
    test "staff can delete training sessions" do
-     patch :delete_training_session,
+     delete :delete_training_session,
         training_session_name: "soldering",
         training_session_time: DateTime.parse("2010-02-11 11:02:57")
      assert_redirected_to :back
      assert_equal flash[:notice], "Training session deleted succesfully"
-     patch :delete_training_session,
+     delete :delete_training_session,
         training_session_name: "soldering",
         training_session_time: DateTime.parse("2010-02-11 11:02:57")
     assert !TrainingSession.where(name: "soldering",
@@ -63,15 +63,6 @@ class StaffDashboardControllerTest < ActionController::TestCase
                                   staff_id: "1337").present?
      assert_redirected_to :back
      assert_equal flash[:alert], "No training session with the given parameters!"
-   end
-
-
-   test "staff can't own two sessions with the same name, date, and time" do
-     post :create_training_session,
-        training_session_name: "soldering",
-        training_session_time: DateTime.parse("2010-02-11 11:02:57")
-     assert_redirected_to :back
-     assert_equal flash[:alert], "This training session already exists!"
    end
 
 
@@ -88,7 +79,23 @@ class StaffDashboardControllerTest < ActionController::TestCase
          training_session_new_trainee: User.find_by(username: "bob")
        assert_redirected_to :back
        assert_equal flash[:alert], "User is already in this training session!"
+   end
 
+
+   test "staff can't own two sessions with the same name, date, and time" do
+     post :create_training_session,
+        training_session_name: "soldering",
+        training_session_time: DateTime.parse("2010-02-11 11:02:57")
+     assert_redirected_to :back
+     assert_equal flash[:alert], "This training session already exists!"
+   end
+
+
+   test "staff can get all users in training session" do
+     get :show_all_users_in_training_session,
+        training_session_name: "soldering",
+        training_session_time: DateTime.parse("2010-02-11 11:02:57")
+     assert_redirected_to :back
    end
 
 
