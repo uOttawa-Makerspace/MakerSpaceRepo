@@ -12,6 +12,11 @@ class StaffDashboardController < ApplicationController
        params['training_session_time'].present?
       if !TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
         TrainingSession.create(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])
+        @training_session = TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])[0]
+        if params['training_session_course'].present?
+          @training_session.course = params['training_session_time']
+          @training_session.save
+        end
         redirect_to (:back)
         flash[:notice] = "Training session created succesfully"
       else
@@ -20,7 +25,7 @@ class StaffDashboardController < ApplicationController
       end
     else
       redirect_to (:back)
-      flash[:alert] = "Enter a name!"
+      flash[:alert] = "To create a training session enter a name and a time!"
     end
   end
 

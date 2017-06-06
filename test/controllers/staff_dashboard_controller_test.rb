@@ -27,7 +27,8 @@ class StaffDashboardControllerTest < ActionController::TestCase
    test "staff can create training sesssions" do
      post :create_training_session,
         training_session_name: "lathe",
-        training_session_time: DateTime.parse("2010-02-11 11:02:57")
+        training_session_time: DateTime.parse("2010-02-11 11:02:57"),
+        training_session_course: "GNG2101"
      assert_redirected_to :back
      assert_equal flash[:notice], "Training session created succesfully"
    end
@@ -95,7 +96,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
      get :show_all_users_in_training_session,
         training_session_name: "soldering",
         training_session_time: DateTime.parse("2010-02-11 11:02:57")
-     assert_redirected_to :back
+     assert_response :ok
    end
 
 
