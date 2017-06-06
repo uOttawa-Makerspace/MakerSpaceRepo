@@ -1,12 +1,14 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
+#password: Password1
+
+#regular user
 bob:
   username: bob
   name: Bob
   email: bob@gmail.com
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
-  #password: Password1
   url: null
   location: makerspace
   gender: male
@@ -14,13 +16,13 @@ bob:
   use: null
   description: null
 
-
+#regular user
 mary:
   username: mary
   name: Mary
   email: mary@gmail.com
   terms_and_conditions: true
-  password: Password2
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
   location: brunsfield
   gender: female
@@ -28,10 +30,48 @@ mary:
   use: null
   description: null
 
+#regular user who's also a staff
+olivia:
+  id: 1337
+  username: olivia
+  name: Olivia
+  email: liv@liv.com
+  terms_and_conditions: true
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  location: makerspace
+  gender: female
+  faculty: engineering
+  use: null
+  description: null
+
+#administrator non-staff
 adam:
   username: adam
   name: Adam
   email: adam@adam.com
   terms_and_conditions: true
-  password: Password3
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  location: sandbox
+  gender: male
+  faculty: arts
+  use: null
+  description: null
+  role: admin
+
+#administrator and staff
+adele:
+  id: 1984
+  username: adele
+  name: Adle
+  email: Adele@gmail.com
+  terms_and_conditions: true
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  location: sandbox
+  gender: female
+  faculty: engineering
+  use: null
+  description: null
   role: admin

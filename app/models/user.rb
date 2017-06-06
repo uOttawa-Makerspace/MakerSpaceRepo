@@ -8,6 +8,7 @@ class User < ActiveRecord::Base
   has_many :repositories, dependent: :destroy
   has_many :certifications, dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
+  has_many :training_sessions
   accepts_nested_attributes_for :repositories
 
   validates :name,
@@ -29,7 +30,7 @@ class User < ActiveRecord::Base
   validates :terms_and_conditions,
     inclusion: {in: [true], on: :create, message: 'You must agree to the terms and conditions' }
 
-  validates :password, 
+  validates :password,
     presence: { message: "Your password is required." },
     confirmation: {message: "Your passwords do not match."},
     # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
@@ -60,6 +61,6 @@ class User < ActiveRecord::Base
     self.password = @pword
     self.password_confirmation = @pword
   end
-  
-  
+
+
 end

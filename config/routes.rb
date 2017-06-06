@@ -98,6 +98,14 @@ Rails.application.routes.draw do
 
   namespace :staff_dashboard do
     get 'index', path: '/'
+    get 'show_all_users_in_training_session', path: '/training_session_users'
+
+    post 'create_training_session'
+    post 'add_trainee_to_training_session'
+    post 'bulk_add_certifications'
+
+    patch 'rename_training_session'
+    delete 'delete_training_session'
   end
 
 
