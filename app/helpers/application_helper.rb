@@ -14,7 +14,11 @@ module ApplicationHelper
   def admin?
     @user.role.eql?("admin")
   end
-  
+
+  def staff?
+    @user.role.eql?("staff")
+  end
+
   def signed_in?
     session[:user_id].present?
   end
@@ -69,7 +73,7 @@ module ApplicationHelper
   #     a
   #   end
   # end
-  
+
   def page_title (curr_page = '')
     base_title = "MakerRepo"
     if curr_page.empty?
@@ -80,4 +84,3 @@ module ApplicationHelper
   end
 
 end
-

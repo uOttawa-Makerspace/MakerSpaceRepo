@@ -110,9 +110,8 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def add_training
-    @admin = current_user
     if params[:training_name].present? && !Training.find_by(name: params[:training_name]).present?
-      Training.create(name: params[:training_name], user_id: @admin.id)
+      Training.create(name: params[:training_name])
       flash[:notice] = "Training added successfully!"
     else
       flash[:alert] = "Training already exists or input is invalid"
@@ -121,7 +120,6 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def rename_training
-    @admin = current_user
     if !params[:training_name].present? || params[:training_name]==""
       flash[:alert] = "Please enter an existing training name"
     elsif !params[:training_new_name].present?
@@ -140,7 +138,6 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def remove_training
-    @admin = current_user
     if !params[:training_name].present? || params[:training_name]==""
       flash[:alert] = "Please enter an existing training name"
     elsif !Training.find_by(name: params[:training_name]).present?
