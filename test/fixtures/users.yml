@@ -1,16 +1,17 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
+#PASSOWRD IS: Password1
+
 bob:
   username: bob
   name: Bob
   email: bob@gmail.com
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
-  #password: Password1
   url: null
   location: makerspace
   gender: male
-  faculty: engineering
+  faculty: science
   use: null
   description: null
 
@@ -20,18 +21,25 @@ mary:
   name: Mary
   email: mary@gmail.com
   terms_and_conditions: true
-  password: Password2
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  location: brunsfield
+  location: makerspace
   gender: female
-  faculty: science
+  faculty: engineering
   use: null
   description: null
 
+#the only admin
 adam:
   username: adam
   name: Adam
   email: adam@adam.com
   terms_and_conditions: true
-  password: Password3
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  location: brunsfield
+  gender: male
+  faculty: arts
+  use: null
+  description: null
   role: admin

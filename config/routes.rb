@@ -92,6 +92,7 @@ Rails.application.routes.draw do
         post 'remove_equipment'
         post 'submit_pi'
         post 'remove_pi'
+        post 'add_training'
       end
     end
   end

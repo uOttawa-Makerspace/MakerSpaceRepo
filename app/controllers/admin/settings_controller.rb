@@ -117,6 +117,7 @@ class Admin::SettingsController < AdminAreaController
     else
       flash[:alert] = "Training already exists or name is ivalid"
     end
+    redirect_to admin_settings_path
   end
 
   def rename_training
