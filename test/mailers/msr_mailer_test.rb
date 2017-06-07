@@ -8,7 +8,10 @@ class MsrMailerTest < ActionMailer::TestCase
 	    assert_equal ['uottawa.makerepo@gmail.com'], email.from
 	    assert_equal ['bob@gmail.com'], email.to
 	    assert_equal 'Welcome to MakerRepo', email.subject
-	   end
+	    assert email.body.to_s.include? "Bob"
+   	    assert email.body.to_s.include? "bob"
+   	    assert email.body.to_s.include? "http://makerepo.com/login"
+	end
 
 	test "Repository email" do
 		repository = repositories(:one)
@@ -23,9 +26,11 @@ class MsrMailerTest < ActionMailer::TestCase
 		user = users(:bob)
 		newpassword = "Password2"
 	    email = MsrMailer.reset_password_email user.email, newpassword
-
+	    
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 	    assert_equal ['bob@gmail.com'], email.to
 	    assert_equal 'New password for MakerRepo', email.subject
+   	    assert email.body.to_s.include? "Bob"
+   	    assert email.body.to_s.include? "Password2"
 	end
 end
