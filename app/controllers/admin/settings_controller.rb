@@ -111,16 +111,32 @@ class Admin::SettingsController < AdminAreaController
 
   def add_training
     @admin = current_user
-    if params[:training_name].present? && !Training.find_by(name: :training_name).present?
-      Training.create(name: :training_name, user_id: @admin.id)
+    if params[:training_name].present? && !Training.find_by(name: params[:training_name]).present?
+      Training.create(name: params[:training_name], user_id: @admin.id)
       flash[:notice] = "Training added successfully!"
     else
-      flash[:alert] = "Training already exists or name is ivalid"
+      flash[:alert] = "Training already exists or input is invalid"
     end
     redirect_to admin_settings_path
   end
 
   def rename_training
+    @admin = current_user
+    if !params[:training_name].present? || params[:training_name]==""
+      flash[:alert] = "Please enter an existing training name"
+    elsif !params[:training_new_name].present?
+      flash[:alert] = "Please enter new name for the training"
+    elsif !Training.find_by(name: params[:training_name]).present?
+      flash[:alert] = "Please enter an existing training in order to rename it!"
+    elsif Training.find_by(name: params[:training_new_name]).present?
+      flash[:alert] = "There already exists a training with this name!"
+    else
+      @training = Training.find_by(name: params[:training_name])
+      @training.name = params[:training_new_name]
+      @training.save
+      flash[:notice] = "Training renamed successfully"
+    end
+    redirect_to admin_settings_path
   end
 
   def remove_training

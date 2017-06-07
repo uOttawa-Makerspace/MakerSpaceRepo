@@ -3,6 +3,7 @@
 #PASSOWRD IS: Password1
 
 bob:
+  id: 1
   username: bob
   name: Bob
   email: bob@gmail.com
@@ -17,6 +18,7 @@ bob:
 
 
 mary:
+  id: 2
   username: mary
   name: Mary
   email: mary@gmail.com
@@ -31,6 +33,7 @@ mary:
 
 #the only admin
 adam:
+  id: 1337
   username: adam
   name: Adam
   email: adam@adam.com

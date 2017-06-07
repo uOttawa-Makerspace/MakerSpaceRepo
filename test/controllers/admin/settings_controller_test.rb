@@ -10,8 +10,14 @@ class Admin::SettingsControllerTest < ActionController::TestCase
   end
 
   test "admin can add training" do
-    post :add_training, training_name: "soldering"
+    post :add_training, training_name: "soldering_1"
     assert_equal flash[:notice], "Training added successfully!"
+    assert Training.find_by(name: "soldering_1").present?
+  end
+
+  test "admin can rename training" do
+    patch :rename_training, training_name: "lathe_1", training_new_name: "lathe_2"
+    assert_equal flash[:notice], "Training renamed successfully"
   end
 
 end
