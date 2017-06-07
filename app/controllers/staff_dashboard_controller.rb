@@ -6,8 +6,8 @@ class StaffDashboardController < ApplicationController
 
   private
 
-  def ensure_admin
-    unless admin?
+  def ensure_staff
+    unless staff?
       redirect_to '/' and return
     end
   end
