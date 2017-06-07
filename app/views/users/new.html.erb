@@ -53,11 +53,11 @@
     <%= f.text_field :student_id, autofocus: true %>
 
     <%= f.label :faculty , "Faculty (if applicable)"%>
-    <%= f.select :faculty, ["Arts","Education","Engineering","Law","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %>
+    <%= f.select :faculty, ["Arts","Education","Engineering","Law","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %>
 
-    <!-- Should make this a drop down list -->
     <%= f.label :program, "Program (Optional)" %>
-    <%= f.text_field :program, autofocus: true %>
+    <%= f.select :faculty, ["My program is not in the list","Arts – English","Arts - Environ. Studies","Arts - French Studies","Arts – Geography","Arts – History","Arts - Lettres françaises","Arts – Translation","Engineering - Biomedical Mechanical Eng.","Engineering - Chemical Eng.","Engineering - Civil Eng.","Engineering - Computer Eng.","Engineering - Computer Science","Engineering - Electrical Eng","Engineering - Mechanical Eng","Engineering - Software Eng.","Law - Civil Law","Law - Civil Law & Int. Dev.","Science – Biochemistry","Science – Biology","Science - Biomedical Sciences","Science - Biophar. Science","Science – Biotechnology","Science – Chemistry","Science - Environ. Science","Science - Financial Maths-Eco","Science – Geology","Science - Geology-Physics","Science - Master - Environmental Sustainability","Science – Maths","Science - Maths-Stats","Science – Physics","Science - Physics-Math","Social Sciences – Anthropology","Social Sciences - Conflict Studies & Human Rights","Social Sciences - Eco. and Public Policy","Social Sciences – Economics","Social Sciences - Int. Dev. And Global.","Social Sciences - International Eco. & Development","Social Sciences - Political Science","Social Sciences - Public Admin.","Social Sciences – Sociology","Telfer School of Management – Accounting","Telfer School of Management – Commerce","Telfer School of Management - E-Business","Telfer School of Management – Entrepreneurship","Telfer School of Management – Finance","Telfer School of Management - HR Management","Telfer School of Management - International Manag.","Telfer School of Management - Man. & Inf. Sys.","Telfer School of Management – Management","Telfer School of Management – Marketing"], prompt: "Choose..." %>
+
 
     <%= f.label :use, "What do you plan on using MakerRepo for?", style: 'margin-bottom: 0.5rem; display: block;' %>
     <%= f.select :use, ["Course", "Personal Project", "Business", "Other"] , prompt: "Select a use case..." %>
@@ -79,7 +79,6 @@
       <div id="notice"><%flash[:notice] %></div>
     <% end %>
     
-
   <% end %>
 
 </section>
