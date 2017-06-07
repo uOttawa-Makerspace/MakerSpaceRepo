@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170607180252) do
+ActiveRecord::Schema.define(version: 20170607181248) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -151,6 +151,17 @@ ActiveRecord::Schema.define(version: 20170607180252) do
 
   add_index "rfids", ["user_id"], name: "index_rfids_on_user_id", using: :btree
 
+  create_table "training_sessions", force: :cascade do |t|
+    t.integer  "training_id"
+    t.integer  "user_id"
+    t.datetime "timeslot"
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+  end
+
+  add_index "training_sessions", ["training_id"], name: "index_training_sessions_on_training_id", using: :btree
+  add_index "training_sessions", ["user_id"], name: "index_training_sessions_on_user_id", using: :btree
+
   create_table "trainings", force: :cascade do |t|
     t.string   "name"
     t.datetime "created_at", null: false
@@ -202,6 +213,8 @@ ActiveRecord::Schema.define(version: 20170607180252) do
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"
+  add_foreign_key "training_sessions", "trainings"
+  add_foreign_key "training_sessions", "users"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
 end

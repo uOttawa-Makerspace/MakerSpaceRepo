@@ -25,7 +25,7 @@ mary:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  location: makerspace
+  location: sandbox
   gender: female
   faculty: engineering
   use: null
@@ -46,3 +46,19 @@ adam:
   use: null
   description: null
   role: admin
+
+#the only staff
+olivia:
+  id: 777
+  username: olivia
+  name: Olivia
+  email: olivia@gmail.com
+  terms_and_conditions: true
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  location: makerspace
+  gender: female
+  faculty: engineering
+  use: null
+  description: null
+  role: staff

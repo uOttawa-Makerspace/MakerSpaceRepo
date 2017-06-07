@@ -6,7 +6,7 @@ class TrainingSession < ActiveRecord::Base
   validates :user,     presence: true
   validate :is_staff
 
-  def is_admin
+  def is_staff
     errors.add(:string, "user must be staff") if self.user.role != "staff"
   end
 end
