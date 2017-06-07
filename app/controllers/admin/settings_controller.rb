@@ -140,6 +140,16 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def remove_training
+    @admin = current_user
+    if !params[:training_name].present? || params[:training_name]==""
+      flash[:alert] = "Please enter an existing training name"
+    elsif !Training.find_by(name: params[:training_name]).present?
+      flash[:alert] = "Please enter an existing training in order to remove it!"
+    else
+      Training.find_by(name: params[:training_name]).destroy
+      flash[:notice] = "Training removed successfully"
+    end
+    redirect_to admin_settings_path
   end
 
 end

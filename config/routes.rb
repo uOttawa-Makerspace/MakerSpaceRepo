@@ -93,6 +93,7 @@ Rails.application.routes.draw do
         post 'submit_pi'
         post 'remove_pi'
         post 'add_training'
+        post 'remove_training'
         patch 'rename_training'
       end
     end
