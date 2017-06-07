@@ -18,6 +18,8 @@ class Admin::SettingsControllerTest < ActionController::TestCase
   test "admin can rename training" do
     patch :rename_training, training_name: "lathe_1", training_new_name: "lathe_2"
     assert_equal flash[:notice], "Training renamed successfully"
+    assert !Training.find_by(name: "lathe_1").present?
+    assert Training.find_by(name: "lathe_2").present?
   end
 
 end
