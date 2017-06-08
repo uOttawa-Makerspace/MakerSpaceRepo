@@ -8,28 +8,45 @@ class Staff::TrainingSessionsController < ApplicationController
     if !params['training_session_name'].present? || !Training.find_by(name: params['training_session_name']).present?
       flash[:alert] = "Please enter a valid training subject"
     elsif !params['training_session_time'].present?
-      flash[:alert] = "Please choose a time slot"
+      flash[:alert] = "Please enter the training session's time slot"
     else
-      TrainingSession.create(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time'])
+      @training_session = TrainingSession.new(training_id: Training.find_by(name: params['training_session_name']).id, user_id: @staff.id, timeslot: params['training_session_time'])
+      @training_session.save
       flash[:notice] = "Training session created succesfully"
     end
     redirect_to staff_training_sessions_url
   end
-
 
   def rename_training_session
     @staff = current_user
     if !params['training_session_name'].present? || !Training.find_by(name: params['training_session_name']).present?
       flash[:alert] = "Please enter a valid training subject"
     elsif !params['training_session_time'].present?
-      flash[:alert] = "Please choose a time slot"
+      flash[:alert] = "Please enter the training session's time slot"
     elsif !params['training_session_new_name'].present? || !Training.find_by(name: params['training_session_new_name']).present?
       flash[:alert] = "Please select a valid new training subject"
     else
       @training_session = TrainingSession.where(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time'])[0]
-      @training_session.training_id = Training.find_by(name: params['training_session_new_name'])
+      @training_session.training_id = Training.find_by(name: params['training_session_new_name']).id
       @training_session.save
       flash[:notice] =  "Training session renamed succesfully"
+    end
+    redirect_to (:back)
+  end
+
+  def reschedule_training_session
+    @staff = current_user
+    if !params['training_session_name'].present? || !Training.find_by(name: params['training_session_name']).present?
+      flash[:alert] = "Please enter a valid training subject"
+    elsif !params['training_session_time'].present?
+      flash[:alert] = "Please enter the training session's time slot"
+    elsif !params['training_session_new_time'].present?
+      flash[:alert] = "Please enter the training session's new time slot"
+    else
+      @training_session = TrainingSession.where(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time'])[0]
+      @training_session.timeslot = params['training_session_new_time']
+      @training_session.save
+      flash[:notice] =  "Training session rescheduled succesfully"
     end
     redirect_to (:back)
   end
