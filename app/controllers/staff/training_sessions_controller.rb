@@ -11,6 +11,9 @@ class Staff::TrainingSessionsController < ApplicationController
       flash[:alert] = "Please enter the training session's time slot"
     else
       @training_session = TrainingSession.new(training_id: Training.find_by(name: params['training_session_name']).id, user_id: @staff.id, timeslot: params['training_session_time'])
+      if params['training_session_course'].present?
+        @training_session.course = params['training_session_course']
+      end
       @training_session.save
       flash[:notice] = "Training session created succesfully"
     end
