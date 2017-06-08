@@ -1,6 +1,7 @@
 class TrainingSession < ActiveRecord::Base
   belongs_to :training
   belongs_to :user
+  has_many :users
 
   validates :training, presence: true
   validates :user,     presence: true

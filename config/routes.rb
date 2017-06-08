@@ -93,14 +93,25 @@ Rails.application.routes.draw do
         post 'submit_pi'
         post 'remove_pi'
         post 'add_training'
-        post 'remove_training'
+        delete 'remove_training'
         patch 'rename_training'
       end
     end
   end
 
-  namespace :staff_dashboard do
+
+  namespace :staff do
     get 'index', path: '/'
+
+    resources :training_sessions do
+      collection do
+        post 'create_training_session'
+        post 'add_trainee_to_training_session'
+        post 'bulk_add_certifications'
+        patch 'rename_training_session'
+        delete 'delete_training_session'
+      end
+    end
   end
 
 

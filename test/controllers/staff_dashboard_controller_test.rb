@@ -2,8 +2,8 @@ require 'test_helper'
 
 class StaffDashboardControllerTest < ActionController::TestCase
 
-   test "admins succeed at loading Staff Dashboard" do
-     session[:user_id] = users(:adam).id
+   test "staff succeed at loading Staff Dashboard" do
+     session[:user_id] = users(:olivia).id
      get :index
      assert_response :success
    end

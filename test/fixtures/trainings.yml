@@ -1,2 +1,7 @@
 lathe_1:
+  id: 1
   name: lathe_1
+
+welding_3:
+  id: 2
+  name: welding_3

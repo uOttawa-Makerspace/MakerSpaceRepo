@@ -1,8 +1,5 @@
 class StaffDashboardController < ApplicationController
-  before_action :current_user, :ensure_admin
-
-  def index
-  end
+  before_action :current_user, :ensure_staff
 
   private
 

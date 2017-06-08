@@ -23,7 +23,7 @@ class Admin::SettingsControllerTest < ActionController::TestCase
   end
 
   test "admin can remove training" do
-    post :remove_training, training_name: "lathe_1"
+    delete :remove_training, training_name: "lathe_1"
     assert_equal flash[:notice], "Training removed successfully"
     assert !Training.find_by(name: "lathe_1").present?
   end
