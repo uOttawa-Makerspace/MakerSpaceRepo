@@ -11,16 +11,4 @@ section#report{
 		display: block;
 	}
 
-	.button{
-		width: calc(400px + 1.09rem) !important;
-		height: calc(30px + 1.09rem) !important;
-		letter-spacing: 1px;
-		background-color: #4bbc9c;
-		color: #fff;
-		border: none !important;
-
-		&:hover{
-		cursor: pointer;
-		}
-	}
 }
