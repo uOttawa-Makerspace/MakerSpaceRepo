@@ -11,31 +11,32 @@ class Staff::TrainingSessionsController < ApplicationController
       flash[:alert] = "Please choose a time slot"
     else
       TrainingSession.create(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time'])
+      flash[:notice] = "Training session created succesfully"
     end
-    redirect_to root_path
+    redirect_to staff_training_sessions_url
   end
-  #
-  # def rename_training_session
-  #   @staff = current_user
-  #   if params['training_session_name'].present? &&
-  #      params['training_session_time'].present? &&
-  #      params['training_session_new_name'].present?
-  #      if TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
-  #        @training_session = TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])[0]
-  #        @training_session.name = params['training_session_new_name']
-  #        @training_session.save
-  #        redirect_to (:back)
-  #        flash[:notice] = "Training session renamed succesfully"
-  #      else
-  #        redirect_to (:back)
-  #        flash[:alert] = "No training session with the given parameters!"
-  #      end
-  #    else
-  #      redirect_to (:back)
-  #      flash[:alert] = "Invalid parameters!"
-  #    end
-  # end
-  #
+
+  def rename_training_session
+    @staff = current_user
+    if params['training_session_name'].present? &&
+       params['training_session_time'].present? &&
+       params['training_session_new_name'].present?
+       if TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time']).present?
+         @training_session = TrainingSession.where(name: params['training_session_name'], staff_id: @staff.id, session_time: params['training_session_time'])[0]
+         @training_session.name = params['training_session_new_name']
+         @training_session.save
+         redirect_to (:back)
+         flash[:notice] = "Training session renamed succesfully"
+       else
+         redirect_to (:back)
+         flash[:alert] = "No training session with the given parameters!"
+       end
+     else
+       redirect_to (:back)
+       flash[:alert] = "Invalid parameters!"
+     end
+  end
+
   # def delete_training_session
   #   @staff = current_user
   #   if params['training_session_name'].present? &&
