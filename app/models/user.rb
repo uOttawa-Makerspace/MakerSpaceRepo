@@ -11,8 +11,9 @@ class User < ActiveRecord::Base
   accepts_nested_attributes_for :repositories
 
   validates :name,
+    presence: { message: "Your name is required." },
     length: { maximum: 50, message: 'Your name must be less than 50 characters.' }
-
+   
   validates :username,
     presence: { message: "Your username is required." },
     uniqueness: { message: "Your username is already in use." },
@@ -61,5 +62,27 @@ class User < ActiveRecord::Base
     self.password_confirmation = @pword
   end
   
+  # def self.to_csv
+  #   attributes = %w{id name}
+  #   CSV.generate(headers: true) do |csv|
+  #     csv << attributes
+    
+  #     all.each do |user|
+  #       csv << attributesmap{|attr| user.send(attr)}
+  #     end
+  #   end
+  # end 
+
+    def self.to_csv
+    attributes = %w{id name usename email faculty created_at}
+    CSV.generate do |csv|
+      csv << attributes
+    
+      all.each do |user|
+        csv << user.attributes.values_at(*attributes)
+      end
+    end
+  end 
+
   
 end
