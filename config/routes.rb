@@ -106,7 +106,7 @@ Rails.application.routes.draw do
     resources :training_sessions do
       collection do
         post 'create_training_session'
-        post 'add_trainee_to_training_session'
+        post 'add_trainees_to_training_session'
         post 'bulk_add_certifications'
         patch 'rename_training_session'
         patch 'reschedule_training_session'

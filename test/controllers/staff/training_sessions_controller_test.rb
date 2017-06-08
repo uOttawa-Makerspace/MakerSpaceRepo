@@ -62,22 +62,23 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
   test "staff can add new trainees to exisiting training sessions" do
-   post :add_trainee_to_training_session,
+   post :add_trainees_to_training_session,
      training_session_name: "lathe_1",
      training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-     training_session_new_trainee: User.find_by(username: "bob")
+     training_session_new_trainees: [User.find_by(username: "bob")]
    assert_redirected_to :back
    assert_equal flash[:notice], "User successfuly added to the training session"
    @training_session = TrainingSession.where(training_id: Training.find_by(name: "lathe_1"),
                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                  user_id: @user.id)[0]
    assert @training_session.users.include? User.find_by(username: "bob")
-   post :add_trainee_to_training_session,
+   post :add_trainees_to_training_session,
       training_session_name: "lathe_1",
       training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-      training_session_new_trainee: User.find_by(username: "bob")
+      training_session_new_trainees: [User.find_by(username: "mary"), User.find_by(username: "bob")]
    assert_redirected_to :back
    assert_equal flash[:alert], "User is already in this training session!"
+   assert @training_session.users.include? User.find_by(username: "mary")
   end
 
 
