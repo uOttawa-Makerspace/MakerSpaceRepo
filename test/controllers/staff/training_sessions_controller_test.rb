@@ -9,12 +9,6 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     @request.env['HTTP_REFERER'] = staff_training_sessions_url
   end
 
-  # test 'get index' do
-  #   #session[:user_id] = users(:olivia).id
-  #   binding.pry
-  #   get :index
-  # end
-
   test "staff can create new training session" do
     post :create_training_session, training_session_name: "welding_3", training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00")
     assert_equal flash[:notice], "Training session created succesfully"
