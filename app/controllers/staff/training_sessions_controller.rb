@@ -51,21 +51,22 @@ class Staff::TrainingSessionsController < ApplicationController
     redirect_to (:back)
   end
 
-  # def delete_training_session
-  #   @staff = current_user
-  #   if params['training_session_name'].present? &&
-  #      params['training_session_time'].present?
-  #     if TrainingSession.find_by(name: params['training_session_name'], staff_id: @staff.id).present?
-  #       TrainingSession.find_by(name: params['training_session_name'], staff_id: @staff.id).destroy
-  #       redirect_to (:back)
-  #       flash[:notice] = "Training session deleted succesfully"
-  #     else
-  #       redirect_to (:back)
-  #       flash[:alert] = "No training session with the given parameters!"
-  #     end
-  #   end
-  # end
-  #
+  def delete_training_session
+    @staff = current_user
+    if params['training_session_name'].present? &&
+       params['training_session_time'].present? &&
+      if TrainingSession.find_by(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time']).present?
+        TrainingSession.find_by(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time']).destroy
+        flash[:notice] = "Training session deleted succesfully"
+      else
+        flash[:alert] = "No training session with the given parameters!"
+      end
+    end
+    redirect_to (:back)
+
+  end
+
+  
   # def add_trainee_to_training_session
   #   @staff = current_user
   #   if params['training_session_name'].present? &&
