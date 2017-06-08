@@ -10,9 +10,20 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
   test "staff can create new training session" do
-    post :create_training_session, training_session_name: "welding_3", training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00")
+    post :create_training_session,
+      training_session_name: "welding_3",
+      training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00")
     assert_equal flash[:notice], "Training session created succesfully"
     assert_redirected_to staff_training_sessions_url
+  end
+
+  test "staff can rename training session by choosing a different training" do
+    patch :rename_training_session,
+      training_session_name: "lathe_1",
+      training_session_new_name: "welding_3",
+      training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00")
+      assert_redirected_to (:back)
+      assert_equal flash[:notice], "Training session renamed succesfully"
   end
 
 end
