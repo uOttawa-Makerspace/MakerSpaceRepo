@@ -3,3 +3,139 @@
 <head>
   <title>Staff Area | MakerRepo</title>
 </head>
+<% provide(:title, "Manage Users") %>
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:alert] %></div>
+<% end %>
+
+
+
+<div class="edit-column">
+  <div class="setting-title">Manage Users</div>
+    <br>
+    <div class="search-form">
+    <%= form_tag search_admin_users_path, method: :get do %>
+      <%= select_tag 'filter', options_for_select(["Name", "Email", "Username"]), prompt:'Search by...' %>
+      <%= text_field_tag 'q', nil, placeholder: 'Search users...', class:'profile-text' %>
+      <%= submit_tag "Search", class: 'save-button' %>
+    <% end %>
+  </div>
+  <br>
+  <div>
+    <% if params[:p] == "signed_in_users" %>
+      <table>
+        <td><h2>Users currently signed in</h2></td>
+        <td class="right"><%= link_to "Show new users", :p => "new_users" %></td>
+      </table>
+
+      <div class="locations">
+      <table class="locations">
+        <% if params[:location].nil? %>
+            <td class="current">
+        <% else %>
+            <td>
+        <% end %>
+          <%= link_to "All locations", :sort => params[:sort], :direction => params[:direction], :p => params[:p] %></td>
+          <% PiReader.uniq.pluck(:pi_location).sort_by!{ |m| m }.each do |pi_location| %>
+            <% if !pi_location.nil? %>
+                <% if params[:location] == pi_location %>
+                    <td class="current">
+                <% else %>
+                    <td>
+                <% end %>
+                <%= link_to pi_location, :sort => params[:sort], :direction => params[:direction], :p => params[:p], :location => pi_location %></td>
+            <% end %>
+          <% end %>
+      </table>
+      </div>
+    <% elsif params[:p] == "new_users" || params[:p].nil? %>
+      <table>
+        <td><h2>Newest users</h2></td>
+        <td class="right"><%= link_to "Show users currently signed in", :p => "signed_in_users" %></td>
+      </table>
+    <% end %>
+    <%= form_tag new_training_session_staff_training_sessions_path, method: :post do %>
+      <% if !@users.any? %>
+        <p style="color:gray;text-align:center;padding-top:15px;">There are no users to show.</p>
+      <% else %>
+        <% direction = params[:direction] == "asc" ? "desc" : "asc" %>
+        <table class="admin-table" id="admin-index">
+          <thead>
+            <th><%= check_box_tag 'select-all' %></th>
+            <th>
+              <%= link_to "Username", :sort => "username", :direction => direction, :p => params[:p], :location => params[:location] %>
+              <% if params[:sort] == "username" %>
+                <%= fa_icon "sort-#{direction}" %>
+              <% end %>
+            </th>
+            <th>
+              <%= link_to "Name", :sort => "name", :direction => direction, :p => params[:p], :location => params[:location] %>
+              <% if params[:sort] == "name" %>
+                <%= fa_icon "sort-#{direction}" %>
+              <% end %>
+            </th>
+            <th>
+              <%= link_to "Signed in", :sort => "lab_sessions.sign_in_time", :direction => direction, :p => params[:p], :location => params[:location] %>
+              <% if params[:sort] == "lab_sessions.sign_in_time" %>
+                <%= fa_icon "sort-#{direction}" %>
+              <% end %>
+            </th>
+            <th>
+              <%= link_to "Joined", :sort => "users.created_at", :direction => direction, :p => params[:p], :location => params[:location] %>
+              <% if params[:sort] == "users.created_at" %>
+                <%= fa_icon "sort-#{direction}" %>
+              <% end %>
+            </th>
+            <th>Edit</th>
+            <th>View</th>
+          </thead>
+          <% @users.each do |user| %>
+            <tr>
+              <td><center><%= check_box_tag 'training_session_users[]', user %></center></td>
+              <td><%= link_to "#{user.username}", admin_user_path(user) %></td>
+              <td><%= user.name %></td>
+              <td>
+                <% user_sessions = LabSession.where(user_id: user.id) %>
+                <% if user_sessions.present? %>
+                  <%= time_ago_in_words(user_sessions.last.sign_in_time) %> ago
+                <% else %>
+                  -
+                <% end %>
+              </td>
+              <td><%= time_ago_in_words(user.created_at) %> ago</td>
+			           <td class="link-table"><%= link_to fa_icon("pencil"), edit_admin_user_path(user) %></td>
+              <td class="link-table"><%= link_to fa_icon("search"), admin_user_path(user) %></td>
+            </tr>
+          <% end %>
+        </table>
+      <% end %>
+
+      <!-- pagination code starts -->
+      <% if params[:page].nil? %>
+        <% page_number = 1 %>
+      <% else %>
+        <% page_number = Integer(params[:page]) %>
+      <% end %>
+      <table class="pagination">
+        <tr>
+          <td>
+            <% if page_number>1 %>
+              <%= link_to "< Previous page", page: page_number - 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
+            <% end %>
+          </td>
+          <td>
+            <% if page_number<@total_pages %>
+              <%= link_to "Next page >", page: page_number + 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
+            <% end %>
+          </td>
+        </tr>
+      </table>
+      <!-- pagination code ends -->
+
+      <br><br>
+        <%= link_to '<button type="button">Train</button>'.html_safe, new_staff_training_session_path %>    <% end %>
+  </div>
+</div>
