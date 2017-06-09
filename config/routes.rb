@@ -1,8 +1,5 @@
 Rails.application.routes.draw do
 
-  get 'report_generator/index'
-  get 'report_generator/index2'
-
 
   root "static_pages#home"
 
@@ -99,6 +96,14 @@ Rails.application.routes.draw do
       end
     end
   end
+
+  namespace :report_generator do
+      get 'index', path: '/'
+      get 'report1'
+      get 'report2'
+
+  end
+
 
   namespace :staff_dashboard do
     get 'index', path: '/'
