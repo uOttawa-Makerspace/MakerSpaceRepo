@@ -13,6 +13,17 @@ class UserTest < ActiveSupport::TestCase
 
   end
 
+  test "Presence of name" do
+    user = users(:bob)
+
+    user.username = "bob"
+    assert user.valid? , "Your username is required."
+
+    user.username = nil
+    assert user.invalid? , "Your username is required."
+
+  end
+
   test "Presence of Username" do
     user = users(:bob)
 
