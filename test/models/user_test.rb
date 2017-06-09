@@ -17,10 +17,10 @@ class UserTest < ActiveSupport::TestCase
     user = users(:bob)
 
     user.username = "bob"
-    assert user.valid? , "Your username is required."
+    assert user.valid? , "Your name is required."
 
     user.username = nil
-    assert user.invalid? , "Your username is required."
+    assert user.invalid? , "Your name is required."
 
   end
 
