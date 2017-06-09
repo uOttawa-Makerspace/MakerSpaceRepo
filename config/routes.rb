@@ -95,6 +95,7 @@ Rails.application.routes.draw do
         post 'add_training'
         patch 'rename_training'
         delete 'remove_training'
+        delete 'delete_repository'
       end
     end
   end

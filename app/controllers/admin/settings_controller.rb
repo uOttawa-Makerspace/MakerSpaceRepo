@@ -149,4 +149,7 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
 
+  def delete_repository
+  end
+
 end
