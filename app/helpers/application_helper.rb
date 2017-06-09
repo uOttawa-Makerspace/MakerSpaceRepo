@@ -16,7 +16,7 @@ module ApplicationHelper
   end
 
   def staff?
-    @user.role.eql?("staff")
+    @user.role.eql?("staff") or @user.role.eql?("admin")
   end
 
   def signed_in?
