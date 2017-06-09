@@ -82,4 +82,22 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
 
+  test "staff can certify users in training session" do
+    @training_session = training_sessions(:lathe_session)
+    @training_session.users << users(:adam)
+    @training_session.users << users(:mary)
+    @training_session.save
+    assert @training_session.users.include? User.find_by(username: "adam")
+    assert @training_session.users.include? User.find_by(username: "mary")
+    post :certify_trainees,
+      training_session_name: Training.find(@training_session.training_id).name,
+      training_session_graduates: [User.find_by(username: "mary"), User.find_by(username: "adam")],
+      training_session_time: @training_session.timeslot
+    assert_equal flash[:notice], "Certified successfuly"
+    assert_redirected_to :back
+    assert Certification.find_by(user_id: "1337", trainer_id: "777", training: "lathe_1").present?
+    assert_equal User.find_by(username: "mary").certifications[0].training, "lathe_1"
+  end
+
+
 end

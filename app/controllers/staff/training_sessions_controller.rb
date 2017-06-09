@@ -93,5 +93,27 @@ class Staff::TrainingSessionsController < ApplicationController
     redirect_to (:back)
   end
 
+  def certify_trainees
+    @staff = current_user
+    if params['training_session_name'].present? &&
+       params['training_session_graduates'].present? &&
+       params['training_session_time'].present?
+       if !Training.find_by(name: params['training_session_name']).present?
+         flash[:alert] = "Training not found!"
+       else
+         @training_session = TrainingSession.where(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time'])[0]
+         params['training_session_graduates'].each do |graduate|
+           if @training_session.users.include? User.find(graduate)
+             @certification = Certification.new(user_id: graduate, trainer_id: @staff.id, training: params['training_session_name'])
+             @certification.save
+             flash[:notice] = "Certified successfuly"
+           end
+         end
+       end
+     else
+       flash[:alert] = "Invalid parameters!"
+     end
+     redirect_to (:back)
+  end
 
 end

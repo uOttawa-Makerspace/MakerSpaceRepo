@@ -107,7 +107,7 @@ Rails.application.routes.draw do
       collection do
         post 'create_training_session'
         post 'add_trainees_to_training_session'
-        post 'bulk_add_certifications'
+        post 'certify_trainees'
         patch 'rename_training_session'
         patch 'reschedule_training_session'
         delete 'delete_training_session'
