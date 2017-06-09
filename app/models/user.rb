@@ -61,8 +61,7 @@ class User < ActiveRecord::Base
     self.password_confirmation = @pword
   end
 
-  def self.to_csv
-    attributes = %w{id name username email faculty created_at}
+  def self.to_csv(*attributes)
     CSV.generate do |csv|
       csv << attributes
     
