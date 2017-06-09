@@ -1,5 +1,8 @@
 class ReportGeneratorController < ApplicationController
   def index
+  end
+
+  def report1
   	@users = User.all
 
   	respond_to do |format|
@@ -9,7 +12,8 @@ class ReportGeneratorController < ApplicationController
   	end
   end
 
-  def index2
+
+  def report2
   	@users = User.all
 
   	respond_to do |format|
