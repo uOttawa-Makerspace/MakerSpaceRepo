@@ -1,7 +1,11 @@
-class Staff::TrainingSessionsController < ApplicationController
+class Staff::TrainingSessionsController < StaffAreaController
   before_action :load_user, only: [:show, :edit, :update]
 
-  layout 'staff_dashboard'
+  layout 'staff_area'
+
+  def index
+    flash[:notice] = "welcome to training sessions"
+  end
 
   def create_training_session
     @staff = current_user

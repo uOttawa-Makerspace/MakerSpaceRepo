@@ -1,5 +1,55 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Training Sesssion</title>
-</head>
+<% provide(:title, "Manage Users") %>
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:alert] %></div>
+<% end %>
+
+
+<div class="edit-column">
+  <div class="setting-title">Manage Users</div>
+    <br>
+    <div class="search-form">
+    <%= form_tag search_admin_users_path, method: :get do %>
+      <%= select_tag 'filter', options_for_select(["Name", "Email", "Username"]), prompt:'Search by...' %>
+      <%= text_field_tag 'q', nil, placeholder: 'Search users...', class:'profile-text' %>
+      <%= submit_tag "Search", class: 'save-button' %>
+    <% end %>
+  </div>
+  <br>
+  <div>
+    <% if params[:p] == "signed_in_users" %>
+      <table>
+        <td><h2>Users currently signed in</h2></td>
+        <td class="right"><%= link_to "Show new users", :p => "new_users" %></td>
+      </table>
+
+      <div class="locations">
+      <table class="locations">
+        <% if params[:location].nil? %>
+            <td class="current">
+        <% else %>
+            <td>
+        <% end %>
+          <%= link_to "All locations", :sort => params[:sort], :direction => params[:direction], :p => params[:p] %></td>
+          <% PiReader.uniq.pluck(:pi_location).sort_by!{ |m| m }.each do |pi_location| %>
+            <% if !pi_location.nil? %>
+                <% if params[:location] == pi_location %>
+                    <td class="current">
+                <% else %>
+                    <td>
+                <% end %>
+                <%= link_to pi_location, :sort => params[:sort], :direction => params[:direction], :p => params[:p], :location => pi_location %></td>
+            <% end %>
+          <% end %>
+      </table>
+      </div>
+    <% elsif params[:p] == "new_users" || params[:p].nil? %>
+      <table>
+        <td><h2>Newest users</h2></td>
+        <td class="right"><%= link_to "Show users currently signed in", :p => "signed_in_users" %></td>
+      </table>
+    <% end %>
+  </div>
+</div>
