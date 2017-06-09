@@ -22,9 +22,12 @@
     </div>
 
     <br></br>
-    <%= form_tag delete_repository_admin_settings_path, method: :delete do %>
-      <%= submit_tag "Delete", class: 'delete-button' %>
+    <% if admin?%>
+      <%= form_tag delete_repository_admin_settings_path, method: :delete do %>
+        <%= submit_tag "Delete", class: 'delete-button' %>
+      <% end %>
     <% end %>
+
 
       <% if @repository.description.present? %>
       <div class="repo-desc">
