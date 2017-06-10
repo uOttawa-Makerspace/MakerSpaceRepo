@@ -5,15 +5,13 @@ one:
   image_file_name: nil
   image_content_type: nil
   image_file_size: nil
-  image_updated_at: nil
   height: nil
   width: nil
 
 two:
-  repository_id: 1
+  repository_id: 2
   image_file_name: nil
   image_content_type: nil
   image_file_size: nil
-  image_updated_at: nil
   height: nil
   width: nil

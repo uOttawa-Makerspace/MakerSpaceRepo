@@ -24,6 +24,8 @@
     <br></br>
     <% if admin?%>
         <%= link_to "Delete", delete_repository_admin_settings_path(@repository, id: @repository.id), method: :delete %>
+        <%= link_to "Delete".description, class: "delete-button" %>
+
     <% end %>
 
 
