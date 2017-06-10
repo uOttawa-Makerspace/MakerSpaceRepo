@@ -23,9 +23,7 @@
 
     <br></br>
     <% if admin?%>
-      <%= form_tag delete_repository_admin_settings_path, method: :delete do %>
-        <%= submit_tag "Delete", class: 'delete-button' %>
-      <% end %>
+        <%= link_to "Delete", delete_repository_admin_settings_path(@repository, id: @repository.id), method: :delete %>
     <% end %>
 
 
