@@ -1,4 +1,4 @@
-class ReportGeneratorController < ApplicationController
+class ReportGeneratorController < AdminAreaController
   def index
   end
 
