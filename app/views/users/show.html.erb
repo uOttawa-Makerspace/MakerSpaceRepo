@@ -54,6 +54,7 @@
       <%= fa_icon "clock-o", text: "Joined on #{@repo_user.created_at.strftime("%B %d %Y")}"%>
     </div>
 
+
     <% if admin?%>
       <div class="user-certifications"> CERTIFICATIONS
         <br></br>
@@ -62,6 +63,16 @@
               <%= content_tag :span, certification.training %>
               <%= link_to "revoke", revoke_certification_admin_settings_path(id: certification.id), method: :delete,
                     style: 'color:#FFF;  background-color: #b02a12;padding: 0.5rem 1rem;text-color:#FFFF' %>
+            <% end %>
+            <br></br>
+            <%= form_tag set_role_admin_settings_path(@user, id: @repo_user.id), method: :patch do %>
+                <%= radio_button_tag :role, "regular_user" %>
+                <%= label_tag :regular %><br></br>
+                <%= radio_button_tag :role, "staff" %>
+                <%= label_tag :staff %><br></br>
+                <%= radio_button_tag :role, "admin" %>
+                <%= label_tag :admin %><br></br>
+              <%= submit_tag "Save", class: "save-button" %>
             <% end %>
           </div>
       </div>

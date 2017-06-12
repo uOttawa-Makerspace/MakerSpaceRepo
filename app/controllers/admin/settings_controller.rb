@@ -159,4 +159,13 @@ class Admin::SettingsController < AdminAreaController
     redirect_to :back
   end
 
+  def set_role
+    #flash[:notice] = params
+    #redirect_to :back
+    @user = User.find(params[:id])
+    @user.role = params[:role]
+    @user.save
+    redirect_to :back
+  end
+
 end

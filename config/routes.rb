@@ -94,6 +94,7 @@ Rails.application.routes.draw do
         post 'remove_pi'
         post 'add_training'
         patch 'rename_training'
+        patch 'set_role'
         delete 'remove_training'
         delete 'delete_repository'
         delete 'revoke_certification'

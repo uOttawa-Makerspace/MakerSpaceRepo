@@ -31,11 +31,7 @@
     <%= f.label :certifications, class: "profile-label" %>
     <%= f.select :certifications, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a certification..." %>
     <br>
-    <div id="certification-container">
-      <% @certifications.each do |certification| %>
-        <span class="certification"><%= certification.name %></span>
-      <% end %>
-    </div>
+
     <br>
     <br>
     <%= f.submit "Update User", class: "save-button" %>

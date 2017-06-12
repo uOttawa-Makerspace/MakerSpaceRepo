@@ -28,4 +28,9 @@ class Admin::SettingsControllerTest < ActionController::TestCase
     assert !Training.find_by(name: "lathe_1").present?
   end
 
+  test "admin can change user role (admin > staff > regular_user)" do
+    patch :set_role, id: users(:mary), role: "staff"
+    assert_equal User.find_by(username: "mary").role, "staff"
+  end
+
 end
