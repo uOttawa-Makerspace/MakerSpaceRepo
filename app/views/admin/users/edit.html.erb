@@ -10,23 +10,23 @@
     <br>
     <%= f.label :gender, class: "profile-label" %>
     <%= f.text_field :gender, class: "profile-text" %>
-    
+
     <%= f.label :faculty, class: "profile-label" %>
     <%= f.text_field :faculty, class: "profile-text" %>
-    
+
     <%= f.label :use, class: "profile-label" %>
     <%= f.text_field :use, class: "profile-text" %>
-    
+
     <%= f.label :role, class: "profile-label" %><br>
     <%= f.radio_button(:role, "regular_user") %>
     <%= f.label :role_regular, "Regular User", class: "radio-label" %>
     <%= f.radio_button(:role, "admin") %>
     <%= f.label :role_admin, "Admin", class: "radio-label" %>
-    
+
     <br><br>
     <%= f.label :rfid, class: "profile-label" %>
     <%= f.select :rfid, rfid_options_list(@rfids, @edit_admin_user), class: "profile-text" %>
-    
+
     <br><br>
     <%= f.label :certifications, class: "profile-label" %>
     <%= f.select :certifications, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a certification..." %>

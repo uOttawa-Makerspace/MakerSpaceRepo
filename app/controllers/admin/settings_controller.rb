@@ -154,4 +154,9 @@ class Admin::SettingsController < AdminAreaController
     redirect_to root_path
   end
 
+  def revoke_certification
+    Certification.find(params[:id]).destroy
+    redirect_to root_path
+  end
+
 end

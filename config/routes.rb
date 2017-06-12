@@ -96,6 +96,7 @@ Rails.application.routes.draw do
         patch 'rename_training'
         delete 'remove_training'
         delete 'delete_repository'
+        delete 'revoke_certification'
       end
     end
   end

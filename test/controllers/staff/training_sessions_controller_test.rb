@@ -96,7 +96,6 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert_equal flash[:notice], "Certified successfuly"
     assert_redirected_to :back
     assert Certification.find_by(user_id: "1337", trainer_id: "777", training: "lathe_1").present?
-    assert_equal User.find_by(username: "mary").certifications[0].training, "lathe_1"
   end
 
 
