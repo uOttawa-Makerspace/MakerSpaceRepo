@@ -37,7 +37,23 @@ class User < ActiveRecord::Base
     format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/,
              message: "Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."}
 
+  validates :gender,
+    presence: {message: "Your gender is required."}
 
+  validates :faculty,
+    presence: {message: "Please provide your faculty or choose N/A if not applicable"}
+
+  validates :program,
+    presence: {message: "Please provide your program or choose N/A if not applicable"}
+
+  validates :year_of_study,
+    presence: {message: "Please provide your year of study"}
+
+  validates :student_id,
+    presence: {message: "Please provide your student Number"}
+
+  validates :identity,
+    presence: {message: "Please identify who you are"}
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
 
