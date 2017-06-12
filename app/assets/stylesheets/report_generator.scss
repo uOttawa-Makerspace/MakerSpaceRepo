@@ -2,13 +2,22 @@
 
 section#report{
 	@include outer-container(60rem);
-		background-color: #fff;
-		padding: 4rem 5rem 8rem;
+    background-color: #fff;
+    padding: 0, 0, 0, 0;
+    min-height: calc(100vh - 65px);
+
+	// @include outer-container(60rem);
+	// 	background-color: #fff;
+	// 	padding: 4rem 5rem 8rem;
 
 	p{
+		max-width: 420px;
 		text-align: left;
 		color: #366;
 		display: block;
+		width: 100%;
+        margin: 0 auto;
+
 	}
 
 }
