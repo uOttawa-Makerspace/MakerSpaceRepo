@@ -11,9 +11,9 @@
 
   <%= form_for @new_user do |f| %>
 
-    <div id= "required2"><p id = "required_label">Required fields</p>
+    <div id= "required2"><p id = "required_label">Required fields</p></div>
 
-    <div id = "required" ><%= f.label :name , "Name/Nom" %></div>
+    <div id = "required" ><%= f.label :name , "Full Name/Nom" %></div>
     <%= content_tag :span, @new_user.errors[:name][0], class: 'form-error' %>
     <%= content_tag :span, @new_user.errors[:name][1], class: 'form-error',
         style: 'display: block;' if @new_user.errors[:name][1] %>
@@ -44,26 +44,36 @@
         style: 'display: block;' if @new_user.errors[:password][1] %>
     <%= f.password_field :password_confirmation %>
 
-    <!-- Should make "other" a free form text -->
-    <%= f.label :gender %>
-    <%= f.select :gender, ["Male", "Female", "Other"] , prompt: "Choose..." %>
+    <div id = "required" ><%= f.label :gender %></div>
+    <%= content_tag :span, @new_user.errors[:gender].first, class: 'form-error' %>
+    <%= f.select :gender, ["Male", "Female", "Other"] , prompt: "Choose..." %><br><br>
 
+    <div id = "required" ><%= f.label :identity, "I am a ..." %></div>
+    <%= content_tag :span, @new_user.errors[:identity].first, class: 'form-error' %>
+    <%= f.select :identity, ["Grad", "Undergrad", "Faculty Member", "Community Member"] , prompt: "Choose..." %><br><br>
   
-    <%= f.label :student_id , "Student Number (if applicable)" %>
+    <div id = "required" ><%= f.label :student_id , "Student Number (if applicable)" %></div>
+    <%= content_tag :span, @new_user.errors[:student_id].first, class: 'form-error' %>
     <%= f.text_field :student_id, autofocus: true %>
 
-    <%= f.label :faculty , "Faculty (if applicable)"%>
-    <%= f.select :faculty, ["Arts","Education","Engineering","Law","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %>
 
-    <%= f.label :program, "Program (Optional)" %>
-    <%= f.select :faculty, ["My program is not in the list","Arts – English","Arts - Environ. Studies","Arts - French Studies","Arts – Geography","Arts – History","Arts - Lettres françaises","Arts – Translation","Engineering - Biomedical Mechanical Eng.","Engineering - Chemical Eng.","Engineering - Civil Eng.","Engineering - Computer Eng.","Engineering - Computer Science","Engineering - Electrical Eng","Engineering - Mechanical Eng","Engineering - Software Eng.","Law - Civil Law","Law - Civil Law & Int. Dev.","Science – Biochemistry","Science – Biology","Science - Biomedical Sciences","Science - Biophar. Science","Science – Biotechnology","Science – Chemistry","Science - Environ. Science","Science - Financial Maths-Eco","Science – Geology","Science - Geology-Physics","Science - Master - Environmental Sustainability","Science – Maths","Science - Maths-Stats","Science – Physics","Science - Physics-Math","Social Sciences – Anthropology","Social Sciences - Conflict Studies & Human Rights","Social Sciences - Eco. and Public Policy","Social Sciences – Economics","Social Sciences - Int. Dev. And Global.","Social Sciences - International Eco. & Development","Social Sciences - Political Science","Social Sciences - Public Admin.","Social Sciences – Sociology","Telfer School of Management – Accounting","Telfer School of Management – Commerce","Telfer School of Management - E-Business","Telfer School of Management – Entrepreneurship","Telfer School of Management – Finance","Telfer School of Management - HR Management","Telfer School of Management - International Manag.","Telfer School of Management - Man. & Inf. Sys.","Telfer School of Management – Management","Telfer School of Management – Marketing"], prompt: "Choose..." %>
+    <div id = "required" ><%= f.label :faculty , "Faculty"%></div>
+    <%= content_tag :span, @new_user.errors[:faculty].first, class: 'form-error' %>
+    <%= f.select :faculty, ["N/A","Arts","Education","Engineering","Law","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
+    <div id = "required" ><%= f.label :program, "Program" %></div>
+    <%= content_tag :span, @new_user.errors[:program].first, class: 'form-error' %>
+    <%= f.select :faculty, ["N/A","My program is not in the list","Arts – English","Arts - Environ. Studies","Arts - French Studies","Arts – Geography","Arts – History","Arts - Lettres françaises","Arts – Translation","Engineering - Biomedical Mechanical Eng.","Engineering - Chemical Eng.","Engineering - Civil Eng.","Engineering - Computer Eng.","Engineering - Computer Science","Engineering - Electrical Eng","Engineering - Mechanical Eng","Engineering - Software Eng.","Law - Civil Law","Law - Civil Law & Int. Dev.","Science – Biochemistry","Science – Biology","Science - Biomedical Sciences","Science - Biophar. Science","Science – Biotechnology","Science – Chemistry","Science - Environ. Science","Science - Financial Maths-Eco","Science – Geology","Science - Geology-Physics","Science - Master - Environmental Sustainability","Science – Maths","Science - Maths-Stats","Science – Physics","Science - Physics-Math","Social Sciences – Anthropology","Social Sciences - Conflict Studies & Human Rights","Social Sciences - Eco. and Public Policy","Social Sciences – Economics","Social Sciences - Int. Dev. And Global.","Social Sciences - International Eco. & Development","Social Sciences - Political Science","Social Sciences - Public Admin.","Social Sciences – Sociology","Telfer School of Management – Accounting","Telfer School of Management – Commerce","Telfer School of Management - E-Business","Telfer School of Management – Entrepreneurship","Telfer School of Management – Finance","Telfer School of Management - HR Management","Telfer School of Management - International Manag.","Telfer School of Management - Man. & Inf. Sys.","Telfer School of Management – Management","Telfer School of Management – Marketing"], prompt: "Choose..." %><br><br>
+
+    <div id = "required" ><%= f.label :year_of_study, "What year are you in?", style: 'margin-bottom: 0.5rem; display: block;' %></div>
+    <%= content_tag :span, @new_user.errors[:year_of_study].first, class: 'form-error' %>
+    <%= f.select :year_of_study, ["N/A", "1", "2", "3","4","5"] , prompt: "Select a year ..." %><br><br>
 
     <%= f.label :use, "What do you plan on using MakerRepo for?", style: 'margin-bottom: 0.5rem; display: block;' %>
     <%= f.select :use, ["Course", "Personal Project", "Business", "Other"] , prompt: "Select a use case..." %>
 
     <%= content_tag :span, text_area_tag(:use), class: 'other' %>
-
+    <br><br>
     <%= f.label :how_heard_about_us, "How did you hear about us? (optional)" %>
     <%= f.text_area :how_heard_about_us, class: "profile-text" %>
 
