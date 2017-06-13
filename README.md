@@ -36,8 +36,8 @@ run the following command in a bash shell in the same directory as Rakefile (mai
 rake db:setup
 ```
 
-### run tests and load fixtures
-fixtures create create active records for testing 
+### Run tests and load fixtures
+Fixtures create active records for testing 
 ```bash
 bundle exec rake
 ```
