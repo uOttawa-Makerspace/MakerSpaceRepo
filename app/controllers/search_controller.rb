@@ -24,7 +24,6 @@ class SearchController < SessionsController
     sort_arr = sort_order
     @repositories = Repository.where("category LIKE ?", "%#{params[:slug]}%").paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
-      paginate :page => params[:page], :per_page => 12
     end
 
     @photos = photo_hash
@@ -34,7 +33,6 @@ class SearchController < SessionsController
     sort_arr = sort_order
     @repositories = Repository.where("equipment LIKE ?", "%#{params[:slug]}%").paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
-      paginate :page => params[:page], :per_page => 12
     end
 
     @photos = photo_hash
