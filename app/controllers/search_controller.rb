@@ -15,7 +15,6 @@ class SearchController < SessionsController
                                   OR category LIKE ?",
                                   "%#{params[:q]}%", "%#{params[:q]}%", "%#{params[:q]}%", "%#{params[:q]}%").paginate(:per_page=>12,:page=>params[:page]) do
 	    order_by sort_arr.first, sort_arr.last
-	    paginate :page => params[:page], :per_page => 12
 	  end
 
     @photos = photo_hash
