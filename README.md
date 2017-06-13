@@ -36,6 +36,12 @@ run the following command in a bash shell in the same directory as Rakefile (mai
 rake db:setup
 ```
 
+### run tests and load fixtures
+fixtures create create active records for testing 
+```bash
+bundle exec rake
+```
+
 ### Fire up solr with:
 ```bash
 sunspot-solr start
