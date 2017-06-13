@@ -1,6 +1,6 @@
 class SearchController < SessionsController
   before_action :current_user
-  # before_action :signed_in 
+  # before_action :signed_in
 
   def explore
     @repositories = Repository.order([sort_order].to_h).page params[:page]
@@ -9,37 +9,35 @@ class SearchController < SessionsController
 
   def search
   	sort_arr = sort_order
-  	@repositories = Repository.search do
-	    keywords params[:q] 
+  	@repositories = Repository.where("title LIKE ?
+                                  OR description LIKE ?
+                                  OR user_username LIKE ?
+                                  OR category LIKE ?",
+                                  "%#{params[:q]}%", "%#{params[:q]}%", "%#{params[:q]}%", "%#{params[:q]}%").paginate(:per_page=>12,:page=>params[:page]) do
 	    order_by sort_arr.first, sort_arr.last
-	    paginate :page => params[:page], :per_page => 12
-	  end.results
+	  end
 
     @photos = photo_hash
   end
 
   def category
     sort_arr = sort_order
-    @repositories = Repository.search do
-      keywords params[:slug]
+    @repositories = Repository.where("category LIKE ?", "%#{params[:slug]}%").paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
-      paginate :page => params[:page], :per_page => 12
-    end.results
+    end
 
     @photos = photo_hash
   end
-  
+
   def equipment
     sort_arr = sort_order
-    @repositories = Repository.search do
-      keywords params[:slug] 
+    @repositories = Repository.where("equipment LIKE ?", "%#{params[:slug]}%").paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
-      paginate :page => params[:page], :per_page => 12
-    end.results
+    end
 
     @photos = photo_hash
   end
-  
+
 
 	private
 
@@ -50,7 +48,7 @@ class SearchController < SessionsController
     	when 'most_makes' then [:make, :desc]
     	when 'recently_updated' then [:updated_at, :desc]
     	else [:created_at, :desc]
-    end			
+    end
 	end
 
   def photo_hash
