@@ -7,7 +7,7 @@
   <% else %>
     <span class="header-menu-item menu-button">
       <%= link_to user_path(@user.username) do %>
-        <%= image_tag @user.avatar.url, class: 'main-avatar-thumbnail', alt: 'Avatar' %> 
+        <%= image_tag @user.avatar.url, class: 'main-avatar-thumbnail', alt: 'Avatar' %>
         <%= @user.username %>
       <% end %>
       <ul class="menu">
@@ -19,8 +19,8 @@
         <li><%= link_to 'Sign Out', logout_path %></li>
       </ul>
     </span>
-    <span class="header-menu-item"><%= link_to 'Create', new_repository_path(@user.username) %></span>
-    <span class="header-menu-item"><%= link_to 'Explore', explore_path %></span>
+    <span class="header-menu-item"><%= link_to 'Create/Créer', new_repository_path(@user.username) %></span>
+    <span class="header-menu-item"><%= link_to 'Explore/Découvrez', explore_path %></span>
   <% end %>
   <span class="msr-logo">
     <%= link_to root_path do %>Maker<b>Repo</b><% end %>
@@ -32,6 +32,3 @@
   </div>
 </section>
 <section id="header-end"></section>
-
-
-
