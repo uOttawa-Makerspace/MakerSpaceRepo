@@ -1,6 +1,6 @@
 class RepositoriesController < SessionsController
   before_action :current_user
-  before_action :signed_in, except: [:index, :show]
+  before_action :signed_in, except: [:index, :show, :download, :download_files]
   before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
 
   def show
@@ -11,13 +11,13 @@ class RepositoriesController < SessionsController
     @comments = @repository.comments.order(comment_filter).page params[:page]
     @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
   end
-  
+
   def download
     url = "http://s3-us-west-2.amazonaws.com/uottawa-makerspace#{params[:file]}"
     data = open(url)
     send_data data.read, :type => data.content_type, :filename => File.basename(url), :x_sendfile => true
   end
-  
+
   def download_files
     @files = @repository.repo_files.order("LOWER(file_file_name)")
     tmp_filename = "tmp_zip_#{@repository.title}" << Time.now.strftime("%Y%m%d%H%M%S").to_s << ".zip"
@@ -29,7 +29,7 @@ class RepositoriesController < SessionsController
         zos.print IO.read(attachment.path)
       end
     end
-    
+
     filename = "#{@repository.title}_files_MakerRepo.zip"
     send_file temp_file.path, :type => 'application/zip',
                               :disposition => 'attachment',
@@ -41,7 +41,7 @@ class RepositoriesController < SessionsController
   def new
     @repository = Repository.new
   end
-  
+
   def edit
     if (@repository.user_username == @user.username) || (@user.role == "admin")
       @photos = @repository.photos.first(5)
@@ -130,13 +130,13 @@ class RepositoriesController < SessionsController
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end if params['images'].present?
     end
-    
+
     def create_files
       params['files'].each do |f|
         RepoFile.create(file: f, repository_id: @repository.id)
       end if params['files'].present?
     end
-        
+
     def update_photos
       @repository.photos.each do |img|
         if params['deleteimages'].include?(img.image_file_name) #checks if the file should be deleted
@@ -155,7 +155,7 @@ class RepositoriesController < SessionsController
         end
       end if params['images'].present?
     end
-        
+
     def update_files
       @repository.repo_files.each do |f|
         if params['deletefiles'].include?(f.file_file_name) #checks if the file should be deleted
@@ -172,17 +172,16 @@ class RepositoriesController < SessionsController
         end
       end if params['files'].present?
     end
-    
+
     def create_categories
       params['categories'].first(5).each do |c|
         Category.create(name: c, repository_id: @repository.id)
       end if params['categories'].present?
     end
-        
+
     def create_equipments
       params['equipments'].first(5).each do |e|
         Equipment.create(name: e, repository_id: @repository.id)
       end if params['equipments'].present?
     end
 end
-
