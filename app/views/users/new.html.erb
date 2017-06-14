@@ -1,4 +1,8 @@
 <% provide(:title, "Sign Up") %>
+
+
+
+
 <section id="signup">
 
 
@@ -48,10 +52,48 @@
     <%= content_tag :span, @new_user.errors[:gender].first, class: 'form-error' %>
     <%= f.select :gender, ["Male", "Female", "Other"] , prompt: "Choose..." %><br><br>
 
-    <div id = "required" ><%= f.label :identity, "I am a ..." %></div>
-    <%= content_tag :span, @new_user.errors[:identity].first, class: 'form-error' %>
-    <%= f.select :identity, ["Grad", "Undergrad", "Faculty Member", "Community Member"] , prompt: "Choose..." %><br><br>
-  
+<!-- **Cannot figure out styles for the radio buttons :( -->
+ <section id="radiobutton">
+  <div id= "label">
+    <label class="field">I am a ...
+      <span class="required">*</span>
+    </label>
+  </div>
+  <div id="radiobutton" align="left">
+    <table>
+        <td valign="left">
+            <input id="id-1" class="class1" name="identity" value="Grad" type="radio">
+            <label for="id-1">Grad
+            <br>
+            </label>
+        </td>
+
+        <td valign="left">
+            <input id="id-2" class="class2" name="identity" value="Undergrad" type="radio">
+            <label for="id-2">Undergrad
+            <br>
+            </label>
+        </td>
+
+        <td valign="left">
+            <input id="id-3" class="class2" name="identity" value="Faculty Memeber" type="radio">
+            <label for="id-3">Faculty Memeber
+            <br>
+            </label>
+        </td>
+
+        <td valign="left">
+            <input id="id-4" class="class1" name="identity" value="Community Member" type="radio">
+            <label for="id-4">Community Member
+            <br>
+            </label>
+        </td>
+
+    </table>
+  </div>
+</section>
+
+ <section id="student">
     <div id = "required" ><%= f.label :student_id , "Student Number (if applicable)" %></div>
     <%= content_tag :span, @new_user.errors[:student_id].first, class: 'form-error' %>
     <%= f.text_field :student_id, autofocus: true %>
@@ -68,6 +110,7 @@
     <div id = "required" ><%= f.label :year_of_study, "What year are you in?", style: 'margin-bottom: 0.5rem; display: block;' %></div>
     <%= content_tag :span, @new_user.errors[:year_of_study].first, class: 'form-error' %>
     <%= f.select :year_of_study, ["N/A", "1", "2", "3","4","5"] , prompt: "Select a year ..." %><br><br>
+</section>
 
     <%= f.label :use, "What do you plan on using MakerRepo for?", style: 'margin-bottom: 0.5rem; display: block;' %>
     <%= f.select :use, ["Course", "Personal Project", "Business", "Other"] , prompt: "Select a use case..." %>
