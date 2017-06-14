@@ -70,10 +70,10 @@
   <div id="user-show-admin" class="certifications">
     <hr>
     <div class="title">Certifications</div>
-    <% if @certifications.present? %>
+    <% if @edit_admin_user.certifications.present? %>
       <div>This user is currently certified to use the following pieces of equipment:</div>
       <div id="cert-container">
-        <% @certifications.each do |certification| %>
+        <% @edit_admin_user.certifications.each do |certification| %>
           <span class="certification"><%= certification.training %></span>
         <% end %>
       </div>
