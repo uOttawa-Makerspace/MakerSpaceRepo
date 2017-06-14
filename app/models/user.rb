@@ -55,6 +55,7 @@ class User < ActiveRecord::Base
   # validates :identity,
   #   presence: {message: "Please identify who you are"}
 
+
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
 
