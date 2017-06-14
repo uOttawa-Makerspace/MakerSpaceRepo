@@ -1,6 +1,6 @@
 class RepositoriesController < SessionsController
   before_action :current_user
-  before_action :signed_in, except: [:index, :show]
+  before_action :signed_in, except: [:index, :show, :download, :download_files]
   before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
 
   def show

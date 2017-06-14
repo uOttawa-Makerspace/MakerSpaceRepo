@@ -10,9 +10,10 @@
 
   <section id="repository-photos">
 
-    <div id="show-photo">
-      <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.width, height: @photos.first.height} %>
-    </div>
+
+      <div id="show-photo">
+        <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.width, height: @photos.first.height} %>
+      </div>
 
 
     <div id="photo-slide">
