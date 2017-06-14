@@ -48,23 +48,6 @@ class UsersControllerTest < ActionController::TestCase
   end
 
   ##########
-  #additional_info tests
-  test "should be able to get additional_info" do
-    session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
-    get :additional_info, username: "bob"
-    assert_response :ok
-  end
-
-  test "should be able to patch additional_info" do
-    session[:user_id] = User.find_by(username: "mary").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
-    patch :additional_info, username: "mary", user: {faculty: "engineering"} #from science
-    assert_equal "engineering", User.find_by(username: "mary").faculty
-    assert_redirected_to settings_profile_path
-  end
-
-  ##########
   #update tests
   test "user should be able to update profile with patch" do
     session[:user_id] = User.find_by(username: "bob").id
