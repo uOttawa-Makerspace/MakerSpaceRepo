@@ -62,5 +62,12 @@ class User < ActiveRecord::Base
     self.password_confirmation = @pword
   end
 
+  def admin?
+    self.role.eql?("admin")
+  end
+
+  def staff?
+    self.role.eql?("staff") || self.role.eql?("admin")
+  end
 
 end

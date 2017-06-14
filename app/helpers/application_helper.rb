@@ -11,14 +11,6 @@ module ApplicationHelper
     @github_client ||= Octokit::Client.new(access_token: @user.access_token) if github?
   end
 
-  def admin?
-    @user.role.eql?("admin")
-  end
-
-  def staff?
-    @user.role.eql?("staff") or @user.role.eql?("admin")
-  end
-
   def signed_in?
     session[:user_id].present?
   end

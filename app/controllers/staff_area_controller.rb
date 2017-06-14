@@ -4,7 +4,8 @@ class StaffAreaController < SessionsController
   private
 
   def ensure_staff
-    unless staff?
+    @user = current_user
+    unless @user.staff?
       redirect_to '/' and return
     end
   end
