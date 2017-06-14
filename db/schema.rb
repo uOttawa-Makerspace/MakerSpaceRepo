@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170609004133) do
+ActiveRecord::Schema.define(version: 20170614162945) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -164,6 +164,14 @@ ActiveRecord::Schema.define(version: 20170609004133) do
   add_index "training_sessions", ["training_id"], name: "index_training_sessions_on_training_id", using: :btree
   add_index "training_sessions", ["user_id"], name: "index_training_sessions_on_user_id", using: :btree
 
+  create_table "training_sessions_users", id: false, force: :cascade do |t|
+    t.integer "training_session_id"
+    t.integer "user_id"
+  end
+
+  add_index "training_sessions_users", ["training_session_id"], name: "index_training_sessions_users_on_training_session_id", using: :btree
+  add_index "training_sessions_users", ["user_id"], name: "index_training_sessions_users_on_user_id", using: :btree
+
   create_table "trainings", force: :cascade do |t|
     t.string   "name"
     t.datetime "created_at", null: false
@@ -202,7 +210,6 @@ ActiveRecord::Schema.define(version: 20170609004133) do
     t.integer  "reputation",           default: 0
     t.string   "role",                 default: "regular_user"
     t.boolean  "terms_and_conditions"
-    t.string   "training_session_id"
   end
 
   add_foreign_key "categories", "repositories"

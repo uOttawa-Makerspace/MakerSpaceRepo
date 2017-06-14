@@ -8,7 +8,7 @@ class User < ActiveRecord::Base
   has_many :repositories, dependent: :destroy
   has_many :certifications, dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
-  has_many :training_sessions
+  has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories
 
   validates :name,
