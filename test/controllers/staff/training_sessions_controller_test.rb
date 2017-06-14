@@ -28,7 +28,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
       assert TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                    timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                    user_id: @user.id).present?
-      assert !TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
+      refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                     timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                     user_id: @user.id).present?
       assert_redirected_to (:back)
@@ -43,7 +43,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
       assert TrainingSession.where(training_id: Training.find_by(name: "lathe_1"),
                                    timeslot: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00"),
                                    user_id: @user.id).present?
-      assert !TrainingSession.where(training_id: Training.find_by(name: "lathe_1"),
+      refute TrainingSession.where(training_id: Training.find_by(name: "lathe_1"),
                                     timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                     user_id: @user.id).present?
       assert_redirected_to (:back)
@@ -54,7 +54,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     delete :delete_training_session,
       training_session_name: "lathe_1",
       training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00")
-    assert !TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
+    refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                   timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                   user_id: @user.id).present?
     assert_redirected_to (:back)

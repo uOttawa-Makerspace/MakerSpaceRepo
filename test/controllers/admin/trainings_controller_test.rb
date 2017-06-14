@@ -18,7 +18,7 @@ class Admin::TrainingsControllerTest < ActionController::TestCase
   test "admin can rename training" do
     patch :rename_training, training_name: "lathe_1", training_new_name: "lathe_2"
     assert_equal flash[:notice], "Training renamed successfully"
-    assert !Training.find_by(name: "lathe_1").present?
+    refute Training.find_by(name: "lathe_1").present?
     assert Training.find_by(name: "lathe_2").present?
     assert_redirected_to admin_settings_path
   end
@@ -26,7 +26,7 @@ class Admin::TrainingsControllerTest < ActionController::TestCase
   test "admin can remove training" do
     delete :remove_training, training_name: "lathe_1"
     assert_equal flash[:notice], "Training removed successfully"
-    assert !Training.find_by(name: "lathe_1").present?
+    refute Training.find_by(name: "lathe_1").present?
     assert_redirected_to admin_settings_path
   end
 
