@@ -61,11 +61,11 @@
         <div class="user-certifications-container">
             <% @repo_user.certifications.each do |certification| %>
               <%= content_tag :span, certification.training %>
-              <%= link_to "revoke", revoke_certification_admin_settings_path(id: certification.id), method: :delete,
+              <%= link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
                     style: 'color:#FFF;  background-color: #b02a12;padding: 0.5rem 1rem;text-color:#FFFF' %>
             <% end %>
             <br></br>
-            <%= form_tag set_role_admin_settings_path(@user, id: @repo_user.id), method: :patch do %>
+            <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
                 <%= radio_button_tag :role, "regular_user" %>
                 <%= label_tag :regular %><br></br>
                 <%= radio_button_tag :role, "staff" %>

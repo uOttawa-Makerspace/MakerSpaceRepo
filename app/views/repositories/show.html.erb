@@ -23,7 +23,7 @@
 
     <br></br>
     <% if admin?%>
-        <%= link_to "Delete", delete_repository_admin_settings_path(id: @repository.id), method: :delete,
+        <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
               style: 'color:#FFF;  background-color: #b02a12;padding: 0.5rem 1rem;text-color:#FFFF' %>
     <% end %>
 

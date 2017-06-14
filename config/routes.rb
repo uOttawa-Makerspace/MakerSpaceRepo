@@ -79,6 +79,18 @@ Rails.application.routes.draw do
       collection do
         get 'search'
         post 'bulk_add_certifications'
+        patch 'set_role'
+        delete 'delete_repository'
+        delete 'revoke_certification'
+      end
+    end
+
+    resources :trainings do
+      collection do
+        post 'add_training'
+        patch 'rename_training'
+        delete 'remove_training'
+
       end
     end
 
@@ -92,12 +104,7 @@ Rails.application.routes.draw do
         post 'remove_equipment'
         post 'submit_pi'
         post 'remove_pi'
-        post 'add_training'
-        patch 'rename_training'
-        patch 'set_role'
-        delete 'remove_training'
-        delete 'delete_repository'
-        delete 'revoke_certification'
+
       end
     end
   end
