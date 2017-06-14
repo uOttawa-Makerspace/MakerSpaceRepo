@@ -11,8 +11,9 @@ class User < ActiveRecord::Base
   accepts_nested_attributes_for :repositories
 
   validates :name,
+    presence: { message: "Your name is required." },
     length: { maximum: 50, message: 'Your name must be less than 50 characters.' }
-
+   
   validates :username,
     presence: { message: "Your username is required." },
     uniqueness: { message: "Your username is already in use." },
@@ -36,6 +37,7 @@ class User < ActiveRecord::Base
     format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/,
              message: "Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."}
 
+
   validates :gender,
     presence: {message: "Your gender is required."}
 
@@ -53,6 +55,7 @@ class User < ActiveRecord::Base
 
   validates :identity,
     presence: {message: "Please identify who you are"}
+
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
 
