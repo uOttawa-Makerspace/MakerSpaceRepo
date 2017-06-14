@@ -1,5 +1,5 @@
 class MsrMailer < ApplicationMailer
-	# **Have to check this**
+
 	def welcome_email(user)
 		@user = user
 		@url  = 'http://makerepo.com/login'
