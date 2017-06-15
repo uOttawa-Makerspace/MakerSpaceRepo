@@ -1,19 +1,10 @@
 class Admin::ReportGeneratorController < AdminAreaController
-  # before_action :current_user, :ensure_admin
+
   layout 'admin_area'
 
   def index
   end
 
-  # def ensure_admin
-  #     unless admin?
-  #       redirect_to '/' and return
-  #     end
-  # end
-
-  def show
-  end
-  
   def report1
   	@users = User.all
 
