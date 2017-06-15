@@ -11,4 +11,5 @@ class ReportGeneratorController < AdminAreaController
         redirect_to '/' and return
       end
   end
+
 end

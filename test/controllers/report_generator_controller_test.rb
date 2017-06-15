@@ -1,7 +1,6 @@
 require 'test_helper'
 
 class ReportGeneratorControllerTest < ActionController::TestCase
-
 #This test fails
 
  #  test "admins succeed at loading Reports page" do
@@ -15,4 +14,5 @@ class ReportGeneratorControllerTest < ActionController::TestCase
   	get :index
   	assert_redirected_to root_path
   end
+
 end
