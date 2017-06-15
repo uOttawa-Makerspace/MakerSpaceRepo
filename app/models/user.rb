@@ -60,6 +60,14 @@ class User < ActiveRecord::Base
     self.password = @pword
     self.password_confirmation = @pword
   end
-  
-  
+
+  def self.to_csv(*attributes)
+    CSV.generate do |csv|
+      csv << attributes
+    
+      all.each do |user|
+        csv << user.attributes.values_at(*attributes)
+      end
+    end
+  end 
 end
