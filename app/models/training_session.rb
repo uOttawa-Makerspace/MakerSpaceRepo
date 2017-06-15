@@ -9,6 +9,6 @@ class TrainingSession < ActiveRecord::Base
   validate :is_staff
 
   def is_staff
-    errors.add(:string, "user must be staff") if self.user.role != "staff"
+    errors.add(:string, "user must be staff") unless self.user.staff?
   end
 end
