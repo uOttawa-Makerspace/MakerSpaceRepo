@@ -14,3 +14,9 @@
 //     $("[id^=student]").toggle(this.value == 'Undergrad');
 //   });
 // });
+
+
+
+$(document).ready(function() {
+  $("#states").select2({});
+});
