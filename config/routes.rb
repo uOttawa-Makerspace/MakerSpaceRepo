@@ -115,13 +115,11 @@ Rails.application.routes.draw do
 
     resources :training_sessions do
       collection do
-        post 'new_training_session'
-        post 'create_training_session'
         post 'add_trainees_to_training_session'
         post 'certify_trainees'
         patch 'rename_training_session'
         patch 'reschedule_training_session'
-        delete 'delete_training_session'
+        delete 'delete_training_session' 
       end
     end
   end

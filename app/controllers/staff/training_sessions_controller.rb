@@ -38,128 +38,93 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def new
+    training_session = TrainingSession.new(training_session_params)
     if params['training_session_users'].present?
-        @training_session = TrainingSession.new(training_id: Training.first.id, user_id: @staff.id, timeslot: DateTime.now)
-        params['training_session_users'].each do |user|
-          @training_session.users << user
-        end
-        @training_session.save
-        render json: { redirect_uri: "#{new_training_session_staff_training_session_path(@training_session)}" }
-        redirect_to @training_session
+      params['training_session_users'].each do |user|
+        training_session.users << User.find(user)
+      end
     end
+    redirect_to :back
   end
 
-  def create_training_session
-    @staff = current_user
-    if !params['training_session_name'].present? || !Training.find_by(name: params['training_session_name']).present?
-      flash[:alert] = "Please enter a valid training subject"
-    elsif !params['training_session_time'].present?
-      flash[:alert] = "Please enter the training session's time slot"
-    else
-      @training_session = TrainingSession.new(training_id: Training.find_by(name: params['training_session_name']).id, user_id: @staff.id, timeslot: params['training_session_time'])
-      if params['training_session_course'].present?
-        @training_session.course = params['training_session_course']
-      end
-      @training_session.save
+  def create
+    staff = current_user
+    training_session = TrainingSession.new(training_session_params)
+    if training_session.save
       flash[:notice] = "Training session created succesfully"
     end
     redirect_to staff_training_sessions_url
   end
 
   def rename_training_session
-    @staff = current_user
-    if !params['training_session_name'].present? || !Training.find_by(name: params['training_session_name']).present?
-      flash[:alert] = "Please enter a valid training subject"
-    elsif !params['training_session_time'].present?
-      flash[:alert] = "Please enter the training session's time slot"
-    elsif !params['training_session_new_name'].present? || !Training.find_by(name: params['training_session_new_name']).present?
-      flash[:alert] = "Please select a valid new training subject"
-    else
-      @training_session = TrainingSession.where(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time'])[0]
-      @training_session.training_id = Training.find_by(name: params['training_session_new_name']).id
-      @training_session.save
-      flash[:notice] =  "Training session renamed succesfully"
+    staff = current_user
+    training_session = TrainingSession.find_by(training_session_params)
+    if params['training_session_new_training_id'].present?
+      training_session.training_id = params['training_session_new_training_id']
+      if training_session.save
+        flash[:notice] = "Training session renamed succesfully"
+      end
     end
-    redirect_to (:back)
+    redirect_to :back
   end
 
   def reschedule_training_session
-    @staff = current_user
-    if !params['training_session_name'].present? || !Training.find_by(name: params['training_session_name']).present?
-      flash[:alert] = "Please enter a valid training subject"
-    elsif !params['training_session_time'].present?
-      flash[:alert] = "Please enter the training session's time slot"
-    elsif !params['training_session_new_time'].present?
-      flash[:alert] = "Please enter the training session's new time slot"
-    else
-      @training_session = TrainingSession.where(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time'])[0]
-      @training_session.timeslot = params['training_session_new_time']
-      @training_session.save
-      flash[:notice] =  "Training session rescheduled succesfully"
+    staff = current_user
+    training_session = TrainingSession.find_by(training_session_params)
+    if params['training_session_new_time'].present?
+      training_session.timeslot = params['training_session_new_time']
+      if training_session.save
+        flash[:notice] = "Training session rescheduled succesfully"
+      end
     end
-    redirect_to (:back)
+    redirect_to :back
   end
 
   def delete_training_session
-    @staff = current_user
-    if params['training_session_name'].present? &&
-       params['training_session_time'].present? &&
-      if TrainingSession.find_by(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time']).present?
-        TrainingSession.find_by(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time']).destroy
+    staff = current_user
+    training_session = TrainingSession.find_by(training_session_params)
+    if training_session.destroy
         flash[:notice] = "Training session deleted succesfully"
-      else
-        flash[:alert] = "No training session with the given parameters!"
-      end
     end
-    redirect_to (:back)
-
+    redirect_to :back
   end
 
   def add_trainees_to_training_session
-    @staff = current_user
-    if params['training_session_name'].present? &&
-       params['training_session_new_trainees'].present? &&
-       params['training_session_time'].present?
-      if TrainingSession.where(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time']).present?
-        @training_session = TrainingSession.where(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time'])[0]
-        params['training_session_new_trainees'].each do |trainee|
-          if !@training_session.users.include? User.find(trainee)
-            @training_session.users << User.find(trainee)
-            flash[:notice] = "User successfuly added to the training session"
-          else
-            flash[:alert] = "User is already in this training session!"
-          end
-        end
-      else
-        flash[:alert] = "Invalid parameters!"
+    staff = current_user
+    training_session = TrainingSession.find_by(training_session_params)
+    params['training_session_new_trainees'].each do |trainee|
+      unless training_session.users.include? User.find(trainee)
+        training_session.users << User.find(trainee)
       end
-    else
-      flash[:alert] = "Invalid parameters!"
     end
-    redirect_to (:back)
+    if training_session.save
+      flash[:notice] = "Users successfuly added to the training session"
+    end
+    redirect_to :back
   end
 
   def certify_trainees
-    @staff = current_user
-    if params['training_session_name'].present? &&
-       params['training_session_graduates'].present? &&
-       params['training_session_time'].present?
-       if !Training.find_by(name: params['training_session_name']).present?
-         flash[:alert] = "Training not found!"
-       else
-         @training_session = TrainingSession.where(training_id: Training.find_by(name: params['training_session_name']), user_id: @staff.id, timeslot: params['training_session_time'])[0]
-         params['training_session_graduates'].each do |graduate|
-           if @training_session.users.include? User.find(graduate)
-             @certification = Certification.new(user_id: graduate, trainer_id: @staff.id, training: params['training_session_name'])
-             @certification.save
-             flash[:notice] = "Certified successfuly"
+    staff = current_user
+    training_session = TrainingSession.find_by(training_session_params)
+    if params['training_session_graduates'].present?
+      params['training_session_graduates'].each do |graduate|
+         if training_session.users.include? User.find(graduate)
+           unless User.find(graduate).certifications.include? Certification.find_by(training: Training.find(training_session_params['training_id']).name)
+             certification = Certification.new(user_id: graduate, trainer_id: staff.id, training: Training.find(training_session_params['training_id']).name)
+             certification.save
            end
          end
        end
-     else
-       flash[:alert] = "Invalid parameters!"
+       flash[:notice] = "Users certified successfuly"
      end
-     redirect_to (:back)
+     redirect_to :back
   end
+
+
+  private
+
+    def training_session_params
+      params.require(:training_session).permit(:user_id, :training_id, :timeslot, :course)
+    end
 
 end

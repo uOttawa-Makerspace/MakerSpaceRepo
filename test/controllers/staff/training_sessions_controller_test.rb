@@ -9,22 +9,35 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     @request.env['HTTP_REFERER'] = staff_training_sessions_url
   end
 
+
+  test "staff can initiate a new training_session" do
+    post :new, training_session: {
+      training_id: "1",
+      user_id: @user.id
+    }, training_session_users: users(:bob,:mary)
+    assert_redirected_to :back
+  end
+
+
   test "staff can create a new training session" do
-    post :create_training_session,
-      training_session_name: "welding_3",
-      training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00")
+    post :create, training_session: {
+      training_id: "2",
+      timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
+      user_id: @user.id
+    }
     assert TrainingSession.where(training_id: Training.find_by(name: "welding_3"),
                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-                                  user_id: @user.id).present?
+                                 user_id: @user.id).present?
     assert_equal flash[:notice], "Training session created succesfully"
     assert_redirected_to staff_training_sessions_url
   end
 
   test "staff can rename a training session by choosing a different training" do
-    patch :rename_training_session,
-      training_session_name: "lathe_1",
-      training_session_new_name: "welding_3",
-      training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00")
+    patch :rename_training_session, training_session:{
+      training_id: "1",
+      timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
+      user_id: @user.id
+    }, training_session_new_training_id: "2"
       assert TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                    timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                    user_id: @user.id).present?
@@ -36,14 +49,15 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
   test "staff can reschedule a training session by choosing a different timeslot" do
-    patch :reschedule_training_session,
-      training_session_name: "lathe_1",
-      training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-      training_session_new_time: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00")
-      assert TrainingSession.where(training_id: Training.find_by(name: "lathe_1"),
+    patch :reschedule_training_session, training_session:{
+      training_id: "1",
+      timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
+      user_id: @user.id
+    }, training_session_new_time: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00")
+      assert TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                    timeslot: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00"),
                                    user_id: @user.id).present?
-      refute TrainingSession.where(training_id: Training.find_by(name: "lathe_1"),
+      refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                     timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                     user_id: @user.id).present?
       assert_redirected_to (:back)
@@ -51,9 +65,11 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
   test "staff can delete a training session" do
-    delete :delete_training_session,
-      training_session_name: "lathe_1",
-      training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00")
+    delete :delete_training_session, training_session:{
+      training_id: "1",
+      timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
+      user_id: @user.id
+    }
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                   timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                   user_id: @user.id).present?
@@ -62,38 +78,35 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
   test "staff can add new trainees to exisiting training sessions" do
-   post :add_trainees_to_training_session,
-     training_session_name: "lathe_1",
-     training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-     training_session_new_trainees: [User.find_by(username: "bob")]
+   post :add_trainees_to_training_session, training_session:{
+     training_id: "1",
+     timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
+     user_id: @user.id
+   }, training_session_new_trainees: users(:bob, :mary)
    assert_redirected_to :back
-   assert_equal flash[:notice], "User successfuly added to the training session"
-   @training_session = TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
+   training_session = TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                  user_id: @user.id)
-   assert @training_session.users.include? User.find_by(username: "bob")
-   post :add_trainees_to_training_session,
-      training_session_name: "lathe_1",
-      training_session_time: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-      training_session_new_trainees: [User.find_by(username: "mary"), User.find_by(username: "bob")]
+   assert_equal flash[:notice], "Users successfuly added to the training session"
+   assert training_session.users.include? User.find_by(username: "bob")
+   assert training_session.users.include? User.find_by(username: "mary")
    assert_redirected_to :back
-   assert_equal flash[:alert], "User is already in this training session!"
-   assert @training_session.users.include? User.find_by(username: "mary")
   end
 
 
   test "staff can certify users in training session" do
-    @training_session = training_sessions(:lathe_session)
-    @training_session.users << User.find_by(username: "adam")
-    @training_session.users << User.find_by(username: "mary")
-    @training_session.save
-    assert @training_session.users.include? User.find_by(username: "adam")
-    assert @training_session.users.include? User.find_by(username: "mary")
-    post :certify_trainees,
-      training_session_name: Training.find(@training_session.training_id).name,
-      training_session_graduates: [User.find_by(username: "mary"), User.find_by(username: "adam")],
-      training_session_time: @training_session.timeslot
-    assert_equal flash[:notice], "Certified successfuly"
+    training_session = training_sessions(:lathe_session)
+    training_session.users << User.find_by(username: "adam")
+    training_session.users << User.find_by(username: "mary")
+    training_session.save
+    assert training_session.users.include? User.find_by(username: "adam")
+    assert training_session.users.include? User.find_by(username: "mary")
+    post :certify_trainees, training_session:{
+      training_id: "1",
+      timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
+      user_id: @user.id
+    }, training_session_graduates: [User.find_by(username: "mary"), User.find_by(username: "adam")]
+    assert_equal flash[:notice], "Users certified successfuly"
     assert_redirected_to :back
     assert Certification.find_by(user_id: "1337", trainer_id: "777", training: "lathe_1").present?
   end

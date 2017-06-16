@@ -4,8 +4,8 @@ class TrainingSession < ActiveRecord::Base
   has_and_belongs_to_many :users
   has_many :certifications
 
-  validates :training, presence: true
-  validates :user,     presence: true
+  validates :training, presence: { message: "A training subject is required"}
+  validates :user, presence: { message: "A trainer subject is required"}
   validate :is_staff
 
   def is_staff
