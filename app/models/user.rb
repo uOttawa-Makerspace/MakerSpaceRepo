@@ -33,7 +33,6 @@ class User < ActiveRecord::Base
   validates :password, 
     presence: { message: "Your password is required." },
     confirmation: {message: "Your passwords do not match."},
-    # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
     format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/,
              message: "Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."}
 
@@ -42,17 +41,17 @@ class User < ActiveRecord::Base
     presence: {message: "Your gender is required."}
 
   validates :faculty,
-    presence: {message: "Please provide your faculty or choose N/A if not applicable"}, if: :student?
+    presence: {message: "Please provide your faculty"}, if: :student?
 
   validates :program,
-    presence: {message: "Please provide your program or choose N/A if not applicable"}, if: :student?
+    presence: {message: "Please provide your program"}, if: :student?
 
   validates :year_of_study,
     presence: {message: "Please provide your year of study"}, if: :student?
 
   validates :student_id,
     presence: {message: "Please provide your student Number"}, if: :student?,
-    length: { is: 7, message: 'Your username must be less than 20 characters.' }
+    length: { is: 7, message: 'Your username must be 7 characters.' }
 
 
   validates :identity,
