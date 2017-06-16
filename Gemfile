@@ -27,6 +27,7 @@ gem 'aws-sdk', '~> 2.0'
 gem 'rubyzip', '~> 1.1', require: 'zip'
 gem 'will_paginate'
 gem 'mocha'
+gem "select2-rails"
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
