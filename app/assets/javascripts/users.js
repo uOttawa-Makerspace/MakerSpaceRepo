@@ -1,14 +1,16 @@
-$(document).ready(function() {
-  $("[id^=student]").hide();
-  $(".class1").change(function() {
+// $(document).ready(function() {
+//   $("[id^=hidden]").hide();
+//   $("div.radioselect").change(
+//   	function() {
+//     $("[id^=hidden]").toggle(this.value == "student");
+//   	}
+//   );
+// }
+// );
 
-    $("[id^=student]").toggle(this.value == 'Grad');
-  });
-});
-
-$(document).ready(function() {
-  $("[id^=student]").hide();
-  $(".class2").change(function() {
-    $("[id^=student]").toggle(this.value == 'Undergrad');
-  });
-});
+// $(document).ready(function() {
+//   $("[id^=student]").hide();
+//   $(".class2").change(function() {
+//     $("[id^=student]").toggle(this.value == 'Undergrad');
+//   });
+// });
