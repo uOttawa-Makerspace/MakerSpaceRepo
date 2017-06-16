@@ -37,24 +37,26 @@ class User < ActiveRecord::Base
     format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/,
              message: "Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."}
 
-#** Should add condition to these validations **
-  # validates :gender,
-  #   presence: {message: "Your gender is required."}
 
-  # validates :faculty,
-  #   presence: {message: "Please provide your faculty or choose N/A if not applicable"}
+  validates :gender,
+    presence: {message: "Your gender is required."}
 
-  # validates :program,
-  #   presence: {message: "Please provide your program or choose N/A if not applicable"}
+  validates :faculty,
+    presence: {message: "Please provide your faculty or choose N/A if not applicable"}, if: :student?
 
-  # validates :year_of_study,
-  #   presence: {message: "Please provide your year of study"}
+  validates :program,
+    presence: {message: "Please provide your program or choose N/A if not applicable"}, if: :student?
 
-  # validates :student_id,
-  #   presence: {message: "Please provide your student Number"}
+  validates :year_of_study,
+    presence: {message: "Please provide your year of study"}, if: :student?
 
-  # validates :identity,
-  #   presence: {message: "Please identify who you are"}
+  validates :student_id,
+    presence: {message: "Please provide your student Number"}, if: :student?,
+    length: { is: 7, message: 'Your username must be less than 20 characters.' }
+
+
+  validates :identity,
+    presence: {message: "Please identify who you are"}
 
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
@@ -81,5 +83,7 @@ class User < ActiveRecord::Base
     self.password_confirmation = @pword
   end
   
-  
+  def student?
+    self.identity.eql?("student")
+  end
 end
