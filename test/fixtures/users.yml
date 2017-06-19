@@ -13,6 +13,10 @@ bob:
   faculty: engineering
   use: null
   description: null
+  identity: student
+  program: Mechanical
+  year_of_study: 3
+  student_id: 1234567
 
 
 mary:
@@ -27,6 +31,11 @@ mary:
   faculty: science
   use: null
   description: null
+  identity: student
+  program: Biomedical
+  year_of_study: 1
+  student_id: 9876543
+
 
 adam:
   username: adam
@@ -35,3 +44,4 @@ adam:
   terms_and_conditions: true
   password: Password3
   role: admin
+  identity: faculty_member
