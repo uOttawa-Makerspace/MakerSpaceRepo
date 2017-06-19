@@ -56,8 +56,22 @@ section#signup {
       }
     }
 
+  input.show_extra{
+    width: 15px;
+  }
 
+  .programs{
+      display: block;
+      padding: 0.5rem;
+      width: 420px;
+      height: 200px;
+      border-radius: 2px;
+      border: 2px solid #aaa;
+      margin: 0.5rem 0 1rem;
+      font: 300 1rem 'Raleway', helvetica, sans-serif;
+  }
 }
+
 
 div.signup-breadcrumb{
   padding-top: 5%;
