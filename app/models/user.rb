@@ -83,6 +83,6 @@ class User < ActiveRecord::Base
   end
   
   def student?
-    self.identity.eql?("student")
+    self.identity.eql?("grad") || self.identity.eql?("undergrad")
   end
 end
