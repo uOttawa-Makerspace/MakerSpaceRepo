@@ -54,7 +54,10 @@
 
     <div id = "required" ><%= f.label :identity, "I am a ..." %></div>
 
-    <%= f.radio_button(:identity, "student", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Student")  %><br>
+    <%= f.radio_button(:identity, "grad", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Grad")  %><br>
+    
+    <%= f.radio_button(:identity, "undergrad", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Undergrad")  %><br>
+
 
     <%= f.radio_button(:identity, "faculty_member", :class => "show_extra",:style => "display:inline") %><%= f.label(:identity_other, "Faculty Member") %><br>
 
