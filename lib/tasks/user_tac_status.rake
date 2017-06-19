@@ -1,13 +1,8 @@
 namespace :user_tac_status do
 
-  desc "query the db for users who haven't signed the terms of service
+  desc "query the db for users who haven't signed the terms and conditions
         or it's been a year since they did so."
-  task check_status_task: :environment do
-
-  end
-
-  desc "email those users with a link to sign it again"
-  task email_users_task: :environment do
+  task check_status: :environment do
 
   end
 
