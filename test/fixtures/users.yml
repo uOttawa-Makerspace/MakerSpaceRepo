@@ -19,7 +19,7 @@ mary:
   username: mary
   name: Mary
   email: mary@gmail.com
-  terms_and_conditions: true
+  terms_and_conditions: false
   password: Password2
   url: null
   location: brunsfield
@@ -35,3 +35,10 @@ adam:
   terms_and_conditions: true
   password: Password3
   role: admin
+
+sara:
+  username: sara
+  name: Sara
+  email: sara@sara.com
+  terms_and_conditions: false
+  password: Password1
