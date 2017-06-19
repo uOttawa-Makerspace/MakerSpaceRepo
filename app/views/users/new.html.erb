@@ -54,59 +54,11 @@
 
     <div id = "required" ><%= f.label :identity, "I am a ..." %></div>
 
-    <!-- **Does not toggle, saves into db -->
-    <div id="id1" class="radioselect">
-        <%= f.radio_button(:identity, "student", :class => "show_extra") %></div>
-        <%= f.label(:identity_student, "Student") %>
-    <div id="idXX" class="radioselect">
-        <%= f.radio_button(:identity, "faculty_member", :class => "show_extra") %></div>
-        <%= f.label(:identity_other, "Faculty Member") %>
-    <div id="id3" class="radioselect">
-        <%= f.radio_button(:identity, "community_member", :class => "show_extra") %></div>
-        <%= f.label(:identity_other, "Community Member") %>
+    <%= f.radio_button(:identity, "student", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Student")  %><br>
 
-<!-- This worked with toggling but doesn't save into database
- <section id="radiobutton">
-  <div id= "label">
-    <label class="field">I am a ...
-      <span class="required">*</span>
-    </label>
-  </div>
-  <div id="radiobutton" align="left">
-    <table>
-        <td valign="left">
-            <input id="id-1" class="class1" name="identity" value="Grad" type="radio">
-            <label for="id-1">Grad
-            <br>
-            </label>
-        </td>
+    <%= f.radio_button(:identity, "faculty_member", :class => "show_extra",:style => "display:inline") %><%= f.label(:identity_other, "Faculty Member") %><br>
 
-        <td valign="left">
-            <input id="id-2" class="class2" name="identity" value="Undergrad" type="radio">
-            <label for="id-2">Undergrad
-            <br>
-            </label>
-        </td>
-
-        <td valign="left">
-            <input id="id-3" class="class2" name="identity" value="Faculty Memeber" type="radio">
-            <label for="id-3">Faculty Memeber
-            <br>
-            </label>
-        </td>
-
-        <td valign="left">
-            <input id="id-4" class="class1" name="identity" value="Community Member" type="radio">
-            <label for="id-4">Community Member
-            <br>
-            </label>
-        </td>
-
-    </table>
-  </div>
-</section>
--->
-
+    <%= f.radio_button(:identity, "community_member", :class => "show_extra",:style => "display:inline") %><%= f.label(:identity_other, "Community Member") %><br>
 
 <section id="hidden">
     <div id = "required" ><%= f.label :student_id , "Student Number (if applicable)" %></div>
@@ -120,23 +72,8 @@
 
     <div id = "required" ><%= f.label :program, "Program" %></div>
     <%= content_tag :span, @new_user.errors[:program].first, class: 'form-error' %>
-    <%= f.select :program, ["N/A","My program is not in the list","Arts – English","Arts - Environ. Studies","Arts - French Studies","Arts – Geography","Arts – History","Arts - Lettres françaises","Arts – Translation","Engineering - Biomedical Mechanical Eng.","Engineering - Chemical Eng.","Engineering - Civil Eng.","Engineering - Computer Eng.","Engineering - Computer Science","Engineering - Electrical Eng","Engineering - Mechanical Eng","Engineering - Software Eng.","Law - Civil Law","Law - Civil Law & Int. Dev.","Science – Biochemistry","Science – Biology","Science - Biomedical Sciences","Science - Biophar. Science","Science – Biotechnology","Science – Chemistry","Science - Environ. Science","Science - Financial Maths-Eco","Science – Geology","Science - Geology-Physics","Science - Master - Environmental Sustainability","Science – Maths","Science - Maths-Stats","Science – Physics","Science - Physics-Math","Social Sciences – Anthropology","Social Sciences - Conflict Studies & Human Rights","Social Sciences - Eco. and Public Policy","Social Sciences – Economics","Social Sciences - Int. Dev. And Global.","Social Sciences - International Eco. & Development","Social Sciences - Political Science","Social Sciences - Public Admin.","Social Sciences – Sociology","Telfer School of Management – Accounting","Telfer School of Management – Commerce","Telfer School of Management - E-Business","Telfer School of Management – Entrepreneurship","Telfer School of Management – Finance","Telfer School of Management - HR Management","Telfer School of Management - International Manag.","Telfer School of Management - Man. & Inf. Sys.","Telfer School of Management – Management","Telfer School of Management – Marketing"], prompt: "Choose..." ,(:class => "states") %><br><br>
+    <%= f.select(:program, ["N/A","My program is not in the list","Arts – English","Arts - Environ. Studies","Arts - French Studies","Arts – Geography","Arts – History","Arts - Lettres françaises","Arts – Translation","Engineering - Biomedical Mechanical Eng.","Engineering - Chemical Eng.","Engineering - Civil Eng.","Engineering - Computer Eng.","Engineering - Computer Science","Engineering - Electrical Eng","Engineering - Mechanical Eng","Engineering - Software Eng.","Law - Civil Law","Law - Civil Law & Int. Dev.","Science – Biochemistry","Science – Biology","Science - Biomedical Sciences","Science - Biophar. Science","Science – Biotechnology","Science – Chemistry","Science - Environ. Science","Science - Financial Maths-Eco","Science – Geology","Science - Geology-Physics","Science - Master - Environmental Sustainability","Science – Maths","Science - Maths-Stats","Science – Physics","Science - Physics-Math","Social Sciences – Anthropology","Social Sciences - Conflict Studies & Human Rights","Social Sciences - Eco. and Public Policy","Social Sciences – Economics","Social Sciences - Int. Dev. And Global.","Social Sciences - International Eco. & Development","Social Sciences - Political Science","Social Sciences - Public Admin.","Social Sciences – Sociology","Telfer School of Management – Accounting","Telfer School of Management – Commerce","Telfer School of Management - E-Business","Telfer School of Management – Entrepreneurship","Telfer School of Management – Finance","Telfer School of Management - HR Management","Telfer School of Management - International Manag.","Telfer School of Management - Man. & Inf. Sys.","Telfer School of Management – Management","Telfer School of Management – Marketing"], {prompt: "Choose..."} , {:class => "programs"}) %><br><br>
 
-<!-- I want something like this for programs
- -->
-<!--  <label for="id_label_single">
-  Select your program
-
-    <form action = "">
-        <select name = "program" id ="states">
-        <option value = "0"> </option>
-        <option value = "1"> Software Eng.</option>
-        <option value = "2"> Computer Eng.</option>
-        </select>
-    </form>
-    </label>
-
- -->
     <div id = "required" ><%= f.label :year_of_study, "What year are you in?", style: 'margin-bottom: 0.5rem; display: block;' %></div>
     <%= content_tag :span, @new_user.errors[:year_of_study].first, class: 'form-error' %>
     <%= f.select :year_of_study, ["N/A", "1", "2", "3","4","5"] , prompt: "Select a year ..." %><br><br>
