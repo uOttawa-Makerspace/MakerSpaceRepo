@@ -56,7 +56,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     redirect_to staff_training_sessions_url
   end
 
-  def rename_training_session
+  def change_training_type
     staff = current_user
     training_session = TrainingSession.find_by(training_session_params)
     if params['training_session_new_training_id'].present?

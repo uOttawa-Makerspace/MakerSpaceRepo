@@ -32,8 +32,8 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert_redirected_to staff_training_sessions_url
   end
 
-  test "staff can rename a training session by choosing a different training" do
-    patch :rename_training_session, training_session:{
+  test "staff can change the trainging type by choosing a different training" do
+    patch :change_training_type, training_session:{
       training_id: "1",
       timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
       user_id: @user.id
