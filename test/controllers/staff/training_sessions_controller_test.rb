@@ -30,64 +30,48 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert_response :ok
   end
 
+
   test "staff can change the trainging type by choosing a different training" do
-    patch :change_training_type, training_session:{
-      training_id: "1",
-      timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-      user_id: @user.id
-    }, training_session_new_training_id: "2"
-      assert TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
-                                   timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-                                   user_id: @user.id).present?
-      refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
-                                    timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-                                    user_id: @user.id).present?
-      assert_redirected_to (:back)
-      assert_equal flash[:notice], "Training session renamed succesfully"
-  end
-
-  test "staff can reschedule a training session by choosing a different timeslot" do
-    patch :reschedule_training_session, training_session:{
-      training_id: "1",
-      timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-      user_id: @user.id
-    }, training_session_new_time: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00")
-      assert TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
-                                   timeslot: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00"),
-                                   user_id: @user.id).present?
-      refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
-                                    timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-                                    user_id: @user.id).present?
-      assert_redirected_to (:back)
-      assert_equal flash[:notice], "Training session rescheduled succesfully"
-  end
-
-  test "staff can delete a training session" do
-    delete :delete_training_session, training_session:{
-      training_id: "1",
-      timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-      user_id: @user.id
-    }
+    patch :update,
+      id: training_sessions(:lathe_session),
+      training_session_new_training_id: trainings(:welding_3)
+    assert TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
+                                 timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
+                                 user_id: @user.id).present?
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                   timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                   user_id: @user.id).present?
     assert_redirected_to (:back)
-    assert_equal flash[:notice], "Training session deleted succesfully"
+    assert_equal flash[:notice], "Training session updated succesfully"
   end
 
+
+  test "staff can reschedule a training session by choosing a different timeslot" do
+    patch :update,
+      id: training_sessions(:lathe_session),
+      training_session_new_time: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00")
+    assert TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
+                                 timeslot: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00"),
+                                 user_id: @user.id).present?
+    refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
+                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
+                                  user_id: @user.id).present?
+    assert_redirected_to (:back)
+    assert_equal flash[:notice], "Training session updated succesfully"
+  end
+
+
   test "staff can add new trainees to exisiting training sessions" do
-   post :add_trainees_to_training_session, training_session:{
-     training_id: "1",
-     timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-     user_id: @user.id
-   }, training_session_new_trainees: users(:bob, :mary)
+   patch :update,
+    id: training_sessions(:lathe_session),
+    training_session_new_trainees: users(:bob, :mary)
    assert_redirected_to :back
    training_session = TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                  user_id: @user.id)
-   assert_equal flash[:notice], "Users successfuly added to the training session"
    assert training_session.users.include? User.find_by(username: "bob")
    assert training_session.users.include? User.find_by(username: "mary")
+   assert_equal flash[:notice], "Training session updated succesfully"
    assert_redirected_to :back
   end
 
@@ -99,15 +83,22 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     training_session.save
     assert training_session.users.include? User.find_by(username: "adam")
     assert training_session.users.include? User.find_by(username: "mary")
-    post :certify_trainees, training_session:{
-      training_id: "1",
-      timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-      user_id: @user.id
-    }, training_session_graduates: [User.find_by(username: "mary"), User.find_by(username: "adam")]
+    post :certify_trainees,
+      id: training_session,
+      training_session_graduates: [User.find_by(username: "mary"), User.find_by(username: "adam")]
     assert_equal flash[:notice], "Users certified successfuly"
     assert_redirected_to :back
     assert Certification.find_by(user_id: "1337", trainer_id: "777", training: "lathe_1").present?
   end
 
 
+  test "staff can delete a training session" do
+    delete :delete_training_session,
+      id: training_sessions(:lathe_session)
+    refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
+                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
+                                  user_id: @user.id).present?
+    assert_redirected_to (:back)
+    assert_equal flash[:notice], "Training session deleted succesfully"
+  end
 end
