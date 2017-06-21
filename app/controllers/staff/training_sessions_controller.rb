@@ -8,22 +8,23 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def new
-    training_session = TrainingSession.new(training_session_params)
-    if params['training_session_users'].present?
-      params['training_session_users'].each do |user|
-        training_session.users << User.find(user)
-      end
-    end
-    redirect_to :back
+    @new_training_session = TrainingSession.new
   end
 
   def create
-    staff = current_user
-    training_session = TrainingSession.new(training_session_params)
-    if training_session.save
-      flash[:notice] = "Training session created succesfully"
+    @training_session = TrainingSession.new(training_session_params)
+    if params['training_session_users'].present?
+      params['training_session_users'].each do |user|
+        @training_session.users << User.find(user)
+      end
     end
-    redirect_to staff_training_sessions_url
+    if @training_session.save
+      flash[:notice] = "Training session created succesfully"
+      render json: { redirect_uri: "#{staff_training_session_path(@training_session.id)}" }
+    else
+      flash[:alert] = "Something went wrong. Please try again."
+      redirect_to :back
+    end
   end
 
   def change_training_type

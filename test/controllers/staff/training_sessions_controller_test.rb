@@ -11,11 +11,8 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can initiate a new training_session" do
-    post :new, training_session: {
-      training_id: "1",
-      user_id: @user.id
-    }, training_session_users: users(:bob,:mary)
-    assert_redirected_to :back
+    get :new
+    assert_response :ok
   end
 
 
@@ -24,12 +21,13 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
       training_id: "2",
       timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
       user_id: @user.id
-    }
-    assert TrainingSession.where(training_id: Training.find_by(name: "welding_3"),
+    }, training_session_users: users(:bob, :mary)
+    @training_session = TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
-                                 user_id: @user.id).present?
+                                 user_id: @user.id)
+    assert @training_session.present?
     assert_equal flash[:notice], "Training session created succesfully"
-    assert_redirected_to staff_training_sessions_url
+    assert_response :ok
   end
 
   test "staff can change the trainging type by choosing a different training" do
