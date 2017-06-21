@@ -7,12 +7,6 @@ class Staff::TrainingSessionsController < StaffAreaController
 
   end
 
-  def sort_params
-    if (((["username","name","lab_sessions.sign_in_time","users.created_at"].include? params[:sort]) && (["desc","asc"].include? params[:direction])) || (!params[:sort].present? && !params[:direction].present?))
-      return true
-    end
-  end
-
   def new
     training_session = TrainingSession.new(training_session_params)
     if params['training_session_users'].present?
