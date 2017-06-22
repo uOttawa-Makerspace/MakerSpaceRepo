@@ -114,7 +114,7 @@ Rails.application.routes.draw do
     get 'index', path: '/'
 
     resources :training_sessions do
-      collection do
+      member do
         post 'certify_trainees'
         delete 'delete_training_session'
       end
