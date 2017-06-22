@@ -116,6 +116,7 @@ Rails.application.routes.draw do
     resources :training_sessions do
       member do
         post 'certify_trainees'
+        delete 'remove_trainee'
         delete 'delete_training_session'
       end
     end

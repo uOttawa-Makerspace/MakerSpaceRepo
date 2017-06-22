@@ -1,5 +1,6 @@
 class Staff::TrainingSessionsController < StaffAreaController
   before_action :current_training_session, only: [:show, :edit, :update, :certify_trainees, :delete_training_session]
+  before_action :changed_params, only: [:update]
 
   layout 'staff_area'
 
@@ -28,27 +29,28 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def update
-    # new training type
-    if params['training_session_new_training_id'].present?
-      @current_training_session.training_id = params['training_session_new_training_id']
-    end
-    # add trainee(s)
-    if params['training_session_new_trainees'].present?
-      params['training_session_new_trainees'].each do |trainee|
+    @current_training_session.update(changed_params)
+    if params['changed_params']['users'].present?
+      params['changed_params']['users'].each do |trainee|
         unless @current_training_session.users.include? User.find(trainee)
           @current_training_session.users << User.find(trainee)
         end
       end
     end
-    # change time
-    if params['training_session_new_time'].present?
-      @current_training_session.timeslot = params['training_session_new_time']
-    end
-    # save
     if @current_training_session.save
       flash[:notice] = "Training session updated succesfully"
     end
     redirect_to :back
+  end
+
+  def remove_trainee
+    if params['trainee_id'].present?
+      TrainingSession.find(params['id']).users.delete(params['trainee_id'])
+      if TrainingSession.find(params['id']).save
+        flash[:notice] = "Trainee removed successfuly"
+      end
+      redirect_to :back
+    end
   end
 
   def certify_trainees
@@ -84,6 +86,10 @@ class Staff::TrainingSessionsController < StaffAreaController
 
     def current_training_session
       @current_training_session = TrainingSession.find(params[:id])
+    end
+
+    def changed_params
+      params.require(:changed_params).permit(:training_id, :users, :timeslot)
     end
 
 end

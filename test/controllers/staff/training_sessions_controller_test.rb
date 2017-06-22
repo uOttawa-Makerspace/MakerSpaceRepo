@@ -32,9 +32,10 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can change the trainging type by choosing a different training" do
-    patch :update,
-      id: training_sessions(:lathe_session),
-      training_session_new_training_id: trainings(:welding_3)
+    patch :update, id: training_sessions(:lathe_session),
+    changed_params: {
+      training_id: trainings(:welding_3)
+    }
     assert TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                  user_id: @user.id).present?
@@ -47,9 +48,10 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can reschedule a training session by choosing a different timeslot" do
-    patch :update,
-      id: training_sessions(:lathe_session),
-      training_session_new_time: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00")
+    patch :update, id: training_sessions(:lathe_session),
+    changed_params: {
+      timeslot: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00")
+    }
     assert TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                  timeslot: DateTime.parse("Sun, 02 Mar 2020 01:01:41 UTC +00:00"),
                                  user_id: @user.id).present?
@@ -62,9 +64,10 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can add new trainees to exisiting training sessions" do
-   patch :update,
-    id: training_sessions(:lathe_session),
-    training_session_new_trainees: users(:bob, :mary)
+   patch :update, id: training_sessions(:lathe_session),
+   changed_params: {
+    users: users(:bob, :mary)
+  }
    assert_redirected_to :back
    training_session = TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
@@ -73,6 +76,16 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
    assert training_session.users.include? User.find_by(username: "mary")
    assert_equal flash[:notice], "Training session updated succesfully"
    assert_redirected_to :back
+  end
+
+
+  test "staff can remove a trainee from the training session" do
+    training_session = training_sessions(:lathe_session)
+    training_session.users << User.find_by(username: "adam")
+    training_session.users << User.find_by(username: "mary")
+    delete :remove_trainee, id: training_sessions(:lathe_session), trainee_id: users(:adam)
+    refute training_session.users.include? users(:adam)
+    assert_redirected_to :back
   end
 
 
