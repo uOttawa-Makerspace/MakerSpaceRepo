@@ -55,15 +55,45 @@
     </div>
 
 
-    <% if @user.admin?%>
+    <% if @user.staff?%>
       <div class="user-certifications"> CERTIFICATIONS
         <br></br>
         <div class="user-certifications-container">
-            <% @repo_user.certifications.each do |certification| %>
-              <%= content_tag :span, certification.training %>
-              <%= link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
-                    style: 'color:#FFF;  background-color: #b02a12;padding: 0.5rem 1rem;text-color:#FFFF' %>
-            <% end %>
+            <table class=staff-table>
+              <tr>
+                <th>TRAINING</th>
+                <th>TRAINER</th>
+                <th>TIME</th>
+                <th>ACTION</th>
+              </tr>
+              <% @repo_user.certifications.each do |certification| %>
+                <tr>
+                  <td>
+                    <%=
+                      certification.training
+                    %>
+                  </td>
+                  <td>
+                    <%=
+                      User.find(certification.trainer_id).name
+                    %>
+                  </td>
+                  <td>
+                    <%=
+                      certification.created_at.strftime("%B %d, %Y")
+                    %>
+                  </td>
+                  <% if @user.admin? %>
+                    <td>
+                      <%=
+                        link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
+                        style: 'color:#FFF;  background-color: #b02a12;padding-top: 1rem 1rem;text-color:#FFFF'
+                      %>
+                    </td>
+                  <%end%>  
+                </tr>
+                <% end %>
+            </table>
             <br></br>
             <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
                 <%= radio_button_tag :role, "regular_user" %>

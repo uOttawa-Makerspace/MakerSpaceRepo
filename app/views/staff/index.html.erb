@@ -26,7 +26,7 @@
           user.location
         %></td>
 
-        <td><%=
+        <td><%
           if user.certifications.last.present? && (user.certifications.first == user.certifications.last)
             user.certifications.last.training
           elsif user.certifications.last.present?
