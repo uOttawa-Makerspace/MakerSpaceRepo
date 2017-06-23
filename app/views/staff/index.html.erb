@@ -1,0 +1,37 @@
+
+<section id ="page-contents" >
+    <table class="staff-table">
+      <tr>
+        <th>Username</th>
+        <th>Last Signed In</th>
+        <th>Location</th>
+        <th>Last Certification</th>
+      </tr>
+
+    <% @users.each do |user| %>
+      <tr>
+
+        <td><%=
+          link_to(user.username, user_url(user.username))
+        %></td>
+
+        <td><%=
+          if user.lab_sessions.present?
+            user.lab_sessions.last.created_at
+          end
+        %></td>
+
+        <td><%=
+          user.location
+        %></td>
+
+        <td><%=
+          if user.certifications.last.present?
+            user.certifications.last.training
+          end
+        %></td>
+
+      </tr>
+    <% end %>
+    </table>
+</section>
