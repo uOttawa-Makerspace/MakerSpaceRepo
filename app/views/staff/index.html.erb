@@ -5,7 +5,7 @@
         <th>Username</th>
         <th>Last Signed In</th>
         <th>Location</th>
-        <th>Last Certification</th>
+        <th>Certification</th>
       </tr>
 
     <% @users.each do |user| %>
@@ -27,8 +27,10 @@
         %></td>
 
         <td><%=
-          if user.certifications.last.present?
+          if user.certifications.last.present? && (user.certifications.first == user.certifications.last)
             user.certifications.last.training
+          elsif user.certifications.last.present?
+            user.certifications.last.training + " ..."
           end
         %></td>
 
