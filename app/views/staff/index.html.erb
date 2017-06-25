@@ -27,12 +27,24 @@
         %></td>
 
         <td><%
-          if user.certifications.last.present? && (user.certifications.first == user.certifications.last)
-            user.certifications.last.training
-          elsif user.certifications.last.present?
-            user.certifications.last.training + " ..."
+          if user.certifications.first.present?
+            user.certifications.each do |certification|
+            %>
+            <div
+             class="cert-name"
+             style="display:inline" >
+            <%= certification.training %> |
+            <div id="cert-details">
+              <%= certification.training %> <br>
+              <%= User.find(certification.trainer_id).username %> <br>
+              <%= certification.created_at.strftime("%B %d, %Y")  %>
+            </div>
+            </div>
+          <%
+            end
           end
-        %></td>
+          %>
+      </td>
 
       </tr>
     <% end %>
