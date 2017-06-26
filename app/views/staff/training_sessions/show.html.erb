@@ -1,5 +1,8 @@
 <section id ="page-contents" >
 
+<div>Training Type: <%= Training.find(@current_training_session.training_id).name%></div><br>
+<div>Trainer: <%= User.find(@current_training_session.user_id).name%></div><br>
+
   <table class="staff-table">
       <tr>
         <th>Select</th>
