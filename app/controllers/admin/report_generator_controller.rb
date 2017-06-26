@@ -15,16 +15,12 @@ class Admin::ReportGeneratorController < AdminAreaController
   	end
   end
 
-
   def report2
-  	@users = User.all
-
-  	respond_to do |format|
-  		attributes = %w{id username email gender faculty created_at updated_at}
-  		format.html
-  		format.csv {send_data @users.to_csv(*attributes)}
-  	end
+    @lab_info = LabSession.new
+    respond_to do |format|
+      format.html
+      format.csv {send_data @lab_info.to_csv}
+    end
   end
-
 
 end
