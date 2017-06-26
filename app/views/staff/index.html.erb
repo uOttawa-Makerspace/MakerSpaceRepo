@@ -2,6 +2,7 @@
 <section id ="page-contents" >
     <table class="staff-table">
       <tr>
+        <th>Select</th>
         <th>Username</th>
         <th>Last Signed In</th>
         <th>Location</th>
@@ -11,8 +12,12 @@
     <% @users.each do |user| %>
       <tr>
 
-        <td><%=
-          link_to(user.username, user_url(user.username))
+        <td class="checkbox-row">
+          <input type="checkbox" class="user-checkbox"></input>
+        </td>
+
+        <td class="username-cell"><%=
+          link_to(content_tag(:username, user.username), user_url(user.username))
         %></td>
 
         <td style="horizontal-alginment:center;"><%=
@@ -37,8 +42,8 @@
               <%= certification.training %> |
               <div id="cert-details" style="display:inline">
                 <%= certification.training %> <br>
-                <%= User.find(certification.trainer_id).username %> <br>
-                <%= certification.created_at.strftime("%B %d, %Y")  %>
+                <%= User.find(certification.trainer_id).name %> <br>
+                <%= certification.updated_at.strftime("%B %d, %Y")  %>
               </div>
             </div>
           </div>
@@ -51,4 +56,28 @@
       </tr>
     <% end %>
     </table>
+    <br>
+    <input type="submit" class="save-button" value="train" onclick="train(this)"></input>
+    <script>
+      function train(){
+        var checkboxes = document.getElementsByClassName('user-checkbox');
+        var users = document.getElementsByTagName('username');
+        var checked_usernames = [];
+        for(count = 0; count < checkboxes.length; count++){
+           if (checkboxes[count].checked){
+             var val = users[count]
+             if (!checked_usernames.includes(val.innerHTML)){
+               checked_usernames.push(val.innerHTML);
+             }
+           }
+        }
+        console.log(checked_usernames);
+        $.ajax({
+          type: "GET",
+          url: "/staff/training_sessions/new",
+          data: { checked_usernames: JSON.stringify(checked_usernames) }
+        });
+      }
+    </script>
+
 </section>
