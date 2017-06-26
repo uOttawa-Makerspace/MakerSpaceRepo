@@ -1,5 +1,8 @@
 
 <section id ="page-contents" >
+
+  <%= form_for 'staff/training_session', :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
+
     <table class="staff-table">
       <tr>
         <th>Select</th>
@@ -57,27 +60,8 @@
     <% end %>
     </table>
     <br>
-    <input type="submit" class="save-button" value="train" onclick="train(this)"></input>
-    <script>
-      function train(){
-        var checkboxes = document.getElementsByClassName('user-checkbox');
-        var users = document.getElementsByTagName('username');
-        var checked_usernames = [];
-        for(count = 0; count < checkboxes.length; count++){
-           if (checkboxes[count].checked){
-             var val = users[count]
-             if (!checked_usernames.includes(val.innerHTML)){
-               checked_usernames.push(val.innerHTML);
-             }
-           }
-        }
-        console.log(checked_usernames);
-        $.ajax({
-          type: "GET",
-          url: "/staff/training_sessions/new",
-          data: { checked_usernames: JSON.stringify(checked_usernames) }
-        });
-      }
-    </script>
-
+    <input type="hidden", name="training_session[user_id]", value="1337"/>
+    <input type="hidden", name="training_session[training_id]", value="2"/>
+    <%= submit_tag "Train", class:"save-button"%>
+  <% end %>
 </section>
