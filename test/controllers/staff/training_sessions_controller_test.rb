@@ -21,13 +21,13 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
       training_id: "2",
       timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
       user_id: @user.id
-    }, training_session_users: users(:bob, :mary)
+    }, training_session_users: "[\"bob\", \"mary\"]"
     @training_session = TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  timeslot: DateTime.parse("Sat, 02 Jun 2018 02:01:41 UTC +00:00"),
                                  user_id: @user.id)
     assert @training_session.present?
     assert_equal flash[:notice], "Training session created succesfully"
-    assert_response :ok
+    assert_redirected_to "#{staff_training_session_path(@training_session.id)}"
   end
 
 

@@ -14,7 +14,6 @@ class Staff::TrainingSessionsController < StaffAreaController
 
   def create
     @training_session = TrainingSession.new(training_session_params)
-     #binding.pry
     if params['training_session_users'].present?
       JSON.parse(params['training_session_users']).each do |user|
         @training_session.users << User.find_by(username: user)
@@ -22,7 +21,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     end
     if @training_session.save
       flash[:notice] = "Training session created succesfully"
-      render json: { redirect_uri: "#{staff_training_session_path(@training_session.id)}" }
+      redirect_to "#{staff_training_session_path(@training_session.id)}"
     else
       flash[:alert] = "Something went wrong. Please try again."
       redirect_to :back
