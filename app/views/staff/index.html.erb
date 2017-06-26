@@ -33,13 +33,15 @@
             <div
              class="cert-name"
              style="display:inline" >
-            <%= certification.training %> |
-            <div id="cert-details">
-              <%= certification.training %> <br>
-              <%= User.find(certification.trainer_id).username %> <br>
-              <%= certification.created_at.strftime("%B %d, %Y")  %>
+             <div class="cert-holder" style="display:inline">
+              <%= certification.training %> |
+              <div id="cert-details" style="display:inline">
+                <%= certification.training %> <br>
+                <%= User.find(certification.trainer_id).username %> <br>
+                <%= certification.created_at.strftime("%B %d, %Y")  %>
+              </div>
             </div>
-            </div>
+          </div>
           <%
             end
           end
