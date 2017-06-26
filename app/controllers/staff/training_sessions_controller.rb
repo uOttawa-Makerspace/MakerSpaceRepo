@@ -14,9 +14,10 @@ class Staff::TrainingSessionsController < StaffAreaController
 
   def create
     @training_session = TrainingSession.new(training_session_params)
+     #binding.pry
     if params['training_session_users'].present?
-      params['training_session_users'].each do |user|
-        @training_session.users << User.find(user)
+      JSON.parse(params['training_session_users']).each do |user|
+        @training_session.users << User.find_by(username: user)
       end
     end
     if @training_session.save
