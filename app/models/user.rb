@@ -69,5 +69,7 @@ class User < ActiveRecord::Base
         csv << user.attributes.values_at(*attributes)
       end
     end
-  end 
+  end
+
+  scope :in_last_month, -> { where('created_at BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
 end
