@@ -10,7 +10,8 @@
 </div><br>
 
 
-  <table class="staff-table">
+  <table class="training-session-users-table">
+      Users in this training session
       <tr>
         <th>Drop</th>
         <th>Username</th>
@@ -22,12 +23,12 @@
     <% @current_training_session.users.each do |user| %>
       <tr>
 
-        <td class="checkbox-cell">
-          <input type="checkbox" class="user-checkbox"></input>
+        <td class="drop-checkbox-cell" onclick="check_users(this)">
+          <input type="checkbox" class="drop-user-checkbox"></input>
         </td>
 
-        <td class="username-cell"><%=
-          link_to(content_tag(:username, user.username), user_url(user.username))
+        <td class="drop-username-cell"><%=
+          link_to(content_tag(:drop_username, user.username), user_url(user.username))
         %></td>
 
         <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
@@ -67,8 +68,103 @@
     <% end %>
     </table>
     <br>
-    
+
+    <table>
+      Other Users
+      <tr>
+        <th>Add</th>
+        <th>Username</th>
+        <th>Last Signed In</th>
+        <th>Location</th>
+        <th>Certification</th>
+      </tr>
+
+    <% User.all.each do |user| %>
+      <% unless @current_training_session.users.include?(user) %>
+        <tr>
+
+          <td class="checkbox-cell">
+            <input type="checkbox" class="user-checkbox" onclick="check_users(this)"></input>
+          </td>
+
+          <td class="username-cell"><%=
+            link_to(content_tag(:username, user.username), user_url(user.username))
+          %></td>
+
+          <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
+            if user.lab_sessions.present?
+              singout_time = user.lab_sessions.last.sign_out_time
+              singout_time.strftime("%B %d, %Y")
+            end
+          %></td>
+
+          <td class="location-cell"><%=
+            user.location
+          %></td>
+
+          <td class="certifications-cell"><%
+            if user.certifications.first.present?
+              user.certifications.each do |certification|
+              %>
+              <div
+               class="cert-name"
+               style="display:inline" >
+               <div class="cert-holder" style="display:inline">
+                <%= certification.training %> |
+                <div id="cert-details" style="display:inline">
+                  <%= certification.training %> <br>
+                  <%= User.find(certification.trainer_id).name %> <br>
+                  <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                </div>
+              </div>
+            </div>
+            <%
+              end
+            end
+            %>
+        </td>
+
+        </tr>
+      <% end %>
+    <% end %>
+    </table>
+
+    <br>
     <%= submit_tag "Update", class: 'save-button' %>
   <% end %>
+  <input type="hidden", name="training_session_users"/>
+
+  <script>
+    function check_users(){
+
+      var users = document.getElementsByTagName("drop_username");
+      var session_users = [];
+      for(var i=0; i<users.length; i++){
+        session_users.push(users[i].innerHTML);
+      }
+
+      var drop_check_boxes = document.getElementsByClassName('drop-user-checkbox');
+      var drop_usernames = document.getElementsByTagName('drop_username');
+       for(var i=0; i<drop_check_boxes.length;i++){
+         if(drop_check_boxes[i].checked){
+           if(session_users.indexOf(drop_usernames[i].innerHTML) > -1){
+             session_users.splice(session_users.indexOf(drop_usernames[i].innerHTML), 1);
+           }
+         }
+       }
+
+       var add_check_boxes = document.getElementsByClassName('add-user-checkbox');
+       var add_usernames = document.getElementsByTagName('add_username');
+        for(var i=0; i<add_check_boxes.length;i++){
+          if(add_check_boxes[i].checked){
+            if(session_users.indexOf(add_usernames[i].innerHTML) > -1){
+              session_users.push(session_users.indexOf(add_usernames[i].innerHTML), 1);
+            }
+          }
+        }
+
+       document.getElementsByName("training_session_users")[0].value = JSON.stringify(session_users);
+    }
+  </script>
 
 </section>
