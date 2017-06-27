@@ -24,7 +24,6 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     @training_session = TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  user_id: @user.id)
     assert @training_session.present?
-    assert_equal flash[:notice], "Training session created succesfully"
     assert_redirected_to "#{staff_training_session_path(@training_session.id)}"
   end
 

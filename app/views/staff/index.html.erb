@@ -60,8 +60,8 @@
     <% end %>
     </table>
     <br>
-    <input type="hidden", name="training_session[user_id]", value="1337"/>
-    <input type="hidden", name="training_session[training_id]", value="2"/>
+    <input type="hidden", name="training_session[user_id]", value="<%=current_user.id%>"/>
+    <input type="hidden", name="training_session[training_id]", value="<%=Training.first.id%>"/>
     <input type="hidden", name="training_session_users", value=""/>
     <script>
       function check_users(){
@@ -73,9 +73,7 @@
             checked_users.push(usernames[i].innerHTML);
           }
         }
-        console.log(JSON.stringify(checked_users));
         document.getElementsByName("training_session_users")[0].value = JSON.stringify(checked_users);
-        console.log(document.getElementsByName("training_session_users")[0].value)
       }
     </script>
     <%= submit_tag "Train", class:"save-button"%>

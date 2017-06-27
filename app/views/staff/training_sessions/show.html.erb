@@ -2,11 +2,11 @@
 
 <div>Trainer: <%= User.find(@current_training_session.user_id).name%></div><br></br>
 
-<div>Training Type:
-    <%= form_for 'staff/training_session', :url => { :action => "update", controller: 'staff/training_sessions'} do |f| %>
-      <%= f.select :training, options_from_collection_for_select(Training.show_options, 'id', 'name') %>
-    <% end %>
-  <%= submit_tag "Update", class:"save-button"%>
+<div>Training Type: <%= @current_training_session.training.name %>
+    <br>
+    <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
+      <% label_tag 'changed_params[training_id]' %>
+      <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'change training' %><br>
 </div><br>
 
 
@@ -67,5 +67,8 @@
     <% end %>
     </table>
     <br>
+    
+    <%= submit_tag "Update", class: 'save-button' %>
+  <% end %>
 
 </section>

@@ -20,11 +20,10 @@ class Staff::TrainingSessionsController < StaffAreaController
       end
     end
     if @training_session.save
-      flash[:notice] = "Training session created succesfully"
       redirect_to "#{staff_training_session_path(@training_session.id)}"
     else
-      flash[:alert] = "Something went wrong. Please try again."
       redirect_to :back
+      flash[:alert] = "Something went wrong. Please try again."
     end
   end
 
@@ -41,6 +40,10 @@ class Staff::TrainingSessionsController < StaffAreaController
       flash[:notice] = "Training session updated succesfully"
     end
     redirect_to :back
+  end
+
+  def edit
+    update(params)
   end
 
   def remove_trainee
