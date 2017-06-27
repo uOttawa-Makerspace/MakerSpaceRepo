@@ -1,0 +1,16 @@
+@import "lib";
+
+button{
+	color: #fff;
+	background: #4bbc9c;
+	width: 100px;
+	height: 30px;
+	font:300 1rem 'Raleway', helvetica, sans-serif;
+	padding: 0.2rem;
+    border-radius: 2px;
+    border: 1px solid #aaa;
+        
+    &:hover{
+  		cursor: pointer;
+    }
+}
