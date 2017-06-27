@@ -21,7 +21,7 @@
       </tr>
 
     <% @current_training_session.users.each do |user| %>
-      <tr>
+      <tr class="drop-rows">
 
         <td class="drop-checkbox-cell" onclick="check_users(this)">
           <input type="checkbox" class="drop-user-checkbox"></input>
@@ -68,6 +68,9 @@
     <% end %>
     </table>
     <br>
+    <%= submit_tag "Certify", class: 'certify-button' %>
+
+    <br>
 
     <table>
       Other Users
@@ -81,7 +84,7 @@
 
     <% User.all.each do |user| %>
       <% unless @current_training_session.users.include?(user) %>
-        <tr>
+        <tr class="add-rows">
 
           <td class="add-checkbox-cell">
             <input type="checkbox" class="add-user-checkbox" onclick="check_users(this)"></input>
@@ -139,18 +142,21 @@
     function check_users(){
 
       var users = document.getElementsByTagName("drop_username");
-      var session_users = [];
+      var training_session_users = [];
       for(var i=0; i<users.length; i++){
-        session_users.push(users[i].innerHTML);
+        training_session_users.push(users[i].innerHTML);
       }
 
       var drop_check_boxes = document.getElementsByClassName('drop-user-checkbox');
       var drop_usernames = document.getElementsByTagName('drop_username');
        for(var i=0; i<drop_check_boxes.length;i++){
          if(drop_check_boxes[i].checked){
-           if(session_users.indexOf(drop_usernames[i].innerHTML) > -1){
-             session_users.splice(session_users.indexOf(drop_usernames[i].innerHTML), 1);
+           if(training_session_users.indexOf(drop_usernames[i].innerHTML) > -1){
+             training_session_users.splice(training_session_users.indexOf(drop_usernames[i].innerHTML), 1);
+             document.getElementsByClassName('drop-rows')[i].style="background-color:#B04A45";
            }
+         }else{
+           document.getElementsByClassName('drop-rows')[i].style="background-color:#f0f5f5";
          }
        }
 
@@ -158,11 +164,14 @@
        var add_usernames = document.getElementsByTagName('add_username');
         for(var i=0; i<add_check_boxes.length;i++){
           if(add_check_boxes[i].checked){
-            session_users.push(add_usernames[i].innerHTML);
+            training_session_users.push(add_usernames[i].innerHTML);
+            document.getElementsByClassName('add-rows')[i].style="background-color:#A9D86B";
+          }else{
+            document.getElementsByClassName('add-rows')[i].style="background-color:#f0f5f5";
           }
         }
-        console.log(session_users);
-       document.getElementsByName("users")[0].value = JSON.stringify(session_users);
+        console.log(training_session_users);
+       document.getElementsByName("users")[0].value = JSON.stringify(training_session_users);
     }
   </script>
 

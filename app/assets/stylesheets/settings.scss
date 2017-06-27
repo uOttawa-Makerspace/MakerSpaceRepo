@@ -131,22 +131,6 @@ input.save-button{
   }
 }
 
-input.delete-button{
-  font: 300 1em 'Raleway', sans-serif;
-  padding: 0.5rem 1rem;
-  border: none;
-  text-transform: uppercase;
-  color: #777;
-  letter-spacing: 0.15em;
-  border-radius: 2px;
-  background-color: #b02a12;
-  color: #fff;
-  margin-bottom: 20px;
-
-  &:hover{
-    cursor: pointer;
-  }
-}
 
 div.general-settings {
   select {

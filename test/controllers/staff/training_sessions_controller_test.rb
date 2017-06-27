@@ -20,7 +20,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     post :create, training_session: {
       training_id: "2",
       user_id: @user.id
-    }, users: "[\"bob\", \"mary\"]"
+    }, users: users(:bob, :mary)
     @training_session = TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  user_id: @user.id)
     assert @training_session.present?
@@ -39,37 +39,6 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
                                   user_id: @user.id).present?
     assert_redirected_to (:back)
     assert_equal flash[:notice], "Training session updated succesfully"
-  end
-
-
-  test "staff can add/remove trainees to an exisiting training session" do
-   patch :update, id: training_sessions(:lathe_session),
-    users: '[\'bob\', \'mary\']'
-
-   training_session = TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
-                                 user_id: @user.id)
-   assert training_session.users.include? User.find_by(username: "bob")
-   assert training_session.users.include? User.find_by(username: "mary")
-   assert_equal flash[:notice], "Training session updated succesfully"
-   assert_redirected_to :back
-
-   patch :update, id: training_sessions(:lathe_session),
-    users: '[\'bob\']'
-  assert training_session.users.include? User.find_by(username: "bob")
-  refute training_session.users.include? User.find_by(username: "mary")
-  assert_equal flash[:notice], "Training session updated succesfully"
-  assert_redirected_to :back
-
-  end
-
-
-  test "staff can remove a trainee from the training session" do
-    training_session = training_sessions(:lathe_session)
-    training_session.users << User.find_by(username: "adam")
-    training_session.users << User.find_by(username: "mary")
-    delete :remove_trainee, id: training_sessions(:lathe_session), trainee_id: users(:adam)
-    refute training_session.users.include? users(:adam)
-    assert_redirected_to :back
   end
 
 

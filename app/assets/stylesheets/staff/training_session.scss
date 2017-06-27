@@ -12,3 +12,23 @@ select{
   border: 1px solid #aaa;
   display: inline;
 }
+
+input.certify-button{
+
+  float: right;
+  margin-right: 20px;
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #53BE6A;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+  }
+}
