@@ -31,4 +31,20 @@ class Admin::ReportGeneratorController < AdminAreaController
       format.csv {send_data @labs.to_csv(column)}
     end
   end
+
+  def report3
+    respond_to do |format|
+      format.html
+      format.csv {send_data faculty_frequency_counter()}
+
+    end
+  end
+
+  def faculty_frequency_counter
+      @faculty_freq = User.group(:faculty).count(:faculty)
+      CSV.generate do |csv|
+        csv << @faculty_freq.keys
+        csv << @faculty_freq.values
+      end
+  end
 end
