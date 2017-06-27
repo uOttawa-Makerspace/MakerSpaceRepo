@@ -15,7 +15,11 @@ bob:
   faculty: science
   use: null
   description: null
-
+  identity: student
+  program: Mechanical
+  year_of_study: 3
+  student_id: 1234567  
+  created_at: 2017-05-21T13:25:01-04:00
 
 mary:
   id: 2
@@ -30,7 +34,11 @@ mary:
   faculty: engineering
   use: null
   description: null
-
+  identity: student
+  program: Biomedical
+  year_of_study: 1
+  student_id: 9876543
+  
 #the only admin
 adam:
   id: 1337
@@ -46,6 +54,7 @@ adam:
   use: null
   description: null
   role: admin
+  identity: faculty_member
 
 #the only staff
 olivia:
@@ -62,3 +71,5 @@ olivia:
   use: null
   description: null
   role: staff
+  identity: faculty_member
+  created_at: 2017-05-21T13:25:01-04:00
