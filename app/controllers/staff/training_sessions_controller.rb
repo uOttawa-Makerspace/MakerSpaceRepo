@@ -28,32 +28,25 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def update
+    #binding.pry
     @current_training_session.update(changed_params)
-    if params['changed_params']['users'].present?
-      params['changed_params']['users'].each do |trainee|
-        unless @current_training_session.users.include? User.find(trainee)
-          @current_training_session.users << User.find(trainee)
+    if params['users'].present?
+      JSON.parse(params['users']).each do |new_user|
+        unless @current_training_session.users.include? User.find_by(username: new_user)
+          @current_training_session.users << User.find_by(username: new_user)
+        end
+      end
+      @current_training_session.users.each do |old_user|
+        unless JSON.parse(params['users']).include? old_user.username
+          @current_training_session.users.delete(old_user)
         end
       end
     end
+
     if @current_training_session.save
       flash[:notice] = "Training session updated succesfully"
     end
     redirect_to :back
-  end
-
-  def edit
-    update(params)
-  end
-
-  def remove_trainee
-    if params['trainee_id'].present?
-      TrainingSession.find(params['id']).users.delete(params['trainee_id'])
-      if TrainingSession.find(params['id']).save
-        flash[:notice] = "Trainee removed successfuly"
-      end
-      redirect_to :back
-    end
   end
 
   def certify_trainees
@@ -92,7 +85,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     end
 
     def changed_params
-      params.require(:changed_params).permit(:training_id, :users)
+      params.require(:changed_params).permit(:training_id, :course)
     end
 
 end

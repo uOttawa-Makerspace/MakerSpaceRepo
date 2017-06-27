@@ -1,6 +1,6 @@
 <section id ="page-contents" >
 
-<div>Trainer: <%= User.find(@current_training_session.user_id).name%></div><br></br>
+<div>Trainer: <%= User.find(@current_training_session.user_id).name%></div><br>
 
 <div>Training Type: <%= @current_training_session.training.name %>
     <br>
@@ -83,12 +83,12 @@
       <% unless @current_training_session.users.include?(user) %>
         <tr>
 
-          <td class="checkbox-cell">
-            <input type="checkbox" class="user-checkbox" onclick="check_users(this)"></input>
+          <td class="add-checkbox-cell">
+            <input type="checkbox" class="add-user-checkbox" onclick="check_users(this)"></input>
           </td>
 
-          <td class="username-cell"><%=
-            link_to(content_tag(:username, user.username), user_url(user.username))
+          <td class="add-username-cell"><%=
+            link_to(content_tag(:add_username, user.username), user_url(user.username))
           %></td>
 
           <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
@@ -130,9 +130,10 @@
     </table>
 
     <br>
+    <input type="hidden", name="users"/>
     <%= submit_tag "Update", class: 'save-button' %>
   <% end %>
-  <input type="hidden", name="training_session_users"/>
+
 
   <script>
     function check_users(){
@@ -157,13 +158,11 @@
        var add_usernames = document.getElementsByTagName('add_username');
         for(var i=0; i<add_check_boxes.length;i++){
           if(add_check_boxes[i].checked){
-            if(session_users.indexOf(add_usernames[i].innerHTML) > -1){
-              session_users.push(session_users.indexOf(add_usernames[i].innerHTML), 1);
-            }
+            session_users.push(add_usernames[i].innerHTML);
           }
         }
-
-       document.getElementsByName("training_session_users")[0].value = JSON.stringify(session_users);
+        console.log(session_users);
+       document.getElementsByName("users")[0].value = JSON.stringify(session_users);
     }
   </script>
 

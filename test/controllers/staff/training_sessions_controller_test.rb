@@ -20,7 +20,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     post :create, training_session: {
       training_id: "2",
       user_id: @user.id
-    }, training_session_users: "[\"bob\", \"mary\"]"
+    }, users: "[\"bob\", \"mary\"]"
     @training_session = TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  user_id: @user.id)
     assert @training_session.present?
@@ -42,18 +42,24 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
 
-  test "staff can add new trainees to exisiting training sessions" do
+  test "staff can add/remove trainees to an exisiting training session" do
    patch :update, id: training_sessions(:lathe_session),
-   changed_params: {
-    users: users(:bob, :mary)
-  }
-   assert_redirected_to :back
+    users: '[\'bob\', \'mary\']'
+
    training_session = TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                  user_id: @user.id)
    assert training_session.users.include? User.find_by(username: "bob")
    assert training_session.users.include? User.find_by(username: "mary")
    assert_equal flash[:notice], "Training session updated succesfully"
    assert_redirected_to :back
+
+   patch :update, id: training_sessions(:lathe_session),
+    users: '[\'bob\']'
+  assert training_session.users.include? User.find_by(username: "bob")
+  refute training_session.users.include? User.find_by(username: "mary")
+  assert_equal flash[:notice], "Training session updated succesfully"
+  assert_redirected_to :back
+
   end
 
 
