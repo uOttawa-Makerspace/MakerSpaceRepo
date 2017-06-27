@@ -1,12 +1,11 @@
 <section id ="page-contents" >
 
-<div>Training Type: <%= Training.find(@current_training_session.training_id).name%></div><br>
-<div>Trainer: <%= User.find(@current_training_session.user_id).name%></div><br>
+<div>Trainer: <%= User.find(@current_training_session.user_id).name%></div><br></br>
 
-<%= form_for @current_training_session, url: {action: "update"}, html: {class: "staff_training_session"} do |f| %>
-  <div> <%= f.label :training %> </div>
-  <div> <%= f.select :training, options_from_collection_for_select(Training.show_options, 'id', 'name') %> </div>
-<%end%>
+<div>Training Type: <%= Training.find(@current_training_session.training_id).name%>
+    <%= select_tag :training, options_from_collection_for_select(Training.show_options, 'id', 'name') %>
+</div><br>
+
 
   <table class="staff-table">
       <tr>

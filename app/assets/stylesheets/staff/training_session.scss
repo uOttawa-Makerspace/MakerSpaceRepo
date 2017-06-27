@@ -1,3 +1,14 @@
 // Place all the styles related to the Staff::TrainingSession controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+select.training{
+  font: 300 0.9em 'Raleway', sans-serif;
+  color: #555;
+  padding: 0.5rem;
+	//margin: 0.5rem 0 1rem;
+  //max-width: 400px;
+  width: 20px;
+  border-radius: 3px;
+  border: 1px solid #aaa;
+  display: inline;
+}

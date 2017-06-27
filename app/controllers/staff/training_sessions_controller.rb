@@ -81,7 +81,7 @@ class Staff::TrainingSessionsController < StaffAreaController
   private
 
     def training_session_params
-      params.require(:training_session).permit(:user_id, :training_id, :timeslot, :course)
+      params.require(:training_session).permit(:user_id, :training_id, :course)
     end
 
     def current_training_session
@@ -89,7 +89,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     end
 
     def changed_params
-      params.require(:changed_params).permit(:training_id, :users, :timeslot)
+      params.require(:changed_params).permit(:training_id, :users)
     end
 
 end
