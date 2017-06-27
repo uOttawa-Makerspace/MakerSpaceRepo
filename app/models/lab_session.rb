@@ -1,22 +1,9 @@
 class LabSession < ActiveRecord::Base
   belongs_to :user
 
-  def create_array                  
-    labs = LabSession.all    
-    column = []             
-    labs.each do |lab|       
-      row = []              
-      row << lab.id        
-      user = lab.user       
-      row << user.name << user.email << user.faculty     
-      column << row         
-    end                     
-    column                  
-  end
+  scope :in_last_month, -> { where('sign_in_time BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
 
-  def to_csv
-  	attributes = create_array
-
+  def self.to_csv (attributes)
     CSV.generate do |csv|
       attributes.each do |row|
         csv << row
