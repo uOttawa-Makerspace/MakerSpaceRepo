@@ -6,10 +6,10 @@ class Admin::ReportGeneratorController < AdminAreaController
   end
 
   def report1
-  	@users = User.all
+  	@users = User.in_last_month
 
   	respond_to do |format|
-  		attributes = %w{id name username email faculty created_at}
+  		attributes = %w{id name username email faculty program created_at}
   		format.html
   		format.csv {send_data @users.to_csv(*attributes)}
   	end
