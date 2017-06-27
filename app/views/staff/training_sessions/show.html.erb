@@ -2,8 +2,11 @@
 
 <div>Trainer: <%= User.find(@current_training_session.user_id).name%></div><br></br>
 
-<div>Training Type: <%= Training.find(@current_training_session.training_id).name%>
-    <%= select_tag :training, options_from_collection_for_select(Training.show_options, 'id', 'name') %>
+<div>Training Type:
+    <%= form_for 'staff/training_session', :url => { :action => "update", controller: 'staff/training_sessions'} do |f| %>
+      <%= f.select :training, options_from_collection_for_select(Training.show_options, 'id', 'name') %>
+    <% end %>
+  <%= submit_tag "Update", class:"save-button"%>
 </div><br>
 
 
