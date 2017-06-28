@@ -17,10 +17,11 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can create a new training session" do
-    post :create, training_session: {
-      training_id: "2",
-      user_id: @user.id
-    }, users: users(:bob, :mary)
+    post :create,
+      training_session: {
+        training_id: "2",
+        user_id: @user.id
+      }, users: users(:bob, :mary)
     @training_session = TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  user_id: @user.id)
     assert @training_session.present?
@@ -30,9 +31,9 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
   test "staff can change the trainging type by choosing a different training" do
     patch :update, id: training_sessions(:lathe_session),
-    changed_params: {
-      training_id: trainings(:welding_3)
-    }
+      changed_params: {
+        training_id: trainings(:welding_3)
+      }
     assert TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  user_id: @user.id).present?
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
@@ -59,7 +60,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can delete a training session" do
-    delete :delete_training_session,
+    delete :destroy,
       id: training_sessions(:lathe_session)
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                   user_id: @user.id).present?

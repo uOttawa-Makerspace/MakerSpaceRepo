@@ -86,12 +86,6 @@ Rails.application.routes.draw do
     end
 
     resources :trainings do
-      collection do
-        post 'add_training'
-        patch 'rename_training'
-        delete 'remove_training'
-
-      end
     end
 
     resources :settings, only: [:index] do
@@ -116,8 +110,6 @@ Rails.application.routes.draw do
     resources :training_sessions do
       member do
         post 'certify_trainees'
-        delete 'remove_trainee'
-        delete 'delete_training_session'
       end
     end
   end

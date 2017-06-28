@@ -1,5 +1,5 @@
 class Staff::TrainingSessionsController < StaffAreaController
-  before_action :current_training_session, only: [:show, :edit, :update, :certify_trainees, :delete_training_session]
+  before_action :current_training_session, only: [:show, :edit, :update, :certify_trainees, :destroy]
   before_action :changed_params, only: [:update]
 
   layout 'staff_area'
@@ -67,7 +67,7 @@ class Staff::TrainingSessionsController < StaffAreaController
      redirect_to :back
   end
 
-  def delete_training_session
+  def destroy
     if @current_training_session.destroy
         flash[:notice] = "Training session deleted succesfully"
     end
