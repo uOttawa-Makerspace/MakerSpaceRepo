@@ -1,44 +1,48 @@
 class Admin::TrainingsController < AdminAreaController
+
+  before_action :changed_training, only: [:update, :destroy]
+
   layout 'admin_area'
 
-  def add_training
-    if params[:training_name].present? && !Training.find_by(name: params[:training_name]).present?
-      Training.create(name: params[:training_name])
+  def new
+    @new_training = Training.new
+  end
+
+  def create
+    @new_training = Training.new(training_params)
+    if @new_training.save
       flash[:notice] = "Training added successfully!"
     else
-      flash[:alert] = "Training already exists or input is invalid"
+      flash[:alert] = "Input is invalid"
     end
     redirect_to admin_settings_path
   end
 
-  def rename_training
-    if !params[:training_name].present? || params[:training_name]==""
-      flash[:alert] = "Please enter an existing training name"
-    elsif !params[:training_new_name].present?
-      flash[:alert] = "Please enter new name for the training"
-    elsif !Training.find_by(name: params[:training_name]).present?
-      flash[:alert] = "Please enter an existing training in order to rename it!"
-    elsif Training.find_by(name: params[:training_new_name]).present?
-      flash[:alert] = "There already exists a training with this name!"
-    else
-      @training = Training.find_by(name: params[:training_name])
-      @training.name = params[:training_new_name]
-      @training.save
+  def update
+    @changed_training.update(training_params)
+    if @changed_training.save
       flash[:notice] = "Training renamed successfully"
+    else
+      flash[:alert] = "Input is invalid"
     end
     redirect_to admin_settings_path
   end
 
-  def remove_training
-    if !params[:training_name].present? || params[:training_name]==""
-      flash[:alert] = "Please enter an existing training name"
-    elsif !Training.find_by(name: params[:training_name]).present?
-      flash[:alert] = "Please enter an existing training in order to remove it!"
-    else
-      Training.find_by(name: params[:training_name]).destroy
+  def destroy
+    if @changed_training.destroy
       flash[:notice] = "Training removed successfully"
     end
     redirect_to admin_settings_path
+  end
+
+  private
+
+  def training_params
+      params.require(:training).permit(:name)
+  end
+
+  def changed_training
+    @changed_training = Training.find(params['id'])
   end
 
 end
