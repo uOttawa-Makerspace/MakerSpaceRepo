@@ -5,6 +5,5 @@ class Certification < ActiveRecord::Base
   validates :user, presence: true
   validates :trainer_id, presence: true
   validates :training, presence: true
-  scope :show_options, -> { order("lower(training) ASC").all }
 
 end
