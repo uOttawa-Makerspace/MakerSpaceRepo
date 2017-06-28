@@ -68,6 +68,7 @@ class User < ActiveRecord::Base
       all.each do |user|
         csv << user.attributes.values_at(*attributes)
       end
+      csv << [] << ["Total New users:", all.length]
     end
   end
 
