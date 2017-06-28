@@ -25,7 +25,8 @@ class Admin::ReportGeneratorController < AdminAreaController
       user = lab.user       
       row << lab.user.id << lab.user.name << lab.user.email << user.faculty << lab.user.program    
       column << row         
-    end                                      
+    end
+    column << [] << ["Total visitors this month:", @labs.length]                                      
     respond_to do |format|
       format.html
       format.csv {send_data @labs.to_csv(column)}
