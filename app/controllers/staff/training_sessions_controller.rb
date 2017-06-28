@@ -1,4 +1,6 @@
 class Staff::TrainingSessionsController < StaffAreaController
+
+  skip_before_action :training_session_params, only: [:create]
   before_action :current_training_session, only: [:show, :edit, :update, :certify_trainees, :destroy]
   before_action :changed_params, only: [:update]
 
@@ -13,14 +15,14 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def create
-    @training_session = TrainingSession.new(training_session_params)
+    @new_training_session = TrainingSession.new(user_id: current_user.id, training_id: Training.all.first.id)
     if params['training_session_users'].present?
-      JSON.parse(params['training_session_users']).each do |user|
-        @training_session.users << User.find_by(username: user)
+      params['training_session_users'].each do |user|
+        @new_training_session.users << User.find(user)
       end
     end
-    if @training_session.save
-      redirect_to "#{staff_training_session_path(@training_session.id)}"
+    if @new_training_session.save
+      redirect_to "#{staff_training_session_path(@new_training_session.id)}"
     else
       redirect_to :back
       flash[:alert] = "Something went wrong. Please try again."
@@ -28,7 +30,6 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def update
-    #binding.pry
     @current_training_session.update(changed_params)
     if params['users'].present?
       JSON.parse(params['users']).each do |new_user|
@@ -77,7 +78,7 @@ class Staff::TrainingSessionsController < StaffAreaController
   private
 
     def training_session_params
-      params.require(:training_session).permit(:user_id, :training_id, :course)
+      params.require(:training_session).permit(:training_id, :course)
     end
 
     def current_training_session
