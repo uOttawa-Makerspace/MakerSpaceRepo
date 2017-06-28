@@ -19,41 +19,36 @@
           <input type="checkbox" class="user-checkbox" onclick="check_users(this)"></input>
         </td>
 
-        <td class="username-cell"><%=
-          link_to(content_tag(:username, user.username), user_url(user.username))
-        %></td>
+        <td class="username-cell">
+          <%= link_to(content_tag(:username, user.username), user_url(user.username)) %>
+        </td>
 
-        <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
-          if user.lab_sessions.present?
-            singout_time = user.lab_sessions.last.sign_out_time
-            singout_time.strftime("%B %d, %Y")
-          end
-        %></td>
+        <td class="signed_in-cell" style="horizontal-alginment:center;">
+          <%= if user.lab_sessions.present?
+                singout_time = user.lab_sessions.last.sign_out_time
+                singout_time.strftime("%B %d, %Y")
+              end %>
+        </td>
 
-        <td class="location-cell"><%=
-          user.location
-        %></td>
+        <td class="location-cell">
+          <%= user.location %>
+        </td>
 
-        <td class="certifications-cell"><%
-          if user.certifications.first.present?
-            user.certifications.each do |certification|
-            %>
-            <div
-             class="cert-name"
-             style="display:inline" >
-             <div class="cert-holder" style="display:inline">
-              <%= certification.training %> |
-              <div id="cert-details" style="display:inline">
-                <%= certification.training %> <br>
-                <%= User.find(certification.trainer_id).name %> <br>
-                <%= certification.updated_at.strftime("%B %d, %Y")  %>
-              </div>
+        <td class="certifications-cell">
+        <% user.certifications.each do |certification| %>
+          <div
+           class="cert-name"
+           style="display:inline" >
+           <div class="cert-holder" style="display:inline">
+            <%= certification.training %> |
+            <div id="cert-details" style="display:inline">
+              <%= certification.training %> <br>
+              <%= User.find(certification.trainer_id).name %> <br>
+              <%= certification.updated_at.strftime("%B %d, %Y")  %>
             </div>
           </div>
-          <%
-            end
-          end
-          %>
+        </div>
+        <% end %>
       </td>
 
       </tr>
