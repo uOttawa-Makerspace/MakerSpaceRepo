@@ -11,7 +11,7 @@ class MsrMailer < ApplicationMailer
 		mail(:to => 'uottawa.makerepo@gmail.com', :subject => "Repository #{repository.title} reported")
 	end
 
-	def reset_password_email email, newpassword
+	def reset_password_email (email, newpassword)
 		@user = User.find_by email: email
 		@password = newpassword
 		mail(to: email, subject: "New password for MakerRepo")
