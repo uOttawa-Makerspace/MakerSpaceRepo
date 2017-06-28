@@ -43,7 +43,7 @@
             <%= certification.training %> |
             <div id="cert-details" style="display:inline">
               <%= certification.training %> <br>
-              <%= User.find(certification.trainer_id).name %> <br>
+              <%= certification.trainer %> <br>
               <%= certification.updated_at.strftime("%B %d, %Y")  %>
             </div>
           </div>

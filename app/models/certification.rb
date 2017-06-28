@@ -3,7 +3,14 @@ class Certification < ActiveRecord::Base
   belongs_to :training_session
 
   validates :user, presence: true
-  validates :trainer_id, presence: true
-  validates :training, presence: true
+  validates :training_session, presence: true
+
+  def training
+    return self.training_session.training.name
+  end
+
+  def trainer
+    return self.training_session.user.name
+  end
 
 end

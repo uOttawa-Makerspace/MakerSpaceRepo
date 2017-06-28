@@ -1,19 +1,16 @@
 bob_lathe_1:
   id: 1
   user_id: 1
-  trainer_id: 777
-  training: lathe_1
+  training_session_id: 1
 
 
 mary_welding_3:
   id: 2
   user_id: 2
-  trainer_id: 777
-  training: welding_3
+  training_session_id: 2
 
 
 mary_lathe_1:
   id: 3
   user_id: 2
-  trainer_id: 777
-  training: lathe_1
+  training_session_id: 1

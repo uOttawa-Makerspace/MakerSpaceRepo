@@ -54,8 +54,8 @@ class Staff::TrainingSessionsController < StaffAreaController
     if params['training_session_graduates'].present?
       params['training_session_graduates'].each do |graduate|
          if @current_training_session.users.include? User.find(graduate)
-           unless User.find(graduate).certifications.include? Certification.find_by(training: @current_training_session.training.name)
-             certification = Certification.new(user_id: graduate, trainer_id: staff.id, training: @current_training_session.training.name)
+           unless User.find(graduate).certifications.include? Certification.find_by(training_session_id: @current_training_session.id)
+             certification = Certification.new(user_id: graduate, training_session_id: @current_training_session.id)
              unless certification.save
                flash[:alert] = "%{grad}'s certification not saved properly!" % { :grad => graduate.username }
              end
