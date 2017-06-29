@@ -1,6 +1,7 @@
 class SearchController < SessionsController
   before_action :current_user
   # before_action :signed_in
+  require 'will_paginate/array'
 
   def explore
     @repositories = Repository.order([sort_order].to_h).page params[:page]
@@ -22,10 +23,16 @@ class SearchController < SessionsController
 
   def category
     sort_arr = sort_order
-    @repositories = Repository.where("category LIKE ?", "%#{params[:slug]}%").paginate(:per_page=>12,:page=>params[:page]) do
+    repositories_by_category = Repository.where("category LIKE ?", "%#{params[:slug]}%")
+    repositories_by_categories = []
+    Category.where('lower(name) LIKE ?', params[:slug].downcase).each do |cat|
+      repositories_by_categories << cat.repository
+    end
+    @repositories = repositories_by_category + repositories_by_categories
+    @repositories.uniq
+    @repositories.paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
     end
-
     @photos = photo_hash
   end
 
