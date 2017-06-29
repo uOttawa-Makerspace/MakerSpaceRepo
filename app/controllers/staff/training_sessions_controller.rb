@@ -17,8 +17,8 @@ class Staff::TrainingSessionsController < StaffAreaController
   def create
     @new_training_session = TrainingSession.new(user_id: current_user.id, training_id: Training.all.first.id)
     if params['training_session_users'].present?
-      params['training_session_users'].each do |user|
-        @new_training_session.users << User.find(user)
+      params['training_session_users'].each do |user_id|
+        @new_training_session.users << User.find(user_id)
       end
     end
     if @new_training_session.save

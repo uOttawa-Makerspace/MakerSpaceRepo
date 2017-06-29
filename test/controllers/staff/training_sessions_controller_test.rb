@@ -17,23 +17,19 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can create a new training session" do
-    post :create,
-      training_session: {
-        training_id: 7,
-        user_id: @user.id
-      }, users: users(:bob, :mary)
-    @training_session = TrainingSession.find_by(training_id: Training.find_by(name: "soldering_7"),
-                                 user_id: @user.id)
-    assert @training_session.present?
-    assert_redirected_to "#{staff_training_session_path(@training_session.id)}"
+  post :create, training_session_users: [users(:bob).id, users(:mary).id]
+  @new_training_session = TrainingSession.where(training_id: Training.all.first.id, user_id: @user.id).last
+  assert @new_training_session.present?
+  assert @new_training_session.users.include? User.find_by(username: "bob")
+  assert_redirected_to "#{staff_training_session_path(@new_training_session.id)}"
   end
 
 
   test "staff can change the trainging type by choosing a different training" do
     patch :update, id: training_sessions(:lathe_1_session),
-      changed_params: {
-        training_id: trainings(:welding_3)
-      }
+    changed_params: {
+      training_id: trainings(:welding_3)
+    }
     assert TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  user_id: @user.id).present?
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
