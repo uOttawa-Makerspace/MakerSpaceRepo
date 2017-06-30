@@ -15,7 +15,7 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def create
-    @new_training_session = TrainingSession.new(user_id: current_user.id, training_id: Training.all.first.id)
+    @new_training_session = TrainingSession.new(default_params)
     if params['training_session_users'].present?
       params['training_session_users'].each do |user_id|
         @new_training_session.users << User.find(user_id)
@@ -77,8 +77,12 @@ class Staff::TrainingSessionsController < StaffAreaController
 
   private
 
+    def default_params
+      return {user_id: current_user.id, training_id: Training.all.first.id}
+    end
+
     def training_session_params
-      params.require(:training_session).permit(:training_id, :course)
+      params.require(:training_session).permit(:training_id, :course, :users)
     end
 
     def current_training_session
