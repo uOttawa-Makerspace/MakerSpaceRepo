@@ -17,4 +17,8 @@ class MsrMailer < ApplicationMailer
 		mail(to: email, subject: "New password for MakerRepo")
 	end
 
+#should test this method
+	def send_report(email, csv)
+	    attachments['Report1.csv'] = {mime_type: 'text/csv', content: csv}
+	    mail(to: email, subject: 'Monthly Report', body: 'Reports are attached below')
 end
