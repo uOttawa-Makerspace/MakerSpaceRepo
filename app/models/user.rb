@@ -30,7 +30,7 @@ class User < ActiveRecord::Base
   validates :terms_and_conditions,
     inclusion: {in: [true], on: :create, message: 'You must agree to the terms and conditions' }
 
-  validates :password, 
+  validates :password,
     presence: { message: "Your password is required." },
     confirmation: {message: "Your passwords do not match."},
     format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/,
@@ -51,7 +51,7 @@ class User < ActiveRecord::Base
 
   validates :student_id,
     presence: {message: "Please provide your student Number"}, if: :student?,
-    length: { is: 7, message: 'Your username must be 7 characters.' }
+    length: { is: 7, message: 'Your student number must be 7 characters.' }
 
 
   validates :identity,
@@ -81,7 +81,7 @@ class User < ActiveRecord::Base
     self.password = @pword
     self.password_confirmation = @pword
   end
-  
+
   def student?
     self.identity.eql?("grad") || self.identity.eql?("undergrad")
   end
