@@ -5,28 +5,34 @@ class Admin::ReportGeneratorController < AdminAreaController
   def index
   end
 
-  def report1
-  	@users = User.in_last_month
+  def repor1_generator
+    @users = User.in_last_month
+    attributes = %w{id name username email faculty program created_at}
+    @users.to_csv(*attributes)
+  end
 
+  def report1
   	respond_to do |format|
-  		attributes = %w{id name username email faculty program created_at}
   		format.html
-  		format.csv {send_data @users.to_csv(*attributes)}
-  	end
+  		format.csv {send_data repor1_generator() }
+
+      ##Should move this
+      MsrMailer.send_report("admin@email.com", repor1_generator()).deliver
+    end
   end
 
   def report2
     @labs = LabSession.in_last_month
     column = []
-    column << ["lab_id", "sign_in_time", "user_id", "name", "email", "faculty", "program"]             
-    @labs.each do |lab|       
-      row = []              
-      row << lab.id << lab.sign_in_time       
-      user = lab.user       
-      row << lab.user.id << lab.user.name << lab.user.email << user.faculty << lab.user.program    
-      column << row         
+    column << ["lab_id", "sign_in_time", "user_id", "name", "email", "faculty", "program"]
+    @labs.each do |lab|
+      row = []
+      row << lab.id << lab.sign_in_time
+      user = lab.user
+      row << lab.user.id << lab.user.name << lab.user.email << user.faculty << lab.user.program
+      column << row
     end
-    column << [] << ["Total visitors this month:", @labs.length]                                      
+    column << [] << ["Total visitors this month:", @labs.length]
     respond_to do |format|
       format.html
       format.csv {send_data @labs.to_csv(column)}
