@@ -21,4 +21,5 @@ class MsrMailer < ApplicationMailer
 	def send_report(email, csv)
 	    attachments['Report1.csv'] = {mime_type: 'text/csv', content: csv}
 	    mail(to: email, subject: 'Monthly Report', body: 'Reports are attached below')
+	end
 end
