@@ -24,7 +24,7 @@
       <tr class="drop-rows">
 
         <td class="drop-checkbox-cell" onclick="check_users(this)">
-          <input type="checkbox" class="drop-user-checkbox"></input>
+          <%= check_box_tag 'dropped_users[]', value=user.username%>
         </td>
 
         <td class="drop-username-cell"><%=
@@ -87,7 +87,7 @@
       <tr class="add-rows">
 
           <td class="add-checkbox-cell">
-            <input type="checkbox" class="add-user-checkbox" onclick="check_users(this)"></input>
+            <%= check_box_tag 'added_users[]', value=user.username%>
           </td>
 
           <td class="add-username-cell">
@@ -124,48 +124,8 @@
       <% end %>
     <% end %>
     </table>
-
     <br>
-    <input type="hidden", name="users"/>
     <%= submit_tag "Update", class: 'save-button' %>
   <% end %>
-
-
-  <script>
-    function check_users(){
-
-      var users = document.getElementsByTagName("drop_username");
-      var training_session_users = [];
-      for(var i=0; i<users.length; i++){
-        training_session_users.push(users[i].innerHTML);
-      }
-
-      var drop_check_boxes = document.getElementsByClassName('drop-user-checkbox');
-      var drop_usernames = document.getElementsByTagName('drop_username');
-       for(var i=0; i<drop_check_boxes.length;i++){
-         if(drop_check_boxes[i].checked){
-           if(training_session_users.indexOf(drop_usernames[i].innerHTML) > -1){
-             training_session_users.splice(training_session_users.indexOf(drop_usernames[i].innerHTML), 1);
-             document.getElementsByClassName('drop-rows')[i].style="background-color:#B04A45";
-           }
-         }else{
-           document.getElementsByClassName('drop-rows')[i].style="background-color:#f0f5f5";
-         }
-       }
-
-       var add_check_boxes = document.getElementsByClassName('add-user-checkbox');
-       var add_usernames = document.getElementsByTagName('add_username');
-        for(var i=0; i<add_check_boxes.length;i++){
-          if(add_check_boxes[i].checked){
-            training_session_users.push(add_usernames[i].innerHTML);
-            document.getElementsByClassName('add-rows')[i].style="background-color:#A9D86B";
-          }else{
-            document.getElementsByClassName('add-rows')[i].style="background-color:#f0f5f5";
-          }
-        }
-        console.log(training_session_users);
-       document.getElementsByName("users")[0].value = JSON.stringify(training_session_users);
-    }
-  </script>
 
 </section>

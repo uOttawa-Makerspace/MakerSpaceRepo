@@ -1,6 +1,5 @@
 class Staff::TrainingSessionsController < StaffAreaController
 
-  skip_before_action :training_session_params, only: [:create]
   before_action :current_training_session, only: [:show, :edit, :update, :certify_trainees, :destroy]
   before_action :changed_params, only: [:update]
 
@@ -31,21 +30,21 @@ class Staff::TrainingSessionsController < StaffAreaController
 
   def update
     @current_training_session.update(changed_params)
-    if params['users'].present?
-      JSON.parse(params['users']).each do |new_user|
-        unless @current_training_session.users.include? User.find_by(username: new_user)
-          @current_training_session.users << User.find_by(username: new_user)
-        end
-      end
-      @current_training_session.users.each do |old_user|
-        unless JSON.parse(params['users']).include? old_user.username
-          @current_training_session.users.delete(old_user)
-        end
+    if params['dropped_users'].present?
+      params['dropped_users'].each do |dropped_user|
+        @current_training_session.users.delete(User.find_by(username: dropped_user))
       end
     end
-
+    if params['added_users'].present?
+      params['added_users'].each do |added_user|
+        @current_training_session.users << User.find_by(username: added_user)
+      end
+    end
+    @current_training_session.users = @current_training_session.users.uniq
     if @current_training_session.save
       flash[:notice] = "Training session updated succesfully"
+    else
+      flash[:aler] = "Something went wrong, please try again"
     end
     redirect_to :back
   end
