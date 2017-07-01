@@ -35,9 +35,9 @@ class SearchController < SessionsController
     repositories_by_category = Repository.where("category LIKE ?", "%#{params[:slug]}%")
     repositories_by_categories = []
     Category.all.each do |cat|
-      cat_name = cat.name.downcase.gsub!(/\W+/, '')
-      search_cat = params[:slug].downcase.gsub!(/\W+/, '')
-      if cat_name = search_cat
+      @cat_name = cat.name.downcase.gsub!(/\W+/, '')
+      @search_cat = params[:slug].downcase.gsub!(/\W+/, '')
+      if @cat_name == @search_cat
         repositories_by_categories << cat.repository
       end
     end
