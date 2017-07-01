@@ -37,6 +37,11 @@ class SearchController < SessionsController
     Category.where('lower(name) LIKE ?', params[:slug].downcase).each do |cat|
       repositories_by_categories << cat.repository
     end
+    Category.all.each do |cat|
+      if CategoryOption.where(name: cat.name).exists?
+        repositories_by_categories << cat.repository
+      end
+    end
     @repositories = repositories_by_category + repositories_by_categories
     @repositories = @repositories.uniq
     @repositories.paginate(:per_page=>12,:page=>params[:page]) do
