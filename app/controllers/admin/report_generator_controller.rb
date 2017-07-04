@@ -1,11 +1,12 @@
 class Admin::ReportGeneratorController < AdminAreaController
-
+  # before_action :report1_generator
   layout 'admin_area'
 
   def index
   end
 
-  def repor1_generator
+# New users/month
+  def report1_generator
     @users = User.in_last_month
     attributes = %w{id name username email faculty program created_at}
     @users.to_csv(*attributes)
@@ -14,14 +15,12 @@ class Admin::ReportGeneratorController < AdminAreaController
   def report1
   	respond_to do |format|
   		format.html
-  		format.csv {send_data repor1_generator() }
-
-      ##Should move this
-      MsrMailer.send_report("admin@email.com", repor1_generator()).deliver
+  		format.csv {send_data report1_generator() }
     end
   end
 
-  def report2
+# Visitors/month
+  def report2_generator
     @labs = LabSession.in_last_month
     column = []
     column << ["lab_id", "sign_in_time", "user_id", "name", "email", "faculty", "program"]
@@ -33,25 +32,29 @@ class Admin::ReportGeneratorController < AdminAreaController
       column << row
     end
     column << [] << ["Total visitors this month:", @labs.length]
+    @labs.to_csv(column)
+  end
+
+  def report2
     respond_to do |format|
       format.html
-      format.csv {send_data @labs.to_csv(column)}
+      format.csv {send_data report2_generator() }
     end
   end
 
-  def report3
-    respond_to do |format|
-      format.html
-      format.csv {send_data faculty_frequency_counter()}
-
-    end
-  end
-
-  def faculty_frequency_counter
+  def report3_generator
       @faculty_freq = User.group(:faculty).count(:faculty)
       CSV.generate do |csv|
         csv << @faculty_freq.keys
         csv << @faculty_freq.values
       end
   end
+
+  def report3
+    respond_to do |format|
+      format.html
+      format.csv {send_data report3_generator()}
+    end
+  end
+
 end
