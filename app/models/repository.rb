@@ -20,6 +20,10 @@ class Repository < ActiveRecord::Base
      "Attribution - Non-Commercial - No Derivatives"]
   end
 
+  def user_username
+    return self.user.username
+  end
+
   validates :title,
     format:     { with:    /\A[-a-zA-Z\d\s]*\z/, message: "Invalid project title" },
     presence:   { message: "Project title is required."},

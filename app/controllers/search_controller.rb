@@ -18,11 +18,12 @@ class SearchController < SessionsController
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%")
-    repositories_by_categories = []
-    Category.where('lower(name) LIKE ?', params[:q].downcase).each do |cat|
-      repositories_by_categories << cat.repository
-	  end
-    @repositories = repositories_by_attributes + repositories_by_categories
+    if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
+      @repositories += Repository.where(category: category)
+    end
+    if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
+      @repositories += Category.where(name: name).includes(:repository).map(&:repository)
+    end
     @repositories = @repositories.uniq
     @repositories.paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
@@ -32,16 +33,13 @@ class SearchController < SessionsController
 
   def category
     sort_arr = sort_order
-    repositories_by_category = Repository.where("category LIKE ?", "%#{params[:slug]}%")
-    repositories_by_categories = []
-    Category.all.each do |cat|
-      @cat_name = cat.name.downcase.gsub!(/\W+/, '')
-      @search_cat = params[:slug].downcase.gsub!(/\W+/, '')
-      if @cat_name == @search_cat
-        repositories_by_categories << cat.repository
-      end
+    @repositories = []
+    if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
+      @repositories += Repository.where(category: category)
     end
-    @repositories = repositories_by_category + repositories_by_categories
+    if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
+      @repositories += Category.where(name: name).includes(:repository).map(&:repository)
+    end
     @repositories = @repositories.uniq
     @repositories.paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
@@ -77,5 +75,25 @@ class SearchController < SessionsController
     photos = Photo.find(photo_ids.values)
     photos.inject({}) { |h,e| h.merge!(e.repository_id => e) }
   end
+
+  SLUG_TO_OLD_CATEGORY = {
+    'internet-of-things' => 'Internet of Things',
+    'virtual-reality' => 'Virtual Reality',
+    'health-sciences' => 'Bio-Medical',
+    'mobile-development' => 'mobile',
+    'other-projects' => '3D-Model',
+    'wearable' => 'Wearables'
+  }
+
+  SLUG_TO_CATEGORY_MODEL = {
+   'internet-of-things' => 'Internet of Things',
+   'course-related-projects' => 'Course-related Projects',
+   'health-sciences' => 'Health Sciences',
+   'wearable' => 'Wearable',
+   'mobile-development' => 'Mobile Development',
+   'virtual-reality' => 'Virtual Reality',
+   'other-projects' => 'Other Projects',
+   'uottawa-team-projects' => "uOttawa Team Projects"
+  }
 
 end
