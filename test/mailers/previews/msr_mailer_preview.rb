@@ -14,9 +14,9 @@ class MsrMailerPreview < ActionMailer::Preview
 	end
 
 	def send_report_email
-		MsrMailer.send_report('makerspace@uottawa.ca', Admin::ReportGeneratorController.new.report1_generator(),
-													Admin::ReportGeneratorController.new.report2_generator(),
-													Admin::ReportGeneratorController.new.report3_generator())
+		MsrMailer.send_report('makerspace@uottawa.ca', ReportGenerator.new_user_report,
+													ReportGenerator.lab_session_report,
+													ReportGenerator.faculty_frequency_report)
 	end
 
 end

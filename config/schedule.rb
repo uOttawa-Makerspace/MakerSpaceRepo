@@ -1,8 +1,8 @@
 #Not 100% sure this works properly
 every '0 7 1 * *' do #At 7am on 1st day of every month
-  runner "MsrMailer.send_report('makerspace@uottawa.ca', Admin::ReportGeneratorController.new.report1_generator(),
-                                Admin::ReportGeneratorController.new.report2_generator(),
-                                Admin::ReportGeneratorController.new.report3_generator()).deliver"
+  runner "MsrMailer.send_report('makerspace@uottawa.ca', ReportGenerator.new_user_report,
+  				ReportGenerator.lab_session_report,
+  				ReportGenerator.faculty_frequency_report).deliver"
 end
 
 
