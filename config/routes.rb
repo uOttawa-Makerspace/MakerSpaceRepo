@@ -77,7 +77,6 @@ Rails.application.routes.draw do
 
     resources :report_generator do
       collection do
-        get 'index'
         get 'report1'
         get 'report2'
         get 'report3'
@@ -106,15 +105,6 @@ Rails.application.routes.draw do
       end
     end
   end
-
-  namespace :report_generator do
-      get 'index', path: '/'
-      get 'report1'
-      get 'report2'
-      get 'report3'
-
-  end
-
 
   namespace :staff_dashboard do
     get 'index', path: '/'
