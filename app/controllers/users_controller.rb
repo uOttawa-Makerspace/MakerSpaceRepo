@@ -10,20 +10,15 @@ class UsersController < SessionsController
 
     respond_to do |format|
       if @new_user.save
+        flash[:notice] = "Profile created successfully."
+        MsrMailer.welcome_email(@new_user).deliver_now
         session[:user_id], cookies[:user_id] = @new_user.id, @new_user.id
-        format.html { redirect_to additional_info_user_path(@new_user.username) }
+        format.html { redirect_to settings_profile_path(@new_user.username) }
         format.json { render json: { success: @new_user.id }, status: :ok }
       else
         format.html { render 'new', status: :unprocessable_entity }
         format.json { render json: @new_user.errors, status: :unprocessable_entity }
       end
-    end
-  end
-
-  def additional_info
-    if request.patch?
-      user_params[:use] = params[:use] if user_params[:use].eql?("Other")
-      redirect_to settings_profile_path if @user.update(user_params)
     end
   end
 
@@ -114,7 +109,7 @@ private
   def user_params
     params.require(:user).permit(:password, :password_confirmation, :url,
       :location, :email, :name, :username, :avatar, :gender, :faculty, :use,
-      :description, :terms_and_conditions)
+      :description, :terms_and_conditions, :program, :student_id, :how_heard_about_us, :year_of_study, :identity)
   end
 
   def sort_order

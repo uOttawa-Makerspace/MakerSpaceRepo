@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160826210404) do
+ActiveRecord::Schema.define(version: 20170612183232) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -183,6 +183,11 @@ ActiveRecord::Schema.define(version: 20160826210404) do
     t.integer  "reputation",           default: 0
     t.string   "role",                 default: "regular_user"
     t.boolean  "terms_and_conditions"
+    t.string   "program"
+    t.integer  "student_id"
+    t.string   "how_heard_about_us"
+    t.string   "identity"
+    t.string   "year_of_study"
   end
 
   add_foreign_key "categories", "repositories"

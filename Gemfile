@@ -1,5 +1,5 @@
 source 'https://rubygems.org'
-ruby '2.3.4'
+ruby '2.3.1'
 
 gem 'rails', '~> 4.2'
 gem 'thin', '~> 1.6.3'
@@ -36,7 +36,7 @@ group :development, :test do
 end
 
 group :development do
-  gem 'capistrano', '~> 3.6'
+  gem 'capistrano', '~> 3.6.1'
   gem 'capistrano-rails'
   gem 'capistrano3-unicorn'
   gem 'web-console', '~> 2.0'

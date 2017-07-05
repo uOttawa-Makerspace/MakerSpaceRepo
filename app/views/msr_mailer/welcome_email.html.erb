@@ -1,0 +1,20 @@
+<%= image_tag("EmailHeader.jpg", width: '100%', position: 'relative') %>
+<section style="padding-left: 8vw;padding-top: 5vw;">
+<p style="  font: 400 1.3em 'Raleway', sans-serif;color: #333;"><h1>
+    Welcome to MakerRepo, <%= @user.name %>!
+ </h1> 
+</p>
+
+<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #333;">
+  You have successfully signed up to MakerRepo.com,
+  your username is: <%= @user.username %>.<br>
+</p>
+<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #333;">
+  To login, please follow this link: <%= @url %>.
+</p>
+
+<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #333;">
+  Cheers,<br>
+  The MakerRepo Team
+</p>
+</section>
