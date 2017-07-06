@@ -4,7 +4,7 @@ class CategoryOption < ActiveRecord::Base
   scope :show_options, -> { order("lower(name) ASC").all }
 
   def repositories
-    return Repository.joins(:categories).where(categories: { category_option_id: 1 })
+    return Repository.joins(:categories).where(categories: { category_option_id: self.id })
   end
 
 end
