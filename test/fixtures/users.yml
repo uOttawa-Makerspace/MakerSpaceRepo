@@ -1,47 +1,73 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
+#PASSOWRD IS: Password1
+
 bob:
+  id: 1
   username: bob
   name: Bob
   email: bob@gmail.com
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
-  #password: Password1
   url: null
   location: makerspace
   gender: male
-  faculty: engineering
-  use: null
-  description: null
-  identity: student
-  program: Mechanical
-  year_of_study: 3
-  student_id: 1234567
-
-
-mary:
-  username: mary
-  name: Mary
-  email: mary@gmail.com
-  terms_and_conditions: true
-  password: Password2
-  url: null
-  location: brunsfield
-  gender: female
   faculty: science
   use: null
   description: null
   identity: student
   program: Biomedical
-  year_of_study: 1
-  student_id: 9876543
+  # year_of_study: 3
+  # student_id: 1234567
 
+mary:
+  id: 2
+  username: mary
+  name: Mary
+  email: mary@gmail.com
+  terms_and_conditions: true
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  location: sandbox
+  gender: female
+  faculty: engineering
+  use: null
+  description: null
+  identity: student
+  program: Mechanical
+  # year_of_study: 1
+  # student_id: 9876543
 
+#the only admin
 adam:
+  id: 1337
   username: adam
   name: Adam
   email: adam@adam.com
   terms_and_conditions: true
-  password: Password3
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  location: brunsfield
+  gender: male
+  faculty: arts
+  use: null
+  description: null
   role: admin
+  identity: faculty_member
+
+#the only staff
+olivia:
+  id: 777
+  username: olivia
+  name: Olivia
+  email: olivia@gmail.com
+  terms_and_conditions: true
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  location: makerspace
+  gender: female
+  faculty: engineering
+  use: null
+  description: null
+  role: staff
   identity: faculty_member

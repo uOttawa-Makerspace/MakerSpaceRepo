@@ -1,7 +1,17 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  repository_id: 
+  repository_id: 1
+  image_file_name: nil
+  image_content_type: nil
+  image_file_size: nil
+  height: nil
+  width: nil
 
 two:
-  repository_id: 
+  repository_id: 2
+  image_file_name: nil
+  image_content_type: nil
+  image_file_size: nil
+  height: nil
+  width: nil
