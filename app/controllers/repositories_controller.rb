@@ -65,7 +65,7 @@ class RepositoriesController < SessionsController
       create_categories
       create_equipments
       render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
-      Repository.reindex
+      # Repository.reindex
     else
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
@@ -83,7 +83,7 @@ class RepositoriesController < SessionsController
       create_equipments
       flash[:notice] = "Project updated successfully!"
       render json: { redirect_uri: "#{repository_path(@repository.user_username, @repository.slug)}" }
-      Repository.reindex
+      # Repository.reindex
     else
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
@@ -174,9 +174,12 @@ class RepositoriesController < SessionsController
     end
 
     def create_categories
-      params['categories'].first(5).each do |c|
-        Category.create(name: c, repository_id: @repository.id)
-      end if params['categories'].present?
+      if params['categories'].present?
+        cats = params['categories']
+        cats.each do |cat|
+          Category.create(category_option_id: CategoryOption.find_by(name: String(cat)).id, repository_id: @repository.id)
+        end
+      end
     end
 
     def create_equipments

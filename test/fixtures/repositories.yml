@@ -1,12 +1,13 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
+  id: 1
   user_id:
   title: Repository1
   description: description1
-  category: My Old String
 
 two:
+  id: 2
   user_id:
   title: Repository2
   description: description2
