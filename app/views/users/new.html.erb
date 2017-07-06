@@ -1,14 +1,8 @@
 <% provide(:title, "Sign Up") %>
-
-
-
-
 <section id="signup">
-
-
   <div class="signup-breadcrumb">
      <div id="create-account">
-         Create Account/Créer le Compte 
+         Create Account/Créer le Compte
      </div>
   </div>
   <div class="signup-title">Create your personal account/Créer le Compte Personel</div>
@@ -50,28 +44,23 @@
 
     <div id = "required" ><%= f.label :gender %></div>
     <%= content_tag :span, @new_user.errors[:gender].first, class: 'form-error' %>
-    <%= f.select :gender, ["Male", "Female", "Other"] , prompt: "Choose..." %><br><br>
+    <%= f.select :gender, ["Male", "Female", "Other", "Prefer not to specify"] , prompt: "Choose..." %><br><br>
 
     <div id = "required" ><%= f.label :identity, "I am a ..." %></div>
-
     <%= f.radio_button(:identity, "grad", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Grad")  %><br>
-    
     <%= f.radio_button(:identity, "undergrad", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Undergrad")  %><br>
-
-
     <%= f.radio_button(:identity, "faculty_member", :class => "show_extra",:style => "display:inline") %><%= f.label(:identity_other, "Faculty Member") %><br>
-
     <%= f.radio_button(:identity, "community_member", :class => "show_extra",:style => "display:inline") %><%= f.label(:identity_other, "Community Member") %><br>
 
 <section id="hidden">
-    <div id = "required" ><%= f.label :student_id , "Student Number (if applicable)" %></div>
+    <div id = "required" ><%= f.label :student_id , "Student Number" %></div>
     <%= content_tag :span, @new_user.errors[:student_id].first, class: 'form-error' %>
     <%= f.text_field :student_id, autofocus: true %>
 
 
     <div id = "required" ><%= f.label :faculty , "Faculty"%></div>
     <%= content_tag :span, @new_user.errors[:faculty].first, class: 'form-error' %>
-    <%= f.select :faculty, ["N/A","Arts","Education","Engineering","Law","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
+    <%= f.select :faculty, ["Arts","Education","Engineering","Law","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
     <% programs = File.read("#{Rails.root}/public/programs.txt").lines %>
     <div id = "required" ><%= f.label :program, "Program" %></div>
@@ -80,7 +69,7 @@
 
     <div id = "required" ><%= f.label :year_of_study, "What year are you in?", style: 'margin-bottom: 0.5rem; display: inline;' %></div>
     <%= content_tag :span, @new_user.errors[:year_of_study].first, class: 'form-error' %>
-    <%= f.select :year_of_study, ["N/A", "1", "2", "3","4","5"] , prompt: "Select a year ..." %><br><br>
+    <%= f.select :year_of_study, ["1", "2", "3","4","5"] , prompt: "Select a year ..." %><br><br>
 </section>
 
     <%= f.label :use, "What do you plan on using MakerRepo for?", style: 'margin-bottom: 0.5rem; display: block;' %>
@@ -102,7 +91,7 @@
     <% if flash[:notice] %>
       <div id="notice"><%flash[:notice] %></div>
     <% end %>
-    
+
   <% end %>
 
 </section>
