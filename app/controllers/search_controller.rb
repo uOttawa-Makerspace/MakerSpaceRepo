@@ -18,12 +18,7 @@ class SearchController < SessionsController
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%")
-    if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
-      @repositories += Repository.where(category: category)
-    end
-    if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
-      @repositories += Category.where(name: name).includes(:repository).map(&:repository)
-    end
+    
     @repositories = @repositories.uniq
     @repositories.paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
