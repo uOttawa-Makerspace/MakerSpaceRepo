@@ -75,14 +75,11 @@ Rails.application.routes.draw do
   namespace :admin do
     get 'index', path: '/'
 
-    resources :report_generator do
+    resources :report_generator, only: [:index] do
       collection do
         get 'report1'
         get 'report2'
         get 'report3'
-        post 'report1'
-        post 'report2'
-        post 'report3'
       end
     end
     resources :users, only: [:index, :edit, :update, :show] do
