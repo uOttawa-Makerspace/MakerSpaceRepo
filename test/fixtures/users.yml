@@ -17,8 +17,8 @@ bob:
   description: null
   identity: student
   program: Biomedical
-  # year_of_study: 3
-  # student_id: 1234567
+  year_of_study: 3
+  student_id: 1234567
 
 mary:
   id: 2
@@ -35,8 +35,8 @@ mary:
   description: null
   identity: student
   program: Mechanical
-  # year_of_study: 1
-  # student_id: 9876543
+  year_of_study: 1
+  student_id: 9876543
 
 #the only admin
 adam:
