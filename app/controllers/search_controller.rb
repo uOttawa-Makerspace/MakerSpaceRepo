@@ -10,19 +10,14 @@ class SearchController < SessionsController
 
   def search
   	sort_arr = sort_order
-  	@repositories = Repository.where("lower(title) LIKE ?
+  	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).where("lower(title) LIKE ?
                                                 OR lower(description) LIKE ?
                                                 OR lower(user_username) LIKE ?
                                                 OR lower(category) LIKE ?",
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%",
-                                  "%#{params[:q].downcase}%")
-
-    @repositories = @repositories.uniq
-    @repositories.paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
-    end
+                                  "%#{params[:q].downcase}%").uniq
     @photos = photo_hash
   end
 
