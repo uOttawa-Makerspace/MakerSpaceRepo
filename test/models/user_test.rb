@@ -1,8 +1,8 @@
 require 'test_helper'
 
 class UserTest < ActiveSupport::TestCase
-  
-  test "Name length" do 
+
+  test "Name length" do
   	user = users(:bob)
 
   	user.name = "j"*5
@@ -75,17 +75,17 @@ class UserTest < ActiveSupport::TestCase
 
   	user.password = "abABbc246dabc"
     assert user.valid? ,"Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."
-  
+
     user.password = "abcd"
     assert user.invalid? ,"Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."
-  end   
+  end
 
   test "Presence of password" do
       user = users(:bob)
 
       user.password = "abABbc246dabc"
       assert user.valid? , "Your password is required."
-      
+
       user.password = nil
       assert user.invalid? , "Your password is required."
   end
@@ -93,9 +93,17 @@ class UserTest < ActiveSupport::TestCase
   test "Passwords matching" do
     user = User.create(:password => 'abABbc246dabc', :password_confirmation => 'abABbc246dabc')
     assert_equal( user.password, user.password_confirmation, "Your passwords do not match.")
-    
+
     user = User.create(:password => 'abABbc246dabc', :password_confirmation => 'ABabBC135DABC')
     assert_not_equal( user.password, user.password_confirmation, "Your passwords do not match.")
+  end
+
+  test "validation of identity" do
+    user = users(:bob)
+    assert user.valid?, "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member"
+
+    user.identity = "something invalid"
+    assert user.invalid?, "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member"
   end
 
 end
