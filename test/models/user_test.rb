@@ -108,8 +108,11 @@ class UserTest < ActiveSupport::TestCase
 
   test "validation of identity" do
     user = users(:bob)
-    assert user.valid?, "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member"
+    assert user.valid?, "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member, or unknown"
 
+    user.identity = "unknown"
+    assert user.valid?,  "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member, or unknown"
+    
     user.identity = "something invalid"
     assert user.invalid?, "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member"
   end
