@@ -4,7 +4,7 @@ class SearchController < SessionsController
   require 'will_paginate/array'
 
   def explore
-    @repositories = Repository.order([sort_order].to_h).page params[:page]
+    @repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).order([sort_order].to_h).page params[:page]
     @photos = photo_hash
   end
 
