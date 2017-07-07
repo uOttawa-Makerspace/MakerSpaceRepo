@@ -88,6 +88,6 @@ class User < ActiveRecord::Base
   end
 
   def identity_valid?
-    errors.add(:identity, "identity not valid") unless self.identity.eql?("grad") || self.identity.eql?("undergrad") || self.identity.eql?("faculty_member") || self.identity.eql?("community_member")
+    errors.add(:identity, "identity not valid") unless self.identity.eql?("grad") || self.identity.eql?("undergrad") || self.identity.eql?("faculty_member") || self.identity.eql?("community_member") || self.identity.eql?("unknown")
   end
 end
