@@ -98,6 +98,14 @@ class UserTest < ActiveSupport::TestCase
     assert_not_equal( user.password, user.password_confirmation, "Your passwords do not match.")
   end
 
+  test "presence of identity" do
+    user = users(:bob)
+    assert user.valid?, "Identity is required"
+
+    user.identity = nil
+    assert user.invalid?, "Identity is required"
+  end
+
   test "validation of identity" do
     user = users(:bob)
     assert user.valid?, "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member"
@@ -105,5 +113,70 @@ class UserTest < ActiveSupport::TestCase
     user.identity = "something invalid"
     assert user.invalid?, "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member"
   end
+
+  test "presence of gender" do
+    user = users(:mary)
+    assert user.valid?, "Gender is required"
+
+    user.gender = nil
+    assert user.invalid?, "Gender is required"
+  end
+
+  test "presence of faculty if student" do
+    user = users(:bob)
+    assert user.valid?, "Please provide your faculty"
+
+    user.faculty = nil
+    assert user.invalid?, "Please provide your faculty"
+
+    user = users(:adam)
+    user.faculty = nil
+    assert user.valid?
+  end
+
+  test "presence of program if student" do
+    user = users(:bob)
+    assert user.valid? , "Please provide your program of study"
+
+    user.program = nil
+    assert user.invalid?, "Please provide your program of study"
+
+    user = users(:olivia)
+    user.program = nil
+    assert user.valid?
+  end
+
+  test "presence year of study if student" do
+    user = users(:bob)
+    assert user.valid?, "Please provide your year_of_study"
+
+    user.year_of_study = nil
+    assert user.invalid?, "Please provide your year_of_study"
+
+    user = users(:adam)
+    user.year_of_study = nil
+    assert user.valid?
+  end
+
+  test "presence of student id if student" do
+    user = users(:bob)
+    assert user.valid?, "Please provide your student id"
+
+    user.student_id = nil
+    assert user.invalid?, "Please provide your student id"
+
+    user = users(:olivia)
+    user.student_id = nil
+    assert user.valid?
+  end
+
+  test "length of student_id" do
+    user = users(:bob)
+    assert user.valid?, "your student id must be 7 characters long"
+
+    user.student_id = 123456
+    assert user.invalid?, "your student id must be 7 characters long"
+  end
+
 
 end
