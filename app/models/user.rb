@@ -90,4 +90,6 @@ class User < ActiveRecord::Base
   def identity_valid?
     errors.add(:identity, "identity not valid") unless self.identity.eql?("grad") || self.identity.eql?("undergrad") || self.identity.eql?("faculty_member") || self.identity.eql?("community_member") || self.identity.eql?("unknown")
   end
+
+  scope :unknown_identity, -> { where(identity:"unknown") }
 end
