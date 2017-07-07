@@ -10,7 +10,7 @@ class SearchController < SessionsController
 
   def search
   	sort_arr = sort_order
-  	@repositories = Repository.paginate(:per_page=>1,:page=>params[:page]).where("lower(title) LIKE ?
+  	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).where("lower(title) LIKE ?
                                                 OR lower(description) LIKE ?
                                                 OR lower(user_username) LIKE ?
                                                 OR lower(category) LIKE ?",
