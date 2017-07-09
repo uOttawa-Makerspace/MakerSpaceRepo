@@ -23,17 +23,20 @@ class SearchController < SessionsController
 
   def category
     sort_arr = sort_order
-    @repositories = []
+    #@repositories = []
     if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
-      @repositories += Repository.where(category: category)
+      @repositories1 = Repository.where(category: category)
+      @repositories = @repositories1.paginate(:per_page=>12,:page=>params[:page])
     end
     if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
-      @repositories += Category.where(name: name).includes(:repository).map(&:repository)
+      @repositories2 = Category.where(name: name).includes(:repository).map(&:repository)
+      @repositories = @repositories2.paginate(:per_page=>12,:page=>params[:page])
     end
-    @repositories = @repositories.uniq
-    @repositories.paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
+    if category && name
+      @repositories = (@repositories1 + @repositories2).paginate(:per_page=>12,:page=>params[:page])
     end
+    #   order_by sort_arr.first, sort_arr.last
+    # end
     @photos = photo_hash
   end
 
