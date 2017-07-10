@@ -9,3 +9,5 @@ old:
 assigned:
   user_id: 1
   card_number: "987654321"
+  created_at: <%= Time.now - 20.days %>
+  updated_at: <%= Time.now - 20.days %>
