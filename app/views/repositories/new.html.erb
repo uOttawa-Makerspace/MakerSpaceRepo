@@ -37,7 +37,7 @@
     <div id="image-container"></div>
     
     <br>
-    <%= f.label :categories "Categories/Catégories" %> 
+    <%= f.label :categories, "Categories/Catégories" %> 
     <div>Choose at most 5 categories that fit your project./Choisi un maximum de 5 catégories qui convent à ton projet</div>
     <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category.../Sélectionne une catégorie..." %>
     
@@ -51,7 +51,7 @@
     <div id="equipment-container"></div>
   
     <br>
-    <%= f.label :license "License/Licence" %> 
+    <%= f.label :license, "License/Licence" %> 
     <div>Choose how you want your project to be used by others./Choisi comment tu veux que ton projet soit utilisé par les autres</div>
     <%= f.select :license, @repository.class.license_options %>
 
