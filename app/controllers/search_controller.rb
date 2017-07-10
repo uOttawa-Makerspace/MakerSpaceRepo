@@ -17,26 +17,29 @@ class SearchController < SessionsController
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%",
-                                  "%#{params[:q].downcase}%").uniq
+                                  "%#{params[:q].downcase}%").distinct
     @photos = photo_hash
   end
 
   def category
     sort_arr = sort_order
-    #@repositories = []
     if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
-      @repositories1 = Repository.where(category: category)
-      @repositories = @repositories1.paginate(:per_page=>12,:page=>params[:page])
+      @repositories1 = Repository.where(category: category).distinct
+      @repositories = @repositories1.paginate(:per_page=>12,:page=>params[:page]) do
+        order_by sort_arr.first, sort_arr.last
+      end
     end
     if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
-      @repositories2 = Category.where(name: name).includes(:repository).map(&:repository)
-      @repositories = @repositories2.paginate(:per_page=>12,:page=>params[:page])
+      @repositories2 = Category.where(name: name).distinct.includes(:repository).map(&:repository)
+      @repositories = @repositories2.paginate(:per_page=>12,:page=>params[:page]) do
+        order_by sort_arr.first, sort_arr.last
+      end
     end
     if category && name
-      @repositories = (@repositories1 + @repositories2).paginate(:per_page=>12,:page=>params[:page])
+      @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
+        order_by sort_arr.first, sort_arr.last
+      end
     end
-    #   order_by sort_arr.first, sort_arr.last
-    # end
     @photos = photo_hash
   end
 
