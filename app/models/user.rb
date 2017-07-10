@@ -11,8 +11,9 @@ class User < ActiveRecord::Base
   accepts_nested_attributes_for :repositories
 
   validates :name,
+    presence: { message: "Your name is required." },
     length: { maximum: 50, message: 'Your name must be less than 50 characters.' }
-
+   
   validates :username,
     presence: { message: "Your username is required." },
     uniqueness: { message: "Your username is already in use." },
@@ -35,7 +36,6 @@ class User < ActiveRecord::Base
     # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
     format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/,
              message: "Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."}
-
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
@@ -60,6 +60,17 @@ class User < ActiveRecord::Base
     self.password = @pword
     self.password_confirmation = @pword
   end
-  
-  
+
+  def self.to_csv(*attributes)
+    CSV.generate do |csv|
+      csv << attributes
+    
+      all.each do |user|
+        csv << user.attributes.values_at(*attributes)
+      end
+      csv << [] << ["Total New users:", all.length]
+    end
+  end
+
+  scope :in_last_month, -> { where('created_at BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
 end

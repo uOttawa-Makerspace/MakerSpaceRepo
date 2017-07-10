@@ -75,6 +75,13 @@ Rails.application.routes.draw do
   namespace :admin do
     get 'index', path: '/'
 
+    resources :report_generator, only: [:index] do
+      collection do
+        get 'report1'
+        get 'report2'
+        get 'report3'
+      end
+    end
     resources :users, only: [:index, :edit, :update, :show] do
       collection do
         get 'search'
@@ -100,7 +107,6 @@ Rails.application.routes.draw do
     get 'index', path: '/'
   end
 
-
   # namespace :help do
   #   get 'main', path: '/'
   # end
@@ -110,7 +116,6 @@ Rails.application.routes.draw do
    # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
     get 'likes', on: :member
-    match 'additional_info', on: :member, via: [:get, :patch]
     patch 'change_password', on: :member
   end
 
