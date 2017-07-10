@@ -75,6 +75,13 @@ Rails.application.routes.draw do
   namespace :admin do
     get 'index', path: '/'
 
+    resources :report_generator, only: [:index] do
+      collection do
+        get 'report1'
+        get 'report2'
+        get 'report3'
+      end
+    end
     resources :users, only: [:index, :edit, :update, :show] do
       collection do
         get 'search'
@@ -113,7 +120,6 @@ Rails.application.routes.draw do
       end
     end
   end
-
 
   # namespace :help do
   #   get 'main', path: '/'

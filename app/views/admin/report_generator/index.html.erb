@@ -1,0 +1,17 @@
+<section id="report">
+<div class="edit-column">
+
+<h1>Report Generator</h1>
+<p>Click the buttons below to view the reports.</p><br><br>
+
+<p> New users in the past month </p>
+<%= link_to '<button type="button">Extract</button>'.html_safe, report1_admin_report_generator_index_path(format: "csv") %><br><br>
+
+<p> Visits in the past month </p>
+<%= link_to '<button type="button">Extract</button>'.html_safe, report2_admin_report_generator_index_path(format: "csv") %><br><br>
+
+<p> Diversity of users based on faculty </p>
+<%= link_to '<button type="button">Extract</button>'.html_safe, report3_admin_report_generator_index_path(format: "csv") %>
+
+</div>
+</section>
