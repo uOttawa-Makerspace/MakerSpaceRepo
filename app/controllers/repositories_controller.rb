@@ -65,7 +65,6 @@ class RepositoriesController < SessionsController
       create_categories
       create_equipments
       render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
-      # Repository.reindex
     else
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
@@ -83,7 +82,6 @@ class RepositoriesController < SessionsController
       create_equipments
       flash[:notice] = "Project updated successfully!"
       render json: { redirect_uri: "#{repository_path(@repository.user_username, @repository.slug)}" }
-      # Repository.reindex
     else
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
