@@ -68,8 +68,7 @@
     <% end %>
     </table>
     <br>
-    <%= submit_tag "Certify", class: 'certify-button' %>
-
+    <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>
     <br>
 
     <table>

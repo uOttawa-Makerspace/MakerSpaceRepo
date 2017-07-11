@@ -44,11 +44,8 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     training_session.users << User.find_by(username: "adam")
     training_session.save
     assert training_session.users.include? User.find_by(username: "adam")
-    post :certify_trainees,
-      id: training_session,
-      training_session_graduates: [users(:adam)]
-    assert_equal flash[:notice], "Users certified successfuly"
-    assert_redirected_to :back
+    post :certify_trainees, id: training_session
+    assert_redirected_to new_staff_training_session_path
     assert Certification.find_by(user_id: users(:adam).id, training_session_id: training_sessions(:lathe_1_session).id).present?
   end
 

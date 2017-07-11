@@ -51,20 +51,15 @@ class Staff::TrainingSessionsController < StaffAreaController
 
   def certify_trainees
     staff = current_user
-    if params['training_session_graduates'].present?
-      params['training_session_graduates'].each do |graduate|
-         if @current_training_session.users.include? User.find(graduate)
-           unless User.find(graduate).certifications.include? Certification.find_by(training_session_id: @current_training_session.id)
-             certification = Certification.new(user_id: graduate, training_session_id: @current_training_session.id)
-             unless certification.save
-               flash[:alert] = "%{grad}'s certification not saved properly!" % { :grad => graduate.username }
-             end
-           end
-         end
-       end
-       flash[:notice] = "Users certified successfuly"
-     end
-     redirect_to :back
+    @current_training_session.users.each do |graduate|
+      certification = Certification.new(user_id: graduate.id, training_session_id: @current_training_session.id)
+      if certification.save
+       flash[:notice] = "%{grad}'s certification has been succesfully created" % { :grad => graduate.username }
+      else
+       flash[:alert] = "%{grad}'s certification not saved properly!" % { :grad => graduate.username }
+      end
+    end
+    redirect_to new_staff_training_session_path
   end
 
   def destroy
