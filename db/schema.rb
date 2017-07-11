@@ -208,8 +208,8 @@ ActiveRecord::Schema.define(version: 20170628161537) do
     t.integer  "reputation",           default: 0
     t.string   "role",                 default: "regular_user"
     t.boolean  "terms_and_conditions"
-    t.integer  "student_id"
     t.string   "program"
+    t.integer  "student_id"
     t.string   "how_heard_about_us"
     t.string   "identity"
     t.string   "year_of_study"

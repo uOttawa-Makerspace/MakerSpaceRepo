@@ -30,17 +30,17 @@ class Staff::TrainingSessionsController < StaffAreaController
 
   def update
     @current_training_session.update(changed_params)
+
     if params['dropped_users'].present?
-      params['dropped_users'].each do |dropped_user|
-        @current_training_session.users.delete(User.find_by(username: dropped_user))
-      end
+        @current_training_session.users -= User.where(username: params['dropped_users'])
     end
+
     if params['added_users'].present?
-      params['added_users'].each do |added_user|
-        @current_training_session.users << User.find_by(username: added_user)
-      end
+      @current_training_session.users +=  User.where(username: params['added_users'])
     end
+
     @current_training_session.users = @current_training_session.users.uniq
+
     if @current_training_session.save
       flash[:notice] = "Training session updated succesfully"
     else
