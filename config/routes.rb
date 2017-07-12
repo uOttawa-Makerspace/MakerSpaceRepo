@@ -80,6 +80,7 @@ Rails.application.routes.draw do
         get 'report1'
         get 'report2'
         get 'report3'
+        get 'report4'
       end
     end
     resources :users, only: [:index, :edit, :update, :show] do
