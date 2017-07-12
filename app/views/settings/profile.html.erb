@@ -29,8 +29,9 @@
     <%= f.label :url, "URL", class: "profile-label" %>
     <%= f.url_field :url, class: "profile-text" %>
 
-    <section id="old_users">
     <% if @user.identity == "unknown" %>
+
+    <section id="old_users">
         <p id="intro"> <strong>MakerRepo has been updated and the users who've already had an account have to update their information.<br>
            Please fill in the form below and click Save. </strong> </p>
 
@@ -57,8 +58,9 @@
         <%= f.label :year_of_study, "What year are you in?", class: "profile-label"  %>
         <%= content_tag :span, @user.errors[:year_of_study].first, class: 'form-error' %>
         <%= f.select :year_of_study, ["1", "2", "3","4","5"] , prompt: "Select a year ..." %><br><br>
+      </section>
     <% end %>
-  </section>
+    <br><br>
 
 <!--     <%= f.label :description, class: "profile-label" %>
     <%= content_tag :span, @user.errors[:description].first, class: 'form-error' %>
@@ -74,4 +76,5 @@
     <% end %>
 
   </div>
+
 <% end %>
