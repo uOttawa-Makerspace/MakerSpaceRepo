@@ -81,6 +81,7 @@ Rails.application.routes.draw do
         get 'report2'
         get 'report3'
         get 'report4'
+        get 'report5'
       end
     end
     resources :users, only: [:index, :edit, :update, :show] do
