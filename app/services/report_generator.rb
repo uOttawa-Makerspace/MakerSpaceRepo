@@ -18,7 +18,6 @@ class ReportGenerator
       column << row
     end
     column << [] << ["Total visitors this month:", @labs.length] << ["# of Unique Visits:", LabSession.distinct.count(:user_id)]
-    column <<
     @labs.to_csv(column)
   end
 
