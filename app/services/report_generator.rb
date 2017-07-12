@@ -36,4 +36,20 @@ class ReportGenerator
       csv << @gender_freq.values
     end
   end
+  
+  def self.unique_visitors_report
+    @unique_visits = LabSession.select('DISTINCT user_id')
+
+    column = []
+    column << ["id" , "name", "username", "email", "gender", "faculty", "program" ]
+
+    @unique_visits.each do |lab|
+      @visitor = lab.user
+      row = []
+      row << @visitor.id << @visitor.name << @visitor.username << @visitor.email << @visitor.gender << @visitor.faculty << @visitor.program
+      column << row
+    end
+    column << [] << ["# of Unique Visits:", LabSession.distinct.count(:user_id)]
+    @unique_visits.to_csv(column)
+  end
 end
