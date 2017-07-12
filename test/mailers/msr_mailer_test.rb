@@ -37,7 +37,7 @@ class MsrMailerTest < ActionMailer::TestCase
 	test "Sending reports" do
 		email = MsrMailer.send_report('makerspace@uottawa.ca', ReportGenerator.new_user_report,
 						ReportGenerator.lab_session_report,
-						ReportGenerator.faculty_frequency_report)
+						ReportGenerator.faculty_frequency_report, ReportGenerator.gender_frequesncy_report)
 
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['makerspace@uottawa.ca'], email.to
