@@ -18,10 +18,11 @@ class MsrMailer < ApplicationMailer
 	end
 
 #should test this method
-	def send_report(email, csv1, csv2, csv3)
-	    attachments['Report1.csv'] = {mime_type: 'text/csv', content: csv1}
-			attachments['Report2.csv'] = {mime_type: 'text/csv', content: csv2}
-			attachments['Report3.csv'] = {mime_type: 'text/csv', content: csv3}
+	def send_report(email, csv1, csv2, csv3, csv4)
+	    attachments['NewUsers.csv'] = {mime_type: 'text/csv', content: csv1}
+			attachments['Visits.csv'] = {mime_type: 'text/csv', content: csv2}
+			attachments['FacultyFrequency.csv'] = {mime_type: 'text/csv', content: csv3}
+			attachments['GenderFrequency.csv'] = {mime_type: 'text/csv', content: csv4}
 
 	    mail(to: email, subject: 'Monthly Report')
 	end
