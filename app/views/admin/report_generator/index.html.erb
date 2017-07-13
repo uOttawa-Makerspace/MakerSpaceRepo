@@ -5,19 +5,19 @@
 <p>Click the buttons below to view the reports.</p><br><br>
 
 <p> New users in the past month </p>
-<%= link_to '<button type="button">Extract</button>'.html_safe, report1_admin_report_generator_index_path(format: "csv") %><br><br>
+<%= link_to '<button type="button">Download</button>'.html_safe, new_users_admin_report_generator_index_path(format: "csv") %><br><br>
 
 <p> Total visits in the past month </p>
-<%= link_to '<button type="button">Extract</button>'.html_safe, report2_admin_report_generator_index_path(format: "csv") %><br><br>
-
-<p> Diversity of users based on faculty </p>
-<%= link_to '<button type="button">Extract</button>'.html_safe, report3_admin_report_generator_index_path(format: "csv") %><br><br>
-
-<p> Diversity of users based on gender </p>
-<%= link_to '<button type="button">Extract</button>'.html_safe, report4_admin_report_generator_index_path(format: "csv") %><br><br>
+<%= link_to '<button type="button">Download</button>'.html_safe, total_visits_admin_report_generator_index_path(format: "csv") %><br><br>
 
 <p> Unique visitors in the past month </p>
-<%= link_to '<button type="button">Extract</button>'.html_safe, report5_admin_report_generator_index_path(format: "csv") %>
+<%= link_to '<button type="button">Download</button>'.html_safe, unique_visits_admin_report_generator_index_path(format: "csv") %><br><br>
+
+<p> Diversity of users based on faculty </p>
+<%= link_to '<button type="button">Download</button>'.html_safe, faculty_frequency_admin_report_generator_index_path(format: "csv") %><br><br>
+
+<p> Diversity of users based on gender </p>
+<%= link_to '<button type="button">Download</button>'.html_safe, gender_frequency_admin_report_generator_index_path(format: "csv") %>
 
 </div>
 </section>
