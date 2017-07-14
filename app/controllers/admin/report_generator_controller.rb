@@ -1,5 +1,4 @@
 class Admin::ReportGeneratorController < AdminAreaController
-  # before_action :report1_generator
   layout 'admin_area'
 
   def index
