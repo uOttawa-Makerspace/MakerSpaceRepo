@@ -42,13 +42,13 @@
         <p> If you are <strong>not</strong> a <strong> student </strong>, you can ignore the rest of the form and click Save. </p>
         <p> If you <strong>are</strong> a student (grad/undergrad) it is mandatory for you to answer the questions below. </p>
 
-        <%= f.label :student_id , "Student Number" , class: "profile-label"%>
+        <%= f.label :student_id , "Student Number (must be 7 characters)" , class: "profile-label"%>
         <%= content_tag :span, @user.errors[:student_id].first, class: 'form-error' %>
         <%= f.text_field :student_id, class: "profile-text", autofocus: true %>
 
         <%= f.label :faculty , "Faculty" , class: "profile-label" %>
         <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
-        <%= f.select :faculty, ["Arts","Education","Engineering","Law","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
+        <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
         <p> # should load the list of programs </p>
         <%= f.label :program, "Program" , class: "profile-label" %>
