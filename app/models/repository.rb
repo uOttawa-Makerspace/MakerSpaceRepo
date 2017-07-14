@@ -8,7 +8,6 @@ class Repository < ActiveRecord::Base
   has_many   :likes,    dependent: :destroy
   has_many   :makes,    class_name: "Repository", foreign_key: "make_id"
   belongs_to :parent,   class_name: "Repository", foreign_key: "make_id"
-
   paginates_per 12
 
   def self.license_options
@@ -32,6 +31,10 @@ class Repository < ActiveRecord::Base
 
   before_destroy do
     self.user.decrement!(:reputation, 25)
+  end
+
+  def user_username
+    return self.user.username
   end
 
   # validates :category,

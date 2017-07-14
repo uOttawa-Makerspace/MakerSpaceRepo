@@ -7,7 +7,6 @@ one:
   description: description1
   slug: slug1
   category: 3D-Model
-  user_username: bob
 
 two:
   id: 2
@@ -16,4 +15,3 @@ two:
   description: description2
   slug: slug2
   category: Virtual Reality
-  user_username: mary
