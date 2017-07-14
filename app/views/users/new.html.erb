@@ -60,9 +60,10 @@
 
     <div id = "required" ><%= f.label :faculty , "Faculty"%></div>
     <%= content_tag :span, @new_user.errors[:faculty].first, class: 'form-error' %>
-    <%= f.select :faculty, ["Arts","Education","Engineering","Law","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
+    <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
+      " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
-    <% programs = File.read("#{Rails.root}/public/programs.txt").lines %>
+    <% programs = ProgramList.fetch_all %>
     <div id = "required" ><%= f.label :program, "Program" %></div>
     <%= content_tag :span, @new_user.errors[:program].first, class: 'form-error' %>
     <%= f.select(:program, programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
