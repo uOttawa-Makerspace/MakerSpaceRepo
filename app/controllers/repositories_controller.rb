@@ -175,7 +175,7 @@ class RepositoriesController < SessionsController
       if params['categories'].present?
         cats = params['categories']
         cats.each do |cat|
-          Category.create(category_option_id: CategoryOption.find_by(name: String(cat)).id, repository_id: @repository.id)
+          Category.create(category_option_id: CategoryOption.find_by(name: cat).id, repository_id: @repository.id)
         end
       end
     end

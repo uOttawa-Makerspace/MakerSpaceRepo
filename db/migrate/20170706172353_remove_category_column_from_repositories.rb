@@ -1,5 +1,5 @@
 class RemoveCategoryColumnFromRepositories < ActiveRecord::Migration
-  def change
+  def down
     remove_column :repositories, :category, :string
   end
 end

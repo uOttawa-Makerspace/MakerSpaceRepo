@@ -1,5 +1,5 @@
 class AddCategoryOptionIdToCategories < ActiveRecord::Migration
-  def change
+  def up
     Category.all.each do |cat|
       cat.category_option_id = CategoryOption.find_by(name: cat.name).id
       cat.save!
