@@ -1,20 +1,19 @@
 class ReportGenerator
 
-
   def self.new_user_report
     @users = User.in_last_month
-    attributes = %w{id name username email gender faculty program created_at}
+    attributes = %w{id name username email gender identity faculty program year_of_study student_id created_at}
     @users.to_csv(*attributes)
   end
 
   def self.lab_session_report
     @labs = LabSession.in_last_month
     column = []
-    column << ["lab_id", "sign_in_time", "user_id", "name", "email", "gender", "faculty", "program"]
+    column << ["lab_id", "sign_in_time", "user_id", "name", "email", "gender","idenity", "faculty", "program"]
     @labs.each do |lab|
       row = []
       row << lab.id << lab.sign_in_time
-      row << lab.user.id << lab.user.name << lab.user.email << lab.user.gender << lab.user.faculty << lab.user.program
+      row << lab.user.id << lab.user.name << lab.user.email << lab.user.gender << lab.user.identity << lab.user.faculty << lab.user.program
       column << row
     end
     column << [] << ["Total visitors this month:", @labs.length] << ["# of Unique Visits:", @labs.distinct.count(:user_id)]
@@ -25,11 +24,11 @@ class ReportGenerator
     @labs = LabSession.in_last_month
     @unique_visits = @labs.select('DISTINCT user_id')
     column = []
-    column << ["id" , "name", "username", "email", "gender", "faculty", "program" ]
+    column << ["id" , "name", "username", "email", "gender", "idenity", "faculty", "program" ]
     @unique_visits.each do |lab|
       @visitor = lab.user
       row = []
-      row << @visitor.id << @visitor.name << @visitor.username << @visitor.email << @visitor.gender << @visitor.faculty << @visitor.program
+      row << @visitor.id << @visitor.name << @visitor.username << @visitor.email << @visitor.gender << @visitor.identity << @visitor.faculty << @visitor.program
       column << row
     end
     column << [] << ["# of Unique Visits:", @labs.distinct.count(:user_id)]
