@@ -2,6 +2,8 @@
 
 one:
   repository_id: 1
+  name: Virtual Reality
 
 two:
   repository_id:  2
+  name: Course-related Projects
