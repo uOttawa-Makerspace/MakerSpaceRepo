@@ -1,0 +1,11 @@
+vr:
+  id: 1
+  name: Virtual Reality
+
+Course-related:
+  id: 2
+  name: Course-related Projects
+
+mobile:
+  id: 3
+  name: Mobile Development
