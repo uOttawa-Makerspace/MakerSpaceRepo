@@ -4,10 +4,10 @@
 
   <div class="signup-breadcrumb">
      <div id="create-account">
-         Create Account/Créer le Compte 
+         Create Account<br>Créer le Compte
      </div>
   </div>
-  <div class="signup-title">Create your personal account/Créer le Compte Personel</div>
+  <div class="signup-title">Create your personal account<br>Créer le Compte Personel</div>
 
   <%= form_for @new_user do |f| %>
 
@@ -51,7 +51,7 @@
     <div id = "required" ><%= f.label :identity, "I am a ..." %></div>
     <%= content_tag :span, @new_user.errors[:identity].first, class: 'form-error' %>
     <%= f.select :identity, ["Grad", "Undergrad", "Faculty Member", "Community Member"] , prompt: "Choose..." %><br><br>
-  
+
     <div id = "required" ><%= f.label :student_id , "Student Number (if applicable)" %></div>
     <%= content_tag :span, @new_user.errors[:student_id].first, class: 'form-error' %>
     <%= f.text_field :student_id, autofocus: true %>
@@ -80,7 +80,7 @@
 
     <div id = "required" ><div id="terms_and_conditions_box" ></div>
       <%= f.check_box :terms_and_conditions, :style => "float:right;" %>
-      <%= f.label :terms_and_conditions, :class => "checkbox inline" do "I agree to the #{link_to "terms and condition", "terms_and_conditions.pdf", target: "blank"}/J\'accepte les #{link_to "termes et conditions", "terms_and_conditions.pdf", target: "blank"}".html_safe end %>
+      <%= f.label :terms_and_conditions, :class => "checkbox inline" do "I agree to the #{link_to "terms and condition", "terms_and_conditions.pdf", target: "blank"}<br>J\'accepte les #{link_to "termes et conditions", "terms_and_conditions.pdf", target: "blank"}".html_safe end %>
       <%= content_tag :span, @new_user.errors[:terms_and_conditions].first, class: 'form-error' %>
     </div>
 
@@ -88,7 +88,7 @@
     <% if flash[:notice] %>
       <div id="notice"><%flash[:notice] %></div>
     <% end %>
-    
+
   <% end %>
 
 </section>
