@@ -1,0 +1,36 @@
+HS:
+  id: 1
+  name: Health Sciences
+
+IoT:
+  id: 2
+  name: Internet of Things
+
+MD:
+  id: 3
+  name: Mobile Development
+
+VR:
+  id: 4
+  name: Virtual Reality
+
+OP:
+  id: 5
+  name: Other Projects
+
+CRP:
+  id: 6
+  name: Course-related Projects
+
+UTP:
+  id: 7
+  name: uOttawa Team Projects
+
+wearable:
+  id: 8
+  name: Wearable
+
+
+undefined:
+  id: 9
+  name: undefined
