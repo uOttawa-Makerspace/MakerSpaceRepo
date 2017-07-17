@@ -33,9 +33,6 @@ class Repository < ActiveRecord::Base
     self.user.decrement!(:reputation, 25)
   end
 
-  def user_username
-    return self.user.username
-  end
 
   # validates :category,
   #   inclusion: { within: category_options },
