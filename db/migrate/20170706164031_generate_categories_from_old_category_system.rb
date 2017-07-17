@@ -1,4 +1,5 @@
 class GenerateCategoriesFromOldCategorySystem < ActiveRecord::Migration
+
   def up
     Repository.all.each do |repo|
       if new_cat_name = OLD_CATEGORY_TO_CATEGORY_MODEL[repo.category]
@@ -8,6 +9,9 @@ class GenerateCategoriesFromOldCategorySystem < ActiveRecord::Migration
         repo.save
       end
     end
+  end
+
+  def down
   end
 
   OLD_CATEGORY_TO_CATEGORY_MODEL = {
