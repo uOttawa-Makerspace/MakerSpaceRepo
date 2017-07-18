@@ -12,7 +12,7 @@
       <div style="width: 420px;">
         <%= f.text_area :description, class: 'repo', id: 'redactor' %>
       </div>
-  
+
     <%= label_tag :file, "Project files/Fichiers du Projet" %>
     <label class="custom-instructable-upload">
       <%= file_field_tag 'files[]', type: :files, multiple: true %>
@@ -35,26 +35,38 @@
     </div>
 
     <div id="image-container"></div>
-    
+
     <br>
-    <%= f.label :categories, "Categories/Catégories" %> 
+    <%= f.label :categories, "Categories/Catégories" %>
     <div>Choose at most 5 categories that fit your project./Choisi un maximum de 5 catégories qui convent à ton projet</div>
     <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category.../Sélectionne une catégorie..." %>
-    
+
     <div id="category-container"></div>
-  
+
     <br>
-    <%= f.label :equipment , "Equipment/Équipement"%> 
+    <%= f.label :equipment , "Equipment/Équipement"%>
     <div>Choose at most 5 pieces of equipment that are related to your project./Choisi un maximum de 5 pièces d'équipment qui sont reliés à ton</div>
     <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a piece of equipment.../Sélectionne une piéce d'équipement..." %>
-  
+
     <div id="equipment-container"></div>
-  
+
     <br>
-    <%= f.label :license, "License/Licence" %> 
+    <%= f.label :license, "License/Licence" %>
     <div>Choose how you want your project to be used by others./Choisi comment tu veux que ton projet soit utilisé par les autres</div>
     <%= f.select :license, @repository.class.license_options %>
 
+    <br>
+    <br>
+
+<div id= "share_option">
+    <%= f.label :share_type, "Your project is..." %>
+    <%= fa_icon('globe') %>
+    <%= f.radio_button(:share_type, "public", :style => "display:inline")%><%= f.label(:share_type, "Public", :id =>"type", :style => "display:inline")  %>
+    <div id= "description"> Anyone can see this repository </div>
+    <%= fa_icon('lock') %>
+    <%= f.radio_button(:share_type, "private", :style => "display:inline") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>
+    <div id= "description"> You can choose who can see this repository </div>
+</div>
     <br>
     <br>
     <br>
