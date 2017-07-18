@@ -77,9 +77,11 @@ Rails.application.routes.draw do
 
     resources :report_generator, only: [:index] do
       collection do
-        get 'report1'
-        get 'report2'
-        get 'report3'
+        get 'new_users'
+        get 'total_visits'
+        get 'unique_visits'
+        get 'faculty_frequency'
+        get 'gender_frequency'
       end
     end
     resources :users, only: [:index, :edit, :update, :show] do
