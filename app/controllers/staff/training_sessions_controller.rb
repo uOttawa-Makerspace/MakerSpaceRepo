@@ -57,9 +57,9 @@ class Staff::TrainingSessionsController < StaffAreaController
     @current_training_session.users.each do |graduate|
       certification = Certification.new(user_id: graduate.id, training_session_id: @current_training_session.id)
       if certification.save
-       flash[:notice] = "%{grad}'s certification has been succesfully created" % { :grad => graduate.username }
+       flash[:notice] = "#{graduate.username}'s certification has been created"
       else
-       flash[:alert] = "%{grad}'s certification not saved properly!" % { :grad => graduate.username }
+       flash[:alert] = "#{graduate.username}'s certification not saved properly!"
       end
     end
     redirect_to new_staff_training_session_path
