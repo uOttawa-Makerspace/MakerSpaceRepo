@@ -28,7 +28,7 @@ class Staff::TrainingSessionsController < StaffAreaController
       redirect_to :back
       flash[:alert] = "Something went wrong. Please try again."
     end
-
+    
   end
 
   def update
@@ -77,7 +77,7 @@ class Staff::TrainingSessionsController < StaffAreaController
   private
 
     def default_params
-      return {user_id: current_user.id, training_id: Training.all.first.id}
+      return {user_id: current_user.id, training_id: params[:training_id]}
     end
 
     def training_session_params

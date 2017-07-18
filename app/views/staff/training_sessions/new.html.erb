@@ -2,6 +2,9 @@
 
   <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
 
+  <% label_tag 'training_id' %>
+  <%= select_tag 'training_id', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'select training' %><br>
+
     <table class="staff-table">
       <tr>
         <th>Select</th>
