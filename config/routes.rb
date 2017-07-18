@@ -121,6 +121,10 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :staff_dashboard do
+    get 'index', path: '/'
+  end
+
   # namespace :help do
   #   get 'main', path: '/'
   # end
