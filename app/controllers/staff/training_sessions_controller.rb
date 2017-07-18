@@ -15,17 +15,20 @@ class Staff::TrainingSessionsController < StaffAreaController
 
   def create
     @new_training_session = TrainingSession.new(default_params)
+
     if params['training_session_users'].present?
       params['training_session_users'].each do |user_id|
         @new_training_session.users << User.find(user_id)
       end
     end
+
     if @new_training_session.save
-      redirect_to "#{staff_training_session_path(@new_training_session.id)}"
+      redirect_to staff_training_session_path(@new_training_session.id)
     else
       redirect_to :back
       flash[:alert] = "Something went wrong. Please try again."
     end
+
   end
 
   def update
@@ -44,7 +47,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     if @current_training_session.save
       flash[:notice] = "Training session updated succesfully"
     else
-      flash[:aler] = "Something went wrong, please try again"
+      flash[:alert] = "Something went wrong, please try again"
     end
     redirect_to :back
   end
@@ -65,6 +68,8 @@ class Staff::TrainingSessionsController < StaffAreaController
   def destroy
     if @current_training_session.destroy
         flash[:notice] = "Training session deleted succesfully"
+    else
+        flash[:alert] = "Something went wrong."
     end
     redirect_to :back
   end
