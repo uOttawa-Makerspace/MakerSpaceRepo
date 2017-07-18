@@ -21,7 +21,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   @new_training_session = TrainingSession.where(training_id: Training.all.first.id, user_id: @user.id).last
   assert @new_training_session.present?
   assert @new_training_session.users.include? User.find_by(username: "bob")
-  assert_redirected_to "#{staff_training_session_path(@new_training_session.id)}"
+  assert_redirected_to staff_training_session_path(@new_training_session.id)
   end
 
 
