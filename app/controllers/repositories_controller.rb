@@ -4,12 +4,23 @@ class RepositoriesController < SessionsController
   before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
 
   def show
-    @photos = @repository.photos.first(5)
-    @files = @repository.repo_files.order("LOWER(file_file_name)")
-    @categories = @repository.categories
-    @equipments = @repository.equipments
-    @comments = @repository.comments.order(comment_filter).page params[:page]
-    @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+    if @repository.share_type == "private"
+      if @repository.users.include? :current_user
+        @photos = @repository.photos.first(5)
+        @files = @repository.repo_files.order("LOWER(file_file_name)")
+        @categories = @repository.categories
+        @equipments = @repository.equipments
+        @comments = @repository.comments.order(comment_filter).page params[:page]
+        @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+      end
+    else
+      @photos = @repository.photos.first(5)
+      @files = @repository.repo_files.order("LOWER(file_file_name)")
+      @categories = @repository.categories
+      @equipments = @repository.equipments
+      @comments = @repository.comments.order(comment_filter).page params[:page]
+      @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+    end
   end
 
   def download
