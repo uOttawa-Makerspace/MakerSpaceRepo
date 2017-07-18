@@ -1,5 +1,6 @@
 class Repository < ActiveRecord::Base
   belongs_to :user
+  has_many   :users
   has_many   :photos,   dependent: :destroy
   has_many   :repo_files,   dependent: :destroy
   has_many   :categories,     dependent: :destroy
@@ -24,6 +25,9 @@ class Repository < ActiveRecord::Base
     format:     { with:    /\A[-a-zA-Z\d\s]*\z/, message: "Invalid project title" },
     presence:   { message: "Project title is required."},
     uniqueness: { message: "Project title is already in use.", scope: :user_username}
+
+  validates :share_type,
+    presence: { message: "Is your project public or private?" }
 
   before_save do
     self.slug = self.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
