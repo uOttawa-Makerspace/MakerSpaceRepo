@@ -25,10 +25,10 @@ class Staff::TrainingSessionsController < StaffAreaController
     if @new_training_session.save
       redirect_to staff_training_session_path(@new_training_session.id)
     else
-      redirect_to :back
       flash[:alert] = "Something went wrong. Please try again."
+      redirect_to :back
     end
-    
+
   end
 
   def update
@@ -86,6 +86,7 @@ class Staff::TrainingSessionsController < StaffAreaController
 
     def current_training_session
       @current_training_session = TrainingSession.find(params[:id])
+      @staff = User.find(@current_training_session.user_id)
     end
 
     def changed_params
