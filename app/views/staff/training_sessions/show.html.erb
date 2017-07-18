@@ -81,7 +81,7 @@
         <th>Certification</th>
       </tr>
 
-    <% User.all.each do |user| %>
+    <% User.all.limit(20).each do |user| %> 
       <% unless @current_training_session.users.include?(user) %>
       <tr class="add-rows">
 

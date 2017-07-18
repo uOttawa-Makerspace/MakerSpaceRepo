@@ -14,7 +14,7 @@
         <th>Certification</th>
       </tr>
 
-    <% User.all.each do |user| %>
+    <% User.all.limit(20).each do |user| %>
       <tr>
 
         <td>
