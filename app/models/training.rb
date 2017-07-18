@@ -1,5 +1,4 @@
 class Training < ActiveRecord::Base
   has_many :training_session, dependent: :destroy
   validates :name, presence: true, uniqueness: true
-  scope :show_options, -> { order("lower(name) ASC").all }
 end
