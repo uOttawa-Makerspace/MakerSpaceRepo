@@ -9,7 +9,6 @@ class Repository < ActiveRecord::Base
   has_many   :likes,    dependent: :destroy
   has_many   :makes,    class_name: "Repository", foreign_key: "make_id"
   belongs_to :parent,   class_name: "Repository", foreign_key: "make_id"
-
   paginates_per 12
 
   def self.license_options
@@ -20,6 +19,7 @@ class Repository < ActiveRecord::Base
      "Attribution - Non-Commercial - Share Alike",
      "Attribution - Non-Commercial - No Derivatives"]
   end
+
 
   validates :title,
     format:     { with:    /\A[-a-zA-Z\d\s]*\z/, message: "Invalid project title" },
@@ -36,6 +36,7 @@ class Repository < ActiveRecord::Base
   before_destroy do
     self.user.decrement!(:reputation, 25)
   end
+
 
   # validates :category,
   #   inclusion: { within: category_options },

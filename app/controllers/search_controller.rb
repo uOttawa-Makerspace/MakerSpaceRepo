@@ -4,43 +4,41 @@ class SearchController < SessionsController
   require 'will_paginate/array'
 
   def explore
-    @repositories = Repository.order([sort_order].to_h).page params[:page]
+    @repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).order([sort_order].to_h).page params[:page]
     @photos = photo_hash
   end
 
   def search
   	sort_arr = sort_order
-  	repositories_by_attributes = Repository.where("lower(title) LIKE ?
+  	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).where("lower(title) LIKE ?
                                                 OR lower(description) LIKE ?
                                                 OR lower(user_username) LIKE ?
                                                 OR lower(category) LIKE ?",
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%",
                                   "%#{params[:q].downcase}%",
-                                  "%#{params[:q].downcase}%")
-    repositories_by_categories = []
-    Category.where('lower(name) LIKE ?', params[:q].downcase).each do |cat|
-      repositories_by_categories << cat.repository
-	  end
-    @repositories = repositories_by_attributes + repositories_by_categories
-    @repositories = @repositories.uniq
-    @repositories.paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
-    end
+                                  "%#{params[:q].downcase}%").distinct
     @photos = photo_hash
   end
 
   def category
     sort_arr = sort_order
-    repositories_by_category = Repository.where("category LIKE ?", "%#{params[:slug]}%")
-    repositories_by_categories = []
-    Category.where('lower(name) LIKE ?', params[:slug].downcase).each do |cat|
-      repositories_by_categories << cat.repository
+    if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
+      @repositories1 = Repository.where(category: category).distinct
+      @repositories = @repositories1.paginate(:per_page=>12,:page=>params[:page]) do
+        order_by sort_arr.first, sort_arr.last
+      end
     end
-    @repositories = repositories_by_category + repositories_by_categories
-    @repositories = @repositories.uniq
-    @repositories.paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
+    if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
+      @repositories2 = Category.where(name: name).distinct.includes(:repository).map(&:repository)
+      @repositories = @repositories2.paginate(:per_page=>12,:page=>params[:page]) do
+        order_by sort_arr.first, sort_arr.last
+      end
+    end
+    if category && name
+      @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
+        order_by sort_arr.first, sort_arr.last
+      end
     end
     @photos = photo_hash
   end
@@ -73,5 +71,25 @@ class SearchController < SessionsController
     photos = Photo.find(photo_ids.values)
     photos.inject({}) { |h,e| h.merge!(e.repository_id => e) }
   end
+
+  SLUG_TO_OLD_CATEGORY = {
+    'internet-of-things' => 'Internet of Things',
+    'virtual-reality' => 'Virtual Reality',
+    'health-sciences' => 'Bio-Medical',
+    'mobile-development' => 'mobile',
+    'other-projects' => '3D-Model',
+    'wearable' => 'Wearables'
+  }
+
+  SLUG_TO_CATEGORY_MODEL = {
+   'internet-of-things' => 'Internet of Things',
+   'course-related-projects' => 'Course-related Projects',
+   'health-sciences' => 'Health Sciences',
+   'wearable' => 'Wearable',
+   'mobile-development' => 'Mobile Development',
+   'virtual-reality' => 'Virtual Reality',
+   'other-projects' => 'Other Projects',
+   'uottawa-team-projects' => "uOttawa Team Projects"
+  }
 
 end

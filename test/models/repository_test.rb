@@ -1,7 +1,7 @@
 require 'test_helper'
 
 class RepositoryTest < ActiveSupport::TestCase
-	
+
 	test "Presence of title" do
 		repository = repositories(:one)
 
@@ -17,6 +17,7 @@ class RepositoryTest < ActiveSupport::TestCase
 		repository = repositories(:two)
 
 		repository.title = "Repository1"
+		repository.user_username = "bob"
 		assert repository.invalid? , "Project title is already in use."
 
 

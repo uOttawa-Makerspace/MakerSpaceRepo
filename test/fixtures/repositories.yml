@@ -5,15 +5,17 @@ one:
   user_id: 1
   title: Repository1
   description: description1
+  slug: slug1
+  category: 3D-Model
   user_username: bob
-  slug: repository1
   share_type: public
-
+  
 two:
   id: 2
-  user_id: 1
+  user_id: 2
   title: Repository2
   description: description2
-  user_username: bob
-  slug: repository2
+  slug: slug2
+  category: Virtual Reality
+  user_username: mary
   share_type: public
