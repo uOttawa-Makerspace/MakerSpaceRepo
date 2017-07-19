@@ -17,6 +17,7 @@
     <%= "#{@repositories.count} repositories were found" %>
   </span>
   <section id="repositories-container">
+    <div class="pagination"><%= will_paginate @repositories %></div><br>
   <% @repositories.each_with_index do |repository, i| %>
     <div class="repository-container">
 
@@ -34,5 +35,7 @@
       </div>
     </div>
   <% end %>
+  <br></br>
   </section>
+
 </section>
