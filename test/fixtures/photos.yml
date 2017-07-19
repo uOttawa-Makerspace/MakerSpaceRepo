@@ -2,16 +2,17 @@
 
 one:
   repository_id: 1
-  image_file_name: nil
-  image_content_type: nil
-  image_file_size: nil
-  height: nil
-  width: nil
+  image_file_name: p1
+  image_content_type: .png
+  image_file_size: 3
+  height: 3
+  width: 3
 
 two:
   repository_id: 2
-  image_file_name: nil
-  image_content_type: nil
-  image_file_size: nil
-  height: nil
-  width: nil
+  image_file_name: p2
+  image_content_type: .png
+  image_file_size: 3
+  height: 3
+  width: 3
+
