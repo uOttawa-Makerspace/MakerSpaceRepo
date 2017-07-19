@@ -7,6 +7,7 @@ one:
   description: description1
   user_username: bob
   slug: repository1
+  share_type: public
 
 two:
   id: 2
@@ -15,3 +16,4 @@ two:
   description: description2
   user_username: bob
   slug: repository2
+  share_type: public
