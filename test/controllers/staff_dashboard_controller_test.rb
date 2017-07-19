@@ -6,7 +6,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
      session[:user_id] = users(:olivia).id
      session[:expires_at] = "Sat, 03 Jun 2025 05:01:41 UTC +00:00"
      get :index
-     assert_redirected_to staff_dashboard_index_path
+     assert_response :success
    end
 
    test "regular users are redirected to home" do
