@@ -1,13 +1,9 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  id: 1
-  category_option_id: 1
   repository_id: 1
-  name: Health Sciences
+  name: Virtual Reality
 
 two:
-  id: 2
-  category_option_id: 2
-  repository_id: 2
-  name: Internet of Things
+  repository_id:  2
+  name: Course-related Projects
