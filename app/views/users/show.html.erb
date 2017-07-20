@@ -75,7 +75,7 @@
                   </td>
                   <td>
                     <%=
-                      User.find(certification.trainer_id).name
+                      certification.trainer
                     %>
                   </td>
                   <td>
@@ -90,7 +90,7 @@
                         style: 'color:#FFF;  background-color: #b02a12;padding-top: 1rem 1rem;text-color:#FFFF'
                       %>
                     </td>
-                  <%end%>  
+                  <%end%>
                 </tr>
                 <% end %>
             </table>
