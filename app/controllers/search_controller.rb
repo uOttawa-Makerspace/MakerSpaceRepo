@@ -45,7 +45,9 @@ class SearchController < SessionsController
 
   def equipment
     sort_arr = sort_order
-    @repositories = Repository.where("equipment LIKE ?", "%#{params[:slug]}%").paginate(:per_page=>12,:page=>params[:page]) do
+
+    name = params[:slug].gsub('-', ' ')
+    @repositories =  Equipment.where(name: name).distinct.includes(:repository).map(&:repository).paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
     end
 
