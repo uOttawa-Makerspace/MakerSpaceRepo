@@ -5,8 +5,8 @@ class MakesController < SessionsController
 
   def create
     @repo = @repository.makes.build do |r|
-      r.title = params[:repository][:title]
-      r.description = params[:repository][:description]
+      r.title = params[@repository.title][:title]
+      r.description = params[@repository.title][:description]
       r.license = @repository.license
       r.github = @repository.github
       r.github_url = @repository.github_url
@@ -31,7 +31,7 @@ class MakesController < SessionsController
   end
 
   private
-    
+
     def set_repository
       @repository = Repository.find_by(user_username: params[:user_username], slug: params[:slug])
     end
@@ -44,10 +44,12 @@ class MakesController < SessionsController
     end
 
     def copy_tags
-      @repository.tags.each do |t|
-        Tag.create(name: t.name, repository_id: @repo.id)
+      @repository.categories.each do |c|
+        Category.create(name: c.name, repository_id: @repo.id, category_option_id: c.category_option_id)
+      end
+      @repository.equipment.each do |e|
+       Equipment.create(name: e.name, repository_id: @repo.id)
       end
     end
 
 end
-
