@@ -9,11 +9,7 @@ one:
   category: 3D-Model
   user_username: bob
   share_type: public
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 90d22f611a870b946f8401a3e4136cff9b51ebee
 two:
   id: 2
   user_id: 2
