@@ -4,9 +4,9 @@ namespace :csv do
 
     $legible_users = []
 
-    data = Rails.root.join('test','lib','assets','TRAINING_DATABASE.csv')
+    test_spreadsheet = Rails.root.join('test','lib','assets','TRAINING_DATABASE.csv')
 
-    CSV.foreach(data) do |row|
+    CSV.foreach(test_spreadsheet) do |row|
 
       student_id = row[2]
       email = row[6]
