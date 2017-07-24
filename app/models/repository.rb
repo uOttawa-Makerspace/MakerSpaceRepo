@@ -31,9 +31,9 @@ class Repository < ActiveRecord::Base
   validates :share_type,
     presence: { message: "Is your project public or private?" }
 
-  validates :password
-    presence: { message: "Password is required for private projects" } if private?
-    
+  validates :password,
+    presence: { message: "Password is required for private projects" }, if: :private?
+
   before_save do
     self.slug = self.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
