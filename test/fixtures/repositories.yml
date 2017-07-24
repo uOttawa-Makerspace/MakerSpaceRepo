@@ -10,6 +10,7 @@ one:
   user_username: bob
   share_type: public
 
+
 two:
   id: 2
   user_id: 2
@@ -18,4 +19,5 @@ two:
   slug: slug2
   category: Virtual Reality
   user_username: mary
-  share_type: public
+  share_type: private
+  password: Password1
