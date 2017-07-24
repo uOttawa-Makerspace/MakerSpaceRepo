@@ -1,0 +1,130 @@
+<section id ="page-contents" >
+
+<div>Trainer: <%= @staff.name %></div><br>
+
+<div>Training Type: <%= @current_training_session.training.name %>
+    <br>
+    <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
+      <% label_tag 'changed_params[training_id]' %>
+      <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'change training' %><br>
+</div><br>
+
+
+  <table class="training-session-users-table">
+      Users in this training session
+      <tr>
+        <th>Drop</th>
+        <th>Username</th>
+        <th>Last Signed In</th>
+        <th>Location</th>
+        <th>Certification</th>
+      </tr>
+
+    <% @current_training_session.users.each do |user| %>
+      <tr class="drop-rows">
+
+        <td class="drop-checkbox-cell" onclick="check_users(this)">
+          <%= check_box_tag 'dropped_users[]', value=user.username%>
+        </td>
+
+        <td class="drop-username-cell"><%=
+          link_to(content_tag(:drop_username, user.username), user_url(user.username))
+        %></td>
+
+        <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
+          if user.lab_sessions.present?
+            singout_time = user.lab_sessions.last.sign_out_time
+            singout_time.strftime("%B %d, %Y")
+          end
+        %></td>
+
+        <td class="location-cell"><%=
+          user.location
+        %></td>
+
+        <td class="certifications-cell"><%
+          if user.certifications.first.present?
+            user.certifications.each do |certification|
+            %>
+            <div
+             class="cert-name"
+             style="display:inline" >
+             <div class="cert-holder" style="display:inline">
+              <%= certification.training %> |
+              <div id="cert-details" style="display:inline">
+                <%= certification.training %> <br>
+                <%= certification.trainer %> <br>
+                <%= certification.updated_at.strftime("%B %d, %Y")  %>
+              </div>
+            </div>
+          </div>
+          <%
+            end
+          end
+          %>
+        </td>
+
+      </tr>
+    <% end %>
+    </table>
+    <br>
+    <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>
+    <br>
+
+    <table>
+      Other Users
+      <tr>
+        <th>Add</th>
+        <th>Username</th>
+        <th>Last Signed In</th>
+        <th>Location</th>
+        <th>Certification</th>
+      </tr>
+
+    <% User.all.limit(20).each do |user| %> 
+      <% unless @current_training_session.users.include?(user) %>
+      <tr class="add-rows">
+
+          <td class="add-checkbox-cell">
+            <%= check_box_tag 'added_users[]', value=user.username%>
+          </td>
+
+          <td class="add-username-cell">
+            <%= link_to(content_tag(:add_username, user.username), user_url(user.username)) %>
+          </td>
+
+          <td class="signed_in-cell" style="horizontal-alginment:center;">
+            <%= if user.lab_sessions.present?
+                  singout_time = user.lab_sessions.last.sign_out_time
+                  singout_time.strftime("%B %d, %Y")
+                end %>
+          </td>
+
+          <td class="location-cell">
+            <%= user.location %></td>
+
+          <td class="certifications-cell">
+          <% user.certifications.each do |certification| %>
+              <div
+               class="cert-name"
+               style="display:inline" >
+               <div class="cert-holder" style="display:inline">
+                <%= certification.training %> |
+                <div id="cert-details" style="display:inline">
+                  <%= certification.training %> <br>
+                  <%= certification.trainer %> <br>
+                  <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </td>
+      </tr>
+      <% end %>
+    <% end %>
+    </table>
+    <br>
+    <%= submit_tag "Update", class: 'save-button' %>
+  <% end %>
+
+</section>

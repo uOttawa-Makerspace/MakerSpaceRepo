@@ -67,7 +67,7 @@ class UserTest < ActiveSupport::TestCase
   	assert user.terms_and_conditions , "You must agree to the terms and conditions"
 
     user.terms_and_conditions = false
-    assert !(user.terms_and_conditions) , "You must agree to the terms and conditions"
+    refute (user.terms_and_conditions) , "You must agree to the terms and conditions"
   end
 
   test "Allowed characters in the password" do

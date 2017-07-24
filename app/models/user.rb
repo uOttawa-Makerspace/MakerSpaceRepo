@@ -8,6 +8,7 @@ class User < ActiveRecord::Base
   has_many :repositories, dependent: :destroy
   has_many :certifications, dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
+  has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories
 
   validates :name,
@@ -92,6 +93,16 @@ class User < ActiveRecord::Base
   end
 
   scope :unknown_identity, -> { where(identity:"unknown") }
+
+
+  def admin?
+    self.role.eql?("admin")
+  end
+
+  def staff?
+    self.role.eql?("staff") || self.role.eql?("admin")
+  end
+
 
   def self.to_csv(*attributes)
     CSV.generate do |csv|
