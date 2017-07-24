@@ -5,7 +5,7 @@
 
 <section id="user-show">
 
-  <% if @repo_user.eql?(@user) %> 
+  <% if @repo_user.eql?(@user) %>
     <%= link_to fa_icon("cog", text: ' Edit Profile'), settings_profile_path, class: 'edit-user-profile' %>
 
   <%= link_to settings_profile_path do %>
@@ -16,13 +16,13 @@
       </div>
     </div>
   <% end %>
-  
+
   <% else %>
     <div class="user-avatar">
       <%= image_tag @repo_user.avatar.url %>
     </div>
   <% end %>
-  
+
   <div id="user-info">
     <div class="fullname">
       <%= "#{@repo_user.name}"%>
@@ -52,7 +52,63 @@
     </div>
     <div class="user-info">
       <%= fa_icon "clock-o", text: "Joined on #{@repo_user.created_at.strftime("%B %d %Y")}"%>
-    </div>  
+    </div>
+
+
+    <% if @user.staff?%>
+      <div class="user-certifications"> CERTIFICATIONS
+        <br></br>
+        <div class="user-certifications-container">
+            <table class=staff-table>
+              <tr>
+                <th>TRAINING</th>
+                <th>TRAINER</th>
+                <th>TIME</th>
+                <th>ACTION</th>
+              </tr>
+              <% @repo_user.certifications.each do |certification| %>
+                <tr>
+                  <td>
+                    <%=
+                      certification.training
+                    %>
+                  </td>
+                  <td>
+                    <%=
+                      certification.trainer
+                    %>
+                  </td>
+                  <td>
+                    <%=
+                      certification.created_at.strftime("%B %d, %Y")
+                    %>
+                  </td>
+                  <% if @user.admin? %>
+                    <td>
+                      <%=
+                        link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
+                        style: 'color:#FFF;  background-color: #b02a12;padding-top: 1rem 1rem;text-color:#FFFF'
+                      %>
+                    </td>
+                  <%end%>
+                </tr>
+                <% end %>
+            </table>
+            <br></br>
+            <% if @user.admin? %>
+            <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
+                <%= radio_button_tag :role, "regular_user" %>
+                <%= label_tag :regular %><br></br>
+                <%= radio_button_tag :role, "staff" %>
+                <%= label_tag :staff %><br></br>
+                <%= radio_button_tag :role, "admin" %>
+                <%= label_tag :admin %><br></br>
+              <%= submit_tag "Save", class: "save-button" %>
+            <% end %>
+          <% end %>
+          </div>
+      </div>
+    <% end %>
 
   </div>
 
@@ -86,15 +142,14 @@
 
       <div class="repo-info">
         <div class="left">
-          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug)%></div> 
-          <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div> 
+          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug)%></div>
+          <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
           <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
         </div>
-        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div> 
+        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
       </div>
     </div>
   <% end %>
   </section>
-  <%= paginate repos %> 
+  <%= paginate repos %>
 </section>
-

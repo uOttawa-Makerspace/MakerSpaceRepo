@@ -31,7 +31,7 @@ div.setting-side-panel{
   li{
   	display: block;
   	height: 2.5rem;
-  	
+
   	a {
   		@include transition(100ms);
 
@@ -84,7 +84,7 @@ textarea.profile-text{
   border-radius: 3px;
   border: 1px solid #aaa;
   display: block;
-  height: 120px;	
+  height: 120px;
 }
 
 select.profile-select{
@@ -130,6 +130,7 @@ input.save-button{
     cursor: pointer;
   }
 }
+
 
 div.general-settings {
   select {
@@ -191,7 +192,7 @@ div.edit-column{
   font: 400 1rem 'Raleway', sans-serif;
   padding-top: 2rem;
   min-height: calc(100vh - 50px);
-  
+
   input#q{
     display:inline;
     width:300px;
@@ -202,7 +203,7 @@ div.edit-column{
     width:120px;
     height:35px;
   }
-  
+
   a.edit-user-link {
     @include transition(100ms);
     position: relative;
@@ -258,7 +259,7 @@ div.cp-column{
 }
 
 @media screen and (max-width: 700px){
- 
+
   div.setting-side-panel{
     display: none;
   }
@@ -267,7 +268,7 @@ div.cp-column{
     @include span-columns(12, 3);
     padding: 0;
     border: none;
-    
+
     div.title{
       padding-top: 0;
     }

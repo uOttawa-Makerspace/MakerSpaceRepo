@@ -1,0 +1,34 @@
+// Place all the styles related to the Staff::TrainingSession controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+select{
+  font: 300 0.9em 'Raleway', sans-serif;
+  color: #555;
+  padding: 0.5rem;
+	margin: 0.5rem 0 1rem;
+  max-width: 400px;
+  width: 15%;
+  border-radius: 3px;
+  border: 1px solid #aaa;
+  display: inline;
+}
+
+.certify-button{
+
+  float: right;
+  margin-right: 20px;
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #53BE6A;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+  }
+}
