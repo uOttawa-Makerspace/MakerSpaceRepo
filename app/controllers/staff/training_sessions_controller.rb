@@ -53,7 +53,6 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def certify_trainees
-    staff = current_user
     @current_training_session.users.each do |graduate|
       certification = Certification.new(user_id: graduate.id, training_session_id: @current_training_session.id)
       if certification.save
