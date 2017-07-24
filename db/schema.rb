@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170714165821) do
+ActiveRecord::Schema.define(version: 20170724223831) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -33,9 +33,9 @@ ActiveRecord::Schema.define(version: 20170714165821) do
 
   create_table "certifications", force: :cascade do |t|
     t.integer  "user_id"
-    t.string   "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
+    t.integer  "training_session_id"
   end
 
   add_index "certifications", ["user_id"], name: "index_certifications_on_user_id", using: :btree
@@ -52,6 +52,14 @@ ActiveRecord::Schema.define(version: 20170714165821) do
 
   add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
   add_index "comments", ["user_id"], name: "index_comments_on_user_id", using: :btree
+
+  create_table "course_options", force: :cascade do |t|
+    t.string   "title"
+    t.string   "code"
+    t.integer  "year"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "equipment", force: :cascade do |t|
     t.integer  "repository_id"
@@ -151,6 +159,31 @@ ActiveRecord::Schema.define(version: 20170714165821) do
 
   add_index "rfids", ["user_id"], name: "index_rfids_on_user_id", using: :btree
 
+  create_table "training_sessions", force: :cascade do |t|
+    t.integer  "training_id"
+    t.integer  "user_id"
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+    t.string   "course"
+  end
+
+  add_index "training_sessions", ["training_id"], name: "index_training_sessions_on_training_id", using: :btree
+  add_index "training_sessions", ["user_id"], name: "index_training_sessions_on_user_id", using: :btree
+
+  create_table "training_sessions_users", id: false, force: :cascade do |t|
+    t.integer "training_session_id"
+    t.integer "user_id"
+  end
+
+  add_index "training_sessions_users", ["training_session_id"], name: "index_training_sessions_users_on_training_session_id", using: :btree
+  add_index "training_sessions_users", ["user_id"], name: "index_training_sessions_users_on_user_id", using: :btree
+
+  create_table "trainings", force: :cascade do |t|
+    t.string   "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "upvotes", force: :cascade do |t|
     t.integer  "user_id"
     t.integer  "comment_id"
@@ -201,6 +234,8 @@ ActiveRecord::Schema.define(version: 20170714165821) do
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"
+  add_foreign_key "training_sessions", "trainings"
+  add_foreign_key "training_sessions", "users"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
 end
