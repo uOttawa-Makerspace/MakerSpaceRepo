@@ -6,7 +6,6 @@ namespace :users_without_tac do
     @users = User.unsigned_tac_users
     $emails = []
     @users.each do |user|
-      #puts user['username'] + ", " + user['email']
       $emails << user['email']
     end
   end
