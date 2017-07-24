@@ -95,6 +95,7 @@
                 <% end %>
             </table>
             <br></br>
+            <% if @user.admin? %>
             <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
                 <%= radio_button_tag :role, "regular_user" %>
                 <%= label_tag :regular %><br></br>
@@ -104,6 +105,7 @@
                 <%= label_tag :admin %><br></br>
               <%= submit_tag "Save", class: "save-button" %>
             <% end %>
+          <% end %>
           </div>
       </div>
     <% end %>
