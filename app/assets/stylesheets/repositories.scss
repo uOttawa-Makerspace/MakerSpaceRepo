@@ -54,7 +54,6 @@ section#new-repo{
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
   }
-
 }
 
 .ui-state-focus:not(.ui-selectmenu-button){
@@ -273,8 +272,15 @@ div#share_option{
     cursor: not-allowed;
   }
 
-
+  input {
+      color: #666;
+      height: 20px;
+      padding: 2px;
+      padding-left: 5px;
+  }
 }
+
+
 
 label.custom-instructable-upload{
   @include transition(100);
