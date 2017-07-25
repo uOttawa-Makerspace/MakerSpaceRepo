@@ -17,8 +17,8 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can create a new training session" do
-  post :create, training_session_users: [users(:bob).id, users(:mary).id], training_id: Training.last.id, course: CourseOption.first
-  @new_training_session = TrainingSession.where(training_id: Training.last.id, user_id: @user.id, course: CourseOption.first.code).last
+  post :create, training_session_users: [users(:bob).id, users(:mary).id], training_id: Training.last.id, course: "GNG2205"
+  @new_training_session = TrainingSession.where(training_id: Training.last.id, user_id: @user.id, course: "GNG2205").last
   assert @new_training_session.present?
   assert @new_training_session.users.include? User.find_by(username: "bob")
   assert_redirected_to staff_training_session_path(@new_training_session.id)
