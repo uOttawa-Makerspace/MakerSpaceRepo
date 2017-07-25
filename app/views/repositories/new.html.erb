@@ -61,11 +61,15 @@
 <div id= "share_option">
     <%= f.label :share_type, "Your project is..." %>
     <%= fa_icon('globe') %>
-    <%= f.radio_button(:share_type, "public", :style => "display:inline")%><%= f.label(:share_type, "Public", :id =>"type", :style => "display:inline")  %>
+    <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline")%><%= f.label(:share_type, "Public", :id =>"type", :style => "display:inline")  %>
     <div id= "description"> Anyone can see this repository </div>
     <%= fa_icon('lock') %>
-    <%= f.radio_button(:share_type, "private", :style => "display:inline") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>
+    <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>
     <div id= "description"> You can choose who can see this repository </div>
+
+    <section id="hidden">
+        <div id= "password"><%= password_field_tag :password, nil, placeholder: 'Password' %></div>
+    </section>
 </div>
     <br>
     <br>
