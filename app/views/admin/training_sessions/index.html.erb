@@ -1,0 +1,125 @@
+<section id="page-contents">
+  <% if flash[:notice] %>
+    <div id="notice"><%= flash[:notice] %></div>
+  <% end %>
+
+  <% provide(:title, "Settings") %>
+  <% if flash[:notice] %>
+    <div id="notice"><%= flash[:notice] %></div>
+  <% end %>
+
+
+    <div class="edit-column">
+      <div class="setting-title">Training Sessions Manager</div>
+      <br>
+      <input type="text" id="query" onkeyup="findSession()" placeholder=" Find by: date, training, course, username  ">
+
+      <br></br>
+      <br>Training Sessions</br>
+      <table id="sessions-table">
+        <tr>
+          <th>Date
+            <button class="sort-arrow" onclick="sortTable(0)"><div class="arrow-down"></div></button></th></th>
+          <th>Training
+            <button class="sort-arrow" onclick="sortTable(1)"><div class="arrow-down"></div></button></th>
+          <th>Trainer
+            <button class="sort-arrow" onclick="sortTable(2)"><div class="arrow-down"></div></button></th>
+          <th>Course
+            <button class="sort-arrow" onclick="sortTable(3)"><div class="arrow-down"></div></button></th>
+          <th>Users</th>
+        </tr>
+
+        <tbody>
+        <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20) %>
+        <%= will_paginate @sessions %>
+        <% @sessions.each do |s| %>
+          <tr>
+
+            <td>
+               <%= s.updated_at.strftime("%m/%d/%Y") %>
+               <%= s.updated_at.strftime("at %I:%M %p").downcase() %>
+            </td>
+
+            <td class="training-cell">
+              <%= s.training.name %>
+            </td>
+
+            <td class="trainer-cell" style="horizontal-alginment:center;">
+              <%= s.user.name %>
+            </td>
+
+            <td class="course-cell">
+              <%= s.course %>
+            </td>
+
+            <td class="users-cell">
+            <% s.users.each do |user| %>
+                <div
+                 class="cert-name"
+                 style="display:inline" >
+                 <div class="cert-holder" style="display:inline">
+                  <%= user.name %> |
+                </div>
+              </div>
+            <% end %>
+            </td>
+
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+
+  </div>
+
+</section>
+
+<script>
+  function findSession() {
+    var input, filter, table, tr, i;
+    input = document.getElementById("query");
+    filter = input.value.toUpperCase();
+    table = document.getElementById("sessions-table");
+    tr = document.getElementsByTagName("tr");
+    for (i = 0; i < tr.length; i++) {
+      td0 = tr[i].getElementsByTagName("td")[0]; //match date
+      td1 = tr[i].getElementsByTagName("td")[1]; //match training
+      td2 = tr[i].getElementsByTagName("td")[2]; //match trainer
+      td3 = tr[i].getElementsByTagName("td")[3]; //match course
+      if (td1) {
+        if (td1.innerHTML.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = "";
+        } else if (td2.innerHTML.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = "";
+        }else if (td3.innerHTML.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = "";
+        }else if (td0.innerHTML.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = "";
+        }else {
+          tr[i].style.display = "none";
+        }
+      }
+    }
+  }
+  function sortTable(col) {
+    var table, rows, switching, i, x, y, shouldSwitch;
+    table = document.getElementById("sessions-table");
+    switching = true;
+    while (switching) {
+      switching = false;
+      rows = table.getElementsByTagName("tr");
+      for (i = 1; i < (rows.length - 1); i++) {
+        shouldSwitch = false;
+        x = rows[i].getElementsByTagName("td")[col];
+        y = rows[i + 1].getElementsByTagName("td")[col];
+        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+          shouldSwitch= true;
+          break;
+        }
+      }
+      if (shouldSwitch) {
+        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+        switching = true;
+      }
+    }
+  }
+</script>
