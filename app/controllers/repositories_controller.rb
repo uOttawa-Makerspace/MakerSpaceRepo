@@ -2,14 +2,19 @@ class RepositoriesController < SessionsController
   before_action :current_user
   before_action :signed_in, except: [:index, :show, :download, :download_files]
   before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
+  before_action :check_auth
 
   def show
-    @photos = @repository.photos.first(5)
-    @files = @repository.repo_files.order("LOWER(file_file_name)")
-    @categories = @repository.categories
-    @equipments = @repository.equipments
-    @comments = @repository.comments.order(comment_filter).page params[:page]
-    @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+    if @authorized
+        # @photos = @repository.photos.first(5)
+        # @files = @repository.repo_files.order("LOWER(file_file_name)")
+        @categories = @repository.categories
+        @equipments = @repository.equipments
+        @comments = @repository.comments.order(comment_filter).page params[:page]
+        @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+    else
+        redirect_to password_entry_repository_path
+    end
   end
 
   def download
@@ -65,7 +70,7 @@ class RepositoriesController < SessionsController
       create_categories
       create_equipments
       render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
-      Repository.reindex
+      @authorized = false
     else
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
@@ -83,7 +88,6 @@ class RepositoriesController < SessionsController
       create_equipments
       flash[:notice] = "Project updated successfully!"
       render json: { redirect_uri: "#{repository_path(@repository.user_username, @repository.slug)}" }
-      Repository.reindex
     else
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
@@ -106,14 +110,41 @@ class RepositoriesController < SessionsController
       render json: { failed: true }
   end
 
+  def password_entry
+  end
+
+  def pass_authenticate
+    @auth = Repository.authenticate(params[:slug], params[:password])
+    @repository = Repository.find_by_slug(params[:slug])
+    respond_to do |format|
+      if @auth
+        @authorized = true
+        flash[:notice] = "Success"
+        format.html{render 'show'}
+        format.json { render json: { role: :guest }, status: :ok }
+      else
+        @authorized = false
+        flash[:notice] = "Incorrect password. Try again!"
+        format.html { redirect_to password_entry_repository_path}
+        format.json { render json: @repository.errors, status: :unprocessable_entity }
+        flash[:alert] = "Incorrect password. Try again!!!!!"
+
+      end
+    end
+  end
+
   private
+
+    def check_auth
+      @authorized == true || (params[:share_type] == "public") || (@user.role == "admin")
+    end
 
     def set_repository
       @repository = Repository.find_by(slug: params[:slug])
     end
 
     def repository_params
-      params.require(:repository).permit(:title, :description, :license, :user_id)
+      params.require(:repository).permit(:title, :description, :license, :user_id, :password)
     end
 
     def comment_filter
