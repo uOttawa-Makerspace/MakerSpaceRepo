@@ -46,14 +46,14 @@ class Repository < ActiveRecord::Base
     self.share_type.eql?("private")
   end
 
-  def self.authenticate(slug, pass)
+  def self.authenticate(slug, password)
     @repository = Repository.find_by_slug(slug)
-    return @repository.password == pass
+    return @repository.pword == password
   end
 
-  # def pword
-  #   @pword ||= Password.new(password)
-  # end
+  def pword
+    @pword ||= Password.new(password)
+  end
 
   # validates :category,
   #   inclusion: { within: category_options },
