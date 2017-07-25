@@ -4,13 +4,13 @@ class SearchController < SessionsController
   require 'will_paginate/array'
 
   def explore
-    @repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).order([sort_order].to_h).page params[:page]
+    @repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).where(share_type: "public").order([sort_order].to_h).page params[:page]
     @photos = photo_hash
   end
 
   def search
   	sort_arr = sort_order
-  	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).where("lower(title) LIKE ?
+  	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).where(share_type: "public").where("lower(title) LIKE ?
                                                 OR lower(description) LIKE ?
                                                 OR lower(user_username) LIKE ?
                                                 OR lower(category) LIKE ?",
