@@ -8,8 +8,9 @@
     <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
       <% label_tag 'changed_params[training_id]' %>
       <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'change training' %><br>
+
       <% label_tag 'changed_params[course]' %>
-      <%= select_tag 'changed_params[course]', options_from_collection_for_select(CourseOption.all, 'id', 'code'), prompt: 'change course' %><br>
+      <%= select_tag 'changed_params[course]', options_from_collection_for_select(CourseOption.all, 'code', 'code'), prompt: 'change course' %><br>
 </div><br>
 
 
