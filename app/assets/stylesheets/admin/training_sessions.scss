@@ -2,12 +2,15 @@
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
 table{
-
   width:98%;
+  font-size: 14px;
+
   th {
       background-color: #c2d6d6;
       color: #366;
       padding:5px;
+      width: 200px;
+
       a {
           text-decoration: underline;
       }
@@ -40,6 +43,7 @@ table{
     color: #366;
     text-align:center;
   }
+
 
 }
 

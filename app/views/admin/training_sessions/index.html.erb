@@ -1,15 +1,9 @@
 <section id="page-contents">
+
   <% if flash[:notice] %>
     <div id="notice"><%= flash[:notice] %></div>
   <% end %>
 
-  <% provide(:title, "Settings") %>
-  <% if flash[:notice] %>
-    <div id="notice"><%= flash[:notice] %></div>
-  <% end %>
-
-
-    <div class="edit-column">
       <div class="setting-title">Training Sessions Manager</div>
       <br>
       <input type="text" id="query" onkeyup="findSession()" placeholder=" Find by: date, training, course, username  ">
@@ -37,7 +31,7 @@
         <% @sessions.each do |s| %>
           <tr>
 
-            <td>
+            <td class="date-cell">
                <%= s.updated_at.strftime("%m/%d/%Y") %>
                <%= s.updated_at.strftime("at %I:%M %p").downcase() %>
             </td>
@@ -57,13 +51,7 @@
 
             <td class="users-cell">
             <% s.users.each do |user| %>
-                <div
-                 class="cert-name"
-                 style="display:inline" >
-                 <div class="cert-holder" style="display:inline">
-                  <%= user.name %> |
-                </div>
-              </div>
+              <%= user.name %> |
             <% end %>
             </td>
 
@@ -80,8 +68,6 @@
         </tbody>
       </table>
 
-  </div>
-
 </section>
 
 <script>
@@ -96,6 +82,7 @@
       td1 = tr[i].getElementsByTagName("td")[1]; //match training
       td2 = tr[i].getElementsByTagName("td")[2]; //match trainer
       td3 = tr[i].getElementsByTagName("td")[3]; //match course
+      td4 = tr[i].getElementsByTagName("td")[4];
       current_staff = tr[i].getElementsByTagName("current_staff")[0]
       if (td1) {
         if (td0.innerHTML.toUpperCase().indexOf(filter) > -1) {
@@ -105,6 +92,8 @@
         } else if (current_staff.innerHTML.toUpperCase().indexOf(filter) > -1) {
           tr[i].style.display = "";
         }else if (td3.innerHTML.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = "";
+        }else if (td4.innerHTML.toUpperCase().indexOf(filter) > -1) {
           tr[i].style.display = "";
         }else {
           tr[i].style.display = "none";

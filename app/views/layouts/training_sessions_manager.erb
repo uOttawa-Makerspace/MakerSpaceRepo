@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Area | MakerRepo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <%= favicon_link_tag 'site-icon.jpg' %>
+    <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
+    <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+    <%= javascript_include_tag "vendor",      :debug => false %>
+    <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+  <%= csrf_meta_tags %>
+  <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
+</head>
+<body>
+	<%= render 'layouts/header' %>
+	<section id="setting">
+		<div class="setting-grid">
+			<%= yield %>
+		</div>
+	</section>
+  <%= render 'layouts/footer' %>
+</body>
+</html>
