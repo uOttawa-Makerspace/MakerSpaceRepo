@@ -4,6 +4,10 @@
     <div id="notice"><%= flash[:notice] %></div>
   <% end %>
 
+  <% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+  <% end %>
+
       <div class="setting-title">Training Sessions Manager</div>
       <br>
       <input type="text" id="query" onkeyup="findSession()" placeholder=" Find by: date, training, course, username  ">
@@ -22,48 +26,54 @@
             <button class="sort-arrow" onclick="sortTable(3)"><div class="arrow-down"></div></button></th>
           <th>Users</th>
           <th>Status</th>
+          <th>Action</th>
 
         </tr>
 
         <tbody>
         <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20) %>
         <%= will_paginate @sessions %>
-        <% @sessions.each do |s| %>
+        <% @sessions.each do |sesh| %>
+        <%= form_for sesh, url: { action: "update", id: sesh.id } do |f| %>
           <tr>
-
             <td class="date-cell">
-               <%= s.updated_at.strftime("%m/%d/%Y") %>
-               <%= s.updated_at.strftime("at %I:%M %p").downcase() %>
+               <%= sesh.created_at.strftime("%m/%d/%Y") %>
+               <%= sesh.created_at.strftime("at %I:%M %p").downcase() %>
             </td>
 
             <td class="training-cell">
-              <%= s.training.name %>
+              <%= sesh.training.name %>
             </td>
 
             <td class="trainer-cell" style="horizontal-alginment:center;">
-              <%= content_tag 'current_staff', s.user.name %>
-              <%= select_tag 'trainging_session[user_id]', options_from_collection_for_select(User.where('role LIKE \'staff\' or role LIKE \'admin\''), 'id', 'name'), prompt: "change" %><br>
+              <%= content_tag 'current_staff', sesh.user.name %>
+              <%= select_tag 'training_session[user_id]', options_from_collection_for_select(User.where('role LIKE \'staff\' or role LIKE \'admin\''), 'id', 'name'), prompt: "change" %><br>
             </td>
 
             <td class="course-cell">
-              <%= s.course %>
+              <%= sesh.course %>
             </td>
 
             <td class="users-cell">
-            <% s.users.each do |user| %>
+            <% sesh.users.each do |user| %>
               <%= user.name %> |
             <% end %>
             </td>
 
             <td class="status-cell">
-              <% if s.users.first.certifications.include? Certification.find_by(training_session_id: s.id) %>
+              <% if sesh.users.first.certifications.include? Certification.find_by(training_session_id: sesh.id) %>
                 COMPLETE
               <% else %>
                 INCOMPLETE
               <% end %>
             </td>
 
+            <td class="action-cell">
+              <%=submit_tag "Update", class:"save-button" %>
+            </td>
+
           </tr>
+          <% end %>
         <% end %>
         </tbody>
       </table>

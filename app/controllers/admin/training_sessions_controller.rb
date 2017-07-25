@@ -1,6 +1,6 @@
 class Admin::TrainingSessionsController < AdminAreaController
-  before_action :target_training_session, only: [:update]
   before_action :training_session_params, only: [:update]
+  before_action :training_session, only: [:update]
 
   layout 'training_sessions_manager'
 
@@ -9,17 +9,24 @@ class Admin::TrainingSessionsController < AdminAreaController
 
   def update
     @training_session.update(training_session_params)
+    if @training_session.save
+      flash[:notice] = "Updated Successfuly"
+      redirect_to :back
+    else
+      flash[:alert] = "Something Went Wrong"
+      redirect_to :back
+    end
   end
 
 
   private
 
-    def target_training_session
+    def training_session
       @training_session = TrainingSession.find(params[:id])
     end
 
     def training_session_params
-      params.require(:training_session_params).permit(:training_id, :user_id, :course, :users)
+      params.require(:training_session).permit(:user_id)
     end
 
 end
