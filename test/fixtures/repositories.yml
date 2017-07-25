@@ -8,6 +8,8 @@ one:
   slug: slug1
   category: 3D-Model
   user_username: bob
+  share_type: public
+
 
 two:
   id: 2
@@ -17,3 +19,16 @@ two:
   slug: slug2
   category: Virtual Reality
   user_username: mary
+  share_type: public
+
+
+three:
+  id: 3
+  user_id: 2
+  title: Repository3
+  description: description3
+  slug: slug3
+  category: other-projects
+  user_username: mary
+  share_type: private
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
