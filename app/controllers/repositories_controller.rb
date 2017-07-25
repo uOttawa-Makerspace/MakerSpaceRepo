@@ -5,7 +5,7 @@ class RepositoriesController < SessionsController
   before_action :check_auth
 
   def show
-    if @authorized
+    if @check_passed
         # @photos = @repository.photos.first(5)
         # @files = @repository.repo_files.order("LOWER(file_file_name)")
         @categories = @repository.categories
@@ -136,7 +136,11 @@ class RepositoriesController < SessionsController
   private
 
     def check_auth
-      @authorized == true || (params[:share_type] == "public") || (@user.role == "admin")
+      if (@authorized == true || (params[:share_type] == "public") || (@user.role == "admin") || (params[:user_username] == @user.username))
+        @check_passed = true
+      else
+        @check_passed = false
+      end
     end
 
     def set_repository
