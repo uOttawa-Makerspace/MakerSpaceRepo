@@ -27,6 +27,8 @@
           <th>Course
             <button class="sort-arrow" onclick="sortTable(3)"><div class="arrow-down"></div></button></th>
           <th>Users</th>
+          <th>Status</th>
+
         </tr>
 
         <tbody>
@@ -63,6 +65,14 @@
                 </div>
               </div>
             <% end %>
+            </td>
+
+            <td class="status-cell">
+              <% if s.users.first.certifications.include? Certification.find_by(training_session_id: s.id) %>
+                COMPLETE
+              <% else %>
+                INCOMPLETE
+              <% end %>
             </td>
 
           </tr>
