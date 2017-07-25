@@ -139,6 +139,10 @@ ActiveRecord::Schema.define(version: 20170714165821) do
     t.integer  "make",          default: 0
     t.string   "slug"
     t.string   "share_type"
+<<<<<<< HEAD
+=======
+    t.string   "password"
+>>>>>>> 29126515c09f4fb29dc469a2ecc10dcd85c8e310
   end
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree

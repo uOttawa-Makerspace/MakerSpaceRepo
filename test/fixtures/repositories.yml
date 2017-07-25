@@ -8,7 +8,6 @@ one:
   slug: slug1
   category: 3D-Model
   user_username: bob
-  slug: repository1
   share_type: public
 
 two:
@@ -19,6 +18,5 @@ two:
   slug: slug2
   category: Virtual Reality
   user_username: mary
-  user_username: bob
-  slug: repository2
-  share_type: public
+  share_type: private
+  password: Password1
