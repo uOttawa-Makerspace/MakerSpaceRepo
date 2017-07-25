@@ -76,7 +76,7 @@ class Staff::TrainingSessionsController < StaffAreaController
   private
 
     def default_params
-      return {user_id: current_user.id, training_id: params[:training_id]}
+      return {user_id: current_user.id, training_id: params[:training_id], course: CourseOption.find(params[:course]).code}
     end
 
     def training_session_params
