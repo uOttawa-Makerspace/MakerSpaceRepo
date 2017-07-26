@@ -6,7 +6,7 @@
   <%= select_tag 'training_id', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'select training' %><br>
 
   <% label_tag 'course' %>
-  <%= select_tag 'course', options_from_collection_for_select(), prompt: 'select course' %><br>
+  <%= select_tag 'course', options_for_select(['GNG1105', 'GNG2205']), prompt: 'select course' %><br>
 
 
     <table class="staff-table">
