@@ -5,15 +5,24 @@ class RepositoriesController < SessionsController
   before_action :check_auth
 
   def show
-    if @check_passed
-        # @photos = @repository.photos.first(5)
-        # @files = @repository.repo_files.order("LOWER(file_file_name)")
-        @categories = @repository.categories
-        @equipments = @repository.equipments
-        @comments = @repository.comments.order(comment_filter).page params[:page]
-        @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+    if @repository.share_type.eql?("private")
+      if @check_passed
+          @photos = @repository.photos.first(5)
+          @files = @repository.repo_files.order("LOWER(file_file_name)")
+          @categories = @repository.categories
+          @equipments = @repository.equipments
+          @comments = @repository.comments.order(comment_filter).page params[:page]
+          @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+      else
+          redirect_to password_entry_repository_path
+      end
     else
-        redirect_to password_entry_repository_path
+      @photos = @repository.photos.first(5)
+      @files = @repository.repo_files.order("LOWER(file_file_name)")
+      @categories = @repository.categories
+      @equipments = @repository.equipments
+      @comments = @repository.comments.order(comment_filter).page params[:page]
+      @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
     end
   end
 
@@ -127,8 +136,6 @@ class RepositoriesController < SessionsController
         flash[:notice] = "Incorrect password. Try again!"
         format.html { redirect_to password_entry_repository_path}
         format.json { render json: @repository.errors, status: :unprocessable_entity }
-        flash[:alert] = "Incorrect password. Try again!!!!!"
-
       end
     end
   end
@@ -136,7 +143,7 @@ class RepositoriesController < SessionsController
   private
 
     def check_auth
-      if (@authorized == true || (params[:share_type] == "public") || (@user.role == "admin") || (params[:user_username] == @user.username))
+      if (@authorized == true || (@user.role == "admin") || (params[:user_username] == @user.username))
         @check_passed = true
       else
         @check_passed = false
