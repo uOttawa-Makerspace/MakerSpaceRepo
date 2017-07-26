@@ -49,6 +49,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     else
       flash[:alert] = "Something went wrong, please try again"
     end
+
     redirect_to :back
   end
 
@@ -93,7 +94,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     end
 
     def changed_params
-      params.require(:changed_params).permit(:training_id, :course)
+      params.require(:changed_params).permit(:training_id, :course, :user_id).reject { |_, v| v.blank? }
     end
 
 end
