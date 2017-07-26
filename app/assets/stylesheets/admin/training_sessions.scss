@@ -44,7 +44,27 @@ table{
     text-align:center;
   }
   td.action-cell{
-    padding-top: 20px
+    padding-top: 20px;
+    align-items: center;
+      .delete-ts{
+        float: right;
+        margin-right: 20px;
+        font: 300 1em 'Raleway', sans-serif;
+        padding: 0.5rem 1rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #A61E10;
+        color: #fff;
+        margin-bottom: 20px;
+        margin-right: 25px;
+
+        &:hover{
+          cursor: pointer;
+        }
+      }
   }
 
 
@@ -69,7 +89,6 @@ button.sort-arrow{
 
 select#training_session_user_id{
   width: 90px;
-  height: 2rem;
   font-size: 0.75rem;
   alignment: center;
 }

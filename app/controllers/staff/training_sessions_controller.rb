@@ -35,7 +35,10 @@ class Staff::TrainingSessionsController < StaffAreaController
     @current_training_session.update(changed_params)
 
     if params['dropped_users'].present?
-        @current_training_session.users -= User.where(username: params['dropped_users'])
+      @current_training_session.users -= User.where(username: params[ 'dropped_users'])
+      User.where(username: params[ 'dropped_users']).each do |user|
+        user.certifications.find_by(training_session_id: @current_training_session.id).destroy
+      end
     end
 
     if params['added_users'].present?
