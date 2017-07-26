@@ -226,7 +226,6 @@ div#role-container{
 
 	font: 'Raleway', sans-serif;
 	font-size: 1.1rem;
-	font-weight: bold;
 	color: #366;
 
 	.update-button{
@@ -255,11 +254,14 @@ div#role-container{
 		font-size: 0.95rem;
 		padding-left: 3px;
 		padding-right: 15px;
+		font-weight: bold;
+
 	}
 
 	div#change-to{
 		font: 'Raleway', sans-serif;
-		font-size: 1.2rem;
+		font-size: 1.15rem;
+
 	}
 
 }
