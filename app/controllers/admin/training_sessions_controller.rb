@@ -1,6 +1,6 @@
 class Admin::TrainingSessionsController < AdminAreaController
   before_action :training_session_params, only: [:update]
-  before_action :training_session, only: [:update]
+  before_action :training_session, only: [:update, :destroy]
 
   layout 'training_sessions_manager'
 
@@ -36,7 +36,7 @@ class Admin::TrainingSessionsController < AdminAreaController
     end
 
     def training_session_params
-      params.require(:training_session).permit(:user_id)
+      params.require(:training_session).permit(:user_id).reject { |_, v| v.blank? }
     end
 
 end
