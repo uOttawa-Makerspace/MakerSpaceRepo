@@ -19,6 +19,16 @@ class Admin::TrainingSessionsController < AdminAreaController
   end
 
 
+  def destroy
+    if @training_session.destroy
+        flash[:notice] = "Training session deleted succesfully"
+    else
+        flash[:alert] = "Something went wrong."
+    end
+    redirect_to :back
+  end
+
+
   private
 
     def training_session
