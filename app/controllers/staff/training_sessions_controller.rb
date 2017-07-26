@@ -76,7 +76,11 @@ class Staff::TrainingSessionsController < StaffAreaController
   private
 
     def default_params
-      return {user_id: current_user.id, training_id: params[:training_id]}
+      if params[:user_id].present?
+        return {user_id: params[:user_id], training_id: params[:training_id]}
+      else
+        return {user_id: current_user.id, training_id: params[:training_id]}
+      end
     end
 
     def training_session_params
