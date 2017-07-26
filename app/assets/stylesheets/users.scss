@@ -222,6 +222,40 @@ a.delete{
   font-size: 0.85rem;
 }
 
+a.revoke-button{
+	font: 300 0.7em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #A61E10;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+a.renew-button{
+	font: 300 0.7em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #53BE6A;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+  }
+}
+
 div#role-container{
 
 	font: 'Raleway', sans-serif;

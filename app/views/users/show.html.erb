@@ -88,7 +88,11 @@
                     <td>
                       <%=
                         link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
-                        style: 'color:#FFF;  background-color: #b02a12;padding-top: 1rem 1rem;text-color:#FFFF'
+                        class: 'revoke-button'
+                      %>
+                      <%=
+                        link_to "renew", renew_certification_admin_users_path(id: certification.id), method: :patch,
+                        class: 'renew-button'
                       %>
                     </td>
                   <%end%>
