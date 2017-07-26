@@ -16,3 +16,10 @@ two:
   height: 3
   width: 3
 
+three:
+  repository_id: 3
+  image_file_name: p3
+  image_content_type: .png
+  image_file_size: 3
+  height: 3
+  width: 3
