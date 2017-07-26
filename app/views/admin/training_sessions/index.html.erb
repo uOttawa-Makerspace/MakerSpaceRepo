@@ -70,7 +70,7 @@
 
             <td class="action-cell">
               <%=submit_tag "Update", class:"save-button" %>
-              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Are you sure?' }%>
+              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }%>
             </td>
 
           </tr>
