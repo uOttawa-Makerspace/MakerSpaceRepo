@@ -1,0 +1,13 @@
+one:
+  id: 1
+  repository_id: 1
+  file_file_name: repo_1_file_1
+  file_content_type: CAD
+  file_file_size: 3
+
+two:
+  id: 2
+  repository_id: 1
+  file_file_name: repo_1_file_2
+  file_content_type: CAD
+  file_file_size: 4

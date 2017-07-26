@@ -36,15 +36,10 @@ run the following command in a bash shell in the same directory as Rakefile (mai
 rake db:setup
 ```
 
-### Run tests and load fixtures
-Fixtures create active records for testing 
+### Run all tests to load clean fixtures in the database
+Fixtures are dummy instances of models for testing and development
 ```bash
 bundle exec rake
-```
-
-### Fire up solr with:
-```bash
-sunspot-solr start
 ```
 
 ### Fire up the rails server with:
