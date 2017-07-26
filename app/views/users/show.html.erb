@@ -94,18 +94,22 @@
                 </tr>
                 <% end %>
             </table>
-            <br></br>
+            <br><br>
             <% if @user.admin? %>
-            <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
-                <%= radio_button_tag :role, "regular_user" %>
-                <%= label_tag :regular %><br></br>
-                <%= radio_button_tag :role, "staff" %>
-                <%= label_tag :staff %><br></br>
-                <%= radio_button_tag :role, "admin" %>
-                <%= label_tag :admin %><br></br>
-              <%= submit_tag "Save", class: "save-button" %>
-            <% end %>
-          <% end %>
+              <div id="role-container" > Current role: <%= @repo_user.role.gsub("_", " ") %>
+                <div id="change-to"> Change to:
+                <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
+                  <%= radio_button_tag :role, "admin" %>
+                  <%= label_tag :admin %>
+                  <%= radio_button_tag :role, "staff" %>
+                  <%= label_tag :staff %>
+                  <%= radio_button_tag :role, "regular_user" %>
+                  <%= label_tag :regular %><br>
+                <%= submit_tag "update role", class: "update-button" %>
+                <% end %>
+              <% end %>
+              </div>
+            </div>
           </div>
       </div>
     <% end %>

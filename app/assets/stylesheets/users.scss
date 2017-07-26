@@ -222,6 +222,48 @@ a.delete{
   font-size: 0.85rem;
 }
 
+div#role-container{
+
+	font: 'Raleway', sans-serif;
+	font-size: 1.1rem;
+	font-weight: bold;
+	color: #366;
+
+	.update-button{
+		font: 300 0.7em 'Raleway', sans-serif;
+		padding: 0.3rem 0.13em;
+		border: none;
+		text-transform: uppercase;
+		color: #777;
+		letter-spacing: 0.09em;
+		border-radius: 2px;
+		background-color: #5f9ea0;
+		color: #fff;
+		margin-bottom: 12px;
+
+		&:hover{
+			cursor: pointer;
+		}
+	}
+
+	input[type=radio]{
+		color: black;
+		background: black;
+	}
+
+	label{
+		font-size: 0.95rem;
+		padding-left: 3px;
+		padding-right: 15px;
+	}
+
+	div#change-to{
+		font: 'Raleway', sans-serif;
+		font-size: 1.2rem;
+	}
+
+}
+
 div#notice{
   display: none;
   position: absolute;
