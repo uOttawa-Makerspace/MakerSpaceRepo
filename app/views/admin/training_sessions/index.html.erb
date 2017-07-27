@@ -16,7 +16,7 @@
       <table id="sessions-table">
         <tr>
           <th>Date
-            <button class="sort-arrow" onclick="sortTable(0)"><div class="arrow-down"></div></button></th></th>
+            <button class="sort-arrow" onclick="sortTable(0)"><div class="arrow-down"></div></button></th>
           <th>Training
             <button class="sort-arrow" onclick="sortTable(1)"><div class="arrow-down"></div></button></th>
           <th>Trainer
@@ -46,7 +46,7 @@
             </td>
 
             <td class="trainer-cell" style="horizontal-alginment:center;">
-              <%= content_tag 'current_staff', sesh.user.name %>
+              <%= link_to sesh.user.name, user_url(sesh.user.username) %>
             <!--  <%= select_tag 'training_session[user_id]', options_from_collection_for_select(User.where('role LIKE \'staff\' or role LIKE \'admin\''), 'id', 'name'), prompt: "change" %><br> -->
             </td>
 
