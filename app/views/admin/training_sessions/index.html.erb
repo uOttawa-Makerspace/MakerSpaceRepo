@@ -90,6 +90,9 @@
 </section>
 
 <script>
+
+  var sort_direction = 1;
+
   function findSession() {
     var input, filter, table, tr, i;
     input = document.getElementById("query");
@@ -121,25 +124,50 @@
     }
   }
   function sortTable(col) {
-    var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementById("sessions-table");
-    switching = true;
-    while (switching) {
-      switching = false;
-      rows = table.getElementsByTagName("tr");
-      for (i = 1; i < (rows.length - 1); i++) {
-        shouldSwitch = false;
-        x = rows[i].getElementsByTagName("td")[col];
-        y = rows[i + 1].getElementsByTagName("td")[col];
-        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-          shouldSwitch= true;
-          break;
+    if(sort_direction === 1){
+      var table, rows, switching, i, x, y, shouldSwitch;
+      table = document.getElementById("sessions-table");
+      switching = true;
+      while (switching) {
+        switching = false;
+        rows = table.getElementsByTagName("tr");
+        for (i = 1; i < (rows.length - 1); i++) {
+          shouldSwitch = false;
+          x = rows[i].getElementsByTagName("td")[col];
+          y = rows[i + 1].getElementsByTagName("td")[col];
+          if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+            shouldSwitch= true;
+            break;
+          }
+        }
+        if (shouldSwitch) {
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
         }
       }
-      if (shouldSwitch) {
-        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-        switching = true;
+      sort_direction = 0;
+    }else{
+      var table, rows, switching, i, x, y, shouldSwitch;
+      table = document.getElementById("sessions-table");
+      switching = true;
+      while (switching) {
+        switching = false;
+        rows = table.getElementsByTagName("tr");
+        for (i = 1; i < (rows.length - 1); i++) {
+          shouldSwitch = false;
+          x = rows[i].getElementsByTagName("td")[col];
+          y = rows[i + 1].getElementsByTagName("td")[col];
+          if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+            shouldSwitch= true;
+            break;
+          }
+        }
+        if (shouldSwitch) {
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
+        }
       }
+      sort_direction = 1;
     }
   }
 </script>
