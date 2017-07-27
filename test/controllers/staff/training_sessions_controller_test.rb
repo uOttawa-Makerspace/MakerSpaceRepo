@@ -55,7 +55,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
       id: training_sessions(:lathe_1_session)
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                   user_id: @user.id).present?
-    assert_redirected_to (:back)
+    assert_redirected_to new_staff_training_session_path
     assert_equal flash[:notice], "Training session deleted succesfully"
   end
 end
