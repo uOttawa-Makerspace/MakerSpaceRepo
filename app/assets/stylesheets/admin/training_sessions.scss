@@ -30,7 +30,7 @@ table{
 
   }
   td{
-      padding:5px 10px;
+      padding:5px 6px;
       text-align: center;
   }
   tr {
@@ -44,13 +44,29 @@ table{
     text-align:center;
   }
   td.action-cell{
-    padding-top: 20px;
     align-items: center;
-      .delete-ts{
-        float: right;
-        margin-right: 20px;
-        font: 300 1em 'Raleway', sans-serif;
+    padding-top: 12px;
+
+      .visit-button{
+        font: 300 10px 'Raleway', sans-serif;
         padding: 0.5rem 1rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #5f9ea0;
+        color: #fff;
+
+        &:hover{
+          cursor: pointer;
+        }
+      }
+
+      .destroy-button{
+        float: right;
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 0.84rem;
         border: none;
         text-transform: uppercase;
         color: #777;
@@ -58,15 +74,15 @@ table{
         border-radius: 2px;
         background-color: #A61E10;
         color: #fff;
-        margin-bottom: 20px;
-        margin-right: 25px;
+        margin-bottom: 6px;
+        margin-right: 37px;
+        margin-top: 15px;
 
         &:hover{
           cursor: pointer;
         }
       }
   }
-
 
 }
 

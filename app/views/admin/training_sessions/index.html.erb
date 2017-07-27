@@ -16,7 +16,7 @@
       <br>Training Sessions</br>
       <table id="sessions-table">
         <tr>
-          <th>Date
+          <th>Date (mm/dd/yy)
             <button class="sort-arrow" onclick="sortTable(0)"><div class="arrow-down"></div></button></th></th>
           <th>Training
             <button class="sort-arrow" onclick="sortTable(1)"><div class="arrow-down"></div></button></th>
@@ -34,11 +34,10 @@
         <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20) %>
         <%= will_paginate @sessions %>
         <% @sessions.each do |sesh| %>
-        <%= form_for sesh, url: { action: "update", id: sesh.id } do |f| %>
           <tr>
             <td class="date-cell">
-               <%= sesh.created_at.strftime("%m/%d/%Y") %>
-               <%= sesh.created_at.strftime("at %I:%M %p").downcase() %>
+              <%= sesh.created_at.strftime("%I:%M %p\n").downcase() %>
+              <%= sesh.created_at.strftime("%d/%m/%Y") %>
             </td>
 
             <td class="training-cell">
@@ -47,7 +46,7 @@
 
             <td class="trainer-cell" style="horizontal-alginment:center;">
               <%= content_tag 'current_staff', sesh.user.name %>
-              <%= select_tag 'training_session[user_id]', options_from_collection_for_select(User.where('role LIKE \'staff\' or role LIKE \'admin\''), 'id', 'name'), prompt: "change" %><br>
+            <!--  <%= select_tag 'training_session[user_id]', options_from_collection_for_select(User.where('role LIKE \'staff\' or role LIKE \'admin\''), 'id', 'name'), prompt: "change" %><br> -->
             </td>
 
             <td class="course-cell">
@@ -69,12 +68,11 @@
             </td>
 
             <td class="action-cell">
-              <%=submit_tag "Update", class:"save-button" %>
-              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"delete-ts"%>
+              <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %>
+              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
             </td>
 
           </tr>
-          <% end %>
         <% end %>
         </tbody>
       </table>
