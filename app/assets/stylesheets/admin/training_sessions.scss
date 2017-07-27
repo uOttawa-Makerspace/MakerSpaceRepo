@@ -29,6 +29,12 @@ table{
       }
 
   }
+  .action-header{
+    width: 100px;
+  }
+
+
+
   td{
       padding:5px 6px;
       text-align: center;
@@ -46,10 +52,11 @@ table{
   td.action-cell{
     align-items: center;
     padding-top: 12px;
+    width: 70px;
 
       .visit-button{
         font: 300 10px 'Raleway', sans-serif;
-        padding: 0.5rem 1rem;
+        padding: 0.5rem 1.6rem;
         border: none;
         text-transform: uppercase;
         color: #777;
@@ -66,7 +73,7 @@ table{
       .destroy-button{
         float: right;
         font: 300 10px 'Raleway', sans-serif;
-        padding: 0.5rem 0.84rem;
+        padding: 0.5rem 0.81rem;
         border: none;
         text-transform: uppercase;
         color: #777;
@@ -75,8 +82,8 @@ table{
         background-color: #A61E10;
         color: #fff;
         margin-bottom: 6px;
-        margin-right: 37px;
         margin-top: 15px;
+        margin-right: 4px;
 
         &:hover{
           cursor: pointer;

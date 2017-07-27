@@ -13,10 +13,9 @@
       <input type="text" id="query" onkeyup="findSession()" placeholder=" Find by: date, training, course, username  ">
 
       <br></br>
-      <br>Training Sessions</br>
       <table id="sessions-table">
         <tr>
-          <th>Date (mm/dd/yy)
+          <th>Date
             <button class="sort-arrow" onclick="sortTable(0)"><div class="arrow-down"></div></button></th></th>
           <th>Training
             <button class="sort-arrow" onclick="sortTable(1)"><div class="arrow-down"></div></button></th>
@@ -26,7 +25,7 @@
             <button class="sort-arrow" onclick="sortTable(3)"><div class="arrow-down"></div></button></th>
           <th>Users</th>
           <th>Status</th>
-          <th>Action</th>
+          <th class="action-header">Action</th>
 
         </tr>
 
@@ -36,8 +35,9 @@
         <% @sessions.each do |sesh| %>
           <tr>
             <td class="date-cell">
-              <%= sesh.created_at.strftime("%I:%M %p\n").downcase() %>
-              <%= sesh.created_at.strftime("%d/%m/%Y") %>
+              <%= sesh.created_at.strftime("%I:%M %p").downcase() %>
+              <br>
+              <%= sesh.created_at.strftime("%b %e %Y").downcase() %>
             </td>
 
             <td class="training-cell">
