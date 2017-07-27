@@ -135,7 +135,7 @@
 
   <% if @user.admin? %>
     <br>
-    <%=link_to "Destroy", { action: :destroy }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
+    <%=link_to "Cancel", { action: :destroy }, method: :delete, data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
   <% end %>
 
 

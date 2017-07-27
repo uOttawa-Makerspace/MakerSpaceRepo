@@ -1,6 +1,10 @@
 // Place all the styles related to the Staff::TrainingSession controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+section#page-contents{
+  padding-bottom: 30px;
+}
+
 select{
   font: 300 0.9em 'Raleway', sans-serif;
   color: #555;
