@@ -23,8 +23,9 @@
             <button class="sort-arrow" onclick="sortTable(2)"><div class="arrow-down"></div></button></th>
           <th>Course
             <button class="sort-arrow" onclick="sortTable(3)"><div class="arrow-down"></div></button></th>
+          <th>Status
+            <button class="sort-arrow" onclick="sortTable(4)"><div class="arrow-down"></div></button></th>
           <th>Users</th>
-          <th>Status</th>
           <th class="action-header">Action</th>
 
         </tr>
@@ -53,6 +54,14 @@
               <%= sesh.course %>
             </td>
 
+            <td class="status-cell">
+              <% if sesh.users.first.certifications.include? Certification.find_by(training_session_id: sesh.id) %>
+                COMPLETE
+              <% else %>
+                INCOMPLETE
+              <% end %>
+            </td>
+
             <td class="users-cell">
                 <div
                  class="users-count"
@@ -66,14 +75,6 @@
                   </div>
                 </div>
               </div>
-            </td>
-
-            <td class="status-cell">
-              <% if sesh.users.first.certifications.include? Certification.find_by(training_session_id: sesh.id) %>
-                COMPLETE
-              <% else %>
-                INCOMPLETE
-              <% end %>
             </td>
 
             <td class="action-cell">
