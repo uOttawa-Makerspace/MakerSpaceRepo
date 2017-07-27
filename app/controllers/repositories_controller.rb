@@ -2,6 +2,7 @@ class RepositoriesController < SessionsController
   before_action :current_user
   before_action :signed_in, except: [:index, :show, :download, :download_files]
   before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
+  before_action :check_session
   before_action :check_auth
 
   def show
@@ -128,6 +129,7 @@ class RepositoriesController < SessionsController
     respond_to do |format|
       if @auth
         @authorized = true
+        authorized_repo_ids << params[:id]
         flash[:notice] = "Success"
         format.html{render 'show'}
         format.json { render json: { role: :guest }, status: :ok }
@@ -141,6 +143,12 @@ class RepositoriesController < SessionsController
   end
 
   private
+
+    def check_session
+      if authorized_repo_ids.include? params[:id]
+        @authorized = true
+      end
+    end
 
     def check_auth
       if (@authorized == true || (@user.role == "admin") || (params[:user_username] == @user.username))
