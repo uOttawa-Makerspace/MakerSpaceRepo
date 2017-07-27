@@ -108,8 +108,7 @@ div#sesh-users{
 
 div.users-count{
   cursor:pointer;
-  width: 150px;
-  height: 150px;
+  padding: 40px 40px 40px 40px;
 }
 
 div.users-count:hover div#sesh-users{
@@ -131,6 +130,10 @@ button.sort-arrow{
     border-color: #2c5252 transparent transparent transparent;
   }
 
+}
+
+div.clickable-username:hover{
+  background-color: rgba(238, 238, 238, 0.5);
 }
 
 select#training_session_user_id{
