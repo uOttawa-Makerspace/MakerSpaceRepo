@@ -54,9 +54,18 @@
             </td>
 
             <td class="users-cell">
-            <% sesh.users.each do |user| %>
-              <%= user.name %> |
-            <% end %>
+                <div
+                 class="users-count"
+                 style="display:inline" >
+                 <div class="count-holder" style="display:inline">
+                  <%= sesh.users.length %>
+                  <div id="sesh-users" style="display:inline">
+                    <% sesh.users.each do |user| %>
+                      <%= user.name %> <br>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
             </td>
 
             <td class="status-cell">
