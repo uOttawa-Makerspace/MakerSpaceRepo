@@ -71,7 +71,7 @@
                   <div id="sesh-users" style="display:inline">
                     <% sesh.users.each do |user| %>
                       <div class="clickable-username">
-                        <%=link_to user.name, user_url(user.username) %> <br>
+                        <%=link_to user.name, user_url(user.username), class: "user-link" %> <br>
                       </div>
                     <% end %>
                   </div>

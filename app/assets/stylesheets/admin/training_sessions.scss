@@ -134,6 +134,11 @@ button.sort-arrow{
 
 div.clickable-username:hover{
   background-color: rgba(238, 238, 238, 0.5);
+
+  .user-link{
+    padding: 0px 55px;
+  }
+
 }
 
 select#training_session_user_id{
