@@ -71,7 +71,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     else
         flash[:alert] = "Something went wrong."
     end
-    redirect_to :back
+    redirect_to new_staff_training_session_path
   end
 
   private

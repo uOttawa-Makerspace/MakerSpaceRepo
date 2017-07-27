@@ -32,3 +32,20 @@ select{
     cursor: pointer;
   }
 }
+
+.destroy-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 0.81rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #A61E10;
+  color: #fff;
+
+
+  &:hover{
+    cursor: pointer;
+  }
+}

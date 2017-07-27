@@ -133,4 +133,10 @@
     <%= submit_tag "Update", class: 'save-button' %>
   <% end %>
 
+  <% if @user.admin? %>
+    <br>
+    <%=link_to "Destroy", { action: :destroy }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
+  <% end %>
+
+
 </section>
