@@ -84,16 +84,18 @@
                       certification.created_at.strftime("%B %d, %Y")
                     %>
                   </td>
-                  <% if @user.admin? %>
-                    <td>
-                      <%=
-                        link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
-                        class: 'revoke-button'
-                      %>
+                  <% if @user.staff? %>
+                    <td class="action-cell">
                       <%=
                         link_to "renew", renew_certification_admin_users_path(id: certification.id), method: :patch,
                         class: 'renew-button'
                       %>
+                    <% if @user.admin? %>
+                      <%=
+                        link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
+                        class: 'revoke-button'
+                      %>
+                    <%end%>
                     </td>
                   <%end%>
                 </tr>
