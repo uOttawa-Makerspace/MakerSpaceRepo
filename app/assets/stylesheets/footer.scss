@@ -4,7 +4,7 @@ footer{
   display: inline-block;
   text-align: center;
   width:100%;
-  padding: 1.5rem 1rem;
+  padding: 0.8rem 1rem;
   border-top: 1px solid #5f9ea0;
   color: #5f9ea0;
 
@@ -16,14 +16,15 @@ footer{
   	text-align: center;
   	li{
   		display: inline-block;
-  		padding: 0 1rem;
-  		border-right: 1 px solid #5f9ea0;
+  		padding: 0 3rem;
+  		border-right: 1px solid #5f9ea0;
   		font-weight: 600;
   		font-size: 0.8rem;
   		text-transform: uppercase;
 
   		a{
 			  @include transition(200ms);
+        line-height: 155%;
   		}
 
   		a:hover{
