@@ -50,7 +50,18 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
 
-  test "staff can delete a training session" do
+  test "staff can't delete a training session (only admins can)" do
+    delete :destroy,
+      id: training_sessions(:lathe_1_session)
+    assert TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
+                                  user_id: @user.id).present?
+    assert_redirected_to :back
+    assert_equal flash[:alert], "Something went wrong or you're not an admin"
+  end
+
+  test "admins can delete a training session" do
+    session[:user_id] = User.find_by(username: "adam").id
+    session[:expires_at] = "Sat, 03 Jun 2025 05:01:41 UTC +00:00"
     delete :destroy,
       id: training_sessions(:lathe_1_session)
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
@@ -58,4 +69,5 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert_redirected_to new_staff_training_session_path
     assert_equal flash[:notice], "Training session deleted succesfully"
   end
+
 end
