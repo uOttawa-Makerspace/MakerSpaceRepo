@@ -80,7 +80,6 @@ class RepositoriesController < SessionsController
       create_categories
       create_equipments
       render json: { redirect_uri: "#{repository_path(@user.username, @repository.slug)}" }
-      @authorized = false
     else
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
