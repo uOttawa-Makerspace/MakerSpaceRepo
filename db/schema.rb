@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170717220935) do
+ActiveRecord::Schema.define(version: 20170724223831) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -19,12 +19,10 @@ ActiveRecord::Schema.define(version: 20170717220935) do
   create_table "categories", force: :cascade do |t|
     t.integer  "repository_id"
     t.string   "name"
-    t.datetime "created_at",         null: false
-    t.datetime "updated_at",         null: false
-    t.integer  "category_option_id"
+    t.datetime "created_at",    null: false
+    t.datetime "updated_at",    null: false
   end
 
-  add_index "categories", ["category_option_id"], name: "index_categories_on_category_option_id", using: :btree
   add_index "categories", ["repository_id"], name: "index_categories_on_repository_id", using: :btree
 
   create_table "category_options", force: :cascade do |t|
@@ -54,6 +52,14 @@ ActiveRecord::Schema.define(version: 20170717220935) do
 
   add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
   add_index "comments", ["user_id"], name: "index_comments_on_user_id", using: :btree
+
+  create_table "course_options", force: :cascade do |t|
+    t.string   "title"
+    t.string   "code"
+    t.integer  "year"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "equipment", force: :cascade do |t|
     t.integer  "repository_id"
@@ -217,7 +223,6 @@ ActiveRecord::Schema.define(version: 20170717220935) do
     t.string   "year_of_study"
   end
 
-  add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "certifications", "users"
   add_foreign_key "comments", "repositories"
