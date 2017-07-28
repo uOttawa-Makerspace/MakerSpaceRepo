@@ -18,7 +18,7 @@ two:
 
 three:
   repository_id: 3
-  image_file_name: p3
+  image_file_name: p2
   image_content_type: .png
   image_file_size: 3
   height: 3

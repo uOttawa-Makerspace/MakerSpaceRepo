@@ -9,3 +9,8 @@ two:
   id: 2
   repository_id: 2
   name: lathe
+
+three:
+  id: 3
+  repository_id: 3
+  name: laser_cutter
