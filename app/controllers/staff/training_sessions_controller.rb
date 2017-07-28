@@ -32,6 +32,14 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def update
+
+    if changed_params['user_id'].present?
+      unless @user.admin?
+        flash[:alert] = "You're not an admin."
+        redirect_to :back
+      end
+    end
+
     @current_training_session.update(changed_params)
 
     if params['dropped_users'].present?
@@ -66,7 +74,7 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def destroy
-    if @current_training_session.destroy
+    if @user.admin? && @current_training_session.destroy
         flash[:notice] = "Training session deleted succesfully"
     else
         flash[:alert] = "Something went wrong."
@@ -78,7 +86,9 @@ class Staff::TrainingSessionsController < StaffAreaController
 
     def default_params
       if params[:user_id].present?
-        return {user_id: params[:user_id], training_id: params[:training_id]}
+        if @user.admin?
+          return {user_id: params[:user_id], training_id: params[:training_id]}
+        end
       else
         return {user_id: current_user.id, training_id: params[:training_id]}
       end
