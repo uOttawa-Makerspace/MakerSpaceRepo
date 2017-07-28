@@ -2,10 +2,12 @@
 <section id="signup">
   <div class="signup-breadcrumb">
      <div id="create-account">
-         Create Account/Créer le Compte
+
+         Create Account<br>Créer le Compte
+
      </div>
   </div>
-  <div class="signup-title">Create your personal account/Créer le Compte Personel</div>
+  <div class="signup-title">Create your personal account<br>Créer le Compte Personel</div>
 
   <%= form_for @new_user do |f| %>
 
@@ -33,7 +35,7 @@
     <%= content_tag :span, @new_user.errors[:password][1], class: 'form-error',
         style: 'display: block;' if @new_user.errors[:password][1] %>
     <u>Use at least one uppercase letter, one lowercase letter,
-      one number and be eight characters long./ Utilisez au moins une lettre majuscule, une lettre minuscule, un chiffre et il doit être huit caractères de long.</u>
+      one number and be eight characters long.<br> Utilisez au moins une lettre majuscule, une lettre minuscule, un chiffre et il doit être huit caractères de long.</u>
     <%= f.password_field :password %>
 
     <div id = "required" ><%= f.label :password_confirmation, "Password Confirmation/ Confirmation de Mot de Passe" %></div>
@@ -47,6 +49,7 @@
     <%= f.select :gender, ["Male", "Female", "Other", "Prefer not to specify"] , prompt: "Choose..." %><br><br>
 
     <div id = "required" ><%= f.label :identity, "I am a ..." %></div>
+
     <%= f.radio_button(:identity, "grad", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Grad")  %><br>
     <%= f.radio_button(:identity, "undergrad", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Undergrad")  %><br>
     <%= f.radio_button(:identity, "faculty_member", :class => "show_extra",:style => "display:inline") %><%= f.label(:identity_other, "Faculty Member") %><br>
@@ -54,6 +57,7 @@
 
 <section id="hidden">
     <div id = "required" ><%= f.label :student_id , "Student Number" %></div>
+
     <%= content_tag :span, @new_user.errors[:student_id].first, class: 'form-error' %>
     <%= f.text_field :student_id, autofocus: true %>
 
@@ -84,7 +88,7 @@
 
     <div id = "required" ><div id="terms_and_conditions_box" ></div>
       <%= f.check_box :terms_and_conditions, :style => "float:right;" %>
-      <%= f.label :terms_and_conditions, :class => "checkbox inline" do "I agree to the #{link_to "terms and condition", "terms_and_conditions.pdf", target: "blank"}/J\'accepte les #{link_to "termes et conditions", "terms_and_conditions.pdf", target: "blank"}".html_safe end %>
+      <%= f.label :terms_and_conditions, :class => "checkbox inline" do "I agree to the #{link_to "terms and condition", "terms_and_conditions.pdf", target: "blank"}<br>J\'accepte les #{link_to "termes et conditions", "terms_and_conditions.pdf", target: "blank"}".html_safe end %>
       <%= content_tag :span, @new_user.errors[:terms_and_conditions].first, class: 'form-error' %>
     </div>
 

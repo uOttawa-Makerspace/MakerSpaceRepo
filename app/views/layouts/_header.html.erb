@@ -1,9 +1,9 @@
 <section id="header">
   <div class="inner">
   <% unless signed_in? %>
-    <span class="header-menu-item not-signed-in"><%= link_to 'Sign Up/Créer un Compte', new_user_path %></span>
-    <span class="header-menu-item not-signed-in"><%= link_to 'Log In/Connexion', login_path %></span>
-    <span class="header-menu-item"><%= link_to 'Explore/Explorer', explore_path %></span>
+    <span class="header-menu-item not-signed-in"><%= link_to 'Sign Up<br>Créer un Compte'.html_safe, new_user_path %></span>
+    <span class="header-menu-item not-signed-in"><%= link_to 'Log In<br>Connexion'.html_safe, login_path %></span>
+    <span class="header-menu-item"><%= link_to 'Explore<br>Explorer'.html_safe, explore_path %></span>
   <% else %>
     <span class="header-menu-item menu-button">
       <%= link_to user_path(@user.username) do %>
@@ -20,8 +20,8 @@
         <li><%= link_to 'Sign Out', logout_path %></li>
       </ul>
     </span>
-    <span class="header-menu-item"><%= link_to 'Create/Créer', new_repository_path(@user.username) %></span>
-    <span class="header-menu-item"><%= link_to 'Explore/Découvrez', explore_path %></span>
+    <span class="header-menu-item"><%= link_to 'Create<br>Créer'.html_safe, new_repository_path(@user.username) %></span>
+    <span class="header-menu-item"><%= link_to 'Explore<br>Découvrez'.html_safe, explore_path %></span>
   <% end %>
   <span class="msr-logo">
     <%= link_to root_path do %>Maker<b>Repo</b><% end %>

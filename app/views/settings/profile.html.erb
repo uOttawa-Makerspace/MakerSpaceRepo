@@ -3,19 +3,20 @@
 <%= form_for @user, url: user_path(@user.username), method: :patch do |f| %>
 
   <div class="edit-column">
-    <div class="setting-title">Edit Profile/Modifier ton Profile</div>
+    <div class="setting-title">Edit Profile<br>Modifier ton Profile</div>
     <div class="section-desc">
-      Public information/Information Publique<br>
-      <span>This information will be visible to anyone viewing your profile./Cette information va être visible par quiconque qui regarde ton profile</span>
+      Public information<br>Information Publique<br>
+      <span>This information will be visible to anyone viewing your profile.<br>Cette information va être visible par quiconque qui regarde ton profile</span>
     </div>
 
-    <%= f.label :avatar, "Profile Picture/Photo de Profile", class: "profile-label" %>
+    <%= f.label :avatar, "Profile Picture<br>Photo de Profile".html_safe, class: "profile-label" %>
+
 
     <div class="avatar-column">
       <%= image_tag @user.avatar.url, class: 'edit-avatar' %>
       <label class="custom-file-upload">
         <%= f.file_field :avatar %>
-        Choose new image/Choisi une nouvelle image
+        Choose new image<br>Choisi une nouvelle image
       </label>
     </div>
 
@@ -28,6 +29,7 @@
 
     <%= f.label :url, "URL", class: "profile-label" %>
     <%= f.url_field :url, class: "profile-text" %>
+
 
     <% if @user.identity == "unknown" %>
 
@@ -61,6 +63,7 @@
       </section>
     <% end %>
     <br><br>
+
 
 <!--     <%= f.label :description, class: "profile-label" %>
     <%= content_tag :span, @user.errors[:description].first, class: 'form-error' %>
