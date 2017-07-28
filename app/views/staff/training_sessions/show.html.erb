@@ -1,5 +1,12 @@
-<section id ="page-contents" >
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
 
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:notice] %></div>
+<% end %>
+
+<section id ="page-contents" >
 
 <div>Training Type: <%= @current_training_session.training.name %>
     <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>

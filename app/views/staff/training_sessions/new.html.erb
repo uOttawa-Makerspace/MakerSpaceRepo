@@ -1,3 +1,11 @@
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:notice] %></div>
+<% end %>
+
 <section id ="page-contents" >
 
   <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
