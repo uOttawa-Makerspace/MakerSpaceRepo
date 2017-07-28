@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170724223831) do
+ActiveRecord::Schema.define(version: 20170628161537) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -52,14 +52,6 @@ ActiveRecord::Schema.define(version: 20170724223831) do
 
   add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
   add_index "comments", ["user_id"], name: "index_comments_on_user_id", using: :btree
-
-  create_table "course_options", force: :cascade do |t|
-    t.string   "title"
-    t.string   "code"
-    t.integer  "year"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
 
   create_table "equipment", force: :cascade do |t|
     t.integer  "repository_id"
@@ -216,8 +208,8 @@ ActiveRecord::Schema.define(version: 20170724223831) do
     t.integer  "reputation",           default: 0
     t.string   "role",                 default: "regular_user"
     t.boolean  "terms_and_conditions"
-    t.string   "program"
     t.integer  "student_id"
+    t.string   "program"
     t.string   "how_heard_about_us"
     t.string   "identity"
     t.string   "year_of_study"
