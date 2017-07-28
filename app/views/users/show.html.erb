@@ -103,15 +103,17 @@
             </table>
             <br><br>
             <% if @user.admin? %>
-              <div id="role-container" > Current role: <%= @repo_user.role.gsub("_", " ") %>
-                <div id="change-to"> Change to:
+              <div id="role-container" >
+                <div style="font-weight: bold;"> Current role: </div>
+                  <%= @repo_user.role.gsub("_", " ") %>
+                <br></br><div id="change-to" style="font-weight: bold;"> Change to:
                 <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
                   <%= radio_button_tag :role, "admin" %>
                   <%= label_tag :admin %>
                   <%= radio_button_tag :role, "staff" %>
                   <%= label_tag :staff %>
                   <%= radio_button_tag :role, "regular_user" %>
-                  <%= label_tag :regular %><br>
+                  <%= label_tag :regular_user %><br></br>
                 <%= submit_tag "update role", class: "update-button" %>
                 <% end %>
               <% end %>
