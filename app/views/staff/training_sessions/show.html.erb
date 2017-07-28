@@ -11,7 +11,7 @@
   <br>
   <% if @user.admin?%>
     <% label_tag 'changed_params[user_id]' %>
-    <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where('role LIKE \'staff\' or role LIKE \'admin\''), 'id', 'name'), prompt: 'change trainer' %><br>
+    <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: ['staff','admin']), 'id', 'name'), prompt: 'change trainer' %><br>
   <% end %>
 </div><br>
 
