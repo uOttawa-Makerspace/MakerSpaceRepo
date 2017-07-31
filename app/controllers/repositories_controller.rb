@@ -6,25 +6,15 @@ class RepositoriesController < SessionsController
   before_action :check_auth
 
   def show
-    if @repository.share_type.eql?("private")
-      if @check_passed
-          @photos = @repository.photos.first(5)
-          @files = @repository.repo_files.order("LOWER(file_file_name)")
-          @categories = @repository.categories
-          @equipments = @repository.equipments
-          @comments = @repository.comments.order(comment_filter).page params[:page]
-          @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
-      else
-          redirect_to password_entry_repository_path
-      end
-    else
-      @photos = @repository.photos.first(5)
-      @files = @repository.repo_files.order("LOWER(file_file_name)")
-      @categories = @repository.categories
-      @equipments = @repository.equipments
-      @comments = @repository.comments.order(comment_filter).page params[:page]
-      @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+    if @repository.private? && !@check_passed
+      redirect_to password_entry_repository_path and return
     end
+    @photos = @repository.photos.first(5)
+    @files = @repository.repo_files.order("LOWER(file_file_name)")
+    @categories = @repository.categories
+    @equipments = @repository.equipments
+    @comments = @repository.comments.order(comment_filter).page params[:page]
+    @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
   end
 
   def download
