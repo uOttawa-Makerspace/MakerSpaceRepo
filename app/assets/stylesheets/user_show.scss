@@ -17,7 +17,7 @@ section#user-show{
 
 		img{
 			width: 100%;
-		}	
+		}
 
 		div.edit-avatar{
 			display: none;
@@ -84,11 +84,11 @@ section#user-show{
 			span{
 				color: #366;
 				padding-right: 5%;
-				font-size: 1.5rem;			
+				font-size: 1.5rem;
 			}
 
 			span.date{
-				font-size: 1rem;			
+				font-size: 1rem;
 			}
 		}
 
@@ -133,6 +133,85 @@ section#user-show-links{
 	}
 }
 
+table.staff-table{
+
+	td.action-cell{
+		padding-bottom: 10px;
+		.revoke-button{
+			font: 300 0.6em 'Raleway', sans-serif;
+			padding: 0.4rem 0.8rem;
+		  border: none;
+		  text-transform: uppercase;
+		  color: #777;
+		  letter-spacing: 0.15em;
+		  border-radius: 2px;
+		  background-color: #A61E10;
+		  color: #fff;
+
+		  &:hover{
+		    cursor: pointer;
+		  }
+		}
+
+		.renew-button{
+			font: 300 0.6em 'Raleway', sans-serif;
+		  padding: 0.4rem 0.8rem;
+		  border: none;
+		  text-transform: uppercase;
+		  color: #777;
+		  letter-spacing: 0.15em;
+		  border-radius: 2px;
+		  background-color: #53BE6A;
+		  color: #fff;
+
+		  &:hover{
+		    cursor: pointer;
+		  }
+		}
+	}
+}
+
+
+div#role-container{
+
+	font: 'Raleway', sans-serif;
+	font-size: 1.1rem;
+	color: #366;
+
+	.update-button{
+		font: 300 0.7em 'Raleway', sans-serif;
+		padding: 0.3rem 0.13em;
+		border: none;
+		text-transform: uppercase;
+		color: #777;
+		letter-spacing: 0.09em;
+		border-radius: 2px;
+		background-color: #5f9ea0;
+		color: #fff;
+		margin-bottom: 12px;
+
+		&:hover{
+			cursor: pointer;
+		}
+	}
+
+	input[type=radio]{
+		color: black;
+		background: black;
+	}
+
+	label{
+		font-size: 0.95rem;
+		font-weight: normal;
+		padding-left: 3px;
+		padding-right: 15px;
+		text-transform: lowercase;
+
+	}
+
+
+}
+
 section#repositories-container{
 	@include outer-container(100%);
 	div.repository-container{
@@ -175,7 +254,7 @@ section#repositories-container{
 		    overflow:hidden !important;
 		    text-overflow: ellipsis;
 		 	}
-		 	
+
 		 	div a{
 		 		color: #5f9ea0;
 		 		font-size: 0.9rem;
@@ -197,7 +276,7 @@ section#repositories-container{
 }
 
 @media screen and (max-width: 900px){
- 
+
   section#repositories-container div.repository-container{
     @include span-columns(6, 2);
 		margin-left: calc(2% - 1px);
@@ -208,7 +287,7 @@ section#repositories-container{
 }
 
 @media screen and (max-width: 550px){
- 
+
   section#repositories-container div.repository-container{
     @include span-columns(12, 0);
     display: inline-block;
@@ -235,7 +314,7 @@ a.edit-repo, a.delete-repo{
 
   &:hover{
   	background-color: #366;
-  } 
+  }
 }
 
 /*a.delete-repo{

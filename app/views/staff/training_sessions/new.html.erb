@@ -1,3 +1,11 @@
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:notice] %></div>
+<% end %>
+
 <section id ="page-contents" >
 
   <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
@@ -5,6 +13,10 @@
   <% label_tag 'training_id' %>
   <%= select_tag 'training_id', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'select training' %><br>
 
+  <% if @user.admin? %>
+    <% label_tag 'user_id' %>
+    <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']), 'id', 'name'), prompt: 'select instructor' %><br>
+  <% end %>
     <table class="staff-table">
       <tr>
         <th>Select</th>
