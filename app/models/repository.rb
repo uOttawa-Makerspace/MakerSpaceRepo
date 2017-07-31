@@ -31,6 +31,8 @@ class Repository < ActiveRecord::Base
   validates :share_type,
     presence: { message: "Is your project public or private?" }
 
+  validate :share_type_valid?
+
   validates :password,
     presence: { message: "Password is required for private projects" }, if: :private?
 
@@ -55,6 +57,9 @@ class Repository < ActiveRecord::Base
     @pword ||= Password.new(password)
   end
 
+  def share_type_valid?
+    errors.add(:share_type, "Invalid Share Type") unless self.share_type.eql?("public") || self.share_type.eql?("private")
+  end
   # validates :category,
   #   inclusion: { within: category_options },
   #   presence: { message: "A category is required."}
