@@ -2,7 +2,7 @@ class Admin::TrainingSessionsController < AdminAreaController
   before_action :training_session_params, only: [:update]
   before_action :training_session, only: [:update, :destroy]
 
-  layout 'training_sessions_manager'
+  layout 'staff_area'
 
   def index
   end
@@ -13,7 +13,7 @@ class Admin::TrainingSessionsController < AdminAreaController
       flash[:notice] = "Updated Successfuly"
       redirect_to :back
     else
-      flash[:alert] = "Something Went Wrong"
+      flash[:alert] = "Something went Wrong"
       redirect_to :back
     end
   end
