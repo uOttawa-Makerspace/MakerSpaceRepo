@@ -7,6 +7,7 @@
   <% if flash[:alert] %>
     <div id="alert"><%= flash[:alert] %></div>
   <% end %>
+  <br>
 
       <div class="setting-title">Admin Training Sessions Manager</div>
       <br>
@@ -31,7 +32,7 @@
         </tr>
 
         <tbody>
-        <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20) %>
+        <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 50) %>
         <%= will_paginate @sessions %>
         <% @sessions.each do |sesh| %>
           <tr>
