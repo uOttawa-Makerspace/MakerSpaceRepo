@@ -118,6 +118,8 @@ Rails.application.routes.draw do
     get 'index', path: '/'
 
     resources :training_sessions do
+      get 'index', path: '/', on: :collection
+      get 'new'
       member do
         post 'certify_trainees'
       end

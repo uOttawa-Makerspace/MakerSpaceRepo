@@ -1,1 +1,7 @@
-<%= link_to 'New Training Session', new_staff_training_session_path, class: 'save-button' %>
+<div id="staff-buttons">
+  <%= link_to 'My Training Sessions', staff_training_sessions_path, class: 'my-sessions' %>
+  <br></br> <br></br>
+  <%= link_to 'Start New Training', new_staff_training_session_path, class: 'new-session' %>
+  <br></br> <br></br>
+  <%= link_to 'Go To Kiosk', new_staff_training_session_path, class: 'kiosk-button' %>
+</div>
