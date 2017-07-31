@@ -47,7 +47,6 @@
 
             <td class="trainer-cell" style="horizontal-alginment:center;">
               <%= link_to sesh.user.name, user_url(sesh.user.username) %>
-            <!--  <%= select_tag 'training_session[user_id]', options_from_collection_for_select(User.where('role LIKE \'staff\' or role LIKE \'admin\''), 'id', 'name'), prompt: "change" %><br> -->
             </td>
 
             <td class="course-cell">
@@ -106,18 +105,21 @@
       td1 = tr[i].getElementsByTagName("td")[1]; //match training
       td2 = tr[i].getElementsByTagName("td")[2]; //match trainer
       td3 = tr[i].getElementsByTagName("td")[3]; //match course
-      td4 = tr[i].getElementsByTagName("td")[4];
-      current_staff = tr[i].getElementsByTagName("current_staff")[0]
+      td4 = tr[i].getElementsByTagName("td")[4]; //match status
+      td5 = tr[i].getElementsByTagName("td")[5]; //match users
+
       if (td1) {
         if (td0.innerHTML.toUpperCase().indexOf(filter) > -1) {
           tr[i].style.display = "";
         } else if (td1.innerHTML.toUpperCase().indexOf(filter) > -1) {
           tr[i].style.display = "";
-        } else if (current_staff.innerHTML.toUpperCase().indexOf(filter) > -1) {
+        } else if (td2.innerHTML.toUpperCase().indexOf(filter) > -1) {
           tr[i].style.display = "";
         }else if (td3.innerHTML.toUpperCase().indexOf(filter) > -1) {
           tr[i].style.display = "";
         }else if (td4.innerHTML.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = "";
+        }else if (td5.innerHTML.toUpperCase().indexOf(filter) > -1) {
           tr[i].style.display = "";
         }else {
           tr[i].style.display = "none";
