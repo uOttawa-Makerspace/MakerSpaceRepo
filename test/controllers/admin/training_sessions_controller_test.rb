@@ -5,7 +5,6 @@ class Admin::TrainingSessionsControllerTest < ActionController::TestCase
   setup do
     session[:user_id] = User.find_by(username: "adam").id
     session[:expires_at] = "Sat, 03 Jun 2025 05:01:41 UTC +00:00"
-    @user = User.find_by(username: "adam")
     @request.env['HTTP_REFERER'] = admin_training_sessions_url
   end
 

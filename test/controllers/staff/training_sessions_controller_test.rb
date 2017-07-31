@@ -49,6 +49,23 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert Certification.find_by(user_id: users(:adam).id, training_session_id: training_sessions(:lathe_1_session).id).present?
   end
 
+  test "staff can view their own training sessions" do
+    get :show, id: training_sessions(:lathe_1_session)
+    assert_response :ok
+  end
+
+  test "staff can't view training sessions owned by other staff or admins" do
+    get :show, id: training_sessions(:welding_3_session)
+    assert_redirected_to new_staff_training_session_path
+    assert_equal flash[:alert],"Can't access training session"
+  end
+
+  test "admin can view any training session" do
+    session[:user_id] = User.find_by(username: "adam").id
+    session[:expires_at] = "Sat, 03 Jun 2025 05:01:41 UTC +00:00"
+    get :show, id: training_sessions(:lathe_1_session)
+    assert_response :ok
+  end
 
   test "staff can delete a training session " do
     delete :destroy,
@@ -58,6 +75,5 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert_redirected_to new_staff_training_session_path
     assert_equal flash[:notice], "Deleted Successfully"
   end
-
 
 end
