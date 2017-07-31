@@ -234,7 +234,7 @@
 <polyline fill="none" stroke="black" points="41,-565.5 169,-565.5 "/>
 <polyline fill="none" stroke="black" points="41,-541.5 169,-541.5 "/>
 <text text-anchor="start" x="49" y="-524.9" font-family="Times Roman,serif" font-size="14.00">_layout</text>
-<text text-anchor="start" x="49" y="-506.9" font-family="Times Roman,serif" font-size="14.00">copy_tags</text>
+<text text-anchor="start" x="49" y="-506.9" font-family="Times Roman,serif" font-size="14.00">copy_categories_and_equipment</text>
 <text text-anchor="start" x="49" y="-488.9" font-family="Times Roman,serif" font-size="14.00">create_photos</text>
 <text text-anchor="start" x="49" y="-470.9" font-family="Times Roman,serif" font-size="14.00">set_repository</text>
 </g>

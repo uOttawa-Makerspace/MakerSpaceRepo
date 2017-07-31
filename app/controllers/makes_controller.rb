@@ -16,7 +16,7 @@ class MakesController < SessionsController
 
     if @repo.save
       create_photos
-      copy_tags
+      copy_categories_and_equipment
       @repository.increment!(:make)
       render json: { redirect_uri: "#{repository_path(@user.username, @repo.slug)}" }
       @user.increment!(:reputation, 15)
@@ -43,7 +43,7 @@ class MakesController < SessionsController
       end if params['images'].present?
     end
 
-    def copy_tags
+    def copy_categories_and_equipment
       @repository.categories.each do |c|
         Category.create(name: c.name, repository_id: @repo.id, category_option_id: c.category_option_id)
       end
