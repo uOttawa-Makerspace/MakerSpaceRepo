@@ -77,11 +77,11 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def destroy
-    if @user.admin? && @current_training_session.destroy
-        flash[:notice] = "Training session deleted succesfully"
+    if @current_training_session.destroy
+        flash[:notice] = "Deleted Successfully"
         redirect_to new_staff_training_session_path
     else
-        flash[:alert] = "Something went wrong or you're not an admin"
+        flash[:alert] = "Something went wrong"
         redirect_to :back
     end
   end
