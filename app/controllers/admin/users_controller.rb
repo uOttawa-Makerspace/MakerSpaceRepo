@@ -126,8 +126,25 @@ class Admin::UsersController < AdminAreaController
   end
 
   def revoke_certification
-    Certification.find(params[:id]).destroy
-    redirect_to :back
+    if Certification.find(params[:id]).destroy
+      flash[:notice] = "Deleted successfully"
+      redirect_to :back
+    else
+      flash[:alert] = "Something went wrong, try refreshing"
+      redirect_to :back
+    end
+  end
+
+  def renew_certification
+    cert = Certification.find(params[:id])
+    cert.updated_at = Time.now
+    if cert.save
+      flash[:notice] = "Renewed successfully"
+      redirect_to :back
+    else
+      flash[:alert] = "Something went wrong, try refreshing"
+      redirect_to :back
+    end
   end
 
   def set_role

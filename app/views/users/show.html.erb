@@ -56,7 +56,8 @@
 
 
     <% if @user.staff?%>
-      <div class="user-certifications"> CERTIFICATIONS
+      <br></br>
+      <div class="user-certifications" style="padding-top: 200px;">This user has the following certifications:
         <br></br>
         <div class="user-certifications-container">
             <table class=staff-table>
@@ -83,33 +84,44 @@
                       certification.created_at.strftime("%B %d, %Y")
                     %>
                   </td>
-                  <% if @user.admin? %>
-                    <td>
-                      <%=
-                        link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
-                        style: 'color:#FFF;  background-color: #b02a12;padding-top: 1rem 1rem;text-color:#FFFF'
-                      %>
-                    </td>
-                  <%end%>
+                  <td class="action-cell">
+                    <% if @user.admin? %>
+                        <%=
+                          link_to "renew", renew_certification_admin_users_path(id: certification.id), method: :patch,
+                          class: 'renew-button'
+                        %>
+                      <% if @user.admin? %>
+                        <%=
+                          link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
+                          class: 'revoke-button'
+                        %>
+                      <%end%>
+                    <%end%>
+                  </td>
                 </tr>
                 <% end %>
             </table>
-            <br></br>
+            <br><br>
             <% if @user.admin? %>
-            <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
-                <%= radio_button_tag :role, "regular_user" %>
-                <%= label_tag :regular %><br></br>
-                <%= radio_button_tag :role, "staff" %>
-                <%= label_tag :staff %><br></br>
-                <%= radio_button_tag :role, "admin" %>
-                <%= label_tag :admin %><br></br>
-              <%= submit_tag "Save", class: "save-button" %>
-            <% end %>
-          <% end %>
+              <div id="role-container" >
+                <div style="font-weight: bold;"> Current role: </div>
+                  <%= @repo_user.role.gsub("_", " ") %>
+                <br></br><div id="change-to" style="font-weight: bold;"> Change to:
+                <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
+                  <%= radio_button_tag :role, "admin" %>
+                  <%= label_tag :admin %>
+                  <%= radio_button_tag :role, "staff" %>
+                  <%= label_tag :staff %>
+                  <%= radio_button_tag :role, "regular_user" %>
+                  <%= label_tag :regular_user %><br></br>
+                <%= submit_tag "update role", class: "update-button" %>
+                <% end %>
+              <% end %>
+              </div>
+            </div>
           </div>
       </div>
     <% end %>
-
   </div>
 
   <section id="user-show-links">

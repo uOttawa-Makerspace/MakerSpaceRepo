@@ -1,12 +1,25 @@
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:notice] %></div>
+<% end %>
+
 <section id ="page-contents" >
 
-<div>Trainer: <%= @staff.name %></div><br>
-
 <div>Training Type: <%= @current_training_session.training.name %>
-    <br>
     <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
       <% label_tag 'changed_params[training_id]' %>
       <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'change training' %><br>
+</div><br>
+
+<div>Trainer: <%= @staff.name %>
+  <br>
+  <% if @user.admin?%>
+    <% label_tag 'changed_params[user_id]' %>
+    <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: ['staff','admin']), 'id', 'name'), prompt: 'change trainer' %><br>
+  <% end %>
 </div><br>
 
 
@@ -81,7 +94,7 @@
         <th>Certification</th>
       </tr>
 
-    <% User.all.limit(20).each do |user| %> 
+    <% User.all.limit(20).each do |user| %>
       <% unless @current_training_session.users.include?(user) %>
       <tr class="add-rows">
 
@@ -126,5 +139,11 @@
     <br>
     <%= submit_tag "Update", class: 'save-button' %>
   <% end %>
+
+  <% if @user.admin? %>
+    <br>
+    <%=link_to "Cancel", { action: :destroy }, method: :delete, data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
+  <% end %>
+
 
 </section>
