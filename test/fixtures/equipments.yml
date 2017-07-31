@@ -3,7 +3,7 @@
 one:
   id: 1
   repository_id: 1
-  name: 3D printer
+  name: 3d printer
 
 two:
   id: 2

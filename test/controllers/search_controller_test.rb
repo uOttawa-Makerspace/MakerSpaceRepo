@@ -28,4 +28,11 @@ class SearchControllerTest < ActionController::TestCase
     assert response.body.include? "Repository1"
   end
 
+  test "Shows repos by equipment" do
+    get :equipment, slug: '3d-printer'
+    assert_response :success
+    assert response.body.include? "Repository1"
+    refute response.body.include? "Repository2"
+  end
+
 end
