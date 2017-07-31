@@ -10,10 +10,10 @@ class Admin::TrainingSessionsController < AdminAreaController
   def update
     @training_session.update(training_session_params)
     if @training_session.save
-      flash[:notice] = "Updated Successfuly"
+      flash[:notice] = "Updated Successfully"
       redirect_to :back
     else
-      flash[:alert] = "Something went Wrong"
+      flash[:alert] = "Something went wrong"
       redirect_to :back
     end
   end
@@ -21,9 +21,9 @@ class Admin::TrainingSessionsController < AdminAreaController
 
   def destroy
     if @training_session.destroy
-        flash[:notice] = "Training session deleted succesfully"
+        flash[:notice] = "Deleted Successfully"
     else
-        flash[:alert] = "Something went wrong."
+        flash[:alert] = "Something went wrong"
     end
     redirect_to :back
   end

@@ -12,8 +12,13 @@ class Admin::TrainingSessionsControllerTest < ActionController::TestCase
   test "admin can update training session user_id (trainer)" do
     patch :update, id: 1, training_session: {user_id: 1337}
     assert_redirected_to :back
-    assert_equal flash[:notice], "Updated Successfuly"
+    assert_equal flash[:notice], "Updated Successfully"
+  end
 
+  test "admin can destroy training session" do
+    delete :destroy, id: 1
+    assert_redirected_to :back
+    assert_equal flash[:notice], "Deleted Successfully"
   end
 
 end
