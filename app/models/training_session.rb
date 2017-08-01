@@ -1,4 +1,4 @@
-class TrainingSession < ActiveRecord::Base
+class TrainingSession < ApplicationRecord
   belongs_to :training
   belongs_to :user
   has_and_belongs_to_many :users, :uniq => true

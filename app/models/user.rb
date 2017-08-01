@@ -1,4 +1,4 @@
-class User < ActiveRecord::Base
+class User < ApplicationRecord
   include BCrypt
   include ActiveModel::Serialization
 
@@ -14,7 +14,7 @@ class User < ActiveRecord::Base
   validates :name,
     presence: { message: "Your name is required." },
     length: { maximum: 50, message: 'Your name must be less than 50 characters.' }
-   
+
   validates :username,
     presence: { message: "Your username is required." },
     uniqueness: { message: "Your username is already in use." },
@@ -73,7 +73,7 @@ class User < ActiveRecord::Base
   def self.to_csv(*attributes)
     CSV.generate do |csv|
       csv << attributes
-    
+
       all.each do |user|
         csv << user.attributes.values_at(*attributes)
       end

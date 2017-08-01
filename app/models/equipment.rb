@@ -1,3 +1,3 @@
-class Equipment < ActiveRecord::Base
+class Equipment < ApplicationRecord
   belongs_to :repository
 end
