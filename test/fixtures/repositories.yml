@@ -5,7 +5,7 @@ one:
   user_id: 1
   title: Repository1
   description: description1
-  slug: slug1
+  slug: repository1
   category: 3D-Model
   user_username: bob
   share_type: public
@@ -16,7 +16,7 @@ two:
   user_id: 2
   title: Repository2
   description: description2
-  slug: slug2
+  slug: repository2
   category: Virtual Reality
   user_username: mary
   share_type: public
@@ -27,7 +27,7 @@ three:
   user_id: 2
   title: Repository3
   description: description3
-  slug: slug3
+  slug: repository3
   category: other-projects
   user_username: mary
   share_type: private
