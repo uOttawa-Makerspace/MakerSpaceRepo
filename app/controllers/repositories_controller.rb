@@ -79,7 +79,8 @@ class RepositoriesController < SessionsController
   def update
     @repository.categories.destroy_all
     @repository.equipments.destroy_all
-
+    update_share_type
+    update_password
     if @repository.update(repository_params)
       update_photos
       update_files
@@ -88,6 +89,7 @@ class RepositoriesController < SessionsController
       flash[:notice] = "Project updated successfully!"
       render json: { redirect_uri: "#{repository_path(@repository.user_username, @repository.slug)}" }
     else
+      flash[:alert] = "Unable to apply the changes."
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
   end
@@ -152,7 +154,7 @@ class RepositoriesController < SessionsController
     end
 
     def repository_params
-      params.require(:repository).permit(:title, :description, :license, :user_id, :password)
+      params.require(:repository).permit(:title, :description, :license, :user_id, :share_type, :password)
     end
 
     def comment_filter
@@ -223,4 +225,24 @@ class RepositoriesController < SessionsController
         Equipment.create(name: e, repository_id: @repository.id)
       end if params['equipments'].present?
     end
+
+    def update_share_type
+      if repository_params['share_type'].present?
+        @repository.share_type = repository_params['share_type']
+        @repository.save
+      end
+    end
+
+    def update_password
+      if @repository.share_type.eql?("public")
+        @repository.password = nil
+        @repository.save
+      else
+        if params['password'].present?
+          @repository.pword = params['password']
+          @repository.save
+        end
+      end
+    end
+
 end
