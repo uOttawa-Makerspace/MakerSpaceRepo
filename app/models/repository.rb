@@ -57,6 +57,11 @@ class Repository < ActiveRecord::Base
     @pword ||= Password.new(password)
   end
 
+  def pword=(new_password)
+    @pword = Password.create(new_password)
+    self.password = @pword
+  end
+
   def share_type_valid?
     errors.add(:share_type, "Invalid Share Type") unless self.share_type.eql?("public") || self.share_type.eql?("private")
   end
