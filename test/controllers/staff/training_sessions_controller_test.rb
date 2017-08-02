@@ -33,7 +33,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
                                  user_id: @user.id).present?
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                   user_id: @user.id).present?
-    assert_redirected_to (:back)
+    assert_redirected_to staff_training_sessions_url
     assert_equal flash[:notice], "Training session updated succesfully"
   end
 
@@ -53,7 +53,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     delete :destroy, params: { id: training_sessions(:lathe_1_session) }
     assert TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                   user_id: @user.id).present?
-    assert_redirected_to :back
+    assert_redirected_to staff_training_sessions_url
     assert_equal flash[:alert], "Something went wrong or you're not an admin"
   end
 
