@@ -10,7 +10,7 @@ Rails.application.routes.draw do
     get 'privacy'
     get 'about'
     get 'contact'
-    get 'report_repository', path: 'report_repository/:repository_id'
+    get 'report_repository/:repository_id', :as => 'report_repository', :action => 'report_repository'
   end
 
   # RFID
@@ -22,8 +22,8 @@ Rails.application.routes.draw do
   namespace :search, path: '/', as: nil do
     get 'explore'
     get 'search'
-    get 'category', path: 'category/:slug'
-    get 'equipment', path: 'equipment/:slug'
+    get 'category/:slug', :as => 'category', :action => 'category'
+    get 'equipment/:slug', :as => 'equipment', :action => 'equipment'
   end
 
   # TEMPLATE
@@ -73,7 +73,7 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    get 'index', path: '/'
+    get '/', :as => 'index', :action => 'index'
 
     resources :report_generator, only: [:index] do
       collection do
@@ -115,7 +115,7 @@ Rails.application.routes.draw do
 
 
   namespace :staff do
-    get 'index', path: '/'
+    get '/', :as => 'index', :action => 'index'
 
     resources :training_sessions do
       member do
@@ -125,14 +125,14 @@ Rails.application.routes.draw do
   end
 
   namespace :staff_dashboard do
-    get 'index', path: '/'
+    get '/', :as => 'index', :action => 'index'
   end
 
   # namespace :help do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post 'vote', to: 'users#vote', path: 'vote/:comment_id'
+  post 'vote/:comment_id', :as => 'vote', :action => 'vote'
 
    # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
@@ -144,8 +144,8 @@ Rails.application.routes.draw do
   resources :repositories, path: '/:user_username', param: :slug, except: :index do
     post 'add_like', on: :member
     collection do
-      get 'download_files', path: ':slug/download_files'
-      get 'download', path: ':slug/download'
+      get 'download_files', :path => ':slug/download_files'
+      get 'download', :path => ':slug/download'
     end
   end
 
