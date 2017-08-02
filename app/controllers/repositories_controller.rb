@@ -122,7 +122,7 @@ class RepositoriesController < SessionsController
         @authorized = true
         authorized_repo_ids << params[:id]
         flash[:notice] = "Success"
-        format.html{render 'show'}
+        format.html{redirect_to repository_path}
         format.json { render json: { role: :guest }, status: :ok }
       else
         @authorized = false
