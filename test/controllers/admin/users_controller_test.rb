@@ -10,7 +10,7 @@ class Admin::UsersControllerTest < ActionController::TestCase
 
 
   test "admin can change user role (admin > staff > regular_user)" do
-    patch :set_role, id: users(:mary), role: "staff"
+    patch :set_role, params: { id: users(:mary), role: "staff" }
     assert_equal User.find_by(username: "mary").role, "staff"
     assert_redirected_to admin_users_path
     end
