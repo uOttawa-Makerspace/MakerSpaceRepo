@@ -5,23 +5,23 @@ class UsersControllerTest < ActionController::TestCase
   ##########
   #create tests
   test "creating the same username or email again return unprocessable_entity" do
-    post :create, user: {
-                username: "bob",
-                name: "Bob",
-                email: "fake@fake.fake",
-                terms_and_conditions: true,
-                password: "Password1"}
+    post :create, params: { user: {
+                            username: "bob",
+                            name: "Bob",
+                            email: "fake@fake.fake",
+                            terms_and_conditions: true,
+                            password: "Password1"} }
     assert_response :unprocessable_entity,
                     "How is bob processable when bob is a fixture"
   end
 
   test "creating a user returns :found and saves user in the database" do
-    post :create, user: {
-                username: "sam",
-                name: "Sam",
-                email: "sam@sam.sam",
-                terms_and_conditions: true,
-                password: "Password1"}
+    post :create, params: { user: {
+                            username: "sam",
+                            name: "Sam",
+                            email: "sam@sam.sam",
+                            terms_and_conditions: true,
+                            password: "Password1"} }
     assert_response :found, "\nFailed at creating Sam"
     assert User.exists?(username: "sam"), "\nFailed at saving Sam"
   end
@@ -43,7 +43,7 @@ class UsersControllerTest < ActionController::TestCase
   ##########
   #likes tests
   test "should be able to get likes through controller" do
-    get :likes, username: "bob"
+    get :likes, params: {username: "bob"}
     assert_response :found
   end
 
