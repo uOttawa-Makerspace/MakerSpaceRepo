@@ -132,7 +132,7 @@ Rails.application.routes.draw do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post 'vote/:comment_id', :as => 'vote', :action => 'vote'
+  post 'vote/:comment_id', :as => 'vote', :controller => 'users', :action => 'vote'
 
    # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
@@ -144,8 +144,8 @@ Rails.application.routes.draw do
   resources :repositories, path: '/:user_username', param: :slug, except: :index do
     post 'add_like', on: :member
     collection do
-      get 'download_files', :path => ':slug/download_files'
-      get 'download', :path => ':slug/download'
+      get ':slug/download_files', :as => 'download_files', :action => 'download_files'
+      get ':slug/download', :as => '/download', :action => '/download'
     end
   end
 
