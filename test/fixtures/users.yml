@@ -52,6 +52,7 @@ adam:
   use: null
   description: null
   role: admin
+  identity: faculty_member
 
 sara:
   username: sara
@@ -60,6 +61,8 @@ sara:
   terms_and_conditions: false
   password: Password1
   identity: faculty_member
+  gender: female
+  
 
 #the only staff
 olivia:
