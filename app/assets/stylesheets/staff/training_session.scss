@@ -1,0 +1,90 @@
+// Place all the styles related to the Staff::TrainingSession controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+section#page-contents{
+  padding-bottom: 30px;
+}
+
+select{
+  font: 300 0.9em 'Raleway', sans-serif;
+  color: #555;
+  padding: 0.5rem;
+	margin: 0.5rem 0 1rem;
+  max-width: 400px;
+  width: 15%;
+  border-radius: 3px;
+  border: 1px solid #aaa;
+  display: inline;
+}
+
+.certify-button{
+
+  float: right;
+  margin-right: 20px;
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #53BE6A;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+.destroy-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 0.81rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #A61E10;
+  color: #fff;
+
+
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+
+
+div#notice{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 5rem;
+  line-height: 5rem !important;
+  font-size: 75%;
+  font: 500 2.0rem 'Raleway', sans-serif;
+  background-color: #5cb85c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}
+
+div#alert{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 2rem;
+  line-height: 2rem !important;
+  font: 300 1.1rem 'Raleway', sans-serif;
+  background-color: #cd5c5c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}

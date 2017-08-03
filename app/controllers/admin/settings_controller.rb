@@ -1,12 +1,12 @@
 class Admin::SettingsController < AdminAreaController
   layout 'admin_area'
-  
+
   def index
     @equip_option = EquipmentOption.new
     @cat_option = CategoryOption.new
     @pi_option = PiReader.new
   end
-  
+
   def add_category
     if !params[:category_option][:name].present?
       flash[:alert] = "Invalid category name."
@@ -17,7 +17,7 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-  
+
   def rename_category
     if !params[:category_option][:name].present?
       flash[:alert] = "Invalid category name."
@@ -30,7 +30,7 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-  
+
   def remove_category
     if params[:remove_category]!=""
       CategoryOption.where(id: params[:remove_category]).destroy_all
@@ -40,11 +40,11 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-  
+
   def cat_params
     params.require(:category_option).permit(:name)
   end
-  
+
   def add_equipment
     if !params[:equipment_option][:name].present?
       flash[:alert] = "Invalid equipment name."
@@ -55,7 +55,7 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-  
+
   def rename_equipment
     if !params[:equipment_option][:name].present?
       flash[:alert] = "Invalid equipment name."
@@ -68,7 +68,7 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-  
+
   def remove_equipment
     if params[:remove_equipment]!=""
       EquipmentOption.where(id: params[:remove_equipment]).destroy_all
@@ -78,11 +78,11 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-  
+
   def equip_params
     params.require(:equipment_option).permit(:name)
   end
-  
+
   def submit_pi
     puts "aiai"
     puts params
@@ -94,7 +94,7 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-  
+
   def remove_pi
     if params[:remove_pi]!=""
       PiReader.where(:id => params[:remove_pi]).destroy_all
@@ -104,8 +104,9 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-  
+
   def pi_params
     params.require(:pi_reader).permit(:pi_location)
   end
+
 end

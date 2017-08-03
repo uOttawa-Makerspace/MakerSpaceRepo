@@ -54,6 +54,13 @@ adam:
   use: null
   description: null
   role: admin
+
+sara:
+  username: sara
+  name: Sara
+  email: sara@sara.com
+  terms_and_conditions: false
+  password: Password1
   identity: faculty_member
 
 #the only staff

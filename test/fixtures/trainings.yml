@@ -1,0 +1,11 @@
+lathe_1:
+  id: 1
+  name: lathe_1
+
+welding_3:
+  id: 2
+  name: welding_3
+
+soldering_7:
+  id: 7
+  name: soldering_7

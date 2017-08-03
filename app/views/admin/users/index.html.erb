@@ -23,7 +23,7 @@
         <td><h2>Users currently signed in</h2></td>
         <td class="right"><%= link_to "Show new users", :p => "new_users" %></td>
       </table>
-      
+
       <div class="locations">
       <table class="locations">
         <% if params[:location].nil? %>
@@ -48,7 +48,7 @@
       <table>
         <td><h2>Newest users</h2></td>
         <td class="right"><%= link_to "Show users currently signed in", :p => "signed_in_users" %></td>
-      </table>   
+      </table>
     <% end %>
     <%= form_tag bulk_add_certifications_admin_users_path, method: :post do %>
       <% if !@users.any? %>
@@ -99,13 +99,13 @@
                 <% end %>
               </td>
               <td><%= time_ago_in_words(user.created_at) %> ago</td>
-			  <td class="link-table"><%= link_to fa_icon("pencil"), edit_admin_user_path(user) %></td>
+			           <td class="link-table"><%= link_to fa_icon("pencil"), edit_admin_user_path(user) %></td>
               <td class="link-table"><%= link_to fa_icon("search"), admin_user_path(user) %></td>
             </tr>
           <% end %>
         </table>
       <% end %>
-      
+
       <!-- pagination code starts -->
       <% if params[:page].nil? %>
         <% page_number = 1 %>
@@ -127,7 +127,7 @@
         </tr>
       </table>
       <!-- pagination code ends -->
-    
+
       <br><br>
       <center><%= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt:'Add a certification to selected users...' %>
       <%= submit_tag "Add", class: 'save-button' %></center>
