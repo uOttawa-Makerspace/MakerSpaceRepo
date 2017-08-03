@@ -82,6 +82,7 @@ Rails.application.routes.draw do
         get 'unique_visits'
         get 'faculty_frequency'
         get 'gender_frequency'
+        get 'training'
       end
     end
     resources :users, only: [:index, :edit, :update, :show] do
