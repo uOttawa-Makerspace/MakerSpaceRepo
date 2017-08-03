@@ -1,8 +1,8 @@
 require 'test_helper'
 
 class UserTest < ActiveSupport::TestCase
-  
-  test "Name length" do 
+
+  test "Name length" do
   	user = users(:bob)
 
   	user.name = "j"*5
@@ -67,7 +67,7 @@ class UserTest < ActiveSupport::TestCase
   	assert user.terms_and_conditions , "You must agree to the terms and conditions"
 
     user.terms_and_conditions = false
-    assert !(user.terms_and_conditions) , "You must agree to the terms and conditions"
+    refute (user.terms_and_conditions) , "You must agree to the terms and conditions"
   end
 
   test "Allowed characters in the password" do
@@ -75,17 +75,17 @@ class UserTest < ActiveSupport::TestCase
 
   	user.password = "abABbc246dabc"
     assert user.valid? ,"Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."
-  
+
     user.password = "abcd"
     assert user.invalid? ,"Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."
-  end   
+  end
 
   test "Presence of password" do
       user = users(:bob)
 
       user.password = "abABbc246dabc"
       assert user.valid? , "Your password is required."
-      
+
       user.password = nil
       assert user.invalid? , "Your password is required."
   end
@@ -93,9 +93,14 @@ class UserTest < ActiveSupport::TestCase
   test "Passwords matching" do
     user = User.create(:password => 'abABbc246dabc', :password_confirmation => 'abABbc246dabc')
     assert_equal( user.password, user.password_confirmation, "Your passwords do not match.")
-    
+
     user = User.create(:password => 'abABbc246dabc', :password_confirmation => 'ABabBC135DABC')
     assert_not_equal( user.password, user.password_confirmation, "Your passwords do not match.")
+  end
+
+  test "unsigned_tac_users scope catches users with unsigned terms and conditions" do
+    assert User.unsigned_tac_users.include? users(:sara)
+    assert_equal(users(:sara).terms_and_conditions, false)
   end
 
 end

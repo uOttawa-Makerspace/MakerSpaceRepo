@@ -1,6 +1,6 @@
 class Admin::UsersController < AdminAreaController
   before_action :load_user, only: [:show, :edit, :update]
-  
+
   layout 'admin_area'
 
   def index
@@ -30,7 +30,7 @@ class Admin::UsersController < AdminAreaController
       flash[:alert] = "Invalid parameters!"
     end
   end
-  
+
   def sort_params
     if (((["username","name","lab_sessions.sign_in_time","users.created_at"].include? params[:sort]) && (["desc","asc"].include? params[:direction])) || (!params[:sort].present? && !params[:direction].present?))
       return true
@@ -74,7 +74,7 @@ class Admin::UsersController < AdminAreaController
       flash[:alert] = "Invalid parameters!"
     end
   end
-  
+
   def show
     @all_sessions = @edit_admin_user.lab_sessions.order("sign_in_time DESC")
     each_session = 0
@@ -116,8 +116,42 @@ class Admin::UsersController < AdminAreaController
       create_certifications
       render json: { redirect_uri: "#{edit_admin_user_path(@edit_admin_user)}" }
       flash[:notice] = "User information updated!"
-      
+
     end
+  end
+
+  def delete_repository
+    Repository.find(params[:id]).destroy
+    redirect_to root_path
+  end
+
+  def revoke_certification
+    if Certification.find(params[:id]).destroy
+      flash[:notice] = "Deleted successfully"
+      redirect_to :back
+    else
+      flash[:alert] = "Something went wrong, try refreshing"
+      redirect_to :back
+    end
+  end
+
+  def renew_certification
+    cert = Certification.find(params[:id])
+    cert.updated_at = Time.now
+    if cert.save
+      flash[:notice] = "Renewed successfully"
+      redirect_to :back
+    else
+      flash[:alert] = "Something went wrong, try refreshing"
+      redirect_to :back
+    end
+  end
+
+  def set_role
+    @user = User.find(params[:id])
+    @user.role = params[:role]
+    @user.save
+    redirect_to :back
   end
 
   private
@@ -129,7 +163,7 @@ class Admin::UsersController < AdminAreaController
   def load_user
     @edit_admin_user = User.find(params[:id])
   end
-  
+
   def create_certifications
     params['certifications'].first(5).each do |c|
       Certification.create(name: c, user_id: @edit_admin_user.id)
