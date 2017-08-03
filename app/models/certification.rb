@@ -4,6 +4,7 @@ class Certification < ActiveRecord::Base
 
   validates :user, presence: true
   validates :training_session, presence: true
+  validate :unique_cert
 
   def training
     return self.training_session.training.name
@@ -12,9 +13,7 @@ class Certification < ActiveRecord::Base
   def trainer
     return self.training_session.user.name
   end
-  
-  validate unique_cert
-  
+
   def unique_cert
     @user_certs = self.user.certifications
     @user_certs.each do |cert|
