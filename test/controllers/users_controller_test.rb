@@ -21,7 +21,7 @@ class UsersControllerTest < ActionController::TestCase
                             name: "Sam",
                             email: "sam@sam.sam",
                             terms_and_conditions: true,
-                            password: "Password1"
+                            password: "Password1",
                             identity: "community_member",
                             gender: "Male"} }
     assert_response :found, "\nFailed at creating Sam"
