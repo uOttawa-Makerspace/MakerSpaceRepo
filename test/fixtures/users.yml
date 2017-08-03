@@ -15,12 +15,13 @@ bob:
   faculty: science
   use: null
   description: null
-  identity: student
+  identity: undergrad
   program: Biomedical
   year_of_study: 3
   student_id: 1234567
   created_at: <%= 1.month.ago %>
 
+#old user
 mary:
   id: 2
   username: mary
@@ -34,10 +35,7 @@ mary:
   faculty: engineering
   use: null
   description: null
-  identity: student
-  program: Mechanical
-  year_of_study: 1
-  student_id: 9876543
+  identity: unknown
 
 #the only admin
 adam:
