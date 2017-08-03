@@ -20,7 +20,7 @@
 
     <div>Course: <%= @current_training_session.course %></div>
       <% label_tag 'changed_params[course]' %>
-      <%= select_tag 'changed_params[course]',  options_for_select(['GNG1105', 'GNG2205']), prompt: 'change course' %><br>
+      <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'change course' %><br>
 </div><br>
 
 
