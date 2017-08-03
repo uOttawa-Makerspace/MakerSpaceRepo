@@ -53,4 +53,19 @@ class ReportGenerator
     end
   end
 
+  def self.training_report
+    @certifications = Certification.in_last_month
+
+    column = []
+    column << ["TRAINING ID", "STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE", "WORKSHOP"]
+
+    @certifications.each do |certification|
+      row = []
+      row << certification.id << certification.user.student_id << certification.user.name << certification.user.email << certification.training
+      row << certification.created_at <<  User.find(certification.training_session.user_id).name << certification.training_session.course
+      column << row
+    end
+    @certifications.to_csv(column)
+  end
+
 end
