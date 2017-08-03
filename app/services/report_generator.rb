@@ -36,7 +36,8 @@ class ReportGenerator
   end
 
   def self.faculty_frequency_report
-      @faculty_freq = User.group(:faculty).count(:faculty)
+      @users = User.in_last_month
+      @faculty_freq = @users.group(:faculty).count(:faculty)
       CSV.generate do |csv|
         csv << @faculty_freq.keys
         csv << @faculty_freq.values
@@ -44,7 +45,8 @@ class ReportGenerator
   end
 
   def self.gender_frequesncy_report
-    @gender_freq = User.group(:gender).count(:gender)
+    @users = User.in_last_month
+    @gender_freq = @users.group(:gender).count(:gender)
     CSV.generate do |csv|
       csv << @gender_freq.keys
       csv << @gender_freq.values
