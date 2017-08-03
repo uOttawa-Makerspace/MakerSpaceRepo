@@ -4,7 +4,7 @@ class Certification < ActiveRecord::Base
 
   validates :user, presence: true
   validates :training_session, presence: true
-  validate :unique_cert
+  validate :unique_cert, on: :create
 
   def training
     return self.training_session.training.name
