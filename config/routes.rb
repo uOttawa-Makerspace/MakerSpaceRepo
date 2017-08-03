@@ -77,16 +77,25 @@ Rails.application.routes.draw do
 
     resources :report_generator, only: [:index] do
       collection do
-        get 'report1'
-        get 'report2'
-        get 'report3'
+        get 'new_users'
+        get 'total_visits'
+        get 'unique_visits'
+        get 'faculty_frequency'
+        get 'gender_frequency'
       end
     end
     resources :users, only: [:index, :edit, :update, :show] do
       collection do
         get 'search'
         post 'bulk_add_certifications'
+        patch 'set_role'
+        patch 'renew_certification'
+        delete 'delete_repository'
+        delete 'revoke_certification'
       end
+    end
+
+    resources :trainings do
     end
 
     resources :settings, only: [:index] do
@@ -99,6 +108,18 @@ Rails.application.routes.draw do
         post 'remove_equipment'
         post 'submit_pi'
         post 'remove_pi'
+
+      end
+    end
+  end
+
+
+  namespace :staff do
+    get 'index', path: '/'
+
+    resources :training_sessions do
+      member do
+        post 'certify_trainees'
       end
     end
   end

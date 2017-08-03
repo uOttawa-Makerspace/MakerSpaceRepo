@@ -1,46 +1,82 @@
 <% provide(:title, "Settings") %>
-<% if flash[:notice] %>
-  <div id="notice"><%= flash[:notice] %></div>
-<% end %>
 
 <%= form_for @user, url: user_path(@user.username), method: :patch do |f| %>
 
   <div class="edit-column">
-    <div class="setting-title">Edit Profile/Modifier ton Profile</div>
+    <div class="setting-title">Edit Profile<br>Modifier ton Profile</div>
     <div class="section-desc">
-      Public information/Information Publique<br>
-      <span>This information will be visible to anyone viewing your profile./Cette information va être visible par quiconque qui regarde ton profile</span>
+      Public information<br>Information Publique<br>
+      <span>This information will be visible to anyone viewing your profile.<br>Cette information va être visible par quiconque qui regarde ton profile</span>
     </div>
 
-    <%= f.label :avatar, "Profile Picture/Photo de Profile", class: "profile-label" %>
-    
+    <%= f.label :avatar, "Profile Picture<br>Photo de Profile".html_safe, class: "profile-label" %>
+
+
     <div class="avatar-column">
       <%= image_tag @user.avatar.url, class: 'edit-avatar' %>
       <label class="custom-file-upload">
         <%= f.file_field :avatar %>
-        Choose new image/Choisi une nouvelle image
+        Choose new image<br>Choisi une nouvelle image
       </label>
     </div>
 
-    <%= f.label :name, "Name/Nom", class: "profile-label" %>
+    <%= f.label :name, "Full Name/Nom", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:name].first, class: 'form-error' %>
     <%= f.text_field :name, class: "profile-text", autofocus: true %>
 
-    <%= f.label :email, "Email/Addresse Courriel", class: "profile-label" %>
-    <%= content_tag :span, @user.errors[:email].first, class: 'form-error' %>
-    <%= f.email_field :email, class: "profile-text" %> 
-
     <%= f.label :location,"Location" , class: "profile-label" %>
-    <%= f.text_field :location, class: "profile-text" %> 
+    <%= f.text_field :location, class: "profile-text" %>
 
     <%= f.label :url, "URL", class: "profile-label" %>
-    <%= f.url_field :url, class: "profile-text" %> 
+    <%= f.url_field :url, class: "profile-text" %>
+
+
+    <% if @user.identity == "unknown" %>
+
+    <section id="old_users">
+        <p id="intro"> <strong>MakerRepo has been updated and the users who've already had an account have to update their information.<br>
+           Please fill in the form below and click Save. </strong> </p>
+
+        <%= f.label :identity, "I am a ..." , class: "profile-label" %>
+        <%= content_tag :span, @user.errors[:identity].first, class: 'form-error' %>
+        <%= f.select :identity, ["grad", "undergrad", "faculty_member", "community_member"] , prompt: "Choose..." %><br><br>
+
+        <p> If you are <strong>not</strong> a <strong> student </strong>, you can ignore the rest of the form and click Save. </p>
+        <p> If you <strong>are</strong> a student (grad/undergrad) it is mandatory for you to answer the questions below. </p>
+
+        <%= f.label :student_id , "Student Number (must be 7 characters)" , class: "profile-label"%>
+        <%= content_tag :span, @user.errors[:student_id].first, class: 'form-error' %>
+        <%= f.text_field :student_id, class: "profile-text", autofocus: true %>
+
+        <%= f.label :faculty , "Faculty" , class: "profile-label" %>
+        <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
+        <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
+
+        <p> # should load the list of programs </p>
+        <%= f.label :program, "Program" , class: "profile-label" %>
+        <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
+        <%= f.select(:program, ["program"] , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
+
+        <%= f.label :year_of_study, "What year are you in?", class: "profile-label"  %>
+        <%= content_tag :span, @user.errors[:year_of_study].first, class: 'form-error' %>
+        <%= f.select :year_of_study, ["1", "2", "3","4","5"] , prompt: "Select a year ..." %><br><br>
+      </section>
+    <% end %>
+    <br><br>
+
 
 <!--     <%= f.label :description, class: "profile-label" %>
     <%= content_tag :span, @user.errors[:description].first, class: 'form-error' %>
     <%= f.text_area :description, class: "profile-text" %>    -->
 
     <%= f.submit "Save/Enregistrer", class: "save-button" %>
+
+    <% if flash[:notice] %>
+      <div id="notice"><%= flash[:notice] %></div>
+    <% end %>
+    <% if flash[:alert] %>
+      <div id="alert"><%= flash[:alert] %></div>
+    <% end %>
 
   </div>
 

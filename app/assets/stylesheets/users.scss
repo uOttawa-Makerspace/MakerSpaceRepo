@@ -5,7 +5,6 @@ input{
 }
 
 /* SIGNUP PAGE */
-
 section#signup {
 
     @include outer-container(70rem);
@@ -27,11 +26,43 @@ section#signup {
       color: #F00;
     }
 
-    // select{
-    //   width: 318px;
-    //   display: block;
-    // }
+.select2-container .select2-selection--single {
+    box-sizing: border-box;
+    cursor: pointer;
+    display: block;
+    height: 40px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+ .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #777;
+    line-height: 37px;
+    font-size: 15px;
+    font-family: 'Raleway',helvetica,sans-serif;
+}
 
+.select2-container .select2-selection--single .select2-selection__rendered {
+    display: block;
+    padding-left: 4px;
+    padding-right: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+li.select2-results__option{
+  font: 4px;
+}
+.programs {
+    display: block;
+    padding: 0.1rem;
+    width: 415px;
+    height: 40px;
+    border-radius: 2px;
+    border: 1px solid #aaa;
+    margin: 0.5rem 0 1rem;
+    font: 300 1rem 'Raleway', helvetica, sans-serif;
+}
     input:not([type=checkbox]), textarea{
   		display: block;
   		padding: 0.5rem;
@@ -61,7 +92,13 @@ section#signup {
         }
       }
     }
+
+  input.show_extra{
+    width: 15px;
+  }
+
 }
+
 
 div.signup-breadcrumb{
   padding-top: 5%;
@@ -221,6 +258,7 @@ a.delete{
 	border-radius: 3px;
   font-size: 0.85rem;
 }
+
 
 div#notice{
   display: none;

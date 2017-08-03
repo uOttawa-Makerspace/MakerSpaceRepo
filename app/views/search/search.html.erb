@@ -3,7 +3,7 @@
   <section id="repository-filter">
     <div class="sort">sort by</div>
     <nav>
-      <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest' %>
+      <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
       <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
       <ul class="filter">
         <li><%= link_to 'Newest/Plus récent', search_path(sort: :newest, q: params[:q]) %></li>
@@ -17,6 +17,7 @@
     <%= "#{@repositories.count} repositories were found" %>
   </span>
   <section id="repositories-container">
+    <div class="pagination"><%= will_paginate @repositories %></div><br>
   <% @repositories.each_with_index do |repository, i| %>
     <div class="repository-container">
 
@@ -34,5 +35,7 @@
       </div>
     </div>
   <% end %>
+  <br></br>
   </section>
+
 </section>
