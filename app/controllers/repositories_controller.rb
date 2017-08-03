@@ -142,7 +142,7 @@ class RepositoriesController < SessionsController
     end
 
     def check_auth
-      if (@authorized == true || (@user.role == "admin") || (params[:user_username] == @user.username))
+      if (@authorized == true || (@user.role == "admin") || (@user.role == "staff") || (params[:user_username] == @user.username))
         @check_passed = true
       else
         @check_passed = false
