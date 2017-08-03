@@ -115,6 +115,10 @@ class User < ActiveRecord::Base
     end
   end
 
+
   scope :in_last_month, -> { where('created_at BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
+
+  scope :unsigned_tac_users, -> { where('terms_and_conditions = false') }
+
 
 end

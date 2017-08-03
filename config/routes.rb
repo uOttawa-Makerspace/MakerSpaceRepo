@@ -89,6 +89,7 @@ Rails.application.routes.draw do
         get 'search'
         post 'bulk_add_certifications'
         patch 'set_role'
+        patch 'renew_certification'
         delete 'delete_repository'
         delete 'revoke_certification'
       end
