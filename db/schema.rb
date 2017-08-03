@@ -53,14 +53,6 @@ ActiveRecord::Schema.define(version: 20170714165821) do
   add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
   add_index "comments", ["user_id"], name: "index_comments_on_user_id", using: :btree
 
-  create_table "course_options", force: :cascade do |t|
-    t.string   "title"
-    t.string   "code"
-    t.integer  "year"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
   create_table "equipment", force: :cascade do |t|
     t.integer  "repository_id"
     t.string   "name"
