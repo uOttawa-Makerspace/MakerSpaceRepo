@@ -98,4 +98,9 @@ class UserTest < ActiveSupport::TestCase
     assert_not_equal( user.password, user.password_confirmation, "Your passwords do not match.")
   end
 
+  test "unsigned_tac_users scope catches users with unsigned terms and conditions" do
+    assert User.unsigned_tac_users.include? users(:sara)
+    assert_equal(users(:sara).terms_and_conditions, false)
+  end
+
 end
