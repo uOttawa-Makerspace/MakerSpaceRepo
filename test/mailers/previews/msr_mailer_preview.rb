@@ -19,4 +19,8 @@ class MsrMailerPreview < ActionMailer::Preview
 													ReportGenerator.faculty_frequency_report)
 	end
 
+	def tac_reminder_email
+		MsrMailer.tac_reminder_email('baduser@tac.com')
+	end
+
 end

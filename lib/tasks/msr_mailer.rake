@@ -3,7 +3,7 @@ namespace :msr_mailer do
   task send_emails: :environment do
     emails = ['abc@abc.com', 'xyz@xyz.ca']
     emails.each do |email|
-      MsrMailer.send_reminder_email(email).deliver
+      MsrMailer.tac_reminder_email(email).deliver
     end
   end
 end

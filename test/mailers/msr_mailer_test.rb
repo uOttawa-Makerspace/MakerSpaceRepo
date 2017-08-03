@@ -46,7 +46,7 @@ class MsrMailerTest < ActionMailer::TestCase
 	end
 
 	test "Send Terms and Conditions reminder email" do
-		email = MsrMailer.send_tac_reminder_email('abc@123.com')
+		email = MsrMailer.tac_reminder_email('abc@123.com')
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['abc@123.com'], email.to
 		assert_equal 'Please sign the terms and conditions!', email.subject
