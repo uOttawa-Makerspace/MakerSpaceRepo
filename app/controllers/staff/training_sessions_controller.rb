@@ -32,6 +32,14 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def update
+
+    if changed_params['user_id'].present?
+      unless @user.admin?
+        flash[:alert] = "You're not an admin."
+        redirect_to :back
+      end
+    end
+
     @current_training_session.update(changed_params)
 
     if params['dropped_users'].present?
@@ -49,6 +57,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     else
       flash[:alert] = "Something went wrong, please try again"
     end
+
     redirect_to :back
   end
 
@@ -65,18 +74,25 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def destroy
-    if @current_training_session.destroy
+    if @user.admin? && @current_training_session.destroy
         flash[:notice] = "Training session deleted succesfully"
+        redirect_to new_staff_training_session_path
     else
-        flash[:alert] = "Something went wrong."
+        flash[:alert] = "Something went wrong or you're not an admin"
+        redirect_to :back
     end
-    redirect_to :back
   end
 
   private
 
     def default_params
-      return {user_id: current_user.id, training_id: params[:training_id], course: params[:course]}
+      if params[:user_id].present?
+        if @user.admin?
+          return {user_id: params[:user_id], training_id: params[:training_id], course: params[:course]}}
+        end
+      else
+        return {user_id: current_user.id, training_id: params[:training_id], course: params[:course]}}
+      end
     end
 
     def training_session_params
@@ -89,7 +105,7 @@ class Staff::TrainingSessionsController < StaffAreaController
     end
 
     def changed_params
-      params.require(:changed_params).permit(:training_id, :course)
+      params.require(:changed_params).permit(:training_id, :course, :user_id).reject { |_, v| v.blank? }
     end
 
 end
