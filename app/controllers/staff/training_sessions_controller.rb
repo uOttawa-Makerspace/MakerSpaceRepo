@@ -2,7 +2,7 @@ class Staff::TrainingSessionsController < StaffAreaController
 
   before_action :current_training_session, only: [:show, :edit, :update, :certify_trainees, :destroy]
   before_action :changed_params, only: [:update]
-  before_action :verify_ownership, only: [:show]
+  before_action :verify_ownership, except: [:show]
 
   layout 'staff_area'
 
