@@ -141,8 +141,7 @@
   <% end %>
 
   <br>
-  <%=link_to "Cancel", { action: :destroy }, method: :delete, data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
-
-
-
+  <% if @user.admin? || @current_training_session.user == @user%>
+    <%=link_to "Cancel", { action: :destroy }, method: :delete, data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
+  <% end %>
 </section>
