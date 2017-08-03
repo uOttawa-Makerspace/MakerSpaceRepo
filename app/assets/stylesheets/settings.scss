@@ -218,6 +218,38 @@ div.edit-column{
         color: #789;
     }
   }
+	div#alert{
+
+		display: none;
+	  position: absolute;
+	  top: 65px;
+	  width: 100vw;
+	  left:0;right:0;
+	  margin: 0 auto;
+	  height: 5rem;
+	  line-height: 5rem !important;
+	  font-size: 75%;
+	  font: 500 2.0rem 'Raleway', sans-serif;
+	  background-color: #cd5c5c;
+	  color: #fff;
+	  z-index: 2;
+	  text-align: center;
+	}
+
+	section#old_users{
+		padding: 10px;
+		background-color: #F2B3AC;
+
+		p{
+			font: 500 1rem 'Raleway', sans-serif;
+		}
+		p#intro{
+			font: 500 1.2rem 'Raleway', sans-serif;
+		}
+
+	}
+
+
 }
 
 img.edit-avatar{

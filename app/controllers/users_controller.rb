@@ -32,7 +32,8 @@ class UsersController < SessionsController
       flash[:notice] = "Profile updated successfully."
       redirect_to settings_profile_path
     else
-      render 'settings/profile', layout: 'setting'
+      flash[:alert] = "Could not save changes."
+      redirect_to settings_profile_path
     end
   end
 
