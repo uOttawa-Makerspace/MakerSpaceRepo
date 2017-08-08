@@ -92,10 +92,10 @@ class Staff::TrainingSessionsController < StaffAreaController
     def default_params
       if params[:user_id].present?
         if @user.admin?
-          return {user_id: params[:user_id], training_id: params[:training_id]}
+          return {user_id: params[:user_id], training_id: params[:training_id], course: params[:course]}
         end
       else
-        return {user_id: current_user.id, training_id: params[:training_id]}
+        return {user_id: current_user.id, training_id: params[:training_id], course: params[:course]}
       end
     end
 

@@ -4,8 +4,10 @@ lathe_1_session:
   user_id: 777
   course: GNG2205
 
+
 welding_3_session:
   id: 2
   training_id: 2
   user_id: 1337
   course: GNG1105
+
