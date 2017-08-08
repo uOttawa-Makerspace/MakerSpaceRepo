@@ -2,7 +2,6 @@ class Repository < ActiveRecord::Base
   include BCrypt
 
   belongs_to :user
-  has_many   :users
   has_many   :photos,   dependent: :destroy
   has_many   :repo_files,   dependent: :destroy
   has_many   :categories,     dependent: :destroy
@@ -29,9 +28,8 @@ class Repository < ActiveRecord::Base
     uniqueness: { message: "Project title is already in use.", scope: :user_username}
 
   validates :share_type,
-    presence: { message: "Is your project public or private?" }
-
-  validate :share_type_valid?
+    presence: { message: "Is your project public or private?"},
+    inclusion: { in:['public', 'private']}
 
   validates :password,
     presence: { message: "Password is required for private projects" }, if: :private?
@@ -62,9 +60,6 @@ class Repository < ActiveRecord::Base
     self.password = @pword
   end
 
-  def share_type_valid?
-    errors.add(:share_type, "Invalid Share Type") unless self.share_type.eql?("public") || self.share_type.eql?("private")
-  end
   # validates :category,
   #   inclusion: { within: category_options },
   #   presence: { message: "A category is required."}
