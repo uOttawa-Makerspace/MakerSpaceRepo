@@ -74,11 +74,12 @@
         <%= fa_icon('lock') %>
         <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>
         <div id= "description"> Only those with the url and password can view this repository </div>
-
-        <section id="hidden">
-            <div id= "password"><%= password_field_tag :repo_pass, nil, placeholder: 'Password' %></div>
-        </section>
     </div>
+
+        <!-- <div id="pass">
+          <%= password_field_tag :password, nil, placeholder: 'Password' %>
+        </div> -->
+
     <br>
     <br>
     <br>

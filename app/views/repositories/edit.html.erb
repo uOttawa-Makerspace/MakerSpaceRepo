@@ -101,8 +101,8 @@
     </div>
     <section id="pass">
       <br>
-      <%= password_field_tag :repo_pass, nil, placeholder: 'Password' %>
-      <%= content_tag :span, @repository.errors[:repo_pass].first, class: 'form-error' %>
+      <%= password_field_tag :password, nil, placeholder: 'Password' %>
+      <%= content_tag :span, @repository.errors[:password].first, class: 'form-error' %>
     </section>
     <br>
     <br>
