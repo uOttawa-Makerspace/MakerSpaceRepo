@@ -1,9 +1,7 @@
 class RepositoriesController < SessionsController
-  before_action :current_user
+  before_action :current_user, :check_session, :check_auth
   before_action :signed_in, except: [:index, :show, :download, :download_files]
   before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
-  before_action :check_session
-  before_action :check_auth
 
   def show
     if @repository.private? && !@check_passed
@@ -44,6 +42,7 @@ class RepositoriesController < SessionsController
   end
 
   def new
+    binding.pry
     @repository = Repository.new
   end
 
@@ -142,7 +141,7 @@ class RepositoriesController < SessionsController
     end
 
     def check_auth
-      if (@authorized == true || (@user.role == "admin") || (@user.role == "staff") || (params[:user_username] == @user.username))
+      if (@authorized == true || (@user.admin?) || (@user.staff?) || (params[:user_username] == @user.username))
         @check_passed = true
       else
         @check_passed = false
