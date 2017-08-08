@@ -6,4 +6,8 @@ class Space < ActiveRecord::Base
 
   validates :name,  presence: { message: "A name is required for the space"}, uniqueness: { message: "Space already exists"}
 
+  def signed_in_users
+    return self.lab_sessions.where(sign_out_time: nil).map(&:user)
+  end
+
 end
