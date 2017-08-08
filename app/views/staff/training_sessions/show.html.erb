@@ -8,19 +8,20 @@
 
 
 <section id ="page-contents" >
+<%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
+
 <div>Trainer: <%= @staff.name %></div>
   <% if @user.admin?%>
     <% label_tag 'changed_params[user_id]' %>
     <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: ['staff','admin']), 'id', 'name'), prompt: 'change trainer' %><br></br>
   <% end %>
 <div>Training Type: <%= @current_training_session.training.name %>
-    <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
-      <% label_tag 'changed_params[training_id]' %>
-      <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'change training' %><br></br>
+    <% label_tag 'changed_params[training_id]' %><br>
+    <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'change training' %><br></br>
 
-    <div>Course: <%= @current_training_session.course %></div>
-      <% label_tag 'changed_params[course]' %>
-      <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'change course' %><br>
+  <div>Course: <%= @current_training_session.course %></div>
+    <% label_tag 'changed_params[course]' %>
+    <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'change course' %><br>
 </div><br>
 
 
