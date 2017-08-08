@@ -20,7 +20,7 @@ class Admin::TrainingSessionsControllerTest < ActionController::TestCase
     delete :destroy, id: 1
     assert_redirected_to :back
     assert_equal flash[:notice], "Deleted Successfully"
-    refute TrainingSession.find(1).present?
+    refute TrainingSession.find_by(id: 1).present?
   end
 
 end
