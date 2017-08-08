@@ -58,19 +58,15 @@ class UsersController < SessionsController
   end
 
   def show
-    if (params[:username] == @user.username)
       @repo_user = User.find_by username: params[:username]
       @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
-      @repositories = @repo_user.repositories.where(make_id: nil).page params[:page]
+      if (params[:username] == @user.username)
+        @repositories = @repo_user.repositories.where(make_id: nil).page params[:page]
+      else
+        @repositories = @repo_user.repositories.where(share_type: "public").where(make_id: nil).page params[:page]
+      end
       @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
       @photos = photo_hash
-    else
-      @repo_user = User.find_by username: params[:username]
-      @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
-      @repositories = @repo_user.repositories.where(share_type: "public").where(make_id: nil).page params[:page]
-      @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
-      @photos = photo_hash
-    end
   end
 
   def likes
