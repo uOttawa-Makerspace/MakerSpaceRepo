@@ -97,4 +97,30 @@ class RepositoriesControllerTest < ActionController::TestCase
     assert_equal 'Success', flash[:notice]
     assert_redirected_to repository_path
   end
+
+  test "users can edit their own repository" do
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    get :edit, user_username: "bob", slug: "repository1"
+    assert_response :success
+  end
+
+  test "Admins can edit users' repository" do
+    session[:user_id] = User.find_by(username: "adam").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    get :edit, user_username: "bob", slug: "repository1"
+    assert_response :success
+  end
+
+  test "users cannot edit other users' repositories" do
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    get :edit, user_username: "mary", slug: "repository2"
+    assert_equal "You are not allowed to perform this action!", flash[:alert]
+    assert_redirected_to repository_path("mary", "repository2")
+  end
+
 end
