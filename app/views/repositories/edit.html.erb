@@ -95,12 +95,15 @@
         <%= fa_icon('lock') %>
         <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>
         <div id= "description"> Only those with the url and password can view this repository </div>
-
+        <% if @repository.share_type.eql?("private")%>
+          <div id="change"><input type="checkbox" >Change Password</div>
+        <% end %>
     </div>
-      <p> Change Password </p>
-      <div id= "password"><%= password_field_tag :password, nil, placeholder: 'Password' %></div>
-      <%= content_tag :span, @repository.errors[:password].first, class: 'form-error' %>
-
+    <section id="pass">
+      <br>
+      <%= password_field_tag :repo_pass, nil, placeholder: 'Password' %>
+      <%= content_tag :span, @repository.errors[:repo_pass].first, class: 'form-error' %>
+    </section>
     <br>
     <br>
     <br>
