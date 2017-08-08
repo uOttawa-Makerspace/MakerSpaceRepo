@@ -1,5 +1,6 @@
 class LabSession < ActiveRecord::Base
   belongs_to :user
+  belongs_to :space
 
   scope :in_last_month, -> { where('sign_in_time BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
 
@@ -9,6 +10,6 @@ class LabSession < ActiveRecord::Base
         csv << row
       end
     end
-  end                       
+  end
 
 end

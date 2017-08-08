@@ -1,4 +1,7 @@
 class PiReader < ActiveRecord::Base
+
+  belongs_to :space
+
   def pi_mac_with_location
     "#{pi_mac_address} (#{pi_location})"
   end
