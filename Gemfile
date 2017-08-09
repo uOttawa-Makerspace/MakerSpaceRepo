@@ -51,11 +51,11 @@ group :development do
 end
 
 group :test do
-  gem 'faker', '~> 1.1.2'
-  gem 'capybara', '~> 2.1.0'
-  gem 'database_cleaner', '~> 1.0.1'
-  gem 'launchy', '~> 2.3.0'
-  gem 'selenium-webdriver', '~> 2.39.0'
+  gem 'faker', '~> 1.8.2'
+  gem 'capybara', '~> 2.15.0'
+  gem 'database_cleaner', '~> 1.6.1'
+  gem 'launchy', '~> 2.4'
+  gem 'selenium-webdriver', '~> 3.4.4'
 
 end
 
