@@ -22,20 +22,35 @@
 
     <%= f.label :name, "Full Name/Nom", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:name].first, class: 'form-error' %>
-    <%= f.text_field :name, class: "profile-text", autofocus: true %>
+    <%= f.text_field :name, class: "profile-text", autofocus: true %> <br>
 
-    <%= f.label :location,"Location" , class: "profile-label" %>
-    <%= f.text_field :location, class: "profile-text" %>
+    <%= f.label :faculty , "Faculty" , class: "profile-label" %>
+    <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
+    <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
+      " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
-    <%= f.label :url, "URL", class: "profile-label" %>
-    <%= f.url_field :url, class: "profile-text" %>
+    <% programs = ProgramList.fetch_all %>
+    <%= f.label :program, "Program" , class: "profile-label" %>
+    <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
+    <%= f.select(:program, programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
 
 
     <% if @user.identity == "unknown" %>
 
-    <section id="old_users">
+      <section id="old_users">
         <p id="intro"> <strong>MakerRepo has been updated and the users who've already had an account have to update their information.<br>
            Please fill in the form below and click Save. </strong> </p>
+
+        <%= f.label :name , "Full Name/Nom" , class: "profile-label"%>
+        <%= content_tag :span, @user.errors[:name][0], class: 'form-error' %>
+        <%= content_tag :span, @user.errors[:name][1], class: 'form-error',
+           style: 'display: block;' if @user.errors[:name][1] %>
+        <%= f.text_field :name, class: "profile-text", autofocus: true %>
+
+        <%= f.label :gender , class: "profile-label" %>
+        <%= content_tag :span, @user.errors[:gender].first, class: 'form-error' %>
+        <%= f.select :gender, ["Male", "Female", "Other", "Prefer not to specify"] , prompt: "Choose..." %><br>
+
 
         <%= f.label :identity, "I am a ..." , class: "profile-label" %>
         <%= content_tag :span, @user.errors[:identity].first, class: 'form-error' %>
