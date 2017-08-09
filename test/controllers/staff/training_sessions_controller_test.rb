@@ -17,7 +17,8 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can create a new training session" do
-  post :create, training_session_users: [users(:bob).id, users(:mary).id], training_id: Training.last.id, course: "GNG2205"
+  post :create,
+  params: { training_session_users: [users(:bob).id, users(:mary).id], training_id: Training.last.id, course: "GNG2205" }
   @new_training_session = TrainingSession.where(training_id: Training.last.id, user_id: @user.id, course: "GNG2205").last
   assert @new_training_session.present?
   assert @new_training_session.users.include? User.find_by(username: "bob")
@@ -26,9 +27,8 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
 
 
   test "staff can change the trainging type by choosing a different training" do
-    patch :update, params: {
-      id: training_sessions(:lathe_1_session),
-      changed_params: {training_id: trainings(:welding_3)} }
+    patch :update,
+    params: { id: training_sessions(:lathe_1_session), changed_params: {training_id: trainings(:welding_3)} }
     assert TrainingSession.find_by(training_id: Training.find_by(name: "welding_3"),
                                  user_id: @user.id).present?
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
