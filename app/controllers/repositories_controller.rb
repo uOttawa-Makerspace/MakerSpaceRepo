@@ -42,7 +42,6 @@ class RepositoriesController < SessionsController
   end
 
   def new
-    binding.pry
     @repository = Repository.new
   end
 
