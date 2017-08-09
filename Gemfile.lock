@@ -193,6 +193,7 @@ GEM
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
+    puma (3.9.1)
     rack (2.0.3)
     rack-test (0.6.3)
       rack (>= 1.0)
@@ -340,6 +341,7 @@ DEPENDENCIES
   photoswipe-rails (~> 4.0.8a)
   progress_bar (~> 1.0.3)
   pry (~> 0.10.1)
+  puma (~> 3.0)
   rack (~> 2.0)
   railroady
   rails (~> 5.0)
