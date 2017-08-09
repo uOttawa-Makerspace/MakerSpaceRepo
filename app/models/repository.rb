@@ -12,6 +12,9 @@ class Repository < ActiveRecord::Base
   belongs_to :parent,   class_name: "Repository", foreign_key: "make_id"
   paginates_per 12
 
+  default_scope { where(:share_type => "public") }
+  # scope :public_repos, -> { where(share_type:"public") }
+
   def self.license_options
     ["Creative Commons - Attribution",
      "Creative Commons - Attribution - Share Alike",
