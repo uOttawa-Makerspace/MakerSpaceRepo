@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170717220935) do
+ActiveRecord::Schema.define(version: 20170809153751) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -139,6 +139,8 @@ ActiveRecord::Schema.define(version: 20170717220935) do
     t.integer  "make_id"
     t.integer  "make",          default: 0
     t.string   "slug"
+    t.string   "share_type"
+    t.string   "password"
   end
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree
@@ -210,8 +212,8 @@ ActiveRecord::Schema.define(version: 20170717220935) do
     t.integer  "reputation",           default: 0
     t.string   "role",                 default: "regular_user"
     t.boolean  "terms_and_conditions"
-    t.integer  "student_id"
     t.string   "program"
+    t.integer  "student_id"
     t.string   "how_heard_about_us"
     t.string   "identity"
     t.string   "year_of_study"
