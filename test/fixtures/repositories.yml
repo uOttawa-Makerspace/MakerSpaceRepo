@@ -5,7 +5,7 @@ one:
   user_id: 1
   title: Repository1
   description: description1
-  slug: slug1
+  slug: repository1
   category: 3D-Model
   user_username: bob
 
@@ -14,6 +14,23 @@ two:
   user_id: 2
   title: Repository2
   description: description2
-  slug: slug2
+  slug: repository2
   category: Virtual Reality
   user_username: mary
+
+gng2101repo:
+  id: 3
+  user_id: 1
+  title: GNG2101 Hydrophonics
+  description: description2
+  slug: gng2101-Hydrophonics
+  user_username: bob
+
+
+gng1103repo:
+  id: 4
+  user_id: 1
+  title: GNG-1103SopmeProjectName
+  description: description2
+  slug: gng-1103sopmeprojectname
+  user_username: bob

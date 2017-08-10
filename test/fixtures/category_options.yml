@@ -5,3 +5,7 @@ one:
 two:
   id: 2
   name: Virtual Reality
+
+three:
+  id: 3
+  name: Course-related Projects

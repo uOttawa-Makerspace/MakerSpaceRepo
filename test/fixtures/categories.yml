@@ -5,5 +5,13 @@ one:
   name: Virtual Reality
 
 two:
-  repository_id:  2
+  repository_id: 2
+  name: Course-related Projects
+
+three:
+  repository_id: 3
+  name: Course-related Projects
+
+four:
+  repository_id: 4
   name: Course-related Projects
