@@ -19,13 +19,15 @@ class Certification < ActiveRecord::Base
     CSV.generate do |csv|
       attributes.each do |row|
         csv << row
+      end
+    end
+  end
 
   def unique_cert
     @user_certs = self.user.certifications
     @user_certs.each do |cert|
       if cert.training == self.training
         errors.add(:string, "Certification already exists.")
-
       end
     end
   end
