@@ -12,4 +12,8 @@ class TrainingSession < ActiveRecord::Base
     errors.add(:string, "user must be staff") unless self.user.staff?
   end
 
+  def courses
+    ['GNG2101', 'GNG1103']
+  end
+
 end
