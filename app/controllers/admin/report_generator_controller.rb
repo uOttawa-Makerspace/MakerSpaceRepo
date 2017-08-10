@@ -47,7 +47,7 @@ class Admin::ReportGeneratorController < AdminAreaController
   def training
     respond_to do |format|
       format.html
-      format.csv {send_data ReportGenerator.training_report, filename: "gender_frequency-#{Date.today}.csv"}
+      format.csv {send_data ReportGenerator.training_report, filename: "trainings-#{Date.today}.csv"}
     end
   end
 end
