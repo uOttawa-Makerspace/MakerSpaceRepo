@@ -6,15 +6,12 @@ $(document).ready(function() {
 		}
 		else {
 			$("#pass").hide();
-			$("#change").hide();
+			$("#change_pass").hide();
 		}
 	});
 });
 
-
-$(document).ready( function() {
-	$("#pass").hide();
-	// $("#repo_pass").hide();
+ $(document).ready( function() {
 	$("#change").on('change', function() {
 	  $('#pass').toggle(this.checked);
 	}).change();
