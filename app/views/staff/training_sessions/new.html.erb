@@ -42,8 +42,9 @@
 
         <td class="signed_in-cell" style="horizontal-alginment:center;">
           <%= if user.lab_sessions.present?
-                singout_time = user.lab_sessions.last.sign_out_time
-                singout_time.strftime("%B %d, %Y")
+                if singout_time = user.lab_sessions.last.sign_out_time
+                  singout_time.strftime("%B %d, %Y")
+                end
               end %>
         </td>
 
