@@ -1,6 +1,28 @@
 <% provide(:title, params[:slug].slug_to_title(params[:slug])) %>
 <section id="repositories-index">
   <div class="like-title"><%= yield(:title)  %></div>
+  <section id="pinned-repos">
+    <% if yield(:title) %>
+      <% @pinned_repos = Category.where(name: yield(:title).downcase).map(&:repository)%>
+      <% @pinned_repos.each_with_index do |repository, i| %>
+      <div class="repository-container">
+
+        <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].image.url}')"  %> >
+          <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
+        </div>
+
+        <div class="repo-info">
+          <div class="left">
+            <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %></div>
+            <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
+            <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+          </div>
+          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
+        </div>
+      </div>
+      <% end %>
+    <% end %>
+  </section>
   <section id="repository-filter">
     <div class="sort">sort by/classer par</div>
     <nav>
