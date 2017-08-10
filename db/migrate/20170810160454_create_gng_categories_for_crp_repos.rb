@@ -12,6 +12,9 @@ class CreateGngCategoriesForCrpRepos < ActiveRecord::Migration
       elsif course == 'GNG1103'
         repo_gng_cat = Category.new(repository_id: cat.repository.id, name: course, category_option_id: gng1103.id)
         repo_gng_cat.save
+      else
+        repo_gng_cat = Category.new(repository_id: cat.repository.id, name: 'Other Projects', category_option_id: CategoryOption.find_by(name: 'Other Projects').id)
+        repo_gng_cat.save
       end
     end
   end
