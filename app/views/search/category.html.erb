@@ -7,7 +7,6 @@
     <div class="pinned-repository-container">
 
       <div class="pinned-repo-display-wrapper"  <%=  "style=background-image:url('#{@photos[repository.id].image.url}')"  %> >
-        <% binding.pry %>
       </div>
 
     </div>
@@ -34,7 +33,6 @@
     <div class="repository-container">
 
       <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].image.url}')"  %> >
-          <% binding.pry %>
         <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
       </div>
 
