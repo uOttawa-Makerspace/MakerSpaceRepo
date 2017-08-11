@@ -35,7 +35,7 @@
     <%= f.select(:program, programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
 
 
-    <% if @user.identity == "unknown" %>
+    <% if @user.identity == "unknown" || @user.name == "anonymous" || @user.gender == "unknown"%>
 
       <section id="old_users">
         <p id="intro"> <strong>MakerRepo has been updated and the users who've already had an account have to update their information.<br>
