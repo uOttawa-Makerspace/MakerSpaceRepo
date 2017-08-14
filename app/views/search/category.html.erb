@@ -1,6 +1,19 @@
 <% provide(:title, params[:slug].slug_to_title(params[:slug])) %>
 <section id="repositories-index">
   <div class="like-title"><%= yield(:title)  %></div>
+  <section id="pinned-repositories-container">
+    <% if @pinned_repos
+          @pinned_repos.each_with_index do |repository, i| %>
+    <div class="pinned-repository-container">
+
+      <div class="pinned-repo-display-wrapper"  <%=  "style=background-image:url('#{@photos[repository.id].image.url}')"  %> >
+      </div>
+
+    </div>
+    <% end %>
+    <% end %>
+
+  </section>
   <section id="repository-filter">
     <div class="sort">sort by/classer par</div>
     <nav>

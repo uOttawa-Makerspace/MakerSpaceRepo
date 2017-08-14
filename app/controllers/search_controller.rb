@@ -39,6 +39,7 @@ class SearchController < SessionsController
       @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
         order_by sort_arr.first, sort_arr.last
       end
+      @pinned_repos = @repositories.select {|v| v["pinned"] == true}
     end
     @photos = photo_hash
   end
