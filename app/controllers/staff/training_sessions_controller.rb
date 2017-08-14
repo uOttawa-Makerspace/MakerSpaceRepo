@@ -50,7 +50,7 @@ class Staff::TrainingSessionsController < StaffAreaController
           cert = user.certifications.find_by(training_session_id: @current_training_session.id)
           if cert.present?
             unless cert.destroy
-              flash[:alert] = "Error deleting #{user.username}'s #{user.username}"
+              flash[:alert] = "Error deleting #{user.username}'s #{@current_training_session.training.name} certification."
             end
           end
         end
