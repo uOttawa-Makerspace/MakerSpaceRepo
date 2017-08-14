@@ -87,6 +87,7 @@ Rails.application.routes.draw do
     resources :users, only: [:index, :edit, :update, :show] do
       collection do
         get 'search'
+        get 'pin_unpin_repository'
         post 'bulk_add_certifications'
         patch 'set_role'
         patch 'renew_certification'
