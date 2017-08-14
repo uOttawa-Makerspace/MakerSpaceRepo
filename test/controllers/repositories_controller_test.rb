@@ -54,6 +54,19 @@ class RepositoriesControllerTest < ActionController::TestCase
     assert_equal flash[:notice] , "Project updated successfully!"
   end
 
+  test "Changing private to public happens successfully" do
+    session[:user_id] = User.find_by(username: "mary").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    patch :update, user_username: "mary", slug: "repository3",
+    repository:{share_type: "public"}
+
+    assert_equal 'public', Repository.find_by(slug: "repository3").share_type
+    assert_nil Repository.find_by(slug: "repository3").password
+
+    assert_equal flash[:notice] , "Project updated successfully!"
+  end
+
   test "user can remove repository" do
     session[:user_id] = User.find_by(username: "mary").id
     session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
