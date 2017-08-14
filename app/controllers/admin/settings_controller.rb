@@ -119,7 +119,7 @@ class Admin::SettingsController < AdminAreaController
     end
 
     if repo.save
-      flash[:notice] = "success"
+      flash[:notice] = "Featured: #{repo.featured}"
     else
       flash[:alert] = "something went wrong"
     end
