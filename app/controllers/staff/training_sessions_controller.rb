@@ -46,7 +46,14 @@ class Staff::TrainingSessionsController < StaffAreaController
     if params['dropped_users'].present?
       @current_training_session.users -= User.where(username: params[ 'dropped_users'])
       User.where(username: params[ 'dropped_users']).each do |user|
-        user.certifications.find_by(training_session_id: @current_training_session.id).destroy
+        if user.present?
+          cert = user.certifications.find_by(training_session_id: @current_training_session.id)
+          if cert.present?
+            unless cert.destroy
+              flash[:alert] = "Error deleting #{user.username}'s #{user.username}"
+            end
+          end
+        end
       end
     end
 

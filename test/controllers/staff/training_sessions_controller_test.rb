@@ -76,4 +76,16 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert_equal flash[:notice], "Deleted Successfully"
   end
 
+  test "removing a user from a training session deletes the associated certification if it exists" do
+    session[:user_id] = User.find_by(username: "adam").id
+    session[:expires_at] = "Sat, 03 Jun 2025 05:01:41 UTC +00:00"
+    training_session = training_sessions(:lathe_1_session)
+    training_session.users << User.find_by(username: "olivia")
+    training_session.save
+    post :certify_trainees, id: training_session
+    assert Certification.find_by(user_id: users(:olivia).id, training_session_id: training_sessions(:lathe_1_session).id).present?
+    patch :update, dropped_users: ['olivia'], id: training_session, changed_params:{user_id: @user.id}
+    refute Certification.find_by(user_id: users(:olivia).id, training_session_id: training_sessions(:lathe_1_session).id).present?
+  end
+
 end
