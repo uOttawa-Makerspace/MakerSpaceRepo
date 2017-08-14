@@ -1,6 +1,11 @@
 <% provide(:title, params[:slug].slug_to_title(params[:slug])) %>
 <section id="repositories-index">
   <div class="like-title"><%= yield(:title)  %></div>
+
+  <section id="pinned-repositories-container">
+    <div class="pagination"><%= will_paginate @pinned_repositories %></div><br>
+  </section>
+
   <section id="repository-filter">
     <div class="sort">sort by/classer par</div>
     <nav>

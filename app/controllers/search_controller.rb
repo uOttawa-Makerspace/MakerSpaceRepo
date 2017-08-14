@@ -40,6 +40,15 @@ class SearchController < SessionsController
         order_by sort_arr.first, sort_arr.last
       end
     end
+    @pinned_repositories = []
+    @repositories.each do |repo|
+      if repo.featured
+        @pinned_repositories << repo
+      end
+    end
+    @pinned_repositories = @pinned_repositories.paginate(:per_page=>4,:page=>params[:page]) do
+      order_by sort_arr.first, sort_arr.last
+    end
     @photos = photo_hash
   end
 
