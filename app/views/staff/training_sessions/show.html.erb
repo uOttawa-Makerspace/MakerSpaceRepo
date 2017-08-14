@@ -3,11 +3,13 @@
 <% end %>
 
 <% if flash[:alert] %>
-  <div id="alert"><%= flash[:notice] %></div>
+  <div id="alert"><%= flash[:alert] %></div>
 <% end %>
 
 
 <section id ="page-contents" >
+<%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
+
 <div>Trainer: <%= @staff.name %></div>
   <% if @user.admin?%>
     <% label_tag 'changed_params[user_id]' %>
