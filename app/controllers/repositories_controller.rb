@@ -77,7 +77,6 @@ class RepositoriesController < SessionsController
   def update
     @repository.categories.destroy_all
     @repository.equipments.destroy_all
-    update_share_type
     update_password
     if @repository.update(repository_params)
       update_photos
@@ -224,15 +223,8 @@ class RepositoriesController < SessionsController
       end if params['equipments'].present?
     end
 
-    def update_share_type
-      if repository_params['share_type'].present?
-        @repository.share_type = repository_params['share_type']
-        @repository.save
-      end
-    end
-
     def update_password
-      if @repository.share_type.eql?("public")
+      if repository_params['share_type'].eql?("public")
         @repository.password = nil
         @repository.save
       else
