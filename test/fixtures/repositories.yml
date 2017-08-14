@@ -8,6 +8,8 @@ one:
   slug: slug1
   category: 3D-Model
   user_username: bob
+  featured: false
+
 
 two:
   id: 2

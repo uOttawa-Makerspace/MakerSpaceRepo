@@ -113,10 +113,11 @@ class Admin::SettingsController < AdminAreaController
     params.require(:repository_id)
     repo = Repository.find_by(id: params[:repository_id])
     if repo.featured?
-      repo.featured == false
+      repo.featured = false
     else
-      repo.featured == true
+      repo.featured = true
     end
+
     if repo.save
       flash[:notice] = "success"
     else
