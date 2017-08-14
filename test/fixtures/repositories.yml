@@ -17,3 +17,4 @@ two:
   slug: slug2
   category: Virtual Reality
   user_username: mary
+  featured: true
