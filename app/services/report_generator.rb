@@ -68,4 +68,17 @@ class ReportGenerator
     @certifications.to_csv(column)
   end
 
+  def self.project_report(start_date, end_date)
+    @repositories = Repository.where('created_at BETWEEN ? AND ? ', start_date, end_date)
+    column = []
+    column << ["id", "student"]
+    @repositories.each do |repository|
+      row = []
+      row << repository.id << repository.user_username
+      column << row
+    end
+
+    @repositories.to_csv(column)
+
+  end
 end
