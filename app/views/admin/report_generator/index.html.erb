@@ -35,8 +35,8 @@
 
 <%= form_tag select_date_range_admin_report_generator_index_path, method: :put do %>
 
-  <%= select_date Date::today, :prefix => 'start' %>
-  <%= select_date Date::today, :prefix => 'end' %>
+  <%= select_date Date::today, :prefix => 'start', end_year: Time.current.year %>
+  <%= select_date Date::today, :prefix => 'end', end_year: Time.current.year %>
   <%= submit_tag("Update Date") %>
 <% end %>
 Selected dates: <br>
