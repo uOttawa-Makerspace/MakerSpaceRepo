@@ -4,19 +4,6 @@
   <h2 class="featured">Featured Projects</h2><br>
 
 <br>
-  <section id="repository-filter">
-    <div class="sort">sort by/classer par</div>
-    <nav>
-      <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-      <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
-      <ul class="filter">
-        <li><%= link_to 'Newest/Plus récent', category_path(sort: :newest, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Likes/Plus d\'Aimes', category_path(sort: :most_likes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Makes/Plus de fabrications', category_path(sort: :most_makes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Recently Updated/Récemment mis à jour', category_path(sort: :recently_updated, slug: params[:slug]) %></li>
-      </ul>
-    </nav>
-  </section>
   <section id="repositories-container">
   <div class="pagination"><%= will_paginate @pinned_repositories %></div><br>
   <% @pinned_repositories.each_with_index do |repository, i| %>
@@ -30,7 +17,6 @@
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
           <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
         </div>
-        <%= link_to (fa_icon 'star'), pin_unpin_repository_admin_settings_path(repository_id: repository.id), class: "star" %> <br></br>
         <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
       </div>
     </div>

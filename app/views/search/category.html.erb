@@ -1,4 +1,5 @@
 <% provide(:title, params[:slug].slug_to_title(params[:slug])) %>
+
 <section id="repositories-index">
   <div class="like-title"><%= yield(:title)  %></div>
 
@@ -30,7 +31,6 @@
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
           <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
         </div>
-        <%= link_to (fa_icon 'star'), pin_unpin_repository_admin_settings_path(repository_id: repository.id), class: "star" %> <br></br>
         <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
       </div>
     </div>
