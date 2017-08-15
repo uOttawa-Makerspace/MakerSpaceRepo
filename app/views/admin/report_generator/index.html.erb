@@ -29,5 +29,22 @@
 <p id="brunsfield"> Makerspace </p>
 <%= link_to '<button type="button">Download</button>'.html_safe%> <br><br>
 
+ <!-- <%= date_select("repository", "created", prompt: { day: 'Select day', month: 'Select month', year: 'Select year' })%> -->
+ <br>
+
+
+<%= form_tag select_date_range_admin_report_generator_index_path, method: :put do %>
+
+  <%= select_date Date::today, :prefix => 'start' %>
+  <%= select_date Date::today, :prefix => 'end' %>
+  <%= submit_tag("Update Date") %>
+<% end %>
+Selected dates: <br>
+<%= @start_date.strftime("%B %d, %Y") %> <br>
+<%= @end_date.strftime("%B %d, %Y") %> <br>
+<p> <strong> Repository Reports </strong> </p>
+<%= link_to '<button type="button">Download</button>'.html_safe, repository_admin_report_generator_index_path(format: "csv")%> <br><br>
+
+
 </div>
 </section>
