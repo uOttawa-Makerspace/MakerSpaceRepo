@@ -46,6 +46,12 @@ class SearchController < SessionsController
         @pinned_repositories << repo
       end
     end
+    if category && name
+      @repositories = (@repositories1 + @repositories2 + @pinned_repositories).uniq.paginate(:per_page=>12,:page=>params[:page]) do
+        order_by sort_arr.first, sort_arr.last
+      end
+    end
+    
     @pinned_repositories = @pinned_repositories.paginate(:per_page=>4,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
     end
