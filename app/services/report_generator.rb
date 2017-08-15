@@ -71,13 +71,15 @@ class ReportGenerator
   def self.project_report(start_date, end_date)
     @repositories = Repository.where('created_at BETWEEN ? AND ? ', start_date, end_date)
     column = []
-    column << ["id", "student"]
+    column << ["title", "owner name", "url", "category"]
+    # should add categories
     @repositories.each do |repository|
       row = []
-      row << repository.id << repository.user_username
+      row << repository.title << repository.user.name
+      row << Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username)
+
       column << row
     end
-
     @repositories.to_csv(column)
 
   end
