@@ -33,12 +33,12 @@ class Repository < ActiveRecord::Base
     self.user.decrement!(:reputation, 25)
   end
 
-  #GET VALUES FROM DATE PICKER (MAYBE)
-  # scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
-
-  # Is this a good approach to generate the url?
-  def self.generate_url(username,slug)
-    "makerepo.com/"+username+"/"+slug
+  def self.to_csv (attributes)
+    CSV.generate do |csv|
+      attributes.each do |row|
+        csv << row
+      end
+    end
   end
 
   # validates :category,
