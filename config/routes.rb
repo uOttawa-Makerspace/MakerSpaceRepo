@@ -83,6 +83,8 @@ Rails.application.routes.draw do
         get 'faculty_frequency'
         get 'gender_frequency'
         get 'training'
+        put 'select_date_range'
+        get 'repository'
       end
     end
     resources :users, only: [:index, :edit, :update, :show] do
