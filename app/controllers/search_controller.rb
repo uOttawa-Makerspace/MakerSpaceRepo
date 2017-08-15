@@ -1,10 +1,21 @@
 class SearchController < SessionsController
   before_action :current_user
-  # before_action :signed_in
+  before_action :category, only: [:featured]
   require 'will_paginate/array'
 
   def explore
     @repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).order([sort_order].to_h).page params[:page]
+    @photos = photo_hash
+  end
+
+  def equipment
+    sort_arr = sort_order
+
+    name = params[:slug].gsub('-', ' ')
+    @repositories =  Equipment.where(name: name).distinct.includes(:repository).map(&:repository).paginate(:per_page=>12,:page=>params[:page]) do
+      order_by sort_arr.first, sort_arr.last
+    end
+
     @photos = photo_hash
   end
 
@@ -40,19 +51,18 @@ class SearchController < SessionsController
         order_by sort_arr.first, sort_arr.last
       end
     end
+    @photos = photo_hash
+  end
+
+  def featured
+    sort_arr = sort_order
     @pinned_repositories = []
     @repositories.each do |repo|
       if repo.featured
         @pinned_repositories << repo
       end
     end
-    if category && name
-      @repositories = (@repositories1 + @repositories2 + @pinned_repositories).uniq.paginate(:per_page=>12,:page=>params[:page]) do
-        order_by sort_arr.first, sort_arr.last
-      end
-    end
-    
-    @pinned_repositories = @pinned_repositories.paginate(:per_page=>4,:page=>params[:page]) do
+    @pinned_repositories = @pinned_repositories.paginate(:per_page=>12,:page=>params[:page]) do
       order_by sort_arr.first, sort_arr.last
     end
     @photos = photo_hash
@@ -78,7 +88,7 @@ class SearchController < SessionsController
     	when 'most_likes' then [:like, :desc]
     	when 'most_makes' then [:make, :desc]
     	when 'recently_updated' then [:updated_at, :desc]
-    	else [:created_at, :desc]
+    	else [:updated_at, :desc]
     end
 	end
 

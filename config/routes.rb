@@ -23,6 +23,7 @@ Rails.application.routes.draw do
     get 'explore'
     get 'search'
     get 'category', path: 'category/:slug'
+    get 'featured', path: 'category/:slug/featured'
     get 'equipment', path: 'equipment/:slug'
   end
 
