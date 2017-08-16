@@ -3,8 +3,8 @@
 <section id="repositories-index">
   <div class="like-title"><%= yield(:title)  %></div>
   <h2 class="subtitle">
-    <%= link_to "All projects ", category_path(slug: params[:slug]), class: "not-focused" %> |
-    <%= link_to "Featured projects ", featured_path(slug: params[:slug]), class: "focused"%>
+    <div class="not-focused"><%= link_to "All projects ", category_path(slug: params[:slug]) %></div> |
+    <div class="focused"><%= link_to "Featured projects ", featured_path(slug: params[:slug])%> <%= fa_icon 'star' %></div>
   </h2><br></br>
   <section id="repository-filter">
     <div class="sort">sort by/classer par</div>
@@ -28,7 +28,11 @@
       </div>
       <div class="repo-info">
         <div class="left">
-          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %></div>
+          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %>
+            <% if repository.featured %> &nbsp;
+              <%= fa_icon 'star' %><br>
+            <% end %>
+          </div>
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
           <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
         </div>

@@ -32,8 +32,10 @@ h2.subtitle{
 	text-align: center;
 	padding-bottom: 0.6rem;
 	margin-bottom: 0.6rem;
+	overflow:auto;
 
 	.focused{
+		display: inline-block;
 		padding: 10px 10px;
 		border-style: double;
 		background-color: #C4DCDB;
@@ -43,6 +45,8 @@ h2.subtitle{
 	}
 
 	.not-focused{
+		display: inline-block;
+		
 		padding: 10px 10px;
 		color: #7ACACC;
 

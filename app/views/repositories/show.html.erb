@@ -24,7 +24,8 @@
 
     <br></br>
     <% if @user.admin?%>
-        <%= link_to "Pin/Unpin", pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
+        Currently Featured: <%=  @repository.featured.to_s.upcase %><br></br>
+        <%= link_to "Feature / Unfeature", pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
             class: "pin-button" %>
         <br></br>
         <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
