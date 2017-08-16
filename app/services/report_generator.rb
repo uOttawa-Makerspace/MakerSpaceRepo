@@ -71,7 +71,7 @@ class ReportGenerator
   def self.project_report(start_date, end_date)
     @repositories = Repository.where('created_at BETWEEN ? AND ? ', start_date, end_date)
     column = []
-    column << ["title", "owner name", "url", "categories"]
+    column << ["title", "owner", "url", "categories"]
 
     @repositories.each do |repository|
       row = []
