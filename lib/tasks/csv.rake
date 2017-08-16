@@ -36,8 +36,8 @@ namespace :csv do
         puts "Error: #{name} is not found as a user"
       end
     end
-
-
   end
+
+  task
 
 end
