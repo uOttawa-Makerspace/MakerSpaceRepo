@@ -2,8 +2,6 @@ namespace :csv do
 
   task :certify_existing_users => :environment do
 
-    legible_users = []
-
     test_spreadsheet = Rails.root.join('test','lib','assets','TRAINING_DATABASE.csv')
 
     CSV.foreach(test_spreadsheet) do |row|
@@ -38,6 +36,8 @@ namespace :csv do
         puts "Error: #{name} is not found as a user"
       end
     end
+
+
   end
 
 end
