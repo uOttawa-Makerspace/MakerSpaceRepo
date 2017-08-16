@@ -32,17 +32,23 @@
  <!-- <%= date_select("repository", "created", prompt: { day: 'Select day', month: 'Select month', year: 'Select year' })%> -->
  <br>
 
+<div class="date_selection">
+  <%= form_tag select_date_range_admin_report_generator_index_path, method: :put do %>
 
-<%= form_tag select_date_range_admin_report_generator_index_path, method: :put do %>
+      <div style="display:inline-block;"><%= label_tag('Start Date:  ') %> </div>
+      <%= select_date @start_date, :prefix => 'start', end_year: Time.current.year %> <br>
 
-  <%= select_date Date::today, :prefix => 'start', end_year: Time.current.year %>
-  <%= select_date Date::today, :prefix => 'end', end_year: Time.current.year %>
-  <%= submit_tag("Update Date") %>
-<% end %>
-Selected dates: <br>
-<%= @start_date.strftime("%B %d, %Y") %> <br>
-<%= @end_date.strftime("%B %d, %Y") %> <br>
-<p> <strong> Repository Reports </strong> </p>
+      <div style="display:inline-block;"><%= label_tag('End Date:  ') %> </div>
+      <%= select_date @end_date, :prefix => 'end', end_year: Time.current.year %> <br>
+      <p><%= @start_date.strftime("%B %d, %Y") %>  <b>to</b>  <%= @end_date.strftime("%B %d, %Y") %></p>
+      <%= submit_tag("Update",  class:"update_button") %>
+      <br>
+  <% end %>
+
+  </div>
+
+<br><br>
+<p> Repositories </p>
 <%= link_to '<button type="button">Download</button>'.html_safe, repository_admin_report_generator_index_path(format: "csv")%> <br><br>
 
 
