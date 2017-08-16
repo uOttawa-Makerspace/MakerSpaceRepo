@@ -38,6 +38,5 @@ namespace :csv do
     end
   end
 
-  task
 
 end
