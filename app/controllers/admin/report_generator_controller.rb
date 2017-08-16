@@ -61,17 +61,16 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   def select_date_range
     session[:selected_dates] = nil
-    @start_date1 = Date::civil(params[:start][:year].to_i, params[:start][:month].to_i,
+    @start = Date::civil(params[:start][:year].to_i, params[:start][:month].to_i,
                       params[:start][:day].to_i)
-    @start_date = Time.zone.at(@start_date1.to_time).to_datetime
+    @start_date = Time.zone.at(@start.to_time).to_datetime
 
-    @end_date1 = Date::civil(params[:end][:year].to_i, params[:end][:month].to_i,
+    @end = Date::civil(params[:end][:year].to_i, params[:end][:month].to_i,
                       params[:end][:day].to_i)
-    @end_date = Time.zone.at(@end_date1.to_time).to_datetime
+    @end_date = Time.zone.at(@end.to_time).to_datetime
 
     selected_dates << @start_date << @end_date
     redirect_to :back
-
   end
 
   # repositories based on selected dates
