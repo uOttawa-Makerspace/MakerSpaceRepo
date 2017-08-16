@@ -5,6 +5,7 @@ namespace :csv do
     test_spreadsheet = Rails.root.join('test','lib','assets','TRAINING_DATABASE.csv')
 
     CSV.foreach(test_spreadsheet) do |row|
+      
       student_id = row[2]
       name = row[3]
       email = row[6]
@@ -37,6 +38,5 @@ namespace :csv do
       end
     end
   end
-
 
 end
