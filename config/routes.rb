@@ -77,6 +77,7 @@ Rails.application.routes.draw do
 
     resources :report_generator, only: [:index] do
       collection do
+        get 'index'
         get 'new_users'
         get 'total_visits'
         get 'unique_visits'
