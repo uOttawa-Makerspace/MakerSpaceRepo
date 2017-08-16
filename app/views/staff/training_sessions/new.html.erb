@@ -1,0 +1,77 @@
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:alert] %></div>
+<% end %>
+
+<section id ="page-contents" >
+
+  <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
+
+  <% label_tag 'training_id' %>
+  <%= select_tag 'training_id', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'select training', class: "trainer-training-course" %><br>
+
+  <% label_tag 'course' %>
+  <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'select course', class: "trainer-training-course" %><br>
+
+  <% if @user.admin? %>
+    <% label_tag 'user_id' %>
+    <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']), 'id', 'name'), prompt: 'select instructor', class: "trainer-training-course" %><br>
+  <% end %>
+    <table class="staff-table">
+      <tr>
+        <th>Select</th>
+        <th>Username</th>
+        <th>Last Signed In</th>
+        <th>Location</th>
+        <th>Certification</th>
+      </tr>
+
+    <% User.all.limit(20).each do |user| %>
+      <tr>
+
+        <td>
+           <%= check_box_tag 'training_session_users[]', value=user.id%>
+        </td>
+
+        <td class="username-cell">
+          <%= link_to(content_tag(:username, user.username), user_url(user.username)) %>
+        </td>
+
+        <td class="signed_in-cell" style="horizontal-alginment:center;">
+          <%= if user.lab_sessions.present?
+                singout_time = user.lab_sessions.last.sign_out_time
+                singout_time.strftime("%B %d, %Y")
+              end %>
+        </td>
+
+        <td class="location-cell">
+          <%= user.location %>
+        </td>
+
+        <td class="certifications-cell">
+        <% user.certifications.each do |certification| %>
+          <div
+           class="cert-name"
+           style="display:inline" >
+           <div class="cert-holder" style="display:inline">
+            <%= certification.training %> |
+            <div id="cert-details" style="display:inline">
+              <%= certification.training %> <br>
+              <%= certification.trainer %> <br>
+              <%= certification.updated_at.strftime("%B %d, %Y")  %>
+            </div>
+          </div>
+        </div>
+        <% end %>
+      </td>
+
+      </tr>
+    <% end %>
+    </table>
+    <br>
+    <%= submit_tag "Train", class:"save-button"%>
+  <% end %>
+</section>

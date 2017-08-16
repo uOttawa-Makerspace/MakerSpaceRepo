@@ -1,0 +1,231 @@
+// Place all the styles related to the Staff::TrainingSession controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+section#page-contents{
+  padding-bottom: 30px;
+}
+
+select.trainer-training-course{
+  font: 300 0.9em 'Raleway', sans-serif;
+  color: #555;
+  padding: 0.5rem;
+	margin: 0.5rem 0 1rem;
+  max-width: 400px;
+  width: 15%;
+  border-radius: 3px;
+  border: 1px solid #aaa;
+  display: inline;
+}
+
+.certify-button{
+
+  float: right;
+  margin-right: 20px;
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #53BE6A;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+.destroy-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 0.81rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #A61E10;
+  color: #fff;
+
+
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+
+table{
+  width:98%;
+  font-size: 14px;
+
+  th {
+      background-color: #c2d6d6;
+      color: #366;
+      padding:5px;
+      width: 200px;
+
+      a {
+          text-decoration: underline;
+      }
+      i {
+          margin-left:1px;
+          line-height: 10px;
+          width: 10px;
+          height: 13px;
+          text-align: center;
+      }
+      i.fa-sort-asc {
+          vertical-align: bottom;
+      }
+      i.fa-sort-desc {
+          vertical-align: top;
+      }
+
+  }
+  .action-header{
+    width: 100px;
+  }
+
+
+
+  td{
+      padding:5px 6px;
+      text-align: center;
+  }
+  tr {
+      background-color: #f0f5f5;
+  }
+  tr.current-session {
+      background-color: #b3e6cc;
+  }
+  .link-table {
+    color: #366;
+    text-align:center;
+  }
+  td.action-cell{
+    align-items: center;
+    padding-top: 12px;
+    width: 70px;
+
+      .visit-button{
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 1.6rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #5f9ea0;
+        color: #fff;
+
+        &:hover{
+          cursor: pointer;
+        }
+      }
+
+      .destroy-button{
+        float: right;
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 0.81rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #A61E10;
+        color: #fff;
+        margin-bottom: 6px;
+        margin-top: 15px;
+        margin-right: 4px;
+
+        &:hover{
+          cursor: pointer;
+        }
+      }
+  }
+
+}
+
+div#sesh-users{
+  visibility: hidden;
+  width: 150px;
+  background-color: #c2d6d6;
+  color: #366;
+  text-align: center;
+  border-radius: 6px;
+  padding-bottom: 2px;
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+}
+
+div.users-count{
+  cursor:pointer;
+  padding: 40px 40px 40px 40px;
+}
+
+div.users-count:hover div#sesh-users{
+    visibility:visible;
+}
+
+button.sort-arrow{
+
+  align: center;
+  width: 27px;
+  height: 20px;
+  background: none;
+  border-color: transparent;
+
+  .arrow-down {
+    align: center;
+    border-style: solid;
+    border-width: 9px 9px 0 9px;
+    border-color: #2c5252 transparent transparent transparent;
+  }
+
+}
+
+div.clickable-username:hover{
+  background-color: rgba(238, 238, 238, 0.5);
+
+  .user-link{
+    padding: 0px 55px;
+  }
+
+}
+
+
+
+div#notice{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 5rem;
+  line-height: 5rem !important;
+  font-size: 75%;
+  font: 500 2.0rem 'Raleway', sans-serif;
+  background-color: #5cb85c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}
+
+div#alert{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 2rem;
+  line-height: 2rem !important;
+  font: 300 1.1rem 'Raleway', sans-serif;
+  background-color: #cd5c5c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}

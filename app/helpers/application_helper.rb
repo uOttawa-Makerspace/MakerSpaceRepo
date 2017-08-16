@@ -11,10 +11,6 @@ module ApplicationHelper
     @github_client ||= Octokit::Client.new(access_token: @user.access_token) if github?
   end
 
-  def admin?
-    @user.role.eql?("admin")
-  end
-  
   def signed_in?
     session[:user_id].present?
   end
@@ -69,7 +65,7 @@ module ApplicationHelper
   #     a
   #   end
   # end
-  
+
   def page_title (curr_page = '')
     base_title = "MakerRepo"
     if curr_page.empty?
@@ -80,4 +76,3 @@ module ApplicationHelper
   end
 
 end
-

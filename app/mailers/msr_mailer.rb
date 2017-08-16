@@ -26,4 +26,10 @@ class MsrMailer < ApplicationMailer
 
 	    mail(to: email, subject: 'Monthly Report')
 	end
+
+	def tac_reminder_email(email)
+    mail(to: email,
+				 subject: "Please sign the terms and conditions!")
+  end
+
 end

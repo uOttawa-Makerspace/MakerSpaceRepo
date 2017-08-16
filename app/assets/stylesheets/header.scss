@@ -7,12 +7,14 @@ section#header{
   z-index:5;
   background-color: #5f9ea0;
   border-bottom: 5px solid #366;
-  
+
   .inner{
     max-width: 70rem;
     margin: 0 auto;
   }
 }
+
+
 
 section#header-end{
   height:65px;
@@ -43,7 +45,8 @@ span.header-menu-item {
     float: right;
     height: 60px;
     text-align: center;
-    padding: 0 20px;
+    padding: 4px 20px;
+    line-height: 25px;
 
     img{
       height: 40px;
@@ -54,7 +57,7 @@ span.header-menu-item {
     }
     &:hover{
       color: #a3e6db;
-    } 
+    }
   }
 }
 
@@ -100,7 +103,7 @@ form.header-search{
   display: inline-block;
   line-height: 60px;
   margin-left: 50px;
-  
+
   input{
     @include transition(200ms);
     border: none;
@@ -112,26 +115,26 @@ form.header-search{
     width: 100px;
     @include prefixer(box-shadow, none);
 
-    &::-webkit-input-placeholder { 
+    &::-webkit-input-placeholder {
         color:    #366;
         opacity: 0.5;
     }
-    &:-moz-placeholder { 
+    &:-moz-placeholder {
        color:    #366;
        opacity:  0.5;
     }
-    &::-moz-placeholder { 
+    &::-moz-placeholder {
        color:    #366;
        opacity:  0.5;
     }
-    &:-ms-input-placeholder { 
+    &:-ms-input-placeholder {
        color:    #366;
       opacity: 0.5;
     }
 
     &:focus{
       width:200px;
-    } 
+    }
   }
 
   i{

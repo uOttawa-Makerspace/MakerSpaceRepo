@@ -8,12 +8,13 @@ class User < ActiveRecord::Base
   has_many :repositories, dependent: :destroy
   has_many :certifications, dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
+  has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories
 
   validates :name,
     presence: { message: "Your name is required." },
     length: { maximum: 50, message: 'Your name must be less than 50 characters.' }
-   
+
   validates :username,
     presence: { message: "Your username is required." },
     uniqueness: { message: "Your username is already in use." },
@@ -30,12 +31,34 @@ class User < ActiveRecord::Base
   validates :terms_and_conditions,
     inclusion: {in: [true], on: :create, message: 'You must agree to the terms and conditions' }
 
-  validates :password, 
+  validates :password,
     presence: { message: "Your password is required." },
     confirmation: {message: "Your passwords do not match."},
-    # format: {with: /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W]).{8,}/,
     format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/,
              message: "Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."}
+
+
+  validates :gender,
+    presence: {message: "Your gender is required."}
+
+  validates :faculty,
+    presence: {message: "Please provide your faculty"}, if: :student?
+
+  validates :program,
+    presence: {message: "Please provide your program"}, if: :student?
+
+  validates :year_of_study,
+    presence: {message: "Please provide your year of study"}, if: :student?
+
+  validates :student_id,
+    presence: {message: "Please provide your student Number"}, if: :student?,
+    length: { is: 7, message: 'Your student number must be 7 characters.' }
+
+
+  validates :identity,
+    presence: {message: "Please identify who you are"}
+
+  validate :identity_valid?
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
@@ -61,10 +84,30 @@ class User < ActiveRecord::Base
     self.password_confirmation = @pword
   end
 
+  def student?
+    self.identity.eql?("grad") || self.identity.eql?("undergrad")
+  end
+
+  def identity_valid?
+    errors.add(:identity, "identity not valid") unless self.identity.eql?("grad") || self.identity.eql?("undergrad") || self.identity.eql?("faculty_member") || self.identity.eql?("community_member") || self.identity.eql?("unknown")
+  end
+
+  scope :unknown_identity, -> { where(identity:"unknown") }
+
+
+  def admin?
+    self.role.eql?("admin")
+  end
+
+  def staff?
+    self.role.eql?("staff") || self.role.eql?("admin")
+  end
+
+
   def self.to_csv(*attributes)
     CSV.generate do |csv|
       csv << attributes
-    
+
       all.each do |user|
         csv << user.attributes.values_at(*attributes)
       end
@@ -72,5 +115,10 @@ class User < ActiveRecord::Base
     end
   end
 
+
   scope :in_last_month, -> { where('created_at BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
+
+  scope :unsigned_tac_users, -> { where('terms_and_conditions = false') }
+
+
 end
