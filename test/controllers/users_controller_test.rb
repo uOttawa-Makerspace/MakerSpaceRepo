@@ -67,7 +67,7 @@ class UsersControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: "bob").id
     session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
     @oldpass = User.find_by(username: "bob").password
-    post :change_password, params: { username: "bob.username",
+    post :change_password, params: { username: "bob",
                                      user: {old_password: "Password1", password: "Password2", password_confirmation: "Password2"} }
     @newpass = User.find_by(username: "bob").password
     assert_equal 'Password changed successfully', flash[:notice]
@@ -79,7 +79,7 @@ class UsersControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: "bob").id
     session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
     @oldpass = User.find_by(username: "bob").password
-    post :change_password, params: { username: "bob.username",
+    post :change_password, params: { username: "bob",
                                     user: {old_password: "WrongOldPass1", password: "Password2", password_confirmation: "Password2"},
                                     pword: "Password1" }
     @newpass = User.find_by(username: "bob").password
@@ -92,7 +92,7 @@ class UsersControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: "bob").id
     session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
     @oldpass = User.find_by(username: "bob").password
-    post :change_password, params: { username: "bob.username",
+    post :change_password, params: { username: "bob",
                                       user: {old_password: "Password1", password: "Password2", password_confirmation: "WrongConfirmationPass1"} }
     @newpass = User.find_by(username: "bob").password
     assert_nil flash.now[:alert]
