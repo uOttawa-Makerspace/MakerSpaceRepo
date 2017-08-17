@@ -19,20 +19,20 @@
         Choose new image<br>Choisi une nouvelle image
       </label>
     </div>
-
+    <br><br>
     <%= f.label :name, "Full Name/Nom", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:name].first, class: 'form-error' %>
-    <%= f.text_field :name, class: "profile-text", autofocus: true %> <br>
+    <%= f.text_field :name, class: "profile-text", autofocus: true %>
 
     <%= f.label :faculty , "Faculty" , class: "profile-label" %>
     <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
     <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
       " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
-    <% programs = ProgramList.fetch_all %>
+    <% @programs = ProgramList.fetch_all %>
     <%= f.label :program, "Program" , class: "profile-label" %>
     <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
-    <%= f.select(:program, programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
+    <%= f.select(:program, @programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
 
 
     <% if @user.identity == "unknown" || @user.name == "anonymous" || @user.gender == "unknown"%>
@@ -68,10 +68,9 @@
         <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
           " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
-        <% programs = ProgramList.fetch_all %>
         <%= f.label :program, "Program" , class: "profile-label" %>
         <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
-        <%= f.select(:program, programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
+        <%= f.select(:program, @programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
 
         <%= f.label :year_of_study, "What year are you in?", class: "profile-label"  %>
         <%= content_tag :span, @user.errors[:year_of_study].first, class: 'form-error' %>
