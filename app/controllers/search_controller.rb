@@ -55,16 +55,14 @@ class SearchController < SessionsController
   end
 
   def featured
-    sort_arr = sort_order
     @pinned_repositories = []
     @repositories.each do |repo|
       if repo.featured
         @pinned_repositories << repo
       end
     end
-    @pinned_repositories = @pinned_repositories.paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
-    end
+    @pinned_repositories = @pinned_repositories.sort!{|a,b|b.updated_at <=> a.updated_at}
+    @pinned_repositories = @pinned_repositories.paginate(:per_page=>12,:page=>params[:page])
     @photos = photo_hash
   end
 
@@ -88,7 +86,7 @@ class SearchController < SessionsController
     	when 'most_likes' then [:like, :desc]
     	when 'most_makes' then [:make, :desc]
     	when 'recently_updated' then [:updated_at, :desc]
-    	else [:updated_at, :desc]
+    	else [:created_at, :desc]
     end
 	end
 
