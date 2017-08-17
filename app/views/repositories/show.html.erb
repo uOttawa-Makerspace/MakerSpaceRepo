@@ -29,7 +29,7 @@
             class: "pin-button" %>
         <br></br>
         <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
-            class: "delete-button", data: {:confirm => 'Are you sure?'} %>
+            class: "delete-button", data: {confirm: 'Are you sure?'} %>
     <% end %>
 
 
