@@ -1,11 +1,11 @@
 require 'test_helper'
 
 class SpaceTest < ActiveSupport::TestCase
-  test "User->LabSession->PiReader->Space association" do
+  test "User-Space association through LabSession and PiReader" do
     user = users(:sara)
-
     refute spaces(:brunsfield).users.include? user
-
+    #creating a lab session with a pi_reader that belongs_to brunsfield
+    #makse Sara signed in to brunsfield
     LabSession.create(user_id: user.id, pi_reader_id: 2)
     assert spaces(:brunsfield).users.include? user
   end
