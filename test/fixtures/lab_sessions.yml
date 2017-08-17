@@ -27,7 +27,7 @@ four:
   user_id: 2
   pi_reader_id: 1
   sign_in_time: <%= 1.hour.ago %>
-  sign_out_time: null
+  sign_out_time: <%= Date.tomorrow %>
   created_at: 2017-06-21T13:25:01-04:00
   mac_address: m4k3rsp4c3-pi-1
 
@@ -35,6 +35,6 @@ five:
   user_id: 1337
   pi_reader_id: 1
   sign_in_time: <%= 2.hours.ago %>
-  sign_out_time: null
+  sign_out_time: <%= Date.tomorrow %>
   created_at: 2017-08-17T09:30:01-04:00
   mac_address: m4k3rsp4c3-pi-1
