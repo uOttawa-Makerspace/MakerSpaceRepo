@@ -7,7 +7,7 @@ class CommentsController < SessionsController
     comment = repository.comments.build(comment_params)
     comment.user_id = @user.id
   	comment.username = @user.username
-    	
+
   	if comment.save!
 	  	render json: {
 	  		username: comment.username,
@@ -21,7 +21,23 @@ class CommentsController < SessionsController
 	  else
 	  	redirect_to root_path
 	  end
+  end
 
+  def destroy
+    if params[:id].present?
+      if repo = Comment.find_by(id: params[:id]).repository
+        if ((@user.admin?) || (@user.id.equal? Comment.find_by(id: params[:id]).user_id))
+          if Comment.find_by(id: params[:id]).destroy
+            flash[:notice] = "Comment deleted succesfully"
+          else
+            flash[:alert] = "Something went wrong"
+          end
+        else
+          flash[:alert] = "Something went wrong"
+        end
+      end
+    end
+    redirect_to repository_path(slug: repo.slug, user_username: repo.user_username)
   end
 
   private

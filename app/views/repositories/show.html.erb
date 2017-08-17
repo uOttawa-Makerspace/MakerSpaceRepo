@@ -165,7 +165,10 @@
           <%= link_to user_path(comment.username) do %>
             <div><%= comment.username %><%= content_tag :div, comment.user.reputation, class: 'rep' %> </div>
            <% end %>
-          <%= content_tag :div, time_ago_in_words(comment.created_at) << " ago", class: 'time' %>
+          <%= content_tag :div, time_ago_in_words(comment.created_at) << " ago", class: 'time' %><br>
+          <% if ((@user.admin?) || (@user.id.equal? comment.user_id))%>
+            <%= link_to (fa_icon('times')), {controller: :comments, action: :destroy, id: comment.id}, method: :delete, data: { confirm: "Are you sure?" },  class: 'x-button' %>
+          <% end %>
         </div>
         <div class="comment-content">
           <%= comment.content.html_safe %>
