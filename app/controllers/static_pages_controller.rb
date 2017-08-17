@@ -31,7 +31,7 @@ class StaticPagesController < SessionsController
       @user.pword = random_password
 
       if @user.save!
-        MsrMailer.reset_password_email(@user.email, random_password ).deliver
+        MsrMailer.reset_password_email(@user.email, random_password ).deliver_later
         flash[:notice] = "Check your email for your new password.";
         redirect_to root_path
       end
