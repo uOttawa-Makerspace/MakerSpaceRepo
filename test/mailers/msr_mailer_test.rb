@@ -44,4 +44,13 @@ class MsrMailerTest < ActionMailer::TestCase
 		assert_equal 'Monthly Report', email.subject
 		assert_not_nil(email.attachments, "No attachments found")
 	end
+
+	test "Send Terms and Conditions reminder email" do
+		email = MsrMailer.tac_reminder_email('abc@123.com')
+		assert_equal ['uottawa.makerepo@gmail.com'], email.from
+		assert_equal ['abc@123.com'], email.to
+		assert_equal 'Please sign the terms and conditions!', email.subject
+
+	end
+
 end
