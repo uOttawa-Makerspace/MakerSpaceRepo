@@ -24,6 +24,7 @@
     <%= content_tag :span, @user.errors[:name].first, class: 'form-error' %>
     <%= f.text_field :name, class: "profile-text", autofocus: true %>
 
+
     <%= f.label :faculty , "Faculty" , class: "profile-label" %>
     <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
     <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
