@@ -63,3 +63,69 @@
   <br>
   <%= submit_tag "Sign Out Users", class: 'save-button' %>
 <% end %>
+
+
+<br></br>
+<%= form_tag("/staff_dashboard/add_users", method: "patch", action: "sign_in_users") do %>
+
+<table class="staff-users-table">
+    Users recently signed out of <%=@space.name%></h2>
+    <tr>
+      <th>Sign In</th>
+      <th>Username</th>
+      <th>Last Signed In</th>
+      <th>Location</th>
+      <th>Certification</th>
+    </tr>
+
+    <% @space.recently_signed_out_users.each do |user| %>
+      <tr class="add-rows">
+
+        <td class="add-checkbox-cell" >
+          <%= check_box_tag 'added_users[]', value=user.username%>
+        </td>
+
+        <td class="add-username-cell"><%=
+          link_to(content_tag(:add_username, user.username), user_url(user.username))
+        %></td>
+
+        <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
+          if user.lab_sessions.present?
+            singout_time = user.lab_sessions.last.sign_out_time
+            singout_time.strftime("%B %d, %Y")
+          end
+        %></td>
+
+        <td class="location-cell"><%=
+          user.location
+        %></td>
+
+        <td class="certifications-cell"><%
+          if user.certifications.first.present?
+            user.certifications.each do |certification|
+            %>
+            <div
+             class="cert-name"
+             style="display:inline" >
+             <div class="cert-holder" style="display:inline">
+              <%= certification.training %> |
+              <div id="cert-details" style="display:inline">
+                <%= certification.training %> <br>
+                <%= certification.trainer %> <br>
+                <%= certification.updated_at.strftime("%B %d, %Y")  %>
+              </div>
+            </div>
+          </div>
+          <%
+            end
+          end
+          %>
+        </td>
+
+      </tr>
+    <% end %>
+    <br></br>
+  </table>
+  <br>
+  <%= submit_tag "Sign In Users", class: 'save-button' %>
+<% end %>

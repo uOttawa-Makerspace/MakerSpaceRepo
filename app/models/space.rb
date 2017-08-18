@@ -10,4 +10,8 @@ class Space < ActiveRecord::Base
     return self.lab_sessions.where("sign_out_time > ?", Time.now).map(&:user)
   end
 
+  def recently_signed_out_users
+    return self.lab_sessions.where(["(sign_out_time < ?) AND (sign_out_time > ?)", Time.now, 1.day.ago]).limit(40).map(&:user)
+  end
+
 end
