@@ -25,6 +25,8 @@ class Repository < ActiveRecord::Base
     presence:   { message: "Project title is required."},
     uniqueness: { message: "Project title is already in use.", scope: :user_username}
 
+  # validate :has_valid_photo?
+
   before_save do
     self.slug = self.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
@@ -32,6 +34,24 @@ class Repository < ActiveRecord::Base
   before_destroy do
     self.user.decrement!(:reputation, 25)
   end
+
+
+  # #To check if the repository's photos make it invalid
+  # def has_valid_photo?
+  #   if self.photos.exists?
+  #     @photos = self.photos
+  #     @photos.each do |photo|
+  #       if photo.invalid?
+  #         #should be another attribure other than id
+  #         errors.add(:id, "invalid repo")
+  #       end
+  #     end
+  #
+  #   else
+  #     #should be another attribure other than id
+  #     errors.add(:id, "invalid repo")
+  #   end
+  # end
 
 
   # validates :category,
