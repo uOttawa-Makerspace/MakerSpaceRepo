@@ -204,7 +204,6 @@ ActiveRecord::Schema.define(version: 20170808162101) do
     t.string   "username"
     t.string   "password"
     t.string   "url"
-    t.string   "location"
     t.datetime "created_at",                                    null: false
     t.datetime "updated_at",                                    null: false
     t.text     "description"
