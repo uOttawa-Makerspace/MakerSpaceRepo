@@ -53,12 +53,11 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert_response :ok
   end
 
-  test "staff can't delete a training session (only admins can)" do
-    delete :destroy, params: { id: training_sessions(:lathe_1_session) }
-    assert TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
-                                  user_id: @user.id).present?
-    assert_redirected_to staff_training_sessions_url
-    assert_equal flash[:alert], "Something went wrong or you're not an admin"
+  test "staff can't destroy others' training sessions" do
+    delete :destroy, params: { id: training_sessions(:soldering_7_session).id }
+    assert TrainingSession.find_by(training_id: training_sessions(:soldering_7_session).id, user_id: "1337").present?
+    assert_redirected_to new_staff_training_session_path
+    assert_equal flash[:alert], "Can't access training session"
   end
 
   test "admin can view any training session" do

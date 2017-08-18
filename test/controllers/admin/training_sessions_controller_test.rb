@@ -9,7 +9,7 @@ class Admin::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
   test "admin can update training session user_id (trainer)" do
-    patch :update, id: 1, training_session: {user_id: 1337}
+    patch :update, params: { id: 1, training_session: {user_id: 1337} }
     assert_redirected_to :back
     assert_equal flash[:notice], "Updated Successfully"
     assert TrainingSession.find_by(id: 1, user_id: 1337).present?
@@ -17,7 +17,7 @@ class Admin::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
   test "admin can destroy training session" do
-    delete :destroy, id: 1
+    delete :destroy,  params: { id: 1 } 
     assert_redirected_to :back
     assert_equal flash[:notice], "Deleted Successfully"
     refute TrainingSession.find_by(id: 1).present?
