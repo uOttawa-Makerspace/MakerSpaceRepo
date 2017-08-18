@@ -1,58 +1,65 @@
-<h2>welcome to <%=@space.name%></h2>
+<h2>welcome to <%=content_tag :space_name, @space.name%></h2>
+
+<%= form_tag("/staff_dashboard/remove_users", method: "patch", action: "sign_out_users") do %>
+
 <table class="staff-users-table">
     Users inside <%=@space.name%></h2>
     <tr>
-      <th>Drop</th>
+      <th>Sign Out</th>
       <th>Username</th>
       <th>Last Signed In</th>
       <th>Location</th>
       <th>Certification</th>
     </tr>
 
-  <% @space.users.each do |user| %>
-    <tr class="drop-rows">
+    <% @space.signed_in_users.each do |user| %>
+      <tr class="drop-rows">
 
-      <td class="drop-checkbox-cell" >
-        <%= check_box_tag 'dropped_users[]', value=user.username%>
-      </td>
+        <td class="drop-checkbox-cell" >
+          <%= check_box_tag 'dropped_users[]', value=user.username%>
+        </td>
 
-      <td class="drop-username-cell"><%=
-        link_to(content_tag(:drop_username, user.username), user_url(user.username))
-      %></td>
+        <td class="drop-username-cell"><%=
+          link_to(content_tag(:drop_username, user.username), user_url(user.username))
+        %></td>
 
-      <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
-        if user.lab_sessions.present?
-          singout_time = user.lab_sessions.last.sign_out_time
-          singout_time.strftime("%B %d, %Y")
-        end
-      %></td>
+        <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
+          if user.lab_sessions.present?
+            singout_time = user.lab_sessions.last.sign_out_time
+            singout_time.strftime("%B %d, %Y")
+          end
+        %></td>
 
-      <td class="location-cell"><%=
-        user.location
-      %></td>
+        <td class="location-cell"><%=
+          user.location
+        %></td>
 
-      <td class="certifications-cell"><%
-        if user.certifications.first.present?
-          user.certifications.each do |certification|
-          %>
-          <div
-           class="cert-name"
-           style="display:inline" >
-           <div class="cert-holder" style="display:inline">
-            <%= certification.training %> |
-            <div id="cert-details" style="display:inline">
-              <%= certification.training %> <br>
-              <%= certification.trainer %> <br>
-              <%= certification.updated_at.strftime("%B %d, %Y")  %>
+        <td class="certifications-cell"><%
+          if user.certifications.first.present?
+            user.certifications.each do |certification|
+            %>
+            <div
+             class="cert-name"
+             style="display:inline" >
+             <div class="cert-holder" style="display:inline">
+              <%= certification.training %> |
+              <div id="cert-details" style="display:inline">
+                <%= certification.training %> <br>
+                <%= certification.trainer %> <br>
+                <%= certification.updated_at.strftime("%B %d, %Y")  %>
+              </div>
             </div>
           </div>
-        </div>
-        <%
+          <%
+            end
           end
-        end
-        %>
-      </td>
+          %>
+        </td>
 
-    </tr>
-  <% end %>
+      </tr>
+    <% end %>
+    <br></br>
   </table>
+  <br>
+  <%= submit_tag "Sign Out Users", class: 'save-button' %>
+<% end %>

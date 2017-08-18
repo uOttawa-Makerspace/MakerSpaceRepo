@@ -135,6 +135,7 @@ Rails.application.routes.draw do
 
   namespace :staff_dashboard do
     get 'index', path: '/'
+    patch 'sign_out_users', path: '/remove_users'
   end
 
   # namespace :help do
