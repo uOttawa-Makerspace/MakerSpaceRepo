@@ -11,19 +11,21 @@
       <div class= "not-focused"><%= link_to "Featured projects ", category_path(slug: params[:slug], featured: 'yes')%> <%= fa_icon 'star' %></div>
     <% end %>
   </h2><br></br>
-  <section id="repository-filter">
-    <div class="sort">sort by/classer par</div>
-    <nav>
-      <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-      <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
-      <ul class="filter">
-        <li><%= link_to 'Newest/Plus récent', category_path(sort: :newest, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Likes/Plus d\'Aimes', category_path(sort: :most_likes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Makes/Plus de fabrications', category_path(sort: :most_makes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Recently Updated/Récemment mis à jour', category_path(sort: :recently_updated, slug: params[:slug]) %></li>
-      </ul>
-    </nav>
-  </section>
+  <% unless params['featured']%>
+    <section id="repository-filter">
+      <div class="sort">sort by/classer par</div>
+      <nav>
+        <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
+        <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
+        <ul class="filter">
+          <li><%= link_to 'Newest/Plus récent', category_path(sort: :newest, slug: params[:slug]) %></li>
+          <li><%= link_to 'Most Likes/Plus d\'Aimes', category_path(sort: :most_likes, slug: params[:slug]) %></li>
+          <li><%= link_to 'Most Makes/Plus de fabrications', category_path(sort: :most_makes, slug: params[:slug]) %></li>
+          <li><%= link_to 'Recently Updated/Récemment mis à jour', category_path(sort: :recently_updated, slug: params[:slug]) %></li>
+        </ul>
+      </nav>
+    </section>
+  <% end %>  
   <section id="repositories-container">
   <div class="pagination"><%= will_paginate @repositories %></div><br>
   <% @repositories.each_with_index do |repository, i| %>
