@@ -26,7 +26,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
      get :index
 
      assert_response :success
-     assert response.body.include? 'brunsfield'
+     assert response.body.include? 'makerspace'
    end
 
    test "a space can passed in params" do
