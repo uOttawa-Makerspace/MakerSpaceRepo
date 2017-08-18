@@ -1,7 +1,8 @@
 class Staff::TrainingSessionsController < StaffAreaController
 
-  before_action :current_training_session, only: [:show, :edit, :update, :certify_trainees, :destroy]
+  before_action :current_training_session, except: [:new, :create, :index]
   before_action :changed_params, only: [:update]
+  before_action :verify_ownership, except: [:new, :create, :index]
 
   layout 'staff_area'
 
@@ -43,7 +44,15 @@ class Staff::TrainingSessionsController < StaffAreaController
     @current_training_session.update(changed_params)
 
     if params['dropped_users'].present?
-        @current_training_session.users -= User.where(username: params['dropped_users'])
+      @current_training_session.users -= User.where(username: params[ 'dropped_users'])
+      User.where(username: params[ 'dropped_users']).each do |user|
+        cert = user.certifications.find_by(training_session_id: @current_training_session.id)
+        if cert.present?
+          unless cert.destroy
+            flash[:alert] = "Error deleting #{user.username}'s #{@current_training_session.training.name} certification."
+          end
+        end
+      end
     end
 
     if params['added_users'].present?
@@ -74,12 +83,12 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def destroy
-    if @user.admin? && @current_training_session.destroy
-        flash[:notice] = "Training session deleted succesfully"
+    if @current_training_session.destroy
+        flash[:notice] = "Deleted Successfully"
         redirect_to new_staff_training_session_path
     else
-        flash[:alert] = "Something went wrong or you're not an admin"
-        redirect_back(fallback_location: root_path)
+        flash[:alert] = "Something went wrong"
+        redirect_to new_staff_training_session_path
     end
   end
 
@@ -106,6 +115,13 @@ class Staff::TrainingSessionsController < StaffAreaController
 
     def changed_params
       params.require(:changed_params).permit(:training_id, :course, :user_id).reject { |_, v| v.blank? }
+    end
+
+    def verify_ownership
+      unless (@user.admin? || @current_training_session.user == @user)
+        flash[:alert] = "Can't access training session"
+        redirect_to new_staff_training_session_path
+      end
     end
 
 end

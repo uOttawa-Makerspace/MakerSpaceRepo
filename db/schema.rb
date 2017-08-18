@@ -78,6 +78,9 @@ ActiveRecord::Schema.define(version: 20170717220935) do
     t.index ["user_id"], name: "index_lab_sessions_on_user_id", using: :btree
   end
 
+  add_index "lab_sessions", ["pi_reader_id"], name: "index_lab_sessions_on_pi_reader_id", using: :btree
+  add_index "lab_sessions", ["user_id"], name: "index_lab_sessions_on_user_id", using: :btree
+
   create_table "likes", force: :cascade do |t|
     t.integer  "user_id"
     t.integer  "repository_id"
@@ -108,6 +111,8 @@ ActiveRecord::Schema.define(version: 20170717220935) do
     t.integer  "space_id"
     t.index ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
   end
+
+  add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
 
   create_table "repo_files", force: :cascade do |t|
     t.integer  "repository_id"
@@ -153,6 +158,12 @@ ActiveRecord::Schema.define(version: 20170717220935) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "spaces", force: :cascade do |t|
+    t.string   "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "training_sessions", force: :cascade do |t|
     t.integer  "training_id"
     t.integer  "user_id"
@@ -190,7 +201,6 @@ ActiveRecord::Schema.define(version: 20170717220935) do
     t.string   "username"
     t.string   "password"
     t.string   "url"
-    t.string   "location"
     t.datetime "created_at",                                    null: false
     t.datetime "updated_at",                                    null: false
     t.text     "description"
