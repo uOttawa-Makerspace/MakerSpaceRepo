@@ -49,7 +49,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
   test "staff can view their own training sessions" do
-    get :show, id: training_sessions(:lathe_1_session)
+    get :show, params: { id: training_sessions(:lathe_1_session) }
     assert_response :ok
   end
 
@@ -77,9 +77,9 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     training_session = training_sessions(:lathe_1_session)
     training_session.users << User.find_by(username: "olivia")
     training_session.save
-    post :certify_trainees, id: training_session
+    post :certify_trainees, params: { id: training_session }
     assert Certification.find_by(user_id: users(:olivia).id, training_session_id: training_sessions(:lathe_1_session).id).present?
-    patch :update, dropped_users: ['olivia'], id: training_session, changed_params:{user_id: @user.id}
+    patch :update, params: { dropped_users: ['olivia'], id: training_session, changed_params:{user_id: @user.id} }
     refute Certification.find_by(user_id: users(:olivia).id, training_session_id: training_sessions(:lathe_1_session).id).present?
   end
 

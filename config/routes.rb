@@ -99,7 +99,7 @@ Rails.application.routes.draw do
     end
 
     resources :training_sessions do
-      get 'index', path: '/'
+      get '/', :as => 'index', :action => 'index'
 
       member do
         patch 'update'
@@ -126,7 +126,7 @@ Rails.application.routes.draw do
     get '/', :as => 'index', :action => 'index'
 
     resources :training_sessions do
-      get  "/", :as => "index", :action => "index", on: :collection
+      get  '/', :as => 'index', :action => 'index', on: :collection
       member do
         post 'certify_trainees'
       end
