@@ -48,12 +48,7 @@ class SearchController < SessionsController
 
     if category && name && params['featured']
       old_category_repos = Repository.where(category: category, featured: true).distinct
-      new_category_repos = []
-      Category.where(name: name).distinct.includes(:repository).map(&:repository).each do |repo|
-        if repo.featured?
-          new_category_repos << repo
-        end
-      end
+      new_category_repos = Category.where(name: name).distinct.includes(:repository).map(&:repository).select{ |repo| repo[:featured] == true }
       @repositories = (old_category_repos + new_category_repos).uniq.sort!{|a,b|b.updated_at <=> a.updated_at}.paginate(:per_page=>12,:page=>params[:page]) do
         order_by :updated_at, :desc
       end
