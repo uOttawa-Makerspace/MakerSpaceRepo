@@ -1,29 +1,50 @@
 one:
   user_id: 1
+  pi_reader_id: 1
   sign_in_time: <%= 1.month.ago %>
   sign_out_time: 2017-06-21T13:25:01-04:00
   created_at: 2017-05-21T13:25:01-04:00
-  mac_address: a brunsfield pi
+  mac_address: m4k3rsp4c3-pi-1
+
 
 two:
   user_id: 2
+  pi_reader_id: 2
   sign_in_time: <%= 1.month.ago %>
   sign_out_time: 2017-06-21T13:25:01-04:00
   created_at: 2017-06-21T13:25:01-04:00
-  mac_address: a sandbox pi
-
+  mac_address: 8runsf13ld-pi-1
 
 three:
   user_id: 777
+  pi_reader_id: 2
   sign_in_time: 2017-07-23T13:25:01-04:00
   sign_out_time: 2017-07-23T13:25:01-04:00
   created_at: 2017-06-23T13:25:01-04:00
-  mac_address:  a brunsfield pi
+  mac_address: 8runsf13ld-pi-1
+
 
 
 four:
-    user_id: 2
-    sign_in_time: <%= 1.month.ago %>
-    sign_out_time: 2017-06-21T13:25:01-04:00
-    created_at: 2017-06-21T13:25:01-04:00
-    mac_address: a makerspace pi
+  user_id: 2
+  pi_reader_id: 2
+  sign_in_time: <%= 1.month.ago %>
+  sign_out_time: 2017-06-21T13:25:01-04:00
+  created_at: 2017-06-21T13:25:01-04:00
+  mac_address: 8runsf13ld-pi-1
+
+four:
+  user_id: 2
+  pi_reader_id: 1
+  sign_in_time: <%= 1.hour.ago %>
+  sign_out_time: <%= Date.tomorrow %>
+  created_at: 2017-06-21T13:25:01-04:00
+  mac_address: m4k3rsp4c3-pi-1
+
+five:
+  user_id: 1337
+  pi_reader_id: 1
+  sign_in_time: <%= 2.hours.ago %>
+  sign_out_time: <%= Date.tomorrow %>
+  created_at: 2017-08-17T09:30:01-04:00
+  mac_address: m4k3rsp4c3-pi-1

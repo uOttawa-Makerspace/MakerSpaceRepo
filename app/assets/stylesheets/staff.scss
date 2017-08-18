@@ -57,6 +57,47 @@ table{
 
 }
 
+div#staff-buttons{
+
+  display: table;
+  margin: 0 auto;
+
+
+  .my-sessions{
+    font: 300 1.1em 'Raleway', sans-serif;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-radius: 2px;
+    background-color: #5f9ea0;
+    color: #fff;
+  }
+  .new-session{
+    font: 300 1.1em 'Raleway', sans-serif;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-radius: 2px;
+    background-color: #5f9ea0;
+    color: #fff;
+    margin-left: 12px;
+  }
+  .kiosk-button{
+    font: 300 1.1em 'Raleway', sans-serif;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-radius: 2px;
+    background-color: #5f9ea0;
+    color: #fff;
+    margin-left: 65px;
+  }
+
+}
+
 
 div#cert-details{
   visibility: hidden;

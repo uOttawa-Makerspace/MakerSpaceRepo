@@ -1,4 +1,21 @@
-<table id="sessions-table">
+<section id="page-contents">
+   <script type="text/javascript" src="../javascripts/sorting.js" ></script>
+
+  <% if flash[:notice] %>
+    <div id="notice"><%= flash[:notice] %></div>
+  <% end %>
+
+  <% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+  <% end %>
+  <br>
+
+      <div class="setting-title">Admin Training Sessions Manager</div>
+      <br>
+      <input type="text" id="query" onkeyup="findSession()" placeholder=" Find by: date, training, course, username  ">
+
+      <br></br>
+      <table id="sessions-table">
         <tr>
           <th>Date
             <button class="sort-arrow" onclick="sortTable(0)"><div class="arrow-down"></div></button></th>
@@ -16,7 +33,7 @@
         </tr>
 
         <tbody>
-        <% @sessions = TrainingSession.where(user_id: @user.id).paginate(:page => params[:page], :per_page => 50) %>
+        <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 50) %>
         <%= will_paginate @sessions %>
         <% @sessions.each do |sesh| %>
           <tr>
@@ -72,3 +89,5 @@
         <% end %>
         </tbody>
       </table>
+
+</section>
