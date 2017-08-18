@@ -10,15 +10,15 @@ class Admin::TrainingSessionsControllerTest < ActionController::TestCase
 
   test "admin can update training session user_id (trainer)" do
     patch :update, params: { id: 1, training_session: {user_id: 1337} }
-    assert_redirected_to :back
+    assert_redirected_to  admin_training_sessions_url
     assert_equal flash[:notice], "Updated Successfully"
     assert TrainingSession.find_by(id: 1, user_id: 1337).present?
     refute TrainingSession.find_by(id: 1, user_id: 777).present?
   end
 
   test "admin can destroy training session" do
-    delete :destroy,  params: { id: 1 } 
-    assert_redirected_to :back
+    delete :destroy,  params: { id: 1 }
+    assert_redirected_to  admin_training_sessions_url
     assert_equal flash[:notice], "Deleted Successfully"
     refute TrainingSession.find_by(id: 1).present?
   end

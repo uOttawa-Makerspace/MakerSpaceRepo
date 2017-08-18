@@ -128,10 +128,10 @@ class Admin::UsersController < AdminAreaController
   def revoke_certification
     if Certification.find(params[:id]).destroy
       flash[:notice] = "Deleted successfully"
-      redirect_to :back
+      redirect_back(fallback_location: root_path)
     else
       flash[:alert] = "Something went wrong, try refreshing"
-      redirect_to :back
+      redirect_back(fallback_location: root_path)
     end
   end
 
@@ -140,10 +140,10 @@ class Admin::UsersController < AdminAreaController
     cert.updated_at = Time.now
     if cert.save
       flash[:notice] = "Renewed successfully"
-      redirect_to :back
+      redirect_back(fallback_location: root_path)
     else
       flash[:alert] = "Something went wrong, try refreshing"
-      redirect_to :back
+      redirect_back(fallback_location: root_path)
     end
   end
 
