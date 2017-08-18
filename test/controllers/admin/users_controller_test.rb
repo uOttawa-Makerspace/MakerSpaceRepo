@@ -22,7 +22,7 @@ class Admin::UsersControllerTest < ActionController::TestCase
   end
 
   test "admin can search for users by email" do
-    get :search, q: "@SARA.com"
+    get :search, q: "@SARA.com", filter: "Email"
     assert response.body.include? "Sara"
     refute response.body.include? "Mary"
   end
