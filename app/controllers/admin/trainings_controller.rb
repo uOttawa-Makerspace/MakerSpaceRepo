@@ -38,7 +38,7 @@ class Admin::TrainingsController < AdminAreaController
   private
 
   def training_params
-      params.require(:training).permit(:name)
+      params.require(:training).permit(:name, :training_id)
   end
 
   def changed_training
