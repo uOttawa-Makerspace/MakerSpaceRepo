@@ -24,20 +24,18 @@ class CommentsController < SessionsController
   end
 
   def destroy
-    if params[:id].present?
-      if repo = Comment.find_by(id: params[:id]).repository
-        if ((@user.admin?) || (@user.id.equal? Comment.find_by(id: params[:id]).user_id))
-          if Comment.find_by(id: params[:id]).destroy
-            flash[:notice] = "Comment deleted succesfully"
-          else
-            flash[:alert] = "Something went wrong"
-          end
-        else
-          flash[:alert] = "Something went wrong"
+    if comment = Comment.find_by(id: params[:id])
+      if @user.admin? || comment.user == @user
+        if comment.destroy
+          flash[:notice] = "Comment deleted succesfully"
         end
+      else
+        flash[:alert] = "Something went wrong"
       end
+    else
+      flash[:alert] = "Something went wrong"
     end
-    redirect_to repository_path(slug: repo.slug, user_username: repo.user_username)
+    redirect_to repository_path(slug: comment.repository.slug, user_username: comment.repository.user_username)
   end
 
   private
