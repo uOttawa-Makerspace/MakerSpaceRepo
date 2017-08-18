@@ -1,6 +1,5 @@
 class SearchController < SessionsController
   before_action :current_user
-  before_action :category, only: [:featured]
   require 'will_paginate/array'
 
   def explore
@@ -46,24 +45,26 @@ class SearchController < SessionsController
         order_by sort_arr.first, sort_arr.last
       end
     end
-    if category && name
+
+    if category && name && params['featured']
+      old_category_repos = Repository.where(category: category, featured: true).distinct
+      new_category_repos = []
+      Category.where(name: name).distinct.includes(:repository).map(&:repository).each do |repo|
+        if repo.featured?
+          new_category_repos << repo
+        end
+      end
+      @repositories = (old_category_repos + new_category_repos).uniq.sort!{|a,b|b.updated_at <=> a.updated_at}.paginate(:per_page=>12,:page=>params[:page]) do
+        order_by :updated_at, :desc
+      end
+
+    elsif category && name
       @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
         order_by sort_arr.first, sort_arr.last
       end
     end
     @photos = photo_hash
-  end
 
-  def featured
-    @pinned_repositories = []
-    @repositories.each do |repo|
-      if repo.featured
-        @pinned_repositories << repo
-      end
-    end
-    @pinned_repositories = @pinned_repositories.sort!{|a,b|b.updated_at <=> a.updated_at}
-    @pinned_repositories = @pinned_repositories.paginate(:per_page=>12,:page=>params[:page])
-    @photos = photo_hash
   end
 
   def equipment
