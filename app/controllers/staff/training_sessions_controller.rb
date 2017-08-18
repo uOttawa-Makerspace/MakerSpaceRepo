@@ -1,4 +1,4 @@
-class Staff::TrainingSessionsController < StaffAreaController
+class Staff::TrainingSessionsController < StaffDashboardController
 
   before_action :current_training_session, except: [:new, :create, :index]
   before_action :changed_params, only: [:update]
