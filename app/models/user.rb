@@ -119,7 +119,7 @@ class User < ActiveRecord::Base
     if self.lab_sessions.last.equal? nil
       return 'no sign in yet'
     end
-    return self.lab_sessions.last.mac_address
+    return self.lab_sessions.last.space.name
   end
 
   scope :in_last_month, -> { where('created_at BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
