@@ -7,3 +7,7 @@ one:
 two:
   repository_id:  2
   name: Course-related Projects
+
+three:
+  repository_id:  3
+  name: other-projects
