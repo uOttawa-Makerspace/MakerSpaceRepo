@@ -1,3 +1,18 @@
 // Place all the styles related to the StaffDashboard controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+
+
+.update-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #5f9ea0;
+  color: #fff;
+  margin-bottom: 20px;
+
+}

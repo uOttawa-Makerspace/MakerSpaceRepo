@@ -31,18 +31,31 @@ class StaffDashboardController < StaffAreaController
     redirect_to :back
   end
 
+  def change_space
+
+    if new_space = Space.find_by(name: params['space_name'])
+      current_sesh = current_user.lab_sessions.last
+      current_sesh.sign_out_time = Time.now
+      current_sesh.save
+      new_sesh = LabSession.new(
+                    user_id: current_user.id,
+                    sign_in_time: Time.now,
+                    sign_out_time: Date.tomorrow,
+                    pi_reader_id: new_space.pi_readers.first.id,
+                    mac_address: new_space.pi_readers.first.pi_mac_address)
+      if new_sesh.save
+        flash[:notice] = "Space changed successfully"
+      else
+        flash[:alert] = "Space changed successfully"
+      end
+    end
+    redirect_to staff_dashboard_index_path
+  end
+
   private
 
   def default_space
-    if @space.equal? nil
-      if params['space_name'].present?
-        @space = Space.find_by(name: params['space_name'])
-      else
-        @space = current_user.lab_sessions.last.space
-      end
-    else
-      @space
-    end
+    @space = current_user.lab_sessions.last.space
   end
 
 end

@@ -33,7 +33,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
   end
 
   def update
-
     if changed_params['user_id'].present?
       unless @user.admin?
         flash[:alert] = "You're not an admin."

@@ -1,7 +1,14 @@
 <h2>welcome to <%=content_tag :space_name, @space.name%></h2>
 
-<%= form_tag("/staff_dashboard/remove_users", method: "patch", action: "sign_out_users") do %>
+<div>
+  <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
+    <% label_tag 'space_name' %>
+    <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "space-selector" %><br></br>
+  <%= submit_tag "update", class: "update-button" %>
+  <%end%>
+</div><br>
 
+<%= form_tag("/staff_dashboard/remove_users", method: "patch", action: "sign_out_users") do %>
 <table class="staff-users-table">
     Users inside <%=@space.name%></h2>
     <tr>
