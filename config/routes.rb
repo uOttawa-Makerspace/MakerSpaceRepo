@@ -98,6 +98,14 @@ Rails.application.routes.draw do
     resources :trainings do
     end
 
+    resources :training_sessions do
+      get 'index', path: '/'
+
+      member do
+        patch 'update'
+      end
+    end
+
     resources :settings, only: [:index] do
       collection do
         post 'add_category'
@@ -118,6 +126,7 @@ Rails.application.routes.draw do
     get 'index', path: '/'
 
     resources :training_sessions do
+      get 'index', path: '/', on: :collection
       member do
         post 'certify_trainees'
       end

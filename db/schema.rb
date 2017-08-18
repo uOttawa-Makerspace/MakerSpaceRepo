@@ -77,8 +77,10 @@ ActiveRecord::Schema.define(version: 20170808162101) do
     t.datetime "created_at",    null: false
     t.datetime "updated_at",    null: false
     t.string   "mac_address"
+    t.integer  "pi_reader_id"
   end
 
+  add_index "lab_sessions", ["pi_reader_id"], name: "index_lab_sessions_on_pi_reader_id", using: :btree
   add_index "lab_sessions", ["user_id"], name: "index_lab_sessions_on_user_id", using: :btree
 
   create_table "likes", force: :cascade do |t|
@@ -110,7 +112,10 @@ ActiveRecord::Schema.define(version: 20170808162101) do
     t.string   "pi_location"
     t.datetime "created_at",     null: false
     t.datetime "updated_at",     null: false
+    t.integer  "space_id"
   end
+
+  add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
 
   create_table "repo_files", force: :cascade do |t|
     t.integer  "repository_id"
@@ -199,7 +204,6 @@ ActiveRecord::Schema.define(version: 20170808162101) do
     t.string   "username"
     t.string   "password"
     t.string   "url"
-    t.string   "location"
     t.datetime "created_at",                                    null: false
     t.datetime "updated_at",                                    null: false
     t.text     "description"
@@ -229,9 +233,11 @@ ActiveRecord::Schema.define(version: 20170808162101) do
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
   add_foreign_key "equipment", "repositories"
+  add_foreign_key "lab_sessions", "pi_readers"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "photos", "repositories"
+  add_foreign_key "pi_readers", "spaces"
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"
