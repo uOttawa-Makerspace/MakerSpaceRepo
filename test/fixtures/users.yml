@@ -10,7 +10,6 @@ bob:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  location: makerspace
   gender: Male
   faculty: science
   use: null
@@ -30,7 +29,6 @@ mary:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  location: sandbox
   gender: unknown
   faculty: engineering
   use: null
@@ -62,7 +60,6 @@ adam:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  location: brunsfield
   gender: Male
   faculty: arts
   use: null
@@ -90,7 +87,6 @@ olivia:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  location: makerspace
   gender: Female
   faculty: engineering
   use: null
