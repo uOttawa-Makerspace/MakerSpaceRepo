@@ -3,7 +3,7 @@ namespace :update_mailer do
   task :send_email => :environment do
     @old_users = User.unknown_identity
     @old_users.each do |user|
-      UpdateMailer.update_identity(user).deliver
+      UpdateMailer.update_identity(user).deliver_now
     end
   end
 end
