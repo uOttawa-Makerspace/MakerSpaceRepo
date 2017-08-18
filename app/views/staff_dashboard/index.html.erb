@@ -66,7 +66,7 @@
 
 
 <br></br>
-<%= form_tag("/staff_dashboard/add_users", method: "patch", action: "sign_in_users") do %>
+<%= form_tag("/staff_dashboard/add_users", method: "put", action: "sign_in_users") do %>
 
 <table class="staff-users-table">
     Users recently signed out of <%=@space.name%></h2>

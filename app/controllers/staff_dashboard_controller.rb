@@ -18,6 +18,19 @@ class StaffDashboardController < StaffAreaController
     redirect_to :back
   end
 
+  def sign_in_users
+    if params['added_users'].present?
+      params['added_users'].each do |username|
+        user = User.find_by(username: username)
+        lab_session = LabSession.new(user_id: user.id, sign_in_time: Time.now, sign_out_time: Date.tomorrow, mac_address: @space.pi_readers.first.pi_mac_address, pi_reader_id: @space.pi_readers.first.id)
+        unless lab_session.save
+          flash[:alert] = "Error signing #{username} in"
+        end
+      end
+    end
+    redirect_to :back
+  end
+
   private
 
   def default_space
