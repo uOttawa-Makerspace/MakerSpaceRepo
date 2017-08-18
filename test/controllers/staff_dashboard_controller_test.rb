@@ -22,32 +22,32 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert_redirected_to root_path
    end
 
-  #  test "a space is chosen by default" do
-  #    get :index
-   #
-  #    assert_response :success
-  #    assert response.body.include? 'brunsfield'
-  #  end
-   #
-  #  test "a space can passed in params" do
-  #    get :index, space_name: 'makerspace'
-   #
-  #    assert_response :success
-  #    assert response.body.include? 'makerspace'
-  #    refute response.body.include? 'brunsfield'
-  #  end
-   #
-  #  test "space doesn't go back to default on its own" do
-  #    get :index, space_name: 'makerspace'
-  #    assert_response :success
-  #    assert response.body.include? 'makerspace'
-  #    refute response.body.include? 'brunsfield'
-   #
-  #    get :index
-  #    assert_response :success
-  #    assert response.body.include? 'makerspace'
-  #    refute response.body.include? 'brunsfield'
-  #  end
+   test "a space is chosen by default" do
+     get :index
+
+     assert_response :success
+     assert response.body.include? 'brunsfield'
+   end
+
+   test "a space can passed in params" do
+     get :index, space_name: 'makerspace'
+
+     assert_response :success
+     assert response.body.include? 'makerspace'
+     refute response.body.include? 'brunsfield'
+   end
+
+   test "space doesn't go back to default on its own" do
+     get :index, space_name: 'makerspace'
+     assert_response :success
+     assert response.body.include? 'makerspace'
+     refute response.body.include? 'brunsfield'
+
+     get :index
+     assert_response :success
+     assert response.body.include? 'makerspace'
+     refute response.body.include? 'brunsfield'
+   end
 
 
 end
