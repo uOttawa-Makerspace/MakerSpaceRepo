@@ -5,7 +5,7 @@
 <% end %>
 </div>
 
-<h2>welcome to <%=content_tag :space_name, @space.name%></h2>
+<h2><%= link_to "welcome to #{@space.name}", staff_dashboard_index_path%></h2>
 
 <div>
   <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
@@ -42,7 +42,7 @@
         <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
           if user.lab_sessions.present?
             if user.lab_sessions.last.sign_out_time > Time.now
-              user_time = user.lab_sessions.last.sign_in_time
+              user_time = Time.now
             else
               user_time = user.lab_sessions.last.sign_out_time
             end

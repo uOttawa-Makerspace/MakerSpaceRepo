@@ -138,7 +138,7 @@ Rails.application.routes.draw do
     get 'search'
     put 'change_space', path: '/change_space'
     put 'sign_in_users', path: '/add_users'
-    patch 'sign_out_users', path: '/remove_users'
+    put 'sign_out_users', path: '/remove_users'
   end
 
   # namespace :help do
