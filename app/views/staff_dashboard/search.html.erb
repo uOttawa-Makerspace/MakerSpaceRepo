@@ -16,26 +16,95 @@
 </div><br>
 <br>
 
+<% if @users.any? %>
+<table class="staff-search-results">
+    Search results
+    <tr>
+      <th>Username</th>
+      <th>Email</th>
+      <th>Last Seen At</th>
+      <th>Location</th>
+      <th>Status</th>
+      <th><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT </th>
+    </tr>
+
+    <% @users.each do |user| %>
+      <tr class="sign-in-or-out">
+
+        <td class="sign-in-cell"><%=
+          link_to(content_tag(:drop_username, user.username), user_url(user.username))
+        %></td>
+
+        <td class="email-cell"><%=
+          user.email
+        %></td>
+
+        <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
+          if user.lab_sessions.present?
+            if user.lab_sessions.last.sign_out_time > Time.now
+              user_time = user.lab_sessions.last.sign_in_time
+            else
+              user_time = user.lab_sessions.last.sign_out_time
+            end
+            user_time.strftime("%B %d, %Y")
+          end
+        %></td>
+
+        <td class="location-cell"><%=
+          user.location
+        %></td>
+
+        <td class="status-cell"><%=
+        if user.lab_sessions.present?
+          if @space.signed_in_users.include? user
+            "Signed In"
+          else
+            "Signed Out"
+          end
+        end
+        %></td>
+
+        <td class="sign-in-or-out-cell" >
+          <% if @space.signed_in_users.include? user%>
+            <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
+          <%else%>
+            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
+          <%end%>
+        </td>
+
+      </tr>
+    <% end %>
+    <br></br>
+  </table>
+  <br>
+<% else %>
+  No results
+<% end %>
+<br><br>
+
 <%= form_tag("/staff_dashboard/remove_users", method: "patch", action: "sign_out_users") do %>
 <table class="staff-users-table">
     Users inside <%=@space.name%></h2>
     <tr>
-      <th>Sign Out</th>
       <th>Username</th>
-      <th>Last Signed In</th>
+      <th>Email</th>
+      <th>Last Seen At</th>
       <th>Location</th>
       <th>Certifications</th>
+      <th>Sign Out of <%=@space.name.capitalize%></th>
     </tr>
 
     <% @space.signed_in_users.each do |user| %>
       <tr class="drop-rows">
 
-        <td class="drop-checkbox-cell" >
-          <%= check_box_tag 'dropped_users[]', value=user.username%>
-        </td>
+
 
         <td class="drop-username-cell"><%=
           link_to(content_tag(:drop_username, user.username), user_url(user.username))
+        %></td>
+
+        <td class="email-cell"><%=
+          user.email
         %></td>
 
         <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
@@ -71,6 +140,10 @@
           %>
         </td>
 
+        <td class="drop-checkbox-cell" >
+          <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
+        </td>
+
       </tr>
     <% end %>
     <br></br>
@@ -88,7 +161,7 @@
     <tr>
       <th>Sign In</th>
       <th>Username</th>
-      <th>Last Signed In</th>
+      <th>Last Seen At</th>
       <th>Location</th>
       <th>Certifications</th>
     </tr>
@@ -97,7 +170,7 @@
       <tr class="add-rows">
 
         <td class="add-checkbox-cell" >
-          <%= check_box_tag 'added_users[]', value=user.username%>
+          <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
         </td>
 
         <td class="add-username-cell"><%=

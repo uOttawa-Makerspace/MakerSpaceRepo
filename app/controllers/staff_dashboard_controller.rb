@@ -52,6 +52,21 @@ class StaffDashboardController < StaffAreaController
     redirect_to staff_dashboard_index_path
   end
 
+  def search
+    unless params[:query].blank?
+      @query = params[:query]
+      @users = User.where('LOWER(name) like LOWER(?) OR
+                           LOWER(email) like LOWER(?) OR
+                           LOWER(username) like LOWER(?)',
+                           "%#{@query}%", "%#{@query}%", "%#{@query}%")
+                           .includes(:lab_sessions)
+                           .order(:updated_at)
+    else
+      redirect_to (:back)
+      flash[:alert] = "Invalid parameters!"
+    end
+  end
+
   private
 
   def default_space
