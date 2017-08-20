@@ -4,6 +4,22 @@
 <h1>Report Generator</h1>
 <p>Click the buttons below to view the reports.</p><br><br>
 
+<div class="date_selection">
+  <%= form_tag select_date_range_admin_report_generator_index_path, method: :put do %>
+
+      <div style="display:inline-block;"><%= label_tag('Start Date:  ') %> </div>
+      <%= select_date @start_date, :prefix => 'start', end_year: Time.current.year %> <br>
+
+      <div style="display:inline-block;"><%= label_tag('End Date:  ') %> </div>
+      <%= select_date @end_date, :prefix => 'end', end_year: Time.current.year %>
+      <p style="display: inline-block; max-width: 250px; "><%= @start_date.strftime("%B %d, %Y") %>  -  <%= @end_date.strftime("%B %d, %Y") %></p>
+      <%= submit_tag("Update",  class:"update_button") %>
+      <br>
+  <% end %>
+
+</div>
+
+
 <p> New users in the past month </p>
 <%= link_to '<button type="button">Download</button>'.html_safe, new_users_admin_report_generator_index_path(format: "csv") %><br><br>
 
@@ -31,21 +47,6 @@
 
  <!-- <%= date_select("repository", "created", prompt: { day: 'Select day', month: 'Select month', year: 'Select year' })%> -->
  <br>
-
-<div class="date_selection">
-  <%= form_tag select_date_range_admin_report_generator_index_path, method: :put do %>
-
-      <div style="display:inline-block;"><%= label_tag('Start Date:  ') %> </div>
-      <%= select_date @start_date, :prefix => 'start', end_year: Time.current.year %> <br>
-
-      <div style="display:inline-block;"><%= label_tag('End Date:  ') %> </div>
-      <%= select_date @end_date, :prefix => 'end', end_year: Time.current.year %>
-      <p style="display: inline-block; max-width: 250px; "><%= @start_date.strftime("%B %d, %Y") %>  -  <%= @end_date.strftime("%B %d, %Y") %></p>
-      <%= submit_tag("Update",  class:"update_button") %>
-      <br>
-  <% end %>
-
-  </div>
 
 <br><br>
 <p> Repositories </p>
