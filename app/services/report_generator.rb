@@ -1,13 +1,13 @@
 class ReportGenerator
 
-  def self.new_user_report
-    @users = User.in_last_month
+  def self.new_user_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
+    @users = User.between_dates_picked(start_date, end_date)
     attributes = %w{id name username email gender identity faculty program year_of_study student_id created_at}
     @users.to_csv(*attributes)
   end
 
-  def self.lab_session_report
-    @labs = LabSession.in_last_month
+  def self.lab_session_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
+    @labs = LabSession.between_dates_picked(start_date, end_date)
     column = []
     column << ["lab_id", "sign_in_time", "user_id", "name", "email", "gender","idenity", "faculty", "program"]
     @labs.each do |lab|
@@ -20,8 +20,8 @@ class ReportGenerator
     @labs.to_csv(column)
   end
 
-  def self.unique_visitors_report
-    @labs = LabSession.in_last_month
+  def self.unique_visitors_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
+    @labs = LabSession.between_dates_picked(start_date, end_date)
     @unique_visits = @labs.select('DISTINCT user_id')
     column = []
     column << ["id" , "name", "username", "email", "gender", "idenity", "faculty", "program" ]
@@ -35,8 +35,8 @@ class ReportGenerator
     @unique_visits.to_csv(column)
   end
 
-  def self.faculty_frequency_report
-      @users = User.in_last_month
+  def self.faculty_frequency_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
+      @users = User.between_dates_picked(start_date, end_date)
       @faculty_freq = @users.group(:faculty).count(:faculty)
       CSV.generate do |csv|
         csv << @faculty_freq.keys
@@ -44,8 +44,8 @@ class ReportGenerator
       end
   end
 
-  def self.gender_frequesncy_report
-    @users = User.in_last_month
+  def self.gender_frequesncy_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
+    @users = User.between_dates_picked(start_date, end_date)
     @gender_freq = @users.group(:gender).count(:gender)
     CSV.generate do |csv|
       csv << @gender_freq.keys
@@ -53,8 +53,8 @@ class ReportGenerator
     end
   end
 
-  def self.training_report
-    @certifications = Certification.in_last_month
+  def self.training_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
+    @certifications = Certification.between_dates_picked(start_date, end_date)
 
     column = []
     column << ["TRAINING ID", "STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE", "WORKSHOP"]
@@ -68,8 +68,8 @@ class ReportGenerator
     @certifications.to_csv(column)
   end
 
-  def self.project_report(start_date, end_date)
-    @repositories = Repository.where('created_at BETWEEN ? AND ? ', start_date, end_date)
+  def self.project_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
+    @repositories = Repository.between_dates_picked(start_date, end_date)
     column = []
     column << ["title", "owner", "url", "categories"]
 
