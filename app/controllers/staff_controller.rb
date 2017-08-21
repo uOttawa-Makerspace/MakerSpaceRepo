@@ -1,4 +1,4 @@
-class StaffController < StaffAreaController
+class StaffController < StaffDashboardController
 
   def index
   end

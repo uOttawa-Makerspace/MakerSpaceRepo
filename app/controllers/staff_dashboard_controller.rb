@@ -49,7 +49,7 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = "Space changed successfully"
       end
     end
-    redirect_to staff_dashboard_index_path
+    redirect_to :back
   end
 
   def search
