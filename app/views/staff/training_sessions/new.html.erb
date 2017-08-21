@@ -24,15 +24,11 @@
     <table id="staff-table">
       <h3>Users Inside <%=@space.name%></h3>
       <tr>
-        <th href="#" onclick="selectAll()">Select All</th>
-        <th>Name
-          <input type="button" class="sort-arrow" onclick="sortTable('staff-table', 1)"><div class="arrow-down"></div></input></th>
-        <th>Email
-          <input type="button" class="sort-arrow" onclick="sortTable('staff-table', 2)"><div class="arrow-down"></div></input></th>
-        <th>Signed In
-          <input type="button" class="sort-arrow" onclick="sortTable('staff-table', 3)"><div class="arrow-down"></div></input></th>
-        <th>Certifications
-          <input type="button" class="sort-arrow" onclick="sortTable('staff-table', 4)"><div class="arrow-down"></div></input></th>
+        <th href="#" onclick="selectAll()">Select All <%=fa_icon('arrow-down')%></th>
+        <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Email <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
       </tr>
 
     <% @space.signed_in_users.each do |user| %>
