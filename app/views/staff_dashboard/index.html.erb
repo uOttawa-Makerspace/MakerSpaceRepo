@@ -30,8 +30,6 @@
     <% @space.signed_in_users.each do |user| %>
       <tr class="drop-rows">
 
-
-
         <td class="drop-username-cell"><%=
           link_to(content_tag(:drop_username, user.username), user_url(user.username))
         %></td>

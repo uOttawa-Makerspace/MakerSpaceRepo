@@ -65,7 +65,7 @@
             </td>
 
             <td class="status-cell">
-              <% if sesh.users.first.certifications.include? Certification.find_by(training_session_id: sesh.id) %>
+              <% if sesh.completed? %>
                 COMPLETE
               <% else %>
                 INCOMPLETE

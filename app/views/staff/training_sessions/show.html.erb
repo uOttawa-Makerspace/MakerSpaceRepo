@@ -28,61 +28,59 @@
 <% end %>
 
 
-  <table class="training-session-users-table">
+  <table id="training-session-users-table">
       Users in this training session
       <tr>
-        <th>Remove User From This Training Session</th>
-        <th>Username</th>
-        <th>Last Signed In</th>
-        <th>Location</th>
-        <th>Certifications</th>
+        <th>Remove From This Session</th>
+        <th>Name
+          <input type="button" class="sort-arrow" onclick="sortTable('training-session-users-table', 1)"><div class="arrow-down"></div></input></th>
+        <th>Email
+          <input type="button" class="sort-arrow" onclick="sortTable('training-session-users-table', 2)"><div class="arrow-down"></div></input></th>
+        <th>Signed In
+          <input type="button" class="sort-arrow" onclick="sortTable('training-session-users-table', 3)"><div class="arrow-down"></div></input></th>
+        <th>Certifications
+          <input type="button" class="sort-arrow" onclick="sortTable('training-session-users-table', 4)"><div class="arrow-down"></div></input></th>
       </tr>
 
     <% @current_training_session.users.each do |user| %>
-      <tr class="drop-rows">
+    <tr>
 
-        <td class="drop-checkbox-cell" onclick="check_users(this)">
-          <%= link_to (fa_icon('times')), {controller: :training_sessions, action: :update, dropped_users: [user.username], changed_params: {course: nil}}, method: 'PATCH', class: 'x-button' %>
-        </td>
+      <td>
+        <%= link_to (fa_icon('times')),
+          {controller: :training_sessions, action: :update, id: @current_training_session.id, dropped_users: [user.username], changed_params: {course: ''} },  
+          method: :patch, class: 'x-button' %>
+      </td>
 
-        <td class="drop-username-cell"><%=
-          link_to(content_tag(:drop_username, user.username), user_url(user.username))
-        %></td>
+      <td class="user-name">
+        <%= link_to(user.name, user_url(user.username)) %>
+      </td>
 
-        <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
-          if user.lab_sessions.present?
-            singout_time = user.lab_sessions.last.sign_out_time
-            singout_time.strftime("%B %d, %Y")
-          end
-        %></td>
+      <td class="email-cell" style="horizontal-alginment:center;">
+        <%= user.email  %>
+      </td>
 
-        <td class="location-cell"><%=
-          user.location
-        %></td>
+      <td class="signed-in-cell" style="horizontal-alginment:center;">
+        <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
+      </td>
 
-        <td class="certifications-cell"><%
-          if user.certifications.first.present?
-            user.certifications.each do |certification|
-            %>
-            <div
-             class="cert-name"
-             style="display:inline" >
-             <div class="cert-holder" style="display:inline">
-              <%= certification.training %> |
-              <div id="cert-details" style="display:inline">
-                <%= certification.training %> <br>
-                <%= certification.trainer %> <br>
-                <%= certification.updated_at.strftime("%B %d, %Y")  %>
-              </div>
-            </div>
+      <td class="certifications-cell">
+      <% user.certifications.each do |certification| %>
+        <div
+         class="cert-name"
+         style="display:inline" >
+         <div class="cert-holder" style="display:inline">
+          <%= certification.training %> |
+          <div id="cert-details" style="display:inline">
+            <%= certification.training %> <br>
+            <%= certification.trainer %> <br>
+            <%= certification.updated_at.strftime("%B %d, %Y")  %>
           </div>
-          <%
-            end
-          end
-          %>
-        </td>
+        </div>
+      </div>
+      <% end %>
+    </td>
 
-      </tr>
+    </tr>
     <% end %>
     </table>
     <br>

@@ -168,7 +168,7 @@ div.users-count:hover div#sesh-users{
     visibility:visible;
 }
 
-button.sort-arrow{
+input.sort-arrow{
 
   align: center;
   width: 27px;
@@ -181,6 +181,8 @@ button.sort-arrow{
     border-style: solid;
     border-width: 9px 9px 0 9px;
     border-color: #2c5252 transparent transparent transparent;
+    color: red;
+    display: block;
   }
 
 }
