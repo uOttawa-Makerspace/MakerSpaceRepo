@@ -8,7 +8,6 @@
 
 
 <section id="page-contents">
-   <script type="text/javascript" src="../javascripts/sorting.js" ></script>
 
   <% if flash[:notice] %>
     <div id="notice"><%= flash[:notice] %></div>
@@ -26,23 +25,18 @@
       <br></br>
       <table id="sessions-table">
         <tr>
-          <th>Date
-            <button class="sort-arrow" onclick="sortTable('sessions-table', 0)"><div class="arrow-down"></div></button></th>
-          <th>Training
-            <button class="sort-arrow" onclick="sortTable('sessions-table', 1)"><div class="arrow-down"></div></button></th>
-          <th>Trainer
-            <button class="sort-arrow" onclick="sortTable('sessions-table', 2)"><div class="arrow-down"></div></button></th>
-          <th>Course
-            <button class="sort-arrow" onclick="sortTable('sessions-table', 3)"><div class="arrow-down"></div></button></th>
-          <th>Status
-            <button class="sort-arrow" onclick="sortTable('sessions-table', 4)"><div class="arrow-down"></div></button></th>
-          <th>Users</th>
+          <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Course <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Status <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Users <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header">Action</th>
 
         </tr>
 
         <tbody>
-        <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 50) %>
+        <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20) %>
         <%= will_paginate @sessions %>
         <% @sessions.each do |sesh| %>
           <tr>
