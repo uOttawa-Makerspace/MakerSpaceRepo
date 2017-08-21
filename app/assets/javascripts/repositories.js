@@ -1,19 +1,16 @@
-$(document).ready(function() {
-	$("#pass").hide();
-	$(".show_extra").change(function() {
-		if(this.value === "private") {
-			$("#pass").show();
-		}
-		else {
-			$("#pass").hide();
-			$("#change_pass").hide();
-		}
-	});
-});
+function showField(){
+	document.getElementById("password").style.display = 'block'
+}
 
- $(document).ready( function() {
-	$("#change").on('change', function() {
-	  $('#pass').toggle(this.checked);
-	}).change();
-
-});
+function hideField(){
+	$("#change_pass").hide();
+	document.getElementById("password").style.display = 'none'
+}
+function toggleField() {
+		var x = document.getElementById("password")
+		if (x.style.display === 'none') {
+			document.getElementById("password").style.display = 'block'
+		} else {
+			document.getElementById("password").style.display = 'none'
+    }
+}
