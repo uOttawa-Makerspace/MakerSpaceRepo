@@ -1,8 +1,10 @@
 class TrainingSession < ActiveRecord::Base
   belongs_to :training
   belongs_to :user
+
   has_and_belongs_to_many :users, :uniq => true
   has_many :certifications, dependent: :destroy
+  has_one :space, through: :training
 
   validates :training, presence: { message: "A training subject is required"}
   validates :user, presence: { message: "A trainer is required"}
