@@ -33,7 +33,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert response.body.include? 'welcome to '
 
      put :change_space, space_name: 'brunsfield'
-     assert_redirected_to staff_dashboard_index_path
+     assert_redirected_to :back
      assert_equal flash[:notice], "Space changed successfully"
    end
 
