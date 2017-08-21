@@ -1,3 +1,11 @@
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:alert] %></div>
+<% end %>
+
 <h2><%= link_to "welcome to #{@space.name}", staff_index_path%></h2>
 
 <div>

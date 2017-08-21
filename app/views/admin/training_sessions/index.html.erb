@@ -1,3 +1,12 @@
+<% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
+<% if flash[:alert] %>
+  <div id="alert"><%= flash[:alert] %></div>
+<% end %>
+
+
 <section id="page-contents">
    <script type="text/javascript" src="../javascripts/sorting.js" ></script>
 
