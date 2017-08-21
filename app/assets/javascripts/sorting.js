@@ -33,6 +33,8 @@ function findSession() {
     }
   }
 }
+
+
 function sortTable(col) {
   if(sort_direction === 1){
     var table, rows, switching, i, x, y, shouldSwitch;
@@ -79,4 +81,13 @@ function sortTable(col) {
     }
     sort_direction = 1;
   }
+}
+
+
+function selectAll(){
+  $("input:checkbox").each(function(){
+    $(this).attr('checked', true);
+  });
+
+  return false;
 }
