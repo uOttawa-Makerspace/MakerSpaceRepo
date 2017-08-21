@@ -82,10 +82,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
   def destroy
     if @current_training_session.destroy
         flash[:notice] = "Deleted Successfully"
-        redirect_to new_staff_training_session_path
+        redirect_to staff_index_url
     else
         flash[:alert] = "Something went wrong"
-        redirect_to new_staff_training_session_path
+        redirect_to :back
     end
   end
 

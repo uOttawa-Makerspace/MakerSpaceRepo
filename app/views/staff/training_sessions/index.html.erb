@@ -11,9 +11,10 @@
           <th>Date <span onclick="sortTable('staff-table', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th>Training <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Trainer <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Course <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Status <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Users <span onclick="sortTable('staff-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Space <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Course <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Status <span onclick="sortTable('staff-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Users <span onclick="sortTable('staff-table', 6)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header">Action</th>
 
         </tr>
@@ -35,6 +36,10 @@
 
             <td class="trainer-cell" style="horizontal-alginment:center;">
               <%= link_to sesh.user.name, user_url(sesh.user.username) %>
+            </td>
+
+            <td class="space-cell">
+              <%= sesh.training.space.name %>
             </td>
 
             <td class="course-cell">
