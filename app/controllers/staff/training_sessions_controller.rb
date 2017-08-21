@@ -72,9 +72,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
   def certify_trainees
     @current_training_session.users.each do |graduate|
       certification = Certification.new(user_id: graduate.id, training_session_id: @current_training_session.id)
-      if certification.save
-       flash[:notice] = "#{graduate.username}'s certification has been created"
-      else
+      unless certification.save
        flash[:alert] = "#{graduate.username}'s certification not saved properly!"
       end
     end
