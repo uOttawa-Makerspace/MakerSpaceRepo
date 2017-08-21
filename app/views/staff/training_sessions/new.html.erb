@@ -21,13 +21,18 @@
     <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']), 'id', 'name'), prompt: 'select instructor', class: "trainer-training-course" %><br>
   <% end %>
   <br></br>
-    <table class="staff-table">
+    <table id="staff-table">
       <h3>Users Inside <%=@space.name%></h3>
       <tr>
         <th href="#" onclick="selectAll()">Select All</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Certifications</th>
+        <th>Name
+          <input type="button" class="sort-arrow" onclick="sortTable('staff-table', 1)"><div class="arrow-down"></div></input></th>
+        <th>Email
+          <input type="button" class="sort-arrow" onclick="sortTable('staff-table', 2)"><div class="arrow-down"></div></input></th>
+        <th>Signed In
+          <input type="button" class="sort-arrow" onclick="sortTable('staff-table', 3)"><div class="arrow-down"></div></input></th>
+        <th>Certifications
+          <input type="button" class="sort-arrow" onclick="sortTable('staff-table', 4)"><div class="arrow-down"></div></input></th>
       </tr>
 
     <% @space.signed_in_users.each do |user| %>
@@ -43,6 +48,10 @@
 
         <td class="email-cell" style="horizontal-alginment:center;">
           <%= user.email  %>
+        </td>
+
+        <td class="signed-in-cell" style="horizontal-alginment:center;">
+          <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
         </td>
 
         <td class="certifications-cell">

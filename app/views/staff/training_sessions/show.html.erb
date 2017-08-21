@@ -24,7 +24,6 @@
       <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'change course', class: "trainer-training-course" %><br>
 </div><br>
 
-<br>
 <%= submit_tag "Update", class: 'save-button' %>
 <% end %>
 
