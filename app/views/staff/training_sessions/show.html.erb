@@ -32,14 +32,10 @@
       Users in this training session
       <tr>
         <th>Remove From This Session</th>
-        <th>Name
-          <input type="button" class="sort-arrow" onclick="sortTable('training-session-users-table', 1)"><div class="arrow-down"></div></input></th>
-        <th>Email
-          <input type="button" class="sort-arrow" onclick="sortTable('training-session-users-table', 2)"><div class="arrow-down"></div></input></th>
-        <th>Signed In
-          <input type="button" class="sort-arrow" onclick="sortTable('training-session-users-table', 3)"><div class="arrow-down"></div></input></th>
-        <th>Certifications
-          <input type="button" class="sort-arrow" onclick="sortTable('training-session-users-table', 4)"><div class="arrow-down"></div></input></th>
+        <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Email <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
       </tr>
 
     <% @current_training_session.users.each do |user| %>
@@ -47,7 +43,7 @@
 
       <td>
         <%= link_to (fa_icon('times')),
-          {controller: :training_sessions, action: :update, id: @current_training_session.id, dropped_users: [user.username], changed_params: {course: ''} },  
+          {controller: :training_sessions, action: :update, id: @current_training_session.id, dropped_users: [user.username], changed_params: {course: ''} },
           method: :patch, class: 'x-button' %>
       </td>
 

@@ -8,18 +8,12 @@
 
 <table id="sessions-table">
         <tr>
-          <th>Date
-            <input type="button" class="sort-arrow" onclick="sortTable('sessions-table', 0)"><div class="arrow-down"></div></input></th>
-          <th>Training
-            <input type="button" class="sort-arrow" onclick="sortTable('sessions-table', 1)"><div class="arrow-down"></div></input></th>
-          <th>Trainer
-            <input type="button" class="sort-arrow" onclick="sortTable('sessions-table', 2)"><div class="arrow-down"></div></input></th>
-          <th>Course
-            <input type="button" class="sort-arrow" onclick="sortTable('sessions-table', 3)"><div class="arrow-down"></div></input></th>
-          <th>Status
-            <input type="button" class="sort-arrow" onclick="sortTable('sessions-table', 4)"><div class="arrow-down"></div></input></th>
-          <th>Users
-            <input type="button" class="sort-arrow" onclick="sortTable('sessions-table', 5)"><div class="arrow-down"></div></input></th>
+          <th>Date <span onclick="sortTable('staff-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Training <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Trainer <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Course <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Status <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Users <span onclick="sortTable('staff-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header">Action</th>
 
         </tr>
