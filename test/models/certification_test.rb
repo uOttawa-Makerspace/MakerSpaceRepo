@@ -8,7 +8,7 @@ class CertificationTest < ActiveSupport::TestCase
     cert.user_id = nil
     assert cert.invalid?, "A user is required."
 
-    cert.user_id = 1
+    cert.user_id = 777
     assert cert.valid?, "A user is required."
   end
 
@@ -18,7 +18,7 @@ class CertificationTest < ActiveSupport::TestCase
     cert.training_session_id = nil
     assert cert.invalid?, "A training session is required."
 
-    cert.training_session_id = 1
+    cert.training_session_id = 2
     assert cert.valid?, "A training session is required."
   end
 

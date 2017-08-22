@@ -76,6 +76,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
        flash[:alert] = "#{graduate.username}'s certification not saved properly!"
       end
     end
+    flash[:notice] = "Training Session Completed Successfully"
     redirect_to staff_index_url
   end
 
