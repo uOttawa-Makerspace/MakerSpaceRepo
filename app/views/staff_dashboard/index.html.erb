@@ -15,7 +15,7 @@
     <div class="search-form" style="display:inline"> Search for users to sign them in or out of <%=@space.name.capitalize%>:
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
       <%= text_field_tag 'query', nil, placeholder: 'Search users by name, username, email...', class:'profile-text' %><br>
-      <%= submit_tag "Search", class: 'save-button' %>
+      <%= submit_tag "Search", class: 'update-button' %>
     <% end %>
     </div>
 

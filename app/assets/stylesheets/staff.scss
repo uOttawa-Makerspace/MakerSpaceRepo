@@ -11,7 +11,7 @@ div#space-top-corner{
   padding-left: 3px;
   padding-right: 3px;
   margin-left: 100px;
-  
+
 }
 
 div.setting-top-panel{
@@ -67,43 +67,52 @@ table{
 
 }
 
+.update-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #5f9ea0;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover:not(.vp-button){
+    background-color: #5f9ea0 + 20;
+  }
+
+}
+
+
+.check-button{
+  font-size: 1.5em;
+  color: green - 20;
+}
+
+.x-button{
+  font-size: 1.5em;
+  font-weight: bold;
+  color: red - 80;
+}
+
+
 div#staff-buttons{
 
-  display: table;
-  margin: 0 auto;
+  align: center;
+  float: left;
 
+  .staff-button{
+    font: 300 2.4em 'Raleway', sans-serif;
+    letter-spacing: 0.15em;
+    padding-left: 1rem;
+    border-left: 3px solid transparentize(#5f9ea0, 0.4);
 
-  .my-sessions{
-    font: 300 1.1em 'Raleway', sans-serif;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    border-radius: 2px;
-    background-color: #5f9ea0;
-    color: #fff;
-  }
-  .new-session{
-    font: 300 1.1em 'Raleway', sans-serif;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    border-radius: 2px;
-    background-color: #5f9ea0;
-    color: #fff;
-    margin-left: 12px;
-  }
-  .kiosk-button{
-    font: 300 1.1em 'Raleway', sans-serif;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    border-radius: 2px;
-    background-color: #5f9ea0;
-    color: #fff;
-    margin-left: 65px;
+    &:hover:not(.vp-button){
+      border-left: 5px solid #5f9ea0;
+    }
+
   }
 
 }

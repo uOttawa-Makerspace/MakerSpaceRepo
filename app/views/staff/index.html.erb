@@ -1,15 +1,24 @@
 <section class="page-contents">
   <div class="edit-column">
 
-  <h2><%= link_to "Welcome to " %> <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> </h2>
+    <h2><%= link_to "Welcome to " %> <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> </h2>
 
-  <div>
-    <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
-      <% label_tag 'space_name' %>
-      <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "space-selector" %><br></br>
-    <%= submit_tag "update", class: "update-button" %>
-    <%end%>
-  </div><br>
-  <br>
+    <div>
+      <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
+        <% label_tag 'space_name' %>
+        <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "space-selector" %><br></br>
+      <%= submit_tag "update", class: "update-button" %>
+      <%end%>
+    </div><br>
+    <br></br>
+
+    <div id="staff-buttons">
+      <%= link_to (fa_icon('desktop') + ' Go To ' + @space.name.capitalize + ' Kiosk'), staff_dashboard_index_path, class: "staff-button"%><br></br>
+      <%= link_to (fa_icon('desktop') + ' Start New Training'), new_staff_training_session_path, class: "staff-button"%><br></br>
+      <%= link_to (fa_icon('database') + ' View My Training Sessions'), staff_training_sessions_path, class: "staff-button"%><br></br>
+
+    </div>
+
+
   </div>
 </section>
