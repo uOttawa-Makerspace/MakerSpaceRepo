@@ -26,6 +26,10 @@ section#signup {
       color: #F00;
     }
 
+		section#hidden{
+			border-top: 1px solid #F00;
+			border-bottom: 1px solid #F00;
+		}
 .select2-container .select2-selection--single {
     box-sizing: border-box;
     cursor: pointer;
@@ -54,7 +58,7 @@ li.select2-results__option{
   font: 4px;
 }
 .programs {
-    display: block;
+    // display: block;
     padding: 0.1rem;
     width: 415px;
     height: 40px;
