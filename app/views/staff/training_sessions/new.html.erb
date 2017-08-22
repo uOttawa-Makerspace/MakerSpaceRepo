@@ -6,10 +6,10 @@
   <div id="alert"><%= flash[:alert] %></div>
 <% end %>
 
-<section id ="page-contents" >
-
+<section class="page-contents">
+  <div class="edit-column">
   <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
-  <h3>New <spacetag style="font-weight:bold"><%=@space.name %></spacetag> training session:<h3>
+  <h2>New <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> Training Session</h2>
   <% label_tag 'training_id' %>
   <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings, 'id', 'name'), prompt: 'select training', class: "trainer-training-course" %><br>
 
@@ -73,4 +73,5 @@
     <br>
     <%= submit_tag "Begin Training", class:"save-button"%>
   <% end %>
+  </div>
 </section>

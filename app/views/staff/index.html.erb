@@ -6,21 +6,17 @@
   <div id="alert"><%= flash[:alert] %></div>
 <% end %>
 
-<h2><%= link_to "welcome to #{@space.name}", staff_index_path%></h2>
+<section class="page-contents">
+  <div class="edit-column">
+  <h2><%= link_to "welcome to #{@space.name}", staff_index_path%></h2>
 
-<div>
-  <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
-    <% label_tag 'space_name' %>
-    <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "space-selector" %><br></br>
-  <%= submit_tag "update", class: "update-button" %>
-  <%end%>
-</div><br>
-<br>
-
-<div id="staff-buttons">
-  <%= link_to 'My Training Sessions', staff_training_sessions_path, class: 'my-sessions' %>
-  <br></br> <br></br>
-  <%= link_to 'Start New Training', new_staff_training_session_path, class: 'new-session' %>
-  <br></br> <br></br>
-  <%= link_to 'Go To Kiosk', staff_dashboard_index_path, class: 'kiosk-button' %>
-</div>
+  <div>
+    <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
+      <% label_tag 'space_name' %>
+      <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "space-selector" %><br></br>
+    <%= submit_tag "update", class: "update-button" %>
+    <%end%>
+  </div><br>
+  <br>
+  </div>
+</section>

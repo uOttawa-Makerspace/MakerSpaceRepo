@@ -13,12 +13,18 @@
 </head>
 <body>
 	<%= render 'layouts/header' %>
-	<section id="setting">
+	<section id="setting" style="width:90%">
 		<div class="setting-grid">
-			<div class="setting-top-panel">
+			<div class="setting-side-panel">
         <div class="panel-title"><%= link_to 'Staff Area', staff_index_path %></div>
+				<ul>
+		      <li class="setting-menu-item">
+            <%= link_to 'Go To Kiosk', staff_dashboard_index_path, class: 'kiosk-button' %><br></br>
+            <%= link_to 'Start New Training', new_staff_training_session_path, class: 'new-session' %><br></br>
+            <%= link_to 'My Training Sessions', staff_training_sessions_path, class: 'my-sessions' %><br></br>
+		      </li>
+				</ul>
 			</div>
-        <br></br>
 			<%= yield %>
 
 		</div>
