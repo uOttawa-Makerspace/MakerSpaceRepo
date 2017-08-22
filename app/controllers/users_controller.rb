@@ -60,7 +60,7 @@ class UsersController < SessionsController
   def show
     @repo_user = User.find_by username: params[:username]
     @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
-    @repositories = @repo_user.repositories.where(make_id: nil).page params[:page]
+    @repositories = @repo_user.repositories.has_photos.where(make_id: nil).page params[:page]
     @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
     @photos = photo_hash
   end
