@@ -12,11 +12,9 @@
 
       <div style="display:inline-block;"><%= label_tag('End Date:  ') %> </div>
       <%= select_date @end_date, :prefix => 'end', end_year: Time.current.year %>
-      <p style="display: inline-block; max-width: 250px; "><%= @start_date.strftime("%B %d, %Y") %>  -  <%= @end_date.strftime("%B %d, %Y") %></p>
+      <p style="display: inline-block;"><%= @start_date.strftime("%B %d, %Y") %>  -  <%= @end_date.strftime("%B %d, %Y") %></p>
       <%= submit_tag("Update",  class:"update_button") %>
-      <br>
   <% end %>
-
 </div>
 
 <br><br>
