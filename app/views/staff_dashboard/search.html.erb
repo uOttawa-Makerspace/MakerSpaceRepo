@@ -25,7 +25,7 @@
           <th>Email <span onclick="sortTable('staff-search-results', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Last Seen <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
           <th>Status <span onclick="sortTable('staff-search-results', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT <span onclick="sortTable('staff-search-results', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
         </tr>
 
         <% @users.each do |user| %>
@@ -55,7 +55,7 @@
             end
             %></td>
 
-            <td class="sign-in-or-out-cell" >
+            <td class="action-cell" >
               <% if @space.signed_in_users.include? user%>
                 <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
               <%else%>
@@ -74,12 +74,12 @@
     <br><br>
 
     <table class="space-users-table">
-        Users inside <%=@space.name%></h2>
+        Users inside <%=@space.name.capitalize%></h2>
         <tr>
           <th>Name <span onclick="sortTable('space-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th>Email <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Certifications <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Sign Out of <%=@space.name.capitalize%> <span onclick="sortTable('space-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Sign Out of <%=@space.name.capitalize%></th>
         </tr>
 
         <% @space.signed_in_users.each do |user| %>
@@ -129,7 +129,7 @@
               %>
             </td>
 
-            <td class="drop-checkbox-cell" >
+            <td class="action-cell" >
               <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
             </td>
 
@@ -142,12 +142,13 @@
     <br></br>
 
     <table class="staff-users-table">
-      Users recently signed out of <%=@space.name%></h2>
+      Users recently signed out of <%=@space.name.capitalize%></h2>
       <tr>
         <th>Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Last Seen <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Certifications <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Sign In <span onclick="sortTable('staff-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Email <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Last Seen <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Certifications <span onclick="sortTable('staff-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Sign In To <%=@space.name.capitalize%></th>
       </tr>
 
       <% @space.recently_signed_out_users.each do |user| %>
@@ -155,6 +156,10 @@
 
           <td class="add-username-cell"><%=
             link_to(content_tag(:add_username, user.name), user_url(user.username))
+          %></td>
+
+          <td class="add-username-cell"><%=
+             user.email
           %></td>
 
           <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
@@ -185,7 +190,7 @@
             %>
           </td>
 
-          <td class="add-checkbox-cell" >
+          <td class="action-cell" >
             <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
           </td>
 

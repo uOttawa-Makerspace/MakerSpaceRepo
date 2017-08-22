@@ -26,9 +26,30 @@ div.setting-top-panel{
 
 }
 
-table{
+.update-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #5f9ea0;
+  color: #fff;
+  margin-bottom: 20px;
 
-  width:110%;
+  &:hover:not(.vp-button){
+    background-color: #5f9ea0 + 20;
+  }
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+
+table{
+  font-size: 14px;
+  width: 110%;
   th {
       background-color: #c2d6d6;
       color: #366;
@@ -49,11 +70,56 @@ table{
       i.fa-sort-desc {
           vertical-align: top;
       }
+
   }
+
   td{
-      padding:5px 10px;
-      text-align: center;
+    text-align: center;
   }
+  td.action-cell{
+
+      .x-button{
+        color: red - 80;
+        font-size: 1.4em;
+      }
+      .check-button{
+        color: green - 30;
+        font-size: 1.4em;
+      }
+
+      .visit-button{
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 1.6rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #5f9ea0;
+        color: #fff;
+        &:hover{
+          cursor: pointer;
+        }
+      }
+
+      .destroy-button{
+        float: right;
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 0.8rem;
+        margin-right: 18px;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #A61E10;
+        color: #fff;
+        &:hover{
+          cursor: pointer;
+        }
+      }
+  }
+
   tr {
       background-color: #f0f5f5;
   }
@@ -67,36 +133,9 @@ table{
 
 }
 
-.update-button{
-  font: 300 1em 'Raleway', sans-serif;
-  padding: 0.5rem 1rem;
-  border: none;
-  text-transform: uppercase;
-  color: #777;
-  letter-spacing: 0.15em;
-  border-radius: 2px;
-  background-color: #5f9ea0;
-  color: #fff;
-  margin-bottom: 20px;
-
-  &:hover:not(.vp-button){
-    background-color: #5f9ea0 + 20;
-  }
-
+.edit-column{
+  width: 110%;
 }
-
-
-.check-button{
-  font-size: 1.5em;
-  color: green - 20;
-}
-
-.x-button{
-  font-size: 1.5em;
-  font-weight: bold;
-  color: red - 80;
-}
-
 
 div#staff-buttons{
 

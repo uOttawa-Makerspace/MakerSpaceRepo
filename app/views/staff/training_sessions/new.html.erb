@@ -28,7 +28,7 @@
       <% @space.signed_in_users.each do |user| %>
         <tr>
 
-          <td>
+          <td class="action-cell">
              <%= check_box_tag 'training_session_users[]', value=user.id%>
           </td>
 
@@ -67,6 +67,6 @@
       <br>
       <%= submit_tag "Begin Training", class:"save-button"%>
     <% end %>
-    
+
   </div>
 </section>

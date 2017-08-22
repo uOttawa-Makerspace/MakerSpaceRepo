@@ -38,7 +38,7 @@
       <% @current_training_session.users.each do |user| %>
       <tr>
 
-        <td>
+        <td class="action-cell">
           <%= link_to (fa_icon('times')),
             {controller: :training_sessions, action: :update, id: @current_training_session.id, dropped_users: [user.username], changed_params: {course: ''} },
             method: :patch, class: 'x-button' %>
@@ -100,7 +100,8 @@
       <% unless @current_training_session.users.include? user %>
       <tr>
 
-        <td><%= link_to (fa_icon('check')), {controller: :training_sessions, action: :update, id: @current_training_session.id, added_users: [user.username], changed_params: {course: ''} },
+        <td class="action-cell">
+          <%= link_to (fa_icon('check')), {controller: :training_sessions, action: :update, id: @current_training_session.id, added_users: [user.username], changed_params: {course: ''} },
                 method: :patch, class: 'check-button' %>
 
         <td class="user-name">
