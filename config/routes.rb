@@ -98,6 +98,14 @@ Rails.application.routes.draw do
     resources :trainings do
     end
 
+    resources :training_sessions do
+      get 'index', path: '/'
+
+      member do
+        patch 'update'
+      end
+    end
+
     resources :settings, only: [:index] do
       collection do
         post 'add_category'
@@ -157,6 +165,7 @@ Rails.application.routes.draw do
 
   namespace :comments do
     post :create, path: '/:slug'
+    delete :destroy, path: '/:id/destroy'
   end
 
 end

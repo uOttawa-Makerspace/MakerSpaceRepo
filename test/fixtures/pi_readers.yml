@@ -1,0 +1,12 @@
+one:
+  id: 1
+  pi_mac_address: m4k3rsp4c3-pi-1
+  pi_location: makerspace
+  space_id: 1
+
+
+two:
+  id: 2
+  pi_mac_address: 8runsf13ld-pi-1
+  pi_location: brunsfield
+  space_id: 2
