@@ -7,12 +7,12 @@ function findSession() {
   table = document.getElementById("sessions-table");
   tr = document.getElementsByTagName("tr");
   for (i = 0; i < tr.length; i++) {
-    td0 = tr[i].getElementsByTagName("td")[0]; //match date
-    td1 = tr[i].getElementsByTagName("td")[1]; //match training
-    td2 = tr[i].getElementsByTagName("td")[2]; //match trainer
-    td3 = tr[i].getElementsByTagName("td")[3]; //match course
-    td4 = tr[i].getElementsByTagName("td")[4]; //match status
-    td5 = tr[i].getElementsByTagName("td")[5]; //match users
+    td0 = tr[i].getElementsByTagName("td")[0];
+    td1 = tr[i].getElementsByTagName("td")[1];
+    td2 = tr[i].getElementsByTagName("td")[2];
+    td3 = tr[i].getElementsByTagName("td")[3];
+    td4 = tr[i].getElementsByTagName("td")[4];
+    td5 = tr[i].getElementsByTagName("td")[5];
 
     if (td1) {
       if (td0.innerHTML.toUpperCase().indexOf(filter) > -1) {
@@ -84,10 +84,10 @@ function sortTable(table_class, col) {
 }
 
 
-function selectAll(){
-  $("input:checkbox").each(function(){
-    $(this).attr('checked', true);
-  });
-
+function selectAll(table_id){
+  boxes = document.getElementById(table_id).getElementsByTagName("input");
+  for (i = 0; i < (boxes.length ); i++) {
+    boxes[i].checked = true;
+  }
   return false;
 }
