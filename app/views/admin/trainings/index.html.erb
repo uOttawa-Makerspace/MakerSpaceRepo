@@ -1,0 +1,54 @@
+<section id="page-contents">
+   <script type="text/javascript" src="../javascripts/sorting.js" ></script>
+
+  <% if flash[:notice] %>
+    <div id="notice"><%= flash[:notice] %></div>
+  <% end %>
+
+  <% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+  <% end %>
+  <br>
+<div class="edit-column">
+  <div class="setting-title">General Settings</div>
+  <div class="general-settings">
+  <table id="trainings-table">
+    <tr>
+      <th>Training
+        <button class="sort-arrow" onclick="sortTable(0)"><div class="arrow-down"></div></button></th>
+      <th>Space
+        <button class="sort-arrow" onclick="sortTable(1)"><div class="arrow-down"></div></button></th>
+      <th>Total Sessions
+        <button class="sort-arrow" onclick="sortTable(2)"><div class="arrow-down"></div></button></th>
+      <th class="action-header">Action</th>
+
+    </tr>
+
+    <tbody>
+    <% @trainings = Training.all.paginate(:page => params[:page], :per_page => 50) %>
+    <%= will_paginate @trainings %>
+    <% @trainings.each do |training| %>
+      <tr>
+        <td class="training-cell">
+          <%= training.name %>
+        </td>
+
+        <td class="space-cell">
+          <%= training.space.name %>
+        </td>
+
+        <td class="total-ssessions-cell" style="horizontal-alginment:center;">
+          <%= training.training_sessions.length %>
+        </td>
+
+        <td class="action-cell">
+          <%=link_to "Visit", admin_training_url(id: training.id), class:"visit-button" %>
+        </td>
+
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+</div>
+</div>
+</section>

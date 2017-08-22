@@ -4,6 +4,9 @@ class Admin::TrainingsController < AdminAreaController
 
   layout 'admin_area'
 
+  def index
+  end
+
   def new
     @new_training = Training.new
   end

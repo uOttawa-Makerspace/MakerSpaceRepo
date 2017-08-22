@@ -96,6 +96,7 @@ Rails.application.routes.draw do
     end
 
     resources :trainings do
+      get 'index', path: '/'
     end
 
     resources :training_sessions do
