@@ -4,6 +4,14 @@
 @import "lib";
 /* SETTING LAYOUT */
 
+div#space-top-corner{
+  font: 400 0.8rem 'Raleway', helvetica, sans-serif;
+  display:inline;
+  float: right;
+  float: top;
+  padding-top: 8px; 
+}
+
 div.setting-top-panel{
   position: center;
   padding: 3rem 1rem 0;
@@ -130,5 +138,5 @@ div.cert-name:hover div#cert-details{
 div.cert-name-red:hover div#cert-details{
     visibility:visible;
     background-color: red + 130;
-    
+
 }
