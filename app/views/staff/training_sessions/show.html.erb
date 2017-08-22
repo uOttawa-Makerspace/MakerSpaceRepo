@@ -10,6 +10,12 @@
 <section id ="page-contents" >
 <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
 
+<div>Training Session #<%= @current_training_session.id %></div>
+<div><%= @current_training_session.space.name.capitalize %></div>
+<div>Created On <%= @current_training_session.created_at.strftime("%D at %l:%M%P") %></div>
+<div>Updated On <%= @current_training_session.updated_at.strftime("%D at %l:%M%P") %></div><br></br>
+
+
 <div>Trainer: <%= @staff.name %></div>
   <% if @user.admin?%>
     <% label_tag 'changed_params[user_id]' %>
@@ -17,7 +23,7 @@
   <% end %>
 <div>Training Type: <%= @current_training_session.training.name %><br>
       <% label_tag 'changed_params[training_id]' %>
-      <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'change training', class: "trainer-training-course" %><br></br>
+      <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings, 'id', 'name'), prompt: 'change training', class: "trainer-training-course" %><br></br>
 
     <div>Course: <%= @current_training_session.course %></div>
       <% label_tag 'changed_params[course]' %>
@@ -88,4 +94,57 @@
   <% if @user.admin? || @current_training_session.user == @user%>
     <%=link_to "Cancel", { action: :destroy }, method: :delete, data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
   <% end %>
+
+  <br></br>
+  <table id="training-session-users-table">
+        Users inside <%=@current_training_session.space.name%>
+        <tr>
+          <th>Add To This Session</th>
+          <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Email <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+        </tr>
+
+      <% @current_training_session.space.signed_in_users.each do |user| %>
+      <tr>
+
+        <td>
+          <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
+        </td>
+
+        <td class="user-name">
+          <%= link_to(user.name, user_url(user.username)) %>
+        </td>
+
+        <td class="email-cell" style="horizontal-alginment:center;">
+          <%= user.email  %>
+        </td>
+
+        <td class="signed-in-cell" style="horizontal-alginment:center;">
+          <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
+        </td>
+
+        <td class="certifications-cell">
+        <% user.certifications.each do |certification| %>
+          <div
+           class="cert-name"
+           style="display:inline" >
+           <div class="cert-holder" style="display:inline">
+            <%= certification.training %> |
+            <div id="cert-details" style="display:inline">
+              <%= certification.training %> <br>
+              <%= certification.trainer %> <br>
+              <%= certification.updated_at.strftime("%B %d, %Y")  %>
+            </div>
+          </div>
+        </div>
+        <% end %>
+      </td>
+
+      </tr>
+      <% end %>
+      </table>
+
+
 </section>

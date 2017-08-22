@@ -11,7 +11,7 @@
   <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
   <h3>New <spacetag style="font-weight:bold"><%=@space.name %></spacetag> training session:<h3>
   <% label_tag 'training_id' %>
-  <%= select_tag 'training_id', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'select training', class: "trainer-training-course" %><br>
+  <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings, 'id', 'name'), prompt: 'select training', class: "trainer-training-course" %><br>
 
   <% label_tag 'course' %>
   <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'select course', class: "trainer-training-course" %><br>
