@@ -1,195 +1,152 @@
-
-
 <section class="page-contents">
   <div class="edit-column">
 
-    <div class="search-form">
+    <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path%></h2>
+    <div>
+      <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
+        <% label_tag 'space_name' %>
+        <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "space-selector" %><br></br>
+      <%= submit_tag "update", class: "update-button" %>
+      <%end%>
+    </div>
+
+    <div class="search-form" style="display:inline"> Search for users to sign them in or out of <%=@space.name.capitalize%>:
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
       <%= text_field_tag 'query', nil, placeholder: 'Search users by name, username, email...', class:'profile-text' %><br>
       <%= submit_tag "Search", class: 'save-button' %>
     <% end %>
     </div>
-  <h2><%= link_to "welcome to #{@space.name}", staff_dashboard_index_path%></h2>
 
-  <div>
-    <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
-      <% label_tag 'space_name' %>
-      <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "space-selector" %><br></br>
-    <%= submit_tag "update", class: "update-button" %>
-    <%end%>
-  </div><br>
-  <br>
-
-  <% if @users.any? %>
-  <table class="staff-search-results">
-      Search results
-      <tr>
-        <th>Username</th>
-        <th>Email</th>
-        <th>Last Seen At</th>
-        <th>Location</th>
-        <th>Status</th>
-        <th><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT </th>
-      </tr>
-
-      <% @users.each do |user| %>
-        <tr class="sign-in-or-out">
-
-          <td class="sign-in-cell"><%=
-            link_to(content_tag(:drop_username, user.username), user_url(user.username))
-          %></td>
-
-          <td class="email-cell"><%=
-            user.email
-          %></td>
-
-          <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
-            if user.lab_sessions.present?
-              if user.lab_sessions.last.sign_out_time > Time.now
-                user_time = Time.now
-              else
-                user_time = user.lab_sessions.last.sign_out_time
-              end
-              user_time.strftime("%B %d, %Y")
-            end
-          %></td>
-
-          <td class="location-cell"><%=
-            user.location
-          %></td>
-
-          <td class="status-cell"><%=
-          if user.lab_sessions.present?
-            if @space.signed_in_users.include? user
-              "Signed In"
-            else
-              "Signed Out"
-            end
-          end
-          %></td>
-
-          <td class="sign-in-or-out-cell" >
-            <% if @space.signed_in_users.include? user%>
-              <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
-            <%else%>
-              <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
-            <%end%>
-          </td>
-
+    <% if @users.any? %>
+    <table class="staff-search-results">
+        Search results
+        <tr>
+          <th>Username <span onclick="sortTable('staff-search-results', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Email <span onclick="sortTable('staff-search-results', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Last Seen <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Status <span onclick="sortTable('staff-search-results', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT <span onclick="sortTable('staff-search-results', 4)"><%=fa_icon('arrow-down')%></span></th>
         </tr>
-      <% end %>
-      <br></br>
-    </table>
-    <br>
-  <% else %>
-    No results
-  <% end %>
-  <br><br>
 
-  <%= form_tag("/staff_dashboard/remove_users", method: "patch", action: "sign_out_users") do %>
-  <table class="staff-users-table">
-      Users inside <%=@space.name%></h2>
-      <tr>
-        <th>Username</th>
-        <th>Email</th>
-        <th>Last Seen At</th>
-        <th>Location</th>
-        <th>Certifications</th>
-        <th>Sign Out of <%=@space.name.capitalize%></th>
-      </tr>
+        <% @users.each do |user| %>
+          <tr class="sign-in-or-out">
 
-      <% @space.signed_in_users.each do |user| %>
-        <tr class="drop-rows">
+            <td class="sign-in-cell"><%=
+              link_to(content_tag(:drop_username, user.username), user_url(user.username))
+            %></td>
 
+            <td class="email-cell"><%=
+              user.email
+            %></td>
 
+            <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
+              if user.lab_sessions.present?
+                time_ago_in_words(user.lab_sessions.last.sign_out_time) + " ago at #{user.lab_sessions.last.space.name}"
+              end
+            %></td>
 
-          <td class="drop-username-cell"><%=
-            link_to(content_tag(:drop_username, user.username), user_url(user.username))
-          %></td>
-
-          <td class="email-cell"><%=
-            user.email
-          %></td>
-
-          <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
+            <td class="status-cell"><%=
             if user.lab_sessions.present?
-              singout_time = user.lab_sessions.last.sign_out_time
-              singout_time.strftime("%B %d, %Y")
+              if @space.signed_in_users.include? user
+                "Signed In"
+              else
+                "Signed Out"
+              end
             end
-          %></td>
+            %></td>
 
-          <td class="location-cell"><%=
-            user.location
-          %></td>
+            <td class="sign-in-or-out-cell" >
+              <% if @space.signed_in_users.include? user%>
+                <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
+              <%else%>
+                <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
+              <%end%>
+            </td>
 
-          <td class="certifications-cell"><%
-            if user.certifications.first.present?
-              user.certifications.each do |certification|
-              %>
-              <div
-               class="cert-name"
-               style="display:inline" >
-               <div class="cert-holder" style="display:inline">
-                <%= certification.training %> |
-                <div id="cert-details" style="display:inline">
-                  <%= certification.training %> <br>
-                  <%= certification.trainer %> <br>
-                  <%= certification.updated_at.strftime("%B %d, %Y")  %>
+          </tr>
+        <% end %>
+        <br></br>
+      </table>
+      <br>
+    <% else %>
+      No results
+    <% end %>
+    <br><br>
+
+    <table class="space-users-table">
+        Users inside <%=@space.name%></h2>
+        <tr>
+          <th>Name <span onclick="sortTable('space-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Email <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Certifications <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Sign Out of <%=@space.name.capitalize%> <span onclick="sortTable('space-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+        </tr>
+
+        <% @space.signed_in_users.each do |user| %>
+          <tr class="drop-rows">
+
+            <td class="drop-username-cell"><%=
+              link_to(content_tag(:drop_username, user.name), user_url(user.username))
+            %></td>
+
+            <td class="email-cell"><%=
+              user.email
+            %></td>
+
+            <td class="certifications-cell"><%
+              if user.certifications.first.present?
+                user.certifications.each do |certification|
+                %>
+                <div
+                 class="cert-name"
+                 style="display:inline" >
+                 <div class="cert-holder" style="display:inline">
+                  <%= certification.training %> |
+                  <div id="cert-details" style="display:inline">
+                    <%= certification.training %> <br>
+                    <%= certification.trainer %> <br>
+                    <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                  </div>
                 </div>
               </div>
-            </div>
-            <%
+              <%
+                end
               end
-            end
-            %>
-          </td>
+              %>
+            </td>
 
-          <td class="drop-checkbox-cell" >
-            <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
-          </td>
+            <td class="drop-checkbox-cell" >
+              <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
+            </td>
 
-        </tr>
-      <% end %>
-      <br></br>
-    </table>
-    <br>
-    <%= submit_tag "Sign Out Users", class: 'save-button' %>
-  <% end %>
+          </tr>
+        <% end %>
+        <br></br>
+      </table>
+      <br>
 
+    <br></br>
 
-  <br></br>
-  <%= form_tag("/staff_dashboard/add_users", method: "put", action: "sign_in_users") do %>
-
-  <table class="staff-users-table">
+    <table class="staff-users-table">
       Users recently signed out of <%=@space.name%></h2>
       <tr>
-        <th>Sign In</th>
-        <th>Username</th>
-        <th>Last Seen At</th>
-        <th>Location</th>
-        <th>Certifications</th>
+        <th>Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Last Seen <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Certifications <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Sign In <span onclick="sortTable('staff-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
       </tr>
 
       <% @space.recently_signed_out_users.each do |user| %>
         <tr class="add-rows">
 
-          <td class="add-checkbox-cell" >
-            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
-          </td>
-
           <td class="add-username-cell"><%=
-            link_to(content_tag(:add_username, user.username), user_url(user.username))
+            link_to(content_tag(:add_username, user.name), user_url(user.username))
           %></td>
 
           <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
             if user.lab_sessions.present?
-              singout_time = user.lab_sessions.last.sign_out_time
-              singout_time.strftime("%B %d, %Y")
+              time_ago_in_words(user.lab_sessions.last.sign_out_time) + " ago at #{user.lab_sessions.last.space.name}"
             end
-          %></td>
-
-          <td class="location-cell"><%=
-            user.location
           %></td>
 
           <td class="certifications-cell"><%
@@ -214,12 +171,14 @@
             %>
           </td>
 
+          <td class="add-checkbox-cell" >
+            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
+          </td>
+
         </tr>
       <% end %>
       <br></br>
     </table>
     <br>
-    <%= submit_tag "Sign In Users", class: 'save-button' %>
-  <% end %>
 </div>
 </section>

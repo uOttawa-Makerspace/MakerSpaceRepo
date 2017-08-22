@@ -1,8 +1,5 @@
-
-
 <section class="page-contents">
   <div class="edit-column">
-
 
     <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path%></h2>
     <div>
@@ -23,10 +20,10 @@
     <table class="staff-users-table">
         Users inside <%=@space.name%></h2>
         <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Certifications</th>
-          <th>Sign Out of <%=@space.name.capitalize%></th>
+          <th>Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Email <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Certifications <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Sign Out of <%=@space.name.capitalize%> <span onclick="sortTable('staff-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
         </tr>
 
         <% @space.signed_in_users.each do |user| %>
@@ -79,10 +76,10 @@
     <table class="staff-users-table">
       Users recently signed out of <%=@space.name%></h2>
       <tr>
-        <th>Name</th>
-        <th>Last Seen</th>
-        <th>Certifications</th>
-        <th>Sign In</th>
+        <th>Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Last Seen <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Certifications <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Sign In <span onclick="sortTable('staff-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
       </tr>
 
       <% @space.recently_signed_out_users.each do |user| %>

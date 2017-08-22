@@ -35,10 +35,10 @@ function findSession() {
 }
 
 
-function sortTable(table_id, col) {
+function sortTable(table_class, col) {
   if(sort_direction === 1){
     var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementById(table_id);
+    table = document.getElementsByClassName(table_class)[0];
     switching = true;
     while (switching) {
       switching = false;
@@ -60,7 +60,7 @@ function sortTable(table_id, col) {
     sort_direction = 0;
   }else{
     var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementById(table_id);
+    table = document.getElementsByClassName(table_class)[0];
     switching = true;
     while (switching) {
       switching = false;

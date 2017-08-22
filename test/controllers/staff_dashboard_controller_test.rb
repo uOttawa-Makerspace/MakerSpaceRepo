@@ -25,12 +25,12 @@ class StaffDashboardControllerTest < ActionController::TestCase
    test "a space is chosen by default" do
      get :index
      assert_response :success
-     assert response.body.include? 'welcome to '
+     assert response.body.include? 'Welcome to '
    end
 
    test "a space can be changed" do
      get :index
-     assert response.body.include? 'welcome to '
+     assert response.body.include? 'Welcome to '
 
      put :change_space, space_name: 'brunsfield'
      assert_redirected_to :back

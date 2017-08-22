@@ -35,14 +35,14 @@
   <% end %>
 
 
-    <table id="training-session-users-table">
+    <table class="training-session-users-table">
         Users in this training session
         <tr>
           <th>Remove From This Session</th>
-          <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Signed In <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Certifications <span onclick="sortTable('training-session-users-table', 4)"><%=fa_icon('arrow-down')%></span></th>
         </tr>
 
       <% @current_training_session.users.each do |user| %>
@@ -97,14 +97,14 @@
     <% end %>
 
     <br></br>
-    <table id="training-session-users-table">
+    <table class="space-users-table">
         Users inside <%=@current_training_session.space.name%>
         <tr>
           <th>Add To This Session</th>
-          <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Name <span onclick="sortTable('space-users-table, 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Email <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Signed In <span onclick="sortTable('space-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Certifications <span onclick="sortTable('space-users-table', 4)"><%=fa_icon('arrow-down')%></span></th>
         </tr>
 
       <% @current_training_session.space.signed_in_users.each do |user| %>
