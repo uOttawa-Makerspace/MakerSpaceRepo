@@ -7,11 +7,11 @@ class Certification < ActiveRecord::Base
   validate :unique_cert, on: :create
 
   def training
-    return self.training_session.training.name
+    return self.training_session.training.name rescue nil
   end
 
   def trainer
-    return self.training_session.user.name
+    return self.training_session.user.name rescue nil
   end
 
   def unique_cert

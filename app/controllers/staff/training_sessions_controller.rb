@@ -76,7 +76,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
        flash[:alert] = "#{graduate.username}'s certification not saved properly!"
       end
     end
-    redirect_to new_staff_training_session_path
+    redirect_to staff_dashboard_index_url
   end
 
   def destroy
