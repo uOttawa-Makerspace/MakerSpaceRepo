@@ -25,8 +25,8 @@ class Repository < ActiveRecord::Base
     presence:   { message: "Project title is required."},
     uniqueness: { message: "Project title is already in use.", scope: :user_username}
 
+  validates :photos, :length => { :minimum => 1 }
   # validate :has_valid_photo?
-
   before_save do
     self.slug = self.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
@@ -54,6 +54,8 @@ class Repository < ActiveRecord::Base
   # end
 
 
+  scope :has_photos, -> {includes(:photos).where.not(photos: { id: nil })}
+  
   # validates :category,
   #   inclusion: { within: category_options },
   #   presence: { message: "A category is required."}
