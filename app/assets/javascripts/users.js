@@ -1,18 +1,9 @@
-$(document).ready(function() {
-	$("#hidden").hide(); 
-	$(".show_extra").change(function() { 
-		if(this.value === "grad") { 
-			$("#hidden").show();
-		}
-		else if(this.value === "undergrad") { 
-			$("#hidden").show();
-		} 
-		else { 
-			$("#hidden").hide(); 
-		}
-	});
-});
-
+function showField(){
+	document.getElementById("hidden").style.display = 'block';
+}
+function hideField(){
+	document.getElementById("hidden").style.display = 'none';
+}
 
 $(document).ready(function() {
   $(".programs").select2({});
