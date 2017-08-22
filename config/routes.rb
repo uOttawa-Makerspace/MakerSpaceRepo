@@ -169,6 +169,7 @@ Rails.application.routes.draw do
 
   namespace :comments do
     post :create, path: '/:slug'
+    delete :destroy, path: '/:id/destroy'
   end
 
 end
