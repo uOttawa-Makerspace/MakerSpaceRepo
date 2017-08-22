@@ -69,7 +69,7 @@
       " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
     <% programs = ProgramList.fetch_all %>
-    <div id = "required_students" ><%= f.label :program, "Program" %></div>
+    <div id = "required" ><%= f.label :program, "Program" %></div>
     <%= content_tag :span, @new_user.errors[:program].first, class: 'form-error' %>
     <%= f.select(:program, programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
 
