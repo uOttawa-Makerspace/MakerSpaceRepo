@@ -40,9 +40,23 @@
             <td class="certifications-cell"><%
               if user.certifications.first.present?
                 user.certifications.each do |certification|
-                %>
+                %><%
+                  unless certification.out_of_date? %>
+                  <div
+                   class="cert-name"
+                   style="display:inline" >
+                   <div class="cert-holder" style="display:inline">
+                    <%= certification.training %> |
+                    <div id="cert-details" style="display:inline">
+                      <%= certification.training %> <br>
+                      <%= certification.trainer %> <br>
+                      <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                    </div>
+                  </div>
+                </div>
+                <% else %>
                 <div
-                 class="cert-name"
+                 class="cert-name-red"
                  style="display:inline" >
                  <div class="cert-holder" style="display:inline">
                   <%= certification.training %> |
@@ -53,12 +67,11 @@
                   </div>
                 </div>
               </div>
-              <%
+              <% end
                 end
               end
               %>
             </td>
-
             <td class="drop-checkbox-cell" >
               <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
             </td>
@@ -98,9 +111,23 @@
           <td class="certifications-cell"><%
             if user.certifications.first.present?
               user.certifications.each do |certification|
-              %>
+              %><%
+                unless certification.updated_at < 2.years.ago %>
+                <div
+                 class="cert-name"
+                 style="display:inline" >
+                 <div class="cert-holder" style="display:inline">
+                  <%= certification.training %> |
+                  <div id="cert-details" style="display:inline">
+                    <%= certification.training %> <br>
+                    <%= certification.trainer %> <br>
+                    <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                  </div>
+                </div>
+              </div>
+              <% else %>
               <div
-               class="cert-name"
+               class="cert-name-red"
                style="display:inline" >
                <div class="cert-holder" style="display:inline">
                 <%= certification.training %> |
@@ -111,7 +138,7 @@
                 </div>
               </div>
             </div>
-            <%
+            <% end
               end
             end
             %>

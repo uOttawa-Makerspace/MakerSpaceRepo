@@ -6,12 +6,18 @@ class Certification < ActiveRecord::Base
   validates :training_session, presence: { message: "A training session is required." }
   validate :unique_cert, on: :create
 
+  scope :out_of_date, -> { where('updated_at < ', 2.years.ago) }
+
   def training
     return self.training_session.training.name rescue nil
   end
 
   def trainer
     return self.training_session.user.name rescue nil
+  end
+
+  def out_of_date?
+    return self.updated_at < 2.years.ago
   end
 
   def unique_cert

@@ -116,6 +116,19 @@ div.cert-name{
   cursor:pointer;
 }
 
+
+div.cert-name-red{
+  cursor:pointer;
+  background-color: red + 130;
+}
+
+
 div.cert-name:hover div#cert-details{
     visibility:visible;
+}
+
+div.cert-name-red:hover div#cert-details{
+    visibility:visible;
+    background-color: red + 130;
+    
 }

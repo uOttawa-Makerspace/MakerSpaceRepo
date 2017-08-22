@@ -21,7 +21,7 @@
     <table class="staff-search-results">
         Search results
         <tr>
-          <th>Username <span onclick="sortTable('staff-search-results', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Name <span onclick="sortTable('staff-search-results', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th>Email <span onclick="sortTable('staff-search-results', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Last Seen <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
           <th>Status <span onclick="sortTable('staff-search-results', 3)"><%=fa_icon('arrow-down')%></span></th>
@@ -32,7 +32,7 @@
           <tr class="sign-in-or-out">
 
             <td class="sign-in-cell"><%=
-              link_to(content_tag(:drop_username, user.username), user_url(user.username))
+              link_to(content_tag(:drop_username, user.name), user_url(user.username))
             %></td>
 
             <td class="email-cell"><%=
@@ -96,9 +96,23 @@
             <td class="certifications-cell"><%
               if user.certifications.first.present?
                 user.certifications.each do |certification|
-                %>
+                %><%
+                  unless certification.updated_at < 2.years.ago %>
+                  <div
+                   class="cert-name"
+                   style="display:inline" >
+                   <div class="cert-holder" style="display:inline">
+                    <%= certification.training %> |
+                    <div id="cert-details" style="display:inline">
+                      <%= certification.training %> <br>
+                      <%= certification.trainer %> <br>
+                      <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                    </div>
+                  </div>
+                </div>
+                <% else %>
                 <div
-                 class="cert-name"
+                 class="cert-name-red"
                  style="display:inline" >
                  <div class="cert-holder" style="display:inline">
                   <%= certification.training %> |
@@ -109,7 +123,7 @@
                   </div>
                 </div>
               </div>
-              <%
+              <% end
                 end
               end
               %>
