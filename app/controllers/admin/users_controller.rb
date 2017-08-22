@@ -63,7 +63,7 @@ class Admin::UsersController < AdminAreaController
         elsif params[:filter] == "Username"
           @users = User.where("LOWER(username) like LOWER(?)", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}").paginate(:page => params[:page], :per_page => 20)
         elsif !params[:filter].present?
-          @users = User.where('name like LOWER(?) OR email like LOWER(?) OR username like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}").paginate(:page => params[:page], :per_page => 20)
+          @users = User.where('LOWER(name) like LOWER(?) OR LOWER(email) like LOWER(?) OR LOWER(username) like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}").paginate(:page => params[:page], :per_page => 20)
         end
       else
         redirect_to (:back)
