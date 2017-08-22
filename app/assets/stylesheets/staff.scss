@@ -71,9 +71,20 @@ table{
           vertical-align: top;
       }
 
-  }.action-header{
-    width: max(180px);
   }
+  .action-header{
+    width: max(100px);
+  }
+  .last-seen-header{
+    width: max(220px);
+  }
+  .certifications-header{
+    width: max(220px);
+  }
+  .email-header{
+    width: max(220px);
+  }
+
 
   td{
     text-align: center;

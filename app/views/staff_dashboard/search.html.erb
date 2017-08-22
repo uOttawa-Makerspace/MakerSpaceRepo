@@ -25,7 +25,7 @@
           <th>Email <span onclick="sortTable('staff-search-results', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Last Seen <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
           <th>Status <span onclick="sortTable('staff-search-results', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
+          <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
         </tr>
 
         <% @users.each do |user| %>
