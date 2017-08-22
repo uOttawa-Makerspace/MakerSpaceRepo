@@ -1,6 +1,7 @@
 class Certification < ActiveRecord::Base
   belongs_to :user
   belongs_to :training_session
+  has_one :space, through: :training_session
 
   validates :user, presence: { message: "A user is required." }
   validates :training_session, presence: { message: "A training session is required." }
