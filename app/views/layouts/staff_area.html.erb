@@ -25,6 +25,13 @@
 		      </li>
 				</ul>
 			</div>
+      <% if flash[:notice] %>
+        <div id="notice"><%= flash[:notice] %></div>
+      <% end %>
+
+      <% if flash[:alert] %>
+        <div id="alert"><%= flash[:alert] %></div>
+      <% end %>
 			<%= yield %>
 
 		</div>

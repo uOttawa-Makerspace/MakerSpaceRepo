@@ -1,7 +1,9 @@
 <section class="page-contents">
+
   <div class="edit-column">
 
     <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path%></h2>
+
     <div>
       <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
         <% label_tag 'space_name' %>
@@ -82,8 +84,6 @@
       </table>
       <br>
 
-
-
     <br></br>
 
     <table class="staff-users-table">
@@ -153,5 +153,5 @@
       <br></br>
     </table>
     <br>
-</div>
+  </div>
 </section>

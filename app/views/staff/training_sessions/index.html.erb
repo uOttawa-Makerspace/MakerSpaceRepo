@@ -1,14 +1,9 @@
-<% if flash[:notice] %>
-  <div id="notice"><%= flash[:notice] %></div>
-<% end %>
-
-<% if flash[:alert] %>
-  <div id="alert"><%= flash[:alert] %></div>
-<% end %>
-
 <section class="page-contents">
   <div class="edit-column">
-  <table class="sessions-table">
+    
+    <h2>Viewing <%=@user.name.capitalize %> Training Sessions</h2>
+
+    <table class="sessions-table">
     <tr>
       <th>Date <span onclick="sortTable('staff-table', 0)"><%=fa_icon('arrow-down')%></span></th>
       <th>Training <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
@@ -83,5 +78,5 @@
     </tbody>
   </table>
 
-</div>
+  </div>
 </section>
