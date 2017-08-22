@@ -2,10 +2,10 @@
   <div class="edit-column">
       <div class="setting-title">Admin Training Sessions Manager</div>
       <br>
-      <input type="text" id="query" onkeyup="findSession()" placeholder=" Find by: date, training, course, username  ">
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
 
       <br></br>
-      <table id="sessions-table">
+      <table class="sessions-table">
         <tr>
           <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
@@ -66,9 +66,11 @@
             </td>
 
             <td class="action-cell">
-              <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %>
+            <br>
+              <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %><br></br>
               <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
-            </td>
+            <br></br>
+          </td>
 
           </tr>
         <% end %>

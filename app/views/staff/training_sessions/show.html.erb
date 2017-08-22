@@ -28,11 +28,10 @@
     <table class="training-session-users-table">
         Users in this training session
         <tr>
-          <th>Remove From This Session</th>
+          <th class="action-header">Remove From This Session</th>
           <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Signed In <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('training-session-users-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
         </tr>
 
       <% @current_training_session.users.each do |user| %>
@@ -50,10 +49,6 @@
 
         <td class="email-cell" style="horizontal-alginment:center;">
           <%= user.email  %>
-        </td>
-
-        <td class="signed-in-cell" style="horizontal-alginment:center;">
-          <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
         </td>
 
         <td class="certifications-cell">

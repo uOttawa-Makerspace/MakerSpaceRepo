@@ -25,7 +25,7 @@
           <th>Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th>Email <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Certifications <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Sign Out of <%=@space.name.capitalize%></th>
+          <th class="action-header">Sign Out of <%=@space.name.capitalize%></th>
         </tr>
 
         <% @space.signed_in_users.each do |user| %>

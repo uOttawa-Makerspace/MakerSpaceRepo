@@ -18,7 +18,7 @@
       <table class="staff-table" id="staff-users-table">
         <h3>Users Inside <%=@space.name%></h3>
         <tr>
-          <th href="#" onclick="selectAll('staff-users-table')">Select All <%=fa_icon('arrow-down')%></th>
+          <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <%=fa_icon('arrow-down')%></th>
           <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Email <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
           <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>

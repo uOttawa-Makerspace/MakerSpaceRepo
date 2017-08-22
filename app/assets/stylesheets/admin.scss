@@ -30,7 +30,6 @@ div#alert{
   z-index: 2;
   text-align: center;
 }
-
 table{
   font-size: 14px;
   width: 110%;
@@ -55,6 +54,8 @@ table{
           vertical-align: top;
       }
 
+  }.action-header{
+    width: max(180px);
   }
 
   td{
@@ -74,6 +75,8 @@ table{
       .visit-button{
         font: 300 10px 'Raleway', sans-serif;
         padding: 0.5rem 1.6rem;
+        margin-top: 0.65rem;
+        margin-bottom: 0.88rem;
         border: none;
         text-transform: uppercase;
         color: #777;
@@ -87,10 +90,10 @@ table{
       }
 
       .destroy-button{
-        float: right;
         font: 300 10px 'Raleway', sans-serif;
         padding: 0.5rem 0.8rem;
-        margin-right: 18px;
+        margin-top: 0.65rem;
+        margin-bottom: 0.88rem;
         border: none;
         text-transform: uppercase;
         color: #777;
@@ -98,6 +101,7 @@ table{
         border-radius: 2px;
         background-color: #A61E10;
         color: #fff;
+
         &:hover{
           cursor: pointer;
         }

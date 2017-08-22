@@ -1,17 +1,19 @@
 <section class="page-contents">
   <div class="edit-column">
-    
-    <h2>Viewing <%=@user.name.capitalize %> Training Sessions</h2>
 
+    <h2>Viewing <%=@user.name.capitalize + "'s"%> Training Sessions</h2>
+    <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
+
+    <br></br>
     <table class="sessions-table">
     <tr>
-      <th>Date <span onclick="sortTable('staff-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Training <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Trainer <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Space <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Course <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Status <span onclick="sortTable('staff-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Users <span onclick="sortTable('staff-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Space <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Course <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Status <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Users <span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
       <th class="action-header">Action</th>
 
     </tr>
@@ -69,8 +71,10 @@
         </td>
 
         <td class="action-cell">
-          <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %>
+        <br>
+          <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %><br></br>
           <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
+        <br></br>
         </td>
 
       </tr>
