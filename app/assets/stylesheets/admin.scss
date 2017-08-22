@@ -1,0 +1,32 @@
+div#notice{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 2rem;
+  line-height: 2rem !important;
+  font-size: 75%;
+  font: 300 1.1rem 'Raleway', sans-serif;
+  background-color: #5cb85c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}
+
+div#alert{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 2rem;
+  line-height: 2rem !important;
+  font: 300 1.1rem 'Raleway', sans-serif;
+  background-color: #cd5c5c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}
