@@ -15,8 +15,9 @@
 	<%= render 'layouts/header' %>
 	<section id="setting" style="width:90%">
 		<div class="setting-grid">
-			<div class="setting-side-panel"><div id="space-top-corner"><%=@user.lab_sessions.last.space.name.capitalize%></div><br>
-        <div class="panel-title"><%= link_to 'Staff Area', staff_index_path %></div>
+			<div class="setting-side-panel">
+        <div class="panel-title"><div id="space-top-corner"><%=link_to @user.lab_sessions.last.space.name.capitalize, staff_index_path%></div>
+            <%= link_to 'Staff Area', staff_index_path %></div>
 				<ul>
 		      <li class="setting-menu-item">
             <%= link_to 'Go To Kiosk', staff_dashboard_index_path, class: 'kiosk-button' %><br></br>

@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="edit-column">
 
-  <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_index_path%></h2>
+  <h2><%= link_to "Welcome to " %> <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> </h2>
 
   <div>
     <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>

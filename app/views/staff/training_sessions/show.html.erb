@@ -2,8 +2,7 @@
   <div class="edit-column">
 
     <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
-
-    <div>Training Session #<%= @current_training_session.id %></div>
+    <div style="font-weight:bold;font-size:1.4em;">Training Session #<%= @current_training_session.id %></div><br>
     <div><%= @current_training_session.space.name.capitalize %></div>
     <div>Created On <%= @current_training_session.created_at.strftime("%D at %l:%M%P") %></div>
     <div>Updated On <%= @current_training_session.updated_at.strftime("%D at %l:%M%P") %></div><br></br>
