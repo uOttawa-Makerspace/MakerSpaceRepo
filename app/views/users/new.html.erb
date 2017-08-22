@@ -50,17 +50,18 @@
 
     <div id = "required" ><%= f.label :identity, "I am a ..." %></div>
 
-    <%= f.radio_button(:identity, "grad", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Grad")  %><br>
-    <%= f.radio_button(:identity, "undergrad", :class => "show_extra",:style => "display:inline")%><%= f.label(:identity_student, "Undergrad")  %><br>
-    <%= f.radio_button(:identity, "faculty_member", :class => "show_extra",:style => "display:inline") %><%= f.label(:identity_other, "Faculty Member") %><br>
-    <%= f.radio_button(:identity, "community_member", :class => "show_extra",:style => "display:inline") %><%= f.label(:identity_other, "Community Member") %><br>
+    <%= f.radio_button(:identity, "grad", :class => "show_extra",:style => "display:inline", :onclick => "showField();") %><%= f.label(:identity_student, "Grad")  %><br>
+    <%= f.radio_button(:identity, "undergrad", :class => "show_extra",:style => "display:inline", :onclick => "showField();") %><%= f.label(:identity_student, "Undergrad")  %><br>
+    <%= f.radio_button(:identity, "faculty_member", :class => "show_extra",:style => "display:inline",:onclick => "hideField();") %><%= f.label(:identity_other, "Faculty Member") %><br>
+    <%= f.radio_button(:identity, "community_member", :class => "show_extra",:style => "display:inline",:onclick => "hideField();") %><%= f.label(:identity_other, "Community Member") %><br>
 
-<section id="hidden">
+<section id="hidden" style="display: none;">
+    <div id= "required2"><p id = "required_label">Students only</p></div>
+
+
     <div id = "required" ><%= f.label :student_id , "Student Number" %></div>
-
     <%= content_tag :span, @new_user.errors[:student_id].first, class: 'form-error' %>
     <%= f.text_field :student_id, autofocus: true %>
-
 
     <div id = "required" ><%= f.label :faculty , "Faculty"%></div>
     <%= content_tag :span, @new_user.errors[:faculty].first, class: 'form-error' %>
@@ -68,7 +69,7 @@
       " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
     <% programs = ProgramList.fetch_all %>
-    <div id = "required" ><%= f.label :program, "Program" %></div>
+    <div id = "required_students" ><%= f.label :program, "Program" %></div>
     <%= content_tag :span, @new_user.errors[:program].first, class: 'form-error' %>
     <%= f.select(:program, programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
 
@@ -76,7 +77,7 @@
     <%= content_tag :span, @new_user.errors[:year_of_study].first, class: 'form-error' %>
     <%= f.select :year_of_study, ["1", "2", "3","4","5"] , prompt: "Select a year ..." %><br><br>
 </section>
-
+  <br>
     <%= f.label :use, "What do you plan on using MakerRepo for?", style: 'margin-bottom: 0.5rem; display: block;' %>
     <%= f.select :use, ["Course", "Personal Project", "Business", "Other"] , prompt: "Select a use case..." %>
 
