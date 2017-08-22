@@ -107,11 +107,11 @@
         </tr>
 
       <% @current_training_session.space.signed_in_users.each do |user| %>
+      <% unless @current_training_session.users.include? user %>
       <tr>
 
-        <td>
-          <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
-        </td>
+        <td><%= link_to (fa_icon('check')), {controller: :training_sessions, action: :update, id: @current_training_session.id, added_users: [user.username], changed_params: {course: ''} },
+                method: :patch, class: 'check-button' %>
 
         <td class="user-name">
           <%= link_to(user.name, user_url(user.username)) %>
@@ -139,6 +139,7 @@
             </div>
           </div>
         </div>
+        <% end %>
         <% end %>
       </td>
 
