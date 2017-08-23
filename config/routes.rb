@@ -95,6 +95,11 @@ Rails.application.routes.draw do
       end
     end
 
+    resources :spaces do
+      get 'index', path: '/', on: :collection
+      get 'edit', on: :member
+    end
+
     resources :trainings do
     end
 
