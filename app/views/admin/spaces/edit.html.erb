@@ -1,41 +1,77 @@
 <section id="page-contents">
   <div class="edit-column">
     <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
-    <h2><%=@space.name.upcase%><br> <h3><%=@space.name.capitalize + "\'s RFID Readers"%></h3><h2>
+    <h1 style="font-weight:bold;"><%=@space.name.upcase%> Manager</h1>
 
-    <table>
-      <tr>
-        <th>Reader Mac Address</th>
-        <th>Space</th>
-        <th>Disassociate from <%=@space.name.capitalize%></th>
-      </tr>
-      <%@space.pi_readers.each do |raspi| %>
-      <tr>
-        <td><%=raspi.pi_mac_address%></td>
-        <td><%=raspi.space.name%></td>
-        <td><%=link_to fa_icon('times'), admin_pi_reader_url(id: raspi.id, pi_reader_params: {space_id: nil}), method: :patch, action: :update, path: '/' %></td>
-      </tr>
+    <table><th style="font-size:1.4em;">Manage RFID Readers</th></table><br>
+    <div>
+      <h3><%=@space.name.capitalize%> RFID Readers</h3>
+      <table>
+        <tr>
+          <th>Reader Mac Address</th>
+          <th>Space</th>
+          <th>Disassociate from <%=@space.name.capitalize%></th>
+        </tr>
+        <%@space.pi_readers.each do |raspi| %>
+        <tr>
+          <td><%=raspi.pi_mac_address%></td>
+          <td><%=raspi.space.name%></td>
+          <td><%=link_to fa_icon('times'), admin_pi_reader_url(id: raspi.id, pi_reader_params: {space_id: nil}), method: :patch, action: :update, path: '/' %></td>
+        </tr>
+        <%end%>
+      </table>
+
+      <br></br>
+
+      <h3>Unassociated RFID Readers</h3>
+      <table>
+        <tr>
+          <th>Reader Mac Address</th>
+          <th>Space</th>
+          <th>Associate with <%=@space.name.capitalize%></th>
+        </tr>
+        <%PiReader.where(space_id: nil).each do |raspi| %>
+        <tr>
+          <td><%=raspi.pi_mac_address%></td>
+          <td>unknown</td>
+          <td><%=link_to fa_icon('check'), admin_pi_reader_url(id: raspi.id, pi_reader_params: {space_id: @space.id}), method: :patch, action: :update, path: '/' %></td>
+        </tr>
+        <%end%>
+      </table>
+    </div>
+
+    <br></br>
+    <br></br>
+
+    <table><th style="font-size:1.4em;">Manage Trainings</th></table><br>
+    <div>
+      <h3><%=@space.name.capitalize%> Trainings</h3>
+      <table>
+        <tr>
+          <th>Training</th>
+          <th>Total Sessions</th>
+          <th>Total Certifications</th>
+          <th>Delete Training and all Sessions and Certifications</th>
+        </tr>
+        <%@space.trainings.each do |training| %>
+        <tr>
+          <td><%=training.name%></td>
+          <td><%=training.training_sessions.length%></td>
+          <td><%=training.certifications.length%></td>
+          <td><%=link_to fa_icon('times'), admin_training_url(id: training.id), method: :delete, action: :destroy %></td>
+        </tr>
+        <%end%>
+      </table>
+
+      <br>
+      <%= form_for admin_trainings_path, :url => { :action => "create", controller: 'admin/trainings'} do |f| %>
+        <% content_tag 'training_params[space_id]', @space.id%>
+        <%= text_field_tag 'training_params[name]', nil, placeholder: 'Enter a unique name', style: 'width:200px;height:20px;font-size:1.3em;' %><br><br>
+        <%= submit_tag "Add Training", class:"save-button"%>
       <%end%>
-    </table>
+      <br></br>
 
-    <br>
-
-    <h3>RFID Readers with unknown space</h3>
-    <table>
-      <tr>
-        <th>Reader Mac Address</th>
-        <th>Space</th>
-        <th>Associate with <%=@space.name.capitalize%></th>
-      </tr>
-      <%PiReader.where(space_id: nil).each do |raspi| %>
-      <tr>
-        <td><%=raspi.pi_mac_address%></td>
-        <td>unknown</td>
-        <td><%=link_to fa_icon('check'), admin_pi_reader_url(id: raspi.id, pi_reader_params: {space_id: @space.id}), method: :patch, action: :update, path: '/' %></td>
-      </tr>
-      <%end%>
-    </table>
-
+    </div>
 
   </div>
 </section>

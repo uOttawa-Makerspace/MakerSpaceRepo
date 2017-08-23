@@ -15,7 +15,7 @@ class Admin::TrainingsController < AdminAreaController
     else
       flash[:alert] = "Input is invalid"
     end
-    redirect_to admin_settings_path
+    redirect_to :back
   end
 
   def update
@@ -38,7 +38,7 @@ class Admin::TrainingsController < AdminAreaController
   private
 
   def training_params
-      params.require(:training).permit(:name)
+      params.require(:training_params).permit(:name, :space_id)
   end
 
   def changed_training
