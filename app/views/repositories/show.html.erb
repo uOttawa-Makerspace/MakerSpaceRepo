@@ -9,18 +9,25 @@
 <section id="show-repository">
 
   <section id="repository-photos">
-
-
+    <% if @photos.length != 0 %>
       <div id="show-photo">
         <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.width, height: @photos.first.height} %>
       </div>
-
-
     <div id="photo-slide">
       <% @photos.each do |p| %>
-        <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
+        <!-- is this 'if p.valid?' necessary?(I added it to make sure an invalid photo doesn't cause error) -->
+        <% if p.valid? %>
+          <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
+        <%end %>
       <% end %>
     </div>
+
+    <% else %>
+      <div id="show-photo">
+        <%= image_tag("NoImageAvailable.png") %>
+      </div>
+    <%end%>
+
 
     <br></br>
     <% if @user.admin?%>
