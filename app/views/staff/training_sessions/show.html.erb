@@ -46,7 +46,7 @@
       <tr>
 
         <td class="action-cell">
-          <%= link_to (fa_icon('times')),
+          <%= link_to (fa_icon('times-circle')),
             {controller: :training_sessions, action: :update, id: @current_training_session.id, dropped_users: [user.username], changed_params: {course: ''} },
             method: :patch, class: 'x-button' %>
         </td>
@@ -117,7 +117,7 @@
       <tr>
 
         <td class="action-cell">
-          <%= link_to (fa_icon('check')), {controller: :training_sessions, action: :update, id: @current_training_session.id, added_users: [user.username], changed_params: {course: ''} },
+          <%= link_to (fa_icon('check-circle')), {controller: :training_sessions, action: :update, id: @current_training_session.id, added_users: [user.username], changed_params: {course: ''} },
                 method: :patch, class: 'check-button' %>
 
         <td class="user-name">
@@ -168,12 +168,17 @@
       <% end %>
     </table>
 
-    <br></br>
+    <br>
     <% if @user.admin? || @current_training_session.user == @user%>
-    <br></br>
       <%=link_to "Destroy", { action: :destroy }, method: :delete, data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
         class:"destroy-button",
         style:"float:right;float:top;"%>
     <% end %>
+    <br></br>
+    
+    <br></br>
+
   </div>
+  <br></br>
+
 </section>
