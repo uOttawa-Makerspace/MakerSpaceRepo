@@ -3,7 +3,6 @@ class Admin::SpacesController < AdminAreaController
   layout 'admin_area'
 
   def index
-    @space = Space.first
   end
 
   def new
