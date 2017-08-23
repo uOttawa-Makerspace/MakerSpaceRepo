@@ -31,8 +31,8 @@ class RfidController < SessionsController
     active_session = rfid.user.lab_sessions.where("sign_out_time > ?", Time.now)
     if active_session.present?
       active_session.update_all(sign_out_time: Time.now)
-      active_location = PiReader.find_by(pi_mac_address: active_session.first.try(:mac_address)).try(:pi_location)
-      new_location = PiReader.find_by(pi_mac_address: params[:mac_address]).try(:pi_location)
+      active_location = PiReader.find_by(pi_mac_address: active_session.first.try(:mac_address))
+      new_location = PiReader.find_by(pi_mac_address: params[:mac_address])
       if active_location != new_location
         new_session(rfid)
       end
@@ -44,7 +44,7 @@ class RfidController < SessionsController
   def new_session (rfid)
     sign_in = Time.now
     sign_out = sign_in + 3.hours
-    raspi = PiReader.find_by(pi_mac_address: params[:mac_address]).try(params[:pi_location])
+    raspi = PiReader.find_by(pi_mac_address: params[:mac_address])
     new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out, mac_address: params[:mac_address], pi_reader_id: raspi.id)
     new_session.save
   end
