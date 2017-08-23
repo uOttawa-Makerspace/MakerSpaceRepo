@@ -18,6 +18,8 @@
         <!-- is this 'if p.valid?' necessary?(I added it to make sure an invalid photo doesn't cause error) -->
         <% if p.valid? %>
           <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
+        <% else %>
+          <%= image_tag("NoImageAvailable.png") %>
         <%end %>
       <% end %>
     </div>
