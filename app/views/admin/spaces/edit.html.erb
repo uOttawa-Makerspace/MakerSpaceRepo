@@ -1,13 +1,14 @@
 <section id="page-contents">
   <div class="edit-column">
     <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
+
+    <h3><%=@space.name.capitalize + "\'s RFID Readers"%></h3>
     <table>
       <tr>
         <th>Reader Mac Address</th>
         <th>Space</th>
-        <th>Disassociate</th>
+        <th>Disassociate from <%=@space.name.capitalize%></th>
       </tr>
-
       <%@space.pi_readers.each do |raspi| %>
       <tr>
         <td><%=raspi.pi_mac_address%></td>
@@ -16,6 +17,25 @@
       </tr>
       <%end%>
     </table>
+
+    <br></br>
+
+    <h3>Readers with unknown space</h3>
+    <table>
+      <tr>
+        <th>Reader Mac Address</th>
+        <th>Space</th>
+        <th>Associate with <%=@space.name.capitalize%></th>
+      </tr>
+      <%PiReader.where(space_id: nil).each do |raspi| %>
+      <tr>
+        <td><%=raspi.pi_mac_address%></td>
+        <td>unknown</td>
+        <td><%=link_to fa_icon('check'), admin_pi_reader_url(id: raspi.id, pi_reader_params: {space_id: @space.id}), method: :patch, action: :update, path: '/' %></td>
+      </tr>
+      <%end%>
+    </table>
+
 
   </div>
 </section>
