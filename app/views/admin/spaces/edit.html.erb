@@ -1,8 +1,8 @@
 <section id="page-contents">
   <div class="edit-column">
     <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
+    <h2><%=@space.name.upcase%><br> <h3><%=@space.name.capitalize + "\'s RFID Readers"%></h3><h2>
 
-    <h3><%=@space.name.capitalize + "\'s RFID Readers"%></h3>
     <table>
       <tr>
         <th>Reader Mac Address</th>
@@ -18,9 +18,9 @@
       <%end%>
     </table>
 
-    <br></br>
+    <br>
 
-    <h3>Readers with unknown space</h3>
+    <h3>RFID Readers with unknown space</h3>
     <table>
       <tr>
         <th>Reader Mac Address</th>

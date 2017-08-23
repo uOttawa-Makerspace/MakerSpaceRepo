@@ -1,6 +1,7 @@
 <section id="page-contents">
   <div class="edit-column">
     <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
+
     <h2>Select a Space To Edit </h2>
     <br>
     <%Space.all.each do |space|%>
@@ -9,6 +10,13 @@
       <%= link_to fa_icon('desktop'), edit_admin_space_path(id: space.id, space_params: {name: space.name}),  method: :get, class: "space-button", style:"border:none;"%><br></br>
     </div><br></br><br></br>
     <%end%>
-
+    <br></br>
+    <h3>Create a new space by giving it a unique name </h2>
+    <br>
+    <%= form_for admin_spaces_path, :url => { :action => "create", controller: 'admin/spaces'} do |f| %>
+      <%= text_field_tag 'space_params[name]', '', style: 'width:200px;height:55px;' %><br><br>
+      <%= submit_tag "create", class:"save-button"%>
+    <%end%>
+    <br></br>
   </div>
 </section>

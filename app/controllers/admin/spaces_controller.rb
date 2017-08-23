@@ -27,10 +27,8 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def destroy
-    if name = params[:name]
-      if Space.find_by(name: param).destroy
-        flash[:notice] = "Training removed successfully"
-      end
+    if Space.find_by(space_params).destroy
+      flash[:notice] = "Space deleted successfully!"
     else
       flash[:alert] = "Name is required"
     end
