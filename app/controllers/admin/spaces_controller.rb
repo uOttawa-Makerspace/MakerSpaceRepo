@@ -11,17 +11,13 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def create
-    if name = params[:name]
-      @space = Space.new(name: name)
-    else
-      flash[:alert] = "Name is required"
-    end
-    if @space.save
-      flash[:notice] = "Training added successfully!"
+    space = Space.new(space_params)
+    if space.save
+      flash[:notice] = "Space created successfully!"
     else
       flash[:alert] = "Something went wrong."
     end
-    redirect_to admin_spaces_path
+    redirect_to :back
   end
 
   def edit

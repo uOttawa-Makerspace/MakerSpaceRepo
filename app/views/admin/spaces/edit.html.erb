@@ -1,7 +1,21 @@
 <section id="page-contents">
   <div class="edit-column">
     <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
-    
+    <table>
+      <tr>
+        <th>Reader Mac Address</th>
+        <th>Space</th>
+        <th>Disassociate</th>
+      </tr>
+
+      <%@space.pi_readers.each do |raspi| %>
+      <tr>
+        <td><%=raspi.pi_mac_address%></td>
+        <td><%=raspi.space.name%></td>
+        <td><%=link_to fa_icon('times'), admin_pi_reader_url(id: raspi.id, pi_reader_params: {space_id: nil}), method: :patch, action: :update, path: '/' %></td>
+      </tr>
+      <%end%>
+    </table>
 
   </div>
 </section>

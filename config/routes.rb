@@ -103,6 +103,10 @@ Rails.application.routes.draw do
     resources :trainings do
     end
 
+    resources :pi_readers do
+      patch 'update', on: :member
+    end
+
     resources :training_sessions do
       get 'index', path: '/'
 
