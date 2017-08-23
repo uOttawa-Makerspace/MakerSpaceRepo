@@ -24,7 +24,7 @@ class RfidControllerTest < ActionController::TestCase
     rfid = rfids(:old)
 
     assert_no_difference('Rfid.count') do
-      post :card_number, rfid: rfid.card_number, mac_address: "m4k3rsp4c3-pi-1"
+      post :card_number, rfid: rfid.card_number, mac_address: rfid.mac_address
     end
   end
 
@@ -32,7 +32,7 @@ class RfidControllerTest < ActionController::TestCase
     rfid = rfids(:no_user)
     old_timestamp = rfid.updated_at.to_i
 
-    post :card_number, rfid: rfid.card_number, mac_address: "8runsf13ld-pi-1"
+    post :card_number, rfid: rfid.card_number, mac_address: rfid.mac_address
 
     rfid.reload
     assert_not_equal old_timestamp, rfid.updated_at.to_i
@@ -41,7 +41,7 @@ class RfidControllerTest < ActionController::TestCase
   test "posting existing card with no user returns unprocessable_entity" do
     rfid = rfids(:no_user)
 
-    post :card_number, rfid: rfid.card_number, mac_address: "8runsf13ld-pi-1"
+    post :card_number, rfid: rfid.card_number, mac_address: rfid.mac_address
 
     assert_response :unprocessable_entity
   end
@@ -53,4 +53,13 @@ class RfidControllerTest < ActionController::TestCase
 
     assert_response :ok
   end
+
+  test "posting from a newly connected pi creates a new PiReader with no space_id" do
+    rfid = rfids(:from_new_pi)
+
+    post :card_number, rfid: rfid.card_number, mac_address: rfid.mac_address
+
+    assert PiReader.find_by(pi_mac_address: rfid.mac_address, space_id: nil).present?
+  end
+
 end
