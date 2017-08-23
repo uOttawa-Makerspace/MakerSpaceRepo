@@ -62,4 +62,16 @@ class RfidControllerTest < ActionController::TestCase
     assert PiReader.find_by(pi_mac_address: rfid.mac_address, space_id: nil).present?
   end
 
+  test "can sign in to a space" do
+    rfid = rfids(:assigned)
+    raspi =  pi_readers(:two)
+
+    post :card_number, rfid: rfid.card_number, mac_address: raspi.pi_mac_address
+
+    lab_session = LabSession.find_by(user_id: rfid.user_id, pi_readrer_id: raspi.pi_mac_address)
+    assert lab_session.present?
+    assert lab_session.sign_out_time > Time.now
+    assert raspi.space.signed_in_users.include? rfid.user
+  end
+
 end
