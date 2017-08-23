@@ -1,9 +1,9 @@
 <section id="page-contents">
   <div class="edit-column">
     <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
-    <h1 style="font-weight:bold;"><%=@space.name.upcase%> Manager</h1>
+    <h1 style="font-weight:bold;padding-left:180px;"><%=@space.name.upcase%> Manager</h1>
 
-    <table><th style="font-size:1.4em;">Manage RFID Readers</th></table><br>
+    <table style="font-size:1.4em;border:none"><th>Manage RFID Readers</th></table><br>
     <div>
       <h3><%=@space.name.capitalize%> RFID Readers</h3>
       <table>
@@ -58,14 +58,16 @@
           <td><%=training.name%></td>
           <td><%=training.training_sessions.length%></td>
           <td><%=training.certifications.length%></td>
-          <td><%=link_to fa_icon('times'), admin_training_url(id: training.id), method: :delete, action: :destroy %></td>
+          <td><%=link_to fa_icon('times'), admin_training_url(id: training.id), method: :delete, action: :destroy,
+            data: { confirm: 'Deleting a training will delete ALL its Sessions and Certifications! Ok to confirm' } %></td>
         </tr>
         <%end%>
       </table>
 
-      <br>
+      <br></br>
+      <h3>New <%=@space.name.capitalize%> Training</h3><br>
       <%= form_for admin_trainings_path, :url => { :action => "create", controller: 'admin/trainings'} do |f| %>
-        <% content_tag 'training_params[space_id]', @space.id%>
+        <%= hidden_field_tag 'training_params[space_id]', @space.id %>
         <%= text_field_tag 'training_params[name]', nil, placeholder: 'Enter a unique name', style: 'width:200px;height:20px;font-size:1.3em;' %><br><br>
         <%= submit_tag "Add Training", class:"save-button"%>
       <%end%>
