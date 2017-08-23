@@ -44,8 +44,9 @@ class RfidController < SessionsController
   def new_session (rfid)
     sign_in = Time.now
     sign_out = sign_in + 3.hours
-    raspi = PiReader.find_by(pi_mac_address: params[:mac_address])
-    new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out, mac_address: params[:mac_address], pi_reader_id: raspi.id)
-    new_session.save
+    if raspi = PiReader.find_by(pi_mac_address: params[:mac_address])
+      new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out, mac_address: params[:mac_address], pi_reader_id: raspi.id)
+      new_session.save
+    end
   end
 end
