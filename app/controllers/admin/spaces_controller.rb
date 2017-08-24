@@ -20,8 +20,9 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def edit
-    unless @space = Space.find_by(space_params)
-      @space = Space.first
+    unless @space = Space.find(params[:id])
+      flash[:alert] = "Not Found"
+      redirect_to :back
     end
   end
 

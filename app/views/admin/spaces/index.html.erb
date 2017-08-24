@@ -6,8 +6,8 @@
     <br>
     <%Space.all.each do |space|%>
     <div id="space-buttons">
-      <%= link_to ("Edit " + space.name.capitalize), edit_admin_space_path(id: space.id, space_params: {name: space.name}), method: :get, class: "space-button"%>
-      <%= link_to fa_icon('desktop'), edit_admin_space_path(id: space.id, space_params: {name: space.name}),  method: :get, class: "space-button", style:"border:none;"%><br></br>
+      <%= link_to ("Edit " + space.name.capitalize), edit_admin_space_path(id: space.id), method: :get, class: "space-button"%>
+      <%= link_to fa_icon('desktop'), edit_admin_space_path(id: space.id),  method: :get, class: "space-button", style:"border:none;"%><br></br>
     </div><br></br><br></br>
     <%end%>
     <br></br>
