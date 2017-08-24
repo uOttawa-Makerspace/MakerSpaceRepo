@@ -38,3 +38,4 @@ four:
   description: description4
   slug: repository4
   user_username: bob
+  category: other-projects
