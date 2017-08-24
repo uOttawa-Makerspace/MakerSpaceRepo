@@ -35,4 +35,18 @@ class RepositoryTest < ActiveSupport::TestCase
 		assert repository.invalid?, "Invalid project title"
 
 	end
+
+	test "validation only affects repos on create" do
+		repo = repositories(:four)
+
+		assert repo.valid? , "invlid repo"
+
+		repo = Repository.create(:title => 'myRepo', :user_id => 1, :user_username => "bob", :id =>111 )
+		assert repo.invalid?, "invlid repo"
+
+		photo = photos(:three)
+		photo.repository_id = 111
+		repo.photos << photo
+		assert repo.valid?, "invlid repo"
+	end
 end
