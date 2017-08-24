@@ -36,10 +36,7 @@ class RepositoryTest < ActiveSupport::TestCase
 
 	end
 
-	test "validation only affects repos on create" do
-		repo = repositories(:four)
-
-		assert repo.valid? , "invlid repo"
+	test "repository cannot be created without a photo" do
 
 		repo = Repository.create(:title => 'myRepo', :user_id => 1, :user_username => "bob", :id =>111 )
 		assert repo.invalid?, "invlid repo"

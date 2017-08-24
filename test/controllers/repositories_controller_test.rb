@@ -11,12 +11,12 @@ class RepositoriesControllerTest < ActionController::TestCase
   end
 
 
-  test "old repositories with no photos can be updated successfully" do
+  test "repositories cannot be updated if no photos are present" do
     session[:user_id] = User.find_by(username: "mary").id
     session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
 
     patch :update, user_username: "bob", slug: "repository4",
     repository:{description: "mydescription"}
-    assert_response :success
+    assert_response :unprocessable_entity
   end
 end
