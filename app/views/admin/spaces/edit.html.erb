@@ -3,7 +3,7 @@
     <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
     <h1 style="font-weight:bold;text-align:center;"><%=@space.name.upcase%></h1><br>
 
-    <table><th style="font-size:1.4em;background:none;">Manage RFID Readers</th></table><br>
+    <table><th class="section-header">Manage RFID Readers</th></table><br>
     <div>
       <h3><%=@space.name.capitalize%> RFID Readers</h3>
       <table>
@@ -43,7 +43,7 @@
     <br></br>
     <br></br>
 
-    <table><th style="font-size:1.4em;background:none;">Manage Trainings</th></table>
+    <table><th  class="section-header">Manage Trainings</th></table>
     <div>
       </br>
       <h3 style="font-weight:bold;">New <%=@space.name.capitalize%> Training:</h3>
@@ -77,7 +77,7 @@
     <br></br>
     <br></br>
 
-    <table><th style="font-size:1.4em;background:none;background-color:#FF5A5A;color:#FFFFFF;">Destroy Space</th></table>
+    <table><th class="destroy-header">Destroy Space</th></table>
     <div>
       <span style="font-weight:bold;color:#E91D1D"> Destroying a space will erase all associated data including trainings, training sessions, and certifications.</span>
       <br></br>

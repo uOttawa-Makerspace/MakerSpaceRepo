@@ -1,3 +1,14 @@
 // Place all the styles related to the Admin::Spaces controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+th.section-header{
+  font-size: 1.4em;
+  background: none
+}
+
+th.destroy-header{
+  font-size:1.4em;
+  background:none;
+  background-color:#FF5A5A;
+  color:#FFFFFF;
+}
