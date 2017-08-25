@@ -21,6 +21,12 @@ div.panel-title {
   font-size: 35px;
 }
 
+div.waiver-form-outer{
+	height:100px;
+	overflow: auto;
+	background-color: transparentize(yellow, 0.6);
+}
+
 div.setting-side-panel{
 	@include span-columns(2.5, 0);
 	position: relative;

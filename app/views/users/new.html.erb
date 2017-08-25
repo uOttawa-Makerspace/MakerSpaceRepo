@@ -95,8 +95,7 @@
 
     <br><br>
 
-    <div><div id="read_and_accepted_waiver_form" ></div>
-      <%= "I agree to this waiver:"%><br></br>
+    <div><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "I agree to this waiver:"%><br></br></div>
       <div class="waiver-form-outer">
         <div class="waiver-form-inner">
         <%= f.label :waiver_form
@@ -116,7 +115,7 @@
             loss of property, damage of property as a result my use or misuse of the equipment, or failure of said
             equipment.".html_safe
          %><br>
-         <span id = "required">Sign and Agree</span>
+         <span id = "required" style="float:right;padding-right:5px;font-weight:bold;">I Agree</span>
         <%= f.check_box :read_and_accepted_waiver_form, :style => "float:right;", :onclick => "showCreateButton()" %>
         <%= content_tag :span, @new_user.errors[:read_and_accepted_waiver_form].first, class: 'form-error' %>
         </div>

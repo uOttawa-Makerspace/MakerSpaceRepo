@@ -55,7 +55,7 @@ table{
     text-align:center;
   }
   tr.no-waiver{
-    background-color: red + 120;
+    background-color: transparentize(yellow, 0.6);
   }
 }
 
