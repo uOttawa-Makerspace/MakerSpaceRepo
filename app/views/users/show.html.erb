@@ -57,7 +57,7 @@
 
     <% if @user.staff?%>
       <br></br>
-      <div class="user-certifications" style="padding-top: 200px;">This user has the following certifications:
+      <div class="user-certifications" style="padding-top: 200px;"><br>This user has the following certifications:
         <br></br>
         <div class="user-certifications-container">
             <table class=staff-table>
@@ -85,16 +85,17 @@
                     %>
                   </td>
                   <td class="action-cell">
-                    <% if @user.admin? %>
+                    <br>
+                    <% if @user.admin? || (@user.staff == certification.training_session.user)%>
                         <%=
                           link_to "renew", renew_certification_admin_users_path(id: certification.id), method: :patch,
-                          class: 'renew-button'
+                          class: 'destroy-button', style:"background-color:#53BE6A;"
                         %>
                       <% if @user.admin? %>
                         <%=
                           link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
-                          class: 'revoke-button'
-                        %>
+                          class: 'destroy-button'
+                        %><br></br>
                       <%end%>
                     <%end%>
                   </td>
