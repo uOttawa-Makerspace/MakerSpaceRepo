@@ -48,6 +48,7 @@
     <%= content_tag :span, @new_user.errors[:gender].first, class: 'form-error' %>
     <%= f.select :gender, ["Male", "Female", "Other", "Prefer not to specify"] , prompt: "Choose..." %><br><br>
 
+    <%= content_tag :span, @new_user.errors[:identity][0], class: 'form-error' %>
     <div id = "required" ><%= f.label :identity, "I am a ..." %></div>
 
     <%= f.radio_button(:identity, "grad", :class => "show_extra",:style => "display:inline", :onclick => "showField();") %><%= f.label(:identity_student, "Grad")  %><br>
