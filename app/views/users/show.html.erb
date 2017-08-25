@@ -64,7 +64,8 @@
               <tr>
                 <th>TRAINING</th>
                 <th>TRAINER</th>
-                <th>TIME</th>
+                <th>CREATED ON</th>
+                <th>RENEWED ON</th>
                 <th>ACTION</th>
               </tr>
               <% @repo_user.certifications.each do |certification| %>
@@ -80,8 +81,16 @@
                     %>
                   </td>
                   <td>
-                    <%=
+                    <%= if @user.admin?
+                      link_to certification.created_at.strftime("%B %d, %Y"), staff_training_session_path(id: certification.training_session.id), style:"text-decoration:underline;"
+                    else
                       certification.created_at.strftime("%B %d, %Y")
+                    end
+                    %>
+                  </td>
+                  <td>
+                    <%=
+                      certification.updated_at.strftime("%B %d, %Y")
                     %>
                   </td>
                   <td class="action-cell">
