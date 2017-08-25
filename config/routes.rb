@@ -96,7 +96,8 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :spaces, only: [:index, :create, :edit, :destroy] do
+    resources :spaces, only: [:index, :create, :edit] do
+      delete 'destroy', path: '/edit/'
     end
 
     resources :trainings, only: [:index, :create, :update, :destroy] do

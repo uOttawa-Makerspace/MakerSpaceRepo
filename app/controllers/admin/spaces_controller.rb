@@ -27,10 +27,15 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def destroy
-    if Space.find_by(space_params).destroy
-      flash[:notice] = "Space deleted successfully!"
+    space = Space.find(params[:id])
+    if params[:admin_input] == space.name.upcase
+      raspis = PiReader.where(space_id: space.id)
+      raspis.update_all(space_id: nil)
+      if space.destroy
+        flash[:notice] = "Space deleted!"
+      end
     else
-      flash[:alert] = "Name is required"
+      flash[:alert] = "Invalid Input"
     end
     redirect_to admin_spaces_path
   end
