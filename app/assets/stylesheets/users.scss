@@ -159,12 +159,13 @@ div.signup-title, div.login-title{
 
 
 span#fake-signup-button{
+	display: block;
   letter-spacing: 1px;
   background-color: transparentize(#4bbc9c, 0.8);
   color: #fff;
   border: none !important;
 	padding: 0.5rem;
-	width: 400px;
+	width: 300px;
 	border-radius: 2px;
 	border: 1px solid #aaa;
 	margin: 0.5rem 0 1rem;

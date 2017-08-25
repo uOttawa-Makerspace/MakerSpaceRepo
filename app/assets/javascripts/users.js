@@ -4,9 +4,15 @@ function showField(){
 function hideField(){
 	document.getElementById("hidden").style.display = 'none';
 }
+
 function showCreateButton(){
-	document.getElementById("fake-signup-button").style.display = 'none';
-	document.getElementById("signup-button").style.display = 'block';
+	if(document.getElementById("fake-signup-button").style.display != 'none'){
+		document.getElementById("fake-signup-button").style.display = 'none';
+		document.getElementById("signup-button").style.display = 'block';
+	}else{
+			document.getElementById("fake-signup-button").style.display = 'block';
+			document.getElementById("signup-button").style.display = 'none';
+		}
 }
 
 $(document).ready(function() {
