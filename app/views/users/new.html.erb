@@ -93,10 +93,43 @@
       <%= content_tag :span, @new_user.errors[:terms_and_conditions].first, class: 'form-error' %>
     </div>
 
-    <%= f.submit "Create Account/Créer mon Compte", class: 'signup-button' %>
-    <% if flash[:notice] %>
-      <div id="notice"><%flash[:notice] %></div>
-    <% end %>
+    <br><br>
+
+    <div><div id="read_and_accepted_waiver_form" ></div>
+      <%= "I agree to the following"%><br>
+      <div class="waiver-form-outer">
+        <div class="waiver-form-inner">
+        <%= f.label :waiver_form
+          "I the undersigned understand that there are many inherent risks to working in a machine workshop, such as the
+            Brunsfield Centre and Manufacturing Training Centre, therefore I agree to and state the following:
+            1.\nI acknowledge that I have taken the specific training courses outlined below that, are offered by the Centre
+            for Entrepreneurship Engineering and Design's Manufacturing Training Centre and/or Brunsfield Centre.
+            The Rules for the safe operation of these tools and equipment were explained to me in the respective
+            training courses. I have read and understood all the rules as they were presented to me, and that I will keep
+            up to date on these rules and policies. I also understand that failure to comply with these rules and policies
+            or failure to work safely within the supervision of CEED staff may result in nullification of my privileges
+            to work in the Brunsfield Centre or be trained in the Manufacturing Training Centre.
+            2. I agree that when I am faced with unfamiliar operation or non-conforming operation of machinery, that I
+            will consult the staff and/or trainer responsible for me during my use of said equipment.
+            3. I accept the inherent risks of working in a workshop and utilizing heavy machinery as well as my
+            responsibility for my own safety as well as others around me. This may include but is not limited to: injury,
+            loss of property, damage of property as a result my use or misuse of the equipment, or failure of said
+            equipment.".html_safe
+         %><br>
+         <span id = "required">Sign and Agree</span>
+        <%= f.check_box :read_and_accepted_waiver_form, :style => "float:right;", :onclick => "showCreateButton()" %>
+        <%= content_tag :span, @new_user.errors[:read_and_accepted_waiver_form].first, class: 'form-error' %>
+        </div>
+      </div>
+    </div>
+    <br>
+    <span id='fake-signup-button'> Create Account/Créer mon Compte </span>
+    <span id='signup-button'>
+      <%= f.submit "Create Account/Créer mon Compte", class: 'signup-button' %>
+      <% if flash[:notice] %>
+        <div id="notice"><%flash[:notice] %></div>
+      <% end %>
+    </span>
 
   <% end %>
 
