@@ -7,7 +7,7 @@ Rails.application.routes.draw do
     get 'forgot_password'
     get 'reset_password'
     get 'terms-of-service', as: 'tos'
-    get 'privacy'
+    get 'hours'
     get 'about'
     get 'contact'
     get 'report_repository', path: 'report_repository/:repository_id'
