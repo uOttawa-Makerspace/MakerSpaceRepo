@@ -4,6 +4,7 @@ class CreateGngCategoriesForCrpRepos < ActiveRecord::Migration
     gng2101.save
     gng1103 = CategoryOption.new(name: 'GNG1103')
     gng1103.save
+    other_projects =  CategoryOption.find_by(name: 'Other Projects')
     Category.where(name: "Course-related Projects").each do |category|
       course = category.repository.title.upcase.gsub(/[^0-9A-Za-z]/, '')[0..6]
       if course == 'GNG2101'
@@ -15,7 +16,7 @@ class CreateGngCategoriesForCrpRepos < ActiveRecord::Migration
         repo_gng_cat.save
         category.destroy
       else
-        repo_gng_cat = Category.new(repository_id: category.repository.id, name: 'Other Projects', category_option_id: CategoryOption.find_by(name: 'Other Projects').id)
+        repo_gng_cat = Category.new(repository_id: category.repository.id, name: 'Other Projects', category_option_id: other_projects.id)
         repo_gng_cat.save
         category.destroy
       end
