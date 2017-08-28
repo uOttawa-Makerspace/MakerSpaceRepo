@@ -33,12 +33,14 @@ class SearchController < SessionsController
 
   def category
     sort_arr = sort_order
+    
     if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
       @repositories1 = Repository.where(category: category).distinct
       @repositories = @repositories1.paginate(:per_page=>12,:page=>params[:page]) do
         order_by sort_arr.first, sort_arr.last
       end
     end
+
     if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
       @repositories2 = Category.where(name: name).distinct.includes(:repository).map(&:repository)
       @repositories = @repositories2.paginate(:per_page=>12,:page=>params[:page]) do
