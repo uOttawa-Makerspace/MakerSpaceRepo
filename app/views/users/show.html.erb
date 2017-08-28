@@ -69,7 +69,11 @@
                 <th>ACTION</th>
               </tr>
               <% @repo_user.certifications.each do |certification| %>
-                <tr>
+            <%if certification.out_of_date?%>
+              <tr class="cert-row-red">
+            <%else%>
+              <tr>
+            <%end%>
                   <td>
                     <%=
                       certification.training

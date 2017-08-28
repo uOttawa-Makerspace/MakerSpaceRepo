@@ -147,6 +147,9 @@ table{
     color: #366;
     text-align:center;
   }
+  tr.cert-row-red{
+    background-color: transparentize(#ff8282, 0.5);
+  }
 
 }
 

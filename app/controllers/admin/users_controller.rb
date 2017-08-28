@@ -137,7 +137,7 @@ class Admin::UsersController < AdminAreaController
 
   def renew_certification
     cert = Certification.find(params[:id])
-    cert.updated_at = Time.now
+    cert.touch
     if cert.save
       flash[:notice] = "Renewed successfully"
       redirect_to :back
