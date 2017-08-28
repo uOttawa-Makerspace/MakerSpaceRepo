@@ -3,7 +3,7 @@ class Admin::ReportGeneratorController < AdminAreaController
   require 'date'
 
   def index
-    if session[:selected_dates] == nil
+    unless session[:selected_dates]
       @start_date = 1.month.ago
       @end_date = DateTime.current
     else
@@ -28,7 +28,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
 # New users
   def new_users
-    if session[:selected_dates] == nil
+    unless session[:selected_dates]
       @start_date = 1.month.ago
       @end_date = DateTime.current
     else
@@ -44,7 +44,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
 # Visitors
   def total_visits
-    if session[:selected_dates] == nil
+    unless session[:selected_dates]
       @start_date = 1.month.ago
       @end_date = DateTime.current
     else
@@ -60,7 +60,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
 # Unique visitor
   def unique_visits
-    if session[:selected_dates] == nil
+    unless session[:selected_dates]
       @start_date = 1.month.ago
       @end_date = DateTime.current
     else
@@ -76,7 +76,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
 # Diversity of users based on faculty
   def faculty_frequency
-    if session[:selected_dates] == nil
+    unless session[:selected_dates]
       @start_date = 1.month.ago
       @end_date = DateTime.current
     else
@@ -92,7 +92,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
 # Diversity of users based on gender
   def gender_frequency
-    if session[:selected_dates] == nil
+    unless session[:selected_dates]
       @start_date = 1.month.ago
       @end_date = DateTime.current
     else
@@ -107,7 +107,7 @@ class Admin::ReportGeneratorController < AdminAreaController
   end
 
   def training
-    if session[:selected_dates] == nil
+    unless session[:selected_dates]
       @start_date = 1.month.ago
       @end_date = DateTime.current
     else
@@ -123,7 +123,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   # repositories
   def repository
-    if session[:selected_dates] == nil
+    unless session[:selected_dates]
       @start_date = 1.month.ago
       @end_date = DateTime.current
     else
