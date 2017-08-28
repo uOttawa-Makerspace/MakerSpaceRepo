@@ -6,14 +6,9 @@ class StaffDashboardController < StaffAreaController
 
   def sign_out_users
     if params['dropped_users'].present?
-      params['dropped_users'].each do |username|
-        user = User.find_by(username: username)
-        lab_session = @space.lab_sessions.where(user_id: user.id).last
-        lab_session.sign_out_time = Time.now #sign user out of user.lab_sessions.last.space
-        unless lab_session.save
-          flash[:alert] = "Error signing #{username} out"
-        end
-      end
+      users = User.where(username: params['dropped_users']).map(&:id)
+      lab_sessions = LabSession.where(user_id: users)
+      lab_sessions.update_all(sign_out_time: Time.now)
     end
     redirect_to :back
   end
