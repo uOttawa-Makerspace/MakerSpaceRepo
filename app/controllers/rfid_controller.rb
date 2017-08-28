@@ -33,7 +33,7 @@ class RfidController < SessionsController
     if active_session.present?
       active_sessions.update_all(sign_out_time: Time.now)
       last_active_location = PiReader.find_by(pi_mac_address: active_sessions.last.pi_reader.pi_mac_address)
-      if active_location != new_location
+      if last_active_location != new_location
         new_session(rfid, new_location)
       end
     else
