@@ -125,14 +125,15 @@ class UsersControllerTest < ActionController::TestCase
     session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
 
     patch :update, username: "john", user: {name: "John", gender: "Male", identity: "grad", student_id: 9876543, faculty: "arts", program: "Honours BA in English", year_of_study: "3"}
+    @user = User.find_by(username: "john")
     assert_equal 'Profile updated successfully.', flash[:notice]
-    assert_equal "John", User.find_by(username: "john").name
-    assert_equal "Male", User.find_by(username: "john").gender
-    assert_equal "grad", User.find_by(username: "john").identity
-    assert_equal 9876543, User.find_by(username: "john").student_id
-    assert_equal "arts", User.find_by(username: "john").faculty
-    assert_equal "Honours BA in English", User.find_by(username: "john").program
-    assert_equal "3", User.find_by(username: "john").year_of_study
+    assert_equal "John", @user.name
+    assert_equal "Male", @user.gender
+    assert_equal "grad", @user.identity
+    assert_equal 9876543, @user.student_id
+    assert_equal "arts", @user.faculty
+    assert_equal "Honours BA in English", @user.program
+    assert_equal "3", @user.year_of_study
     assert_redirected_to settings_profile_path
   end
 
