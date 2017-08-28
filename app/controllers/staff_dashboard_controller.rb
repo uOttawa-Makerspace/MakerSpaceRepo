@@ -10,20 +10,20 @@ class StaffDashboardController < StaffAreaController
       lab_sessions = LabSession.where(user_id: users)
       lab_sessions.update_all(sign_out_time: Time.now)
     end
-    redirect_to :back
+    redirect_to staff_dashboard_index_path(space_id: @space.id)
   end
 
   def sign_in_users
     if params['added_users'].present?
-      params['added_users'].each do |username|
-        user = User.find_by(username: username)
-        lab_session = LabSession.new(user_id: user.id, sign_in_time: Time.now, sign_out_time: Date.tomorrow, mac_address: @space.pi_readers.first.pi_mac_address, pi_reader_id: @space.pi_readers.first.id)
+      users = User.where(username: params['added_users'])
+      users.each do |user|
+        lab_session = LabSession.new(user_id: user.id, pi_reader_id: PiReader.find_by(space_id: @space.id).id, sign_in_time: Time.now, sign_out_time: Time.now+3.hours)
         unless lab_session.save
-          flash[:alert] = "Error signing #{username} in"
+          flash[:alert] = "Error signing #{user.name} in"
         end
       end
     end
-    redirect_to :back
+    redirect_to staff_dashboard_index_path(space_id: @space.id)
   end
 
   def change_space
