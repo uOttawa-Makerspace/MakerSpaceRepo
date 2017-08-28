@@ -57,6 +57,7 @@ Rails.application.routes.draw do
   end
 
   get 'help', to: 'help#main'
+  put 'send_email', to:'help#send_email'
 
   namespace :licenses do
     get 'common-creative-attribution', as: 'cca'
