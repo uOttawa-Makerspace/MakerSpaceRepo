@@ -46,18 +46,14 @@ class SearchController < SessionsController
       end
     end
 
-    if category && name && params['featured']
-      old_category_repos = Repository.where(category: category, featured: true).distinct
-      new_category_repos = Category.where(name: name).distinct.includes(:repository).map(&:repository).select{ |repo| repo[:featured] == true }
-      @repositories = (old_category_repos + new_category_repos).uniq.sort!{|a,b|b.updated_at <=> a.updated_at}.paginate(:per_page=>12,:page=>params[:page]) do
-        order_by :updated_at, :desc
-      end
-
-    elsif category && name
-      @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
-        order_by sort_arr.first, sort_arr.last
-      end
+    @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
+      order_by sort_arr.first, sort_arr.last
     end
+
+    if params['featured']
+      @repositories = @repositories.select{|r| r.featured?}.uniq.sort{|a,b|b.updated_at <=> a.updated_at}.paginate(:per_page=>12,:page=>params[:page])
+    end
+
     @photos = photo_hash
 
   end
