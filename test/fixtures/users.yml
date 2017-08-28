@@ -24,7 +24,7 @@ bob:
 mary:
   id: 2
   username: mary
-  name: anonymous
+  name: Mary
   email: mary@gmail.com
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
