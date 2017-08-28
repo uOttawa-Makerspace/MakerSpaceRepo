@@ -1,13 +1,17 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  user_id: 112233
-  repository_id: 998877
-  content: Content1
+  id: 1
+  user_id: 1
+  repository_id: 1
+  content: Nice comment
   upvote: 1
+  username: bob
 
 two:
-  user_id: 445566
-  repository_id: 112233
-  content: Content2
+  id: 2
+  user_id: 1337
+  repository_id: 1
+  content: Another nice comment
   upvote: 1
+  username: adam
