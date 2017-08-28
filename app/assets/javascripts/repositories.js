@@ -9,8 +9,8 @@ function hideField(){
 function toggleField() {
 		var x = document.getElementById("password")
 		if (x.style.display === 'none') {
-			document.getElementById("password").style.display = 'block'
+			x.style.display = 'block'
 		} else {
-			document.getElementById("password").style.display = 'none'
+			x.style.display = 'none'
     }
 }
