@@ -37,16 +37,18 @@ class StaffDashboardController < StaffAreaController
       current_sesh = current_user.lab_sessions.last
       current_sesh.sign_out_time = Time.now
       current_sesh.save
-      new_sesh = LabSession.new(
-                    user_id: current_user.id,
-                    sign_in_time: Time.now,
-                    sign_out_time: Date.tomorrow,
-                    pi_reader_id: new_space.pi_readers.first.id,
-                    mac_address: new_space.pi_readers.first.pi_mac_address)
-      if new_sesh.save
-        flash[:notice] = "Space changed successfully"
-      else
-        flash[:alert] = "Space changed successfully"
+      if (reader =  PiReader.find_by(space_id: new_space.id))
+        new_sesh = LabSession.new(
+                      user_id: current_user.id,
+                      sign_in_time: Time.now,
+                      sign_out_time: Date.tomorrow,
+                      pi_reader_id: reader.id,
+                      mac_address: reader.pi_mac_address)
+        if new_sesh.save
+          flash[:notice] = "Space changed successfully"
+        else
+          flash[:alert] = "Something went wrong"
+        end
       end
     end
     redirect_to :back
