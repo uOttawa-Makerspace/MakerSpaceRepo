@@ -68,7 +68,7 @@ class StaffDashboardController < StaffAreaController
   private
 
   def default_space
-    @space = current_user.lab_sessions.last.space
+    @space = current_user.lab_sessions.last.space rescue Space.all.first
   end
 
 end
