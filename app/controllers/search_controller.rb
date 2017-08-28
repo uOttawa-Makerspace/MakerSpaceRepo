@@ -46,8 +46,10 @@ class SearchController < SessionsController
       end
     end
 
-    @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
+    if category && name
+      @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
+        order_by sort_arr.first, sort_arr.last
+      end
     end
 
     if params['featured']
