@@ -84,6 +84,7 @@ Rails.application.routes.draw do
         get 'gender_frequency'
       end
     end
+
     resources :users, only: [:index, :edit, :update, :show] do
       collection do
         get 'search'
@@ -95,7 +96,14 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :trainings do
+    resources :spaces, only: [:index, :create, :edit] do
+      delete 'destroy', path: '/edit/'
+    end
+
+    resources :trainings, only: [:index, :create, :update, :destroy] do
+    end
+
+    resources :pi_readers, only: [:update] do
     end
 
     resources :training_sessions do
