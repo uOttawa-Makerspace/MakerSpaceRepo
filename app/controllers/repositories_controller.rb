@@ -1,11 +1,12 @@
 class RepositoriesController < SessionsController
-  before_action :current_user, :check_session, :check_auth
+  before_action :current_user, :check_session
   before_action :signed_in, except: [:index, :show, :download, :download_files]
-  before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
+  before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files, :check_auth, :pass_authenticate]
+  before_action :check_auth, only: [:show]
 
   def show
     if @repository.private? && !@check_passed
-      redirect_to password_entry_repository_path and return
+      redirect_to password_entry_repository_path(@repository.user_username, @repository.slug) and return
     end
     @photos = @repository.photos.first(5)
     @files = @repository.repo_files.order("LOWER(file_file_name)")
@@ -113,19 +114,16 @@ class RepositoriesController < SessionsController
 
   def pass_authenticate
     @auth = Repository.authenticate(params[:slug], params[:password])
-    @repository = Repository.find_by_slug(params[:slug])
     respond_to do |format|
       if @auth
         @authorized = true
         authorized_repo_ids << params[:id]
         flash[:notice] = "Success"
-        format.html{redirect_to repository_path}
-        format.json { render json: { role: :guest }, status: :ok }
+        format.html{redirect_to repository_path(@repository.user_username, @repository.slug)}
       else
         @authorized = false
-        flash[:notice] = "Incorrect password. Try again!"
-        format.html { redirect_to password_entry_repository_path}
-        format.json { render json: @repository.errors, status: :unprocessable_entity }
+        flash[:alert] = "Incorrect password. Try again!"
+        format.html { redirect_to password_entry_repository_path(@repository.user_username, @repository.slug)}
       end
     end
   end
@@ -139,7 +137,8 @@ class RepositoriesController < SessionsController
     end
 
     def check_auth
-      if (@authorized == true || (@user.admin?) || (@user.staff?) || (params[:user_username] == @user.username))
+
+      if (@authorized == true || (@user.admin?) || (@user.staff?) || (@repository.user_username == @user.username))
         @check_passed = true
       else
         @check_passed = false
