@@ -29,9 +29,10 @@ class StaffDashboardController < StaffAreaController
   def change_space
 
     if new_space = Space.find_by(name: params['space_name'])
-      current_sesh = current_user.lab_sessions.last
-      current_sesh.sign_out_time = Time.now
-      current_sesh.save
+      if current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.now).last
+        current_sesh.sign_out_time = Time.now
+        current_sesh.save
+      end
       if (reader =  PiReader.find_by(space_id: new_space.id))
         new_sesh = LabSession.new(
                       user_id: current_user.id,
