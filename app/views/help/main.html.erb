@@ -6,32 +6,24 @@
   <div class="container">
 
     <div class="col">
-      <div class="category">Repo License</div>
-        <ul class="fa-ul">
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution'), licenses_cca_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution - Share Alike'), licenses_ccasa_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution - No Derivatives'), licenses_ccand_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution - Non-Commercial'), licenses_ccanc_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Attribution - Non-commercial - Share Alike'), licenses_ancsa_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Attribution - Non-Commercial - No Derivatives'), licenses_ancnd_path %></li>
-        </ul>
+      <div class="category">If you're facing technical issues, please contact us.</div>
     </div>
 
   </div>
-<div id="issue-report">
-  <%= form_tag send_email_path, method: :put do %>
-    <%= label_tag :name , "Full Name/Nom" %>
-    <%= text_field_tag :name,'', autofocus: true %>
+  <div class="issue-report">
+    <%= form_tag send_email_path, method: :put do %>
+      <%= label_tag :name , "Full Name" %>
+      <%= text_field_tag :name,'', autofocus: true, :required => true %>
 
-    <%= label_tag :email %>
-    <%= text_field_tag :email,'', autofocus: true %>
+      <%= label_tag :email %>
+      <%= text_field_tag :email,'', autofocus: true, :required => true %>
 
-    <%= label_tag :subject %>
-    <%= text_field_tag :subject,'', autofocus: true %>
-    <%= label_tag :comments %>
-    <%= text_area_tag :comments %>
+      <%= label_tag :subject %>
+      <%= text_field_tag :subject,'', autofocus: true, :required => true %>
+      <%= label_tag :comments %>
+      <%= text_area_tag :comments,'', autofocus: true, :required => true, placeholder: "Please explain your issue." %>
 
-    <%= submit_tag("Send", class: 'send-button')  %>
-  <% end %>
-</div>
+      <%= submit_tag("Submit", class: 'submit-button') %>
+    <% end %>
+  </div>
 </section>
