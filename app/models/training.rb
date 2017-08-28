@@ -4,5 +4,6 @@ class Training < ActiveRecord::Base
 
   validates :name, presence: true, uniqueness: true
   validates :space_id, presence: true
-
+  
+  has_many :certifications, through: :training_sessions
 end
