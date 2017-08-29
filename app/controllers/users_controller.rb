@@ -110,7 +110,8 @@ private
   def user_params
     params.require(:user).permit(:password, :password_confirmation, :url,
       :email, :name, :username, :avatar, :gender, :faculty, :use,
-      :description, :terms_and_conditions, :program, :student_id, :how_heard_about_us, :year_of_study, :identity, :read_and_accepted_waiver_form)
+      :description, :terms_and_conditions, :program, :student_id, :how_heard_about_us,
+      :year_of_study, :identity, :read_and_accepted_waiver_form)
   end
 
   def sort_order

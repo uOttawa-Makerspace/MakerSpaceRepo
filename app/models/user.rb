@@ -28,7 +28,7 @@ class User < ActiveRecord::Base
   validates :description,
     length: { maximum: 250, message: 'Maximum of 250 characters.' }
 
-  validates :terms_and_conditions,
+  validates :read_and_accepted_waiver_form,
     inclusion: {in: [true], on: :create, message: 'You must agree to the terms and conditions' }
 
   validates :password,

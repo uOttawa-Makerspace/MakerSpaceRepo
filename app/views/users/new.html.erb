@@ -86,13 +86,6 @@
     <%= f.label :how_heard_about_us, "How did you hear about us? (optional)" %>
     <%= f.text_area :how_heard_about_us, class: "profile-text" %>
 
-
-    <div id = "required" ><div id="terms_and_conditions_box" ></div>
-      <%= f.check_box :terms_and_conditions, :style => "float:right;" %>
-      <%= f.label :terms_and_conditions, :class => "checkbox inline" do "I agree to the #{link_to "terms and condition", "terms_and_conditions.pdf", target: "blank"}<br>J\'accepte les #{link_to "termes et conditions", "terms_and_conditions.pdf", target: "blank"}".html_safe end %>
-      <%= content_tag :span, @new_user.errors[:terms_and_conditions].first, class: 'form-error' %>
-    </div>
-
     <br><br>
 
     <div><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "I agree to this waiver:"%><br></br></div>
