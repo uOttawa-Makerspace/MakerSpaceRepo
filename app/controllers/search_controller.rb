@@ -33,7 +33,7 @@ class SearchController < SessionsController
 
   def category
     sort_arr = sort_order
-    
+
     if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
       @repositories1 = Repository.where(category: category).distinct
       @repositories = @repositories1.paginate(:per_page=>12,:page=>params[:page]) do
@@ -55,7 +55,7 @@ class SearchController < SessionsController
     end
 
     if params['featured']
-      @repositories = @repositories.select{|r| r.featured?}.uniq.sort_by{:updated_at}.reverse.paginate(:per_page=>12,:page=>params[:page])
+      @repositories = @repositories.select{|r| r.featured?}.uniq.sort_by(&:updated_at).reverse.paginate(:per_page=>12,:page=>params[:page])
     end
 
     @photos = photo_hash
