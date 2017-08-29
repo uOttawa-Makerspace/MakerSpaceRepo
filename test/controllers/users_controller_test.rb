@@ -99,4 +99,22 @@ class UsersControllerTest < ActionController::TestCase
     assert_response :ok
   end
 
+  test "user can view their profile" do
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    # bob has an invalid repository
+    get :show, username: "bob"
+    assert_response :success
+  end
+
+  test "users can view others' profile" do
+    session[:user_id] = User.find_by(username: "adam").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    # bob has an invalid repository
+    get :show, username: "bob"
+    assert_response :success
+  end
+
 end
