@@ -9,14 +9,14 @@ class Admin::TrainingsControllerTest < ActionController::TestCase
   end
 
   test "admin can add training" do
-    post :create, training: {name: "soldering_1"}
+    post :create, training_params: {name: "soldering_1", space_id: 1}
     assert_equal flash[:notice], "Training added successfully!"
     assert Training.find_by(name: "soldering_1").present?
     assert_redirected_to admin_settings_path
   end
 
   test "admin can rename training" do
-    patch :update, training: {name: "soldering_5"},
+    patch :update, training_params: {name: "soldering_5"},
       id: trainings(:lathe_1)
     assert_equal flash[:notice], "Training renamed successfully"
     refute Training.find_by(name: "lathe_1").present?
@@ -26,8 +26,7 @@ class Admin::TrainingsControllerTest < ActionController::TestCase
 
   test "admin can remove training" do
     @training = Training.find_by(name: "lathe_1")
-    delete :destroy, training: {},
-      id: trainings(:lathe_1)
+    delete :destroy, id: trainings(:lathe_1)
     assert_equal flash[:notice], "Training removed successfully"
     refute Training.find_by(name: "lathe_1").present?
     assert_redirected_to admin_settings_path

@@ -24,9 +24,6 @@
     <%= content_tag :span, @user.errors[:name].first, class: 'form-error' %>
     <%= f.text_field :name, class: "profile-text", autofocus: true %>
 
-    <%= f.label :location,"Location" , class: "profile-label" %>
-    <%= f.text_field :location, class: "profile-text" %>
-
     <%= f.label :url, "URL", class: "profile-label" %>
     <%= f.url_field :url, class: "profile-text" %>
 

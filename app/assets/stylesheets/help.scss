@@ -46,6 +46,45 @@ section#help-center{
   	color: teal;
   }
 
+
+  div.issue-report{
+    input.submit-button{
+      width: 150px;
+      letter-spacing: 1px;
+      background-color: #4bbc9c;
+      color: #fff;
+      border: none !important;
+      margin: 0 120px;
+      font: 600 1.2rem 'Raleway', helvetica, sans-serif;
+
+      &:hover{
+        cursor: pointer;
+      }
+    }
+
+    form {
+      margin: 0 20px;
+    }
+
+    label{
+      font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+      color: #777;
+    }
+
+    input, textarea{
+      display: block;
+  		padding: 0.5rem;
+  		width: 400px;
+  		border-radius: 2px;
+  		border: 1px solid #aaa;
+  		margin: 0.5rem 0 1rem;
+  	  font: 300 1rem 'Raleway', helvetica, sans-serif;
+   	}
+
+
+  }
+
+
 }
 
 .faq {
@@ -78,6 +117,9 @@ section#help-center{
   section#help-center div.col{
     float: none;
     width: 100%;
-  } 
+  }
+
+
+
 
 }

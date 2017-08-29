@@ -109,7 +109,7 @@ private
 
   def user_params
     params.require(:user).permit(:password, :password_confirmation, :url,
-      :location, :email, :name, :username, :avatar, :gender, :faculty, :use,
+      :email, :name, :username, :avatar, :gender, :faculty, :use,
       :description, :terms_and_conditions, :program, :student_id, :how_heard_about_us, :year_of_study, :identity)
   end
 
