@@ -69,10 +69,10 @@
     <div id= "share_option">
         <%= f.label :share_type, "Your project is..." %>
         <%= fa_icon('globe') %>
-        <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline", :onclick =>  "hideField();")%><%= f.label(:share_type, "Public", :id =>"type", :style => "display:inline")  %>
+        <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline", :onclick =>  "hidePass();")%><%= f.label(:share_type, "Public", :id =>"type", :style => "display:inline")  %>
         <div id= "description"> Anyone can see this repository </div>
         <%= fa_icon('lock') %>
-        <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline", :onclick => "showField();") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>
+        <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline", :onclick => "showPass();") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>
         <div id= "description"> Only those with the url and password can view this repository </div>
 
         <div id="pass">

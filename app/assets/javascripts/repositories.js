@@ -1,12 +1,12 @@
-function showField(){
+function showPass(){
 	document.getElementById("password").style.display = 'block'
 }
 
-function hideField(){
+function hidePass(){
 	$("#change_pass").hide();
 	document.getElementById("password").style.display = 'none'
 }
-function toggleField() {
+function togglePass() {
 		var x = document.getElementById("password")
 		if (x.style.display === 'none') {
 			x.style.display = 'block'
