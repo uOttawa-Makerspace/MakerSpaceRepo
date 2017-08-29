@@ -11,3 +11,11 @@ two:
   file_file_name: repo_1_file_2
   file_content_type: CAD
   file_file_size: 4
+
+
+three:
+  id: 3
+  repository_id: 3
+  file_file_name: repo_1_file_3
+  file_content_type: CAD
+  file_file_size: 4
