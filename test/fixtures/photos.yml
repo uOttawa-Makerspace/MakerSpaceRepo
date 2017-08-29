@@ -23,3 +23,11 @@ three:
   image_file_size: 3
   height: 3
   width: 3
+
+four:
+  repository_id:
+  image_file_name: p4
+  image_content_type: image/png
+  image_file_size: 3
+  height: 3
+  width: 3
