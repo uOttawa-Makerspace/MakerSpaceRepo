@@ -1,5 +1,7 @@
 class LabSession < ActiveRecord::Base
   belongs_to :user
+  belongs_to :pi_reader
+  has_one :space, through: :pi_reader
 
   scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 

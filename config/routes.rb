@@ -7,7 +7,7 @@ Rails.application.routes.draw do
     get 'forgot_password'
     get 'reset_password'
     get 'terms-of-service', as: 'tos'
-    get 'privacy'
+    get 'hours'
     get 'about'
     get 'contact'
     get 'report_repository', path: 'report_repository/:repository_id'
@@ -57,6 +57,7 @@ Rails.application.routes.draw do
   end
 
   get 'help', to: 'help#main'
+  put 'send_email', to:'help#send_email'
 
   namespace :licenses do
     get 'common-creative-attribution', as: 'cca'
@@ -87,6 +88,7 @@ Rails.application.routes.draw do
         get 'repository'
       end
     end
+
     resources :users, only: [:index, :edit, :update, :show] do
       collection do
         get 'search'
@@ -98,7 +100,22 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :trainings do
+    resources :spaces, only: [:index, :create, :edit] do
+      delete 'destroy', path: '/edit/'
+    end
+
+    resources :trainings, only: [:index, :create, :update, :destroy] do
+    end
+
+    resources :pi_readers, only: [:update] do
+    end
+
+    resources :training_sessions do
+      get 'index', path: '/'
+
+      member do
+        patch 'update'
+      end
     end
 
     resources :settings, only: [:index] do
@@ -121,6 +138,7 @@ Rails.application.routes.draw do
     get 'index', path: '/'
 
     resources :training_sessions do
+      get 'index', path: '/', on: :collection
       member do
         post 'certify_trainees'
       end
@@ -159,6 +177,7 @@ Rails.application.routes.draw do
 
   namespace :comments do
     post :create, path: '/:slug'
+    delete :destroy, path: '/:id/destroy'
   end
 
 end

@@ -20,9 +20,22 @@
         <li><%= link_to 'Sign Out', logout_path %></li>
       </ul>
     </span>
+
     <span class="header-menu-item"><%= link_to 'Create<br>Créer'.html_safe, new_repository_path(@user.username) %></span>
     <span class="header-menu-item"><%= link_to 'Explore<br>Découvrez'.html_safe, explore_path %></span>
   <% end %>
+  <span id = "side-menu" onclick="toggleNav()">&#9776;</span>
+  <div id="mySidenav" class="sidenav">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537" target="_blank">Events</a>
+    <a href="http://volunteer.makerepo.com/" target="_blank">Volunteers</a>
+    <a href="http://volunteer.makerepo.com/resources.html" target="_blank">Resources</a><br><br>
+    <a>Follow Us:</a>
+    <a href="https://www.facebook.com/uOmakerspace/" target="_blank"><i class="fa fa-facebook-official" aria-hidden="true"></i> @uOMakerspace</a>
+    <a href="https://www.instagram.com/uomakerspace/" target="_blank"><i class="fa fa-instagram" aria-hidden="true"></i> @uOMakerspace</a>
+    <a href="https://twitter.com/uomakerspace?lang=en" target="_blank"><i class="fa fa-twitter" aria-hidden="true"></i> @uOMakerspace</a>
+  </div>
+
   <span class="msr-logo">
     <%= link_to root_path do %>Maker<b>Repo</b><% end %>
     <%= form_tag search_path, method: :get, class: 'header-search' do %>

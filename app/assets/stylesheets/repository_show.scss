@@ -122,7 +122,7 @@ div.repo-info-item{
 	@include span-columns(6, 0);
 	padding-top: 30px;
 	font: 300 0.9rem 'Raleway', sans-serif;
-  
+
   table {
     margin-left:-3px;
     width:101%;
@@ -132,7 +132,7 @@ div.repo-info-item{
 		color: #366;
     text-align: left;
 	}
-  
+
   td:last-child{
     padding-right:-5px;
     text-align: right;
@@ -140,23 +140,23 @@ div.repo-info-item{
   #download-zip{
     font-size:0.8rem;
     padding:4px 8px;
-    
+
     i {
       font-size: 0.95rem;
     }
   }
-  
+
   .no-bg-download{
     background-color:transparent;
   }
-  
+
   .bg-download{
     @include transition(100ms);
     background-color: #5f9ea0;
     color: #f9f9f9;
     cursor: pointer;
     border-radius: 6px;
-    
+
     &:hover{
       background-color: #366;
       color: #f9f9f9;
@@ -194,7 +194,7 @@ div.repo-info-item{
 		color: #5f9ea0;
 		font-size: 0.8rem;
 	}
-	
+
 	&:nth-child(1n + 3){
 		width: 100%;
 	}
@@ -215,7 +215,7 @@ div.repo-info-item{
 		@include transition(100ms);
 		display: inline-block;
 		background-color: #5f9ea0;
-		font-size: 1rem;	
+		font-size: 1rem;
 		color: #eee;
 		border-radius: 1rem;
 		margin-top: 0.5rem;
@@ -280,16 +280,24 @@ div.repo-desc{
 
 	  & li{
 	    display: list-item;
-	  }	
+	  }
 	}
 
 }
 
+a.x-button{
+	float: right;
+	display: block;
+
+	i{
+		color: #b02a12;
+	}
+}
 
 section#repo-comments{
 	width: calc(100% - 6rem);
 	background-color: #eee;
-	float: left;	
+	float: left;
 	padding: 3rem;
 
 	div.title{
@@ -379,7 +387,6 @@ section#repo-comments{
 					float: right;
 				}
 			}
-		}	
+		}
 	}
 }
-

@@ -1,0 +1,98 @@
+<section id="page-contents">
+  <div class="edit-column">
+    <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
+    <h1 style="font-weight:bold;text-align:center;"><%=@space.name.upcase%></h1><br>
+
+    <table><th class="section-header">Manage RFID Readers</th></table><br>
+    <div>
+      <h3><%=@space.name.capitalize%> RFID Readers</h3>
+      <table>
+        <tr>
+          <th>Reader Mac Address</th>
+          <th>Space</th>
+          <th>Disassociate from <%=@space.name.capitalize%></th>
+        </tr>
+        <%@space.pi_readers.each do |raspi| %>
+        <tr>
+          <td><%=raspi.pi_mac_address%></td>
+          <td><%=raspi.space.name%></td>
+          <td><%=link_to fa_icon('times'), admin_pi_reader_url(id: raspi.id, pi_reader_params: {space_id: nil}), method: :patch, action: :update, path: '/' %></td>
+        </tr>
+        <%end%>
+      </table>
+
+      <br></br>
+
+      <h3>Unassociated RFID Readers</h3>
+      <table>
+        <tr>
+          <th>Reader Mac Address</th>
+          <th>Space</th>
+          <th>Associate with <%=@space.name.capitalize%></th>
+        </tr>
+        <%PiReader.where(space_id: nil).each do |raspi| %>
+        <tr>
+          <td><%=raspi.pi_mac_address%></td>
+          <td>unknown</td>
+          <td><%=link_to fa_icon('check'), admin_pi_reader_url(id: raspi.id, pi_reader_params: {space_id: @space.id}), method: :patch, action: :update, path: '/' %></td>
+        </tr>
+        <%end%>
+      </table>
+    </div>
+
+    <br></br>
+    <br></br>
+
+    <table><th  class="section-header">Manage Trainings</th></table>
+    <div>
+      </br>
+      <h3 style="font-weight:bold;">New <%=@space.name.capitalize%> Training:</h3>
+      <%= form_for admin_trainings_path, :url => { :action => "create", controller: 'admin/trainings'} do |f| %>
+        <%= hidden_field_tag 'training_params[space_id]', @space.id %>
+        <%= text_field_tag 'training_params[name]', nil, placeholder: 'Enter a unique name', style: 'width:220px;height:18px;' %><tb>
+        <%= submit_tag "Add", class:"save-button"%>
+      <%end%>
+      <br>
+
+      <h3><%=@space.name.capitalize%> Trainings</h3>
+      <table>
+        <tr>
+          <th>Training</th>
+          <th>Total Sessions</th>
+          <th>Total Certifications</th>
+          <th>Delete Training and all Sessions and Certifications</th>
+        </tr>
+        <%@space.trainings.each do |training| %>
+        <tr>
+          <td><%=training.name%></td>
+          <td><%=training.training_sessions.length%></td>
+          <td><%=training.certifications.length%></td>
+          <td><%=link_to fa_icon('times'), admin_training_url(id: training.id), method: :delete, action: :destroy,
+            data: { confirm: 'Deleting a training will delete ALL its Sessions and Certifications! Ok to confirm' } %></td>
+        </tr>
+        <%end%>
+      </table>
+    </div>
+
+    <br></br>
+    <br></br>
+
+    <table><th class="destroy-header">Destroy Space</th></table>
+    <div>
+      <span style="font-weight:bold;color:#E91D1D"> Destroying a space will erase all associated data including trainings, training sessions, and certifications.</span>
+      <br></br>
+      Type <span style="font-weight:bold;"><%=@space.name.upcase%></span> in the box then click DESTROY:
+      <br>
+      <%= form_for admin_spaces_path, action: :destroy, method: :delete do |f| %>
+        <%= text_field_tag :admin_input, "" %>
+        <%= hidden_field_tag :id, @space.id %> <br></br>
+        <%= f.submit "destroy", class: "destroy-button" %>
+      <% end %>
+    </div>
+
+    <br></br>
+    <br></br>
+    <br></br>
+
+  </div>
+</section>

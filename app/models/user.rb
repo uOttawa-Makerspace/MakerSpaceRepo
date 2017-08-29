@@ -115,6 +115,12 @@ class User < ActiveRecord::Base
     end
   end
 
+  def location
+    if self.lab_sessions.last.equal? nil
+      return 'no sign in yet'
+    end
+    return self.lab_sessions.last.mac_address
+  end
 
   scope :unsigned_tac_users, -> { where('terms_and_conditions = false') }
 

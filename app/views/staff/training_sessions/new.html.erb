@@ -3,7 +3,7 @@
 <% end %>
 
 <% if flash[:alert] %>
-  <div id="alert"><%= flash[:notice] %></div>
+  <div id="alert"><%= flash[:alert] %></div>
 <% end %>
 
 <section id ="page-contents" >
@@ -11,14 +11,14 @@
   <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
 
   <% label_tag 'training_id' %>
-  <%= select_tag 'training_id', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'select training' %><br>
+  <%= select_tag 'training_id', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'select training', class: "trainer-training-course" %><br>
 
   <% label_tag 'course' %>
-  <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'select course' %><br>
+  <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'select course', class: "trainer-training-course" %><br>
 
   <% if @user.admin? %>
     <% label_tag 'user_id' %>
-    <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']), 'id', 'name'), prompt: 'select instructor' %><br>
+    <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']), 'id', 'name'), prompt: 'select instructor', class: "trainer-training-course" %><br>
   <% end %>
     <table class="staff-table">
       <tr>
@@ -42,8 +42,9 @@
 
         <td class="signed_in-cell" style="horizontal-alginment:center;">
           <%= if user.lab_sessions.present?
-                singout_time = user.lab_sessions.last.sign_out_time
-                singout_time.strftime("%B %d, %Y")
+                if singout_time = user.lab_sessions.last.sign_out_time
+                  singout_time.strftime("%B %d, %Y")
+                end
               end %>
         </td>
 

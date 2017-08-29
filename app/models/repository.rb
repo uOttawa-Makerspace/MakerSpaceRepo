@@ -25,6 +25,10 @@ class Repository < ActiveRecord::Base
     presence:   { message: "Project title is required."},
     uniqueness: { message: "Project title is already in use.", scope: :user_username}
 
+  validates :photos,
+  :length => { :minimum => 1 }, on: [:create, :update],
+  :presence => {message: "At least one photo is required"}, on: [:create, :update]
+
   before_save do
     self.slug = self.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
@@ -32,6 +36,7 @@ class Repository < ActiveRecord::Base
   before_destroy do
     self.user.decrement!(:reputation, 25)
   end
+
 
   def self.to_csv (attributes)
     CSV.generate do |csv|

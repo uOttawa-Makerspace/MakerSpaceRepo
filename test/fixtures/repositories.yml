@@ -21,6 +21,7 @@ two:
   created_at: <%= 1.year.ago %>
 
 
+
 three:
   id: 3
   user_id: 2
@@ -29,3 +30,16 @@ three:
   slug: repository3
   category: other-projects
   user_username: mary
+
+
+# invalid repository
+#doesn't have any photos
+four:
+  id: 4
+  user_id: 1
+  title: Repository4
+  description: description4
+  slug: repository4
+  user_username: bob
+  category: other-projects
+

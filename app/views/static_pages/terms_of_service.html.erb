@@ -1,1 +1,28 @@
 <% provide(:title, "Terms of Service") %>
+<section id="terms-of-service">
+
+  <div class="title">Terms of Service</div>
+
+  <div class="container">
+
+    <div class="col">
+      <div class="category">Repo License</div>
+        <ul class="fa-ul">
+          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution'), licenses_cca_path %></li>
+          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution - Share Alike'), licenses_ccasa_path %></li>
+          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution - No Derivatives'), licenses_ccand_path %></li>
+          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution - Non-Commercial'), licenses_ccanc_path %></li>
+          <li><%= link_to fa_icon("angle-double-right li", text: ' Attribution - Non-commercial - Share Alike'), licenses_ancsa_path %></li>
+          <li><%= link_to fa_icon("angle-double-right li", text: ' Attribution - Non-Commercial - No Derivatives'), licenses_ancnd_path %></li>
+        </ul>
+    </div>
+
+    <div class="col">
+      <div class="category">Terms and Conditions</div>
+        <ul class="fa-ul">
+          <li> <%= link_to fa_icon("angle-double-right li", text: 'View the document'), "terms_and_conditions.pdf", target: "blank" %>
+        </ul>
+    </div>
+
+  </div>
+</section>
