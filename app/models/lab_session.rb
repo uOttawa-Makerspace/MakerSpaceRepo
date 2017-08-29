@@ -3,7 +3,7 @@ class LabSession < ActiveRecord::Base
   belongs_to :pi_reader
   has_one :space, through: :pi_reader
 
-  scope :in_last_month, -> { where('sign_in_time BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
   def self.to_csv (attributes)
     CSV.generate do |csv|
