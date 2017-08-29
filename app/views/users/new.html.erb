@@ -88,13 +88,16 @@
 
     <br><br>
 
-    <div><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "I agree to this waiver:"%><br></br></div>
+    <div><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "I agree to this waiver:"%></div>
+      <label style="font-size:0.7em">
+        scroll down and click <span id = "required" style="font-weight:bold;">I Agree</span>
+      </label><br></br>
       <div class="waiver-form-outer">
         <div class="waiver-form-inner">
-        <%= f.label :waiver_form
+        <%= f.label :waiver_form,
           "I the undersigned understand that there are many inherent risks to working in a machine workshop, such as the
             Brunsfield Centre and Manufacturing Training Centre, therefore I agree to and state the following:
-            1.\nI acknowledge that I have taken the specific training courses outlined below that, are offered by the Centre
+            1.I acknowledge that I have taken the specific training courses outlined below that, are offered by the Centre
             for Entrepreneurship Engineering and Design's Manufacturing Training Centre and/or Brunsfield Centre.
             The Rules for the safe operation of these tools and equipment were explained to me in the respective
             training courses. I have read and understood all the rules as they were presented to me, and that I will keep
@@ -106,7 +109,7 @@
             3. I accept the inherent risks of working in a workshop and utilizing heavy machinery as well as my
             responsibility for my own safety as well as others around me. This may include but is not limited to: injury,
             loss of property, damage of property as a result my use or misuse of the equipment, or failure of said
-            equipment.".html_safe
+            equipment."
          %><br>
          <span id = "required" style="float:right;padding-right:5px;font-weight:bold;">I Agree</span>
         <%= f.check_box :read_and_accepted_waiver_form, :style => "float:right;", :onclick => "showCreateButton()" %>
