@@ -1,4 +1,5 @@
 class Training < ActiveRecord::Base
-  has_many :training_session, dependent: :destroy
-  validates :name, presence: true, uniqueness: true
+  has_many :training_sessions, dependent: :destroy
+  has_many :certifications, through: :training_sessions
+  validates :name, presence: true
 end

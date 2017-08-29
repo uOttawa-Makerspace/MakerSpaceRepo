@@ -11,6 +11,7 @@ one:
   featured: false
 
 
+
 two:
   id: 2
   user_id: 2
@@ -20,3 +21,23 @@ two:
   category: Virtual Reality
   user_username: mary
   featured: true
+
+three:
+  id: 3
+  user_id: 2
+  title: Repository3
+  description: description3
+  slug: repository3
+  category: other-projects
+  user_username: mary
+
+# invalid repository
+#doesn't have any photos
+four:
+  id: 4
+  user_id: 1
+  title: Repository4
+  description: description4
+  slug: repository4
+  user_username: bob
+  category: other-projects

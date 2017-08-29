@@ -1,9 +1,17 @@
 require 'test_helper'
 
 class HelpControllerTest < ActionController::TestCase
-  # test "should get main" do
-  #   get :main
-  #   assert_response :success
-  # end
+  test 'user can submit issue reports' do
+    put :send_email,
+
+    :name => "Julia",
+    :email => "julia@gmail.com",
+    :subject => "issue",
+    :comments => "photo upload not working"
+
+    assert_equal flash[:notice],  "Email successfuly send. You will be contacted soon."
+    assert_redirected_to root_path
+  end
+
 
 end

@@ -1,0 +1,23 @@
+<section id="page-contents">
+  <div class="edit-column">
+    <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
+
+    <h2>Select a Space To Edit </h2>
+    <br>
+    <%Space.all.each do |space|%>
+    <div id="space-buttons">
+      <%= link_to fa_icon('gears'), edit_admin_space_path(id: space.id),  method: :get, class: "space-button", style:"border:none;"%>
+      <%= link_to ("Edit " + space.name.capitalize), edit_admin_space_path(id: space.id), method: :get, class: "space-button"%>
+      <br></br>
+    </div><br></br><br></br>
+    <%end%>
+    <br></br>
+    <h3>Create a new space by giving it a unique name </h2>
+    <br>
+    <%= form_for admin_spaces_path, :url => { :action => "create", controller: 'admin/spaces'} do |f| %>
+      <%= text_field_tag 'space_params[name]', nil, placeholder: 'Enter a unique name', style: 'width:200px;height:20px;font-size:1.3em;' %><br><br>
+      <%= submit_tag "create", class:"save-button"%>
+    <%end%>
+    <br></br>
+  </div>
+</section>
