@@ -5,3 +5,7 @@ makerspace:
 brunsfield:
   id: 2
   name: brunsfield
+
+sandbox:
+  id: 3
+  name: sandbox
