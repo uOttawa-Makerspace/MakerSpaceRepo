@@ -37,7 +37,6 @@ class Repository < ActiveRecord::Base
     presence: { message: "Password is required for private projects" }, if: :private?
 
   validates :photos,
-  :length => { :minimum => 1 }, on: [:create, :update],
   :presence => {message: "At least one photo is required"}, on: [:create, :update]
 
 

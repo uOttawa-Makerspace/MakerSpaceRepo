@@ -43,4 +43,4 @@ four:
   slug: repository4
   user_username: bob
   category: other-projects
-
+  share_type: public

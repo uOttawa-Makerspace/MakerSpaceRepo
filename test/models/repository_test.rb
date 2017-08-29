@@ -66,7 +66,7 @@ class RepositoryTest < ActiveSupport::TestCase
 
 	test "repository cannot be created without a photo" do
 
-		repo = Repository.create(:title => 'myRepo', :user_id => 1, :user_username => "bob", :id =>111 )
+		repo = Repository.create(:title => 'myRepo', :user_id => 1, :user_username => "bob", :id =>111, :share_type => "public" )
 		assert repo.invalid?, "invlid repo"
 
 		photo = photos(:three)
