@@ -16,4 +16,12 @@ class TrainingSession < ActiveRecord::Base
     ['GNG2101', 'GNG1103']
   end
 
+  def self.to_csv (attributes)
+    CSV.generate do |csv|
+      attributes.each do |row|
+        csv << row
+      end
+    end
+  end
+
 end
