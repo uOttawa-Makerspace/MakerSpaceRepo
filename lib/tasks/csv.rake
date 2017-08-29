@@ -1,11 +1,11 @@
 namespace :csv do
 
-  task :certify_existing_users => :environment do
+  task :certify_existing_users,[:path] => :environment do |t, args|
 
-    test_spreadsheet = Rails.root.join('test','lib','assets','TRAINING_DATABASE.csv')
+    test_spreadsheet = Rails.root.join(args[:path])
 
     CSV.foreach(test_spreadsheet) do |row|
-      
+
       student_id = row[2]
       name = row[3]
       email = row[6]
