@@ -32,4 +32,12 @@ class MsrMailer < ApplicationMailer
 				 subject: "Please sign the terms and conditions!")
   end
 
+	def issue_email(name, email, subject, comments)
+		@name = name
+		@email = email
+		@subject = subject
+		@comments = comments
+
+		mail(to: "webmaster@makerepo.com", subject: subject)
+	end
 end
