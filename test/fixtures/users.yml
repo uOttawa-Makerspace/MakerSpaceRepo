@@ -61,7 +61,7 @@ sara:
   name: Sara
   email: sara@sara.com
   terms_and_conditions: false
-  password: Password1
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   identity: faculty_member
   gender: female
   read_and_accepted_waiver_form: false
