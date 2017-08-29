@@ -55,12 +55,12 @@
                 <br>
              <span id = "required" style="float:right;padding-right:5px;font-weight:bold;">I Agree</span>
             <%= f.check_box :read_and_accepted_waiver_form, :style => "float:right;", :onclick => "showCreateButton()" %>
-            <%= content_tag :span, @new_user.errors[:read_and_accepted_waiver_form].first, class: 'form-error' %>
+            <%= content_tag :span, @user.errors[:read_and_accepted_waiver_form].first, class: 'form-error' %>
             </label>
           </div>
         </div>
         <br>
-        
+
     <% end %>
 
     <% if @user.identity == "unknown" %>
