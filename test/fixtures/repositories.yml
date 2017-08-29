@@ -9,6 +9,7 @@ one:
   category: 3D-Model
   user_username: bob
 
+
 two:
   id: 2
   user_id: 2
@@ -18,8 +19,30 @@ two:
   category: Virtual Reality
   user_username: mary
 
-gng2101repo:
+
+three:
   id: 3
+  user_id: 2
+  title: Repository3
+  description: description3
+  slug: repository3
+  category: other-projects
+  user_username: mary
+
+# invalid repository
+#doesn't have any photos
+four:
+  id: 4
+  user_id: 1
+  title: Repository4
+  description: description4
+  slug: repository4
+  user_username: bob
+  category: other-projects
+
+
+gng2101repo:
+  id: 5
   user_id: 1
   title: GNG2101 Hydrophonics
   description: description2
@@ -28,7 +51,7 @@ gng2101repo:
 
 
 gng1103repo:
-  id: 4
+  id: 6
   user_id: 1
   title: GNG-1103SopmeProjectName
   description: description2
