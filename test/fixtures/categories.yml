@@ -11,3 +11,8 @@ two:
 three:
   repository_id:  3
   name: other-projects
+
+four:
+  repository_id:  4
+  name: other-projects
+

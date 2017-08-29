@@ -11,6 +11,7 @@ one:
   share_type: public
 
 
+
 two:
   id: 2
   user_id: 2
@@ -20,7 +21,6 @@ two:
   category: Virtual Reality
   user_username: mary
   share_type: public
-
 
 three:
   id: 3
@@ -32,3 +32,15 @@ three:
   user_username: mary
   share_type: private
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+
+# invalid repository
+#doesn't have any photos
+four:
+  id: 4
+  user_id: 1
+  title: Repository4
+  description: description4
+  slug: repository4
+  user_username: bob
+  category: other-projects
+

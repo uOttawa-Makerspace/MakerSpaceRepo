@@ -127,6 +127,23 @@ class UsersControllerTest < ActionController::TestCase
     @repo_user = User.find_by username: "mary"
     @repositories = @repo_user.repositories.public_repos.where(make_id: nil)
     refute @repositories.include?(Repository.find(3))
+
+  test "user can view their profile" do
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    # bob has an invalid repository
+    get :show, username: "bob"
+    assert_response :success
+  end
+
+  test "users can view others' profile" do
+    session[:user_id] = User.find_by(username: "adam").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    # bob has an invalid repository
+    get :show, username: "bob"
+
   end
 
 end

@@ -36,6 +36,11 @@ class Repository < ActiveRecord::Base
   validates :password,
     presence: { message: "Password is required for private projects" }, if: :private?
 
+  validates :photos,
+  :length => { :minimum => 1 }, on: [:create, :update],
+  :presence => {message: "At least one photo is required"}, on: [:create, :update]
+
+
   before_save do
     self.slug = self.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
@@ -43,6 +48,7 @@ class Repository < ActiveRecord::Base
   before_destroy do
     self.user.decrement!(:reputation, 25)
   end
+
 
   def private?
     self.share_type.eql?("private")
@@ -61,6 +67,7 @@ class Repository < ActiveRecord::Base
     @pword = Password.create(new_password)
     self.password = @pword
   end
+
 
   # validates :category,
   #   inclusion: { within: category_options },

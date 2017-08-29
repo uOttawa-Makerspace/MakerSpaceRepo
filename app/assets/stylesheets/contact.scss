@@ -1,0 +1,56 @@
+@import "lib";
+
+section#contact-us{
+  @include outer-container(60rem);
+  background-color: #fff;
+  padding: 0 5% 2rem;
+
+  div.title{
+  	color: #366;
+  	max-width: 40vmax;
+  	border-bottom: 2px solid #366;
+  	font-size: 2rem;
+  	font-weight: 700;
+  	padding: 3rem 0 0.75rem;
+  	margin-bottom: 4rem;
+  }
+
+  div.container{
+    @include outer-container(100%);
+  }
+
+  div.space{
+    color: #366;
+    font-weight: 500;
+    font-size: 18px;
+    margin-bottom: 0.5rem;
+  }
+
+  li{
+    color: #666;
+    font-size: 0.9rem;
+  }
+
+  div.column{
+    @include span-columns(4, 0.25);
+    display: inline-block;
+    margin-bottom: 2rem;
+  }
+
+  a:hover{
+    text-decoration: underline;
+    color: teal;
+  }
+
+  #links{
+    font-size: 20px;
+    color: #366;
+    line-height: 10mm;
+    white-space: nowrap;
+
+    a:hover{
+      text-decoration: none;
+      color: teal;
+    }
+  }
+}

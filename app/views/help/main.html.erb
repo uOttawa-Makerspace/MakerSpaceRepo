@@ -1,68 +1,29 @@
 <% provide(:title, "Help Center") %>
 <section id="help-center">
- 
+
   <div class="title">Help Center</div>
 
   <div class="container">
 
     <div class="col">
-      <div class="category">Getting Started</div>
-        <ul class="fa-ul">
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Setting up an account'), getting_started_sua_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Creating a repository'), getting_started_cr_path %></li>
-        </ul>
-    </div>
-
-    <div class="col">
-      <div class="category">Repository</div>
-        <ul class="fa-ul">
-          <li><%= link_to fa_icon("angle-double-right li", text: ' What is a repository?'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' How do I embed youtube videos?'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Why can\'t I add files?'), "" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' What is a "make"?'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Creating a "make" of a repository'), "#" %></li>
-        </ul>
-    </div>
-
-    <div class="col">
-      <div class="category">Policy</div>
-        <ul class="fa-ul">
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Community Guidelines'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Terms of Service'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Privacy Policy'), "#" %></li>
-        </ul>
+      <div class="category">If you're facing technical issues, please contact us.</div>
     </div>
 
   </div>
+  <div class="issue-report">
+    <%= form_tag send_email_path, method: :put do %>
+      <%= label_tag :name , "Full Name" %>
+      <%= text_field_tag :name,'', autofocus: true, :required => true %>
 
-  <div class="container">
-    <div class="col">
-      <div class="category">User Accounts</div>
-        <ul class="fa-ul">
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Changing your password'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' How do I reset my password?'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Why can\'t I change my username?'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Where can I view or change my email address?'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' How do I request new features?'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' How do I delete my account?'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Linking user account to github account'), "#" %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' What are reputation points?'), "#" %></li>
-        </ul>
-    </div>
+      <%= label_tag :email %>
+      <%= text_field_tag :email,'', autofocus: true, :required => true %>
 
-    <div class="col">
-      <div class="category">Repo License</div>
-        <ul class="fa-ul">
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution'), licenses_cca_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution - Share Alike'), licenses_ccasa_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution - No Derivatives'), licenses_ccand_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Common Creative - Attribution - Non-Commercial'), licenses_ccanc_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Attribution - Non-commercial - Share Alike'), licenses_ancsa_path %></li>
-          <li><%= link_to fa_icon("angle-double-right li", text: ' Attribution - Non-Commercial - No Derivatives'), licenses_ancnd_path %></li>
-        </ul>
-    </div>
+      <%= label_tag :subject %>
+      <%= text_field_tag :subject,'', autofocus: true, :required => true %>
+      <%= label_tag :comments %>
+      <%= text_area_tag :comments,'', autofocus: true, :required => true, placeholder: "Please explain your issue." %>
 
+      <%= submit_tag("Submit", class: 'submit-button') %>
+    <% end %>
   </div>
-
-
 </section>
