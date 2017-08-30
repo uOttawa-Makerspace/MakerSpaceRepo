@@ -21,7 +21,7 @@ class RfidControllerTest < ActionController::TestCase
   end
 
   test "posting existing card does not create a new record" do
-    rfid = rfids(:old)
+    rfid = rfids(:bobs)
 
     assert_no_difference('Rfid.count') do
       post :card_number, rfid: rfid.card_number, mac_address: rfid.mac_address
@@ -47,7 +47,7 @@ class RfidControllerTest < ActionController::TestCase
   end
 
   test "posting existing card with user returns ok" do
-    rfid = rfids(:assigned)
+    rfid = rfids(:marrys)
 
     post :card_number, rfid: rfid.card_number, mac_address: "m4k3rsp4c3-pi-1"
 
@@ -63,15 +63,32 @@ class RfidControllerTest < ActionController::TestCase
   end
 
   test "can sign in to a space" do
-    rfid = rfids(:assigned)
+    rfid = rfids(:marrys)
     raspi =  pi_readers(:two)
 
     post :card_number, rfid: rfid.card_number, mac_address: raspi.pi_mac_address
 
-    lab_session = LabSession.find_by(user_id: rfid.user_id, pi_reader_id: raspi.id)
-    
+    lab_session = LabSession.where(user_id: rfid.user_id, pi_reader_id: raspi.id).last
+    rfid_status = JSON.parse(response.body)['success']
+
+    assert rfid_status == "RFID sign in" #this is what the raspberry pi recieves
     assert lab_session.present?
+    assert lab_session.sign_out_time > Time.now
     assert raspi.space.signed_in_users.include? rfid.user
   end
 
+  test "can sign out of a space" do
+    rfid = rfids(:adams)
+    raspi = pi_readers(:three)
+
+    post :card_number, rfid: rfid.card_number, mac_address: raspi.pi_mac_address
+
+    lab_session = LabSession.where(user_id: rfid.user_id, pi_reader_id: raspi.id).last
+    rfid_status = JSON.parse(response.body)['success']
+
+    assert rfid_status == "RFID sign out" #this is what the raspberry pi recieves
+    assert lab_session.present?
+    assert lab_session.sign_out_time < Time.now
+    refute raspi.space.signed_in_users.include? rfid.user
+  end
 end

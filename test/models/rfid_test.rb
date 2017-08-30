@@ -1,9 +1,9 @@
 require 'test_helper'
 
 class RfidTest < ActiveSupport::TestCase
-  
-	test "Card's presence" do 
-		rfid = rfids(:assigned)
+
+	test "Card's presence" do
+		rfid = rfids(:marrys)
 
 		rfid.card_number = "123456"
 		assert rfid.valid? , "Card number is required."
@@ -14,7 +14,7 @@ class RfidTest < ActiveSupport::TestCase
 
 	test "Card's uniqueness" do
 
-		rfid = rfids(:assigned)
+		rfid = rfids(:marrys)
 
 		rfid.card_number = "123456789"
 		assert rfid.invalid?, "Card number is already in use."

@@ -1,19 +1,26 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
-old:
+bobs:
   user_id: 1
   card_number: "123456789"
   created_at: <%= Time.now - 30.days %>
   updated_at: <%= Time.now - 30.days %>
   mac_address: m4k3rsp4c3-pi-1
 
-assigned:
+marrys:
   user_id: 2
   card_number: "987654321"
   created_at: <%= Time.now - 20.days %>
   updated_at: <%= Time.now - 20.days %>
   mac_address: m4k3rsp4c3-pi-1
 
+adams:
+  user_id: 1337
+  card_number: "133708"
+  created_at: <%= Time.now - 3.days %>
+  updated_at: <%= Time.now - 3.days %>
+  mac_address: n3w-m4c-4dr3ss
+  
 no_user:
   user_id:
   card_number: "000111222"
