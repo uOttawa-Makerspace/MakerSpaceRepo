@@ -35,13 +35,6 @@ class Admin::TrainingsController < AdminAreaController
     redirect_to :back
   end
 
-  def training_report(id)
-    respond_to do |format|
-      format.html
-      format.csv {send_data ReportGenerator.training_session_report(id) }
-  end
-
-  end
   private
 
   def training_params
