@@ -1,5 +1,27 @@
 @import "lib";
 
+section#report{
+	.edit-column{
+		p{
+	    max-width: 420px;
+	    text-align: left;
+	    color: #366;
+	    display: inline;
+	    width: 100%;
+	    margin: 0 auto;
+			line-height: 10mm;
+			font-size: 18px;
+
+		}
+	}
+
+	#report{
+		border-bottom: 1px solid #5f9ea0;
+		padding-top: 30px;
+	}
+}
+
+
 button{
 	color: #fff;
 	background: #5f9ea0;
@@ -7,14 +29,36 @@ button{
 	height: 30px;
 	font:300 1rem 'Raleway', helvetica, sans-serif;
 	padding: 0.2rem;
-    border-radius: 2px;
-    border: 1px solid #aaa;
+  border-radius: 2px;
+  border: 1px solid #aaa;
+	display: inline;
+  float: right;
 
     &:hover{
   		cursor: pointer;
+			opacity: 0.8;
     }
 }
-
 h1{
 	color: #333;
+}
+.update_button{
+	width: 120px;
+  height: 35px;
+	letter-spacing: 1px;
+	background-color: #4bbc9c;
+	color: #fff;
+	padding: 0.2rem;
+	font:400 1.2rem 'Raleway', helvetica, sans-serif;
+	display: block;
+  margin-left: 10px;
+	&:hover{
+		cursor: pointer;
+	}
+}
+
+.date_selection{
+		border-top: 2px solid #5f9ea0;
+		border-bottom: 2px solid #5f9ea0;
+		padding: 1rem
 }

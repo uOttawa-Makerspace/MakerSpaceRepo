@@ -20,6 +20,15 @@ class Certification < ActiveRecord::Base
     return self.updated_at < 2.years.ago
   end
 
+
+  def self.to_csv (attributes)
+    CSV.generate do |csv|
+      attributes.each do |row|
+        csv << row
+      end
+    end
+  end
+
   def unique_cert
     @user_certs = self.user.certifications rescue nil
     if @user_certs
@@ -35,5 +44,7 @@ class Certification < ActiveRecord::Base
     end
     return true
   end
+
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
 end
