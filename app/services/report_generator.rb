@@ -89,19 +89,24 @@ class ReportGenerator
   end
 
 
-  def training_session_report(session_id)
+  def self.training_session_report(id)
     @session = TrainingSession.find(id)
     @students = @session.users
 
     column = []
-    # column << ["title", "owner", "url", "categories"]
-
+    column << ["Training Type:", Training.find(@session.training_id).name] << ["Location: ", Space.find(Training.find(@session.training_id).space_id).name]
+    column << ["Date:", @session.created_at.strftime('%a, %d %b %Y %H:%M')] << ["Trainer:", @session.user.name] << ["Course:", @session.course]
+    column << [] << ["Trainees"]<< ["Name", "Email"]
     @students.each do |student|
       row = []
       row << student.name << student.email
       column << row
     end
 
-    @session.to_csv(column)
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
   end
 end
