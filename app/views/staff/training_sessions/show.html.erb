@@ -15,6 +15,7 @@
     </div>
     <br>
 
+  <% unless @current_training_session.completed? %>
     <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
     <div>Trainer: <%= @staff.name %></div>
       <% if @user.admin?%>
@@ -32,7 +33,13 @@
 
     <%= submit_tag "Update", class: 'save-button' %>
     <% end %>
-
+  <% else %>
+    <div>Trainer: <%= @staff.name %></div>
+    <div>Training: <%= @current_training_session.training.name %></div>
+    <div>Couse: <%= @current_training_session.course %></div><br>
+  <% end %>
+  <br>
+  
     <table class="training-session-users-table">
         Users in this training session
         <tr>
@@ -175,7 +182,7 @@
         style:"float:right;float:top;"%>
     <% end %>
     <br></br>
-    
+
     <br></br>
 
   </div>
