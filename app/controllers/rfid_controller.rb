@@ -11,7 +11,6 @@ class RfidController < SessionsController
 
     if rfid
       if rfid.user_id
-        render json: { success: "RFID exist" }, status: :ok
         check_session(rfid)
       else
         rfid.touch
@@ -35,6 +34,8 @@ class RfidController < SessionsController
       last_active_location = PiReader.find_by(pi_mac_address: active_sessions.last.pi_reader.pi_mac_address)
       if last_active_location != new_location
         new_session(rfid, new_location)
+      else
+        render json: { success: "RFID sign out" }, status: :ok
       end
     else
       new_session(rfid, new_location)
@@ -46,5 +47,6 @@ class RfidController < SessionsController
     sign_out = sign_in + 3.hours
     new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out, mac_address: params[:mac_address], pi_reader_id: new_location.id)
     new_session.save
+    render json: { success: "RFID sign in" }, status: :ok
   end
 end
