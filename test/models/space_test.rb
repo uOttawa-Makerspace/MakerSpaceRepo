@@ -6,7 +6,7 @@ class SpaceTest < ActiveSupport::TestCase
     refute spaces(:brunsfield).users.include? user
     #creating a lab session with a pi_reader that belongs_to brunsfield
     #makse Sara signed in to brunsfield
-    LabSession.create(user_id: user.id, pi_reader_id: 2)
+    LabSession.create(user_id: user.id, space_id: 2)
     assert spaces(:brunsfield).users.include? user
   end
 
