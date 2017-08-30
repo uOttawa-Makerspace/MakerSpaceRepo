@@ -22,9 +22,12 @@ div.panel-title {
 }
 
 div.waiver-form-outer{
-	height:160px;
-	overflow: auto;
+
+	position: relative;
+	left: -180px;
+	width: 850px;
 	background-color: transparentize(yellow, 0.6);
+
 }
 
 div.setting-side-panel{
