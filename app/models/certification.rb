@@ -14,6 +14,15 @@ class Certification < ActiveRecord::Base
     return self.training_session.user.name
   end
 
+
+  def self.to_csv (attributes)
+    CSV.generate do |csv|
+      attributes.each do |row|
+        csv << row
+      end
+    end
+  end
+
   def unique_cert
     @user_certs = self.user.certifications
     @user_certs.each do |cert|
@@ -22,5 +31,7 @@ class Certification < ActiveRecord::Base
       end
     end
   end
+
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
 end
