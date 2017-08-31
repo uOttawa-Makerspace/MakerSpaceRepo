@@ -88,25 +88,30 @@
 
     <br><br>
     <section id="waivers">
-      <label>Choose a language then read the Waiver Form</label><br></br>
-      <div class="waiver-button" onClick="showWaiver('english-waiver', 'french-waiver')">English Version</div><br>
+      <div class="top">
+        <b>
+        RELEASE OF LIABILITY, WAIVER OF CLAIMS, ASSUMPTION OF RISKS AND INDEMNITY AGREEMENT.<br></br>
+        ENTENTE D’EXONÉRATION DE RESPONSABILITÉ, DE RENONCIATION AUX RÉCLAMATIONS ET D’ACCEPTATION DES RISQUES
+        </b>
+      </div><br>
+      <label id="required">Select a version / Sélectionnez une version</label>
+      <div class="waiver-button" onClick="showWaiver('english-waiver', 'french-waiver')">English Version</div>
       <div class="waiver-button" onClick="showWaiver('french-waiver', 'english-waiver')">Version Française</div><br>
 
-<section id="english-waiver" style="display:none;">
-
-    <div><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "I agree to this waiver:"%></div>
-      <label style="font-size:0.7em">
-        scroll down and click <span id = "required" style="font-weight:bold;">I Agree</span>
-      </label><br></br>
-      <div class="waiver-form-outer">
-        <div class="waiver-form-inner" style="font-size:1.4em;">
-         <pre>
-            <b>
+        <section id="english-waiver" style="display:none;">
+            <div class="waiver-container"><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "I agree to this waiver:"%></div>
+              <label style="font-size:0.7em">
+                scroll down and click <span id = "required" style="font-weight:bold;">I Agree</span>
+              </label><br></br>
+              <div class="waiver-form-outer">
+                <div class="waiver-form-inner" style="font-size:1.4em;">
+<pre>
+<b>
                                 PLEASE READ CAREFULLY!
 
       RELEASE OF LIABILITY, WAIVER OF CLAIMS, ASSUMPTION OF RISKS AND  INDEMNITY
            AGREEMENT (hereinafter referred to as the “Release Agreement”).
-            </b>
+</b>
 
 BY SIGNING THIS AGREEMENT YOU WILL WAIVE CERTAIN LEGAL RIGHTS, INCLUDING THE RIGHT
 TO SUE OR CLAIM COMPENSATION FOLLOWING AN ACCIDENT
@@ -174,35 +179,33 @@ follow the University’s instructions or directions.
 <b>
 I HAVE BEEN GIVEN THE OPPORTUNITY AND HAVE BEEN ENCOURAGED TO SEEK INDEPENDENT
 LEGAL ADVICE PRIOR TO SIGNING THIS AGREEMENT.</b>
-            </pre>
 
-           <span style="font-size:1em;">
-             By checking this box, <b>I ACCEPT AND FULLY ASSUME</b> all such (health and safety) risks, dangers and    hazards which may be associated with my participation.
-           </span>
-           <%= content_tag :span, @new_user.errors[:read_and_accepted_waiver_form].first, class: 'form-error' %><br></br>
-           <%= f.check_box :read_and_accepted_waiver_form, :onclick => "showCreateButton()" %><b>I AGREE</b>
+By checking this box, <b>I ACCEPT AND FULLY ASSUME</b> all such (health and safety)
+risks, dangers and hazards which may be associated with my participation.
+</pre>
+                   <%= content_tag :span, @new_user.errors[:read_and_accepted_waiver_form].first, class: 'form-error' %>
+                   <%= f.radio_button :read_and_accepted_waiver_form, true, :onclick => "showCreateButton()", style:"display:inline;width:15px;"%>
+                   <b id="required" style="display:inline;">I AGREE</b>
+                </div>
+              </div>
+            </div>
+        <br></br>
+        </section>
 
-        </div>
-      </div>
-    </div>
-<br></br>
-</section>
-
-<section id="french-waiver" style="display:none;">
-
-    <div><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "I agree to this waiver but in french:"%></div>
-      <label style="font-size:0.7em">
-        scroll down and click <span id = "required" style="font-weight:bold;">I Agree in french</span>
-      </label><br></br>
-      <div class="waiver-form-outer">
-        <div class="waiver-form-inner" style="font-size:1.4em;">
-         <pre>
-            <b>
+        <section id="french-waiver" style="display:none;">
+            <div class="waiver-container"><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "Je suis d'accord avec cette renonciation :"%></div>
+              <label style="font-size:0.7em">
+                Défiler vers le bas et clique <span id = "required" style="font-weight:bold;">Je suis d'accord</span>
+              </label><br></br>
+              <div class="waiver-form-outer">
+                <div class="waiver-form-inner" style="font-size:1.4em;">
+<pre>
+<b>
                                 À LIRE ATTENTIVEMENT!
 
       ENTENTE D’EXONÉRATION DE RESPONSABILITÉ, DE RENONCIATION AUX RÉCLAMATIONS
                               ET D’ACCEPTATION DES RISQUES
-            </b>
+</b>
 
 EN SIGNANT LE PRÉSENT DOCUMENT, VOUS RENONCEZ À CERTAINS DROITS RECONNUS PAR LA
 LOI, Y COMPRIS LE CELUI D’INTENTER DES POURSUITES OU DE RÉCLAMER UNE INDEMNISATION
@@ -277,27 +280,30 @@ infraction en matière de santé et de sécurité.
 <b>
 ON M’A RECOMMANDÉ ET DONNÉ L’OCCASION D’OBTENIR DES CONSEILS D’UN JURISTE IMPARTIAL
 AVANT DE SIGNER LE PRÉSENT DOCUMENT.</b>
-            </pre>
 
-           <span id = "required" style="float:right;padding-right:5px;font-weight:bold;">
-             En cochant cette case, <b>J’ACCEPTE ET J’ASSUME PLEINEMENT</b> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation à l’Événement.
-           </span><br></br>
-           <%= content_tag :span, @new_user.errors[:read_and_accepted_waiver_form].first, class: 'form-error' %><br></br>
-           <%= f.check_box :read_and_accepted_waiver_form, :onclick => "showCreateButton()" %><b>JE SUIS D'ACCORD</b>
+En cochant cette case, <b>J’ACCEPTE ET J’ASSUME PLEINEMENT</b> tous les risques et
+dangers pour la santé et la sécurité que peut comporter ma participation à
+l’Événement.
+</pre>
+                   <%= content_tag :span, @new_user.errors[:read_and_accepted_waiver_form].first, class: 'form-error' %>
+                   <%= f.radio_button :read_and_accepted_waiver_form, true, :onclick => "showCreateButton()", style:"display:inline;width:15px;"%>
+                   <b id="required" style="display:inline;">JE SUIS D'ACCORD</b>
 
-        </div>
-      </div>
-    </div>
-</section>
-    <br>
-    <span id='fake-signup-button'> Create Account/Créer mon Compte </span>
-    <span id='signup-button'>
-      <%= f.submit "Create Account/Créer mon Compte", class: 'signup-button' %>
-      <% if flash[:notice] %>
-        <div id="notice"><%flash[:notice] %></div>
-      <% end %>
-    </span>
+                </div>
+              </div>
+            </div>
+        </section>
+      </section>
 
-  <% end %>
+            <br>
+            <span id='fake-signup-button'> Create Account/Créer mon Compte </span>
+            <span id='signup-button'>
+              <%= f.submit "Create Account/Créer mon Compte", class: 'signup-button' %>
+              <% if flash[:notice] %>
+                <div id="notice"><%flash[:notice] %></div>
+              <% end %>
+            </span>
+
+          <% end %>
 
 </section>

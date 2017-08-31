@@ -23,6 +23,11 @@ div.panel-title {
 
 section#waivers{
 
+	div.top{
+		padding: 6px;
+		background-color: transparentize(yellow, 0.7);
+	}
+
 	div.waiver-button{
 		padding: 0.5rem 1rem;
 		border: none;
@@ -40,9 +45,9 @@ section#waivers{
 	}
 
 	div.waiver-form-outer{
-
 		position: relative;
-		left: -180px;
+		padding: 14px;
+		left: -200px;
 		width: 850px;
 		background-color: transparentize(yellow, 0.6);
 
