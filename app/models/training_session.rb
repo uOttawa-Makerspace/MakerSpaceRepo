@@ -9,16 +9,11 @@ class TrainingSession < ActiveRecord::Base
   validates :training, presence: { message: "A training subject is required"}
   validates :user, presence: { message: "A trainer is required"}
   validate :is_staff
-  validate :course_choice
+
+  before_save :check_course
 
   def is_staff
     errors.add(:string, "user must be staff") unless self.user.staff?
-  end
-
-  def course_choice
-    if self.course == 'no course'
-      self.course = nil
-    end
   end
 
   def courses
@@ -27,6 +22,14 @@ class TrainingSession < ActiveRecord::Base
 
   def completed?
     return self.certifications.length > 0
+  end
+
+  private
+  
+  def check_course
+    if self.course == 'no course'
+      self.course = nil
+    end
   end
 
 end
