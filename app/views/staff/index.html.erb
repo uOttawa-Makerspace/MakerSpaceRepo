@@ -17,7 +17,7 @@
 
 
     <div>
-      <%= form_tag("/staff_dashboard/change_space", method: "put", action: "change_space") do %>
+      <%= form_tag(staff_dashboard_change_space_path, method: "put", action: "change_space") do %>
         <% label_tag 'space_name' %>
         <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "space-selector" %><br></br>
       <%= submit_tag "update", class: "update-button" %>
