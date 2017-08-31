@@ -128,7 +128,7 @@ class UsersControllerTest < ActionController::TestCase
     @repositories = @repo_user.repositories.public_repos.where(make_id: nil)
     refute @repositories.include?(Repository.find(3))
   end
-  
+
 
   test "old valid user should be able to update profile" do
     session[:user_id] = User.find_by(username: "mary").id
@@ -166,7 +166,7 @@ class UsersControllerTest < ActionController::TestCase
     assert_equal "Honours BA in English", @user.program
     assert_equal "3", @user.year_of_study
     assert_redirected_to settings_profile_path
-
+  end
 
   test "user can view their profile" do
     session[:user_id] = User.find_by(username: "bob").id
@@ -184,8 +184,6 @@ class UsersControllerTest < ActionController::TestCase
     # bob has an invalid repository
     get :show, username: "bob"
     assert_response :success
-
-
   end
 
 end

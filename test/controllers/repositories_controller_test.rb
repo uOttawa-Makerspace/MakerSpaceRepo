@@ -2,20 +2,20 @@ require 'test_helper'
 
 class RepositoriesControllerTest < ActionController::TestCase
 
-  # test "users can create a repository" do
-  #   session[:user_id] = User.find_by(username: "mary").id
-  #   session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
-  #
-  #   post :create, user_username:"mary", slug:"repository44",
-  #   repository: {id: 44,
-  #               title: "Repository44",
-  #               description: "description44",
-  #               category: "3D-Model",
-  #               share_type: "public"}
-  #
-  #   assert_response :success, "Failed at creating the repository"
-  #   assert Repository.find_by(title: "Repository44").present?
-  # end
+  test "users can create a repository" do
+    session[:user_id] = User.find_by(username: "mary").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    post :create, user_username:"mary", slug:"repository44",
+    repository: {id: 44,
+                title: "Repository44",
+                description: "description44",
+                category: "3D-Model",
+                share_type: "public"}
+
+    assert_response :success, "Failed at creating the repository"
+    assert Repository.find_by(title: "Repository44").present?
+  end
 
   test "users can update their repository" do
     session[:user_id] = User.find_by(username: "mary").id

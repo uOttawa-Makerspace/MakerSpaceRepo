@@ -68,6 +68,7 @@ class SessionsController < ApplicationController
 
   def authorized_repo_ids
     session[:authorized_repo_ids] ||= []
+  end
   
   def selected_dates
     session[:selected_dates] ||= []
