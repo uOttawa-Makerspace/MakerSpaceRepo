@@ -96,6 +96,7 @@ class ReportGenerator
     column = []
     column << ["Training Type:", Training.find(@session.training_id).name] << ["Location: ", Space.find(Training.find(@session.training_id).space_id).name]
     column << ["Date:", @session.created_at.strftime('%a, %d %b %Y %H:%M')] << ["Trainer:", @session.user.name] << ["Course:", @session.course]
+    column << ["Total Number of Trainees:" , @students.length]
     column << [] << ["Trainees"]<< ["Name", "Email"]
     @students.each do |student|
       row = []
