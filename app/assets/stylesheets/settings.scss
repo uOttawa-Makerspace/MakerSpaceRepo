@@ -21,13 +21,32 @@ div.panel-title {
   font-size: 35px;
 }
 
-div.waiver-form-outer{
+section#waivers{
 
-	position: relative;
-	left: -180px;
-	width: 850px;
-	background-color: transparentize(yellow, 0.6);
+	div.waiver-button{
+		padding: 0.5rem 1rem;
+		border: none;
+		text-transform: uppercase;
+		color: #777;
+		letter-spacing: 0.15em;
+		border-radius: 2px;
+		background-color: #5f9ea0;
+		color: #fff;
+		margin-bottom: 20px;
+	}
 
+	section{
+		display:none;
+	}
+
+	div.waiver-form-outer{
+
+		position: relative;
+		left: -180px;
+		width: 850px;
+		background-color: transparentize(yellow, 0.6);
+
+	}
 }
 
 div.setting-side-panel{

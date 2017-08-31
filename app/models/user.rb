@@ -29,7 +29,7 @@ class User < ActiveRecord::Base
     length: { maximum: 250, message: 'Maximum of 250 characters.' }
 
   validates :read_and_accepted_waiver_form,
-    inclusion: {in: [true], on: :create, message: 'You must agree to the terms and conditions' }
+    inclusion: {in: [true], on: :create, message: 'You must agree to the waiver of form' }
 
   validates :password,
     presence: { message: "Your password is required." },
