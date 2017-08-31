@@ -26,7 +26,7 @@ class Repository < ActiveRecord::Base
     uniqueness: { message: "Project title is already in use.", scope: :user_username}
 
   validates :photos,
-  :length => { :minimum => 1 }, on: [:create, :update],
+  :length => { :minimum => 1 },
   :presence => {message: "At least one photo is required"}, on: [:create, :update]
 
   before_save do
