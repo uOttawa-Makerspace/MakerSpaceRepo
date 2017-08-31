@@ -118,7 +118,7 @@ class User < ActiveRecord::Base
     return self.lab_sessions.last.mac_address
   end
 
-  scope :unsigned_tac_users, -> { where('terms_and_conditions = false') }
+  scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
 
   scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
