@@ -7,7 +7,7 @@ Rails.application.routes.draw do
     get 'forgot_password'
     get 'reset_password'
     get 'terms-of-service', as: 'tos'
-    get 'privacy'
+    get 'hours'
     get 'about'
     get 'contact'
     get 'report_repository', path: 'report_repository/:repository_id'
@@ -57,6 +57,7 @@ Rails.application.routes.draw do
   end
 
   get 'help', to: 'help#main'
+  put 'send_email', to:'help#send_email'
 
   namespace :licenses do
     get 'common-creative-attribution', as: 'cca'
@@ -82,6 +83,9 @@ Rails.application.routes.draw do
         get 'unique_visits'
         get 'faculty_frequency'
         get 'gender_frequency'
+        get 'training'
+        put 'select_date_range'
+        get 'repository'
       end
     end
 

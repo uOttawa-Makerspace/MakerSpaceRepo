@@ -34,6 +34,16 @@ class Repository < ActiveRecord::Base
   end
 
 
+  def self.to_csv (attributes)
+    CSV.generate do |csv|
+      attributes.each do |row|
+        csv << row
+      end
+    end
+  end
+
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
+
   # validates :category,
   #   inclusion: { within: category_options },
   #   presence: { message: "A category is required."}

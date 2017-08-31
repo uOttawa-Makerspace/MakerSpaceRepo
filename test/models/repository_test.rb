@@ -35,4 +35,5 @@ class RepositoryTest < ActiveSupport::TestCase
 		assert repository.invalid?, "Invalid project title"
 
 	end
+
 end

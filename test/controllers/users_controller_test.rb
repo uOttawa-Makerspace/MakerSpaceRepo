@@ -135,6 +135,24 @@ class UsersControllerTest < ActionController::TestCase
     assert_equal "Honours BA in English", @user.program
     assert_equal "3", @user.year_of_study
     assert_redirected_to settings_profile_path
+
+  test "user can view their profile" do
+    session[:user_id] = User.find_by(username: "bob").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    # bob has an invalid repository
+    get :show, username: "bob"
+    assert_response :success
+  end
+
+  test "users can view others' profile" do
+    session[:user_id] = User.find_by(username: "adam").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    # bob has an invalid repository
+    get :show, username: "bob"
+    assert_response :success
+
   end
 
 end
