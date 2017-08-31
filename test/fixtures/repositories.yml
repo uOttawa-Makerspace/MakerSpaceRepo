@@ -21,6 +21,8 @@ two:
   category: Virtual Reality
   user_username: mary
   share_type: public
+  created_at: <%= 1.year.ago %>
+
 
 three:
   id: 3
@@ -32,6 +34,7 @@ three:
   user_username: mary
   share_type: private
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+
 
 # invalid repository
 #doesn't have any photos

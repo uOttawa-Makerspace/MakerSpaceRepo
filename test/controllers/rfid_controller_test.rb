@@ -68,8 +68,8 @@ class RfidControllerTest < ActionController::TestCase
 
     post :card_number, rfid: rfid.card_number, mac_address: raspi.pi_mac_address
 
-    lab_session = LabSession.find_by(user_id: rfid.user_id, pi_reader_id: raspi.id)
-    
+    lab_session = LabSession.find_by(user_id: rfid.user_id, space_id: raspi.space.id)
+
     assert lab_session.present?
     assert raspi.space.signed_in_users.include? rfid.user
   end

@@ -39,7 +39,8 @@ class User < ActiveRecord::Base
 
 
   validates :gender,
-    presence: {message: "Your gender is required."}
+    presence: {message: "Your gender is required."},
+    inclusion: {in:["Male", "Female", "Other", "Prefer not to specify", "unknown"]}
 
   validates :faculty,
     presence: {message: "Please provide your faculty"}, if: :student?
@@ -117,9 +118,8 @@ class User < ActiveRecord::Base
     return self.lab_sessions.last.mac_address
   end
 
-  scope :in_last_month, -> { where('created_at BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
-
   scope :unsigned_tac_users, -> { where('terms_and_conditions = false') }
 
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
 end

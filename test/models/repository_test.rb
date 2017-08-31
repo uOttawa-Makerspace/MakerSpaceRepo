@@ -64,14 +64,4 @@ class RepositoryTest < ActiveSupport::TestCase
 		assert repository.invalid?, "private repositories require password"
 	end
 
-	test "repository cannot be created without a photo" do
-
-		repo = Repository.create(:title => 'myRepo', :user_id => 1, :user_username => "bob", :id =>111, :share_type => "public" )
-		assert repo.invalid?, "invlid repo"
-
-		photo = photos(:three)
-		photo.repository_id = 111
-		repo.photos << photo
-		assert repo.valid?, "invlid repo"
-	end
 end
