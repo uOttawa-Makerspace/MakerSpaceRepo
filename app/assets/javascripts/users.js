@@ -6,12 +6,14 @@ function hideField(){
 }
 
 function showCreateButton(){
-	if(document.getElementById("fake-signup-button").style.display != 'none'){
-		document.getElementById("fake-signup-button").style.display = 'none';
-		document.getElementById("signup-button").style.display = 'block';
+	var fake = document.getElementById("fake-signup-button");
+	var real = document.getElementById("signup-button");
+	if(fake.style.display != 'none'){
+		fake.style.display = 'none';
+		real.style.display = 'block';
 	}else{
-			document.getElementById("fake-signup-button").style.display = 'block';
-			document.getElementById("signup-button").style.display = 'none';
+			fake.style.display = 'block';
+			real.style.display = 'none';
 		}
 }
 
