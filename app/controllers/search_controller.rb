@@ -1,16 +1,26 @@
 class SearchController < SessionsController
   before_action :current_user
-  # before_action :signed_in
   require 'will_paginate/array'
 
   def explore
-    @repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).order([sort_order].to_h).page params[:page]
+    @repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).public_repos.order([sort_order].to_h).page params[:page]
+    @photos = photo_hash
+  end
+
+  def equipment
+    sort_arr = sort_order
+
+    name = params[:slug].gsub('-', ' ')
+    @repositories =  Equipment.where(name: name).distinct.includes(:repository).map(&:repository).paginate(:per_page=>12,:page=>params[:page]) do
+      order_by sort_arr.first, sort_arr.last
+    end
+
     @photos = photo_hash
   end
 
   def search
   	sort_arr = sort_order
-  	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).where("lower(title) LIKE ?
+  	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).public_repos.where("lower(title) LIKE ?
                                                 OR lower(description) LIKE ?
                                                 OR lower(user_username) LIKE ?
                                                 OR lower(category) LIKE ?",
@@ -23,24 +33,33 @@ class SearchController < SessionsController
 
   def category
     sort_arr = sort_order
+
     if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
       @repositories1 = Repository.where(category: category).distinct
       @repositories = @repositories1.paginate(:per_page=>12,:page=>params[:page]) do
         order_by sort_arr.first, sort_arr.last
       end
     end
+
     if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
       @repositories2 = Category.where(name: name).distinct.includes(:repository).map(&:repository)
       @repositories = @repositories2.paginate(:per_page=>12,:page=>params[:page]) do
         order_by sort_arr.first, sort_arr.last
       end
     end
+
     if category && name
       @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
         order_by sort_arr.first, sort_arr.last
       end
     end
+
+    if params['featured']
+      @repositories = @repositories.select{|r| r.featured?}.uniq.sort_by(&:updated_at).reverse.paginate(:per_page=>12,:page=>params[:page])
+    end
+
     @photos = photo_hash
+
   end
 
   def equipment
@@ -86,6 +105,8 @@ class SearchController < SessionsController
   SLUG_TO_CATEGORY_MODEL = {
    'internet-of-things' => 'Internet of Things',
    'course-related-projects' => 'Course-related Projects',
+   'gng2101' => 'gng2101',
+   'gng1103' => 'gng1103',
    'health-sciences' => 'Health Sciences',
    'wearable' => 'Wearable',
    'mobile-development' => 'Mobile Development',

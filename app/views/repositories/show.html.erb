@@ -20,8 +20,12 @@
 
     <br></br>
     <% if @user.admin?%>
+        Currently Featured: <%=  @repository.featured.to_s.upcase %><br></br>
+        <%= link_to "Feature / Unfeature", pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
+            class: "pin-button" %>
+        <br></br>
         <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
-              style: 'color:#FFF;  background-color: #b02a12;padding: 0.5rem 1rem;text-color:#FFFF' %>
+            class: "delete-button", data: {confirm: 'Are you sure?'} %>
     <% end %>
 
 

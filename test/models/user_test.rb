@@ -188,4 +188,18 @@ class UserTest < ActiveSupport::TestCase
     assert_equal(users(:sara).terms_and_conditions, false)
   end
 
+  test "valid user" do
+    user = users(:john)
+    assert user.invalid? , "valid user"
+
+    user.name = "anonymous"
+    user.gender = "unknown"
+    user.identity = "unknown"
+
+    assert user.valid?, "invalid user"
+
+    user = users(:mary)
+    assert user.valid?, "invalid user"
+  end
+
 end

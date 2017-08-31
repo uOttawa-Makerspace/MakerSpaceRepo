@@ -8,6 +8,9 @@ one:
   slug: repository1
   category: 3D-Model
   user_username: bob
+  share_type: public
+  featured: false
+
 
 
 two:
@@ -18,8 +21,9 @@ two:
   slug: repository2
   category: Virtual Reality
   user_username: mary
+  share_type: public
+  featured: true
   created_at: <%= 1.year.ago %>
-
 
 
 three:
@@ -30,6 +34,8 @@ three:
   slug: repository3
   category: other-projects
   user_username: mary
+  share_type: private
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
 
 
 # invalid repository
@@ -42,4 +48,24 @@ four:
   slug: repository4
   user_username: bob
   category: other-projects
+  share_type: public
 
+
+
+gng2101repo:
+  id: 5
+  user_id: 1
+  title: GNG2101 Hydrophonics
+  description: description5
+  slug: gng2101-Hydrophonics
+  user_username: bob
+  share_type: public
+
+gng1103repo:
+  id: 6
+  user_id: 1
+  title: GNG-1103SopmeProjectName
+  description: description5
+  slug: gng-1103sopmeprojectname
+  user_username: bob
+  share_type: public

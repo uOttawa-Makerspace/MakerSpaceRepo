@@ -18,7 +18,23 @@ two:
 
 three:
   repository_id: 3
-  image_file_name: p2
+  image_file_name: p3
+  image_content_type: image/png
+  image_file_size: 3
+  height: 3
+  width: 3
+
+four:
+  repository_id: 5
+  image_file_name: p4
+  image_content_type: image/png
+  image_file_size: 3
+  height: 3
+  width: 3
+
+four:
+  repository_id:
+  image_file_name: p4
   image_content_type: image/png
   image_file_size: 3
   height: 3

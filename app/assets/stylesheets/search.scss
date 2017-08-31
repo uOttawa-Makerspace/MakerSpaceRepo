@@ -26,6 +26,56 @@ section#repositories-index{
 	}
 }
 
+h2.subtitle{
+	font-size: 2rem;
+	color: #5f9ea0;
+	text-align: center;
+	padding-bottom: 0.6rem;
+	margin-bottom: 0.6rem;
+	overflow:auto;
+
+	.focused{
+		display: inline-block;
+		padding: 10px 10px;
+		border-style: double;
+		background-color: #C4DCDB;
+
+		&:hover{
+			background-color: #BEE2E1;
+		}
+	}
+
+	.not-focused{
+		display: inline-block;
+		padding: 10px 10px;
+		color: #5f9ea0;
+
+		&:hover{
+			background-color: #BEE2E1;
+		}
+	}
+}
+
+a.featured{
+	font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+	color: #999;
+}
+
+div.empty-star {
+   margin: 5px 0;
+   position: relative;
+   display: block;
+   color: red;
+   width: 0px;
+   height: 0px;
+   border-right:  10px solid transparent;
+   border-bottom: 7px  solid red;
+   border-left:   10px solid transparent;
+   -moz-transform:    rotate(35deg);
+   -webkit-transform: rotate(35deg);
+   -ms-transform:     rotate(35deg);
+   -o-transform:      rotate(35deg);
+}
 
 
 section#repository-filter{

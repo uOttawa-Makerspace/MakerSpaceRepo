@@ -23,6 +23,7 @@ Rails.application.routes.draw do
     get 'explore'
     get 'search'
     get 'category', path: 'category/:slug'
+    get 'featured', path: 'category/:slug/featured'
     get 'equipment', path: 'equipment/:slug'
   end
 
@@ -128,6 +129,7 @@ Rails.application.routes.draw do
         post 'remove_equipment'
         post 'submit_pi'
         post 'remove_pi'
+        get 'pin_unpin_repository'
 
       end
     end
@@ -168,6 +170,11 @@ Rails.application.routes.draw do
       get 'download_files', path: ':slug/download_files'
       get 'download', path: ':slug/download'
     end
+    member do
+      get 'password_entry', path: '/password_entry'
+      post 'pass_authenticate'
+    end
+
   end
 
   namespace :makes, path: 'makes/:user_username/:slug' do
