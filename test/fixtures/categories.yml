@@ -3,16 +3,20 @@
 one:
   repository_id: 1
   name: Virtual Reality
+  category_option_id: 2
 
 two:
-  repository_id:  2
+  repository_id: 2
   name: Course-related Projects
+  category_option_id: 3
 
 three:
-  repository_id:  3
-  name: other-projects
+  repository_id: 3
+  name: Course-related Projects
+  category_option_id: 3
 
 four:
-  repository_id:  4
-  name: other-projects
+  repository_id: 4
+  name: Course-related Projects
+  category_option_id: 3
 

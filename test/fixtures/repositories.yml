@@ -49,3 +49,24 @@ four:
   user_username: bob
   category: other-projects
   share_type: public
+
+
+
+gng2101repo:
+  id: 5
+  user_id: 1
+  title: GNG2101 Hydrophonics
+  description: description2
+  slug: gng2101-Hydrophonics
+  user_username: bob
+  share_type: public
+
+gng1103repo:
+  id: 6
+  user_id: 1
+  title: GNG-1103SopmeProjectName
+  description: description2
+  slug: gng-1103sopmeprojectname
+  user_username: bob
+  share_type: public
+
