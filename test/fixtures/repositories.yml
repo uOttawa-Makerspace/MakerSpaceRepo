@@ -21,6 +21,8 @@ two:
   category: Virtual Reality
   user_username: mary
   featured: true
+  created_at: <%= 1.year.ago %>
+
 
 three:
   id: 3
@@ -30,6 +32,7 @@ three:
   slug: repository3
   category: other-projects
   user_username: mary
+
 
 # invalid repository
 #doesn't have any photos
@@ -41,3 +44,4 @@ four:
   slug: repository4
   user_username: bob
   category: other-projects
+
