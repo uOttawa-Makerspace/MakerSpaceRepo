@@ -38,6 +38,10 @@ section#waivers{
 		background-color: #5f9ea0;
 		color: #fff;
 		margin-bottom: 20px;
+		&:hover{
+			background-color: transparentize(#5f9ea0, 0.4);
+			cursor: pointer;
+		}
 	}
 
 	section{
