@@ -38,7 +38,7 @@ class StaffDashboardController < StaffAreaController
                       user_id: current_user.id,
                       sign_in_time: Time.now,
                       sign_out_time: Date.tomorrow,
-                      pi_reader_id: reader.id,
+                      space_id: reader.space.id,
                       mac_address: reader.pi_mac_address)
         if new_sesh.save
           flash[:notice] = "Space changed successfully"
