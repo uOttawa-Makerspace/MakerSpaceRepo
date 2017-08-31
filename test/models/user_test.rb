@@ -113,7 +113,7 @@ class UserTest < ActiveSupport::TestCase
 
     user.identity = "unknown"
     assert user.valid?,  "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member, or unknown"
-    
+
     user.identity = "something invalid"
     assert user.invalid?, "Your identity is invalid. Must be one of: grad, undergrad, faculty_member, community_member"
   end
@@ -186,6 +186,20 @@ class UserTest < ActiveSupport::TestCase
   test "unsigned_tac_users scope catches users with unsigned terms and conditions" do
     assert User.unsigned_tac_users.include? users(:sara)
     assert_equal(users(:sara).terms_and_conditions, false)
+  end
+
+  test "valid user" do
+    user = users(:john)
+    assert user.invalid? , "valid user"
+
+    user.name = "anonymous"
+    user.gender = "unknown"
+    user.identity = "unknown"
+
+    assert user.valid?, "invalid user"
+
+    user = users(:mary)
+    assert user.valid?, "invalid user"
   end
 
 end

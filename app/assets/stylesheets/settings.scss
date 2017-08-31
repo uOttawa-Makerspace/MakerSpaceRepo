@@ -280,6 +280,7 @@ label.custom-file-upload{
 	}
 }
 
+
 /* CHANGE PASSWORD */
 
 div.cp-column{
@@ -304,6 +305,47 @@ div.cp-column{
     div.title{
       padding-top: 0;
     }
+
   }
 
 }
+
+// Select2
+.select2-container .select2-selection--single {
+		box-sizing: border-box;
+		cursor: pointer;
+		display: block;
+		height: 40px;
+		user-select: none;
+		-webkit-user-select: none;
+}
+ .select2-container--default .select2-selection--single .select2-selection__rendered {
+		color: #777;
+		line-height: 37px;
+		font-size: 15px;
+		font-family: 'Raleway',helvetica,sans-serif;
+}
+
+.select2-container .select2-selection--single .select2-selection__rendered {
+		display: block;
+		padding-left: 4px;
+		padding-right: 20px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+}
+
+li.select2-results__option{
+	font: 4px;
+}
+.programs {
+		display: block;
+		padding: 0.1rem;
+		width: 415px;
+		height: 40px;
+		border-radius: 2px;
+		border: 1px solid #aaa;
+		margin: 0.5rem 0 1rem;
+		font: 300 1rem 'Raleway', helvetica, sans-serif;
+}
+//

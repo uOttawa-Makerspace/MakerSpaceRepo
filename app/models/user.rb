@@ -39,7 +39,8 @@ class User < ActiveRecord::Base
 
 
   validates :gender,
-    presence: {message: "Your gender is required."}
+    presence: {message: "Your gender is required."},
+    inclusion: {in:["Male", "Female", "Other", "Prefer not to specify", "unknown"]}
 
   validates :faculty,
     presence: {message: "Please provide your faculty"}, if: :student?
