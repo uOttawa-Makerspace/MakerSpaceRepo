@@ -8,4 +8,16 @@ two:
 
 three:
   id: 3
-  name: other-projects
+  name: Course-related Projects
+
+four:
+  id: 4
+  name: Other Projects
+
+five:
+  id: 5
+  name: GNG1103
+
+six:
+  id: 6
+  name: GNG2101
