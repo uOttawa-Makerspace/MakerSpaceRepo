@@ -99,6 +99,37 @@ class UsersControllerTest < ActionController::TestCase
     assert_response :ok
   end
 
+  test "admin can view private repositories on user's profile" do
+    session[:user_id] = User.find_by(username: "adam").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    get :show, username: "mary"
+    @repo_user = User.find_by username: "mary"
+    @repositories = @repo_user.repositories.where(make_id: nil)
+    assert @repositories.include?(Repository.find(3))
+  end
+
+  test "staff can view private repositories on user's profile" do
+    session[:user_id] = User.find_by(username: "olivia").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    get :show, username: "mary"
+    @repo_user = User.find_by username: "mary"
+    @repositories = @repo_user.repositories.where(make_id: nil)
+    assert @repositories.include?(Repository.find(3))
+  end
+
+  test "Regular users cannot view private repos of another user" do
+    session[:user_id] = User.find_by(username: "adam").id
+    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+
+    get :show, username: "mary"
+    @repo_user = User.find_by username: "mary"
+    @repositories = @repo_user.repositories.public_repos.where(make_id: nil)
+    refute @repositories.include?(Repository.find(3))
+  end
+
+
   test "old valid user should be able to update profile" do
     session[:user_id] = User.find_by(username: "mary").id
     session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
@@ -136,6 +167,7 @@ class UsersControllerTest < ActionController::TestCase
     assert_equal "3", @user.year_of_study
     assert_redirected_to settings_profile_path
   end
+
   
   test "user can view their profile" do
     session[:user_id] = User.find_by(username: "bob").id

@@ -57,9 +57,8 @@ class User < ActiveRecord::Base
 
 
   validates :identity,
-    presence: {message: "Please identify who you are"}
-
-  validate :identity_valid?
+    presence: {message: "Please identify who you are"},
+    inclusion: {in:['grad', 'undergrad', 'faculty_member', 'community_member', 'unknown']}
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
@@ -87,10 +86,6 @@ class User < ActiveRecord::Base
 
   def student?
     self.identity.eql?("grad") || self.identity.eql?("undergrad")
-  end
-
-  def identity_valid?
-    errors.add(:identity, "identity not valid") unless self.identity.eql?("grad") || self.identity.eql?("undergrad") || self.identity.eql?("faculty_member") || self.identity.eql?("community_member") || self.identity.eql?("unknown")
   end
 
   scope :unknown_identity, -> { where(identity:"unknown") }

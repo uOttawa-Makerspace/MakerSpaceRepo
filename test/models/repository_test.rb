@@ -33,7 +33,35 @@ class RepositoryTest < ActiveSupport::TestCase
 
 		repository.title = "/*MakerRepo*/"
 		assert repository.invalid?, "Invalid project title"
+	end
 
+	test "presence of share type" do
+		repository = repositories(:one)
+
+		assert repository.valid?, "Share_type is required"
+
+		repository.share_type = nil
+		assert repository.invalid?, "Share_type is required"
+	end
+
+	test "valid share type" do
+		repository = repositories(:one)
+
+		repository.share_type = "unknown"
+		assert repository.invalid?, "share type should be either public or private"
+
+		repository.share_type = "public"
+		assert repository.valid?, "share type should be either public or private"
+
+	end
+
+	test "presence of password for private repositories" do
+		repository = repositories(:three)
+
+		assert repository.valid?, "private repositories require password"
+
+		repository.password = nil
+		assert repository.invalid?, "private repositories require password"
 	end
 
 end
