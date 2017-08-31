@@ -8,6 +8,8 @@ one:
   slug: repository1
   category: 3D-Model
   user_username: bob
+  featured: false
+
 
 
 two:
@@ -18,8 +20,8 @@ two:
   slug: repository2
   category: Virtual Reality
   user_username: mary
+  featured: true
   created_at: <%= 1.year.ago %>
-
 
 
 three:
@@ -42,4 +44,22 @@ four:
   slug: repository4
   user_username: bob
   category: other-projects
+
+
+gng2101repo:
+  id: 5
+  user_id: 1
+  title: GNG2101 Hydrophonics
+  description: description2
+  slug: gng2101-Hydrophonics
+  user_username: bob
+
+
+gng1103repo:
+  id: 6
+  user_id: 1
+  title: GNG-1103SopmeProjectName
+  description: description2
+  slug: gng-1103sopmeprojectname
+  user_username: bob
 

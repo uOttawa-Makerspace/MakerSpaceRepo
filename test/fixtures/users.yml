@@ -10,7 +10,7 @@ bob:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  gender: male
+  gender: Male
   faculty: science
   use: null
   description: null
@@ -20,7 +20,7 @@ bob:
   student_id: 1234567
   created_at: <%= 1.month.ago %>
 
-#old user
+#old valid user
 mary:
   id: 2
   username: mary
@@ -29,11 +29,27 @@ mary:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  gender: female
+  gender: unknown
   faculty: engineering
   use: null
   description: null
   identity: unknown
+
+
+#old invalid user
+john:
+  id: 5
+  username: john
+  name: null
+  email: john@gmail.com
+  terms_and_conditions: true
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  gender: null
+  faculty: null
+  use: null
+  description: null
+  identity: null
+
 
 #the only admin
 adam:
@@ -44,7 +60,7 @@ adam:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  gender: male
+  gender: Male
   faculty: arts
   use: null
   description: null
@@ -58,7 +74,8 @@ sara:
   terms_and_conditions: false
   password: Password1
   identity: faculty_member
-  gender: female
+  gender: Female
+
 
 
 #the only staff
@@ -70,7 +87,7 @@ olivia:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  gender: female
+  gender: Female
   faculty: engineering
   use: null
   description: null

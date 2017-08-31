@@ -68,9 +68,9 @@ class RfidControllerTest < ActionController::TestCase
 
     post :card_number, rfid: rfid.card_number, mac_address: raspi.pi_mac_address
 
-    lab_session = LabSession.where(user_id: rfid.user_id, pi_reader_id: raspi.id).last
+    lab_session = LabSession.find_by(user_id: rfid.user_id, space_id: raspi.space.id)
     rfid_status = JSON.parse(response.body)['success']
-
+    
     assert rfid_status == "RFID sign in" #this is what the raspberry pi recieves
     assert lab_session.present?
     assert lab_session.sign_out_time > Time.now
@@ -83,7 +83,7 @@ class RfidControllerTest < ActionController::TestCase
 
     post :card_number, rfid: rfid.card_number, mac_address: raspi.pi_mac_address
 
-    lab_session = LabSession.where(user_id: rfid.user_id, pi_reader_id: raspi.id).last
+    lab_session = LabSession.where(user_id: rfid.user_id, space_id: raspi.space.id).last
     rfid_status = JSON.parse(response.body)['success']
 
     assert rfid_status == "RFID sign out" #this is what the raspberry pi recieves
