@@ -8,6 +8,8 @@ one:
   slug: repository1
   category: 3D-Model
   user_username: bob
+  featured: false
+
 
 
 two:
@@ -18,8 +20,8 @@ two:
   slug: repository2
   category: Virtual Reality
   user_username: mary
+  featured: true
   created_at: <%= 1.year.ago %>
-
 
 
 three:
