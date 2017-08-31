@@ -135,8 +135,8 @@ ActiveRecord::Schema.define(version: 20170830191857) do
     t.integer  "user_id"
     t.string   "title"
     t.string   "description"
-    t.datetime "created_at",                null: false
-    t.datetime "updated_at",                null: false
+    t.datetime "created_at",                    null: false
+    t.datetime "updated_at",                    null: false
     t.string   "category"
     t.string   "license"
     t.string   "github"
@@ -148,6 +148,8 @@ ActiveRecord::Schema.define(version: 20170830191857) do
     t.string   "slug"
     t.string   "share_type"
     t.string   "password"
+    t.boolean  "featured",      default: false
+
   end
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree

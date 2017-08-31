@@ -9,6 +9,7 @@ one:
   category: 3D-Model
   user_username: bob
   share_type: public
+  featured: false
 
 
 
@@ -21,6 +22,7 @@ two:
   category: Virtual Reality
   user_username: mary
   share_type: public
+  featured: true
   created_at: <%= 1.year.ago %>
 
 

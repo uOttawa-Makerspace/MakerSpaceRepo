@@ -341,6 +341,40 @@ div.redactor-editor{
     display: list-item;
   }
 
+
+}
+
+.pin-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #5f9ea0;
+  color: #fff;
+  margin-bottom: 20px;
+
+}
+
+
+.delete-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #A61E10;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+  }
+
 }
 
 #status-save {
