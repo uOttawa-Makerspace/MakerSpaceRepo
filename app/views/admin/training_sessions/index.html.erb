@@ -82,7 +82,10 @@
 
             <td class="action-cell">
               <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %>
-              <%=link_to "Download", staff_training_session_training_report_url(id: sesh.id, training_session_id: sesh.id, format: "csv"), class:"download-button" %>
+              <%=link_to "Download",
+                    training_report_staff_training_session_path(id:sesh.id, format: "csv" ),
+                    action: :training_report,
+                    class:"download-button" %>
               <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
             </td>
 
