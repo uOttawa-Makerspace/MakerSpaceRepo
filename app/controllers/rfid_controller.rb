@@ -14,7 +14,7 @@ class RfidController < SessionsController
         render json: { success: "RFID exist" }, status: :ok
         check_session(rfid)
       else
-        rfid.touch
+        rfid.update(params)
         render json: { error: "Temporary RFID already exists" }, status: :unprocessable_entity
       end
     else
