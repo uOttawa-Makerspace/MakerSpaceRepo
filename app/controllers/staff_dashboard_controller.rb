@@ -17,7 +17,11 @@ class StaffDashboardController < StaffAreaController
     if params['added_users'].present?
       users = User.where(username: params['added_users'])
       users.each do |user|
-        lab_session = LabSession.new(user_id: user.id, pi_reader_id: PiReader.find_by(space_id: @space.id).id, sign_in_time: Time.now, sign_out_time: Time.now+3.hours)
+        lab_session = LabSession.new(
+                        user_id: user.id,
+                        space_id: @space.id,
+                        sign_in_time: Time.now,
+                        sign_out_time: Time.now+4.hours)
         unless lab_session.save
           flash[:alert] = "Error signing #{user.name} in"
         end
@@ -33,18 +37,15 @@ class StaffDashboardController < StaffAreaController
         current_sesh.sign_out_time = Time.now
         current_sesh.save
       end
-      if (reader =  PiReader.find_by(space_id: new_space.id))
-        new_sesh = LabSession.new(
-                      user_id: current_user.id,
-                      sign_in_time: Time.now,
-                      sign_out_time: Date.tomorrow,
-                      space_id: reader.space.id,
-                      mac_address: reader.pi_mac_address)
-        if new_sesh.save
-          flash[:notice] = "Space changed successfully"
-        else
-          flash[:alert] = "Something went wrong"
-        end
+      new_sesh = LabSession.new(
+                    user_id: current_user.id,
+                    sign_in_time: Time.now,
+                    sign_out_time: Time.now + 4.hours,
+                    space_id: new_space.id)
+      if new_sesh.save
+        flash[:notice] = "Space changed successfully"
+      else
+        flash[:alert] = "Something went wrong"
       end
     end
     redirect_to :back
