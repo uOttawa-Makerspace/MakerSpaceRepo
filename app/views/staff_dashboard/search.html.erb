@@ -16,7 +16,7 @@
         <tr>
           <th>Name <span onclick="sortTable('staff-search-results', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th>Email <span onclick="sortTable('staff-search-results', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Last Seen <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Last Seen <span onclick="sortTable('staff-search-table', 2)"><%=fa_icon('arrow-down')%></span></th>
           <th>Status <span onclick="sortTable('staff-search-results', 3)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
         </tr>
@@ -134,13 +134,13 @@
 
     <br></br>
 
-    <table class="staff-users-table">
+    <table class="staff-recent-users-table">
       Users recently signed out of <%=@space.name.capitalize%></h2>
       <tr>
-        <th>Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Email <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Last Seen <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Certifications <span onclick="sortTable('staff-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Email <span onclick="sortTable('staff-recent-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Last Seen <span onclick="sortTable('staff-recent-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Certifications <span onclick="sortTable('staff-recent-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
         <th class="action-header">Sign In To <%=@space.name.capitalize%></th>
       </tr>
 
