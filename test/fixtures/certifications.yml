@@ -15,3 +15,9 @@ mary_lathe_1:
   user_id: 2
   training_session_id: 1
 
+mary_old:
+  id: 4
+  user_id: 2
+  training_session_id: 3
+  created_at: <%=5.years.ago%>
+  updated_at: <%=3.years.ago%>

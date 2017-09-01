@@ -8,7 +8,7 @@ welding_3:
   name: welding_3
   space_id: 2
 
-soldering_7:
+soldering:
   id: 3
-  name: soldering_7
+  name: soldering
   space_id: 1

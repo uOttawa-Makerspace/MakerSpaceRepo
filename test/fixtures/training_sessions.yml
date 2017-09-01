@@ -10,3 +10,11 @@ welding_3_session:
   training_id: 2
   user_id: 1337
   course: GNG1105
+
+
+old_soldering_session:
+  id: 3
+  training_id: 3
+  user_id: 777
+  course: GNG1105
+  created_at: <%=5.years.ago%>
