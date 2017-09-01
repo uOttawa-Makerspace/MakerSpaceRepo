@@ -64,11 +64,12 @@ span.header-menu-item {
 span.menu-button{
   position: relative;
   z-index: 10;
+  padding-top: 5px;
   ul{
     display: none;
     background-color: #fff;
     position: absolute;
-    top: 45px;
+    top: 50px;
     right: 20px;
     z-index: 1;
     width: 150px;
