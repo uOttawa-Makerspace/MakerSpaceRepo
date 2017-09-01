@@ -93,7 +93,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
   def revoke_certification
     cert = Certification.find(params[:cert_id])
     if cert.destroy
-      flash[:notice] = "Deleted successfully"
+      flash[:notice] = "Deleted Successfully"
     else
       flash[:alert] = "Something went wrong, try refreshing"
     end
