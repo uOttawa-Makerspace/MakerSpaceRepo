@@ -82,9 +82,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def renew_certification
     cert = Certification.find(params[:cert_id])
-    cert.touch
-    if cert.save
-      flash[:notice] = "Renewed successfully"
+    if cert.touch
+      flash[:notice] = "Renewed Successfully"
       redirect_to user_path(cert.user.username)
     else
       flash[:alert] = "Something went wrong, try refreshing"

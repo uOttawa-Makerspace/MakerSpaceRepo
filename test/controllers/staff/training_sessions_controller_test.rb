@@ -88,4 +88,13 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     refute Certification.find_by(user_id: users(:olivia).id, training_session_id: training_sessions(:lathe_1_session).id).present?
   end
 
+  test "staff can renew a certification issued by them at an old training session" do
+    training_session = training_sessions(:old_soldering_session)
+    cert = certifications(:mary_old_soldering)
+    patch :renew_certification, id: training_session.id, cert_id: cert.id
+    assert_equal flash[:notice], "Renewed Successfully"
+    assert cert.updated_at < 1.day.ago
+    assert_redirected_to user_path(users(:mary).username)
+  end
+
 end
