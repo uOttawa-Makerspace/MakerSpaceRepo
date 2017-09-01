@@ -102,7 +102,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     cert = certifications(:mary_old_soldering)
     delete :revoke_certification, id: training_session.id, cert_id: cert.id
     assert_equal flash[:notice], "Deleted Successfully"
-    refute cert.updated_at.present?
+    refute Certification.find_by(id: cert.id).present?
     assert_redirected_to user_path(users(:mary).username)
   end
 
