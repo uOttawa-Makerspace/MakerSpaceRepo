@@ -170,17 +170,23 @@ form.header-search{
 }
 
 .sidenav a {
-    padding: 8px 8px 8px 28px;
-    text-decoration: none;
-    font-size: 20px;
-    color: #f1f1f1;
-    display: block;
-    transition: 0.3s;
-    white-space: nowrap;
+  padding: 8px 8px 8px 8px;
+      text-decoration: none;
+      font-size: 20px;
+      color: #f1f1f1;
+      display: block;
+      transition: 0.3s;
+      white-space: nowrap;
+      margin-left: 10px;
 }
 
 .sidenav a:hover, .offcanvas a:focus{
     color: #a3e6db;
+}
+a#item:hover{
+  color: #a3e6db;
+  border-left: 5px solid #366;
+
 }
 
 .sidenav .closebtn {
