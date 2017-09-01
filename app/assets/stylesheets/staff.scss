@@ -26,6 +26,13 @@ div.setting-top-panel{
 
 }
 
+div.panel-title:hover{
+  padding-left: 5px;
+  &:hover:not(.vp-button){
+    border-left: 5px solid #5f9ea0;
+  }
+}
+
 .update-button{
   font: 300 1em 'Raleway', sans-serif;
   padding: 0.5rem 1rem;
