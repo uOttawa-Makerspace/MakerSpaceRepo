@@ -29,7 +29,7 @@ class MsrMailer < ApplicationMailer
 
 	def waiver_reminder_email(email)
     mail(to: email,
-				 subject: "Please Sign To The Release Agreement!")
+				 subject: "Please Sign The Release Agreement!")
   end
 
 	def issue_email(name, email, subject, comments)

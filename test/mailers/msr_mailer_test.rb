@@ -49,7 +49,7 @@ class MsrMailerTest < ActionMailer::TestCase
 		email = MsrMailer.waiver_reminder_email('abc@123.com')
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['abc@123.com'], email.to
-		assert_equal 'Please Sign To The Release Agreement!', email.subject
+		assert_equal 'Please Sign The Release Agreement!', email.subject
 
 	end
 
