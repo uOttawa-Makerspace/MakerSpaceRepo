@@ -96,18 +96,23 @@ section#user-show{
 }
 
 div#rfid-thing.user-info{
-
+	width: 400px;
 	div#rfid-details{
 		visibility: hidden;
 		background-color: #c2d6d6;
 		color: #366;
 		text-align: center;
-		border-radius: 6px;
-		padding-bottom: 2px;
+		border-radius: 4px;
+		padding: 4px;
 		/* Position the tooltip */
 		position: absolute;
 		z-index: 1;
+		width: inherit + 3%;
 
+		label.unregistered-label{
+			padding: 5px 8px;
+			border-radius: 3px;
+		}
 	}
 
 	div.rfid-status{
@@ -117,10 +122,37 @@ div#rfid-thing.user-info{
 	div.rfid-status:hover div#rfid-details{
 	    visibility:visible;
 	}
-	div.unregistered-card:hover{
-		background-color: transparentize(#c2d6d6, 0.5);;
+	div.unregistered-card{
+
+		a{
+			padding: 4px 8px;
+		}
+		a:hover{
+			border-radius: 4px;
+			background-color: transparentize(#A6E0E7, 0.4);
+		}
 	}
+
+	span.registered-card{
+		float: left;
+	}
+
+	.unregister{
+		font: 300 0.4em 'Raleway', sans-serif;
+		float: bottom;
+	  padding: 0.5rem 1rem;
+	  border: none;
+	  text-transform: uppercase;
+	  color: #777;
+	  letter-spacing: 0.11em;
+	  border-radius: 2px;
+	  background-color: #A61E10;
+	  color: #fff;
+	}
+
 }
+
+
 a.edit-user-profile{
 	@include transition(100ms);
 	position: absolute;

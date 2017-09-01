@@ -150,6 +150,7 @@ Rails.application.routes.draw do
   namespace :staff_dashboard do
     get 'index', path: '/'
     put 'link_rfid'
+    put 'unlink_rfid'
   end
 
   # namespace :help do
