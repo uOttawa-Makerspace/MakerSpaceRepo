@@ -135,18 +135,6 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
-  def renew_certification
-    cert = Certification.find(params[:id])
-    cert.touch
-    if cert.save
-      flash[:notice] = "Renewed successfully"
-      redirect_to :back
-    else
-      flash[:alert] = "Something went wrong, try refreshing"
-      redirect_to :back
-    end
-  end
-
   def set_role
     @user = User.find(params[:id])
     @user.role = params[:role]
