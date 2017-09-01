@@ -101,16 +101,16 @@
                     <br>
                     <% if @user.admin? || (@user == certification.training_session.user)%>
                         <%=
-                          link_to "renew", renew_certification_admin_users_path(id: certification.id), method: :patch,
-                          class: 'destroy-button', style:"background-color:#53BE6A;"
+                          link_to "renew", renew_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                          method: :patch, class: 'destroy-button', style:"background-color:#53BE6A;"
                         %>
                       <% if @user.admin? %>
                         <%=
                           link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
                           class: 'destroy-button'
-                        %><br></br>
+                        %>
                       <%end%>
-                    <%end%>
+                    <%end%><br></br>
                   </td>
                 </tr>
                 <% end %>

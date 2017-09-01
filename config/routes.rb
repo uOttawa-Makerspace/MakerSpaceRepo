@@ -143,6 +143,7 @@ Rails.application.routes.draw do
       get 'index', path: '/', on: :collection
       member do
         post 'certify_trainees'
+        patch 'renew_certification'
       end
     end
   end
