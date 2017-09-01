@@ -61,7 +61,7 @@
         <div class="rfid-status">
           <%= fa_icon "check", text: "RFID Card Set"%>
           <div id="rfid-details">
-             <span class="registered-card" style="display:inline;widh">
+             <span class="registered-card" style="display:inline;">
                <%= label_tag ("card #:#{@repo_user.rfid.card_number}")%></span>
             <span><%=
                link_to 'unregister',
@@ -72,8 +72,11 @@
       <div class="rfid-status">
         <%= fa_icon "ban", text: "RFID Card Not Set"%>
         <div id="rfid-details">
-          <label class="unregistered-label"><b>Unregistered Cards</b><br><i style="font-size:0.8em;">&ensp;&ensp;&ensp;&ensp;&ensp;
-            (click on one to link it to this user)</i></label><br>
+          <label class="unregistered-label">
+            <b>Unregistered Cards</b>
+          </label>
+          <br><i style="font-size:0.8em;">&ensp;&ensp;&ensp;&ensp;&ensp;
+            (click on one to link it to this user)</i><br>
           <% Rfid.recent_unset.each do |rfid| %>
             <div class="unregistered-card">
               <%space = PiReader.find_by(pi_mac_address: rfid.mac_address).space.name rescue "unknown" %>
