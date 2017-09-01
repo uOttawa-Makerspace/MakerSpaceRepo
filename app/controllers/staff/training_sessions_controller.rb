@@ -84,11 +84,20 @@ class Staff::TrainingSessionsController < StaffDashboardController
     cert = Certification.find(params[:cert_id])
     if cert.touch
       flash[:notice] = "Renewed Successfully"
-      redirect_to user_path(cert.user.username)
     else
       flash[:alert] = "Something went wrong, try refreshing"
-      redirect_to user_path(cert.user.username)
     end
+    redirect_to user_path(cert.user.username)
+  end
+
+  def revoke_certification
+    cert = Certification.find(params[:cert_id])
+    if cert.destroy
+      flash[:notice] = "Deleted successfully"
+    else
+      flash[:alert] = "Something went wrong, try refreshing"
+    end
+    redirect_to user_path(cert.user.username)
   end
 
   def destroy
@@ -100,6 +109,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
         redirect_to :back
     end
   end
+
 
   private
 

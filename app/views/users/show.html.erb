@@ -85,7 +85,7 @@
                     %>
                   </td>
                   <td>
-                    <%= if @user.admin?
+                    <%= if (@user.admin? || (@user.name == certification.trainer ))
                       link_to certification.created_at.strftime("%B %d, %Y"), staff_training_session_path(id: certification.training_session.id), style:"text-decoration:underline;"
                     else
                       certification.created_at.strftime("%B %d, %Y")
@@ -104,12 +104,10 @@
                           link_to "renew", renew_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
                           method: :patch, class: 'destroy-button', style:"background-color:#53BE6A;"
                         %>
-                      <% if @user.admin? %>
                         <%=
-                          link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
-                          class: 'destroy-button'
+                          link_to "revoke", revoke_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                          method: :delete, class: 'destroy-button'
                         %>
-                      <%end%>
                     <%end%><br></br>
                   </td>
                 </tr>

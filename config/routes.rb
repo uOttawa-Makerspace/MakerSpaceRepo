@@ -96,7 +96,6 @@ Rails.application.routes.draw do
         post 'bulk_add_certifications'
         patch 'set_role'
         delete 'delete_repository'
-        delete 'revoke_certification'
       end
     end
 
@@ -143,6 +142,7 @@ Rails.application.routes.draw do
       member do
         post 'certify_trainees'
         patch 'renew_certification'
+        delete 'revoke_certification'
       end
     end
   end
