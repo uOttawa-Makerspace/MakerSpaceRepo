@@ -27,6 +27,38 @@ section#terms-of-service{
     font-size: 18px;
     margin-bottom: 0.5rem;
   }
+  div.heading{
+    color: #366;
+    font-weight: 600;
+    font-size: 20px;
+    margin-bottom: 0.5rem;
+  }
+  ul#terms{
+    margin-top: 20px;
+    margin-bottom: 20px;
+
+    li{
+      font-size: 18px;
+      line-height: 8mm;
+      display:inline-block;
+      text-indent: -25px;
+      margin-left: 40px;
+    }
+  }
+
+  p#paragraph{
+    margin-top: 20px;
+    margin-bottom: 20px;
+    font-size: 18px;
+    line-height: 8mm;
+    color: #666;
+    margin-left: 20px !important;
+
+  }
+  ul#sub-terms{
+    padding-left: 30px;
+    padding-top: 10px;
+  }
 
   li{
     color: #666;
