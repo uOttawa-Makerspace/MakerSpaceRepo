@@ -117,15 +117,18 @@ section#user-show-links{
 	float: left;
 	padding: 0 5%;
 	margin-bottom: 3rem;
+
 	a{
 		display: inline-block;
 		font-size: 1.25rem;
 		height: 4rem;
 		line-height: 4rem;
 		color: #555;
-		padding: 0 2%;
+		padding: 0;
 		text-align: center;
 		border-bottom: 5px solid #eee;
+		white-space: nowrap;
+		margin-right: 40px;
 
 		span {
 			font-size: 2rem;
