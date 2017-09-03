@@ -107,14 +107,14 @@ class SearchController < SessionsController
   SLUG_TO_CATEGORY_MODEL = {
    'internet-of-things' => 'Internet of Things',
    'course-related-projects' => 'Course-related Projects',
-   'gng2101' => 'gng2101',
-   'gng1103' => 'gng1103',
+   'gng2101' => 'GNG2101',
+   'gng1103' => 'GNG1103',
    'health-sciences' => 'Health Sciences',
    'wearable' => 'Wearable',
    'mobile-development' => 'Mobile Development',
    'virtual-reality' => 'Virtual Reality',
    'other-projects' => 'Other Projects',
-   'uottawa-team-projects' => "uOttawa Team Projects"
+   'uottawa-team-projects' => "uOttawa Team Projects",
   }
 
 end
