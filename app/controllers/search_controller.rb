@@ -115,8 +115,8 @@ class SearchController < SessionsController
    'virtual-reality' => 'Virtual Reality',
    'other-projects' => 'Other Projects',
    'uottawa-team-projects' => "uOttawa Team Projects",
-   `gng2101` => 'GNG2101',
-   `gng1103` => 'GNG1103'
+   'gng2101' => 'GNG2101',
+   'gng1103' => 'GNG1103'
   }
 
 end
