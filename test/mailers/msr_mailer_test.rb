@@ -45,6 +45,15 @@ class MsrMailerTest < ActionMailer::TestCase
 		assert_not_nil(email.attachments, "No attachments found")
 	end
 
+	test "Sending training reports" do
+		email = MsrMailer.send_training_report('brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca',
+																						ReportGenerator.training_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week))
+		assert_equal ['uottawa.makerepo@gmail.com'], email.from
+		assert_equal ['brunsfield@uottawa.ca'], email.to
+		assert_equal ['MTC@uottawa.ca', 'makerspace@uottawa.ca'], email.bcc
+		assert_not_nil(email.attachments, "No attachments found")
+	end
+
 	test "Send Terms and Conditions reminder email" do
 		email = MsrMailer.tac_reminder_email('abc@123.com')
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from

@@ -57,8 +57,14 @@ h1{
 	}
 }
 
-.date_selection{
+div.date_selection{
 		border-top: 2px solid #5f9ea0;
 		border-bottom: 2px solid #5f9ea0;
-		padding: 1rem
+		padding: 1rem;
+}
+form{
+	select#start_year, #start_month, #start_day,
+	#end_year, #end_month, #end_day{
+		width: 20%;
+	}
 }

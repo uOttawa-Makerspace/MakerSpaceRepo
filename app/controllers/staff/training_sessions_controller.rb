@@ -92,6 +92,13 @@ class Staff::TrainingSessionsController < StaffAreaController
     end
   end
 
+  def training_report
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.training_session_report(params[:id]) }
+    end
+  end
+
   private
 
     def default_params
