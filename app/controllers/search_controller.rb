@@ -46,7 +46,7 @@ class SearchController < SessionsController
       @repositories2 = []
     end
 
-    if categroy_option = CategoryOption.find_by('LOWER(name) = ?', params[:slug].downcase)
+    if categroy_option = CategoryOption.find_by(name: name)
       @repositories3 = Category.where(category_option_id: categroy_option.id).distinct.includes(:repository).map(&:repository)
     else
       @repositories3 = []

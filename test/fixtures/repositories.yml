@@ -69,3 +69,13 @@ gng1103repo:
   slug: gng-1103sopmeprojectname
   user_username: bob
   share_type: public
+
+
+seven:
+  id: 7
+  user_id: 1
+  title: Repository7
+  description: description5
+  slug: repository7
+  user_username: bob
+  share_type: public
