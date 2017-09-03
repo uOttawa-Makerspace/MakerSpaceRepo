@@ -8,7 +8,7 @@ class RepositoriesController < SessionsController
     if @repository.private? && !@check_passed
       redirect_to password_entry_repository_path(@repository.user_username, @repository.slug) and return
     end
-    @photos = @repository.photos.first(5) rescue nil
+    @photos = @repository.photos&.first(5) || []
     @files = @repository.repo_files.order("LOWER(file_file_name)")
     @categories = @repository.categories
     @equipments = @repository.equipments
