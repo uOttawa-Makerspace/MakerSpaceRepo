@@ -114,7 +114,9 @@ class SearchController < SessionsController
    'mobile-development' => 'Mobile Development',
    'virtual-reality' => 'Virtual Reality',
    'other-projects' => 'Other Projects',
-   'uottawa-team-projects' => "uOttawa Team Projects"
+   'uottawa-team-projects' => "uOttawa Team Projects",
+   `gng2101` => 'GNG2101',
+   `gng1103` => 'GNG1103'
   }
 
 end
