@@ -1,5 +1,4 @@
 class StaffDashboardController < StaffAreaController
-  before_action :default_space
 
   def index
   end
@@ -64,12 +63,6 @@ class StaffDashboardController < StaffAreaController
       redirect_to (:back)
       flash[:alert] = "Invalid parameters!"
     end
-  end
-
-  private
-
-  def default_space
-    @space = current_user.lab_sessions.last.space rescue Space.all.first
   end
 
 end
