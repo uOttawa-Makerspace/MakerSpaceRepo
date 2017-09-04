@@ -143,6 +143,7 @@ Rails.application.routes.draw do
         post 'certify_trainees'
         patch 'renew_certification'
         delete 'revoke_certification'
+        get 'training_report'
       end
     end
   end

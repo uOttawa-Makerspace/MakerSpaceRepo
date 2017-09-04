@@ -36,22 +36,24 @@ class SearchController < SessionsController
 
     if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
       @repositories1 = Repository.where(category: category).distinct
-      @repositories = @repositories1.paginate(:per_page=>12,:page=>params[:page]) do
-        order_by sort_arr.first, sort_arr.last
-      end
+    else
+      @repositories1 = []
     end
 
     if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
       @repositories2 = Category.where(name: name).distinct.includes(:repository).map(&:repository)
-      @repositories = @repositories2.paginate(:per_page=>12,:page=>params[:page]) do
-        order_by sort_arr.first, sort_arr.last
-      end
+    else
+      @repositories2 = []
     end
 
-    if category && name
-      @repositories = (@repositories1 + @repositories2).uniq.paginate(:per_page=>12,:page=>params[:page]) do
-        order_by sort_arr.first, sort_arr.last
-      end
+    if categroy_option = CategoryOption.find_by(name: name)
+      @repositories3 = Category.where(category_option_id: categroy_option.id).distinct.includes(:repository).map(&:repository)
+    else
+      @repositories3 = []
+    end
+
+    @repositories = (@repositories1 + @repositories2 + @repositories3).uniq.paginate(:per_page=>12,:page=>params[:page]) do
+      order_by sort_arr.first, sort_arr.last
     end
 
     if params['featured']
@@ -105,14 +107,14 @@ class SearchController < SessionsController
   SLUG_TO_CATEGORY_MODEL = {
    'internet-of-things' => 'Internet of Things',
    'course-related-projects' => 'Course-related Projects',
-   'gng2101' => 'gng2101',
-   'gng1103' => 'gng1103',
+   'gng2101' => 'GNG2101',
+   'gng1103' => 'GNG1103',
    'health-sciences' => 'Health Sciences',
    'wearable' => 'Wearable',
    'mobile-development' => 'Mobile Development',
    'virtual-reality' => 'Virtual Reality',
    'other-projects' => 'Other Projects',
-   'uottawa-team-projects' => "uOttawa Team Projects"
+   'uottawa-team-projects' => "uOttawa Team Projects",
   }
 
 end

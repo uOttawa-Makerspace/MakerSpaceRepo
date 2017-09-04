@@ -52,7 +52,113 @@ select.trainer-training-course{
   }
 }
 
+table{
+  width:98%;
+  font-size: 14px;
 
+  th {
+      background-color: #c2d6d6;
+      color: #366;
+      padding:5px;
+      width: 200px;
+
+      a {
+          text-decoration: underline;
+      }
+      i {
+          margin-left:1px;
+          line-height: 10px;
+          width: 10px;
+          height: 13px;
+          text-align: center;
+      }
+      i.fa-sort-asc {
+          vertical-align: bottom;
+      }
+      i.fa-sort-desc {
+          vertical-align: top;
+      }
+
+  }
+  .action-header{
+    width: 100px;
+  }
+
+
+
+  td{
+      padding:5px 6px;
+      text-align: center;
+  }
+  tr {
+      background-color: #f0f5f5;
+  }
+  tr.current-session {
+      background-color: #b3e6cc;
+  }
+  .link-table {
+    color: #366;
+    text-align:center;
+  }
+  td.action-cell{
+    align-items: center;
+    padding-top: 12px;
+    width: 70px;
+
+      .visit-button{
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 1.6rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #5f9ea0;
+        color: #fff;
+
+        &:hover{
+          cursor: pointer;
+        }
+      }
+
+      .destroy-button{
+        float: right;
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 0.81rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #A61E10;
+        color: #fff;
+        margin-bottom: 7px;
+        margin-top: 0;
+        margin-right: 5px;
+        &:hover{
+          cursor: pointer;
+        }
+      }
+
+      .download-button{
+        float: right;
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 0.34rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #5A42E8;
+        color: #fff;
+        margin-right: 5px;
+        margin-top: 11px;
+        margin-bottom: 5px;
+        &:hover{
+          cursor: pointer;
+        }
+    }
+}
 div#sesh-users{
   visibility: hidden;
   width: 150px;
@@ -84,3 +190,39 @@ div.clickable-username:hover{
   }
 
 }
+
+
+div#notice{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 5rem;
+  line-height: 5rem !important;
+  font-size: 75%;
+  font: 500 2.0rem 'Raleway', sans-serif;
+  background-color: #5cb85c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}
+
+div#alert{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 2rem;
+  line-height: 2rem !important;
+  font: 300 1.1rem 'Raleway', sans-serif;
+  background-color: #cd5c5c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}
+}
+

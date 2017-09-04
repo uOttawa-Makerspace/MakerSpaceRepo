@@ -3,10 +3,13 @@
   <div class="edit-column">
     <div class="setting-title">Admin Area</div>
     <div class="section-desc">
-		<%= link_to fa_icon("angle-double-right li", text: 'General Settings'), admin_settings_path %><br><br>
-		<%= link_to fa_icon("angle-double-right li", text: 'Manage Users'), admin_users_path %><br><br>
-		<%= link_to fa_icon("angle-double-right li", text: 'Reports'), admin_report_generator_index_path %>
-
+      <ul class="fa-ul" id="admin-paths">
+        <li><%= link_to fa_icon("angle-double-right li", text: 'General Settings'), admin_settings_path %></li><br>
+        <li><%= link_to fa_icon("angle-double-right li", text: 'Manage Users'), admin_users_path %></li><br>
+        <li><%= link_to fa_icon("angle-double-right li", text: 'Reports'), admin_report_generator_index_path %></li><br>
+        <li><%= link_to fa_icon("angle-double-right li", text: 'Training Sessions'), admin_training_sessions_path %></li><br>
+        <li><%= link_to fa_icon("angle-double-right li", text: 'Manage Spaces'), admin_spaces_path %></li>
+      </ul>
     </div>
   </div>
 </div>

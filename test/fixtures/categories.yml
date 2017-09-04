@@ -20,3 +20,7 @@ four:
   name: Course-related Projects
   category_option_id: 3
 
+five:
+  repository_id: 7
+  name:
+  category_option_id: 3
