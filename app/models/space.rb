@@ -17,7 +17,7 @@ class Space < ActiveRecord::Base
     self.signed_in_users.each do |u|
       users.delete(u)
     end
-    return users
+    return users.sort_by(&:sign_out_time)
   end
 
 end
