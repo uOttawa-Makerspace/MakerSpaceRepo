@@ -13,7 +13,9 @@ class RfidController < SessionsController
       if rfid.user_id
         check_session(rfid)
       else
+        rfid.mac_address = params[:mac_address]
         rfid.touch
+        rfid.save
         render json: { error: "Temporary RFID already exists" }, status: :unprocessable_entity
       end
     else

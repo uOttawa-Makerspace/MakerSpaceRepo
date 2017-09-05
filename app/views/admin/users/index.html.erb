@@ -76,7 +76,6 @@
                 <%= fa_icon "sort-#{direction}" %>
               <% end %>
             </th>
-            <th>Edit</th>
             <th>View</th>
           </thead>
           <% @users.each do |user| %>
@@ -93,7 +92,6 @@
                 <% end %>
               </td>
               <td><%= time_ago_in_words(user.created_at) %> ago</td>
-			           <td class="link-table"><%= link_to fa_icon("pencil"), edit_admin_user_path(user) %></td>
               <td class="link-table"><%= link_to fa_icon("search"), admin_user_path(user) %></td>
             </tr>
           <% end %>

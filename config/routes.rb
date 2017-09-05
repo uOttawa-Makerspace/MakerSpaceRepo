@@ -154,6 +154,8 @@ Rails.application.routes.draw do
     put 'change_space', path: '/change_space'
     put 'sign_in_users', path: '/add_users'
     put 'sign_out_users', path: '/remove_users'
+    put 'link_rfid'
+    put 'unlink_rfid'
   end
 
   # namespace :help do
