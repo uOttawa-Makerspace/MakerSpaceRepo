@@ -47,7 +47,7 @@ class RfidControllerTest < ActionController::TestCase
   end
 
   test "posting existing card with user returns ok" do
-    rfid = rfids(:marrys)
+    rfid = rfids(:marys)
 
     post :card_number, rfid: rfid.card_number, mac_address: "m4k3rsp4c3-pi-1"
 
@@ -63,7 +63,7 @@ class RfidControllerTest < ActionController::TestCase
   end
 
   test "can sign in to a space" do
-    rfid = rfids(:marrys)
+    rfid = rfids(:marys)
     raspi =  pi_readers(:two)
 
     post :card_number, rfid: rfid.card_number, mac_address: raspi.pi_mac_address

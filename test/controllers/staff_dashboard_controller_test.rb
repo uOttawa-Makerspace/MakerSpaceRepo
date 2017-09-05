@@ -41,7 +41,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
      session[:user_id] = users(:olivia).id
      session[:expires_at] = "Sat, 03 Jun 2025 05:01:41 UTC +00:00"
      @request.env['HTTP_REFERER'] = user_url(users(:sara))
-     rfid = rfids(:old)
+     rfid = rfids(:no_user)
      put :link_rfid, card_number: rfid.card_number, user_id: users(:sara)
      assert_redirected_to :back
      assert users(:sara).rfid.present?
@@ -51,8 +51,8 @@ class StaffDashboardControllerTest < ActionController::TestCase
      session[:user_id] = users(:olivia).id
      session[:expires_at] = "Sat, 03 Jun 2025 05:01:41 UTC +00:00"
      @request.env['HTTP_REFERER'] = user_url(users(:sara))
-     rfid = rfids(:assigned)
-     put :unlink_rfid, card_number: rfid.card_number, user_id: users(:sara)
+     rfid = rfids(:marys)
+     put :unlink_rfid, card_number: rfid.card_number
      assert_redirected_to :back
      refute users(:mary).rfid.present?
    end

@@ -7,7 +7,7 @@ bobs:
   updated_at: <%= Time.now - 30.days %>
   mac_address: m4k3rsp4c3-pi-1
 
-marrys:
+marys:
   user_id: 2
   card_number: "987654321"
   created_at: <%= Time.now - 20.days %>
@@ -20,7 +20,7 @@ adams:
   created_at: <%= Time.now - 3.days %>
   updated_at: <%= Time.now - 3.days %>
   mac_address: n3w-m4c-4dr3ss
-  
+
 no_user:
   user_id:
   card_number: "000111222"
