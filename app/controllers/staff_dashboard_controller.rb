@@ -46,7 +46,10 @@ class StaffDashboardController < StaffAreaController
       else
         flash[:alert] = "Something went wrong"
       end
-=======
+    end
+    redirect_to staff_index_url
+  end
+
   def link_rfid
     if params['user_id'].present? && params['card_number'].present?
       rfid = Rfid.find_by(card_number: params['card_number'])
