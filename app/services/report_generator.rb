@@ -62,7 +62,7 @@ class ReportGenerator
     @certifications.each do |certification|
       row = []
       row << certification.id << certification.user.student_id << certification.user.name << certification.user.email << certification.training
-      row << certification.created_at <<  User.find(certification.training_session.user_id).name << certification.training_session.course
+      row << certification.created_at.strftime('%a, %d %b %Y %H:%M') <<  User.find(certification.training_session.user_id).name << certification.training_session.course << Space.find(certification.training_session.training.space_id).name
       column << row
     end
     @certifications.to_csv(column)
@@ -86,5 +86,28 @@ class ReportGenerator
       column << row
     end
     @repositories.to_csv(column)
+  end
+
+
+  def self.training_session_report(id)
+    @session = TrainingSession.find(id)
+    @students = @session.users
+
+    column = []
+    column << ["Training Type:", Training.find(@session.training_id).name] << ["Location: ", Space.find(Training.find(@session.training_id).space_id).name]
+    column << ["Date:", @session.created_at.strftime('%a, %d %b %Y %H:%M')] << ["Trainer:", @session.user.name] << ["Course:", @session.course]
+    column << ["Total Number of Trainees:" , @students.length]
+    column << [] << ["Trainees"]<< ["Name", "Email"]
+    @students.each do |student|
+      row = []
+      row << student.name << student.email
+      column << row
+    end
+
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
   end
 end

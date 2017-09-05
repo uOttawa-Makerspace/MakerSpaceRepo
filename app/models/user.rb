@@ -115,7 +115,7 @@ class User < ActiveRecord::Base
     if self.lab_sessions.last.equal? nil
       return 'no sign in yet'
     end
-    return self.lab_sessions.last.mac_address
+    return self.lab_sessions.last.space.name
   end
 
   scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }

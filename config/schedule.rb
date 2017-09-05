@@ -5,6 +5,11 @@ every '0 7 1 * *' do #At 7am on 1st day of every month
           ReportGenerator.unique_visitors_report).deliver_now"
 end
 
+# every '* * * * 0' do #First day of every week
+#   runner "MsrMailer.send_training_report('brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca',
+#                                         'ReportGenerator.training_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week)').deliver_now"
+# end
+
 
 
 # Use this file to easily define all of your cron jobs.

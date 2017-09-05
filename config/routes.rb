@@ -143,12 +143,15 @@ Rails.application.routes.draw do
       get 'index', path: '/', on: :collection
       member do
         post 'certify_trainees'
+        get 'training_report'
       end
     end
   end
 
   namespace :staff_dashboard do
     get 'index', path: '/'
+    put 'link_rfid'
+    put 'unlink_rfid'
   end
 
   # namespace :help do
