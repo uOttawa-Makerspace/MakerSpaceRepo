@@ -12,11 +12,7 @@ class StaffAreaController < SessionsController
   end
 
   def default_space
-    begin
-      @space = current_user.lab_sessions.last.space
-    rescue NoMethodError => e
-      @space = Space.first
-    end
+    @space = current_user.lab_sessions&.last&.space || Space.first
   end
 
 end
