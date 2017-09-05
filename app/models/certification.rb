@@ -9,21 +9,11 @@ class Certification < ActiveRecord::Base
 
 
   def training
-    begin
-      training = self.training_session.training.name
-    rescue NoMethodError => e
-      training = nil
-    end
-    return training
+    return self.training_session.training.name
   end
 
   def trainer
-    begin
-      trainer = self.training_session.user.name
-    rescue NoMethodError => e
-      trainer = nil
-    end
-    return trainer
+    return self.training_session.user.name
   end
 
   def out_of_date?
@@ -40,11 +30,7 @@ class Certification < ActiveRecord::Base
   end
 
   def unique_cert
-    begin
-      @user_certs = self.user.certifications
-    rescue NoMethodError => e
-      @user_certs = nil
-    end
+    @user_certs = self.user.certifications
     if @user_certs
       @user_certs.each do |cert|
         if cert.training == self.training
