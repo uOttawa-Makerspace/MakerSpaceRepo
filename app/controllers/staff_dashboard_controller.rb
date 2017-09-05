@@ -16,7 +16,7 @@ class StaffDashboardController < StaffAreaController
     if params['card_number'].present?
       rfid = Rfid.find_by(card_number: params['card_number'])
       rfid.user_id = nil
-      if pi = Space.find_by(name: @user.location).pi_readers.first
+      if pi = Space.find_by(name: @user.location)&.pi_readers.first
         new_mac = pi.pi_mac_address
         rfid.mac_address = new_mac
       end
