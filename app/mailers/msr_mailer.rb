@@ -33,9 +33,8 @@ class MsrMailer < ApplicationMailer
 		mail(to: email1, subject: 'Weekly Report of Trainings', bcc: [email2, email3])
 	end
 
-	def tac_reminder_email(email)
-    mail(to: email,
-				 subject: "Please sign the terms and conditions!")
+	def waiver_reminder_email(email)
+    mail(to: email, subject: "Please Sign The Release Agreement!")
   end
 
 	def issue_email(name, email, subject, comments)

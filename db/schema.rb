@@ -11,9 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-
 ActiveRecord::Schema.define(version: 20170830191857) do
-
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -213,8 +211,8 @@ ActiveRecord::Schema.define(version: 20170830191857) do
     t.string   "username"
     t.string   "password"
     t.string   "url"
-    t.datetime "created_at",                                    null: false
-    t.datetime "updated_at",                                    null: false
+    t.datetime "created_at",                                             null: false
+    t.datetime "updated_at",                                             null: false
     t.text     "description"
     t.string   "email"
     t.string   "avatar_file_name"
@@ -226,14 +224,15 @@ ActiveRecord::Schema.define(version: 20170830191857) do
     t.string   "gender"
     t.string   "faculty"
     t.string   "use"
-    t.integer  "reputation",           default: 0
-    t.string   "role",                 default: "regular_user"
+    t.integer  "reputation",                    default: 0
+    t.string   "role",                          default: "regular_user"
     t.boolean  "terms_and_conditions"
     t.string   "program"
     t.integer  "student_id"
     t.string   "how_heard_about_us"
     t.string   "identity"
     t.string   "year_of_study"
+    t.boolean  "read_and_accepted_waiver_form", default: false
   end
 
   add_foreign_key "categories", "category_options"

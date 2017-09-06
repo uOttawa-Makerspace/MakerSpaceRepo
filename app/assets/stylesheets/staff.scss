@@ -54,7 +54,9 @@ table{
     color: #366;
     text-align:center;
   }
-
+  tr.no-waiver{
+    background-color: transparentize(yellow, 0.6);
+  }
 }
 
 div#staff-buttons{

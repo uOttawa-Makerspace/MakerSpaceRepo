@@ -19,6 +19,7 @@ bob:
   year_of_study: 3
   student_id: 1234567
   created_at: <%= 1.month.ago %>
+  read_and_accepted_waiver_form: true
 
 #old valid user
 mary:
@@ -34,6 +35,8 @@ mary:
   use: null
   description: null
   identity: unknown
+  read_and_accepted_waiver_form: true
+
 
 
 #old invalid user
@@ -66,16 +69,18 @@ adam:
   description: null
   role: admin
   identity: faculty_member
+  read_and_accepted_waiver_form: true
+
 
 sara:
   username: sara
   name: Sara
   email: sara@sara.com
   terms_and_conditions: false
-  password: Password1
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   identity: faculty_member
+  read_and_accepted_waiver_form: false
   gender: Female
-
 
 
 #the only staff
