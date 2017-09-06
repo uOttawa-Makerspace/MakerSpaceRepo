@@ -34,10 +34,10 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "Uniqueness of username" do
-    user = User.create(:name => 'Bobby', :username => 'bob', :email => 'Bobby@gmail.com', :password => 'abcdA34vgh', :terms_and_conditions => true, :identity => 'community_member', :gender => 'Male')
+    user = User.create(:name => 'Bobby', :username => 'bob', :email => 'Bobby@gmail.com', :password => 'abcdA34vgh', :read_and_accepted_waiver_form => true, :identity => 'community_member', :gender => 'Male')
     assert user.invalid? , "Your username is already in use."
 
-    user = User.create(:name => 'Max', :username => 'max123', :email => 'max@gmail.com', :password => 'abcdA34vgh', :terms_and_conditions => true, :identity => 'community_member', :gender => 'Male')
+    user = User.create(:name => 'Max', :username => 'max123', :email => 'max@gmail.com', :password => 'abcdA34vgh', :read_and_accepted_waiver_form => true, :identity => 'community_member', :gender => 'Male')
     assert user.valid? , "Your username is already in use."
   end
 
@@ -53,10 +53,10 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "Uniqueness of email" do
-    user = User.create(:username => 'Bobby123', :name => 'Bobby', :email => 'bob@gmail.com', :password => 'abcdA34vgh', :terms_and_conditions => true, :identity => 'community_member', :gender => 'Male')
+    user = User.create(:username => 'Bobby123', :name => 'Bobby', :email => 'bob@gmail.com', :password => 'abcdA34vgh', :read_and_accepted_waiver_form => true, :identity => 'community_member', :gender => 'Male')
     assert user.invalid? , "Your email is already in use."
 
-    user = User.create(:username => 'max123', :name => 'Max', :email => 'max@gmail.com', :password => 'abcdA34vgh', :terms_and_conditions => true, :identity => 'community_member', :gender => 'Male')
+    user = User.create(:username => 'max123', :name => 'Max', :email => 'max@gmail.com', :password => 'abcdA34vgh', :read_and_accepted_waiver_form => true, :identity => 'community_member', :gender => 'Male')
     assert user.valid? , "Your email is already in use."
   end
 
@@ -183,9 +183,9 @@ class UserTest < ActiveSupport::TestCase
   end
 
 
-  test "unsigned_tac_users scope catches users with unsigned terms and conditions" do
-    assert User.unsigned_tac_users.include? users(:sara)
-    assert_equal(users(:sara).terms_and_conditions, false)
+  test "no_waiver_users scope catches users that didn't read and agree to the waiver" do
+    assert User.no_waiver_users.include? users(:sara)
+    assert_equal(users(:sara).read_and_accepted_waiver_form, false)
   end
 
   test "valid user" do
