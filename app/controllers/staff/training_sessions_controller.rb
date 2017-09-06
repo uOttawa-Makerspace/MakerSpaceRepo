@@ -1,8 +1,8 @@
-class Staff::TrainingSessionsController < StaffAreaController
+class Staff::TrainingSessionsController < StaffDashboardController
 
   before_action :current_training_session, except: [:new, :create, :index]
   before_action :changed_params, only: [:update]
-  before_action :verify_ownership, except: [:new, :create, :index]
+  before_action :verify_ownership, except: [:new, :create, :index, :renew_certification]
 
   layout 'staff_area'
 
@@ -33,7 +33,6 @@ class Staff::TrainingSessionsController < StaffAreaController
   end
 
   def update
-
     if changed_params['user_id'].present?
       unless @user.admin?
         flash[:alert] = "You're not an admin."
@@ -73,22 +72,41 @@ class Staff::TrainingSessionsController < StaffAreaController
   def certify_trainees
     @current_training_session.users.each do |graduate|
       certification = Certification.new(user_id: graduate.id, training_session_id: @current_training_session.id)
-      if certification.save
-       flash[:notice] = "#{graduate.username}'s certification has been created"
-      else
+      unless certification.save
        flash[:alert] = "#{graduate.username}'s certification not saved properly!"
       end
     end
-    redirect_to new_staff_training_session_path
+    flash[:notice] = "Training Session Completed Successfully"
+    redirect_to staff_index_url
+  end
+
+  def renew_certification
+    cert = Certification.find(params[:cert_id])
+    if cert.touch
+      flash[:notice] = "Renewed Successfully"
+    else
+      flash[:alert] = "Something went wrong, try refreshing"
+    end
+    redirect_to user_path(cert.user.username)
+  end
+
+  def revoke_certification
+    cert = Certification.find(params[:cert_id])
+    if cert.destroy
+      flash[:notice] = "Deleted Successfully"
+    else
+      flash[:alert] = "Something went wrong, try refreshing"
+    end
+    redirect_to user_path(cert.user.username)
   end
 
   def destroy
     if @current_training_session.destroy
         flash[:notice] = "Deleted Successfully"
-        redirect_to new_staff_training_session_path
+        redirect_to staff_index_url
     else
         flash[:alert] = "Something went wrong"
-        redirect_to new_staff_training_session_path
+        redirect_to :back
     end
   end
 
@@ -98,7 +116,7 @@ class Staff::TrainingSessionsController < StaffAreaController
       format.csv {send_data ReportGenerator.training_session_report(params[:id]) }
     end
   end
-
+  
   private
 
     def default_params

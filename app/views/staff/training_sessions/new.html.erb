@@ -1,78 +1,93 @@
-<% if flash[:notice] %>
-  <div id="notice"><%= flash[:notice] %></div>
-<% end %>
+<section class="page-contents">
+  <div class="edit-column">
 
-<% if flash[:alert] %>
-  <div id="alert"><%= flash[:alert] %></div>
-<% end %>
+    <h2>New <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> Training Session</h2>
 
-<section id ="page-contents" >
+    <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
+    <% label_tag 'training_id' %>
+    <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings, 'id', 'name'), prompt: 'select training', class: "trainer-training-course" %><br>
 
-  <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
+    <% label_tag 'course' %>
+    <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'select course', class: "trainer-training-course" %><br>
 
-  <% label_tag 'training_id' %>
-  <%= select_tag 'training_id', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'select training', class: "trainer-training-course" %><br>
-
-  <% label_tag 'course' %>
-  <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'select course', class: "trainer-training-course" %><br>
-
-  <% if @user.admin? %>
-    <% label_tag 'user_id' %>
-    <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']), 'id', 'name'), prompt: 'select instructor', class: "trainer-training-course" %><br>
-  <% end %>
-    <table class="staff-table">
-      <tr>
-        <th>Select</th>
-        <th>Username</th>
-        <th>Last Signed In</th>
-        <th>Location</th>
-        <th>Certification</th>
-      </tr>
-
-    <% User.all.limit(20).each do |user| %>
-      <tr>
-
-        <td>
-           <%= check_box_tag 'training_session_users[]', value=user.id%>
-        </td>
-
-        <td class="username-cell">
-          <%= link_to(content_tag(:username, user.username), user_url(user.username)) %>
-        </td>
-
-        <td class="signed_in-cell" style="horizontal-alginment:center;">
-          <%= if user.lab_sessions.present?
-                if singout_time = user.lab_sessions.last.sign_out_time
-                  singout_time.strftime("%B %d, %Y")
-                end
-              end %>
-        </td>
-
-        <td class="location-cell">
-          <%= user.location %>
-        </td>
-
-        <td class="certifications-cell">
-        <% user.certifications.each do |certification| %>
-          <div
-           class="cert-name"
-           style="display:inline" >
-           <div class="cert-holder" style="display:inline">
-            <%= certification.training %> |
-            <div id="cert-details" style="display:inline">
-              <%= certification.training %> <br>
-              <%= certification.trainer %> <br>
-              <%= certification.updated_at.strftime("%B %d, %Y")  %>
-            </div>
-          </div>
-        </div>
-        <% end %>
-      </td>
-
-      </tr>
+    <% if @user.admin? %>
+      <% label_tag 'user_id' %>
+      <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']), 'id', 'name'), prompt: 'select instructor', class: "trainer-training-course" %><br>
     <% end %>
-    </table>
-    <br>
-    <%= submit_tag "Train", class:"save-button"%>
-  <% end %>
+    <br></br>
+      <table class="staff-table" id="staff-users-table">
+        <h3>Users Inside <%=@space.name%></h3>
+        <tr>
+          <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <%=fa_icon('arrow-down')%></th>
+          <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Email <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+        </tr>
+
+      <% @space.signed_in_users.each do |user| %>
+        <%if user.read_and_accepted_waiver_form%>
+          <tr>
+        <%else%>
+          <tr id="no-waiver">
+        <%end%>
+          <td class="action-cell">
+             <%= check_box_tag 'training_session_users[]', value=user.id%>
+          </td>
+
+          <td class="user-name">
+            <%= link_to(user.name, user_url(user.username)) %>
+          </td>
+
+          <td class="email-cell" style="horizontal-alginment:center;">
+            <%= user.email  %>
+          </td>
+
+          <td class="signed-in-cell" style="horizontal-alginment:center;">
+            <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
+          </td>
+
+          <td class="certifications-cell"><%
+            if user.certifications.first.present?
+              user.certifications.each do |certification|
+              %><%
+                unless certification.out_of_date? %>
+                <div
+                 class="cert-name"
+                 style="display:inline" >
+                 <div class="cert-holder" style="display:inline">
+                  <%= certification.training %> |
+                  <div id="cert-details" style="display:inline">
+                    <%= certification.training %> <br>
+                    <%= certification.trainer %> <br>
+                    <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                  </div>
+                </div>
+              </div>
+              <% else %>
+              <div
+               class="cert-name-red"
+               style="display:inline" >
+               <div class="cert-holder" style="display:inline">
+                <%= certification.training %> |
+                <div id="cert-details" style="display:inline">
+                  <%= certification.training %> <br>
+                  <%= certification.trainer %> <br>
+                  <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                </div>
+              </div>
+            </div>
+            <% end
+              end
+            end
+            %>
+          </td>
+        </tr>
+      <% end %>
+      </table>
+      <br>
+      <%= submit_tag "Begin Training", class:"save-button"%>
+    <% end %>
+
+  </div>
 </section>

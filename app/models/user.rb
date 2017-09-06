@@ -28,8 +28,8 @@ class User < ActiveRecord::Base
   validates :description,
     length: { maximum: 250, message: 'Maximum of 250 characters.' }
 
-  validates :terms_and_conditions,
-    inclusion: {in: [true], on: :create, message: 'You must agree to the terms and conditions' }
+  validates :read_and_accepted_waiver_form,
+    inclusion: {in: [true], on: :create, message: 'You must agree to the waiver of form' }
 
   validates :password,
     presence: { message: "Your password is required." },
@@ -118,7 +118,7 @@ class User < ActiveRecord::Base
     return self.lab_sessions.last.space.name
   end
 
-  scope :unsigned_tac_users, -> { where('terms_and_conditions = false') }
+  scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
 
   scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 

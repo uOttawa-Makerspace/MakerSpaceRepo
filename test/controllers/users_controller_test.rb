@@ -20,7 +20,7 @@ class UsersControllerTest < ActionController::TestCase
                 username: "sam",
                 name: "Sam",
                 email: "sam@sam.sam",
-                terms_and_conditions: true,
+                read_and_accepted_waiver_form: true,
                 password: "Password1",
                 identity: "community_member",
                 gender: "Male"}

@@ -95,9 +95,7 @@ Rails.application.routes.draw do
         get 'search'
         post 'bulk_add_certifications'
         patch 'set_role'
-        patch 'renew_certification'
         delete 'delete_repository'
-        delete 'revoke_certification'
       end
     end
 
@@ -143,6 +141,8 @@ Rails.application.routes.draw do
       get 'index', path: '/', on: :collection
       member do
         post 'certify_trainees'
+        patch 'renew_certification'
+        delete 'revoke_certification'
         get 'training_report'
       end
     end
@@ -150,6 +150,10 @@ Rails.application.routes.draw do
 
   namespace :staff_dashboard do
     get 'index', path: '/'
+    get 'search'
+    put 'change_space', path: '/change_space'
+    put 'sign_in_users', path: '/add_users'
+    put 'sign_out_users', path: '/remove_users'
     put 'link_rfid'
     put 'unlink_rfid'
   end

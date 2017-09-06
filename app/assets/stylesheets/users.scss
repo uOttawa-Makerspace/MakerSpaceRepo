@@ -152,6 +152,28 @@ div.signup-title, div.login-title{
 
 
 
+span#fake-signup-button{
+	display: block;
+	letter-spacing: 1px;
+	background-color: transparentize(#4bbc9c, 0.8);
+	color: #fff;
+	border: none !important;
+	padding: 0.5rem;
+	width: 300px;
+	border-radius: 2px;
+	border: 1px solid #aaa;
+	margin: 0.5rem 0 1rem;
+	font: 300 1rem 'Raleway', helvetica, sans-serif;
+
+  &:hover{
+  	cursor: pointer;
+  }
+}
+
+span#signup-button{
+	display: none;
+}
+
 input.signup-button{
 	width: auto !important;
   letter-spacing: 1px;
@@ -163,6 +185,8 @@ input.signup-button{
   	cursor: pointer;
   }
 }
+
+
 
 a.forgot-password{
   text-align: center;
@@ -271,10 +295,10 @@ div#notice{
   width: 100vw;
   left:0;right:0;
   margin: 0 auto;
-  height: 5rem;
-  line-height: 5rem !important;
+  height: 2rem;
+  line-height: 2rem !important;
   font-size: 75%;
-  font: 500 2.0rem 'Raleway', sans-serif;
+  font: 300 1.1rem 'Raleway', sans-serif;
   background-color: #5cb85c;
   color: #fff;
   z-index: 2;
