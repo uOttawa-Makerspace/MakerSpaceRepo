@@ -6,17 +6,15 @@ function hideField(){
 }
 
 function showCreateButton(){
-	// var fake = document.getElementById("fake-signup-button");
-	// var real = document.getElementById("signup-button");
-	// if(fake.style.display != 'none'){
-	// 	fake.style.display = 'none';
-	// 	real.style.display = 'block';
-	// }else{
-	// 		fake.style.display = 'block';
-	// 		real.style.display = 'none';
-	// 	}
-	var button = document.getElementById("signup-button");
-	button.disabled = false;
+	var fake = document.getElementById("fake-signup-button");
+	var real = document.getElementById("signup-button");
+	if(fake.style.display != 'none'){
+		fake.style.display = 'none';
+		real.style.display = 'block';
+	}else{
+			fake.style.display = 'block';
+			real.style.display = 'none';
+	}
 }
 
 function showWaiver(toShow, toHide){
