@@ -91,18 +91,23 @@
       <%end%>
     </div>
       <br></br>
-      <div class="user-certifications" style="padding-top: 200px;">This user has the following certifications:
+      <div class="user-certifications" style="padding-top: 200px;"><br>This user has the following certifications:
         <br></br>
         <div class="user-certifications-container">
             <table class=staff-table>
               <tr>
                 <th>TRAINING</th>
                 <th>TRAINER</th>
-                <th>TIME</th>
+                <th>CREATED ON</th>
+                <th>RENEWED ON</th>
                 <th>ACTION</th>
               </tr>
               <% @repo_user.certifications.each do |certification| %>
-                <tr>
+            <%if certification.out_of_date?%>
+              <tr class="cert-row-red">
+            <%else%>
+              <tr>
+            <%end%>
                   <td>
                     <%=
                       certification.training
@@ -114,23 +119,30 @@
                     %>
                   </td>
                   <td>
-                    <%=
+                    <%= if (@user.admin? || (@user.name == certification.trainer ))
+                      link_to certification.created_at.strftime("%B %d, %Y"), staff_training_session_path(id: certification.training_session.id), style:"text-decoration:underline;"
+                    else
                       certification.created_at.strftime("%B %d, %Y")
+                    end
+                    %>
+                  </td>
+                  <td>
+                    <%=
+                      certification.updated_at.strftime("%B %d, %Y")
                     %>
                   </td>
                   <td class="action-cell">
-                    <% if @user.admin? %>
+                    <br>
+                    <% if @user.admin? || (@user == certification.training_session.user)%>
                         <%=
-                          link_to "renew", renew_certification_admin_users_path(id: certification.id), method: :patch,
-                          class: 'renew-button'
+                          link_to "renew", renew_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                          method: :patch, class: 'destroy-button', style:"background-color:#53BE6A;"
                         %>
-                      <% if @user.admin? %>
                         <%=
-                          link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
-                          class: 'revoke-button'
+                          link_to "revoke", revoke_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                          method: :delete, class: 'destroy-button'
                         %>
-                      <%end%>
-                    <%end%>
+                    <%end%><br></br>
                   </td>
                 </tr>
                 <% end %>

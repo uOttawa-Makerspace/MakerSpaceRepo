@@ -140,22 +140,7 @@ div.users-count:hover div#sesh-users{
     visibility:visible;
 }
 
-button.sort-arrow{
 
-  align: center;
-  width: 27px;
-  height: 20px;
-  background: none;
-  border-color: transparent;
-
-  .arrow-down {
-    align: center;
-    border-style: solid;
-    border-width: 9px 9px 0 9px;
-    border-color: #2c5252 transparent transparent transparent;
-  }
-
-}
 
 div.clickable-username:hover{
   background-color: rgba(238, 238, 238, 0.5);

@@ -1,10 +1,4 @@
 <% provide(:title, "Manage Users") %>
-<% if flash[:notice] %>
-  <div id="notice"><%= flash[:notice] %></div>
-<% end %>
-<% if flash[:alert] %>
-  <div id="alert"><%= flash[:alert] %></div>
-<% end %>
 
 <div class="edit-column">
   <div class="setting-title">Manage Users</div>
@@ -74,7 +68,7 @@
           <% end %>
         </table>
       <% end %>
-  
+
       <!-- pagination code starts -->
       <% if params[:page].nil? %>
         <% page_number = 1 %>
@@ -96,7 +90,7 @@
         </tr>
       </table>
       <!-- pagination code ends -->
-  
+
       <br><br>
       <%= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt:'Add a certification to selected users...' %>
       <%= submit_tag "Add", class: 'save-button' %>

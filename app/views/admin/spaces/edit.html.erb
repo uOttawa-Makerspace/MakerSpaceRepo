@@ -86,7 +86,7 @@
       <%= form_for admin_spaces_path, action: :destroy, method: :delete do |f| %>
         <%= text_field_tag :admin_input, "" %>
         <%= hidden_field_tag :id, @space.id %> <br></br>
-        <%= f.submit "destroy", class: "destroy-button" %>
+        <%= f.submit "destroy", class: "destroy-button",   data: { confirm: 'Are your sure you want to completely DELETE this space and all related informaion?! Ok to confirm' }  %>
       <% end %>
     </div>
 

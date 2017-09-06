@@ -99,3 +99,21 @@ olivia:
   role: staff
   identity: faculty_member
   created_at: <%= 1.month.ago %>
+
+
+#another staff
+justine:
+  id: 123
+  username: justine
+  name: Justine
+  email: jsutine@gmail.com
+  terms_and_conditions: true
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  gender: female
+  faculty: engineering
+  use: null
+  description: null
+  role: staff
+  identity: faculty_member
+  created_at: <%= 1.month.ago %>
