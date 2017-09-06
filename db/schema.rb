@@ -11,9 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-
-ActiveRecord::Schema.define(version: 20170830191857) do
-
+ActiveRecord::Schema.define(version: 20170906151243) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -149,7 +147,6 @@ ActiveRecord::Schema.define(version: 20170830191857) do
     t.string   "share_type"
     t.string   "password"
     t.boolean  "featured",      default: false
-
   end
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree
