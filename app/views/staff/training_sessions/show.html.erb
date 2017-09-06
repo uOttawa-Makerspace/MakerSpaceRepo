@@ -50,7 +50,11 @@
         </tr>
 
       <% @current_training_session.users.each do |user| %>
-      <tr>
+        <%if user.read_and_accepted_waiver_form%>
+          <tr>
+        <%else%>
+          <tr id="no-waiver">
+        <%end%>
 
         <td class="action-cell">
           <%= link_to (fa_icon('times-circle')),

@@ -22,8 +22,11 @@
         </tr>
 
         <% @users.each do |user| %>
-          <tr class="sign-in-or-out">
-
+          <%if user.read_and_accepted_waiver_form%>
+            <tr class="sign-in-or-out">
+          <%else%>
+            <tr class="sign-in-or-out" id="no-waiver">
+          <%end%>
             <td class="sign-in-cell"><%=
               link_to(content_tag(:drop_username, user.name), user_url(user.username))
             %></td>
@@ -145,8 +148,11 @@
       </tr>
 
       <% @space.recently_signed_out_users.each do |user| %>
-        <tr class="add-rows">
-
+        <%if user.read_and_accepted_waiver_form%>
+          <tr class="add-rows">
+        <%else%>
+          <tr class="add-rows" id="no-waiver">
+        <%end%>
           <td class="add-username-cell"><%=
             link_to(content_tag(:add_username, user.name), user_url(user.username))
           %></td>

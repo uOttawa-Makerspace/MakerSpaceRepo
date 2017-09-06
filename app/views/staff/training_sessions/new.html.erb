@@ -26,8 +26,11 @@
         </tr>
 
       <% @space.signed_in_users.each do |user| %>
-        <tr>
-
+        <%if user.read_and_accepted_waiver_form%>
+          <tr>
+        <%else%>
+          <tr id="no-waiver">
+        <%end%>
           <td class="action-cell">
              <%= check_box_tag 'training_session_users[]', value=user.id%>
           </td>
