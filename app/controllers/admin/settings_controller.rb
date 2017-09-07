@@ -83,17 +83,17 @@ class Admin::SettingsController < AdminAreaController
     params.require(:equipment_option).permit(:name)
   end
 
-  def submit_pi
-    puts "aiai"
-    puts params
-    if (!params[:pi_reader][:pi_location].present?) || (params[:submit_pi].blank?)
-        flash[:alert] = "Invalid parameters."
-    else
-      PiReader.where(:id => params[:submit_pi]).update_all(pi_params)
-      flash[:notice] = "Card reader location updated successfully!"
-    end
-    redirect_to admin_settings_path
-  end
+  # def submit_pi
+  #   puts "aiai"
+  #   puts params
+  #   if (!params[:pi_reader][:pi_location].present?) || (params[:submit_pi].blank?)
+  #       flash[:alert] = "Invalid parameters."
+  #   else
+  #     PiReader.where(:id => params[:submit_pi]).update_all(pi_params)
+  #     flash[:notice] = "Card reader location updated successfully!"
+  #   end
+  #   redirect_to admin_settings_path
+  # end
 
   def remove_pi
     if params[:remove_pi]!=""
