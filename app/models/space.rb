@@ -1,6 +1,6 @@
 class Space < ActiveRecord::Base
   has_many :pi_readers
-  has_many :lab_sessions
+  has_many :lab_sessions, dependent: :destroy
   has_many :users, through: :lab_sessions
   has_many :trainings, dependent: :destroy
   has_many :training_sessions, through: :trainings
