@@ -265,7 +265,7 @@ l’Événement.
         <p> If you are <strong>not</strong> a <strong> student </strong>, you can ignore the rest of the form and click Save. </p>
         <p> If you <strong>are</strong> a student (grad/undergrad) it is mandatory for you to answer the questions below. </p>
 
-        <%= f.label :student_id , "Student Number (must be 7 characters)" , class: "profile-label"%>
+        <%= f.label :student_id , "Student Number" , class: "profile-label"%>
         <%= content_tag :span, @user.errors[:student_id].first, class: 'form-error' %>
         <%= f.text_field :student_id, class: "profile-text", autofocus: true %>
 
