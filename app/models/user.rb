@@ -52,9 +52,7 @@ class User < ActiveRecord::Base
     presence: {message: "Please provide your year of study"}, if: :student?
 
   validates :student_id,
-    presence: {message: "Please provide your student Number"}, if: :student?,
-    length: { is: 7, message: 'Your student number must be 7 characters.' }
-
+    presence: {message: "Please provide your student Number"}, if: :student?
 
   validates :identity,
     presence: {message: "Please identify who you are"},
