@@ -1,4 +1,4 @@
-class Comment < ActiveRecord::Base
+class Comment < ApplicationRecord
   belongs_to :user
   belongs_to :repository
   has_many :upvotes, dependent: :destroy

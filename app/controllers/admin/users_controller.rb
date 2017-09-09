@@ -44,10 +44,10 @@ class Admin::UsersController < AdminAreaController
           Certification.create(name: params['bulk_certifications'], user_id: user)
         end
       end
-      redirect_to (:back)
+      redirect_back(fallback_location: root_path)
       flash[:notice] = "Certifications added succesfully!"
     else
-      redirect_to (:back)
+      redirect_back(fallback_location: root_path)
       flash[:alert] = "Invalid parameters!"
     end
   end
@@ -130,7 +130,7 @@ class Admin::UsersController < AdminAreaController
     @user = User.find(params[:id])
     @user.role = params[:role]
     @user.save
-    redirect_to :back
+    redirect_back(fallback_location: root_path)
   end
 
   private

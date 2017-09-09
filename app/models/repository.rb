@@ -1,6 +1,4 @@
-class Repository < ActiveRecord::Base
-  include BCrypt
-
+class Repository < ApplicationRecord
   belongs_to :user
   has_many   :photos,   dependent: :destroy
   has_many   :repo_files,   dependent: :destroy

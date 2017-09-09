@@ -10,7 +10,7 @@ Rails.application.routes.draw do
     get 'hours'
     get 'about'
     get 'contact'
-    get 'report_repository', path: 'report_repository/:repository_id'
+    get 'report_repository/:repository_id', :as => 'report_repository', :action => 'report_repository'
   end
 
   # RFID
@@ -21,10 +21,9 @@ Rails.application.routes.draw do
   # SEARCH PAGES
   namespace :search, path: '/', as: nil do
     get 'explore'
-    get 'search'
-    get 'category', path: 'category/:slug'
+    get 'search'    get 'category/:slug', :as => 'category', :action => 'category'
+    get 'equipment/:slug', :as => 'equipment', :action => 'equipment'
     get 'featured', path: 'category/:slug/featured'
-    get 'equipment', path: 'equipment/:slug'
   end
 
   # TEMPLATE
@@ -75,7 +74,7 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    get 'index', path: '/'
+    get '/', :as => 'index', :action => 'index'
 
     resources :report_generator, only: [:index] do
       collection do
@@ -110,7 +109,7 @@ Rails.application.routes.draw do
     end
 
     resources :training_sessions do
-      get 'index', path: '/'
+      get '/', :as => 'index', :action => 'index'
 
       member do
         patch 'update'
@@ -135,10 +134,10 @@ Rails.application.routes.draw do
 
 
   namespace :staff do
-    get 'index', path: '/'
+    get '/', :as => 'index', :action => 'index'
 
     resources :training_sessions do
-      get 'index', path: '/', on: :collection
+      get  '/', :as => 'index', :action => 'index', on: :collection
       member do
         post 'certify_trainees'
         patch 'renew_certification'
@@ -149,6 +148,9 @@ Rails.application.routes.draw do
   end
 
   namespace :staff_dashboard do
+<<<<<<< HEAD
+    get '/', :as => 'index', :action => 'index'
+=======
     get 'index', path: '/'
     get 'search'
     put 'change_space', path: '/change_space'
@@ -156,13 +158,14 @@ Rails.application.routes.draw do
     put 'sign_out_users', path: '/remove_users'
     put 'link_rfid'
     put 'unlink_rfid'
+>>>>>>> b2b57a2f56cb2065401faf59e77d34c4c454fd7c
   end
 
   # namespace :help do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post 'vote', to: 'users#vote', path: 'vote/:comment_id'
+  post 'vote/:comment_id', :as => 'vote', :controller => 'users', :action => 'vote'
 
    # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
@@ -174,8 +177,8 @@ Rails.application.routes.draw do
   resources :repositories, path: '/:user_username', param: :slug, except: :index do
     post 'add_like', on: :member
     collection do
-      get 'download_files', path: ':slug/download_files'
-      get 'download', path: ':slug/download'
+      get ':slug/download_files', :as => 'download_files', :action => 'download_files'
+      get ':slug/download', :as => '/download', :action => '/download'
     end
     member do
       get 'password_entry', path: '/password_entry'

@@ -65,6 +65,12 @@ span.menu-button{
   position: relative;
   z-index: 10;
   padding-top: 5px;
+  &:hover{
+    ul{
+      display: block;
+    }
+  }
+  
   ul{
     display: none;
     background-color: #fff;

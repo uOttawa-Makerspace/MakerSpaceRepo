@@ -60,9 +60,9 @@ Rails.application.configure do
     :authentication => 'plain',
     :enable_starttls_auto => true
   }
-  
+
   # config.force_ssl = true
-    
+
   config.paperclip_defaults = {
     storage: :s3,
     s3_credentials: {
