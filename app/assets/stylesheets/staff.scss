@@ -4,6 +4,16 @@
 @import "lib";
 /* SETTING LAYOUT */
 
+div#space-top-corner{
+  font: 400 0.75rem 'Raleway', helvetica, sans-serif;
+  display:inline;
+  float: right;
+  padding-left: 3px;
+  padding-right: 3px;
+  margin-left: 100px;
+
+}
+
 div.setting-top-panel{
   position: center;
   padding: 3rem 1rem 0;
@@ -16,9 +26,37 @@ div.setting-top-panel{
 
 }
 
-table{
+div.panel-title:hover{
+  padding-left: 5px;
+  &:hover:not(.vp-button){
+    border-left: 5px solid #5f9ea0;
+  }
+}
 
-  width:98%;
+.update-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #5f9ea0;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover:not(.vp-button){
+    background-color: #5f9ea0 + 20;
+  }
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+
+table{
+  font-size: 14px;
+  width: 110%;
   th {
       background-color: #c2d6d6;
       color: #366;
@@ -39,11 +77,73 @@ table{
       i.fa-sort-desc {
           vertical-align: top;
       }
+
   }
+  .action-header{
+    width: max(100px);
+  }
+  .last-seen-header{
+    width: max(220px);
+  }
+  .certifications-header{
+    width: max(220px);
+  }
+  .email-header{
+    width: max(220px);
+  }
+
+
   td{
-      padding:5px 10px;
-      text-align: center;
+    text-align: center;
+    padding: 5px;
   }
+  td.action-cell{
+
+      .x-button{
+        color: red - 80;
+        font-size: 1.4em;
+      }
+      .check-button{
+        color: green - 30;
+        font-size: 1.4em;
+      }
+
+      .visit-button{
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 1.6rem;
+        margin-top: 0.65rem;
+        margin-bottom: 0.88rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #5f9ea0;
+        color: #fff;
+        &:hover{
+          cursor: pointer;
+        }
+      }
+
+      .destroy-button{
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 0.8rem;
+        margin-top: 0.65rem;
+        margin-bottom: 0.88rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #A61E10;
+        color: #fff;
+
+        &:hover{
+          cursor: pointer;
+        }
+      }
+  }
+
   tr {
       background-color: #f0f5f5;
   }
@@ -54,46 +154,34 @@ table{
     color: #366;
     text-align:center;
   }
+  tr.cert-row-red{
+    background-color: transparentize(#ff8282, 0.5);
+  }
 
+  tr#no-waiver{
+    background-color: transparentize(yellow, 0.6);
+  }
+}
+
+.edit-column{
+  width: 110%;
 }
 
 div#staff-buttons{
 
-  display: table;
-  margin: 0 auto;
+  align: center;
+  float: left;
 
+  .staff-button{
+    font: 300 2.4em 'Raleway', sans-serif;
+    letter-spacing: 0.15em;
+    padding-left: 1rem;
+    border-left: 3px solid transparentize(#5f9ea0, 0.4);
 
-  .my-sessions{
-    font: 300 1.1em 'Raleway', sans-serif;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    border-radius: 2px;
-    background-color: #5f9ea0;
-    color: #fff;
-  }
-  .new-session{
-    font: 300 1.1em 'Raleway', sans-serif;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    border-radius: 2px;
-    background-color: #5f9ea0;
-    color: #fff;
-    margin-left: 12px;
-  }
-  .kiosk-button{
-    font: 300 1.1em 'Raleway', sans-serif;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    border-radius: 2px;
-    background-color: #5f9ea0;
-    color: #fff;
-    margin-left: 65px;
+    &:hover:not(.vp-button){
+      border-left: 5px solid #5f9ea0;
+    }
+
   }
 
 }
@@ -116,6 +204,53 @@ div.cert-name{
   cursor:pointer;
 }
 
+
+div.cert-name-red{
+  cursor:pointer;
+  background-color: red + 130;
+}
+
+
 div.cert-name:hover div#cert-details{
     visibility:visible;
+}
+
+div.cert-name-red:hover div#cert-details{
+    visibility:visible;
+    background-color: red + 130;
+
+}
+
+
+div#notice{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 2rem;
+  line-height: 2rem !important;
+  font-size: 75%;
+  font: 300 1.1rem 'Raleway', sans-serif;
+  background-color: #5cb85c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
+}
+
+div#alert{
+  display: none;
+  position: absolute;
+  top: 65px;
+  width: 100vw;
+  left:0;right:0;
+  margin: 0 auto;
+  height: 2rem;
+  line-height: 2rem !important;
+  font: 300 1.1rem 'Raleway', sans-serif;
+  background-color: #cd5c5c;
+  color: #fff;
+  z-index: 2;
+  text-align: center;
 }

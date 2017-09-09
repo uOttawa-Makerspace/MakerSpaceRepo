@@ -1,10 +1,14 @@
 class RepositoriesController < SessionsController
-  before_action :current_user
+  before_action :current_user, :check_session
   before_action :signed_in, except: [:index, :show, :download, :download_files]
-  before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files]
+  before_action :set_repository, only: [:show, :add_like, :destroy, :edit, :update, :download_files, :check_auth, :pass_authenticate]
+  before_action :check_auth, only: [:show]
 
   def show
-    @photos = @repository.photos.first(5)
+    if @repository.private? && !@check_passed
+      redirect_to password_entry_repository_path(@repository.user_username, @repository.slug) and return
+    end
+    @photos = @repository.photos&.first(5) || []
     @files = @repository.repo_files.order("LOWER(file_file_name)")
     @categories = @repository.categories
     @equipments = @repository.equipments
@@ -74,7 +78,7 @@ class RepositoriesController < SessionsController
   def update
     @repository.categories.destroy_all
     @repository.equipments.destroy_all
-
+    update_password
     if @repository.update(repository_params)
       update_photos
       update_files
@@ -83,6 +87,7 @@ class RepositoriesController < SessionsController
       flash[:notice] = "Project updated successfully!"
       render json: { redirect_uri: "#{repository_path(@repository.user_username, @repository.slug)}" }
     else
+      flash[:alert] = "Unable to apply the changes."
       render json: @repository.errors["title"].first, status: :unprocessable_entity
     end
   end
@@ -104,14 +109,48 @@ class RepositoriesController < SessionsController
       render json: { failed: true }
   end
 
+  def password_entry
+  end
+
+  def pass_authenticate
+    @auth = Repository.authenticate(params[:slug], params[:password])
+    respond_to do |format|
+      if @auth
+        @authorized = true
+        authorized_repo_ids << params[:id]
+        flash[:notice] = "Success"
+        format.html{redirect_to repository_path(@repository.user_username, @repository.slug)}
+      else
+        @authorized = false
+        flash[:alert] = "Incorrect password. Try again!"
+        format.html { redirect_to password_entry_repository_path(@repository.user_username, @repository.slug)}
+      end
+    end
+  end
+
   private
+
+    def check_session
+      if authorized_repo_ids.include? params[:id]
+        @authorized = true
+      end
+    end
+
+    def check_auth
+
+      if (@authorized == true || (@user.admin?) || (@user.staff?) || (@repository.user_username == @user.username))
+        @check_passed = true
+      else
+        @check_passed = false
+      end
+    end
 
     def set_repository
       @repository = Repository.find_by(slug: params[:slug])
     end
 
     def repository_params
-      params.require(:repository).permit(:title, :description, :license, :user_id)
+      params.require(:repository).permit(:title, :description, :license, :user_id, :share_type, :password)
     end
 
     def comment_filter
@@ -182,4 +221,17 @@ class RepositoriesController < SessionsController
         Equipment.create(name: e, repository_id: @repository.id)
       end if params['equipments'].present?
     end
+
+    def update_password
+      if repository_params['share_type'].eql?("public")
+        @repository.password = nil
+        @repository.save
+      else
+        if params['password'].present?
+          @repository.pword = params['password']
+          @repository.save
+        end
+      end
+    end
+
 end

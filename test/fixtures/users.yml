@@ -10,7 +10,7 @@ bob:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  gender: male
+  gender: Male
   faculty: science
   use: null
   description: null
@@ -19,8 +19,9 @@ bob:
   year_of_study: 3
   student_id: 1234567
   created_at: <%= 1.month.ago %>
+  read_and_accepted_waiver_form: true
 
-#old user
+#old valid user
 mary:
   id: 2
   username: mary
@@ -29,11 +30,29 @@ mary:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  gender: female
+  gender: unknown
   faculty: engineering
   use: null
   description: null
   identity: unknown
+  read_and_accepted_waiver_form: true
+
+
+
+#old invalid user
+john:
+  id: 5
+  username: john
+  name: null
+  email: john@gmail.com
+  terms_and_conditions: true
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  gender: null
+  faculty: null
+  use: null
+  description: null
+  identity: null
+
 
 #the only admin
 adam:
@@ -44,21 +63,24 @@ adam:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  gender: male
+  gender: Male
   faculty: arts
   use: null
   description: null
   role: admin
   identity: faculty_member
+  read_and_accepted_waiver_form: true
+
 
 sara:
   username: sara
   name: Sara
   email: sara@sara.com
   terms_and_conditions: false
-  password: Password1
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   identity: faculty_member
-  gender: female
+  read_and_accepted_waiver_form: false
+  gender: Female
 
 
 #the only staff
@@ -67,6 +89,24 @@ olivia:
   username: olivia
   name: Olivia
   email: olivia@gmail.com
+  terms_and_conditions: true
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+  url: null
+  gender: Female
+  faculty: engineering
+  use: null
+  description: null
+  role: staff
+  identity: faculty_member
+  created_at: <%= 1.month.ago %>
+
+
+#another staff
+justine:
+  id: 123
+  username: justine
+  name: Justine
+  email: jsutine@gmail.com
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null

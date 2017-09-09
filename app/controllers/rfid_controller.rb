@@ -1,20 +1,21 @@
 class RfidController < SessionsController
 
   def card_number
-    
+
     if !(PiReader.find_by(pi_mac_address: params[:mac_address]))
       new_reader = PiReader.new(pi_mac_address: params[:mac_address])
       new_reader.save
     end
-    
+
     rfid = Rfid.find_by(card_number: params[:rfid])
 
     if rfid
       if rfid.user_id
-        render json: { success: "RFID exist" }, status: :ok
         check_session(rfid)
       else
+        rfid.mac_address = params[:mac_address]
         rfid.touch
+        rfid.save
         render json: { error: "Temporary RFID already exists" }, status: :unprocessable_entity
       end
     else
@@ -26,25 +27,28 @@ class RfidController < SessionsController
       end
     end
   end
-  
+
   def check_session(rfid)
-    active_session = rfid.user.lab_sessions.where("sign_out_time > ?", Time.now)
-    if active_session.present?
-      active_session.update_all(sign_out_time: Time.now)
-      active_location = PiReader.find_by(pi_mac_address: active_session.first.try(:mac_address)).try(:pi_location)
-      new_location = PiReader.find_by(pi_mac_address: params[:mac_address]).try(:pi_location)
-      if active_location != new_location
-        new_session(rfid)
-      end   
+    active_sessions = rfid.user.lab_sessions.where("sign_out_time > ?", Time.now)
+    new_location = PiReader.find_by(pi_mac_address: params[:mac_address])
+    if active_sessions.present?
+      active_sessions.update_all(sign_out_time: Time.now)
+      last_active_location = PiReader.find_by(space_id: active_sessions.last.space.id)
+      if last_active_location != new_location
+        new_session(rfid, new_location)
+      else
+        render json: { success: "RFID sign out" }, status: :ok
+      end
     else
-      new_session(rfid)
+      new_session(rfid, new_location)
     end
   end
-  
-  def new_session (rfid)
+
+  def new_session (rfid, new_location)
     sign_in = Time.now
     sign_out = sign_in + 3.hours
-    new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out, mac_address: params[:mac_address])
+    new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out, mac_address: params[:mac_address], space_id: new_location.space.id)
     new_session.save
+    render json: { success: "RFID sign in" }, status: :ok
   end
 end

@@ -17,7 +17,7 @@ class StaticPagesController < SessionsController
   def terms_of_service
   end
 
-  def privacy
+  def hours
   end
 
   def forgot_password

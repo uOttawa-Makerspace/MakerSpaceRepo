@@ -19,8 +19,11 @@ class MsrMailerPreview < ActionMailer::Preview
 													ReportGenerator.faculty_frequency_report)
 	end
 
-	def tac_reminder_email
-		MsrMailer.tac_reminder_email('baduser@tac.com')
+	def waiver_reminder_email
+		MsrMailer.waiver_reminder_email('no_waiver_user@gmail.com')
 	end
 
+	def issue_email
+		MsrMailer.issue_email("Julia", "julia@gmail.com", "issue", "photo upload not working")
+	end
 end

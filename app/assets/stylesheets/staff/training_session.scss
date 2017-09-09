@@ -11,7 +11,6 @@ select.trainer-training-course{
   padding: 0.5rem;
 	margin: 0.5rem 0 1rem;
   max-width: 400px;
-  width: 15%;
   border-radius: 3px;
   border: 1px solid #aaa;
   display: inline;
@@ -20,7 +19,6 @@ select.trainer-training-course{
 .certify-button{
 
   float: right;
-  margin-right: 20px;
   font: 300 1em 'Raleway', sans-serif;
   padding: 0.5rem 1rem;
   border: none;
@@ -53,7 +51,6 @@ select.trainer-training-course{
     cursor: pointer;
   }
 }
-
 
 table{
   width:98%;
@@ -135,18 +132,33 @@ table{
         border-radius: 2px;
         background-color: #A61E10;
         color: #fff;
-        margin-bottom: 6px;
-        margin-top: 15px;
-        margin-right: 4px;
-
+        margin-bottom: 7px;
+        margin-top: 0;
+        margin-right: 5px;
         &:hover{
           cursor: pointer;
         }
       }
-  }
 
+      .download-button{
+        float: right;
+        font: 300 10px 'Raleway', sans-serif;
+        padding: 0.5rem 0.34rem;
+        border: none;
+        text-transform: uppercase;
+        color: #777;
+        letter-spacing: 0.15em;
+        border-radius: 2px;
+        background-color: #5A42E8;
+        color: #fff;
+        margin-right: 5px;
+        margin-top: 11px;
+        margin-bottom: 5px;
+        &:hover{
+          cursor: pointer;
+        }
+    }
 }
-
 div#sesh-users{
   visibility: hidden;
   width: 150px;
@@ -169,22 +181,6 @@ div.users-count:hover div#sesh-users{
     visibility:visible;
 }
 
-button.sort-arrow{
-
-  align: center;
-  width: 27px;
-  height: 20px;
-  background: none;
-  border-color: transparent;
-
-  .arrow-down {
-    align: center;
-    border-style: solid;
-    border-width: 9px 9px 0 9px;
-    border-color: #2c5252 transparent transparent transparent;
-  }
-
-}
 
 div.clickable-username:hover{
   background-color: rgba(238, 238, 238, 0.5);
@@ -194,7 +190,6 @@ div.clickable-username:hover{
   }
 
 }
-
 
 
 div#notice{
@@ -229,3 +224,5 @@ div#alert{
   z-index: 2;
   text-align: center;
 }
+}
+

@@ -56,19 +56,58 @@
 
 
     <% if @user.staff?%>
+    <div class="user-info" id="rfid-thing">
+      <% if @repo_user.rfid.present?%>
+        <div class="rfid-status">
+          <%= fa_icon "check", text: "RFID Card Set"%>
+          <div id="rfid-details">
+             <span class="registered-card" style="display:inline;">
+               <%= label_tag ("card #:#{@repo_user.rfid.card_number}")%></span>
+            <span><%=
+               link_to 'unregister',
+               staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number), action: :link_rfid, method: :put, class: 'unregister' %>
+          </div>
+        </div>
+      <%else%>
+      <div class="rfid-status">
+        <%= fa_icon "ban", text: "RFID Card Not Set"%>
+        <div id="rfid-details">
+          <label class="unregistered-label">
+            <b>Unregistered Cards</b>
+          </label>
+          <br><i style="font-size:0.8em;">&ensp;&ensp;&ensp;&ensp;&ensp;
+            (click on one to link it to this user)</i><br>
+          <% Rfid.recent_unset.each do |rfid| %>
+            <div class="unregistered-card">
+              <%space = PiReader.find_by(pi_mac_address: rfid.mac_address).space.name rescue "unknown" %>
+                <%=
+                link_to (rfid.card_number + " tapped at #{space} " + time_ago_in_words(rfid.updated_at) + " ago"),
+                staff_dashboard_link_rfid_path(user_id: @repo_user.id, card_number: rfid.card_number), action: :link_rfid, method: :put
+                %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+      <%end%>
+    </div>
       <br></br>
-      <div class="user-certifications" style="padding-top: 200px;">This user has the following certifications:
+      <div class="user-certifications" style="padding-top: 200px;"><br>This user has the following certifications:
         <br></br>
         <div class="user-certifications-container">
             <table class=staff-table>
               <tr>
                 <th>TRAINING</th>
                 <th>TRAINER</th>
-                <th>TIME</th>
+                <th>CREATED ON</th>
+                <th>RENEWED ON</th>
                 <th>ACTION</th>
               </tr>
               <% @repo_user.certifications.each do |certification| %>
-                <tr>
+            <%if certification.out_of_date?%>
+              <tr class="cert-row-red">
+            <%else%>
+              <tr>
+            <%end%>
                   <td>
                     <%=
                       certification.training
@@ -80,23 +119,30 @@
                     %>
                   </td>
                   <td>
-                    <%=
+                    <%= if (@user.admin? || (@user.name == certification.trainer ))
+                      link_to certification.created_at.strftime("%B %d, %Y"), staff_training_session_path(id: certification.training_session.id), style:"text-decoration:underline;"
+                    else
                       certification.created_at.strftime("%B %d, %Y")
+                    end
+                    %>
+                  </td>
+                  <td>
+                    <%=
+                      certification.updated_at.strftime("%B %d, %Y")
                     %>
                   </td>
                   <td class="action-cell">
-                    <% if @user.admin? %>
+                    <br>
+                    <% if @user.admin? || (@user == certification.training_session.user)%>
                         <%=
-                          link_to "renew", renew_certification_admin_users_path(id: certification.id), method: :patch,
-                          class: 'renew-button'
+                          link_to "renew", renew_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                          method: :patch, class: 'destroy-button', style:"background-color:#53BE6A;"
                         %>
-                      <% if @user.admin? %>
                         <%=
-                          link_to "revoke", revoke_certification_admin_users_path(id: certification.id), method: :delete,
-                          class: 'revoke-button'
+                          link_to "revoke", revoke_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                          method: :delete, class: 'destroy-button'
                         %>
-                      <%end%>
-                    <%end%>
+                    <%end%><br></br>
                   </td>
                 </tr>
                 <% end %>
@@ -124,6 +170,7 @@
     <% end %>
   </div>
 
+
   <section id="user-show-links">
     <% active = params[:show].eql?("makes") ? ["#eee", "#5f9ea0"] : ["#5f9ea0", "#eee"] %>
     <%= link_to "#{user_path(show: :repositories)}#user-show-links", style: 'border-color:'<< active.first do %>
@@ -142,8 +189,7 @@
   <% repos = params[:show].eql?('makes') ? @makes : @repositories %>
   <% repos.each do |repository| %>
     <div class="repository-container">
-
-      <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].image.url}')"  %> >
+        <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')"  %> >
         <% if repository.user_username.eql?(@user.username) %>
           <%= link_to "Delete", repository_path(repository.user_username, repository.slug),
                 method: :delete, data: { confirm: "Are you sure? Once you delete the repository there is no coming back!" }, class: 'delete-repo' %>

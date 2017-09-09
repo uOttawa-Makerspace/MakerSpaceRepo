@@ -2,7 +2,7 @@ class Admin::TrainingSessionsController < AdminAreaController
   before_action :training_session_params, only: [:update]
   before_action :training_session, only: [:update, :destroy]
 
-  layout 'staff_area'
+  layout 'admin_area'
 
   def index
   end

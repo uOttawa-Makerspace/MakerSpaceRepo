@@ -83,17 +83,17 @@ class Admin::SettingsController < AdminAreaController
     params.require(:equipment_option).permit(:name)
   end
 
-  def submit_pi
-    puts "aiai"
-    puts params
-    if (!params[:pi_reader][:pi_location].present?) || (params[:submit_pi].blank?)
-        flash[:alert] = "Invalid parameters."
-    else
-      PiReader.where(:id => params[:submit_pi]).update_all(pi_params)
-      flash[:notice] = "Card reader location updated successfully!"
-    end
-    redirect_to admin_settings_path
-  end
+  # def submit_pi
+  #   puts "aiai"
+  #   puts params
+  #   if (!params[:pi_reader][:pi_location].present?) || (params[:submit_pi].blank?)
+  #       flash[:alert] = "Invalid parameters."
+  #   else
+  #     PiReader.where(:id => params[:submit_pi]).update_all(pi_params)
+  #     flash[:notice] = "Card reader location updated successfully!"
+  #   end
+  #   redirect_to admin_settings_path
+  # end
 
   def remove_pi
     if params[:remove_pi]!=""
@@ -107,6 +107,23 @@ class Admin::SettingsController < AdminAreaController
 
   def pi_params
     params.require(:pi_reader).permit(:pi_location)
+  end
+
+  def pin_unpin_repository
+    params.require(:repository_id)
+    repo = Repository.find_by(id: params[:repository_id])
+    if repo.featured?
+      repo.featured = false
+    else
+      repo.featured = true
+    end
+
+    if repo.save
+      flash[:notice] = "Featured: #{repo.featured}"
+    else
+      flash[:alert] = "something went wrong"
+    end
+    redirect_to :back
   end
 
 end

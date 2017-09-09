@@ -1,31 +1,45 @@
 <% provide(:title, params[:slug].slug_to_title(params[:slug])) %>
+
 <section id="repositories-index">
   <div class="like-title"><%= yield(:title)  %></div>
-  <section id="repository-filter">
-    <div class="sort">sort by/classer par</div>
-    <nav>
-      <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-      <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
-      <ul class="filter">
-        <li><%= link_to 'Newest/Plus récent', category_path(sort: :newest, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Likes/Plus d\'Aimes', category_path(sort: :most_likes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Makes/Plus de fabrications', category_path(sort: :most_makes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Recently Updated/Récemment mis à jour', category_path(sort: :recently_updated, slug: params[:slug]) %></li>
-      </ul>
-    </nav>
-  </section>
+  <h2 class="subtitle">
+    <% if params['featured']%>
+      <div class="not-focused"><%= link_to "All projects ", category_path(slug: params[:slug]) %></div> |
+      <div class="focused"><%= link_to "Featured projects ", category_path(slug: params[:slug], featured: 'yes')%> <%= fa_icon 'star' %></div>
+    <% else %>
+      <div class="focused"><%= link_to "All projects ", category_path(slug: params[:slug]) %></div> |
+      <div class= "not-focused"><%= link_to "Featured projects ", category_path(slug: params[:slug], featured: 'yes')%> <%= fa_icon 'star' %></div>
+    <% end %>
+  </h2><br></br>
+  <% unless params['featured']%>
+    <section id="repository-filter">
+      <div class="sort">sort by/classer par</div>
+      <nav>
+        <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
+        <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
+        <ul class="filter">
+          <li><%= link_to 'Newest/Plus récent', category_path(sort: :newest, slug: params[:slug]) %></li>
+          <li><%= link_to 'Most Likes/Plus d\'Aimes', category_path(sort: :most_likes, slug: params[:slug]) %></li>
+          <li><%= link_to 'Most Makes/Plus de fabrications', category_path(sort: :most_makes, slug: params[:slug]) %></li>
+          <li><%= link_to 'Recently Updated/Récemment mis à jour', category_path(sort: :recently_updated, slug: params[:slug]) %></li>
+        </ul>
+      </nav>
+    </section>
+  <% end %>  
   <section id="repositories-container">
-    <div class="pagination"><%= will_paginate @repositories %></div><br>
+  <div class="pagination"><%= will_paginate @repositories %></div><br>
   <% @repositories.each_with_index do |repository, i| %>
     <div class="repository-container">
-
-      <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].image.url}')"  %> >
+      <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')"  %> >
         <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
       </div>
-
       <div class="repo-info">
         <div class="left">
-          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %></div>
+          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %>
+            <% if repository.featured %> &nbsp;
+              <%= fa_icon 'star' %><br>
+            <% end %>
+          </div>
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
           <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
         </div>
@@ -33,5 +47,6 @@
       </div>
     </div>
   <% end %>
+
   </section>
 </section>

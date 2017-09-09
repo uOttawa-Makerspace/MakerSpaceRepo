@@ -5,15 +5,77 @@ one:
   user_id: 1
   title: Repository1
   description: description1
-  slug: slug1
+  slug: repository1
   category: 3D-Model
   user_username: bob
+  share_type: public
+  featured: false
+
+
 
 two:
   id: 2
   user_id: 2
   title: Repository2
   description: description2
-  slug: slug2
+  slug: repository2
   category: Virtual Reality
   user_username: mary
+  share_type: public
+  featured: true
+  created_at: <%= 1.year.ago %>
+
+
+three:
+  id: 3
+  user_id: 2
+  title: Repository3
+  description: description3
+  slug: repository3
+  category: other-projects
+  user_username: mary
+  share_type: private
+  password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
+
+
+# invalid repository
+#doesn't have any photos
+four:
+  id: 4
+  user_id: 1
+  title: Repository4
+  description: description4
+  slug: repository4
+  user_username: bob
+  category: other-projects
+  share_type: public
+
+
+
+gng2101repo:
+  id: 5
+  user_id: 1
+  title: GNG2101 Hydrophonics
+  description: description5
+  slug: gng2101-Hydrophonics
+  user_username: bob
+  share_type: public
+
+gng1103repo:
+  id: 6
+  user_id: 1
+  title: GNG-1103SopmeProjectName
+  description: description5
+  slug: gng-1103sopmeprojectname
+  user_username: bob
+  share_type: public
+
+
+seven:
+  id: 7
+  user_id: 1
+  title: Repository7
+  description: description5
+  slug: repository7
+  user_username: bob
+  share_type: public

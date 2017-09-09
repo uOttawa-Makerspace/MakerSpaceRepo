@@ -1,8 +1,9 @@
 class SessionsController < ApplicationController
 
-  before_action :session_expiry, except: [:login_authentication] 
+  before_action :session_expiry, except: [:login_authentication]
   before_action :update_activity_time
   before_action :current_user, only: [:login]
+  before_action :authorized_repo_ids
 
   def login_authentication
 
@@ -29,10 +30,10 @@ class SessionsController < ApplicationController
       flash[:alert] = "You are currently logged in, you can not make a new account."
       redirect_to root_path
     end
-    @user = User.new 
+    @user = User.new
     session[:back] = request.referrer
   end
-  
+
   def signed_in
     return if signed_in?
     respond_to do |format|
@@ -41,7 +42,7 @@ class SessionsController < ApplicationController
       format.json { render json: "redirect" }
     end
   end
-  
+
   def logout
     disconnect_user
     @user = User.new
@@ -50,6 +51,8 @@ class SessionsController < ApplicationController
 
   def disconnect_user
     session[:user_id] = nil
+    session[:authorized_repo_ids] = nil
+    session[:selected_dates] = nil
     cookies.delete :user_id
   end
 
@@ -60,6 +63,15 @@ class SessionsController < ApplicationController
 
   def update_activity_time
     session[:expires_at] = 72.hours.from_now
+  end
+
+
+  def authorized_repo_ids
+    session[:authorized_repo_ids] ||= []
+  end
+  
+  def selected_dates
+    session[:selected_dates] ||= []
   end
 
 private

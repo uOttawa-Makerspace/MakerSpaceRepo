@@ -1,10 +1,4 @@
 <% provide(:title, "Admin Area | General Settings") %>
-<% if flash[:notice] %>
-  <div id="notice"><%= flash[:notice] %></div>
-<% end %>
-<% if flash[:alert] %>
-  <div id="alert"><%= flash[:alert] %></div>
-<% end %>
 
 <div class="edit-column">
   <div class="setting-title">General Settings</div>
@@ -29,7 +23,7 @@
       <%= f.text_field :name, class: "profile-text", id:"rename_category_text" %>
       <%= f.submit "Rename", class: 'save-button' %>
     <% end %>
-  
+
     <br><br><br>
     <div>Equipment options</div><hr><br>
     <%= form_for @equip_option, url: {controller: "admin/settings", action: "add_equipment"} do |f| %>
@@ -50,15 +44,9 @@
       <%= f.text_field :name, class: "profile-text", id:"rename_equipment_text" %>
       <%= f.submit "Rename", class: 'save-button' %>
     <% end %>
-    
+
     <br><br><br>
     <div>Card reader options</div><hr><br>
-    <%= form_for @pi_option, url: {controller: "admin/settings", action: "submit_pi"} do |f| %>
-      <%= f.label :Update_card_reader_location, class: "profile-label" %>
-      <%= select_tag :submit_pi, options_from_collection_for_select(PiReader.all, :id, :pi_mac_with_location), class: "profile-select", include_blank: "Select a card reader..." %>
-      <%= f.text_field :pi_location, class: "profile-text", id:"rename_equipment_text" %>
-      <%= f.submit "Submit", class: 'save-button' %>
-    <% end %>
     <br>
     <%= form_for @pi_option, url: {controller: "admin/settings", action: "remove_pi"} do |f| %>
       <%= f.label :remove_card_reader, class: "profile-label" %>
@@ -66,7 +54,7 @@
       <%= f.submit "Remove", class: 'save-button' %>
     <% end %>
     <br><br>
-  
+
   </div>
   <br><br>
   </div>

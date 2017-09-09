@@ -27,9 +27,22 @@ class MsrMailer < ApplicationMailer
 	    mail(to: email, subject: 'Monthly Report')
 	end
 
-	def tac_reminder_email(email)
-    mail(to: email,
-				 subject: "Please sign the terms and conditions!")
+	def send_training_report(email1, email2, email3, csv)
+		attachments['Trainings.csv'] = {mime_type: 'text/csv', content: csv}
+
+		mail(to: email1, subject: 'Weekly Report of Trainings', bcc: [email2, email3])
+	end
+
+	def waiver_reminder_email(email)
+    mail(to: email, subject: "Please Sign The Release Agreement!")
   end
 
+	def issue_email(name, email, subject, comments)
+		@name = name
+		@email = email
+		@subject = subject
+		@comments = comments
+
+		mail(to: "webmaster@makerepo.com", subject: subject)
+	end
 end

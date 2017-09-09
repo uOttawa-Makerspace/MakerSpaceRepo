@@ -28,8 +28,8 @@ class User < ApplicationRecord
   validates :description,
     length: { maximum: 250, message: 'Maximum of 250 characters.' }
 
-  validates :terms_and_conditions,
-    inclusion: {in: [true], on: :create, message: 'You must agree to the terms and conditions' }
+  validates :read_and_accepted_waiver_form,
+    inclusion: {in: [true], on: :create, message: 'You must agree to the waiver of form' }
 
   validates :password,
     presence: { message: "Your password is required." },
@@ -39,7 +39,8 @@ class User < ApplicationRecord
 
 
   validates :gender,
-    presence: {message: "Your gender is required."}
+    presence: {message: "Your gender is required."},
+    inclusion: {in:["Male", "Female", "Other", "Prefer not to specify", "unknown"]}
 
   validates :faculty,
     presence: {message: "Please provide your faculty"}, if: :student?
@@ -51,14 +52,11 @@ class User < ApplicationRecord
     presence: {message: "Please provide your year of study"}, if: :student?
 
   validates :student_id,
-    presence: {message: "Please provide your student Number"}, if: :student?,
-    length: { is: 7, message: 'Your student number must be 7 characters.' }
-
+    presence: {message: "Please provide your student Number"}, if: :student?
 
   validates :identity,
-    presence: {message: "Please identify who you are"}
-
-  validate :identity_valid?
+    presence: {message: "Please identify who you are"},
+    inclusion: {in:['grad', 'undergrad', 'faculty_member', 'community_member', 'unknown']}
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
@@ -88,10 +86,6 @@ class User < ApplicationRecord
     self.identity.eql?("grad") || self.identity.eql?("undergrad")
   end
 
-  def identity_valid?
-    errors.add(:identity, "identity not valid") unless self.identity.eql?("grad") || self.identity.eql?("undergrad") || self.identity.eql?("faculty_member") || self.identity.eql?("community_member") || self.identity.eql?("unknown")
-  end
-
   scope :unknown_identity, -> { where(identity:"unknown") }
 
 
@@ -119,12 +113,11 @@ class User < ApplicationRecord
     if self.lab_sessions.last.equal? nil
       return 'no sign in yet'
     end
-    return self.lab_sessions.last.mac_address
+    return self.lab_sessions.last.space.name
   end
 
-  scope :in_last_month, -> { where('created_at BETWEEN ? AND ? ', 1.month.ago.beginning_of_month , 1.month.ago.end_of_month) }
+  scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
 
-  scope :unsigned_tac_users, -> { where('terms_and_conditions = false') }
-
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
 end
