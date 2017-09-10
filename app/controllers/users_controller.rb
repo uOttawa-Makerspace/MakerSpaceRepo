@@ -58,11 +58,15 @@ class UsersController < SessionsController
   end
 
   def show
-    @repo_user = User.find_by username: params[:username]
-    @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
-    @repositories = @repo_user.repositories.where(make_id: nil).page params[:page]
-    @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
-    @photos = photo_hash
+      @repo_user = User.find_by username: params[:username]
+      @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
+      if (params[:username] == @user.username || @user.admin? || @user.staff?)
+        @repositories = @repo_user.repositories.where(make_id: nil).page params[:page]
+      else
+        @repositories = @repo_user.repositories.public_repos.where(make_id: nil).page params[:page]
+      end
+      @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
+      @photos = photo_hash
   end
 
   def likes
@@ -110,7 +114,8 @@ private
   def user_params
     params.require(:user).permit(:password, :password_confirmation, :url,
       :email, :name, :username, :avatar, :gender, :faculty, :use,
-      :description, :terms_and_conditions, :program, :student_id, :how_heard_about_us, :year_of_study, :identity)
+      :description, :terms_and_conditions, :program, :student_id, :how_heard_about_us,
+      :year_of_study, :identity, :read_and_accepted_waiver_form)
   end
 
   def sort_order

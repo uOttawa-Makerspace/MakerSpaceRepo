@@ -9,23 +9,23 @@
 <section id="show-repository">
 
   <section id="repository-photos">
-
-
       <div id="show-photo">
-        <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.width, height: @photos.first.height} %>
+        <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
       </div>
-
-
     <div id="photo-slide">
       <% @photos.each do |p| %>
-        <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
+          <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
       <% end %>
     </div>
 
     <br></br>
     <% if @user.admin?%>
+        Currently Featured: <%=  @repository.featured.to_s.upcase %><br></br>
+        <%= link_to "Feature / Unfeature", pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
+            class: "pin-button" %>
+        <br></br>
         <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
-              style: 'color:#FFF;  background-color: #b02a12;padding: 0.5rem 1rem;text-color:#FFFF' %>
+            class: "delete-button", data: {confirm: 'Are you sure?'} %>
     <% end %>
 
 
@@ -167,7 +167,7 @@
            <% end %>
           <%= content_tag :div, time_ago_in_words(comment.created_at) << " ago", class: 'time' %><br>
           <% if ((@user.admin?) || (@user.id.equal? comment.user_id))%>
-            <%= link_to (fa_icon('times')), {controller: :comments, action: :destroy, id: comment.id}, method: :delete, data: { confirm: "Are you sure?" },  class: 'x-button' %>
+            <%= link_to (fa_icon('times')), {controller: :comments, action: :destroy, id: comment.id}, method: :delete, data: { confirm: "Are you sure?" },  class: 'x-comment-button' %>
           <% end %>
         </div>
         <div class="comment-content">

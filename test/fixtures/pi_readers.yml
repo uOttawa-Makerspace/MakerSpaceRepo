@@ -4,9 +4,14 @@ one:
   pi_location: makerspace
   space_id: 1
 
-
 two:
   id: 2
   pi_mac_address: 8runsf13ld-pi-1
   pi_location: brunsfield
   space_id: 2
+
+three:
+  id: 3
+  pi_mac_address: s4-nd-b0-x1
+  pi_location: sandbox
+  space_id: 3

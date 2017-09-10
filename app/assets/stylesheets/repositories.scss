@@ -9,11 +9,11 @@ section#new-repo{
   div.title{
     color: #366;
     font-size: 2rem;
-    padding-bottom: 0.5rem; 
+    padding-bottom: 0.5rem;
     text-align: center;
     max-width: 500px;
     margin: 0 auto;
-    margin-bottom: 1rem; 
+    margin-bottom: 1rem;
     border-bottom: 2px solid #366;
   }
 
@@ -54,7 +54,6 @@ section#new-repo{
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
   }
-
 }
 
 .ui-state-focus:not(.ui-selectmenu-button){
@@ -95,7 +94,7 @@ li.ui-menu-item {
 
     &:hover{
       background-color: #5f9ea0;
-      color: #fff; 
+      color: #fff;
     }
   }
 }
@@ -121,7 +120,7 @@ li.ui-menu-item {
 }
 
 .select-styled {
-  position: absolute; 
+  position: absolute;
   top: 0;right:0;bottom:0;left:0;
   padding: 10px;
   @include transition(0.2s);
@@ -136,7 +135,7 @@ li.ui-menu-item {
 }
 
 .select-options {
-  display: none; 
+  display: none;
   position: absolute;
   top: 115%;right: 0;left: 0;
   z-index: 1;
@@ -161,7 +160,7 @@ div#dragndrop{
   width: 100%;
   height: 100%;
   color: #aaa;
-  padding-top: 20px; 
+  padding-top: 20px;
   font: 300 2em 'Raleway', sans-serif;
   text-align: center;
 
@@ -191,7 +190,7 @@ label.custom-image-upload{
   background-color: #eee;
   font: 300 0.8em 'Raleway', sans-serif !important;
   color: #4682b4 !important;
-  margin: 0 !important; 
+  margin: 0 !important;
   &:hover{
     cursor: pointer;
   }
@@ -242,10 +241,48 @@ div#category-container, div#equipment-container{
     margin-right: 0.2rem;
     cursor: default;
   }
-  
+
   span:hover{
     background-color: darkred;
     cursor: not-allowed;
+  }
+}
+div#share_option{
+  span{
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    background-color: #4682b4;
+    color: #555;
+    font: 300 0.8em 'Raleway', sans-serif !important;
+    margin-top: 0.2rem;
+    margin-right: 0.2rem;
+    cursor: default;
+  }
+
+  label#type{
+    color: #555;
+    font: 300 0.9em 'Raleway', sans-serif;
+  }
+  div#description{
+    text-indent: 5mm;
+  }
+
+  div#pass{
+    padding-left: 10px;;
+  }
+  div#change_pass{
+    padding-left: 10px;;
+  }
+  span:hover{
+    background-color: darkred;
+    cursor: not-allowed;
+  }
+
+  input {
+      color: #666;
+      height: 20px;
+      padding: 2px;
+      padding-left: 5px;
   }
 }
 
@@ -303,7 +340,41 @@ div.redactor-editor{
   & li{
     display: list-item;
   }
-  
+
+
+}
+
+.pin-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #5f9ea0;
+  color: #fff;
+  margin-bottom: 20px;
+
+}
+
+
+.delete-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #A61E10;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+  }
+
 }
 
 #status-save {

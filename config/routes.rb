@@ -7,7 +7,7 @@ Rails.application.routes.draw do
     get 'forgot_password'
     get 'reset_password'
     get 'terms-of-service', as: 'tos'
-    get 'privacy'
+    get 'hours'
     get 'about'
     get 'contact'
     get 'report_repository/:repository_id', :as => 'report_repository', :action => 'report_repository'
@@ -24,6 +24,7 @@ Rails.application.routes.draw do
     get 'search'
     get 'category/:slug', :as => 'category', :action => 'category'
     get 'equipment/:slug', :as => 'equipment', :action => 'equipment'
+    get 'featured', path: 'category/:slug/featured'
   end
 
   # TEMPLATE
@@ -57,6 +58,7 @@ Rails.application.routes.draw do
   end
 
   get 'help', to: 'help#main'
+  put 'send_email', to:'help#send_email'
 
   namespace :licenses do
     get 'common-creative-attribution', as: 'cca'
@@ -82,20 +84,29 @@ Rails.application.routes.draw do
         get 'unique_visits'
         get 'faculty_frequency'
         get 'gender_frequency'
+        get 'training'
+        put 'select_date_range'
+        get 'repository'
       end
     end
+
     resources :users, only: [:index, :edit, :update, :show] do
       collection do
         get 'search'
         post 'bulk_add_certifications'
         patch 'set_role'
-        patch 'renew_certification'
         delete 'delete_repository'
-        delete 'revoke_certification'
       end
     end
 
-    resources :trainings do
+    resources :spaces, only: [:index, :create, :edit] do
+      delete 'destroy', path: '/edit/'
+    end
+
+    resources :trainings, only: [:index, :create, :update, :destroy] do
+    end
+
+    resources :pi_readers, only: [:update] do
     end
 
     resources :training_sessions do
@@ -116,6 +127,7 @@ Rails.application.routes.draw do
         post 'remove_equipment'
         post 'submit_pi'
         post 'remove_pi'
+        get 'pin_unpin_repository'
 
       end
     end
@@ -129,12 +141,21 @@ Rails.application.routes.draw do
       get  '/', :as => 'index', :action => 'index', on: :collection
       member do
         post 'certify_trainees'
+        patch 'renew_certification'
+        delete 'revoke_certification'
+        get 'training_report'
       end
     end
   end
 
   namespace :staff_dashboard do
     get '/', :as => 'index', :action => 'index'
+    get 'search'
+    put 'change_space', path: '/change_space'
+    put 'sign_in_users', path: '/add_users'
+    put 'sign_out_users', path: '/remove_users'
+    put 'link_rfid'
+    put 'unlink_rfid'
   end
 
   # namespace :help do
@@ -156,6 +177,11 @@ Rails.application.routes.draw do
       get ':slug/download_files', :as => 'download_files', :action => 'download_files'
       get ':slug/download', :as => '/download', :action => '/download'
     end
+    member do
+      get 'password_entry', path: '/password_entry'
+      post 'pass_authenticate'
+    end
+
   end
 
   namespace :makes, path: 'makes/:user_username/:slug' do

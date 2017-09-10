@@ -1,39 +1,24 @@
-<section id="page-contents">
-   <script type="text/javascript" src="../javascripts/sorting.js" ></script>
-
-  <% if flash[:notice] %>
-    <div id="notice"><%= flash[:notice] %></div>
-  <% end %>
-
-  <% if flash[:alert] %>
-    <div id="alert"><%= flash[:alert] %></div>
-  <% end %>
-  <br>
-
+<section class="page-contents">
+  <div class="edit-column">
       <div class="setting-title">Admin Training Sessions Manager</div>
       <br>
-      <input type="text" id="query" onkeyup="findSession()" placeholder=" Find by: date, training, course, username  ">
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
 
       <br></br>
-      <table id="sessions-table">
+      <table class="sessions-table">
         <tr>
-          <th>Date
-            <button class="sort-arrow" onclick="sortTable(0)"><div class="arrow-down"></div></button></th>
-          <th>Training
-            <button class="sort-arrow" onclick="sortTable(1)"><div class="arrow-down"></div></button></th>
-          <th>Trainer
-            <button class="sort-arrow" onclick="sortTable(2)"><div class="arrow-down"></div></button></th>
-          <th>Course
-            <button class="sort-arrow" onclick="sortTable(3)"><div class="arrow-down"></div></button></th>
-          <th>Status
-            <button class="sort-arrow" onclick="sortTable(4)"><div class="arrow-down"></div></button></th>
-          <th>Users</th>
+          <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Course <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Status <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Users <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header">Action</th>
 
         </tr>
 
         <tbody>
-        <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 50) %>
+        <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20) %>
         <%= will_paginate @sessions %>
         <% @sessions.each do |sesh| %>
           <tr>
@@ -56,10 +41,10 @@
             </td>
 
             <td class="status-cell">
-              <% if sesh.users.first.certifications.include? Certification.find_by(training_session_id: sesh.id) %>
-                COMPLETE
+              <% if sesh.completed? %>
+                COMPLETED
               <% else %>
-                INCOMPLETE
+                NOT COMPLETED
               <% end %>
             </td>
 
@@ -82,12 +67,17 @@
 
             <td class="action-cell">
               <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %>
+              <%=link_to "Download",
+                    training_report_staff_training_session_path(id:sesh.id, format: "csv" ),
+                    action: :training_report,
+                    class:"download-button" %>
               <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
-            </td>
+            <br></br>
+          </td>
 
           </tr>
         <% end %>
         </tbody>
       </table>
-
+    </div>
 </section>

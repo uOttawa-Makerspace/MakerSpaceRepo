@@ -10,7 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
+<<<<<<< HEAD
 ActiveRecord::Schema.define(version: 20170821221608) do
+=======
+ActiveRecord::Schema.define(version: 20170906162344) do
+>>>>>>> b2b57a2f56cb2065401faf59e77d34c4c454fd7c
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -72,11 +76,20 @@ ActiveRecord::Schema.define(version: 20170821221608) do
     t.datetime "created_at",    null: false
     t.datetime "updated_at",    null: false
     t.string   "mac_address"
+<<<<<<< HEAD
     t.integer  "pi_reader_id"
     t.index ["pi_reader_id"], name: "index_lab_sessions_on_pi_reader_id", using: :btree
     t.index ["user_id"], name: "index_lab_sessions_on_user_id", using: :btree
   end
 
+=======
+    t.integer  "space_id"
+  end
+
+  add_index "lab_sessions", ["space_id"], name: "index_lab_sessions_on_space_id", using: :btree
+  add_index "lab_sessions", ["user_id"], name: "index_lab_sessions_on_user_id", using: :btree
+
+>>>>>>> b2b57a2f56cb2065401faf59e77d34c4c454fd7c
   create_table "likes", force: :cascade do |t|
     t.integer  "user_id"
     t.integer  "repository_id"
@@ -123,8 +136,8 @@ ActiveRecord::Schema.define(version: 20170821221608) do
     t.integer  "user_id"
     t.string   "title"
     t.string   "description"
-    t.datetime "created_at",                null: false
-    t.datetime "updated_at",                null: false
+    t.datetime "created_at",                    null: false
+    t.datetime "updated_at",                    null: false
     t.string   "category"
     t.string   "license"
     t.string   "github"
@@ -134,7 +147,13 @@ ActiveRecord::Schema.define(version: 20170821221608) do
     t.integer  "make_id"
     t.integer  "make",          default: 0
     t.string   "slug"
+<<<<<<< HEAD
     t.index ["user_id"], name: "index_repositories_on_user_id", using: :btree
+=======
+    t.string   "share_type"
+    t.string   "password"
+    t.boolean  "featured",      default: false
+>>>>>>> b2b57a2f56cb2065401faf59e77d34c4c454fd7c
   end
 
   create_table "rfids", force: :cascade do |t|
@@ -174,8 +193,13 @@ ActiveRecord::Schema.define(version: 20170821221608) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer  "space_id"
+<<<<<<< HEAD
     t.index ["space_id"], name: "index_trainings_on_space_id", using: :btree
+=======
+>>>>>>> b2b57a2f56cb2065401faf59e77d34c4c454fd7c
   end
+
+  add_index "trainings", ["space_id"], name: "index_trainings_on_space_id", using: :btree
 
   create_table "upvotes", force: :cascade do |t|
     t.integer  "user_id"
@@ -191,8 +215,8 @@ ActiveRecord::Schema.define(version: 20170821221608) do
     t.string   "username"
     t.string   "password"
     t.string   "url"
-    t.datetime "created_at",                                    null: false
-    t.datetime "updated_at",                                    null: false
+    t.datetime "created_at",                                             null: false
+    t.datetime "updated_at",                                             null: false
     t.text     "description"
     t.string   "email"
     t.string   "avatar_file_name"
@@ -204,14 +228,15 @@ ActiveRecord::Schema.define(version: 20170821221608) do
     t.string   "gender"
     t.string   "faculty"
     t.string   "use"
-    t.integer  "reputation",           default: 0
-    t.string   "role",                 default: "regular_user"
+    t.integer  "reputation",                    default: 0
+    t.string   "role",                          default: "regular_user"
     t.boolean  "terms_and_conditions"
-    t.integer  "student_id"
     t.string   "program"
+    t.integer  "student_id"
     t.string   "how_heard_about_us"
     t.string   "identity"
     t.string   "year_of_study"
+    t.boolean  "read_and_accepted_waiver_form", default: false
   end
 
   add_foreign_key "categories", "category_options"
@@ -220,7 +245,7 @@ ActiveRecord::Schema.define(version: 20170821221608) do
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
   add_foreign_key "equipment", "repositories"
-  add_foreign_key "lab_sessions", "pi_readers"
+  add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "photos", "repositories"

@@ -28,6 +28,12 @@ class SearchControllerTest < ActionController::TestCase
     assert response.body.include? "Repository1"
   end
 
+  test "Shows repos only category option id" do
+    get :category, slug: 'course-related-projects'
+    assert_response :success
+    assert response.body.include? "Repository7"
+  end
+
   test "Shows repos by equipment" do
     get :equipment, params: { slug: '3d-printer' }
     assert_response :success

@@ -1,127 +1,80 @@
-<% if flash[:notice] %>
-  <div id="notice"><%= flash[:notice] %></div>
-<% end %>
+<section class="page-contents">
+  <div class="edit-column">
+    <div style="font-weight:bold;font-size:1.4em;">Training Session #<%= @current_training_session.id %></div>
 
-<% if flash[:alert] %>
-  <div id="alert"><%= flash[:alert] %></div>
-<% end %>
+    <div style="float:right;">Created On: <%= @current_training_session.created_at.strftime("%D at %l:%M%P") %></div><br>
+    <div style="float:right;">Updated On: <%= @current_training_session.updated_at.strftime("%D at %l:%M%P") %></div>
 
+    <div>Space: <span style="font-weight:bold;"> <%=@space.name.capitalize %></span></div>
+    <div>Status:
+      <% if @current_training_session.completed? %>
+      <span style="color:#006633;"> Completed </span>
+      <%else%>
+      <span style="color:#700000;"> Incomplete </span>
+      <%end%>
+    </div>
+    <br>
 
-<section id ="page-contents" >
-<%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
+  <% unless @current_training_session.completed? %>
+    <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
+    <div>Trainer: <%= @staff.name %></div>
+      <% if @user.admin?%>
+        <% label_tag 'changed_params[user_id]' %>
+        <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: ['staff','admin']), 'id', 'name'), prompt: 'change trainer', class: "trainer-training-course" %><br></br>
+      <% end %>
+    <div>Training Type: <%= @current_training_session.training.name %><br>
+          <% label_tag 'changed_params[training_id]' %>
+          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings, 'id', 'name'), prompt: 'change training', class: "trainer-training-course" %><br></br>
 
-<div>Trainer: <%= @staff.name %></div>
-  <% if @user.admin?%>
-    <% label_tag 'changed_params[user_id]' %>
-    <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: ['staff','admin']), 'id', 'name'), prompt: 'change trainer', class: "trainer-training-course" %><br></br>
+        <div>Course: <%= @current_training_session.course %></div>
+          <% label_tag 'changed_params[course]' %>
+          <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'change course', class: "trainer-training-course" %><br>
+    </div><br>
+
+    <%= submit_tag "Update", class: 'save-button' %>
+    <% end %>
+  <% else %>
+    <div>Trainer: <%= @staff.name %></div>
+    <div>Training: <%= @current_training_session.training.name %></div>
+    <div>Course: <%= @current_training_session.course %></div><br>
   <% end %>
-<div>Training Type: <%= @current_training_session.training.name %>
-      <% label_tag 'changed_params[training_id]' %>
-      <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(Training.all, 'id', 'name'), prompt: 'change training', class: "trainer-training-course" %><br></br>
+  <br>
 
-    <div>Course: <%= @current_training_session.course %></div>
-      <% label_tag 'changed_params[course]' %>
-      <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'change course', class: "trainer-training-course" %><br>
-</div><br>
+    <table class="training-session-users-table">
+        Users in this training session
+        <tr>
+          <th class="action-header">Remove From This Session</th>
+          <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+        </tr>
 
+      <% @current_training_session.users.each do |user| %>
+        <%if user.read_and_accepted_waiver_form%>
+          <tr>
+        <%else%>
+          <tr id="no-waiver">
+        <%end%>
 
-
-
-  <table class="training-session-users-table">
-      Users in this training session
-      <tr>
-        <th>Drop</th>
-        <th>Username</th>
-        <th>Last Signed In</th>
-        <th>Location</th>
-        <th>Certification</th>
-      </tr>
-
-    <% @current_training_session.users.each do |user| %>
-      <tr class="drop-rows">
-
-        <td class="drop-checkbox-cell" onclick="check_users(this)">
-          <%= check_box_tag 'dropped_users[]', value=user.username%>
+        <td class="action-cell">
+          <%= link_to (fa_icon('times-circle')),
+            {controller: :training_sessions, action: :update, id: @current_training_session.id, dropped_users: [user.username], changed_params: {course: ''} },
+            method: :patch, class: 'x-button' %>
         </td>
 
-        <td class="drop-username-cell"><%=
-          link_to(content_tag(:drop_username, user.username), user_url(user.username))
-        %></td>
+        <td class="user-name">
+          <%= link_to(user.name, user_url(user.username)) %>
+        </td>
 
-        <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
-          if user.lab_sessions.present?
-            singout_time = user.lab_sessions.last.sign_out_time
-            singout_time.strftime("%B %d, %Y")
-          end
-        %></td>
-
-        <td class="location-cell"><%=
-          user.location
-        %></td>
+        <td class="email-cell" style="horizontal-alginment:center;">
+          <%= user.email  %>
+        </td>
 
         <td class="certifications-cell"><%
           if user.certifications.first.present?
             user.certifications.each do |certification|
-            %>
-            <div
-             class="cert-name"
-             style="display:inline" >
-             <div class="cert-holder" style="display:inline">
-              <%= certification.training %> |
-              <div id="cert-details" style="display:inline">
-                <%= certification.training %> <br>
-                <%= certification.trainer %> <br>
-                <%= certification.updated_at.strftime("%B %d, %Y")  %>
-              </div>
-            </div>
-          </div>
-          <%
-            end
-          end
-          %>
-        </td>
-
-      </tr>
-    <% end %>
-    </table>
-    <br>
-    <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>
-    <br>
-
-    <table>
-      Other Users
-      <tr>
-        <th>Add</th>
-        <th>Username</th>
-        <th>Last Signed In</th>
-        <th>Location</th>
-        <th>Certification</th>
-      </tr>
-
-    <% User.all.limit(20).each do |user| %>
-      <% unless @current_training_session.users.include?(user) %>
-      <tr class="add-rows">
-
-          <td class="add-checkbox-cell">
-            <%= check_box_tag 'added_users[]', value=user.username%>
-          </td>
-
-          <td class="add-username-cell">
-            <%= link_to(content_tag(:add_username, user.username), user_url(user.username)) %>
-          </td>
-
-          <td class="signed_in-cell" style="horizontal-alginment:center;">
-            <%= if user.lab_sessions.present?
-                  singout_time = user.lab_sessions.last.sign_out_time
-                  singout_time.strftime("%B %d, %Y")
-                end %>
-          </td>
-
-          <td class="location-cell">
-            <%= user.location %></td>
-
-          <td class="certifications-cell">
-          <% user.certifications.each do |certification| %>
+            %><%
+              unless certification.out_of_date? %>
               <div
                class="cert-name"
                style="display:inline" >
@@ -134,18 +87,109 @@
                 </div>
               </div>
             </div>
-          <% end %>
+            <% else %>
+            <div
+             class="cert-name-red"
+             style="display:inline" >
+             <div class="cert-holder" style="display:inline">
+              <%= certification.training %> |
+              <div id="cert-details" style="display:inline">
+                <%= certification.training %> <br>
+                <%= certification.trainer %> <br>
+                <%= certification.updated_at.strftime("%B %d, %Y")  %>
+              </div>
+            </div>
+          </div>
+          <% end
+            end
+          end
+          %>
         </td>
+
       </tr>
       <% end %>
-    <% end %>
-    </table>
-    <br>
-    <%= submit_tag "Update", class: 'save-button' %>
-  <% end %>
+      </table>
+      <br>
+      <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>
+      <br>
 
-  <br>
-  <% if @user.admin? || @current_training_session.user == @user%>
-    <%=link_to "Cancel", { action: :destroy }, method: :delete, data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
-  <% end %>
+    <br></br>
+    <table class="space-users-table">
+        Users inside <%=@current_training_session.space.name%>
+        <tr>
+          <th class="action-header">Add To This Session</th>
+          <th>Name <span onclick="sortTable('space-users-table, 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Email <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Certifications <span onclick="sortTable('space-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+        </tr>
+
+      <% @current_training_session.space.signed_in_users.each do |user| %>
+      <% unless @current_training_session.users.include? user %>
+      <tr>
+
+        <td class="action-cell">
+          <%= link_to (fa_icon('check-circle')), {controller: :training_sessions, action: :update, id: @current_training_session.id, added_users: [user.username], changed_params: {course: ''} },
+                method: :patch, class: 'check-button' %>
+
+        <td class="user-name">
+          <%= link_to(user.name, user_url(user.username)) %>
+        </td>
+
+        <td class="email-cell" style="horizontal-alginment:center;">
+          <%= user.email  %>
+        </td>
+
+        <td class="certifications-cell"><%
+          if user.certifications.first.present?
+            user.certifications.each do |certification|
+            %><%
+              unless certification.out_of_date? %>
+              <div
+               class="cert-name"
+               style="display:inline" >
+               <div class="cert-holder" style="display:inline">
+                <%= certification.training %> |
+                <div id="cert-details" style="display:inline">
+                  <%= certification.training %> <br>
+                  <%= certification.trainer %> <br>
+                  <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                </div>
+              </div>
+            </div>
+            <% else %>
+            <div
+             class="cert-name-red"
+             style="display:inline" >
+             <div class="cert-holder" style="display:inline">
+              <%= certification.training %> |
+              <div id="cert-details" style="display:inline">
+                <%= certification.training %> <br>
+                <%= certification.trainer %> <br>
+                <%= certification.updated_at.strftime("%B %d, %Y")  %>
+              </div>
+            </div>
+          </div>
+          <% end
+            end
+          end
+          %>
+        </td>
+        <% end %>
+      </tr>
+      <% end %>
+    </table>
+
+    <br>
+    <% if @user.admin? || @current_training_session.user == @user%>
+      <%=link_to "Destroy", { action: :destroy }, method: :delete, data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
+        class:"destroy-button",
+        style:"float:right;float:top;"%>
+    <% end %>
+    <br></br>
+
+    <br></br>
+
+  </div>
+  <br></br>
+
 </section>

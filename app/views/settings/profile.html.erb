@@ -19,20 +19,244 @@
         Choose new image<br>Choisi une nouvelle image
       </label>
     </div>
-
+    <br><br>
     <%= f.label :name, "Full Name/Nom", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:name].first, class: 'form-error' %>
     <%= f.text_field :name, class: "profile-text", autofocus: true %>
 
-    <%= f.label :url, "URL", class: "profile-label" %>
-    <%= f.url_field :url, class: "profile-text" %>
 
+    <%= f.label :faculty , "Faculty" , class: "profile-label" %>
+    <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
+    <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
+      " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
-    <% if @user.identity == "unknown" %>
+    <% @programs = ProgramList.fetch_all %>
+    <%= f.label :program, "Program" , class: "profile-label" %>
+    <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
+    <%= f.select(:program, @programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
 
-    <section id="old_users">
+    <% unless @user.read_and_accepted_waiver_form %>
+    <br><br>
+    <section id="waivers">
+      <div class="top">
+        <b>
+        RELEASE OF LIABILITY, WAIVER OF CLAIMS, ASSUMPTION OF RISKS AND INDEMNITY AGREEMENT.<br></br>
+        ENTENTE D’EXONÉRATION DE RESPONSABILITÉ, DE RENONCIATION AUX RÉCLAMATIONS ET D’ACCEPTATION DES RISQUES
+        </b>
+      </div><br>
+      <label id="required">Select a version / Sélectionnez une version</label>
+      <div class="waiver-button" onClick="showWaiver('english-waiver', 'french-waiver')">English Version</div>
+      <div class="waiver-button" onClick="showWaiver('french-waiver', 'english-waiver')">Version Française</div><br>
+
+        <section id="english-waiver" style="display:none;margin-left: 160px;">
+            <div class="waiver-container"><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "I agree to this waiver:"%></div>
+              <label style="font-size:0.7em">
+                scroll down and click <span id = "required" style="font-weight:bold;">I Agree</span>
+              </label><br></br>
+              <div class="waiver-form-outer">
+                <div class="waiver-form-inner" style="font-size:1.4em;">
+<pre>
+<b>
+                                PLEASE READ CAREFULLY!
+
+      RELEASE OF LIABILITY, WAIVER OF CLAIMS, ASSUMPTION OF RISKS AND  INDEMNITY
+           AGREEMENT (hereinafter referred to as the “Release Agreement”).
+</b>
+
+BY SIGNING THIS AGREEMENT YOU WILL WAIVE CERTAIN LEGAL RIGHTS, INCLUDING THE RIGHT
+TO SUE OR CLAIM COMPENSATION FOLLOWING AN ACCIDENT
+
+The Participant freely accepts and fully assumes all such risks, dangers, and
+hazards and the possibility of personal and bodily injury, death, property damage,
+or loss resulting from such risks, dangers and hazards.
+The risks, dangers, and hazards may include but are not limited to:
+
+  •	Physical Activity
+  •	Theft of Personal Items
+  •	Exposure to hazardous substances (chemicals)
+  •	Laboratory risks
+  •	Physical or mechanical hazards
+  •	Lab equipment
+  •	Personal safety during all aspects of the Activity
+
+The Participant acknowledges and further accepts the responsibility of discussing
+their participation in the Activity with their physician and obtaining adequate
+insurance that may apply; the Participant is aware that the University of Ottawa
+does not carry accident or medical or dental insurance on their behalf.
+By signing this document, the Participant:
+
+  • Agrees to freely accept such risks, dangers and hazards inherent in
+    undertaking the Activity.
+  • Understands that Participants are not covered by the Workplace Safety and
+    Insurance Board for injuries arising as a result of the Activity.
+  • Agrees that it is the responsibility of the Participant to familiarise
+    themselves with health and safety requirements applicable to the Activity
+    and to discontinue any Activity that is unsafe immediately.
+  • Agrees to participate in any hazard awareness training that may be offered
+    and commits to meet personal protection requirements, to follow directives
+    provided by Activity leaders, and to respect emergency situation guidelines.
+  • Agrees to follow University procedures, and to report any Activity-related
+    incidents witnessed, on or off University property while participating in
+    the Activity.
+  • Agrees not to undertake any procedure, process, activity that was not
+    discussed or reviewed with the Activity supervisor without first obtaining
+    training, instruction, and/or supervision by the designated competent
+    supervisor.
+  • Understands and fully accepts that if the Participant chooses to participate
+    in any other activity that is not part of the planned Activity, that they are
+    fully responsible for the consequences of their conduct.
+  • Understands and fully accepts that if the Participant fails to observe any
+    conditions or rules established during the course of the Activity, that the
+    Participant may be asked to leave.
+
+<b>I AGREE TO WAIVE ANY AND ALL CLAIMS</b> that I have or may in the future have
+against the University of Ottawa, its respective Board of Governors, officers,
+directors, employees, agents, independent contractors, subcontractors,
+representatives, successors and assigns, and all instructors, coaches, managers,
+volunteers, sponsors, officials and officers in any way involved or connected with
+the Activity (herein after collectively referred to as the Releasees) arising out
+of my participation in the Activities and <b>TO RELEASE THE RELEASEES</b> from
+any and all liability for any loss, damage, expense or injury including death that
+I may suffer or that my next of kin may suffer during my participation in the
+Activity, DUE TO ANY CAUSE WHATSOEVER, INCLUDING NEGLIGENCE, BREACH OF CONTRACT,
+OR BREACH OF ANY STATUTORY OR OTHER DUTY OF CARE, INCLUDING ANY DUTY OF CARE OWED
+UNDER THE <b>OCCUPIERS LIABILITY ACT</b>, ON THE PART OF THE RELEASEES AND ALSO
+INCLUDING THE FAILURE ON THE PART OF THE RELEASEES TO SAFEGUARD OR PROTECT ME FROM
+THE RISKS, DANGERS AND HAZARDS OF THE ACTIVITY REFERRED TO ABOVE.
+Upon the University’s request, <b>I AGREE</b> to leave the Activity should I fail to
+follow the University’s instructions or directions.
+
+<b>
+I HAVE BEEN GIVEN THE OPPORTUNITY AND HAVE BEEN ENCOURAGED TO SEEK INDEPENDENT
+LEGAL ADVICE PRIOR TO SIGNING THIS AGREEMENT.</b>
+
+By checking this box, <b>I ACCEPT AND FULLY ASSUME</b> all such (health and safety)
+risks, dangers and hazards which may be associated with my participation.
+</pre>
+                <%= f.radio_button :read_and_accepted_waiver_form, true, :onclick => "showCreateButton()", style:"display:inline;width:15px;"%>
+                <b id="required" style="display:inline;">I AGREE</b>
+              </div>
+            </div>
+        </section>
+
+        <section id="french-waiver" style="display:none;margin-left: 160px;">
+            <div class="waiver-container"><div id="read_and_accepted_waiver_form" style="font-weight:bold;" > <%= "Je suis d'accord avec cette renonciation :"%></div>
+              <label style="font-size:0.7em">
+                Défiler vers le bas et clique <span id = "required" style="font-weight:bold;">JE SUIS D'ACCORD</span>
+              </label><br></br>
+              <div class="waiver-form-outer">
+                <div class="waiver-form-inner" style="font-size:1.4em;">
+<pre>
+<b>
+                                À LIRE ATTENTIVEMENT!
+
+      ENTENTE D’EXONÉRATION DE RESPONSABILITÉ, DE RENONCIATION AUX RÉCLAMATIONS
+                              ET D’ACCEPTATION DES RISQUES
+</b>
+
+EN SIGNANT LE PRÉSENT DOCUMENT, VOUS RENONCEZ À CERTAINS DROITS RECONNUS PAR LA
+LOI, Y COMPRIS LE CELUI D’INTENTER DES POURSUITES OU DE RÉCLAMER UNE INDEMNISATION
+À LA SUITE D’UN ACCIDENT.
+
+Le Participant accepte librement et assume pleinement tous les risques et dangers
+liés à l’événement, y compris les préjudices personnels et corporels, décès,
+dommages matériels ou pertes pouvant en découler. Peuvent constituer des risques
+ou dangers, entre autres :
+
+  •	Activités physiques
+  •	Vols d’articles personnels
+  •	Risques physiques ou mécaniques
+  •	Processus
+  •	Matières dangereuses
+  •	Matériel utilisé
+  •	Tout ce qui peut menacer la sécurité personnelle pendant l’événement
+
+Le Participant reconnaît et accepte qu’il lui incombe de discuter de sa
+participation à l’Événement avec son médecin et d’obtenir une couverture
+d’assurance adaptée aux différents types de risque. Il a conscience que
+l’Université d’Ottawa n’a aucune assurance accident, médicale ou dentaire le
+protégeant. En signant le présent document, le Participant :
+
+  • accepte librement les risques et dangers inhérents à sa participation à
+    l’Événement;
+  • comprend que les Participants ne sont pas protégés par la Commission de la
+    sécurité professionnelle et de l’assurance contre les accidents de travail
+    s’ils subissent des blessures dans le cadre de cet Événement;
+  • reconnaît qu’il lui appartient de se familiariser avec les exigences en
+    matière de santé et de sécurité qui s’appliquent à l’Événement et de cesser
+    sur-le-champ toute activité potentiellement dangereuse;
+  • accepte de participer à tout atelier de sensibilisation aux dangers
+    susceptible d’être offert et s’engage à respecter les exigences en matière
+    de protection personnelle, à suivre les directives des responsables de
+    l’Événement et à observer les consignes en cas d’urgence;
+  • accepte de suivre les procédures de l’Université, de signaler tout incident
+    dont il est témoin et de respecter les exigences en matière de santé et de
+    sécurité sur les terrains de l’Université ou ailleurs pendant sa participation
+    à l’Événement;
+  • consent à n’entreprendre aucun processus ni aucune procédure ou activité dont
+    il n’a pas déjà discuté avec le responsable de l’Événement sans avoir d’abord
+    reçu à cet égard de la formation, des instructions ou un encadrement du
+    surveillant compétent désigné;
+  • comprend et accepte pleinement que, s’il se livre à toute activité ne faisant
+    pas partie de l’Événement planifié, il est entièrement responsable des
+    conséquences de sa conduite;
+  • comprend et accepte pleinement que, s’il déroge à des règles ou conditions
+    fixées au cours de l’Événement, on pourrait lui demander de quitter les lieux.
+</br>
+
+<b>JE RENONCE À TOUTE REVENDICATION</b> que je pourrais vouloir formuler par suite
+de ma participation à l’Événement contre l’Université d’Ottawa, son Bureau des
+gouverneurs ou ses administrateurs, dirigeants, employés, mandataires,
+entrepreneurs indépendants, sous-traitants, représentants, successeurs et ayants
+droit, ou contre les instructeurs, entraîneurs, gestionnaires, bénévoles,
+commanditaires, agents et dirigeants qui sont associés ou liés de quelque
+manière que ce soit à l’Événement (ci-après appelés collectivement
+« Renonciataires »). De plus, <b>JE DÉGAGE LES RENONCIATAIRES </b> de toute
+responsabilité relative aux pertes, dommages, décès, préjudices ou dépenses dont
+moi ou mon plus proche parent pourrions devoir assumer les conséquences par suite
+de ma participation à l’Événement, QUELLE QU’EN SOIT LA CAUSE, PAR EXEMPLE UNE
+NÉGLIGENCE, UNE VIOLATION DE CONTRAT OU UN MANQUEMENT À UN DEVOIR DE DILIGENCE
+PRÉVU OU NON PAR LA LOI — NOTAMMENT LA <b><i>LOI SUR LA RESPONSABILITÉ DES</i></b>—
+COMMIS PAR LES RENONCIATAIRES, Y COMPRIS LE DÉFAUT DE ME PROTÉGER OU DE PRENDRE
+DES MESURES RAISONNABLES POUR ME PROTÉGER CONTRE LES RISQUES ET DANGERS
+SUSMENTIONNÉS.
+
+<b>J’ACCEPTE</b>, à la demande de l’Université, de quitter l’Événement si je ne
+respecte pas les instructions ou directives de l’Université, ou si je commets une
+infraction en matière de santé et de sécurité.
+<b>
+ON M’A RECOMMANDÉ ET DONNÉ L’OCCASION D’OBTENIR DES CONSEILS D’UN JURISTE IMPARTIAL
+AVANT DE SIGNER LE PRÉSENT DOCUMENT.</b>
+
+En cochant cette case, <b>J’ACCEPTE ET J’ASSUME PLEINEMENT</b> tous les risques et
+dangers pour la santé et la sécurité que peut comporter ma participation à
+l’Événement.
+</pre>
+                  <%= f.radio_button :read_and_accepted_waiver_form, true, :onclick => "showCreateButton()", style:"display:inline;width:15px;" %>
+                  <b id="required" style="display:inline;">JE SUIS D'ACCORD</b>
+                </div>
+              </div>
+            </div>
+        </section>
+      </section>
+    <% end %>
+
+    <% if @user.identity == "unknown" || @user.name == "anonymous" || @user.gender == "unknown"%>
+
+      <section id="old_users">
         <p id="intro"> <strong>MakerRepo has been updated and the users who've already had an account have to update their information.<br>
            Please fill in the form below and click Save. </strong> </p>
+
+        <%= f.label :name , "Full Name/Nom" , class: "profile-label"%>
+        <%= content_tag :span, @user.errors[:name][0], class: 'form-error' %>
+        <%= content_tag :span, @user.errors[:name][1], class: 'form-error',
+           style: 'display: block;' if @user.errors[:name][1] %>
+        <%= f.text_field :name, class: "profile-text", autofocus: true %>
+
+        <%= f.label :gender , class: "profile-label" %>
+        <%= content_tag :span, @user.errors[:gender].first, class: 'form-error' %>
+        <%= f.select :gender, ["Male", "Female", "Other", "Prefer not to specify"] , prompt: "Choose..." %><br>
+
 
         <%= f.label :identity, "I am a ..." , class: "profile-label" %>
         <%= content_tag :span, @user.errors[:identity].first, class: 'form-error' %>
@@ -41,18 +265,18 @@
         <p> If you are <strong>not</strong> a <strong> student </strong>, you can ignore the rest of the form and click Save. </p>
         <p> If you <strong>are</strong> a student (grad/undergrad) it is mandatory for you to answer the questions below. </p>
 
-        <%= f.label :student_id , "Student Number (must be 7 characters)" , class: "profile-label"%>
+        <%= f.label :student_id , "Student Number" , class: "profile-label"%>
         <%= content_tag :span, @user.errors[:student_id].first, class: 'form-error' %>
         <%= f.text_field :student_id, class: "profile-text", autofocus: true %>
 
         <%= f.label :faculty , "Faculty" , class: "profile-label" %>
         <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
-        <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science"," Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
+        <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
+          " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
-        <p> # should load the list of programs </p>
         <%= f.label :program, "Program" , class: "profile-label" %>
         <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
-        <%= f.select(:program, ["program"] , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
+        <%= f.select(:program, @programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
 
         <%= f.label :year_of_study, "What year are you in?", class: "profile-label"  %>
         <%= content_tag :span, @user.errors[:year_of_study].first, class: 'form-error' %>

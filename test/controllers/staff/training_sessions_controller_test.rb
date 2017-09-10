@@ -44,7 +44,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     training_session.save
     assert training_session.users.include? User.find_by(username: "adam")
     post :certify_trainees, params: { id: training_session }
-    assert_redirected_to new_staff_training_session_path
+    assert_redirected_to staff_index_url
     assert Certification.find_by(user_id: users(:adam).id, training_session_id: training_sessions(:lathe_1_session).id).present?
   end
 
@@ -66,7 +66,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     delete :destroy, params: { id: training_sessions(:lathe_1_session) }
     refute TrainingSession.find_by(training_id: Training.find_by(name: "lathe_1"),
                                   user_id: @user.id).present?
-    assert_redirected_to new_staff_training_session_path
+    assert_redirected_to staff_index_url
     assert_equal flash[:notice], "Deleted Successfully"
   end
 
@@ -80,6 +80,24 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert Certification.find_by(user_id: users(:olivia).id, training_session_id: training_sessions(:lathe_1_session).id).present?
     patch :update, params: { dropped_users: ['olivia'], id: training_session, changed_params:{user_id: @user.id} }
     refute Certification.find_by(user_id: users(:olivia).id, training_session_id: training_sessions(:lathe_1_session).id).present?
+  end
+
+  test "staff can renew a certification issued by them at an old training session" do
+    training_session = training_sessions(:old_soldering_session)
+    cert = certifications(:mary_old_soldering)
+    patch :renew_certification, id: training_session.id, cert_id: cert.id
+    assert_equal flash[:notice], "Renewed Successfully"
+    assert cert.updated_at < 1.day.ago
+    assert_redirected_to user_path(users(:mary).username)
+  end
+
+  test "staff can revoke a certification issued by them at an old training session" do
+    training_session = training_sessions(:old_soldering_session)
+    cert = certifications(:mary_old_soldering)
+    delete :revoke_certification, id: training_session.id, cert_id: cert.id
+    assert_equal flash[:notice], "Deleted Successfully"
+    refute Certification.find_by(id: cert.id).present?
+    assert_redirected_to user_path(users(:mary).username)
   end
 
 end

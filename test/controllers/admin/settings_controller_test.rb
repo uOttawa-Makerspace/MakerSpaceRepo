@@ -8,4 +8,15 @@ class Admin::SettingsControllerTest < ActionController::TestCase
     @request.env['HTTP_REFERER'] = admin_settings_url
   end
 
+
+  test "admin can pin/unpin a repository" do
+    refute Repository.first.featured?
+    get :pin_unpin_repository, repository_id: 1
+    assert Repository.first.featured?
+
+    assert Repository.second.featured?
+    get :pin_unpin_repository, repository_id: 2
+    refute Repository.second.featured?
+  end
+
 end
