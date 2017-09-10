@@ -49,12 +49,7 @@ class RfidControllerTest < ActionController::TestCase
   test "posting existing card with user returns ok" do
     rfid = rfids(:marys)
 
-<<<<<<< HEAD
     post :card_number, params: { rfid: rfid.card_number, mac_address: "m4k3rsp4c3-pi-1" }
-=======
-    post :card_number, rfid: rfid.card_number, mac_address: "m4k3rsp4c3-pi-1"
->>>>>>> b2b57a2f56cb2065401faf59e77d34c4c454fd7c
-
     assert_response :ok
   end
 

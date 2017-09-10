@@ -1,10 +1,6 @@
-<<<<<<< HEAD
 class Repository < ApplicationRecord
-=======
-class Repository < ActiveRecord::Base
   include BCrypt
 
->>>>>>> b2b57a2f56cb2065401faf59e77d34c4c454fd7c
   belongs_to :user
   has_many   :photos,   dependent: :destroy
   has_many   :repo_files,   dependent: :destroy
