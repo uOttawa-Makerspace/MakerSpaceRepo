@@ -66,10 +66,11 @@ class MsrMailerTest < ActionMailer::TestCase
 	test "issue emails get sent successfully" do
 		email = MsrMailer.issue_email("Julia", "julia@gmail.com", "issue", "photo upload not working")
 		assert_equal ['webmaster@makerepo.com'], email.to
+		assert email.body.to_s.include? "issue"
 		assert email.body.to_s.include? "photo upload not working"
 		assert email.body.to_s.include? "Julia"
 		assert email.body.to_s.include? "julia@gmail.com"
-		assert_equal 'issue', email.subject
+		assert_equal 'Issue Report', email.subject
 
 	end
 end
