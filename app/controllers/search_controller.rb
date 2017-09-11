@@ -57,7 +57,7 @@ class SearchController < SessionsController
     end
 
     if params['featured']
-      @repositories = @repositories.select{|r| r.featured?}.uniq.sort_by(&:updated_at).reverse.paginate(:per_page=>12,:page=>params[:page])
+      @repositories = (@repositories1 + @repositories2 + @repositories3).uniq.select{|r| r.featured?}.uniq.sort_by(&:updated_at).reverse.paginate(:per_page=>12,:page=>params[:page])
     end
 
     @photos = photo_hash
