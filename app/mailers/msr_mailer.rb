@@ -43,6 +43,6 @@ class MsrMailer < ApplicationMailer
 		@subject = subject
 		@comments = comments
 
-		mail(to: "webmaster@makerepo.com", subject: subject)
+		mail(to: "webmaster@makerepo.com", subject: "Issue Report")
 	end
 end
