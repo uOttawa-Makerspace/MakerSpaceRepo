@@ -4,6 +4,12 @@
 
     <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path%></h2>
 
+    <div style="float:right;">
+      <%=link_to "Download Summary",
+          staff_dashboard_present_users_report_path(format: "csv" ),
+          action: :training_report,
+          class:"download-button" %>
+    </div>
 
     <div class="search-form" style="display:inline"> Search for users to sign them in or out of <%=@space.name.capitalize%>:
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>

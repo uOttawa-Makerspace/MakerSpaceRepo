@@ -151,6 +151,7 @@ Rails.application.routes.draw do
   namespace :staff_dashboard do
     get 'index', path: '/'
     get 'search'
+    get 'present_users_report'
     put 'change_space', path: '/change_space'
     put 'sign_in_users', path: '/add_users'
     put 'sign_out_users', path: '/remove_users'

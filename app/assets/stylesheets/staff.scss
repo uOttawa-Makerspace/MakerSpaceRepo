@@ -33,6 +33,28 @@ div.panel-title:hover{
   }
 }
 
+.download-button{
+  float: right;
+  font: 300 10px 'Raleway', sans-serif;
+  padding: 0.5rem 0.34rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  background-color: #5A42E8;
+  color: #fff;
+  margin-right: 5px;
+  margin-top: 11px;
+  margin-bottom: 5px;
+  &:hover{
+    cursor: pointer;
+    background-color: transparentize(#5A42E8, 0.4);
+
+  }
+}
+
+
 .update-button{
   font: 300 1em 'Raleway', sans-serif;
   padding: 0.5rem 1rem;

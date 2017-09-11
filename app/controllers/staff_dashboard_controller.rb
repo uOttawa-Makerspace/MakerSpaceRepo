@@ -87,4 +87,12 @@ class StaffDashboardController < StaffAreaController
     end
   end
 
+
+  def present_users_report
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.present_users_report(@space.id, @user.id)}
+    end
+  end
+
  end
