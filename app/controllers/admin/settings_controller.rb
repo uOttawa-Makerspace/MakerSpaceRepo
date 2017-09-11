@@ -18,18 +18,18 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
 
-  def rename_category
-    if !params[:category_option][:name].present?
-      flash[:alert] = "Invalid category name."
-    elsif params[:rename_category]==""
-      flash[:alert] = "Please select a category."
-    else
-      puts "params: #{params[:rename_category]}"
-      CategoryOption.where(:id => params[:rename_category]).update_all(cat_params)
-      flash[:notice] = "Category renamed successfully!"
-    end
-    redirect_to admin_settings_path
-  end
+  # def rename_category
+  #   if !params[:category_option][:name].present?
+  #     flash[:alert] = "Invalid category name."
+  #   elsif params[:rename_category]==""
+  #     flash[:alert] = "Please select a category."
+  #   else
+  #     puts "params: #{params[:rename_category]}"
+  #     CategoryOption.where(:id => params[:rename_category]).update_all(cat_params)
+  #     flash[:notice] = "Category renamed successfully!"
+  #   end
+  #   redirect_to admin_settings_path
+  # end
 
   def remove_category
     if params[:remove_category]!=""
