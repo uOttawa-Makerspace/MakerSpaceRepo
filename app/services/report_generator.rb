@@ -110,4 +110,29 @@ class ReportGenerator
       end
     end
   end
+
+  def self.present_users_report(id, user_id)
+    @space = Space.find(id)
+    @staff = User.find(user_id)
+    @users = @space.signed_in_users
+
+    column = []
+    column << ["Space: ", @space.name]
+    column << ["Staff: ", @staff.name]
+    column << ["Date:", Time.now.strftime('%a, %d %b %Y at %H:%M')]
+    column << [] << ["Users"]<< ["Name", "Email", "Student number"]
+    @users.each do |user|
+      row = []
+      row << user.name << user.email
+      row << (user.student_id || '')
+      column << row
+    end
+
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
+  end
+
 end
