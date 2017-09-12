@@ -16,13 +16,6 @@
       <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-select", include_blank: "Select a category..." %>
       <%= f.submit "Remove", class: 'save-button' %>
     <% end %>
-    <br>
-    <%= form_for @cat_option, url: {controller: "admin/settings", action: "rename_category"} do |f| %>
-      <%= f.label :rename_a_category, class: "profile-label" %>
-      <%= select_tag :rename_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-select", include_blank: "Select..." %>
-      <%= f.text_field :name, class: "profile-text", id:"rename_category_text" %>
-      <%= f.submit "Rename", class: 'save-button' %>
-    <% end %>
 
     <br><br><br>
     <div>Equipment options</div><hr><br>
