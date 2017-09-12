@@ -7,7 +7,7 @@ class StaffDashboardController < StaffAreaController
     if params['dropped_users'].present?
       users = User.where(username: params['dropped_users']).map(&:id)
       lab_sessions = LabSession.where(user_id: users)
-      lab_sessions.update_all(sign_out_time: Time.now)
+      lab_sessions.update_all(sign_out_time: Time.zone.now)
     end
     redirect_to staff_dashboard_index_path(space_id: @space.id)
   end
@@ -19,8 +19,8 @@ class StaffDashboardController < StaffAreaController
         lab_session = LabSession.new(
                         user_id: user.id,
                         space_id: @space.id,
-                        sign_in_time: Time.now,
-                        sign_out_time: Time.now+4.hours)
+                        sign_in_time: Time.zone.now,
+                        sign_out_time: Time.zone.now+4.hours)
         unless lab_session.save
           flash[:alert] = "Error signing #{user.name} in"
         end
@@ -32,14 +32,14 @@ class StaffDashboardController < StaffAreaController
   def change_space
 
     if new_space = Space.find_by(name: params['space_name'])
-      if current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.now).last
-        current_sesh.sign_out_time = Time.now
+      if current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
+        current_sesh.sign_out_time = Time.zone.now
         current_sesh.save
       end
       new_sesh = LabSession.new(
                     user_id: current_user.id,
-                    sign_in_time: Time.now,
-                    sign_out_time: Time.now + 4.hours,
+                    sign_in_time: Time.zone.now,
+                    sign_out_time: Time.zone.now + 4.hours,
                     space_id: new_space.id)
       if new_sesh.save
         flash[:notice] = "Space changed successfully"

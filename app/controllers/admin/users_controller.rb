@@ -10,7 +10,7 @@ class Admin::UsersController < AdminAreaController
           params[:sort] = "lab_sessions.sign_in_time"
           params[:direction] = "desc"
         end
-        @users_temp = LabSession.joins(:user).where("sign_out_time > ?", Time.now)
+        @users_temp = LabSession.joins(:user).where("sign_out_time > ?", Time.zone.now)
         if params[:location].present?
           @users_temp = @users_temp.joins("INNER JOIN pi_readers ON pi_mac_address = mac_address AND LOWER(pi_location) = LOWER('#{params[:location]}')")
         end
@@ -81,10 +81,10 @@ class Admin::UsersController < AdminAreaController
     count = 0
     @all_sessions.each do |session|
         if session.present?
-          if session.sign_out_time < Time.now
+          if session.sign_out_time < Time.zone.now
             each_session = each_session + (session.sign_out_time - session.sign_in_time)/60
           else
-            each_session = each_session + (Time.now - session.sign_in_time)/60
+            each_session = each_session + (Time.zone.now - session.sign_in_time)/60
           end
           count = count + 1
         end

@@ -119,7 +119,7 @@ class ReportGenerator
     column = []
     column << ["Space: ", @space.name]
     column << ["Staff: ", @staff.name]
-    column << ["Date:", Time.now.strftime('%a, %d %b %Y at %H:%M')]
+    column << ["Date:", Time.zone.now.strftime('%a, %d %b %Y at %H:%M')]
     column << [] << ["Users"]<< ["Name", "Email", "Student number"]
     @users.each do |user|
       row = []
