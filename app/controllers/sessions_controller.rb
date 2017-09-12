@@ -77,8 +77,8 @@ class SessionsController < ApplicationController
 private
 
   def get_session_time_left
-    expire_time = session[:expires_at] || Time.now
-    @session_time_left = (expire_time.to_time - Time.now).to_i
+    expire_time = session[:expires_at] || Time.zone.now
+    @session_time_left = (expire_time.to_time - Time.zone.now).to_i
   end
 
 end

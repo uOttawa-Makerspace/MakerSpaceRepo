@@ -73,7 +73,7 @@ class RfidControllerTest < ActionController::TestCase
 
     assert rfid_status == "RFID sign in" #this is what the raspberry pi recieves
     assert lab_session.present?
-    assert lab_session.sign_out_time > Time.now
+    assert lab_session.sign_out_time > Time.zone.now
     assert raspi.space.signed_in_users.include? rfid.user
   end
 
@@ -88,7 +88,7 @@ class RfidControllerTest < ActionController::TestCase
 
     assert rfid_status == "RFID sign out" #this is what the raspberry pi recieves
     assert lab_session.present?
-    assert lab_session.sign_out_time < Time.now
+    assert lab_session.sign_out_time < Time.zone.now
     refute raspi.space.signed_in_users.include? rfid.user
   end
 end

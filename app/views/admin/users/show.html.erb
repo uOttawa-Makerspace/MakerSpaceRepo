@@ -5,7 +5,7 @@
   <div id="user-info">
       <div class="user-avatar">
         <%= image_tag @edit_admin_user.avatar.url, class: 'edit-avatar'%>
-        <% if @all_sessions.where("sign_out_time > ?", Time.now).present? %>
+        <% if @all_sessions.where("sign_out_time > ?", Time.zone.now).present? %>
           <div class="status-online">
             <%= fa_icon "check-circle-o" %>
             <%= "Currently signed in" %>
@@ -84,9 +84,9 @@
     <div id="user-info">
       <% if @all_sessions.present? %>
         <div class="user-info">
-          <% if @all_sessions.first.sign_out_time > Time.now %>
+          <% if @all_sessions.first.sign_out_time > Time.zone.now %>
             <%= fa_icon "calendar-check-o", text: "Currently in lab" %>
-          <% elsif (@all_sessions.first.sign_out_time < (Time.now - 7.days)) %>
+          <% elsif (@all_sessions.first.sign_out_time < (Time.zone.now - 7.days)) %>
             <%= fa_icon "calendar-check-o", text: "Last seen in lab on #{@all_sessions.first.sign_out_time.strftime("%B %d, %Y")}" %>
           <% else %>
             <%= fa_icon "calendar-check-o", text: "Last seen in lab #{time_ago_in_words(@all_sessions.first.sign_out_time)} ago" %>
@@ -107,11 +107,11 @@
             <th>Location</th>
           </thead>
           <% @all_sessions.limit(10).each do |session| %>
-            <% if session.sign_out_time > Time.now %>
+            <% if session.sign_out_time > Time.zone.now %>
               <tr class="current-session">
                 <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
                 <td>Current session</td>
-                <td><%= ((Time.now - session.sign_in_time)/60).round %> min. so far</td>
+                <td><%= ((Time.zone.now - session.sign_in_time)/60).round %> min. so far</td>
                 <td><%= PiReader.find_by(pi_mac_address: session.mac_address).try(:pi_location) %></td>
               </tr>
              <% else %>

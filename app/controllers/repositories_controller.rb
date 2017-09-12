@@ -24,7 +24,7 @@ class RepositoriesController < SessionsController
 
   def download_files
     @files = @repository.repo_files.order("LOWER(file_file_name)")
-    tmp_filename = "tmp_zip_#{@repository.title}" << Time.now.strftime("%Y%m%d%H%M%S").to_s << ".zip"
+    tmp_filename = "tmp_zip_#{@repository.title}" << Time.zone.now.strftime("%Y%m%d%H%M%S").to_s << ".zip"
     temp_file  = Tempfile.new("#{tmp_filename}-#{@repository.title}")
     Zip::OutputStream.open(temp_file.path) do |zos|
       @files.each do |file|
