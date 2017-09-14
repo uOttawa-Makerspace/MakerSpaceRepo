@@ -134,6 +134,7 @@ div#sesh-users{
 div.users-count{
   cursor:pointer;
   padding: 40px 40px 40px 40px;
+  white-space: nowrap;
 }
 
 div.users-count:hover div#sesh-users{
