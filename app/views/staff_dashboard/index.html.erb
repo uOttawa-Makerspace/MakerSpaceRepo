@@ -19,7 +19,7 @@
     </div>
 
     <table class="staff-users-table">
-        Users inside <%=@space.name%></h2>
+        Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%>
         <tr>
           <th class="name-header">Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th class="email-header">Email <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
