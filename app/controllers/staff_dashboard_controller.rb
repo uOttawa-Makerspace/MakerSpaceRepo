@@ -20,7 +20,7 @@ class StaffDashboardController < StaffAreaController
                         user_id: user.id,
                         space_id: @space.id,
                         sign_in_time: Time.zone.now,
-                        sign_out_time: Time.zone.now+4.hours)
+                        sign_out_time: Time.zone.now + 8.hours)
         unless lab_session.save
           flash[:alert] = "Error signing #{user.name} in"
         end
@@ -30,24 +30,11 @@ class StaffDashboardController < StaffAreaController
   end
 
   def change_space
-
     if new_space = Space.find_by(name: params['space_name'])
-      if current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
-        current_sesh.sign_out_time = Time.zone.now
-        current_sesh.save
-      end
-      new_sesh = LabSession.new(
-                    user_id: current_user.id,
-                    sign_in_time: Time.zone.now,
-                    sign_out_time: Time.zone.now + 8.hours,
-                    space_id: new_space.id)
-      if new_sesh.save
-        flash[:notice] = "Space changed successfully"
-      else
-        flash[:alert] = "Something went wrong"
-      end
+      redirect_to staff_dashboard_index_path(space_id: new_space.id)
+    else
+      redirect_to staff_index_url
     end
-    redirect_to staff_index_url
   end
 
   def link_rfid
