@@ -39,7 +39,7 @@ class StaffDashboardController < StaffAreaController
       new_sesh = LabSession.new(
                     user_id: current_user.id,
                     sign_in_time: Time.zone.now,
-                    sign_out_time: Time.zone.now + 4.hours,
+                    sign_out_time: Time.zone.now + 8.hours,
                     space_id: new_space.id)
       if new_sesh.save
         flash[:notice] = "Space changed successfully"
