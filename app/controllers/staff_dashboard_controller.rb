@@ -20,7 +20,7 @@ class StaffDashboardController < StaffAreaController
                         user_id: user.id,
                         space_id: @space.id,
                         sign_in_time: Time.zone.now,
-                        sign_out_time: Time.zone.now+4.hours)
+                        sign_out_time: Time.zone.now + 8.hours)
         unless lab_session.save
           flash[:alert] = "Error signing #{user.name} in"
         end
@@ -39,7 +39,7 @@ class StaffDashboardController < StaffAreaController
       new_sesh = LabSession.new(
                     user_id: current_user.id,
                     sign_in_time: Time.zone.now,
-                    sign_out_time: Time.zone.now + 4.hours,
+                    sign_out_time: Time.zone.now + 8.hours,
                     space_id: new_space.id)
       if new_sesh.save
         flash[:notice] = "Space changed successfully"
