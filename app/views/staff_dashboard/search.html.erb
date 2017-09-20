@@ -98,12 +98,13 @@
                    class="cert-name"
                    style="display:inline" >
                    <div class="cert-holder" style="display:inline">
-                    <%= certification.training %> |
+                    <%= certification.training %>
                     <div id="cert-details" style="display:inline">
                       <%= certification.training %> <br>
                       <%= certification.trainer %> <br>
                       <%= certification.updated_at.strftime("%B %d, %Y")  %>
                     </div>
+                    <br>
                   </div>
                 </div>
                 <% else %>
@@ -111,12 +112,13 @@
                  class="cert-name-red"
                  style="display:inline" >
                  <div class="cert-holder" style="display:inline">
-                  <%= certification.training %> |
+                  <%= certification.training %>
                   <div id="cert-details" style="display:inline">
                     <%= certification.training %> <br>
                     <%= certification.trainer %> <br>
                     <%= certification.updated_at.strftime("%B %d, %Y")  %>
                   </div>
+                  <br>
                 </div>
               </div>
               <% end
@@ -143,7 +145,6 @@
         <th>Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
         <th>Email <span onclick="sortTable('staff-recent-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
         <th>Last Seen <span onclick="sortTable('staff-recent-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Certifications <span onclick="sortTable('staff-recent-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
         <th class="action-header">Sign In To <%=@space.name.capitalize%></th>
       </tr>
 
@@ -166,28 +167,6 @@
               time_ago_in_words(user.lab_sessions.last.sign_out_time) + " ago at #{user.lab_sessions.last.space.name}"
             end
           %></td>
-
-          <td class="certifications-cell"><%
-            if user.certifications.first.present?
-              user.certifications.each do |certification|
-              %>
-              <div
-               class="cert-name"
-               style="display:inline" >
-               <div class="cert-holder" style="display:inline">
-                <%= certification.training %> |
-                <div id="cert-details" style="display:inline">
-                  <%= certification.training %> <br>
-                  <%= certification.trainer %> <br>
-                  <%= certification.updated_at.strftime("%B %d, %Y")  %>
-                </div>
-              </div>
-            </div>
-            <%
-              end
-            end
-            %>
-          </td>
 
           <td class="action-cell" >
             <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>

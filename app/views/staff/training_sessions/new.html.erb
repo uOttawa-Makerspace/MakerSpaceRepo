@@ -56,12 +56,13 @@
                  class="cert-name"
                  style="display:inline" >
                  <div class="cert-holder" style="display:inline">
-                  <%= certification.training %> |
+                  <%= certification.training %>
                   <div id="cert-details" style="display:inline">
                     <%= certification.training %> <br>
                     <%= certification.trainer %> <br>
                     <%= certification.updated_at.strftime("%B %d, %Y")  %>
                   </div>
+                  <br>
                 </div>
               </div>
               <% else %>
@@ -69,12 +70,13 @@
                class="cert-name-red"
                style="display:inline" >
                <div class="cert-holder" style="display:inline">
-                <%= certification.training %> |
+                <%= certification.training %>
                 <div id="cert-details" style="display:inline">
                   <%= certification.training %> <br>
                   <%= certification.trainer %> <br>
                   <%= certification.updated_at.strftime("%B %d, %Y")  %>
                 </div>
+                <br>
               </div>
             </div>
             <% end
