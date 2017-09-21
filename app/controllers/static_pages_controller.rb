@@ -24,7 +24,7 @@ class StaticPagesController < SessionsController
   end
 
   def reset_password
-    @user = User.find_by email: params[:email]
+    @user = User.find_by_email(params[:email])
 
     begin
       random_password = Array.new(10).map { (65 + rand(58)).chr }.join
