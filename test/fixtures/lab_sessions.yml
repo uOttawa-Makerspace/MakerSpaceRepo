@@ -22,12 +22,12 @@ three:
   sign_out_time: 2017-07-23T13:25:01-04:00
   created_at: 2017-06-23T13:25:01-04:00
   mac_address: 8runsf13ld-pi-1
-  
+
 four:
   user_id: 2
   space_id: 1
   sign_in_time: <%= 1.hour.ago %>
-  sign_out_time: <%= Date.tomorrow %>
+  sign_out_time: <%= DateTime.now.tomorrow.to_date %>
   created_at: 2017-06-21T13:25:01-04:00
   mac_address: m4k3rsp4c3-pi-1
 
@@ -35,6 +35,6 @@ five:
   user_id: 1337
   space_id: 3
   sign_in_time: <%= 2.hours.ago %>
-  sign_out_time: <%= Date.tomorrow %>
+  sign_out_time: <%= DateTime.now.tomorrow.to_date %>
   created_at: 2017-08-17T09:30:01-04:00
   mac_address: s4-nd-b0-x1
