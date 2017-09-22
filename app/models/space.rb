@@ -13,7 +13,10 @@ class Space < ActiveRecord::Base
   end
 
   def recently_signed_out_users
-    users = self.lab_sessions.where("sign_out_time < ?", Time.zone.now).last(15).map(&:user).uniq
+    users = self.lab_sessions.where("sign_out_time < ?", Time.zone.now).last(20).map(&:user).uniq
+    self.signed_in_users.each do |user|
+      users.delete(user)
+    end
     return users
   end
 
