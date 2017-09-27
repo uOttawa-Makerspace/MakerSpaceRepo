@@ -1,13 +1,13 @@
-every '0 7 1 * *' do #At 7am on 1st day of every month
-  runner "MsrMailer.send_report('makerspace@uottawa.ca', ReportGenerator.new_user_report,
+every '0 7 * * 0' do #At 7am on 1st day of every week
+  runner "MsrMailer.send_report('makerspace@uottawa.ca', 'hanis@uottawa.ca', ReportGenerator.new_user_report,
   				ReportGenerator.lab_session_report,
   				ReportGenerator.faculty_frequency_report, ReportGenerator.gender_frequesncy_report,
           ReportGenerator.unique_visitors_report).deliver_now"
 end
 
 every '0 7 * * 0' do #At 7am of first day of every week
-  runner "MsrMailer.send_training_report('brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca',
-                                        'ReportGenerator.training_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week)').deliver_now"
+  runner "MsrMailer.send_training_report('brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', 'hanis@uottawa.ca',
+                                        'ReportGenerator.training_report').deliver_now"
 end
 
 
