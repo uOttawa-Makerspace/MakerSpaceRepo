@@ -1,4 +1,3 @@
-# encoding: UTF-8
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
@@ -22,10 +21,9 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.datetime "created_at",         null: false
     t.datetime "updated_at",         null: false
     t.integer  "category_option_id"
+    t.index ["category_option_id"], name: "index_categories_on_category_option_id", using: :btree
+    t.index ["repository_id"], name: "index_categories_on_repository_id", using: :btree
   end
-
-  add_index "categories", ["category_option_id"], name: "index_categories_on_category_option_id", using: :btree
-  add_index "categories", ["repository_id"], name: "index_categories_on_repository_id", using: :btree
 
   create_table "category_options", force: :cascade do |t|
     t.string   "name"
@@ -38,9 +36,8 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.datetime "created_at",          null: false
     t.datetime "updated_at",          null: false
     t.integer  "training_session_id"
+    t.index ["user_id"], name: "index_certifications_on_user_id", using: :btree
   end
-
-  add_index "certifications", ["user_id"], name: "index_certifications_on_user_id", using: :btree
 
   create_table "comments", force: :cascade do |t|
     t.integer  "user_id"
@@ -50,19 +47,17 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.datetime "created_at",                null: false
     t.datetime "updated_at",                null: false
     t.string   "username"
+    t.index ["repository_id"], name: "index_comments_on_repository_id", using: :btree
+    t.index ["user_id"], name: "index_comments_on_user_id", using: :btree
   end
-
-  add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
-  add_index "comments", ["user_id"], name: "index_comments_on_user_id", using: :btree
 
   create_table "equipment", force: :cascade do |t|
     t.integer  "repository_id"
     t.string   "name"
     t.datetime "created_at",    null: false
     t.datetime "updated_at",    null: false
+    t.index ["repository_id"], name: "index_equipment_on_repository_id", using: :btree
   end
-
-  add_index "equipment", ["repository_id"], name: "index_equipment_on_repository_id", using: :btree
 
   create_table "equipment_options", force: :cascade do |t|
     t.string   "name"
@@ -78,20 +73,18 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.datetime "updated_at",    null: false
     t.string   "mac_address"
     t.integer  "space_id"
+    t.index ["space_id"], name: "index_lab_sessions_on_space_id", using: :btree
+    t.index ["user_id"], name: "index_lab_sessions_on_user_id", using: :btree
   end
-
-  add_index "lab_sessions", ["space_id"], name: "index_lab_sessions_on_space_id", using: :btree
-  add_index "lab_sessions", ["user_id"], name: "index_lab_sessions_on_user_id", using: :btree
 
   create_table "likes", force: :cascade do |t|
     t.integer  "user_id"
     t.integer  "repository_id"
     t.datetime "created_at",    null: false
     t.datetime "updated_at",    null: false
+    t.index ["repository_id"], name: "index_likes_on_repository_id", using: :btree
+    t.index ["user_id"], name: "index_likes_on_user_id", using: :btree
   end
-
-  add_index "likes", ["repository_id"], name: "index_likes_on_repository_id", using: :btree
-  add_index "likes", ["user_id"], name: "index_likes_on_user_id", using: :btree
 
   create_table "photos", force: :cascade do |t|
     t.integer  "repository_id"
@@ -103,9 +96,8 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.datetime "image_updated_at"
     t.integer  "height"
     t.integer  "width"
+    t.index ["repository_id"], name: "index_photos_on_repository_id", using: :btree
   end
-
-  add_index "photos", ["repository_id"], name: "index_photos_on_repository_id", using: :btree
 
   create_table "pi_readers", force: :cascade do |t|
     t.string   "pi_mac_address"
@@ -113,9 +105,8 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.datetime "created_at",     null: false
     t.datetime "updated_at",     null: false
     t.integer  "space_id"
+    t.index ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
   end
-
-  add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
 
   create_table "repo_files", force: :cascade do |t|
     t.integer  "repository_id"
@@ -125,9 +116,8 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.string   "file_content_type"
     t.integer  "file_file_size"
     t.datetime "file_updated_at"
+    t.index ["repository_id"], name: "index_repo_files_on_repository_id", using: :btree
   end
-
-  add_index "repo_files", ["repository_id"], name: "index_repo_files_on_repository_id", using: :btree
 
   create_table "repositories", force: :cascade do |t|
     t.integer  "user_id"
@@ -147,9 +137,8 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.string   "share_type"
     t.string   "password"
     t.boolean  "featured",      default: false
+    t.index ["user_id"], name: "index_repositories_on_user_id", using: :btree
   end
-
-  add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree
 
   create_table "rfids", force: :cascade do |t|
     t.integer  "user_id"
@@ -157,9 +146,8 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.datetime "created_at",  null: false
     t.datetime "updated_at",  null: false
     t.string   "mac_address"
+    t.index ["user_id"], name: "index_rfids_on_user_id", using: :btree
   end
-
-  add_index "rfids", ["user_id"], name: "index_rfids_on_user_id", using: :btree
 
   create_table "spaces", force: :cascade do |t|
     t.string   "name"
@@ -173,27 +161,24 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.datetime "created_at",  null: false
     t.datetime "updated_at",  null: false
     t.string   "course"
+    t.index ["training_id"], name: "index_training_sessions_on_training_id", using: :btree
+    t.index ["user_id"], name: "index_training_sessions_on_user_id", using: :btree
   end
-
-  add_index "training_sessions", ["training_id"], name: "index_training_sessions_on_training_id", using: :btree
-  add_index "training_sessions", ["user_id"], name: "index_training_sessions_on_user_id", using: :btree
 
   create_table "training_sessions_users", id: false, force: :cascade do |t|
     t.integer "training_session_id"
     t.integer "user_id"
+    t.index ["training_session_id"], name: "index_training_sessions_users_on_training_session_id", using: :btree
+    t.index ["user_id"], name: "index_training_sessions_users_on_user_id", using: :btree
   end
-
-  add_index "training_sessions_users", ["training_session_id"], name: "index_training_sessions_users_on_training_session_id", using: :btree
-  add_index "training_sessions_users", ["user_id"], name: "index_training_sessions_users_on_user_id", using: :btree
 
   create_table "trainings", force: :cascade do |t|
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer  "space_id"
+    t.index ["space_id"], name: "index_trainings_on_space_id", using: :btree
   end
-
-  add_index "trainings", ["space_id"], name: "index_trainings_on_space_id", using: :btree
 
   create_table "upvotes", force: :cascade do |t|
     t.integer  "user_id"
@@ -201,10 +186,9 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean  "downvote"
+    t.index ["comment_id"], name: "index_upvotes_on_comment_id", using: :btree
+    t.index ["user_id"], name: "index_upvotes_on_user_id", using: :btree
   end
-
-  add_index "upvotes", ["comment_id"], name: "index_upvotes_on_comment_id", using: :btree
-  add_index "upvotes", ["user_id"], name: "index_upvotes_on_user_id", using: :btree
 
   create_table "users", force: :cascade do |t|
     t.string   "username"
@@ -226,8 +210,8 @@ ActiveRecord::Schema.define(version: 20170922172744) do
     t.integer  "reputation",                    default: 0
     t.string   "role",                          default: "regular_user"
     t.boolean  "terms_and_conditions"
-    t.string   "program"
     t.integer  "student_id"
+    t.string   "program"
     t.string   "how_heard_about_us"
     t.string   "identity"
     t.string   "year_of_study"

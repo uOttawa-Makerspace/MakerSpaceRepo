@@ -64,7 +64,15 @@ span.header-menu-item {
 span.menu-button{
   position: relative;
   z-index: 10;
+<<<<<<< HEAD
+  &:hover{
+    ul{
+      display: block;
+    }
+  }
+=======
   padding-top: 5px;
+>>>>>>> b2b57a2f56cb2065401faf59e77d34c4c454fd7c
   ul{
     display: none;
     background-color: #fff;

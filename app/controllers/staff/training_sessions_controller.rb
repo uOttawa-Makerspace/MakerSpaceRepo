@@ -27,7 +27,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
       redirect_to staff_training_session_path(@new_training_session.id)
     else
       flash[:alert] = "Something went wrong. Please try again."
-      redirect_to :back
+      redirect_back(fallback_location: root_path)
     end
 
   end
@@ -36,7 +36,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
     if changed_params['user_id'].present?
       unless @user.admin?
         flash[:alert] = "You're not an admin."
-        redirect_to :back
+        redirect_back(fallback_location: root_path)
       end
     end
 
@@ -66,7 +66,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
       flash[:alert] = "Something went wrong, please try again"
     end
 
-    redirect_to :back
+    redirect_back(fallback_location: root_path)
   end
 
   def certify_trainees

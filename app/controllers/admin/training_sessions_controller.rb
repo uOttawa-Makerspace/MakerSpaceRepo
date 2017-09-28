@@ -11,10 +11,10 @@ class Admin::TrainingSessionsController < AdminAreaController
     @training_session.update(training_session_params)
     if @training_session.save
       flash[:notice] = "Updated Successfully"
-      redirect_to :back
+      redirect_back(fallback_location: root_path)
     else
       flash[:alert] = "Something went wrong"
-      redirect_to :back
+      redirect_back(fallback_location: root_path)
     end
   end
 
@@ -25,7 +25,7 @@ class Admin::TrainingSessionsController < AdminAreaController
     else
         flash[:alert] = "Something went wrong"
     end
-    redirect_to :back
+    redirect_back(fallback_location: root_path)  
   end
 
 

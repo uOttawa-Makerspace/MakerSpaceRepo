@@ -1,7 +1,7 @@
-class Upvote < ActiveRecord::Base
+class Upvote < ApplicationRecord
   belongs_to :user
   belongs_to :comment
-  
+
   validates :comment_id, uniqueness: { scope: :user_id }
   validates :user_id, presence: true
 
@@ -9,8 +9,8 @@ class Upvote < ActiveRecord::Base
   	find_by(comment_id: comment_id, user_id: user_id).present?
   end
 
-  before_create do 
-  	self.downvote ? self.comment.decrement!(:upvote) : self.comment.increment!(:upvote) 
+  before_create do
+  	self.downvote ? self.comment.decrement!(:upvote) : self.comment.increment!(:upvote)
   end
 
   before_update do
@@ -18,7 +18,7 @@ class Upvote < ActiveRecord::Base
   end
 
 	before_destroy do
-  	self.downvote ? self.comment.increment!(:upvote) : self.comment.decrement!(:upvote) 
+  	self.downvote ? self.comment.increment!(:upvote) : self.comment.decrement!(:upvote)
 	end
 
 end

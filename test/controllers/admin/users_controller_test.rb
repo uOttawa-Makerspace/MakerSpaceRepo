@@ -10,19 +10,19 @@ class Admin::UsersControllerTest < ActionController::TestCase
 
 
   test "admin can change user role (admin > staff > regular_user)" do
-    patch :set_role, id: users(:mary), role: "staff"
+    patch :set_role, params: { id: users(:mary), role: "staff" }
     assert_equal User.find_by(username: "mary").role, "staff"
     assert_redirected_to admin_users_path
   end
 
   test "admin can search for users without filer" do
-    get :search, q: "mary"
+    get :search, params: { q: "mary" }
     assert response.body.include? "Mary"
     refute response.body.include? "Sara"
   end
 
   test "admin can search for users by email" do
-    get :search, q: "@SARA.com", filter: "Email"
+    get :search, params: { q: "@SARA.com", filter: "Email" }
     assert response.body.include? "Sara"
     refute response.body.include? "Mary"
   end

@@ -12,5 +12,6 @@
 //
 //= require_tree .
 //= require select2
+//= require turbolinks
 
-Turbolinks.enableProgressBar();
+Turbolinks.controller.adapter.progressBar.show();

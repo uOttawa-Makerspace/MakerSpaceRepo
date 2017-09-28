@@ -10,12 +10,12 @@ class RfidControllerTest < ActionController::TestCase
 
   test "posting new rfid creates new record" do
     assert_difference('Rfid.count', 1) do
-      post :card_number, rfid: "completly new"
+      post :card_number, params: { rfid: "completly new" }
     end
   end
 
   test "posting new rfid returns unprocessable_entity" do
-    post :card_number, rfid: "completly new", mac_address: "m4k3rsp4c3-pi-1"
+    post :card_number, params: { rfid: "completly new", mac_address: "m4k3rsp4c3-pi-1" }
 
     assert_response :unprocessable_entity
   end
@@ -24,7 +24,7 @@ class RfidControllerTest < ActionController::TestCase
     rfid = rfids(:bobs)
 
     assert_no_difference('Rfid.count') do
-      post :card_number, rfid: rfid.card_number, mac_address: rfid.mac_address
+      post :card_number,  params: { rfid: rfid.card_number, mac_address: rfid.mac_address }
     end
   end
 
@@ -32,7 +32,7 @@ class RfidControllerTest < ActionController::TestCase
     rfid = rfids(:no_user)
     old_timestamp = rfid.updated_at.to_i
 
-    post :card_number, rfid: rfid.card_number, mac_address: rfid.mac_address
+    post :card_number, params: { rfid: rfid.card_number, mac_address: rfid.mac_address }
 
     rfid.reload
     assert_not_equal old_timestamp, rfid.updated_at.to_i
@@ -41,7 +41,7 @@ class RfidControllerTest < ActionController::TestCase
   test "posting existing card with no user returns unprocessable_entity" do
     rfid = rfids(:no_user)
 
-    post :card_number, rfid: rfid.card_number, mac_address: rfid.mac_address
+    post :card_number, params: { rfid: rfid.card_number, mac_address: rfid.mac_address }
 
     assert_response :unprocessable_entity
   end
@@ -49,8 +49,7 @@ class RfidControllerTest < ActionController::TestCase
   test "posting existing card with user returns ok" do
     rfid = rfids(:marys)
 
-    post :card_number, rfid: rfid.card_number, mac_address: "m4k3rsp4c3-pi-1"
-
+    post :card_number, params: { rfid: rfid.card_number, mac_address: "m4k3rsp4c3-pi-1" }
     assert_response :ok
   end
 
