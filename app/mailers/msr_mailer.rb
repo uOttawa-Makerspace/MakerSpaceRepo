@@ -17,20 +17,20 @@ class MsrMailer < ApplicationMailer
 		mail(to: email, subject: "New password for MakerRepo")
 	end
 
-	def send_report(email, csv1, csv2, csv3, csv4, csv5)
+	def send_report(email, email2, csv1, csv2, csv3, csv4, csv5)
 	    attachments['NewUsers.csv'] = {mime_type: 'text/csv', content: csv1}
 			attachments['Visits.csv'] = {mime_type: 'text/csv', content: csv2}
 			attachments['FacultyFrequency.csv'] = {mime_type: 'text/csv', content: csv3}
 			attachments['GenderFrequency.csv'] = {mime_type: 'text/csv', content: csv4}
 			attachments['UniqueVisitors.csv'] = {mime_type: 'text/csv', content: csv5}
 
-	    mail(to: email, subject: 'Monthly Report')
+	    mail(to: email, subject: 'Weekly Report', bcc: [email2])
 	end
 
-	def send_training_report(email1, email2, email3, csv)
+	def send_training_report(email1, email2, email3, email4, csv)
 		attachments['Trainings.csv'] = {mime_type: 'text/csv', content: csv}
 
-		mail(to: email1, subject: 'Weekly Report of Trainings', bcc: [email2, email3])
+		mail(to: email1, subject: 'Weekly Report of Trainings', bcc: [email2, email3, email4])
 	end
 
 	def waiver_reminder_email(email)
