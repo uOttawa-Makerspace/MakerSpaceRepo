@@ -35,23 +35,24 @@ class MsrMailerTest < ActionMailer::TestCase
 	end
 
 	test "Sending reports" do
-		email = MsrMailer.send_report('makerspace@uottawa.ca', ReportGenerator.new_user_report,
+		email = MsrMailer.send_report('makerspace@uottawa.ca', 'hanis@uottawa.ca', ReportGenerator.new_user_report,
 						ReportGenerator.lab_session_report,
 						ReportGenerator.faculty_frequency_report, ReportGenerator.gender_frequesncy_report, ReportGenerator.unique_visitors_report)
 
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['makerspace@uottawa.ca'], email.to
-		assert_equal 'Monthly Report', email.subject
+		assert_equal ['hanis@uottawa.ca'], email.bcc
+		assert_equal 'Weekly Report', email.subject
 		assert_not_nil(email.attachments, "No attachments found")
 	end
 
 
 	test "Sending training reports" do
-		email = MsrMailer.send_training_report('brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca',
-																						ReportGenerator.training_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week))
+		email = MsrMailer.send_training_report('brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', 'hanis@uottawa.ca',
+																						ReportGenerator.training_report())
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['brunsfield@uottawa.ca'], email.to
-		assert_equal ['MTC@uottawa.ca', 'makerspace@uottawa.ca'], email.bcc
+		assert_equal ['MTC@uottawa.ca', 'makerspace@uottawa.ca', 'hanis@uottawa.ca'], email.bcc
 		assert_not_nil(email.attachments, "No attachments found")
 	end
 
