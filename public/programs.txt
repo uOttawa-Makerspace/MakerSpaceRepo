@@ -1,5 +1,5 @@
-﻿My program is not in the list
-Bachelor of Arts
+ ﻿My program is not in the list
+ Bachelor of Arts
  Bachelor of Arts with double Minor
  Bachelor of Arts with Major
  Bachelor of Arts with Minor
@@ -13,7 +13,7 @@ Bachelor of Arts
  Bachelor of Science with Double Minor
  Bachelor of Science with Major
  Bachelor of Science with Minor
- Bachelor of Social Sciences 
+ Bachelor of Social Sciences
  Bachelor of Social Sciences with double Minor
  Bachelor of Social Sciences with Major
  Bachelor of Social Sciences with Minor
@@ -24,7 +24,7 @@ Bachelor of Arts
  BASc in Chemical Engineering, Biomedical Engineering Option
  BASc in Chemical Engineering, Engineering Management and Entrepreneurship Option
  BASc in Chemical Engineering, Environmental Engineering Option
- BASc in Civil Engineering 
+ BASc in Civil Engineering
  BASc in Civil Engineering and BSc in Computing Technology
  BASc in Civil Engineering, Engineering Management and Entrepreneurship Option
  BASc in Civil Engineering, Environmental and Water Resources Option
@@ -241,7 +241,7 @@ Bachelor of Arts
  Honours BSocSc in International Development and Globalization
  Honours BSocSc in International Economics and Development
  Honours BSocSc in International Studies and Modern Languages
- Honours BSocSc in Political Science 
+ Honours BSocSc in Political Science
  Honours BSocSc in Political Science and Juris Doctor (JD)
  Honours BSocSc in Public Administration
  Honours BSocSc in Social Work
@@ -257,11 +257,11 @@ Bachelor of Arts
  Joint Honours BSocSc in Communication and Political Science
  Joint Honours BSocSc in Communication and Sociology
  Joint Honours BSocSc in Criminology and Women's Studies
- Joint Honours BSocSc in Economics and Political Science 
+ Joint Honours BSocSc in Economics and Political Science
  Joint Honours BSocSc in History and Political Science
  Joint Honours BSocSc in Mathematics and Economics
  Joint Honours BSocSc in Philosophy and Political Science
- Joint Honours BSocSc in Public Administration and Political Science 
+ Joint Honours BSocSc in Public Administration and Political Science
  Joint Honours BSocSc in Women's Studies and Political Science
  Joint Honours BSocSc in Women's Studies and Sociology
  Joint LLL-MBA Program
@@ -306,7 +306,7 @@ Bachelor of Arts
  Major in Music Studies
  Major in Philosophy
  Major in Physics
- Major in Political Science 
+ Major in Political Science
  Major in Psychology
  Major in Public Administration
  Major in Religious Studies
@@ -490,8 +490,8 @@ Bachelor of Arts
  Mineure en rédaction professionnelle et édition
  Mineure en traduction vers le français
  Minor in Aboriginal Studies
- Minor in Advanced English as a Second Language 
- Minor in Advanced French as a Second Language 
+ Minor in Advanced English as a Second Language
+ Minor in Advanced French as a Second Language
  Minor in Anthropology
  Minor in Applied Ethics
  Minor in Arabic Language and Culture
@@ -511,7 +511,7 @@ Bachelor of Arts
  Minor in English
  Minor in English as a Second Language (ESL)
  Minor in Environmental Studies (Bilingual Program)
- Minor in Francophone Studies 
+ Minor in Francophone Studies
  Minor in French as a Second Language (FLS)
  Minor in Geography
  Minor in Geology
@@ -536,7 +536,7 @@ Bachelor of Arts
  Minor in Music
  Minor in Philosophy
  Minor in Physics
- Minor in Political Science 
+ Minor in Political Science
  Minor in Psychology
  Minor in Public Administration
  Minor in Religious Studies
@@ -547,12 +547,12 @@ Bachelor of Arts
  Minor in Spanish
  Minor in Statistics
  Minor in Theatre
- Minor in Translation into English 
+ Minor in Translation into English
  Minor in United States Studies
  Minor in Women's Studies
  Minor in World Cinemas
  National Program (JD-LLL)
- National Program (JD/LLL) 
+ National Program (JD/LLL)
  Programme de droit canadien – Juris Doctor (J.D.)/Licence en droit (LL.L.)
  Teacher Education - Intermediate/Senior division
  Teacher Education - Junior/Intermediate division
