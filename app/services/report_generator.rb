@@ -2,45 +2,56 @@ class ReportGenerator
 
   def self.new_user_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @users = User.between_dates_picked(start_date, end_date)
-    attributes = %w{id name username email gender identity faculty program year_of_study student_id created_at}
+    attributes = %w{name username email gender identity faculty program year_of_study student_id created_at}
     @users.to_csv(*attributes)
   end
 
   def self.lab_session_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @labs = LabSession.between_dates_picked(start_date, end_date)
     column = []
-    column << ["lab_id", "sign_in_time", "user_id", "name", "email", "gender","idenity", "faculty", "program"]
+    column << ["Visitors of CEED facilities in the past week"] <<[]
+    column << ["Sign-in time", "Name", "Email", "Gender","Identity", "Faculty", "Program", "Space"]
     @labs.each do |lab|
       row = []
-      row << lab.id << lab.sign_in_time
-      row << lab.user.id << lab.user.name << lab.user.email << lab.user.gender << lab.user.identity << lab.user.faculty << lab.user.program
+      row << lab.sign_in_time
+      row << lab.user.name << lab.user.email << lab.user.gender << lab.user.identity << lab.user.faculty << lab.user.program
+      row << Space.find(lab.space.id).name
       column << row
     end
     column << [] << ["Total visitors this week:", @labs.length] << ["# of Unique Visits:", @labs.distinct.count(:user_id)]
     @labs.to_csv(column)
   end
 
+  # *******FIX THIS
   def self.unique_visitors_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @labs = LabSession.between_dates_picked(start_date, end_date)
     @unique_visits = @labs.select('DISTINCT user_id')
     column = []
-    column << ["id" , "name", "username", "email", "gender", "idenity", "faculty", "program" ]
+    column << ["Unique visitors of CEED facilities in the past week"] <<[]
+    column << ["Sign-in time", "Name", "Email", "Gender","Identity", "Faculty", "Program", "Space"]
     @unique_visits.each do |lab|
-      @visitor = lab.user
       row = []
-      row << @visitor.id << @visitor.name << @visitor.username << @visitor.email << @visitor.gender << @visitor.identity << @visitor.faculty << @visitor.program
+      row << lab.user.name << lab.user.email << lab.user.gender << lab.user.identity << lab.user.faculty << lab.user.program
+      row << Space.find(lab.space.id).name
       column << row
     end
-    column << [] << ["# of Unique Visits:", @labs.distinct.count(:user_id)]
+    column << [] << ["# of Unique Visitors this week:", @labs.distinct.count(:user_id)]
     @unique_visits.to_csv(column)
   end
 
   def self.faculty_frequency_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
       @users = User.between_dates_picked(start_date, end_date)
-      @faculty_freq = @users.group(:faculty).count(:faculty)
+      @faculty_freq = @users.where.not('faculty' => nil).group(:faculty).count(:faculty)
+      @no_faculty = @users.where('faculty' => nil)
       CSV.generate do |csv|
+        csv << ["Faculty distribution of users signed up to MakerRepo in the past week"]
+        csv << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
         csv << @faculty_freq.keys
         csv << @faculty_freq.values
+
+        csv << ["No faculty specified (faculty/community members):", @no_faculty.length]
+        csv << [] << ["Total users:", @users.length]
+
       end
   end
 
