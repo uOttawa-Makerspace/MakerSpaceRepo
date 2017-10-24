@@ -2,15 +2,34 @@ class ReportGenerator
 
   def self.new_user_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @users = User.between_dates_picked(start_date, end_date)
-    attributes = %w{name username email gender identity faculty program year_of_study student_id created_at}
-    @users.to_csv(*attributes)
+    column = []
+    column << ["New users signed up to makerepo"]
+    column << ["Start Date", start_date.strftime('%a, %d %b %Y %H:%M')]
+    column << ["End Date", end_date.strftime('%a, %d %b %Y %H:%M')]
+
+    column << [] << ["Name", "Username", "Email", "Gender", "Identity", "Faculty","Year of Study","Student ID","Created at"]
+    @users.each do |user|
+      row = []
+      row << user.name << user.username << user.email << user.gender << user.identity << user.faculty << user.year_of_study << user.student_id << user.created_at
+      column << row
+    end
+    column << [] << ["Total new users:", @users.length]
+    column << ["Number of Grads:", @users.where(identity: 'grad').length]
+    column << ["Number of Undergrads:", @users.where(identity: 'undergrad').length]
+    column << ["Number of Faculty members:", @users.where(identity: 'faculty_member').length]
+    column << ["Number of Community members:", @users.where(identity: 'community_member').length]
+    column << ["Other (unspecified)", @users.where.not(identity: ['grad', 'undergrad', 'faculty_member', 'community_member']).length + @users.where(identity: nil).length ]
+    @users.to_csv(column)
   end
 
+  #visitors
   def self.lab_session_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @labs = LabSession.between_dates_picked(start_date, end_date)
     column = []
-    column << ["Visitors of CEED facilities in the past week"] <<[]
-    column << ["Sign-in time", "Name", "Email", "Gender","Identity", "Faculty", "Program", "Space"]
+    column << ["Visitors of CEED facilities (Total visits)"]
+    column << ["Start Date", start_date.strftime('%a, %d %b %Y %H:%M')]
+    column << ["End Date", end_date.strftime('%a, %d %b %Y %H:%M')] <<[]
+    column << ["Sign-in time", "Name", "Email", "Gender","Identity", "Faculty", "Space"]
     @labs.each do |lab|
       row = []
       row << lab.sign_in_time
@@ -18,7 +37,20 @@ class ReportGenerator
       row << Space.find(lab.space.id).name
       column << row
     end
+    column << [] << []<< ["Visitors were in these spaces:"] << ["Space", "Number of visitors"]
+
+    @spaces = @labs.group(:space_id).count(:space_id)
+    @spaces.each do |space|
+      column << [Space.find(space[0]).name, space[1]]
+    end
     column << [] << ["Total visitors this week:", @labs.length] << ["# of Unique Visits:", @labs.distinct.count(:user_id)]
+
+    # column << ["Number of Grads:", @users.where(identity: 'grad').length]
+    # column << ["Number of Undergrads:", @users.where(identity: 'undergrad').length]
+    # column << ["Number of Faculty members:", @users.where(identity: 'faculty_member').length]
+    # column << ["Number of Community members:", @users.where(identity: 'community_member').length]
+    # column << ["Other (unspecified)", @users.where.not(identity: ['grad', 'undergrad', 'faculty_member', 'community_member']).length + @users.where(identity: nil).length ]
+
     @labs.to_csv(column)
   end
 
