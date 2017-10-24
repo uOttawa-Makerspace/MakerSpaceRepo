@@ -98,14 +98,11 @@ class User < ActiveRecord::Base
   end
 
 
-  def self.to_csv(*attributes)
+  def self.to_csv(attributes)
     CSV.generate do |csv|
-      csv << attributes
-
-      all.each do |user|
-        csv << user.attributes.values_at(*attributes)
+      attributes.each do |row|
+        csv << row
       end
-      csv << [] << ["Total New users:", all.length]
     end
   end
 
