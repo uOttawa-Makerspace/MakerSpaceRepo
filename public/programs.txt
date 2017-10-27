@@ -1,5 +1,4 @@
- ﻿My program is not in the list
- Bachelor of Arts
+﻿Bachelor of Arts
  Bachelor of Arts with double Minor
  Bachelor of Arts with Major
  Bachelor of Arts with Minor
