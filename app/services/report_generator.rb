@@ -33,41 +33,67 @@ class ReportGenerator
     @labs.each do |lab|
       row = []
       row << lab.sign_in_time
-      row << lab.user.name << lab.user.email << lab.user.gender << lab.user.identity << lab.user.faculty << lab.user.program
+      row << lab.user.name << lab.user.email << lab.user.gender << lab.user.identity << lab.user.faculty
       row << Space.find(lab.space.id).name
       column << row
     end
-    column << [] << []<< ["Visitors were in these spaces:"] << ["Space", "Number of visitors"]
+
+    column << [] << [] << ["Total visitors this week:", @labs.length] << ["# of Unique Visits:", @labs.distinct.count(:user_id)]
+
+    column << []<< ["Visitors visited these spaces:"] << ["Space", "Number of visitors"]
 
     @spaces = @labs.group(:space_id).count(:space_id)
     @spaces.each do |space|
       column << [Space.find(space[0]).name, space[1]]
     end
-    column << [] << ["Total visitors this week:", @labs.length] << ["# of Unique Visits:", @labs.distinct.count(:user_id)]
 
-    # column << ["Number of Grads:", @users.where(identity: 'grad').length]
-    # column << ["Number of Undergrads:", @users.where(identity: 'undergrad').length]
-    # column << ["Number of Faculty members:", @users.where(identity: 'faculty_member').length]
-    # column << ["Number of Community members:", @users.where(identity: 'community_member').length]
-    # column << ["Other (unspecified)", @users.where.not(identity: ['grad', 'undergrad', 'faculty_member', 'community_member']).length + @users.where(identity: nil).length ]
+    @visitors = @labs.select('DISTINCT user_id')
+    array = []
+    @visitors.each do |visit|
+      array << User.find(visit.user_id).identity
+    end
+    column << [] << ["Classification based on identity"] << ["Identity", "Count"]
+    identities = Hash[array.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+    identities.each do |identity|
+      column << [identity[0], identity[1]]
+    end
+
+    column << ["Note: 'unknown' identity means the visitor is an old user and has not updated his/her profile"]
 
     @labs.to_csv(column)
   end
 
-  # *******FIX THIS
   def self.unique_visitors_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @labs = LabSession.between_dates_picked(start_date, end_date)
     @unique_visits = @labs.select('DISTINCT user_id')
     column = []
-    column << ["Unique visitors of CEED facilities in the past week"] <<[]
-    column << ["Sign-in time", "Name", "Email", "Gender","Identity", "Faculty", "Program", "Space"]
+    column << ["Unique visitors of CEED facilities"]
+    column << ["Start Date", start_date.strftime('%a, %d %b %Y %H:%M')]
+    column << ["End Date", end_date.strftime('%a, %d %b %Y %H:%M')] <<[]
+    column << ["Name", "Email", "Gender","Identity", "Faculty"]
     @unique_visits.each do |lab|
       row = []
-      row << lab.user.name << lab.user.email << lab.user.gender << lab.user.identity << lab.user.faculty << lab.user.program
-      row << Space.find(lab.space.id).name
+      row << lab.user.name << lab.user.email << lab.user.gender << lab.user.identity << lab.user.faculty
       column << row
     end
-    column << [] << ["# of Unique Visitors this week:", @labs.distinct.count(:user_id)]
+
+    column << [] << ["# of Unique Visitors this week:", @unique_visits.length]
+
+    array = []
+    @unique_visits.each do |visit|
+      array << User.find(visit.user_id).identity
+    end
+    column << [] << ["Classification based on identity"] << ["Identity", "Count"]
+    identities = Hash[array.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+    identities.each do |identity|
+      column << [identity[0], identity[1]]
+    end
+
+    column << ["Note: 'unknown' identity means the visitor is an old user and has not updated his/her profile"]
+
+
     @unique_visits.to_csv(column)
   end
 
@@ -76,7 +102,7 @@ class ReportGenerator
       @faculty_freq = @users.where.not('faculty' => nil).group(:faculty).count(:faculty)
       @no_faculty = @users.where('faculty' => nil)
       CSV.generate do |csv|
-        csv << ["Faculty distribution of users signed up to MakerRepo in the past week"]
+        csv << ["Faculty distribution of users signed up to MakerRepo"]
         csv << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
         csv << @faculty_freq.keys
         csv << @faculty_freq.values
@@ -87,12 +113,21 @@ class ReportGenerator
       end
   end
 
-  def self.gender_frequesncy_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
+  def self.gender_frequency_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
+
     @users = User.between_dates_picked(start_date, end_date)
-    @gender_freq = @users.group(:gender).count(:gender)
+    @gender_freq = @users.where.not('gender' => nil).where.not('gender' => 'unknown').group(:gender).count(:gender)
+    @null = @users.where('gender' => nil)
+    @unknown = @users.where('gender' => 'unknown')
+
     CSV.generate do |csv|
+      csv << ["Faculty distribution of users signed up to MakerRepo"]
+      csv << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
+
       csv << @gender_freq.keys
       csv << @gender_freq.values
+
+      csv << [] << ["Gender not provided (Old user):", @null.length + @unknown.length]
     end
   end
 
@@ -111,6 +146,13 @@ class ReportGenerator
     @certifications.to_csv(column)
   end
 
+  #Seperate Trainings by space
+
+  # self.makerspace_training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
+    # TrainingSession.where(training.space.name == 'makerspace')
+
+  # end
+  
   def self.project_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @repositories = Repository.between_dates_picked(start_date, end_date)
     column = []
