@@ -121,6 +121,36 @@ class Admin::ReportGeneratorController < AdminAreaController
     end
   end
 
+  def makerspace_training
+    unless session[:selected_dates]
+      @start_date = 1.month.ago
+      @end_date = DateTime.current
+    else
+      @start_date = DateTime.parse(selected_dates[0])
+      @end_date = DateTime.parse(selected_dates[1])
+    end
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.makerspace_training_report(@start_date, @end_date), filename: "mspace_trainings-#{Date.today}.csv"}
+    end
+  end
+
+
+  def mtc_training
+    unless session[:selected_dates]
+      @start_date = 1.month.ago
+      @end_date = DateTime.current
+    else
+      @start_date = DateTime.parse(selected_dates[0])
+      @end_date = DateTime.parse(selected_dates[1])
+    end
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.mtc_training_report(@start_date, @end_date), filename: "mtc_trainings-#{Date.today}.csv"}
+    end
+  end
+
+
   # repositories
   def repository
     unless session[:selected_dates]
