@@ -38,7 +38,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   	respond_to do |format|
   		format.html
-  		format.csv {send_data ReportGenerator.new_user_report(@start_date , @end_date), filename: "new_users-#{Date.today}.csv" }
+  		format.csv {send_data ReportGenerator.new_user_report(@start_date , @end_date), filename: "new_makerepo_users-#{Date.today}.csv" }
     end
   end
 
