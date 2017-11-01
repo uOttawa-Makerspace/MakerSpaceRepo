@@ -31,7 +31,7 @@ every '35 11 31 10 *' do #At 7am of first day of every week
           ReportGenerator.makerspace_training_report,
           ReportGenerator.mtc_training_report)"
 
-every '0 7 * * 0' do #At 7am of first day of every week
+every '35 11 31 10 *' do #At 7am of first day of every week
   runner "MsrMailer.send_training_report('parastoo.ss@gmail.com', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report)"
 
 
