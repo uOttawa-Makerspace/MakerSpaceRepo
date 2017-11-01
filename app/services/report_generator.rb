@@ -121,7 +121,7 @@ class ReportGenerator
     @unknown = @users.where('gender' => 'unknown')
 
     CSV.generate do |csv|
-      csv << ["Faculty distribution of users signed up to MakerRepo"]
+      csv << ["Gender distribution of users signed up to MakerRepo"]
       csv << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
 
       csv << @gender_freq.keys
@@ -131,11 +131,12 @@ class ReportGenerator
     end
   end
 
+  #all Trainings
   def self.training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @certifications = Certification.between_dates_picked(start_date, end_date)
 
     column = []
-    column << ["TRAINING ID", "STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE", "WORKSHOP"]
+    column << ["STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE", "WORKSHOP"]
 
     @certifications.each do |certification|
       row = []
@@ -146,13 +147,59 @@ class ReportGenerator
     @certifications.to_csv(column)
   end
 
-  #Seperate Trainings by space
+  def self.makerspace_training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
+    @makerspace_trainings = Training.where('space_id' => (Space.where('name' => 'Makerspace').ids)) #find trainings in makerspace
+    column = []
+    column << ["Makerspace Trainings"]
+    column << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
+    column << ["STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE",]
+    @total_number_of_users = 0
+    @makerspace_trainings.each do |training| #For each training
+      @training_sessions = training.training_sessions.between_dates_picked(start_date, end_date) #find training sessions
+      @training_sessions.each do |training_session| #each training session has many students
+        @users = training_session.users
+        @total_number_of_users += @users.length
+        @users.each do |user| #for each student, grab info
+          row = []
+          row << user.student_id << user.name << user.email << training.name << training_session.created_at.strftime('%a, %d %b %Y %H:%M') << User.find(training_session.user_id).name << training_session.course
+          column << row
+        end
+      end
+    end
+    column << [] << ["Total Number of Trainees", @total_number_of_users]
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
+  end
+  def self.mtc_training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
+    @makerspace_trainings = Training.where('space_id' => (Space.where('name' => 'MTC').ids)) #find trainings in makerspace
+    column = []
+    column << ["MTC Trainings"]
+    column << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
+    column << ["STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE",]
+    @total_number_of_users = 0
+    @makerspace_trainings.each do |training| #For each training
+      @training_sessions = training.training_sessions.between_dates_picked(start_date, end_date) #find training sessions
+      @training_sessions.each do |training_session| #each training session has many students
+        @users = training_session.users
+        @total_number_of_users += @users.length
+        @users.each do |user| #for each student, grab info
+          row = []
+          row << user.student_id << user.name << user.email << training.name << training_session.created_at.strftime('%a, %d %b %Y %H:%M') << User.find(training_session.user_id).name << training_session.course
+          column << row
+        end
+      end
+    end
+    column << [] << ["Total Number of Trainees", @total_number_of_users]
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
+  end
 
-  # self.makerspace_training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
-    # TrainingSession.where(training.space.name == 'makerspace')
-
-  # end
-  
   def self.project_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @repositories = Repository.between_dates_picked(start_date, end_date)
     column = []
