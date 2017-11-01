@@ -38,7 +38,7 @@ class ReportGenerator
       column << row
     end
 
-    column << [] << [] << ["Total visitors this week:", @labs.length] << ["# of Unique Visits:", @labs.distinct.count(:user_id)]
+    column << [] << [] << ["Total visitors:", @labs.length] << ["# of Unique Visits:", @labs.distinct.count(:user_id)]
 
     column << []<< ["Visitors visited these spaces:"] << ["Space", "Number of visitors"]
 
@@ -49,8 +49,8 @@ class ReportGenerator
 
     @visitors = @labs.select('DISTINCT user_id')
     array = []
-    @visitors.each do |visit|
-      array << User.find(visit.user_id).identity
+    @visitors.each do |visitor|
+      array << User.find(visitor.user_id).identity
     end
     column << [] << ["Classification based on identity"] << ["Identity", "Count"]
     identities = Hash[array.group_by {|x| x}.map {|k,v| [k,v.count]}]
@@ -60,6 +60,19 @@ class ReportGenerator
     end
 
     column << ["Note: 'unknown' identity means the visitor is an old user and has not updated his/her profile"]
+
+    array = []
+    @visitors.each do |visitor|
+      array << User.find(visitor.user_id).gender
+    end
+    column << [] << ["Classification based on gender"] << ["Gender", "Count"]
+    genders = Hash[array.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+    genders.each do |gender|
+      column << [gender[0], gender[1]]
+    end
+
+
 
     @labs.to_csv(column)
   end
@@ -134,13 +147,14 @@ class ReportGenerator
   #all Trainings
   def self.training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @certifications = Certification.between_dates_picked(start_date, end_date)
-
     column = []
+    column << ["All Trainings"]
+    column << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
     column << ["STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE", "WORKSHOP"]
 
     @certifications.each do |certification|
       row = []
-      row << certification.id << certification.user.student_id << certification.user.name << certification.user.email << certification.training
+      row << certification.user.student_id << certification.user.name << certification.user.email << certification.training
       row << certification.created_at.strftime('%a, %d %b %Y %H:%M') <<  User.find(certification.training_session.user_id).name << certification.training_session.course << Space.find(certification.training_session.training.space_id).name
       column << row
     end
