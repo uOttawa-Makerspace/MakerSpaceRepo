@@ -43,25 +43,25 @@ class MsrMailer < ApplicationMailer
 
 	#test
 	def send_monthly_report(email1, csv1, csv2, csv3, csv4, csv5, csv6, csv7)
-		attachments['NewUsers.csv'] = {mime_type: 'text/csv', content: csv1}
+		attachments['NewMakerepoUsers.csv'] = {mime_type: 'text/csv', content: csv1}
 		attachments['TotalVisits.csv'] = {mime_type: 'text/csv', content: csv2}
 		attachments['UniqueVisits.csv'] = {mime_type: 'text/csv', content: csv3}
 		attachments['FacultyFrequency.csv'] = {mime_type: 'text/csv', content: csv4}
 		attachments['GenderFrequency.csv'] = {mime_type: 'text/csv', content: csv5}
-		attachments['MakerspaceTraining'] = {mime_type: 'text/csv', content: csv6}
-		attachments['MtcTraining'] = {mime_type: 'text/csv', content: csv7}
+		attachments['MakerspaceTrainings.csv'] = {mime_type: 'text/csv', content: csv6}
+		attachments['MtcTrainings.csv'] = {mime_type: 'text/csv', content: csv7}
 
 		mail(to: email1, subject: 'Monthly Reports')
 	end
 		#test
 		def send_weekly_report(email1, csv1, csv2, csv3, csv4, csv5, csv6, csv7)
-			attachments['NewUsers.csv'] = {mime_type: 'text/csv', content: csv1}
+			attachments['NewMakerepoUsers.csv'] = {mime_type: 'text/csv', content: csv1}
 			attachments['TotalVisits.csv'] = {mime_type: 'text/csv', content: csv2}
 			attachments['UniqueVisits.csv'] = {mime_type: 'text/csv', content: csv3}
 			attachments['FacultyFrequency.csv'] = {mime_type: 'text/csv', content: csv4}
 			attachments['GenderFrequency.csv'] = {mime_type: 'text/csv', content: csv5}
-			attachments['MakerspaceTraining'] = {mime_type: 'text/csv', content: csv6}
-			attachments['MtcTraining'] = {mime_type: 'text/csv', content: csv7}
+			attachments['MakerspaceTrainings.csv'] = {mime_type: 'text/csv', content: csv6}
+			attachments['MtcTrainings.csv'] = {mime_type: 'text/csv', content: csv7}
 
 			mail(to: email1, subject: 'Weekly Reports')
 	end
