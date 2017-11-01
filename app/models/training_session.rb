@@ -25,11 +25,13 @@ class TrainingSession < ActiveRecord::Base
   end
 
   private
-  
+
   def check_course
     if self.course == 'no course'
       self.course = nil
     end
   end
+
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
 end
