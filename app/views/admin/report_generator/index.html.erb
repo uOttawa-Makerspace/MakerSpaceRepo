@@ -24,8 +24,18 @@
   <%= link_to '<button type="button">Download</button>'.html_safe, training_admin_report_generator_index_path(format: "csv")%> <br><br>
 </div>
 
+<div id="report">
+<p> <b> Makerspace Trainings </b> </p>
+<%= link_to '<button type="button">Download</button>'.html_safe, makerspace_training_admin_report_generator_index_path(format: "csv") %><br><br>
+</div>
+
+<div id="report">
+<p> <b> MTC Trainings </b></p>
+<%= link_to '<button type="button">Download</button>'.html_safe, mtc_training_admin_report_generator_index_path(format: "csv") %><br><br>
+</div>
+
   <div id="report">
-    <p> <b>Repositories</b> </p>
+    <p> Repositories </p>
     <%= link_to '<button type="button">Download</button>'.html_safe, repository_admin_report_generator_index_path(format: "csv")%> <br><br>
   </div>
   <div id="report">
@@ -50,6 +60,7 @@
 <p> Diversity of users based on gender </p>
 <%= link_to '<button type="button">Download</button>'.html_safe, gender_frequency_admin_report_generator_index_path(format: "csv") %><br><br>
 </div>
+
 
 <br>
 </div>
