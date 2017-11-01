@@ -61,19 +61,6 @@ class ReportGenerator
 
     column << ["Note: 'unknown' identity means the visitor is an old user and has not updated his/her profile"]
 
-    array = []
-    @visitors.each do |visitor|
-      array << User.find(visitor.user_id).gender
-    end
-    column << [] << ["Classification based on gender"] << ["Gender", "Count"]
-    genders = Hash[array.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    genders.each do |gender|
-      column << [gender[0], gender[1]]
-    end
-
-
-
     @labs.to_csv(column)
   end
 
@@ -112,6 +99,7 @@ class ReportGenerator
 
   def self.faculty_frequency_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
       @users = User.between_dates_picked(start_date, end_date)
+      #this is not working
       @faculty_freq = @users.where.not('faculty' => nil).group(:faculty).count(:faculty)
       @no_faculty = @users.where('faculty' => nil)
       CSV.generate do |csv|
