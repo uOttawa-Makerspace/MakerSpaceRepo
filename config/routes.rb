@@ -87,6 +87,8 @@ Rails.application.routes.draw do
         get 'training'
         put 'select_date_range'
         get 'repository'
+        get 'makerspace_training'
+        get 'mtc_training'
       end
     end
 
