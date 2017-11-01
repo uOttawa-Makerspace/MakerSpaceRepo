@@ -110,7 +110,7 @@ justine:
   terms_and_conditions: true
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
-  gender: female
+  gender: Female
   faculty: engineering
   use: null
   description: null

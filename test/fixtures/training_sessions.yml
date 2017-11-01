@@ -17,4 +17,4 @@ old_soldering_session:
   training_id: 3
   user_id: 777
   course: GNG1105
-  created_at: <%=5.years.ago%>
+  created_at: <%=1.day.ago%>

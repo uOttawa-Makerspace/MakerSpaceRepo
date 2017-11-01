@@ -1,7 +1,7 @@
 # every '0 7 * * 0' do #At 7am on 1st day of every week
 #   runner "MsrMailer.send_report('makerspace@uottawa.ca', 'hanis@uottawa.ca', ReportGenerator.new_user_report,
 #   				ReportGenerator.lab_session_report,
-#   				ReportGenerator.faculty_frequency_report, ReportGenerator.gender_frequesncy_report,
+#   				ReportGenerator.faculty_frequency_report, ReportGenerator.gender_frequency_report,
 #           ReportGenerator.unique_visitors_report).deliver_now"
 # end
 #
@@ -10,6 +10,29 @@
 #                                         'ReportGenerator.training_report').deliver_now"
 # end
 
+
+every '35 11 31 10 *' do #At 7am of first day of every week
+  runner "MsrMailer.send_monthly_report('parastoo.ss@gmail.com', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
+          ReportGenerator.unique_visitors_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
+          ReportGenerator.lab_session_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
+          ReportGenerator.faculty_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
+          ReportGenerator.gender_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
+          ReportGenerator.makerspace_training_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
+          ReportGenerator.mtc_traininf_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month))"
+
+
+
+every '35 11 31 10 *' do #At 7am of first day of every week
+  runner "MsrMailer.send_weekly_report('parastoo.ss@gmail.com', ReportGenerator.new_user_report,
+          ReportGenerator.unique_visitors_report,
+          ReportGenerator.lab_session_report,
+          ReportGenerator.faculty_frequency_report,
+          ReportGenerator.gender_frequency_report,
+          ReportGenerator.makerspace_training_report,
+          ReportGenerator.mtc_training_report)"
+
+every '0 7 * * 0' do #At 7am of first day of every week
+  runner "MsrMailer.send_training_report('parastoo.ss@gmail.com', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report)"
 
 
 # Use this file to easily define all of your cron jobs.
