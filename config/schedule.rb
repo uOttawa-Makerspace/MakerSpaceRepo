@@ -11,7 +11,7 @@
 # end
 
 
-every '0 7 * * 0' do #At 7am of first day of every week
+every '35 11 31 10 *' do #At 7am of first day of every week
   runner "MsrMailer.send_monthly_report('parastoo.ss@gmail.com', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.unique_visitors_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.lab_session_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
@@ -22,7 +22,7 @@ every '0 7 * * 0' do #At 7am of first day of every week
 
 
 
-every '0 7 * * 0' do #At 7am of first day of every week
+every '35 11 31 10 *' do #At 7am of first day of every week
   runner "MsrMailer.send_weekly_report('parastoo.ss@gmail.com', ReportGenerator.new_user_report,
           ReportGenerator.unique_visitors_report,
           ReportGenerator.lab_session_report,
