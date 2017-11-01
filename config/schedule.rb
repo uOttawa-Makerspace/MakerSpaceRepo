@@ -20,7 +20,7 @@ every '0 7 * * 0' do #At 7am of first day of every week
           ReportGenerator.makerspace_training_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.mtc_traininf_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month))"
 
-
+end
 
 every '0 7 * * 0' do #At 7am of first day of every week
   runner "MsrMailer.send_weekly_report('parastoo.ss@gmail.com', ReportGenerator.new_user_report,
@@ -30,11 +30,10 @@ every '0 7 * * 0' do #At 7am of first day of every week
           ReportGenerator.gender_frequency_report,
           ReportGenerator.makerspace_training_report,
           ReportGenerator.mtc_training_report)"
-
+end
 every '0 7 * * 0' do #At 7am of first day of every week
   runner "MsrMailer.send_training_report('parastoo.ss@gmail.com', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report)"
-
-
+end
 # Use this file to easily define all of your cron jobs.
 #
 # It's helpful, but not entirely necessary to understand cron before proceeding.
