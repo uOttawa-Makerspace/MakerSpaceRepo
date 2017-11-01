@@ -10,6 +10,7 @@
 #                                         'ReportGenerator.training_report').deliver_now"
 # end
 
+
 every '0 7 * * 0' do #At 7am of first day of every week
   runner "MsrMailer.send_monthly_report('parastoo.ss@gmail.com', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.unique_visitors_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
@@ -18,6 +19,7 @@ every '0 7 * * 0' do #At 7am of first day of every week
           ReportGenerator.gender_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.makerspace_training_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.mtc_traininf_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month))"
+
 
 
 every '0 7 * * 0' do #At 7am of first day of every week
