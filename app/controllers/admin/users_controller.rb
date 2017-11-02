@@ -123,8 +123,14 @@ class Admin::UsersController < AdminAreaController
   def delete_repository
     Repository.find(params[:id]).destroy
     redirect_to root_path
+    flash[:notice] = "Repository Deleted!"
   end
 
+  def delete_user
+    User.find(params[:id]).destroy
+    redirect_to root_path
+    flash[:notice] = "User Deleted!"
+  end
 
   def set_role
     @user = User.find(params[:id])

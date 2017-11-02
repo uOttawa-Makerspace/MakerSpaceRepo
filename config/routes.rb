@@ -98,6 +98,8 @@ Rails.application.routes.draw do
         post 'bulk_add_certifications'
         patch 'set_role'
         delete 'delete_repository'
+        delete 'delete_user'
+
       end
     end
 

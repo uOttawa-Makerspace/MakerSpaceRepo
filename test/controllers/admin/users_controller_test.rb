@@ -27,4 +27,9 @@ class Admin::UsersControllerTest < ActionController::TestCase
     refute response.body.include? "Mary"
   end
 
+  test "admin can delete a users by email" do
+    delete :delete_user, path: '/123/edit', id: users(:justine)
+    refute User.find_by(username: 'justine').present?
+  end
+
 end
