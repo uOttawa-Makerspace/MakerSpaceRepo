@@ -11,7 +11,7 @@ bob:
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
   gender: Male
-  faculty: science
+  faculty: Science
   use: null
   description: null
   identity: undergrad
@@ -31,7 +31,7 @@ mary:
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
   gender: unknown
-  faculty: engineering
+  faculty: Engineering
   use: null
   description: null
   identity: unknown
@@ -64,7 +64,7 @@ adam:
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
   gender: Male
-  faculty: arts
+  faculty: Arts
   use: null
   description: null
   role: admin
@@ -93,7 +93,7 @@ olivia:
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
   gender: Female
-  faculty: engineering
+  faculty: Engineering
   use: null
   description: null
   role: staff
@@ -111,7 +111,7 @@ justine:
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
   url: null
   gender: Female
-  faculty: engineering
+  faculty: Engineering
   use: null
   description: null
   role: staff

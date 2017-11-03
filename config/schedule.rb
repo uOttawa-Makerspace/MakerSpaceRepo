@@ -11,7 +11,7 @@
 # end
 
 
-every '0 10 * * *' do #At 9am of every day
+every '0 18 * * *' do 
   runner "MsrMailer.send_monthly_report('parastoo.ss@gmail.com', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.unique_visitors_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.lab_session_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
@@ -22,7 +22,7 @@ every '0 10 * * *' do #At 9am of every day
 
 end
 
-every '0 10 * * *' do #At 7am of first day of every week
+every '30 18 * * *' do
   runner "MsrMailer.send_weekly_report('parastoo.ss@gmail.com', ReportGenerator.new_user_report,
           ReportGenerator.unique_visitors_report,
           ReportGenerator.lab_session_report,
@@ -31,7 +31,7 @@ every '0 10 * * *' do #At 7am of first day of every week
           ReportGenerator.makerspace_training_report,
           ReportGenerator.mtc_training_report).deliver_now"
 end
-every '0 10 * * *' do #At 7am of first day of every week
+every '0 19 * * *' do
   runner "MsrMailer.send_training_report('parastoo.ss@gmail.com', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
 # Use this file to easily define all of your cron jobs.
