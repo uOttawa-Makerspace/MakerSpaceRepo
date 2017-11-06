@@ -33,7 +33,7 @@ class MsrMailer < ApplicationMailer
 	# 	mail(to: email1, subject: 'Weekly Report of Trainings', bcc: [email2, email3, email4])
 	# end
 
-	def send_training_report(email1, email2, email3, email4,, email5 csv1, csv2)
+	def send_training_report(email1, email2, email3, email4, email5, csv1, csv2)
 		attachments['MakerspaceTraining.csv'] = {mime_type: 'text/csv', content: csv1}
 		attachments['MtcTraining.csv'] = {mime_type: 'text/csv', content: csv2}
 
