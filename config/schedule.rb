@@ -10,9 +10,9 @@
 #                                         'ReportGenerator.training_report').deliver_now"
 # end
 
-
-every '10 * * * *' do
-  runner "MsrMailer.send_monthly_report('parastoo.ss@gmail.com', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
+#will need to change this to '0 7 1 * *'
+every '0 7 7 * *' do
+  runner "MsrMailer.send_monthly_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com', 'makerspace@uottawa.ca', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.unique_visitors_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.lab_session_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.faculty_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
