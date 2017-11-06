@@ -41,17 +41,17 @@ class MsrMailer < ApplicationMailer
 	end
 
 
-	#test
-	def send_monthly_report(email1, csv1, csv2, csv3, csv4, csv5, csv6, csv7)
+
+	def send_monthly_report(email1, email2, email3, csv1, csv2, csv3, csv4, csv5, csv6, csv7)
 		attachments['NewMakerepoUsers.csv'] = {mime_type: 'text/csv', content: csv1}
-		attachments['TotalVisits.csv'] = {mime_type: 'text/csv', content: csv2}
-		attachments['UniqueVisits.csv'] = {mime_type: 'text/csv', content: csv3}
+		attachments['UniqueVisits.csv'] = {mime_type: 'text/csv', content: csv2}
+		attachments['TotalVisits.csv'] = {mime_type: 'text/csv', content: csv3}
 		attachments['FacultyFrequency.csv'] = {mime_type: 'text/csv', content: csv4}
 		attachments['GenderFrequency.csv'] = {mime_type: 'text/csv', content: csv5}
 		attachments['MakerspaceTrainings.csv'] = {mime_type: 'text/csv', content: csv6}
 		attachments['MtcTrainings.csv'] = {mime_type: 'text/csv', content: csv7}
 
-		mail(to: email1, subject: 'Monthly Reports')
+		mail(to: email1, subject: 'Monthly Reports', bcc: [email2, email3])
 	end
 
 		def send_weekly_report(email1, email2, email3, csv1, csv2, csv3, csv4, csv5, csv6, csv7)

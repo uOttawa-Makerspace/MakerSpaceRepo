@@ -56,7 +56,7 @@ class MsrMailerTest < ActionMailer::TestCase
 	end
 
 	test "Sending monthly reports" do
-		email = MsrMailer.send_monthly_report('abc@gmail.com', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
+		email = MsrMailer.send_monthly_report('abc@gmail.com', 'def@gmail.com','ghi@gmail.com', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
 		          ReportGenerator.unique_visitors_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
 		          ReportGenerator.lab_session_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
 		          ReportGenerator.faculty_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
@@ -66,6 +66,8 @@ class MsrMailerTest < ActionMailer::TestCase
 
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['abc@gmail.com'], email.to
+		assert_equal ['def@gmail.com','ghi@gmail.com'], email.bcc
+
 		assert_not_nil(email.attachments, "No attachments found")
 	end
 
