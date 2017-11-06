@@ -18,7 +18,7 @@ every '10 * * * *' do
           ReportGenerator.faculty_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.gender_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.makerspace_training_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
-          ReportGenerator.mtc_traininf_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month)).deliver_now"
+          ReportGenerator.mtc_training_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month)).deliver_now"
 
 end
 
