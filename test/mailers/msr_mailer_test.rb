@@ -48,9 +48,10 @@ class MsrMailerTest < ActionMailer::TestCase
 
 
 	test "Sending training reports" do
-		email = MsrMailer.send_training_report('abc@gmail.com',ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report)
+		email = MsrMailer.send_training_report('abc@gmail.com','def@gmail.com','ghi@gmail.com','jkl@gmail.com','mno@gmail.com', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report)
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['abc@gmail.com'], email.to
+		assert_equal ['def@gmail.com','ghi@gmail.com','jkl@gmail.com','mno@gmail.com'], email.bcc
 		assert_not_nil(email.attachments, "No attachments found")
 	end
 
@@ -69,7 +70,7 @@ class MsrMailerTest < ActionMailer::TestCase
 	end
 
 	test "Sending weekly reports" do
-		email = MsrMailer.send_weekly_report('abc@gmail.com', ReportGenerator.new_user_report,
+		email = MsrMailer.send_weekly_report('abc@gmail.com','def@gmail.com','ghi@gmail.com', ReportGenerator.new_user_report,
 	          ReportGenerator.unique_visitors_report,
 	          ReportGenerator.lab_session_report,
 	          ReportGenerator.faculty_frequency_report,
@@ -79,6 +80,8 @@ class MsrMailerTest < ActionMailer::TestCase
 
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['abc@gmail.com'], email.to
+		assert_equal ['def@gmail.com','ghi@gmail.com'], email.bcc
+
 		assert_not_nil(email.attachments, "No attachments found")
 
 	end
