@@ -212,12 +212,14 @@ class ReportGenerator
     @makerspace_trainings.each do |training| #For each training
       @training_sessions = training.training_sessions.between_dates_picked(start_date, end_date) #find training sessions
       @training_sessions.each do |training_session| #each training session has many students
-        @users = training_session.users
-        @total_number_of_users += @users.length
-        @users.each do |user| #for each student, grab info
-          row = []
-          row << user.student_id << user.name << user.email << training.name << training_session.created_at.strftime('%a, %d %b %Y %H:%M') << User.find(training_session.user_id).name << training_session.course
-          column << row
+        if training_session.completed? #check if training_session is completed
+          @users = training_session.users
+          @total_number_of_users += @users.length
+          @users.each do |user| #for each student, grab info
+            row = []
+            row << user.student_id << user.name << user.email << training.name << training_session.created_at.strftime('%a, %d %b %Y %H:%M') << User.find(training_session.user_id).name << training_session.course
+            column << row
+          end
         end
       end
     end
