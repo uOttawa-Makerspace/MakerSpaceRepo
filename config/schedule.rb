@@ -31,7 +31,7 @@ every '0 13 * * 1' do
           ReportGenerator.makerspace_training_report,
           ReportGenerator.mtc_training_report).deliver_now"
 end
-every '0 13 * * 1' do
+every '30 13 * * 1' do
   runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
 # Use this file to easily define all of your cron jobs.
