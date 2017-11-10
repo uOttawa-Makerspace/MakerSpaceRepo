@@ -107,8 +107,8 @@ class SearchController < SessionsController
   SLUG_TO_CATEGORY_MODEL = {
    'internet-of-things' => 'Internet of Things',
    'course-related-projects' => 'Course-related Projects',
-   'gng2101' => 'GNG2101',
-   'gng1103' => 'GNG1103',
+   'gng2101/gng2501' => 'GNG2101/GNG2101',
+   'gng1103/gng1503' => 'GNG1103/GNG2503',
    'health-sciences' => 'Health Sciences',
    'wearable' => 'Wearable',
    'mobile-development' => 'Mobile Development',
