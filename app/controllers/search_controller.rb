@@ -108,7 +108,7 @@ class SearchController < SessionsController
    'internet-of-things' => 'Internet of Things',
    'course-related-projects' => 'Course-related Projects',
    'gng2101/gng2501' => 'GNG2101/GNG2501',
-   'gng1103/gng1503' => 'GNG1103/GNG2503',
+   'gng1103/gng1503' => 'GNG1103/GNG1503',
    'health-sciences' => 'Health Sciences',
    'wearable' => 'Wearable',
    'mobile-development' => 'Mobile Development',
