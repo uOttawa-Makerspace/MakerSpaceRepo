@@ -7,8 +7,9 @@ class FixCategories < ActiveRecord::Migration
         print("good 1103")
       else
         print("bad 1103")
+      end
     end
-
+    
     @gng1103CatsB = Category.where(name: "gng1103")
     @gng1103CatsB.each do |cat|
       cat.name = "GNG1103/GNG1503"
@@ -16,6 +17,7 @@ class FixCategories < ActiveRecord::Migration
         print("good 1103")
       else
         print("bad 1103")
+      end
     end
 
     @gng2101CatsA = Category.where(name: "GNG2101")
@@ -25,6 +27,7 @@ class FixCategories < ActiveRecord::Migration
         print("good 2101")
       else
         print("bad 2101")
+      end
     end
 
     @gng2101CatsB = Category.where(name: "gng2101")
@@ -34,6 +37,7 @@ class FixCategories < ActiveRecord::Migration
         print("good 2101")
       else
         print("bad 2101")
+      end
     end
 
   end
