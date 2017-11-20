@@ -10,6 +10,7 @@ Rails.application.routes.draw do
     get 'hours'
     get 'about'
     get 'contact'
+    get 'calendar'
     get 'report_repository', path: 'report_repository/:repository_id'
   end
 
