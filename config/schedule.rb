@@ -34,7 +34,7 @@ end
 # end
 
 #test
-every '0 * * * *' do
+every :monday, :at => '5:10am' do
   runner "MsrMailer.send_weekly_report('parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', ReportGenerator.new_user_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
           ReportGenerator.unique_visitors_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
           ReportGenerator.lab_session_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
@@ -50,7 +50,7 @@ end
 # end
 
 #test
-every '30 * * * *' do
+every :monday, :at => '5:15am' do
   runner "MsrMailer.send_training_report('parastoo.ss@gmail.com', 'parastoo.ss@gmail.com','parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
 
