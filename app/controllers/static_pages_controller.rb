@@ -20,6 +20,9 @@ class StaticPagesController < SessionsController
   def hours
   end
 
+  def calendar
+  end
+
   def forgot_password
   end
 
