@@ -46,7 +46,7 @@ class RfidController < SessionsController
 
   def new_session (rfid, new_location)
     sign_in = Time.zone.now
-    sign_out = sign_in + 3.hours
+    sign_out = sign_in + 6.hours
     new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out, mac_address: params[:mac_address], space_id: new_location.space.id)
     new_session.save
     render json: { success: "RFID sign in" }, status: :ok
