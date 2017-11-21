@@ -23,18 +23,18 @@ every '0 7 1 * *' do
 end
 
 # At 7am of First day of every week
-# every '0 7 * * 0' do
-#   runner "MsrMailer.send_weekly_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com', 'makerspace@uottawa.ca', ReportGenerator.new_user_report,
-#           ReportGenerator.unique_visitors_report,
-#           ReportGenerator.lab_session_report,
-#           ReportGenerator.faculty_frequency_report,
-#           ReportGenerator.gender_frequency_report,
-#           ReportGenerator.makerspace_training_report,
-#           ReportGenerator.mtc_training_report).deliver_now"
-# end
+every :monday, :at => '7am' do
+  runner "MsrMailer.send_weekly_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com', 'makerspace@uottawa.ca', ReportGenerator.new_user_report,
+          ReportGenerator.unique_visitors_report,
+          ReportGenerator.lab_session_report,
+          ReportGenerator.faculty_frequency_report,
+          ReportGenerator.gender_frequency_report,
+          ReportGenerator.makerspace_training_report,
+          ReportGenerator.mtc_training_report).deliver_now"
+end
 
 #test
-every :tuesday, :at => '7am' do
+every :monday, :at => '7:30am' do
   runner "MsrMailer.send_weekly_report('parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', ReportGenerator.new_user_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
           ReportGenerator.unique_visitors_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
           ReportGenerator.lab_session_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
@@ -45,12 +45,12 @@ every :tuesday, :at => '7am' do
 end
 
 # At 7:30am of First day of every week
-# every '30 7 * * 0' do
-#   runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
-# end
+every :monday, :at => '7am' do
+  runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
+end
 
 #test
-every :tuesday, :at => '7am' do
+every :monday, :at => '7:30am' do
   runner "MsrMailer.send_training_report('parastoo.ss@gmail.com', 'parastoo.ss@gmail.com','parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
 
