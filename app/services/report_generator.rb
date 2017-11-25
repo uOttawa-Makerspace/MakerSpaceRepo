@@ -298,4 +298,9 @@ class ReportGenerator
     end
   end
 
+  # def self.frequency_hours_report
+  #   @lab_sessions = LabSession.between_dates_picked(1.day.ago.beginning_of_daym 1.day.ago.end_of_day)
+  #
+  # end
+
 end
