@@ -166,4 +166,19 @@ class Admin::ReportGeneratorController < AdminAreaController
       format.csv {send_data ReportGenerator.project_report(@start_date , @end_date) , filename: "repositories-#{Date.today}.csv"}
     end
   end
+
+
+  def peak_hrs
+    unless session[:selected_dates]
+      @start_date = 1.month.ago
+      @end_date = DateTime.current
+    else
+      @start_date = DateTime.parse(selected_dates[0])
+      @end_date = DateTime.parse(selected_dates[1])
+    end
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.frequency_hours_report(@start_date, @end_date), filename: "repositories-#{Date.today}.csv"}
+    end
+  end
 end
