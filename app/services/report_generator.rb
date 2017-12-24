@@ -298,20 +298,21 @@ class ReportGenerator
     end
   end
 
-  def self.frequency_hours_report
-    @lab_sessions = LabSession.between_dates_picked(1.day.ago.beginning_of_daym 1.day.ago.end_of_day)
-    column = []
-    @lab_sessions.each do |lab_session|
-      row = []
-      row << lab_session.sign_in_time.strftime("%I:%M")
-      column << row
-    end
+  def self.frequency_hours_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
+  @lab_sessions = LabSession.between_dates_picked(start_date, end_date)
+  column = []
+  @lab_sessions.each do |lab_session|
+    row = []
+    row << lab_session.sign_in_time.strftime('%m') << lab_session.sign_in_time.strftime('%d')<< lab_session.sign_in_time.strftime('%H:%M')
 
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
+    column << row
+  end
+
+  CSV.generate do |csv|
+    column.each do |row|
+      csv << row
     end
   end
+end
 
 end
