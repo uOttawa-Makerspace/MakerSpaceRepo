@@ -90,6 +90,7 @@ Rails.application.routes.draw do
         get 'repository'
         get 'makerspace_training'
         get 'mtc_training'
+        get 'peak_hrs'
       end
     end
 
