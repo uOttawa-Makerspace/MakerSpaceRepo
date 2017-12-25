@@ -300,8 +300,9 @@ class ReportGenerator
 
   def self.frequency_hours_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
   @lab_sessions = LabSession.between_dates_picked(start_date, end_date)
+  @mspaceLabSessions = @lab_sessions.where('space_id' => Space.find_by_name("Makerspace").id)
   column = []
-  @lab_sessions.each do |lab_session|
+  @mspaceLabSessions.each do |lab_session|
     row = []
     row << lab_session.sign_in_time.strftime('%m') << lab_session.sign_in_time.strftime('%d')<< lab_session.sign_in_time.strftime('%H:%M')
 
