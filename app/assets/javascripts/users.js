@@ -21,8 +21,3 @@ function showWaiver(toShow, toHide){
 	document.getElementById(toShow).style.display = 'block';
 	document.getElementById(toHide).style.display = 'none';
 }
-
-
-$(document).ready(function() {
-  $(".programs").select2({});
-});
