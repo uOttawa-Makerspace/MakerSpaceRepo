@@ -6,6 +6,9 @@ class SettingsController < SessionsController
   layout "setting"
 
   def profile
+    @programs = ProgramList.fetch_all
+    @user_program = current_user.program.gsub("\n", "")
+    @user_program = @user_program.gsub("\r", "")
   end
 
   def admin
