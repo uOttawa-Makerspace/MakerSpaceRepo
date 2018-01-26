@@ -30,7 +30,6 @@
     <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
       " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
 
-    <% @programs = ProgramList.fetch_all %>
     <%= f.label :program, "Program" , class: "profile-label" %>
     <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
     <%= f.select(:program, @programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
