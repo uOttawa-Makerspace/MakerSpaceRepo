@@ -301,4 +301,12 @@ l’Événement.
 
   </div>
 
+  <script>
+    $(document).ready(function() {
+      var user_program = "<%= @user_program %>";
+      $(".programs").select2({});
+      $(".programs").val(user_program).trigger('change')
+    });
+  </script>
+
 <% end %>
