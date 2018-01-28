@@ -7,8 +7,12 @@ class SettingsController < SessionsController
 
   def profile
     @programs = ProgramList.fetch_all
-    @user_program = current_user.program.gsub("\n", "")
-    @user_program = @user_program.gsub("\r", "")
+    if current_user.program.present?
+      @user_program = current_user.program.gsub("\n", "")
+      @user_program = @user_program.gsub("\r", "")
+    else
+      @user_program = ""
+    end
   end
 
   def admin
