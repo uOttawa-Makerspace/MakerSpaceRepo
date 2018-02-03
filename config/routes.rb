@@ -163,6 +163,7 @@ Rails.application.routes.draw do
     put 'sign_out_users', path: '/remove_users'
     put 'link_rfid'
     put 'unlink_rfid'
+    get 'sign_out_all_users'
   end
 
   # namespace :help do

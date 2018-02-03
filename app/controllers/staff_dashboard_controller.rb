@@ -12,6 +12,14 @@ class StaffDashboardController < StaffAreaController
     redirect_to staff_dashboard_index_path(space_id: @space.id)
   end
 
+  def sign_out_all_users
+    @space.signed_in_users.each do |user|
+      lab_session = LabSession.where(user_id: user.id)
+      lab_session.update_all(sign_out_time: Time.zone.now)
+    end
+    redirect_to staff_dashboard_index_path(space_id: @space.id)
+  end
+
   def sign_in_users
     if params['added_users'].present?
       users = User.where(username: params['added_users'])
