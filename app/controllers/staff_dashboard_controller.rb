@@ -13,7 +13,8 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_out_all_users
-    @space.signed_in_users.each do |user|
+    space = @space
+    space.signed_in_users.each do |user|
       lab_session = LabSession.where(user_id: user.id)
       lab_session.update_all(sign_out_time: Time.zone.now)
     end

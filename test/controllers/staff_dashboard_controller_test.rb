@@ -58,8 +58,10 @@ class StaffDashboardControllerTest < ActionController::TestCase
    end
 
    test "staff can sign out everyone at once" do
-     session[:user_id] = users(:olivia).id
-     session[:expires_at] = "Sat, 03 Jun 2025 05:01:41 UTC +00:00"
-     get :sign_out_all_users
+     user = users(:sara)
+     space = spaces(:brunsfield)
+     LabSession.create(user_id: user.id, space_id: space.id)
+     get :sign_out_all_users, space: space
+     assert_empty space.signed_in_users
    end
 end
