@@ -56,4 +56,10 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert_redirected_to :back
      refute users(:mary).rfid.present?
    end
+
+   test "staff can sign out everyone at once" do
+     session[:user_id] = users(:olivia).id
+     session[:expires_at] = "Sat, 03 Jun 2025 05:01:41 UTC +00:00"
+     get :sign_out_all_users
+   end
 end
