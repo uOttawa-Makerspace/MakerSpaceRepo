@@ -20,6 +20,9 @@
 
     <table class="staff-users-table">
         Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%>
+        <% if @space.signed_in_users.present? %>
+          <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'download-button' %>
+        <%end%>
         <tr>
           <th class="name-header">Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th class="email-header">Email <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>

@@ -56,4 +56,12 @@ class StaffDashboardControllerTest < ActionController::TestCase
      assert_redirected_to :back
      refute users(:mary).rfid.present?
    end
+
+   test "staff can sign out everyone at once" do
+     user = users(:sara)
+     space = spaces(:brunsfield)
+     LabSession.create(user_id: user.id, space_id: space.id)
+     get :sign_out_all_users, space: space
+     assert_empty space.signed_in_users
+   end
 end
