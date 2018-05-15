@@ -27,6 +27,7 @@
           <th class="name-header">Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th class="email-header">Email <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th class="certifications-header">Certifications <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th class="email-header"> # of visits <br> (Past 2 months)<span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header">Sign Out of <%=@space.name.capitalize%></th>
         </tr>
 
@@ -81,6 +82,10 @@
                 end
               end
               %>
+
+              <td class="email-cell" >
+                <%= user.lab_sessions.where('space_id' => @space.id ).where('created_at BETWEEN ? AND ? ', 2.month.ago, DateTime.now).count %>
+              </td>
             </td>
             <td class="action-cell" >
               <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
