@@ -34,27 +34,11 @@ every :monday, :at => '7am' do
           ReportGenerator.mtc_training_report).deliver_now"
 end
 
-#test
-every :monday, :at => '7:30am' do
-  runner "MsrMailer.send_weekly_report('parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', ReportGenerator.new_user_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
-          ReportGenerator.unique_visitors_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
-          ReportGenerator.lab_session_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
-          ReportGenerator.faculty_frequency_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
-          ReportGenerator.gender_frequency_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
-          ReportGenerator.makerspace_training_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week),
-          ReportGenerator.mtc_training_report(1.week.ago.beginning_of_week, 1.week.ago.end_of_week)).deliver_now"
-end
 
 # At 7:30am of First day of every week
 every :monday, :at => '7am' do
   runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
-
-#test
-every :monday, :at => '7:30am' do
-  runner "MsrMailer.send_training_report('parastoo.ss@gmail.com', 'parastoo.ss@gmail.com','parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', 'parastoo.ss@gmail.com', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
-end
-
 
 # Use this file to easily define all of your cron jobs.
 #
