@@ -91,6 +91,7 @@ Rails.application.routes.draw do
         get 'makerspace_training'
         get 'mtc_training'
         get 'peak_hrs'
+        get 'total_visits_per_term'
       end
     end
 
