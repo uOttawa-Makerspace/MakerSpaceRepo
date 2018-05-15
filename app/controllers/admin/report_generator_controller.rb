@@ -178,7 +178,15 @@ class Admin::ReportGeneratorController < AdminAreaController
     end
     respond_to do |format|
       format.html
-      format.csv {send_data ReportGenerator.frequency_hours_report(@start_date, @end_date), filename: "repositories-#{Date.today}.csv"}
+      format.csv {send_data ReportGenerator.frequency_hours_report(@start_date, @end_date), filename: "visits-raw-data-#{Date.today}.csv"}
     end
   end
+
+  def total_visits_per_term
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.total_visits_per_term_report , filename: "total_visits_per_term-#{Date.today}.csv"}
+    end
+  end
+
 end
