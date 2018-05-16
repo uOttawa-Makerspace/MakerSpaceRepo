@@ -317,21 +317,49 @@ def self.frequency_hours_report(start_date = 1.month.ago.beginning_of_month, end
   end
 end
 
+  #Total visits, not unque
+  # def self.total_visits_per_term_report
+  #   column = []
+  #   column << ["Number of students visiting CEED facilities per semester "] <<[]
+  #   column << ["Facility", "Fall 2017 Term", "Winter 2018 Term"]
+  #   Space.all.each do |space|
+  #     row = []
+  #     name = space.name
+  #     row << name
+  #     #Fall
+  #     totalVisitFall2017 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2017, 9, 1, 00, 00, 0) , DateTime.new(2017, 12, 31, 23, 59, 0)).count
+  #     row << totalVisitFall2017
+  #
+  #     #winter
+  #     totalVisitWinter2018 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2018, 1, 1, 00, 00, 0) , DateTime.new(2018, 4, 30, 23, 59, 0)).count
+  #     row << totalVisitWinter2018
+  #
+  #     column << row
+  #   end
+  #
+  #   CSV.generate do |csv|
+  #     column.each do |row|
+  #       csv << row
+  #     end
+  #   end
+  # end
+
+  #unique visits
   def self.total_visits_per_term_report
     column = []
-    column << ["Number of students visiting CEED facilities per semester "] <<[]
+    column << ["Number of students visiting CEED facilities per semester (Unique users)"] <<[]
     column << ["Facility", "Fall 2017 Term", "Winter 2018 Term"]
     Space.all.each do |space|
       row = []
       name = space.name
       row << name
       #Fall
-      totalVisitFall2017 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2017, 9, 1, 00, 00, 0) , DateTime.new(2017, 12, 31, 23, 59, 0)).count
-      row << totalVisitFall2017
+      uniqueVisitFall2017 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2017, 9, 1, 00, 00, 0) , DateTime.new(2017, 12, 31, 23, 59, 0)).select('DISTINCT user_id').count
+      row << uniqueVisitFall2017
 
       #winter
-      totalVisitWinter2018 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2018, 1, 1, 00, 00, 0) , DateTime.new(2018, 4, 30, 23, 59, 0)).count
-      row << totalVisitWinter2018
+      uniqueVisitWinter2018 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2018, 1, 1, 00, 00, 0) , DateTime.new(2018, 5, 30, 23, 59, 0)).select('DISTINCT user_id').count
+      row << uniqueVisitWinter2018
 
       column << row
     end
@@ -342,4 +370,7 @@ end
       end
     end
   end
+
+
+
 end
