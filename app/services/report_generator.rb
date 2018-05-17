@@ -358,12 +358,11 @@ end
       row << uniqueVisitFall2017
 
       #winter
-      uniqueVisitWinter2018 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2018, 1, 1, 00, 00, 0) , DateTime.new(2018, 5, 30, 23, 59, 0)).select('DISTINCT user_id').count
+      uniqueVisitWinter2018 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2018, 1, 1, 00, 00, 0) , DateTime.new(2018, 4, 30, 23, 59, 0)).select('DISTINCT user_id').count
       row << uniqueVisitWinter2018
 
       column << row
     end
-
     CSV.generate do |csv|
       column.each do |row|
         csv << row
@@ -372,5 +371,89 @@ end
   end
 
 
+  def self.unique_visits_detail_report
+
+    column = []
+    column << ["Detailed informaton of unique users viasiting CEED facilities "]
+    column << ["Facility", "Fall 2017 Term", "Winter 2018 Term"]
+
+    Space.all.each do |space|
+      column << []<< [space.name]
+
+      uniqueVisitFall2017 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2017, 9, 1, 00, 00, 0) , DateTime.new(2017, 12, 31, 23, 59, 0)).select('DISTINCT user_id')
+      column << ["Fall 2017 Term"]
+      program = []
+      faculty = []
+      gender = []
+
+      uniqueVisitFall2017.each do |lab|
+        user = User.find_by_id(lab.user_id)
+
+        program << user.program
+        faculty << user.faculty
+        gender << user.gender
+      end
+
+      column << [] << ["Gender"]
+      gendersAll = Hash[gender.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+      gendersAll.each do |gender|
+        column << [gender[0], gender[1]]
+      end
+
+      column << [] << ["Faculty"]
+      facultyAll = Hash[faculty.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+      facultyAll.each do |faculty|
+        column << [faculty[0], faculty[1]]
+      end
+
+      column << [] << ["Program"]
+      programsAll = Hash[program.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+      programsAll.each do |program|
+        column << [program[0], program[1]]
+      end
+
+      uniqueVisitWinter2018 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2018, 1, 1, 00, 00, 0) , DateTime.new(2018, 4, 30, 23, 59, 0)).select('DISTINCT user_id')
+
+      column << ["Winter 2018 Term"]
+      program = []
+      faculty = []
+      gender = []
+      uniqueVisitWinter2018.each do |lab|
+        user = User.find_by_id(lab.user_id)
+        program << user.program
+        faculty << user.faculty
+        gender << user.gender
+      end
+
+      column << [] << ["Gender"]
+      gendersAll = Hash[gender.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+      gendersAll.each do |gender|
+        column << [gender[0], gender[1]]
+      end
+      column << [] << ["Faculty"]
+      facultyAll = Hash[faculty.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+      facultyAll.each do |faculty|
+        column << [faculty[0], faculty[1]]
+      end
+
+      column << [] << ["Program"]
+      programsAll = Hash[program.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+      programsAll.each do |program|
+        column << [program[0], program[1]]
+      end
+    end
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
+
+  end
 
 end
