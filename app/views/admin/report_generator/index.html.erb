@@ -66,9 +66,17 @@
 </div>
 
 <div id="report">
-<p> Total Visit per Facility per Semester</p>
+<p> Unique Visit per Facility per Semester</p>
 <%= link_to '<button type="button">Download</button>'.html_safe, total_visits_per_term_admin_report_generator_index_path(format: "csv") %><br><br>
 </div>
+
+<div id="report">
+<p> Detail of Unique Visit per Facility per Semester</p>
+<%= link_to '<button type="button">Download</button>'.html_safe, unique_visits_detail_admin_report_generator_index_path(format: "csv") %><br><br>
+</div>
+
+
+
 
 <br>
 </div>

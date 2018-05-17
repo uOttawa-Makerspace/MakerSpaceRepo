@@ -92,6 +92,7 @@ Rails.application.routes.draw do
         get 'mtc_training'
         get 'peak_hrs'
         get 'total_visits_per_term'
+        get 'unique_visits_detail'
       end
     end
 
