@@ -139,6 +139,12 @@ class Admin::UsersController < AdminAreaController
     redirect_to :back
   end
 
+  def manage_roles
+      @admins = User.where(:role => "admin")
+      @staff = User.where(:role => "staff")
+  end
+
+  
   private
 
   def user_params
