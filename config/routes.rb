@@ -103,6 +103,7 @@ Rails.application.routes.draw do
         patch 'set_role'
         delete 'delete_repository'
         delete 'delete_user'
+        get 'manage_roles'
 
       end
     end
