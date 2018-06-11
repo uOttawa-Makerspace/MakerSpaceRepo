@@ -107,7 +107,7 @@ class UsersController < SessionsController
     rescue
       render nothing: true
   end
-
+  
 
 private
 
