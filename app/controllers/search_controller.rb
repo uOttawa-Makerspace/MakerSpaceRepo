@@ -40,9 +40,7 @@ class SearchController < SessionsController
       @repositories3 = []
     end
 
-    @repositories = (@repositories1 + @repositories2 + @repositories3).uniq.paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
-    end
+    @repositories = (@repositories1 + @repositories2 + @repositories3).uniq.sort_by { |s| -s[sort_arr.first].to_i}.paginate(:per_page=>12,:page=>params[:page])
 
     if params['featured']
       @repositories = (@repositories1 + @repositories2 + @repositories3).uniq.select{|r| r.featured?}.uniq.sort_by(&:updated_at).reverse.paginate(:per_page=>12,:page=>params[:page])
