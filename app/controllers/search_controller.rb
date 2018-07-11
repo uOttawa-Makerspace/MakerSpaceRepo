@@ -1,26 +1,14 @@
 class SearchController < SessionsController
   before_action :current_user
-  require 'will_paginate/array'
 
   def explore
     @repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).public_repos.order([sort_order].to_h).page params[:page]
     @photos = photo_hash
   end
 
-  def equipment
-    sort_arr = sort_order
-
-    name = params[:slug].gsub('-', ' ')
-    @repositories =  Equipment.where(name: name).distinct.includes(:repository).map(&:repository).paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
-    end
-
-    @photos = photo_hash
-  end
-
   def search
   	sort_arr = sort_order
-  	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).public_repos.order([sort_order].to_h).where("lower(title) LIKE ?
+  	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).public_repos.order([sort_arr].to_h).where("lower(title) LIKE ?
                                                 OR lower(description) LIKE ?
                                                 OR lower(user_username) LIKE ?
                                                 OR lower(category) LIKE ?",
@@ -52,9 +40,7 @@ class SearchController < SessionsController
       @repositories3 = []
     end
 
-    @repositories = (@repositories1 + @repositories2 + @repositories3).uniq.paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
-    end
+    @repositories = (@repositories1 + @repositories2 + @repositories3).uniq.sort_by { |s| -s[sort_arr.first].to_i}.paginate(:per_page=>12,:page=>params[:page])
 
     if params['featured']
       @repositories = (@repositories1 + @repositories2 + @repositories3).uniq.select{|r| r.featured?}.uniq.sort_by(&:updated_at).reverse.paginate(:per_page=>12,:page=>params[:page])
