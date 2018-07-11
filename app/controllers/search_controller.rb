@@ -6,17 +6,6 @@ class SearchController < SessionsController
     @photos = photo_hash
   end
 
-  def equipment
-    sort_arr = sort_order
-
-    name = params[:slug].gsub('-', ' ')
-    @repositories =  Equipment.where(name: name).distinct.includes(:repository).map(&:repository).paginate(:per_page=>12,:page=>params[:page]) do
-      order_by sort_arr.first, sort_arr.last
-    end
-
-    @photos = photo_hash
-  end
-
   def search
   	sort_arr = sort_order
   	@repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).public_repos.order([sort_order].to_h).where("lower(title) LIKE ?
