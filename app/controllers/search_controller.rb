@@ -1,6 +1,5 @@
 class SearchController < SessionsController
   before_action :current_user
-  require 'will_paginate/array'
 
   def explore
     @repositories = Repository.paginate(:per_page=>12,:page=>params[:page]).public_repos.order([sort_order].to_h).page params[:page]
