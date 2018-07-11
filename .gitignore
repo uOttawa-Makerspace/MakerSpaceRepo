@@ -23,3 +23,5 @@ sunspot-solr.pid
 
 #macs
 .DS_Store
+
+.idea/workspace.xml
