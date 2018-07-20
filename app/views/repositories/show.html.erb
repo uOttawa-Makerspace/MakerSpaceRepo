@@ -10,7 +10,9 @@
 
 
   <section id="repository-photos">
-    <%= youtube_video(@repository.youtube_link) %>
+    <% if @repository.youtube_link %>
+      <%= youtube_video(@repository.youtube_link) %>
+    <% end%>
       <div id="show-photo">
         <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
       </div>
