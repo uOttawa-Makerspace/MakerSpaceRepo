@@ -10,7 +10,7 @@
 
 
   <section id="repository-photos">
-    <iframe width="650" height="365" src= 'http://www.youtube.com/embed/<%= YoutubeID.from(@repository.youtube_link) %>?rel=0' frameborder="0" allowfullscreen></iframe>
+    <%= youtube_video(@repository.youtube_link) %>
       <div id="show-photo">
         <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
       </div>
