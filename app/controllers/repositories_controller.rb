@@ -150,7 +150,7 @@ class RepositoriesController < SessionsController
     end
 
     def repository_params
-      params.require(:repository).permit(:title, :description, :license, :user_id, :share_type, :password)
+      params.require(:repository).permit(:title, :description, :license, :user_id, :share_type, :password, :youtube_link)
     end
 
     def comment_filter
