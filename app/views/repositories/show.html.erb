@@ -10,7 +10,7 @@
 
 
   <section id="repository-photos">
-    <% if @repository.youtube_link %>
+    <% if @repository.youtube_link.present? %>
       <%= youtube_video(@repository.youtube_link) %>
     <% end%>
       <div id="show-photo">
