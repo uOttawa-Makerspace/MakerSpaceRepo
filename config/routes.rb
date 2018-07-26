@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
 
+  resources :project_proposals
   root "static_pages#home"
 
   # STATIC PAGES
