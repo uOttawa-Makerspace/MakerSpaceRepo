@@ -225,7 +225,7 @@ function load() {
           var option = document.createElement("option");
           option.text = categoryArray[index];
           document.getElementById("repository_categories").add(option);
-          sort_options("repository_categories");
+          sort_options("repository_categories project_proposal_categories");
           categoryArray.splice(index, 1);
           $(child).remove();
         });

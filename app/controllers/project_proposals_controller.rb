@@ -30,6 +30,7 @@ class ProjectProposalsController < ApplicationController
 
     respond_to do |format|
       if @project_proposal.save
+        create_categories
         format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully created.' }
         format.json { render :show, status: :created, location: @project_proposal }
       else
@@ -72,5 +73,11 @@ class ProjectProposalsController < ApplicationController
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_proposal_params
       params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description, :youtube_link, :category)
+    end
+
+    def create_categories
+      params['categories'].first(5).each do |c|
+        Category.create(name: c, project_proposal_id: @project_proposal.id)
+      end if params['categories'].present?
     end
 end
