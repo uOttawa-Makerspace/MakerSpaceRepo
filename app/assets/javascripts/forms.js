@@ -201,7 +201,7 @@ function load() {
   
 //Get categories
   $(document).ready(function() {
-    $('#repository_categories').on('change', function(e) {
+    $('#repository_categories, #project_proposal_categories').on('change', function(e) {
       var val = e.target.options[e.target.selectedIndex].text;
       e.target.remove(e.target.selectedIndex);
       e.target.selectedIndex = 0;
