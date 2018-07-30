@@ -387,7 +387,7 @@ function load() {
     }
     
   });
-  
+
   $('div#file-container').children().each(function(){
     var file_item = $(this);
     
