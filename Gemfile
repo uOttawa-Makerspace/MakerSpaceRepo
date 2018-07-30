@@ -30,6 +30,7 @@ gem 'mocha'
 gem "select2-rails"
 gem 'whenever', require: false
 gem 'youtube_id'
+gem 'pry-rails', :group => :development
 
 
 group :development, :test do
