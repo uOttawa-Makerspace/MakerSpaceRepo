@@ -127,28 +127,30 @@ function load() {
   
   //CATEGORY-EQUIPMENT-CERTIFICATION STUFF (START)
     // TODO: check this
-  // $('div#category-container').children().each(function(){
-  //   var cat_item = $(this);
-  //   var x = document.getElementById("repository_categories");
-  //
-  //   for (var i=0; i<x.options.length;i++) {
-  //       if (x.options[i].childNodes[0].nodeValue === cat_item[0].childNodes[0].nodeValue){
-  //           x.remove(i);
-  //       }
-  //   }
-  //   categoryArray.push(cat_item[0].innerText);
-  //
-  //   $(cat_item).click(function(){
-  //     var option = document.createElement("option");
-  //     option.text = cat_item[0].innerText;
-  //     x.add(option);
-  //     sort_options("repository_categories");
-  //     var index = $(cat_item).index();
-  //     categoryArray.splice(index, 1);
-  //     $(cat_item).remove();
-  //   });
-  //
-  // });
+  $('div#category-container').children().each(function(){
+    var cat_item = $(this);
+    var x = document.getElementById("repository_categories");
+    console.log("x");
+    console.log(x);
+
+    for (var i=0; i<x.options.length;i++) {
+        if (x.options[i].childNodes[0].nodeValue === cat_item[0].childNodes[0].nodeValue){
+            x.remove(i);
+        }
+    }
+    categoryArray.push(cat_item[0].innerText);
+
+    $(cat_item).click(function(){
+      var option = document.createElement("option");
+      option.text = cat_item[0].innerText;
+      x.add(option);
+      sort_options("repository_categories");
+      var index = $(cat_item).index();
+      categoryArray.splice(index, 1);
+      $(cat_item).remove();
+    });
+
+  });
   
   $('div#equipment-container').children().each(function(){
     var equip_item = $(this);
@@ -445,7 +447,7 @@ function load() {
                 processData: false,
                 contentType: false
             }).done(function(e) {
-                window.location.pathname = e.redirect_uri
+                window.location.href = '/'
             })
                 .fail(function(e) {
                     if( e.responseText === "not signed in" ){ window.location.href = '/login' }

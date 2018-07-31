@@ -5,7 +5,7 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals
   # GET /project_proposals.json
   def index
-    @project_proposals = ProjectProposal.all
+    @project_proposals = ProjectProposal.all.order(created_at: :desc)
   end
 
   # GET /project_proposals/1
@@ -72,7 +72,7 @@ class ProjectProposalsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_proposal_params
-      params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description, :youtube_link, :category)
+      params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description, :youtube_link)
     end
 
     def create_categories
