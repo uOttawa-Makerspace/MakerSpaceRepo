@@ -1,4 +1,10 @@
-<p id="notice"><%= notice %></p>
+<% if flash[:notice] %>
+    <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
+<% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+<% end %>
 
 <h1>Listing Project Proposals</h1>
 
@@ -24,7 +30,7 @@
         <td><%= project_proposal.admin_id %></td>
         <td><%= project_proposal.approved %></td>
         <td><%= project_proposal.title %></td>
-        <td><%= project_proposal.description %></td>
+        <td><%= project_proposal.description.html_safe %></td>
         <td><%= project_proposal.youtube_link %></td>
         <td><%= project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
         <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>

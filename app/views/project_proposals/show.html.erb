@@ -1,39 +1,102 @@
-<p id="notice"><%= notice %></p>
+<% provide(:title, "#{@project_proposal.title}") %>
+<% if flash[:notice] %>
+    <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+<% end %>
 
-<p>
-  <strong>User:</strong>
-  <%= @project_proposal.user_id %>
-</p>
+<section id="show-repository">
+  <% if @project_proposal.youtube_link.present? %>
+      <%= youtube_video(@project_proposal.youtube_link) %>
+  <% end%>
+  <br>
+  <% if @user.admin?%>
+      <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
+                  class: "delete-button", data: {confirm: 'Are you sure?'} %>
+  <% end %>
+  <% if @project_proposal.description.present? %>
+      <div class="repo-desc">
+        <div class="title">DESCRIPTION</div>
+        <div class="description"><%= @project_proposal.description.html_safe %></div>
+      </div>
+  <% end %>
 
-<p>
-  <strong>Admin:</strong>
-  <%= @project_proposal.admin_id %>
-</p>
+  <section id="info">
+    <% if @project_proposal.user_id.eql?(@user.id) || @user.role.eql?("admin") %>
+        <%= link_to fa_icon("pencil", text: 'Edit project proposal'),
+                    edit_project_proposal_path(@project_proposal), class: 'edit-repo-link' %>
+    <% end %>
+    <div id="repo-title">
+      <%= @project_proposal.title %>
+    </div>
+    <div id="repo-info">
+      <div class="repo-info-item">
+        <div class="title">PROJECT BY</div>
+        <% project_username = User.find(@project_proposal.user_id).username%>
+        <div class="name"><%= link_to project_username, user_path(project_username) %></div>
+      </div>
+      <div class="repo-info-item">
+        <div class="title">PUBLISHED ON</div>
+        <div class="date"><%= @project_proposal.created_at.strftime("%b %e %Y") %></div>
+      </div>
+      <% if @categories.present? %>
+          <div class="repo-info-item">
+            <div class="title">CATEGORIES</div>
+            <% @categories.each do |t| %>
+                <span class="tags"><%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase) %></span>
+            <% end %>
+          </div>
+      <% end %>
+      <div class="repo-info-item">
+        <div class="report">
+          <%= link_to fa_icon('flag', text: 'Report inapropriate'), report_repository_path(@project_proposal.id), class: 'repository_report' %>
+          <div class="spinner">
+            <div class="rect1"></div>
+            <div class="rect2"></div>
+            <div class="rect3"></div>
+            <div class="rect4"></div>
+            <div class="rect5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+<!--<p>-->
+  <!--<strong>User:</strong>-->
+  <!--<%= @project_proposal.user_id %>-->
+<!--</p>-->
 
-<p>
-  <strong>Approved:</strong>
-  <%= @project_proposal.approved %>
-</p>
+<!--<p>-->
+  <!--<strong>Admin:</strong>-->
+  <!--<%= @project_proposal.admin_id %>-->
+<!--</p>-->
 
-<p>
-  <strong>Title:</strong>
-  <%= @project_proposal.title %>
-</p>
+<!--<p>-->
+  <!--<strong>Approved:</strong>-->
+  <!--<%= @project_proposal.approved %>-->
+<!--</p>-->
 
-<p>
-  <strong>Description:</strong>
-  <%= @project_proposal.description %>
-</p>
+<!--<p>-->
+  <!--<strong>Title:</strong>-->
+  <!--<%= @project_proposal.title %>-->
+<!--</p>-->
 
-<p>
-  <strong>Youtube link:</strong>
-  <%= @project_proposal.youtube_link %>
-</p>
+<!--<p>-->
+  <!--<strong>Description:</strong>-->
+  <!--<%= @project_proposal.description %>-->
+<!--</p>-->
 
-<p>
-  <strong>Category:</strong>
-  <%= @project_proposal.categories %>
-</p>
+<!--<p>-->
+  <!--<strong>Youtube link:</strong>-->
+  <!--<%= @project_proposal.youtube_link %>-->
+<!--</p>-->
 
-<%= link_to 'Edit', edit_project_proposal_path(@project_proposal) %> |
-<%= link_to 'Back', project_proposals_path %>
+<!--<p>-->
+  <!--<strong>Category:</strong>-->
+  <!--<%= @project_proposal.categories %>-->
+<!--</p>-->
+
+<!---<%= link_to 'Edit', edit_project_proposal_path(@project_proposal) %> | -->
+<!--<%= link_to 'Back', project_proposals_path %>-->

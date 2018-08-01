@@ -126,6 +126,12 @@ class Admin::UsersController < AdminAreaController
     flash[:notice] = "Repository Deleted!"
   end
 
+  def delete_project_proposal
+    ProjectProposal.find(params[:id]).destroy
+    redirect_to project_proposals_path
+    flash[:notice] = "Project Proposal Deleted!"
+  end
+
   def delete_user
     User.find(params[:id]).destroy
     redirect_to root_path
