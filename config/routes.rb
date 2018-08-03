@@ -131,8 +131,10 @@ Rails.application.routes.draw do
     resources :settings, only: [:index] do
       collection do
         post 'add_category'
+        post 'add_area'
         # post 'rename_category'
         post 'remove_category'
+        post 'remove_area'
         post 'add_equipment'
         post 'rename_equipment'
         post 'remove_equipment'

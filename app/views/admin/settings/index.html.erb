@@ -13,8 +13,23 @@
     <br>
     <%= form_for @cat_option, url: {controller: "admin/settings", action: "remove_category"} do |f| %>
       <%= f.label :remove_a_category, class: "profile-label" %>
-      <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-select", include_blank: "Select a category..." %>
+      <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-select", include_blank: "Select an area..." %>
       <%= f.submit "Remove", class: 'save-button' %>
+    <% end %>
+
+    <br><br><br>
+
+    <div>Area options</div><hr><br>
+    <%= form_for @area_option, url: {controller: "admin/settings", action: "add_area"} do |f| %>
+        <%= f.label :add_an_area, class: "profile-label" %>
+        <%= f.text_field :name, class: "profile-text" %>
+        <%= f.submit "Add", class: 'save-button' %>
+    <% end %>
+    <br>
+    <%= form_for @area_option, url: {controller: "admin/settings", action: "remove_area"} do |f| %>
+        <%= f.label :remove_an_area, class: "profile-label" %>
+        <%= select_tag :remove_area, options_from_collection_for_select(AreaOption.show_options, :id, :name), class: "profile-select", include_blank: "Select an area..." %>
+        <%= f.submit "Remove", class: 'save-button' %>
     <% end %>
 
     <br><br><br>

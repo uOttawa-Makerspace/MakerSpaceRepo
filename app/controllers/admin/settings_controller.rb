@@ -5,6 +5,7 @@ class Admin::SettingsController < AdminAreaController
     @equip_option = EquipmentOption.new
     @cat_option = CategoryOption.new
     @pi_option = PiReader.new
+    @area_option = AreaOption.new
   end
 
   def add_category
@@ -14,6 +15,17 @@ class Admin::SettingsController < AdminAreaController
       @cat_option = CategoryOption.new(cat_params)
       @cat_option.save
       flash[:notice] = "Category added successfully!"
+    end
+    redirect_to admin_settings_path
+  end
+
+  def add_area
+    if !params[:area_option][:name].present?
+      flash[:alert] = "Invalid area name."
+    else
+      @area_option = AreaOption.new(area_params)
+      @area_option.save
+      flash[:notice] = "Area added successfully!"
     end
     redirect_to admin_settings_path
   end
@@ -41,8 +53,22 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
 
+  def remove_area
+    if params[:remove_area]!=""
+      AreaOption.where(id: params[:remove_area]).destroy_all
+      flash[:notice] = "Area removed successfully!"
+    else
+      flash[:alert] = "Please select an area."
+    end
+    redirect_to admin_settings_path
+  end
+
   def cat_params
     params.require(:category_option).permit(:name)
+  end
+
+  def area_params
+    params.require(:area_option).permit(:name)
   end
 
   def add_equipment
