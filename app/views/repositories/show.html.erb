@@ -22,15 +22,15 @@
       <% end %>
     </div>
 
-    <br>
+    <br></br>
     <% if @user.admin?%>
-        Currently Featured: <%=  @repository.featured.to_s.upcase %><br>
+        Currently Featured: <%=  @repository.featured.to_s.upcase %><br></br>
         <%= link_to "Feature / Unfeature", pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
             class: "pin-button" %>
-        <br>
-          <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
-              class: "delete-button", data: {confirm: 'Are you sure?'} %>
-      <% end %>
+        <br></br>
+        <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
+            class: "delete-button", data: {confirm: 'Are you sure?'} %>
+    <% end %>
 
 
       <% if @repository.description.present? %>
