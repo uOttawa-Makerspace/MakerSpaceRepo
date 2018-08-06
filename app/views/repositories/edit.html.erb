@@ -60,6 +60,10 @@
     <%= hidden_field_tag 'deleteimages' %>
     </div>
 
+    <%= f.label :youtube_link, "Youtube Link" %>
+    <div>Your project will be better understood with a 1 min Youtube video.<br>Votre projet sera mieux compris avec une vidéo Youtube de 1 minute</div>
+    <%= f.text_field :youtube_link, class: 'repo' %>
+
     <br>
     <%= f.label :categories %>
     <div>Choose at most 5 categories that fit your project.</div>

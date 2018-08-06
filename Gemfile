@@ -29,6 +29,7 @@ gem 'will_paginate'
 gem 'mocha'
 gem "select2-rails"
 gem 'whenever', require: false
+gem 'youtube_id'
 
 
 group :development, :test do

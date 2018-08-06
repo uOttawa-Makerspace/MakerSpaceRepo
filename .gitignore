@@ -25,3 +25,5 @@ sunspot-solr.pid
 .DS_Store
 
 .idea
+.generators
+.DS_Store

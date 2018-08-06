@@ -75,4 +75,8 @@ module ApplicationHelper
     end
   end
 
+  def youtube_video(url)
+    render :partial => 'partials/streaming', :locals => {:url => url}
+  end
+
 end
