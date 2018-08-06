@@ -37,6 +37,12 @@ class Repository < ActiveRecord::Base
     presence: { message: "Password is required for private projects" }, if: :private?
 
   before_save do
+    if self.youtube_link && !YoutubeID.from(self.youtube_link)
+      self.youtube_link = nil
+    end
+  end
+
+  before_save do
     self.slug = self.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
 
