@@ -130,8 +130,6 @@ function load() {
   $('div#category-container').children().each(function(){
     var cat_item = $(this);
     var x = document.getElementById("repository_categories");
-    console.log("x");
-    console.log(x);
 
     for (var i=0; i<x.options.length;i++) {
         if (x.options[i].childNodes[0].nodeValue === cat_item[0].childNodes[0].nodeValue){
