@@ -11,6 +11,7 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals/1
   # GET /project_proposals/1.json
   def show
+    @categories = @project_proposal.categories
   end
 
   # GET /project_proposals/new
@@ -44,8 +45,10 @@ class ProjectProposalsController < ApplicationController
   # PATCH/PUT /project_proposals/1
   # PATCH/PUT /project_proposals/1.json
   def update
+    @project_proposal.categories.destroy_all
     respond_to do |format|
       if @project_proposal.update(project_proposal_params)
+        create_categories
         format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully updated.' }
         format.json { render :show, status: :ok, location: @project_proposal }
       else

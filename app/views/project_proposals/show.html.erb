@@ -32,12 +32,16 @@
     </div>
     <div id="repo-info">
       <div class="repo-info-item">
-        <div class="title">PROJECT BY</div>
-        <% project_username = User.find(@project_proposal.user_id).username%>
-        <div class="name"><%= link_to project_username, user_path(project_username) %></div>
+        <div class="title">PROPOSED BY</div>
+        <% if @project_proposal.user_id %>
+            <% project_username = User.find(@project_proposal.user_id).username%>
+            <div class="name"><%= link_to project_username, user_path(project_username) %></div>
+        <% else %>
+            <div class="name"><%= @project_proposal.try(:username) %></div>
+        <% end %>
       </div>
       <div class="repo-info-item">
-        <div class="title">PUBLISHED ON</div>
+        <div class="title">PROPOSED ON</div>
         <div class="date"><%= @project_proposal.created_at.strftime("%b %e %Y") %></div>
       </div>
       <% if @categories.present? %>
@@ -63,40 +67,3 @@
     </div>
   </section>
 </section>
-<!--<p>-->
-  <!--<strong>User:</strong>-->
-  <!--<%= @project_proposal.user_id %>-->
-<!--</p>-->
-
-<!--<p>-->
-  <!--<strong>Admin:</strong>-->
-  <!--<%= @project_proposal.admin_id %>-->
-<!--</p>-->
-
-<!--<p>-->
-  <!--<strong>Approved:</strong>-->
-  <!--<%= @project_proposal.approved %>-->
-<!--</p>-->
-
-<!--<p>-->
-  <!--<strong>Title:</strong>-->
-  <!--<%= @project_proposal.title %>-->
-<!--</p>-->
-
-<!--<p>-->
-  <!--<strong>Description:</strong>-->
-  <!--<%= @project_proposal.description %>-->
-<!--</p>-->
-
-<!--<p>-->
-  <!--<strong>Youtube link:</strong>-->
-  <!--<%= @project_proposal.youtube_link %>-->
-<!--</p>-->
-
-<!--<p>-->
-  <!--<strong>Category:</strong>-->
-  <!--<%= @project_proposal.categories %>-->
-<!--</p>-->
-
-<!---<%= link_to 'Edit', edit_project_proposal_path(@project_proposal) %> | -->
-<!--<%= link_to 'Back', project_proposals_path %>-->
