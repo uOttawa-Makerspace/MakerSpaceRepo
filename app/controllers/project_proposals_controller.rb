@@ -20,6 +20,7 @@ class ProjectProposalsController < ApplicationController
 
   # GET /project_proposals/1/edit
   def edit
+    @categories = @project_proposal.categories
   end
 
   # POST /project_proposals
