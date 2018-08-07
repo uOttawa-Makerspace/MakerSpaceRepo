@@ -5,43 +5,44 @@
   <div class="title">Edit Project Proposal</div>
   <%= link_to fa_icon("search", text: 'View project proposal'), project_proposal_path(@project_proposal.id), class: 'edit-repo-link', id: 'view-repo-link' %>
   <%= form_for @project_proposal, url: {controller: "project_proposals", action: "update"}, html: { multipart: true } do |f| %>
-
-      <br>
-      <%= f.label :title, "Title" %>
-      <div>Great project titles are short and memorable.</div>
-      <%= f.text_field :title, class: 'repo' %>
-
       <br>
       <%= f.label :username, "Name/Nom" %>
       <div>What is your name? <br> Quel est votre nom?</div>
       <%= f.text_field :username, class: 'repo' %>
-
       <br>
+      <%= f.label :email, "Email/Adresse Courriel" %>
+      <div>What is your email? <br> Quel est votre adresse courriel?</div>
+      <%= f.text_field :email, class: 'repo' %>
+      <br>
+      <%= f.label :client, "Client/Client" %>
+      <div>Who is the client? <br> Qui est le client?</div>
+      <%= f.text_field :client, class: 'repo' %>
+      <br>
+      <%= f.label :title, "Title" %>
+      <div>Great project titles are short and memorable.</div>
+      <%= f.text_field :title, class: 'repo' %>
+      <br>
+      <%= f.label :area, "Area/Domaine" %>
+      <div>Which area(s) does your project touch on? <br> Votre projet touche sur quel(s) domaine(s)?</div>
+      <%= f.select :area, options_from_collection_for_select(AreaOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category.../Sélectionne une catégorie..." %>
+      <br> <br> <br>
       <%= f.label :description %>
       <div style="width: 420px;">
         <%= f.text_area :description, class: 'repo', id: 'redactor' %>
       </div>
-
       <br>
-
       <%= f.label :youtube_link, "Youtube Link" %>
       <div>Project similar in Youtube<br>Projet similaire sur Youtube</div>
       <%= f.text_field :youtube_link, class: 'repo' %>
-
       <br>
       <%= f.label :categories %>
       <div>Choose at most 5 categories that fit your project.</div>
       <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category..." %>
-
       <div id="category-container">
         <% @categories.each do |category| %>
             <span class="category"><%= category.name %></span>
         <% end %>
       </div>
-
-      <br>
-
-
       <br>
       <br>
       <br>
@@ -50,6 +51,5 @@
       <% if flash[:alert] %>
           <div id="alert"><%= flash[:alert] %></div>
       <% end %>
-
   <% end %>
 </section>
