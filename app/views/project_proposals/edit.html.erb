@@ -3,13 +3,18 @@
 <% end %>
 <section id="new-repo">
   <div class="title">Edit Project Proposal</div>
-  <%= link_to fa_icon("search", text: 'View project'), project_proposals_path(@project_proposal.user_id), class: 'edit-repo-link', id: 'view-repo-link' %>
+  <%= link_to fa_icon("search", text: 'View project proposal'), project_proposal_path(@project_proposal.id), class: 'edit-repo-link', id: 'view-repo-link' %>
   <%= form_for @project_proposal, url: {controller: "project_proposals", action: "update"}, html: { multipart: true } do |f| %>
 
       <br>
       <%= f.label :title, "Title" %>
       <div>Great project titles are short and memorable.</div>
       <%= f.text_field :title, class: 'repo' %>
+
+      <br>
+      <%= f.label :username, "Name/Nom" %>
+      <div>What is your name? <br> Quel est votre nom?</div>
+      <%= f.text_field :username, class: 'repo' %>
 
       <br>
       <%= f.label :description %>
