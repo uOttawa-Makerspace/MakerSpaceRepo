@@ -18,7 +18,16 @@ class ProjectProposalsControllerTest < ActionController::TestCase
 
   test "should create project_proposal" do
     assert_difference('ProjectProposal.count') do
-      post :create, project_proposal: { admin_id: @project_proposal.admin_id, approved: @project_proposal.approved, description: @project_proposal.description, score: @project_proposal.score, title: @project_proposal.title, user_id: @project_proposal.user_id, youtube_link: @project_proposal.youtube_link }
+      post :create, project_proposal: { admin_id: @project_proposal.admin_id,
+                                        approved: @project_proposal.approved,
+                                        description: @project_proposal.description,
+                                        title: @project_proposal.title,
+                                        user_id: @project_proposal.user_id,
+                                        youtube_link: @project_proposal.youtube_link,
+                                        username: @project_proposal.username,
+                                        email: @project_proposal.email,
+                                        client: @project_proposal.client,
+                                        area: @project_proposal.area }
     end
 
     assert_redirected_to project_proposal_path(assigns(:project_proposal))
@@ -35,7 +44,16 @@ class ProjectProposalsControllerTest < ActionController::TestCase
   end
 
   test "should update project_proposal" do
-    patch :update, id: @project_proposal, project_proposal: { admin_id: @project_proposal.admin_id, approved: @project_proposal.approved, description: @project_proposal.description, score: @project_proposal.score, title: @project_proposal.title, user_id: @project_proposal.user_id, youtube_link: @project_proposal.youtube_link }
+    patch :update, id: @project_proposal, project_proposal: { admin_id: @project_proposal.admin_id,
+                                                              approved: @project_proposal.approved,
+                                                              description: @project_proposal.description,
+                                                              title: @project_proposal.title,
+                                                              user_id: @project_proposal.user_id,
+                                                              youtube_link: @project_proposal.youtube_link,
+                                                              username: @project_proposal.username,
+                                                              email: @project_proposal.email,
+                                                              client: @project_proposal.client,
+                                                              area: @project_proposal.area }
     assert_redirected_to project_proposal_path(assigns(:project_proposal))
   end
 
