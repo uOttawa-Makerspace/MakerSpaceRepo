@@ -22,7 +22,7 @@
       <br>
       <%= f.label :area, "Area/Domaine" %>
       <div>Which area(s) does your project touch on? <br> Votre projet touche sur quel(s) domaine(s)?</div>
-      <%= f.select :area, options_from_collection_for_select(AreaOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category.../Sélectionne une catégorie..." %>
+      <%= f.collection_check_boxes(:area, AreaOption.show_options, :name, :name) %>
       <br> <br> <br>
       <%= f.label :description %>
       <div style="width: 420px;">
