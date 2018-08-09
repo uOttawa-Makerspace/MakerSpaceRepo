@@ -44,6 +44,10 @@
         <div class="title">PROPOSED ON</div>
         <div class="date"><%= @project_proposal.created_at.strftime("%b %e %Y") %></div>
       </div>
+      <div class="repo-info-item">
+        <div class="title">CONTACT</div>
+        <div class="date"><%= @project_proposal.email %></div>
+      </div>
       <% if @categories.present? %>
           <div class="repo-info-item">
             <div class="title">CATEGORIES</div>
