@@ -13,7 +13,7 @@
     <br>
     <%= form_for @cat_option, url: {controller: "admin/settings", action: "remove_category"} do |f| %>
       <%= f.label :remove_a_category, class: "profile-label" %>
-      <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-select", include_blank: "Select an area..." %>
+      <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-select", include_blank: "Select a category..." %>
       <%= f.submit "Remove", class: 'save-button' %>
     <% end %>
 
