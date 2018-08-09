@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180809142445) do
+ActiveRecord::Schema.define(version: 20180809154217) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -137,6 +137,7 @@ ActiveRecord::Schema.define(version: 20180809142445) do
     t.string   "email"
     t.string   "client"
     t.string   "area",         default: [],              array: true
+    t.string   "client_type"
   end
 
   create_table "repo_files", force: :cascade do |t|

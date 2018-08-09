@@ -9,4 +9,10 @@ class ProjectProposal < ActiveRecord::Base
 
   validates :email,
             presence: { message: "Your email is required." }
+
+  before_save do
+    if self.youtube_link && !YoutubeID.from(self.youtube_link)
+      self.youtube_link = nil
+    end
+  end
 end
