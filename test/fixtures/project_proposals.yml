@@ -9,7 +9,7 @@ one:
   username: bruno
   email: bruno@bruno.com
   client: uottawa
-  area: Mechanical/Mécanique
+  area: [Mechanical/Mécanique, Biomedical]
 
 two:
   id: 2
@@ -22,4 +22,4 @@ two:
   username: bruno2
   email: bruno2@bruno.com
   client: uottawa
-  area: Electrical/Électrique
+  area: [Electrical/Électrique]

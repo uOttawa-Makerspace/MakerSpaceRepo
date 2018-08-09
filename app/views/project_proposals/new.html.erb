@@ -6,7 +6,7 @@
       <br>
       <%= f.label :username, "Name/Nom" %>
       <div>What is your name? <br> Quel est votre nom?</div>
-      <%= f.text_field :username, class: 'repo' %>
+      <%= f.text_field :username, class: 'repo' , autofocus: true %>
       <br>
       <%= f.label :email, "Email/Adresse Courriel" %>
       <div>What is your email? <br> Quel est votre adresse courriel?</div>
@@ -22,7 +22,7 @@
       <br>
       <%= f.label :area, "Area/Domaine" %>
       <div>Which area(s) does your project touch on? <br> Votre projet touche sur quel(s) domaine(s)?</div>
-      <%= f.collection_check_boxes(:area, AreaOption.show_options, :name, :name) %>
+      <%= f.collection_check_boxes :area, AreaOption.show_options, :name, :name %>
       <br> <br> <br>
       <%= f.label :description %>
       <div style="width: 420px;">
