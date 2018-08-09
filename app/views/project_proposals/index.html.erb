@@ -17,6 +17,7 @@
       <th>Title</th>
       <th>Description</th>
       <th>Youtube link</th>
+      <th>Area</th>
       <th>Categories</th>
       <th>Created at</th>
       <th colspan="3"></th>
@@ -32,6 +33,7 @@
         <td><%= project_proposal.title %></td>
         <td><%= project_proposal.description.html_safe %></td>
         <td><%= project_proposal.youtube_link %></td>
+        <td><%= project_proposal.area.each do |a| %> <%= a %> <% end %></td>
         <td><%= project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
         <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>
         <td><%= link_to 'Show', project_proposal %></td>
