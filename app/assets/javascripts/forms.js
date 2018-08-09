@@ -445,7 +445,7 @@ function load() {
                 processData: false,
                 contentType: false
             }).done(function(e) {
-                window.location.href = '/'
+                window.location.href = '/project_proposals'
             })
                 .fail(function(e) {
                     if( e.responseText === "not signed in" ){ window.location.href = '/login' }

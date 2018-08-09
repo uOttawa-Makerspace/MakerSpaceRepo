@@ -61,7 +61,7 @@ function validation_proposal(){
 
     if( categoryArray.length === 0 ){
         span.text("At least one category is required.");
-        $('select#repository_categories').before(span);
+        $('select#project_proposal_categories').before(span);
         ret = false;
     }
 
