@@ -6,6 +6,7 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals.json
   def index
     @project_proposals = ProjectProposal.all.order(created_at: :desc)
+    @user = current_user
   end
 
   # GET /project_proposals/1

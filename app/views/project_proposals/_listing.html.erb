@@ -1,0 +1,42 @@
+<br>
+<div class="title"><%= tittle %></div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>User</th>
+        <th>Admin</th>
+        <th>Client Type</th>
+        <th>Client</th>
+        <th>Approved</th>
+        <th>Title</th>
+        <th>Area</th>
+        <th>Categories</th>
+        <th>Created at</th>
+        <th colspan="3"></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% @project_proposals.where(:approved => approval).find_each.with_index do |project_proposal, n| %>
+        <tr>
+          <td><%= n+1 %></td>
+          <td><%= project_proposal.user_id %></td>
+          <td><%= project_proposal.admin_id %></td>
+          <td><%= project_proposal.client_type %></td>
+          <td><%= project_proposal.client %></td>
+          <td><%= project_proposal.approved %></td>
+          <td><%= project_proposal.title %></td>
+          <td><% project_proposal.area.each do |a| %> <%= a %> <% end %></td>
+          <td><% project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
+          <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>
+          <td><%= link_to 'Show', project_proposal %></td>
+          <% if @user.admin? %>
+            <td><%= link_to 'Edit', edit_project_proposal_path(project_proposal) %></td>
+            <td><%= link_to 'Destroy', project_proposal, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<br>
