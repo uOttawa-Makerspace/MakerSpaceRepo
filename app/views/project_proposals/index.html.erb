@@ -13,6 +13,8 @@
     <tr>
       <th>User</th>
       <th>Admin</th>
+      <th>Client Type</th>
+      <th>Client</th>
       <th>Approved</th>
       <th>Title</th>
       <th>Description</th>
@@ -29,6 +31,8 @@
       <tr>
         <td><%= project_proposal.user_id %></td>
         <td><%= project_proposal.admin_id %></td>
+        <td><%= project_proposal.client_type %></td>
+        <td><%= project_proposal.client %></td>
         <td><%= project_proposal.approved %></td>
         <td><%= project_proposal.title %></td>
         <td><%= project_proposal.description.html_safe %></td>
