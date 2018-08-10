@@ -126,10 +126,11 @@ function load() {
   });
   
   //CATEGORY-EQUIPMENT-CERTIFICATION STUFF (START)
-    // TODO: check this
+    // edit page
   $('div#category-container').children().each(function(){
     var cat_item = $(this);
-    var x = document.getElementById("repository_categories");
+    var x = document.querySelector("#repository_categories, #project_proposal_categories");
+    var id = x.id
 
     for (var i=0; i<x.options.length;i++) {
         if (x.options[i].childNodes[0].nodeValue === cat_item[0].childNodes[0].nodeValue){
@@ -142,7 +143,7 @@ function load() {
       var option = document.createElement("option");
       option.text = cat_item[0].innerText;
       x.add(option);
-      sort_options("repository_categories");
+      sort_options(id);
       var index = $(cat_item).index();
       categoryArray.splice(index, 1);
       $(cat_item).remove();
@@ -198,7 +199,7 @@ function load() {
 
   });
 
-  
+  //TODO: make a function to get any object
 //Get categories
   $(document).ready(function() {
     $('#repository_categories').on('change', function(e) {
@@ -423,7 +424,7 @@ function load() {
     
   });
 
-    $("form#new_project_proposal").submit(function(e){
+    $("form#new_project_proposal, form.edit_project_proposal").submit(function(e){
         e.preventDefault();
         var validate = validation_proposal();
 
@@ -589,6 +590,7 @@ function setAutoComplete(data){
   });
 };
 
+// To delete the category from edit or new
 function sort_options (id) {
   $("#" + id).html($("#" + id + " option").sort(function (a, b) {
     if (!(a.text.includes("Select"))&&!(b.text.includes("Select"))) {

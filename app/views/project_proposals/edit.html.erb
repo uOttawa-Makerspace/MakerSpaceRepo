@@ -15,6 +15,16 @@
       <div>What is your email? <br> Quel est votre adresse courriel?</div>
       <%= f.text_field :email, class: 'repo' %>
       <br>
+      <%= f.label :client_type, "Client Type/Type de Client" %>
+      <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
+      <div class = 'checkbox-list'>
+        <%= f.radio_button :client_type, 'Organization', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label :client_type, 'Organization', :id => 'type', :style => 'display:inline' %>
+        <br>
+        <%= f.radio_button :client_type, 'Individual', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label :client_type, 'Individual', :id => 'type', :style => 'display:inline' %>
+      </div>
+      <br>
       <%= f.label :client, "Client/Client" %>
       <div>Who is the client? <br> Qui est le client?</div>
       <%= f.text_field :client, class: 'repo' %>
@@ -25,8 +35,12 @@
       <br>
       <%= f.label :area, "Area/Domaine" %>
       <div>Which area(s) does your project touch on? <br> Votre projet touche sur quel(s) domaine(s)?</div>
-      <%= f.select :area, options_from_collection_for_select(AreaOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category.../Sélectionne une catégorie..." %>
-      <br> <br> <br>
+      <div class = 'checkbox-list'>
+        <%= f.collection_check_boxes :area, AreaOption.show_options, :name, :name do |b| %>
+            <%= b.label { b.check_box + b.text } %>
+        <% end %>
+      </div>
+      <br> <br>
       <%= f.label :description %>
       <div style="width: 420px;">
         <%= f.text_area :description, class: 'repo', id: 'redactor' %>
