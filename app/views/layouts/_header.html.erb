@@ -5,12 +5,12 @@
     <span class="header-menu-item not-signed-in"><%= link_to 'Log In<br>Connexion'.html_safe, login_path %></span>
     <span class="header-menu-item"><%= link_to 'Explore<br>Explorer'.html_safe, explore_path %></span>
   <% else %>
-    <span class="header-menu-item menu-button">
+    <span class="header-menu-item menu-button" id="menu-button1">
       <%= link_to user_path(@user.username) do %>
         <%= image_tag @user.avatar.url, class: 'main-avatar-thumbnail', alt: 'Avatar' %>
         <%= @user.username %>
       <% end %>
-      <ul class="menu">
+      <ul id="menu1">
         <li><%= link_to 'Profile', user_path(@user.username) %></li>
         <li><%= link_to 'Liked', likes_user_path(@user.username) %></li>
         <li><%= link_to 'Settings', settings_profile_path  %></li>
@@ -20,8 +20,8 @@
         <li><%= link_to 'Sign Out', logout_path %></li>
       </ul>
     </span>
-        <span class="header-menu-item menu-button no-padding"><%= link_to 'Project Proposals<br>Propositions de Projet'.html_safe, project_proposals_path %>
-          <ul class="menu">
+        <span class="header-menu-item menu-button no-padding" id="menu-button2"><%= link_to 'Project Proposals<br>Propositions de Projet'.html_safe, project_proposals_path %>
+          <ul id="menu2">
         <li><%= link_to 'Propose a Project', new_project_proposal_path %></li>
       </ul>
     </span>

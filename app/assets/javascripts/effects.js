@@ -10,11 +10,19 @@ $(document).on('page:change', function(){
     }
   });
 
-  $("span.menu-button").hover(function(){
-    $('ul.menu').fadeIn(100);
+  //TODO: Create a way to generalize dropdown menus
+
+  $("span#menu-button1").hover(function(){
+    $('ul#menu1').fadeIn(100);
   }, function(){
-    $('ul.menu').fadeOut(100);
+    $('ul#menu1').fadeOut(100);
   });
+
+    $("span#menu-button2").hover(function(){
+        $('ul#menu2').fadeIn(100);
+    }, function(){
+        $('ul#menu2').fadeOut(100);
+    });
   
   $('div.repository-container').mouseenter(function(){
     var wrapper = $($(this)[0].firstElementChild);
