@@ -1,10 +1,5 @@
 <section id="header">
   <div class="inner">
-    <span class="header-menu-item menu-button"><%= link_to 'Project Proposals<br>Propositions de Projet'.html_safe, project_proposals_path %>
-      <ul class="menu">
-        <li><%= link_to 'Propose a Project', new_project_proposal_path %></li>
-      </ul>
-    </span>
   <% unless signed_in? %>
     <span class="header-menu-item not-signed-in"><%= link_to 'Sign Up<br>Créer un Compte'.html_safe, new_user_path %></span>
     <span class="header-menu-item not-signed-in"><%= link_to 'Log In<br>Connexion'.html_safe, login_path %></span>
@@ -23,6 +18,11 @@
         <%= content_tag :li, link_to('Admin Area', admin_index_path ) if @user.admin? %>
         <%= content_tag :li, link_to('Staff Area', staff_index_path ) if @user.staff? %>
         <li><%= link_to 'Sign Out', logout_path %></li>
+      </ul>
+    </span>
+        <span class="header-menu-item menu-button no-padding"><%= link_to 'Project Proposals<br>Propositions de Projet'.html_safe, project_proposals_path %>
+          <ul class="menu">
+        <li><%= link_to 'Propose a Project', new_project_proposal_path %></li>
       </ul>
     </span>
 
