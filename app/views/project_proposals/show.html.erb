@@ -7,28 +7,29 @@
 <% end %>
 
 <section id="show-repository">
-  <% if @project_proposal.youtube_link.present? %>
-      <%= youtube_video(@project_proposal.youtube_link) %>
-  <% end%>
-  <br>
-  <% if @user.admin?%>
-      <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
-                  class: "delete-button", data: {confirm: 'Are you sure?'} %>
-  <% end %>
-  <% if @project_proposal.description.present? %>
-      <div class="repo-desc">
-        <div class="title">DESCRIPTION</div>
-        <div class="description"><%= @project_proposal.description.html_safe %></div>
-      </div>
-  <% end %>
-
+  <section id="repository-photos">
+    <% if @project_proposal.youtube_link.present? %>
+        <%= youtube_video(@project_proposal.youtube_link) %>
+    <% end%>
+    <br></br>
+    <% if @user.admin?%>
+        <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
+                    class: "delete-button", data: {confirm: 'Are you sure?'} %>
+    <% end %>
+    <% if @project_proposal.description.present? %>
+        <div class="repo-desc">
+          <div class="title">DESCRIPTION</div>
+          <div class="description"><%= @project_proposal.description.html_safe %></div>
+        </div>
+    <% end %>
+  </section>
   <section id="info">
     <% if @project_proposal.user_id.eql?(@user.id) || @user.role.eql?("admin") %>
         <%= link_to fa_icon("pencil", text: 'Edit project proposal'),
                     edit_project_proposal_path(@project_proposal), class: 'edit-repo-link' %>
     <% end %>
     <div id="repo-title">
-      <%= @project_proposal.title %>
+      <%= "Project Proposal: #{@project_proposal.title}" %>
     </div>
     <div id="repo-info">
       <div class="repo-info-item">
