@@ -455,6 +455,8 @@ function load() {
                     $('input#repository_title').before(span);
                     console.log('error');
                 });
+        } else {
+            //TODO: jQuery(window).scrollTop(jQuery('[class$="form-error"]:first').position().top);
         }
 
     });
