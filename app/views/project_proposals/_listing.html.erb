@@ -20,7 +20,7 @@
     </thead>
 
     <tbody>
-      <% @project_proposals.where(:approved => approval).find_each.with_index do |project_proposal, n| %>
+      <% @project_proposals.where(:approved => approval).each.with_index do |project_proposal, n| %>
         <tr>
           <td><%= n+1 %></td>
           <% if @user.try(:admin?) %>
