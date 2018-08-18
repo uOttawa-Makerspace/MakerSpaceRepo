@@ -42,6 +42,9 @@ function validation(){
 function validation_proposal(){
     var ret = true;
     var title = $("input#project_proposal_title");
+    var name = $("input#project_proposal_username")
+    var email = $("input#project_proposal_email")
+    var client = $("input#project_proposal_client")
     $('span.form-error.repo-form').remove();
     var span = $('<span>').addClass('form-error repo-form');
     var regex = /^[-a-zA-Z\d\s]*$/;
@@ -59,9 +62,21 @@ function validation_proposal(){
         ret = false;
     }
 
-    if( categoryArray.length === 0 ){
-        span.text("At least one category is required.");
-        $('select#project_proposal_categories').before(span);
+    if( name.val().length === 0 ){
+        span.text("Your name is required");
+        $('input#project_proposal_username').before(span);
+        ret = false;
+    }
+
+    if( email.val().length === 0 ){
+        span.text("Your email is required");
+        $('input#project_proposal_email').before(span);
+        ret = false;
+    }
+
+    if( client.val().length === 0 ){
+        span.text("Client is required");
+        $('input#project_proposal_client').before(span);
         ret = false;
     }
 
