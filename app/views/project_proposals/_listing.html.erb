@@ -34,9 +34,9 @@
           <td><% project_proposal.area.each do |a| %> <%= a %> <% end %></td>
           <td><% project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
           <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>
-          <td><%= link_to 'Show', project_proposal, class: "show-button" %></td>
+          <td><%= link_to 'Show', project_proposal, class: "green-button" %></td>
           <% if @user.admin? %>
-            <td><%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "edit-button" %></td>
+            <td><%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "blue-button" %></td>
             <td><%= link_to 'Delete', project_proposal, method: :delete,
                                                   class: "delete-button", data: { confirm: 'Are you sure?' } %></td>
           <% end %>

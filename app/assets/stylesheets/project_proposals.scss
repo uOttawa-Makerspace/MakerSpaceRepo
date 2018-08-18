@@ -19,3 +19,41 @@ div.titlepp{
   margin-bottom: 1rem;
   border-bottom: 2px solid #366;
 }
+
+.blue-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 0.5rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 10px;
+  background-color: darkblue;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+    color: aquamarine;
+  }
+
+}
+
+.green-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.5rem 1rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 10px;
+  background-color: forestgreen;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+    color: aquamarine;
+  }
+
+}

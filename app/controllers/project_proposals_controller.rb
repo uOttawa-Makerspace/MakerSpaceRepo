@@ -50,7 +50,7 @@ class ProjectProposalsController < ApplicationController
     respond_to do |format|
       if @project_proposal.update(project_proposal_params)
         create_categories
-        format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully updated.' }
+        format.html { redirect_to project_proposals_path(@project_proposal), notice: 'Project proposal was successfully updated.' }
         format.json { render :show, status: :ok, location: @project_proposal }
       else
         format.html { render :edit }
@@ -64,7 +64,7 @@ class ProjectProposalsController < ApplicationController
   def destroy
     @project_proposal.destroy
     respond_to do |format|
-      format.html { redirect_to project_proposals_url, notice: 'Project proposal was successfully destroyed.' }
+      format.html { redirect_to project_proposals_url, notice: 'Project proposal was successfully deleted.' }
       format.json { head :no_content }
     end
   end
