@@ -28,6 +28,17 @@
       <% if @user.admin?%>
           <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
                       class: "delete-button", data: {confirm: 'Are you sure?'} %>
+          <br></br>
+          <% if @project_proposal.approved.present? &&  @project_proposal.admin_id.present? %>
+              <% admin_username = User.find(@project_proposal.admin_id).username %>
+              <div> This Project was validated by:
+                <p class="username"><%= link_to admin_username, user_path(admin_username) %></p>
+              </div>
+          <% elsif @project_proposal.approved.present? %>
+              <div class="title">This Project was validated.</div>
+          <% else %>
+              <div class="title">This Project was not validated yet.</div>
+          <% end %>
       <% end %>
     </div>
   </section>
@@ -57,6 +68,16 @@
         <div class="title">CONTACT</div>
         <div class="date"><%= @project_proposal.email %></div>
       </div>
+      <% if @user.admin? %>
+        <div class="repo-info-item">
+          <div class="title">VALIDATION</div>
+            <% case @project_proposal.approved
+                 when 0 %><div class="disapproved"><%= "Disapproved" %></div>
+                <% when 1 %><div class="approved"><%= "Approved" %></div>
+            <% when nil %><div><%= "Not Validated" %></div>
+            <% end %>
+        </div>
+      <% end %>
       <% if @categories.present? %>
           <div class="repo-info-item">
             <div class="title">CATEGORIES</div>

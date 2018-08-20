@@ -71,14 +71,14 @@ class ProjectProposalsController < ApplicationController
 
   def approval
     @project_proposal = ProjectProposal.find(params[:id])
-    @project_proposal.update_attributes(:approved => 1)
+    @project_proposal.update_attributes(:approved => 1, :admin_id => current_user.id)
     flash[:notice] = "Project Proposal Approved"
     redirect_to @project_proposal
   end
 
   def disapproval
     @project_proposal = ProjectProposal.find(params[:id])
-    @project_proposal.update_attributes(:approved => 0)
+    @project_proposal.update_attributes(:approved => 0, :admin_id => current_user.id)
     flash[:notice] = "Project Proposal Disapproved"
     redirect_to @project_proposal
   end

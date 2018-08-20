@@ -1,6 +1,7 @@
 // Place all the styles related to the ProjectProposals controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+@import "lib";
 
 .checkbox-list {
   label#type{
@@ -56,4 +57,37 @@ div.titlepp{
     color: aquamarine;
   }
 
+}
+
+div.approved{
+  color: #19c1a5;
+  font-weight: 500;
+  i{
+    padding-right: 5px;
+    color: #777;
+  }
+}
+
+div.disapproved{
+  color: #FF0000;
+  font-weight: 500;
+  i{
+    padding-right: 5px;
+    color: #777;
+  }
+}
+
+p.username{
+  @include transition(100ms);
+  color: #19c1a5;
+  font-weight: 500;
+
+  i{
+    padding-right: 5px;
+    color: #777;
+  }
+
+  &:hover{
+    color: #5f9ea0;
+  }
 }
