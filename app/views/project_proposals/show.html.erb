@@ -13,8 +13,10 @@
     <% end%>
     <br></br>
     <% if @user.admin?%>
-        <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
-                    class: "delete-button", data: {confirm: 'Are you sure?'} %>
+        <%= link_to "Approve", approval_project_proposals_path(:id => @project_proposal.id), method: :post,
+                    class: "green-button", data: {confirm: 'Are you sure? This will approve the project.'} %>
+        <%= link_to "Disapprove", disapproval_project_proposals_path(id: @project_proposal.id), method: :post,
+                    class: "delete-button", data: {confirm: 'Are you sure? This will disapprove the project.'} %>
     <% end %>
     <% if @project_proposal.description.present? %>
         <div class="repo-desc">
@@ -22,6 +24,12 @@
           <div class="description"><%= @project_proposal.description.html_safe %></div>
         </div>
     <% end %>
+    <div class="repo-desc">
+      <% if @user.admin?%>
+          <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
+                      class: "delete-button", data: {confirm: 'Are you sure?'} %>
+      <% end %>
+    </div>
   </section>
   <section id="info">
     <% if @project_proposal.user_id.eql?(@user.id) || @user.role.eql?("admin") %>

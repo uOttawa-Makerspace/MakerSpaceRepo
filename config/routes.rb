@@ -1,6 +1,11 @@
 Rails.application.routes.draw do
 
-  resources :project_proposals
+  resources :project_proposals do
+    collection do
+      post :approval
+      post :disapproval
+    end
+  end
   root "static_pages#home"
 
   # STATIC PAGES
