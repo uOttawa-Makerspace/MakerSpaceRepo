@@ -28,7 +28,13 @@
           <td><%= project_proposal.admin_id %></td>
           <td><%= project_proposal.client_type %></td>
           <td><%= project_proposal.client %></td>
-          <td><%= project_proposal.approved %></td>
+          <td>
+            <% case project_proposal.approved
+                 when 0 %><%= "No" %>
+            <% when 1 %><%= "Yes" %>
+            <% when nil %><%= "Not validated" %>
+            <% end %>
+          </td>
           <% end %>
           <td><%= project_proposal.title %></td>
           <td><% project_proposal.area.each do |a| %> <%= a %> <% end %></td>
