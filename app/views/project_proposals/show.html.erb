@@ -57,7 +57,7 @@
             <% project_username = User.find(@project_proposal.user_id).username%>
             <div class="name"><%= link_to project_username, user_path(project_username) %></div>
         <% else %>
-            <div class="name"><%= @project_proposal.try(:username) %></div>
+            <div class="date"><%= @project_proposal.try(:username) %></div>
         <% end %>
       </div>
       <div class="repo-info-item">
