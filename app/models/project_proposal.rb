@@ -1,7 +1,8 @@
 class ProjectProposal < ActiveRecord::Base
   has_many   :categories,     dependent: :destroy
+  has_many  :project_joins, dependent: :destroy
+
   belongs_to  :user
-  has_and_belongs_to_many   :project_joins, :uniq => true
 
   validates :title,
             format:     { with:    /\A[-a-zA-Z\d\s]*\z/, message: "Invalid project title" },
