@@ -25,7 +25,10 @@
           <td><%= n+1 %></td>
           <% if @user.try(:admin?) %>
             <% username = User.find(project_proposal.user_id).username if project_proposal.user_id.present? %>
-            <td class="username"><%= link_to username, user_path(username) if username.present? %></td>
+              <% case username
+                     when nil %><td><%= project_proposal.username %></td>
+                  <% else %><td class="username"><%= link_to username, user_path(username) %></td>
+              <% end %>
             <% admin_username = User.find(project_proposal.admin_id).username if project_proposal.admin_id.present? %>
             <td class="admin_username"><%= link_to admin_username, user_path(admin_username) if admin_username.present? %></td>
             <td><%= project_proposal.client_type %></td>
