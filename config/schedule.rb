@@ -13,7 +13,7 @@
 # At 7am of First day of every month
 # every '0 7 1 * *' do
 every 1.month do
-  runner "MsrMailer.send_monthly_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com', 'makerspace@uottawa.ca', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
+  runner "MsrMailer.send_monthly_report(hanis@uottawa.ca', 'bruno.mrlima@gmail.com', 'makerspace@uottawa.ca', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.unique_visitors_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.lab_session_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
           ReportGenerator.faculty_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
@@ -25,7 +25,7 @@ end
 
 # At 7am of First day of every week
 every :monday, :at => '7am' do
-  runner "MsrMailer.send_weekly_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com', 'makerspace@uottawa.ca', ReportGenerator.new_user_report,
+  runner "MsrMailer.send_weekly_report('hanis@uottawa.ca', 'bruno.mrlima@gmail.com', 'makerspace@uottawa.ca', ReportGenerator.new_user_report,
           ReportGenerator.unique_visitors_report,
           ReportGenerator.lab_session_report,
           ReportGenerator.faculty_frequency_report,
@@ -37,7 +37,7 @@ end
 
 # At 7:30am of First day of every week
 every :monday, :at => '7am' do
-  runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'parastoo.ss@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
+  runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'bruno.mrlima@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
 
 # Use this file to easily define all of your cron jobs.
