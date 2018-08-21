@@ -5,11 +5,11 @@
       <tr>
         <th>#</th>
         <% if @user.try(:admin?) %>
-            <th>User</th>
-        <th>Admin</th>
-        <th>Client Type</th>
-        <th>Client</th>
-        <th>Approved</th>
+          <th>User</th>
+          <th>Admin</th>
+          <th>Client Type</th>
+          <th>Client</th>
+          <th>Approved</th>
         <% end %>
         <th>Title</th>
         <th>Area</th>
@@ -24,17 +24,19 @@
         <tr>
           <td><%= n+1 %></td>
           <% if @user.try(:admin?) %>
-            <td><%= project_proposal.user_id  %></td>
-          <td><%= project_proposal.admin_id %></td>
-          <td><%= project_proposal.client_type %></td>
-          <td><%= project_proposal.client %></td>
-          <td>
-            <% case project_proposal.approved
-                 when 0 %><%= "No" %>
-            <% when 1 %><%= "Yes" %>
-            <% when nil %><%= "Not validated" %>
-            <% end %>
-          </td>
+            <% username = User.find(project_proposal.user_id).username if project_proposal.user_id.present? %>
+            <td class="username"><%= link_to username, user_path(username) if username.present? %></td>
+            <% admin_username = User.find(project_proposal.admin_id).username if project_proposal.admin_id.present? %>
+            <td class="admin_username"><%= link_to admin_username, user_path(admin_username) if admin_username.present? %></td>
+            <td><%= project_proposal.client_type %></td>
+            <td><%= project_proposal.client %></td>
+            <td>
+              <% case project_proposal.approved
+                   when 0 %><%= "No" %>
+                <% when 1 %><%= "Yes" %>
+                <% when nil %><%= "Not validated" %>
+              <% end %>
+            </td>
           <% end %>
           <td><%= project_proposal.title %></td>
           <td><% project_proposal.area.each do |a| %> <%= a %> <% end %></td>

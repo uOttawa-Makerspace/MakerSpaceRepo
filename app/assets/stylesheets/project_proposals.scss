@@ -77,7 +77,7 @@ div.disapproved{
   }
 }
 
-p.username{
+.username{
   @include transition(100ms);
   color: #19c1a5;
   font-weight: 500;
@@ -89,5 +89,21 @@ p.username{
 
   &:hover{
     color: #5f9ea0;
+  }
+}
+
+
+.admin_username{
+  @include transition(100ms);
+  color: blue;
+  font-weight: 500;
+
+  i{
+    padding-right: 5px;
+    color: #777;
+  }
+
+  &:hover{
+    color: dodgerblue;
   }
 }
