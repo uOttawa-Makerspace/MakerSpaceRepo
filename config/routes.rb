@@ -4,6 +4,7 @@ Rails.application.routes.draw do
     collection do
       post :approval
       post :disapproval
+      get :join_project_proposal
     end
   end
   root "static_pages#home"

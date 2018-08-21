@@ -83,6 +83,11 @@ class ProjectProposalsController < ApplicationController
     redirect_to @project_proposal
   end
 
+  def join_project_proposal
+    @project_proposal = ProjectProposal.find(params[:id])
+    redirect_to @project_proposal
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_project_proposal
