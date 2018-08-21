@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180809154217) do
+ActiveRecord::Schema.define(version: 20180821192802) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -123,6 +123,13 @@ ActiveRecord::Schema.define(version: 20180809154217) do
   end
 
   add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
+
+  create_table "project_joins", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "project_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "project_proposals", force: :cascade do |t|
     t.integer  "user_id"
