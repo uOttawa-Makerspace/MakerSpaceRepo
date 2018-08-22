@@ -27,6 +27,16 @@
     <div class="repo-desc">
       <%= link_to "Join Project", join_project_proposal_project_proposals_path(id: @project_proposal.id), method: :get,
                   class: "coldblue-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
+      <br></br>
+      <% if @project_proposal.project_joins.present? %>
+        <div>Users that joined this project:</div>
+        <div>
+        <% @project_proposal.project_joins.find_each do |pj| %>
+          <% user_pj = User.find(pj.user_id).username %>
+              <div class="username"><%= link_to user_pj, user_path(user_pj) %></div>
+        <% end %>
+        </div>
+      <% end %>
       <br><br><br>
       <% if @user.admin?%>
           <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
