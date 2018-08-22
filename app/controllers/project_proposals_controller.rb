@@ -84,8 +84,28 @@ class ProjectProposalsController < ApplicationController
   end
 
   def join_project_proposal
-    @project_proposal = ProjectProposal.find(params[:id])
-    redirect_to @project_proposal
+    @project_proposal = ProjectProposal.find(params[:project_proposal_id])
+    @project_join = ProjectJoin.new(project_join_params)
+    @project_join.user_id = @user.id
+    if @project_join.save
+      flash[:notice] = "You joined this project."
+      redirect_to @project_proposal
+    else
+      flash[:alert] = "You already joined this project or something went wrong."
+      redirect_to @project_proposal
+    end
+  end
+
+  def unjoin_project_proposal
+    @project_proposal = ProjectProposal.find(params[:project_proposal_id])
+    @project_join = ProjectJoin.find(params[:project_join_id])
+    if @project_join.delete
+      flash[:notice] = "You unjoined this project."
+      redirect_to @project_proposal
+    else
+      flash[:alert] = "Something went wrong."
+      redirect_to @project_proposal
+    end
   end
 
   private
@@ -103,5 +123,9 @@ class ProjectProposalsController < ApplicationController
       params['categories'].first(5).each do |c|
         Category.create(name: c, project_proposal_id: @project_proposal.id)
       end if params['categories'].present?
+    end
+
+    def project_join_params
+      params.permit(:project_proposal_id)
     end
 end

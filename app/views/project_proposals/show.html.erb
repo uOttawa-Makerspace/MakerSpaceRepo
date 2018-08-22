@@ -25,8 +25,15 @@
         </div>
     <% end %>
     <div class="repo-desc">
-      <%= link_to "Join Project", join_project_proposal_project_proposals_path(id: @project_proposal.id), method: :get,
-                  class: "coldblue-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
+        <br></br>
+        <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
+        <% if @project_join.present? %>
+        <%= link_to "Unjoin Project", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
+                    class: "delete-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
+        <% else %>
+        <%= link_to "Join Project", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
+                    class: "coldblue-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
+      <% end %>
       <br></br>
       <% if @project_proposal.project_joins.present? %>
         <div>Users that joined this project:</div>
