@@ -6,16 +6,9 @@
     <div id="alert"><%= flash[:alert] %></div>
 <% end %>
 
-
-<% if @user.admin? %>
-    <%= render :partial => 'listing', :locals => {:tittle => "Pending Project Proposals", :approval => nil} %>
-<% end %>
-
+<%= render :partial => 'listing', :locals => {:tittle => "Pending Project Proposals", :approval => nil} if @user.admin? %>
 <%= render :partial => 'listing', :locals => {:tittle => "List of Project Proposals", :approval => 1} %>
-
-<% if @user.admin? %>
-    <%= render :partial => 'listing', :locals => {:tittle => "Project Proposals not approved", :approval => 0} %>
-<% end %>
+<%= render :partial => 'listing', :locals => {:tittle => "Project Proposals not approved", :approval => 0} if @user.admin? %>
 
 <br>
 
