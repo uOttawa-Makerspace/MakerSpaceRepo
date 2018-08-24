@@ -6,6 +6,7 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals
   # GET /project_proposals.json
   def index
+    # TODO: How to not join :project_joins?
     @project_proposals = ProjectProposal.all.order(created_at: :desc)
     @user = current_user
   end
@@ -24,6 +25,10 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals/1/edit
   def edit
     @categories = @project_proposal.categories
+  end
+
+  def projects_assigned
+    @project_proposals = ProjectProposal.all.joins(:project_joins).order(created_at: :desc)
   end
 
   # POST /project_proposals

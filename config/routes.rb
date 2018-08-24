@@ -6,6 +6,7 @@ Rails.application.routes.draw do
       post :disapproval
       get :join_project_proposal
       get :unjoin_project_proposal
+      get :projects_assigned
     end
   end
   root "static_pages#home"
