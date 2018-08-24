@@ -1,7 +1,7 @@
 class ProjectProposalsController < ApplicationController
   before_action :set_project_proposal, only: [:show, :edit, :update, :destroy]
   before_action :current_user
-  before_action :project_approved
+  before_action :show_only_project_approved, only: [:show]
 
   # GET /project_proposals
   # GET /project_proposals.json
@@ -130,7 +130,10 @@ class ProjectProposalsController < ApplicationController
       params.permit(:project_proposal_id)
     end
 
-    def project_approved
-
+    def show_only_project_approved
+      if !@user.admin? && @project_proposal.approved.eql?(0)
+        flash[:alert] = "You are not allowed to access this project."
+        redirect_to root_path
+      end
     end
 end

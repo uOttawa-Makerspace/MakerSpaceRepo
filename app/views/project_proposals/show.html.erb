@@ -28,9 +28,9 @@
         <br></br>
         <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
         <% if @project_join.present? %>
-        <%= link_to "Unjoin Project", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
+        <%= link_to "Leave Project", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
                     class: "delete-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
-        <% else %>
+        <% elsif @user.id.present? %>
         <%= link_to "Join Project", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
                     class: "coldblue-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
       <% end %>
@@ -51,13 +51,13 @@
           <br></br>
           <% if @project_proposal.approved.present? &&  @project_proposal.admin_id.present? %>
               <% admin_username = User.find(@project_proposal.admin_id).username %>
-              <div> This Project was validated by:
+              <div> This project was reviwed by:
                 <p class="username"><%= link_to admin_username, user_path(admin_username) %></p>
               </div>
           <% elsif @project_proposal.approved.present? %>
-              <div class="title">This Project was validated.</div>
+              <div class="title">This project was reviwed.</div>
           <% else %>
-              <div class="title">This Project was not validated yet.</div>
+              <div class="title">This project was not reviwed yet.</div>
           <% end %>
       <% end %>
     </div>
