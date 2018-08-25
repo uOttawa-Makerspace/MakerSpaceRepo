@@ -30,7 +30,7 @@ class ProjectProposalsController < ApplicationController
   end
 
   def projects_assigned
-    @project_proposals = ProjectProposal.all.joins(:project_joins).order(created_at: :desc)
+    @project_proposals = ProjectProposal.all.joins(:project_joins).uniq.order(created_at: :desc)
   end
 
   # POST /project_proposals
