@@ -106,6 +106,13 @@
             <% end %>
           </div>
       <% end %>
+      <% if @user.id.present? %>
+        <div class="repo-info-item">
+        <%= link_to "Create Repository", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
+                    class: "coldgreen-button",
+                    data: {confirm: 'This action will create a repository related to this project proposal'} %>
+        </div>
+      <% end %>
       <div class="repo-info-item">
         <div class="report">
           <%= link_to fa_icon('flag', text: 'Report inapropriate'), report_repository_path(@project_proposal.id), class: 'repository_report' %>

@@ -61,6 +61,7 @@ class RepositoriesController < SessionsController
   def create
     @repository = @user.repositories.build(repository_params)
     @repository.user_username = @user.username
+    @repository.project_proposal_id = params[:project_proposal_id]
 
     if @repository.save
       @user.increment!(:reputation, 25)
