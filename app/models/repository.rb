@@ -2,6 +2,7 @@ class Repository < ActiveRecord::Base
   include BCrypt
 
   belongs_to :user
+  belongs_to :project_proposal
   has_many   :photos,   dependent: :destroy
   has_many   :repo_files,   dependent: :destroy
   has_many   :categories,     dependent: :destroy

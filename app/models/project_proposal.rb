@@ -1,6 +1,7 @@
 class ProjectProposal < ActiveRecord::Base
-  has_many   :categories,     dependent: :destroy
-  has_many  :project_joins, dependent: :destroy
+  has_many :categories,     dependent: :destroy
+  has_many :project_joins,  dependent: :destroy
+  has_many :repositories
 
   belongs_to  :user
 
