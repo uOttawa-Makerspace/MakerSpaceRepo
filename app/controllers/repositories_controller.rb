@@ -61,8 +61,6 @@ class RepositoriesController < SessionsController
   def create
     @repository = @user.repositories.build(repository_params)
     @repository.user_username = @user.username
-    @repository.project_proposal_id = params[:project_proposal_id]
-
     if @repository.save
       @user.increment!(:reputation, 25)
       create_photos
@@ -151,7 +149,7 @@ class RepositoriesController < SessionsController
     end
 
     def repository_params
-      params.require(:repository).permit(:title, :description, :license, :user_id, :share_type, :password, :youtube_link)
+      params.require(:repository).permit(:title, :description, :license, :user_id, :share_type, :password, :youtube_link, :project_proposal_id)
     end
 
     def comment_filter
