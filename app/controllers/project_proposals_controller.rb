@@ -147,7 +147,7 @@ class ProjectProposalsController < ApplicationController
     end
 
     def show_only_project_approved
-      if !@user.admin? && @project_proposal.approved.eql?(0)
+      if !@user.admin? && @project_proposal.approved != 1
         flash[:alert] = "You are not allowed to access this project."
         redirect_to root_path
       end
