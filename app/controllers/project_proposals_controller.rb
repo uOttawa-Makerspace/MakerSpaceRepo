@@ -6,11 +6,15 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals
   # GET /project_proposals.json
   def index
-    @project_proposals = ProjectProposal.all
-        .joins('LEFT OUTER JOIN project_joins ON (project_proposals.id = project_joins.project_proposal_id)')
-        .where('project_joins.id IS NULL')
-        .order(created_at: :desc)
     @user = current_user
+    unless @user.admin?
+      @project_proposals = ProjectProposal.all
+          .joins('LEFT OUTER JOIN project_joins ON (project_proposals.id = project_joins.project_proposal_id)')
+          .where('project_joins.id IS NULL')
+          .order(created_at: :desc)
+    else
+      @project_proposals = ProjectProposal.all.order(created_at: :desc)
+    end
   end
 
   # GET /project_proposals/1
