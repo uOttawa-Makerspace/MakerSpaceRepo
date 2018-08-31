@@ -39,7 +39,7 @@ class ProjectProposalsController < ApplicationController
   end
 
   def projects_completed
-    @project_proposals = ProjectProposal.joins(:repositories).order(created_at: :desc)
+    @project_proposals = ProjectProposal.joins(:repositories).uniq.order(created_at: :desc)
   end
 
   # POST /project_proposals
