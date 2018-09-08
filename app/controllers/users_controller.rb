@@ -68,7 +68,7 @@ class UsersController < SessionsController
         @repositories = @repo_user.repositories.public_repos.where(make_id: nil).page params[:page]
       end
       @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
-      @projects_assigned = @user.project_proposals
+      @joined_projects = @user.project_joins
       @photos = photo_hash
   end
 

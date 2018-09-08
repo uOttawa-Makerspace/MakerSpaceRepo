@@ -180,7 +180,7 @@
       <span class="number"><%= @makes.count %></span> MAKES
     <% end %>
     <%= link_to "#{user_path(show: :projects_assigned)}#user-show-links", style: 'border-color:'<< active[2]  do %>
-        <span class="number"><%= @projects_assigned.count %></span> PROJECTS ASSIGNED
+        <span class="number"><%= @joined_projects.count %></span> JOINED PROJECTS
     <% end %>
   </section>
 
@@ -189,6 +189,7 @@
   <% if @repositories.empty? or params[:show].eql?('makes') and @makes.empty? %>
     <%= content_tag :div, "#{@repo_user.username} doesn't have any repositories yet.", class: "empty-repo" %>
   <% end %>
+  <% repos = params[:show].eql?('makes') ? @makes : params[:show].eql?('repositories') ? @repositories : @joined_projects %>
   <% repos = params[:show].eql?('makes') ? @makes : @repositories %>
   <% repos.each do |repository| %>
     <div class="repository-container">
