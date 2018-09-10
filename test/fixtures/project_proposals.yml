@@ -1,11 +1,11 @@
 one:
   id: 1
   user_id: 1
-  admin_id: nil
-  approved: nil
+  admin_id: null
+  approved: null
   title: ProjectProposal1
   description: description1
-  youtube_link: nil
+  youtube_link: null
   username: bruno
   email: bruno@bruno.com
   client: uottawa
@@ -19,7 +19,7 @@ two:
   approved: 0
   title: ProjectProposal2
   description: description2
-  youtube_link: nil
+  youtube_link: null
   username: bruno2
   email: bruno2@bruno.com
   client: uottawa
@@ -33,8 +33,8 @@ three:
   approved: 1
   title: ProjectProposal3
   description: description3
-  youtube_link: nil
-  username: bruno2
+  youtube_link: null
+  username: bruno3
   email: bruno2@bruno.com
   client: uottawa
   area: [Electrical/Électrique]
