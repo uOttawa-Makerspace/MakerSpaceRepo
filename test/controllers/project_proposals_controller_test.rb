@@ -53,7 +53,8 @@ class ProjectProposalsControllerTest < ActionController::TestCase
                                                               username: @project_proposal.username,
                                                               email: @project_proposal.email,
                                                               client: @project_proposal.client,
-                                                              area: @project_proposal.area }
+                                                              area: @project_proposal.area,
+                                                              client_type: @project_proposal.client_type}
     assert_redirected_to project_proposal_path(assigns(:project_proposal))
   end
 
