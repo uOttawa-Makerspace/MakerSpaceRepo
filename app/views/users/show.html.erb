@@ -190,28 +190,47 @@
     <%= content_tag :div, "#{@repo_user.username} doesn't have any repositories yet.", class: "empty-repo" %>
   <% end %>
   <% repos = params[:show].eql?('makes') ? @makes : params[:show].eql?('repositories') ? @repositories : @joined_projects %>
-  <% repos = params[:show].eql?('makes') ? @makes : @repositories %>
-  <% repos.each do |repository| %>
-    <div class="repository-container">
-        <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')"  %> >
-        <% if repository.user_username.eql?(@user.username) %>
-          <%= link_to "Delete", repository_path(repository.user_username, repository.slug),
-                method: :delete, data: { confirm: "Are you sure? Once you delete the repository there is no coming back!" }, class: 'delete-repo' %>
-          <%= link_to "Edit", edit_repository_path(repository.user_username, repository.slug), class: 'edit-repo' %>
-        <% end %>
-        <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
-      </div>
-
-      <div class="repo-info">
-        <div class="left">
-          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug)%></div>
-          <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-          <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+  <% if repos != @joined_projects %>
+    <% repos.each do |repository| %>
+      <div class="repository-container">
+          <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')"  %> >
+          <% if repository.user_username.eql?(@user.username) %>
+            <%= link_to "Delete", repository_path(repository.user_username, repository.slug),
+                  method: :delete, data: { confirm: "Are you sure? Once you delete the repository there is no coming back!" }, class: 'delete-repo' %>
+            <%= link_to "Edit", edit_repository_path(repository.user_username, repository.slug), class: 'edit-repo' %>
+          <% end %>
+          <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
         </div>
-        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
+
+        <div class="repo-info">
+          <div class="left">
+            <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug)%></div>
+            <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
+            <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+          </div>
+          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
+        </div>
       </div>
-    </div>
+    <% end %>
+    <%= paginate repos %>
+  <% else %>
+            <table class="spacing_table">
+              <thead>
+              <tr>
+                <th>Project Proposal</th>
+                <th>Action</th>
+              </tr>
+              </thead>
+
+              <tbody>
+              <% repos.each do |joined_project| %>
+                  <tr>
+                    <td class="titlepp"><%= joined_project.project_proposal.title %></td>
+                    <td><%= link_to 'Show', joined_project.project_proposal, class: "green-button" %></td>
+                  </tr>
+              <% end %>
+              </tbody>
+            </table>
   <% end %>
-  </section>
-  <%= paginate repos %>
+    </section>
 </section>
