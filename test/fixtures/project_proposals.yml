@@ -10,7 +10,7 @@ one:
   email: bruno@bruno.com
   client: uottawa
   area: [Mechanical/Mécanique, Biomedical]
-  client_type: Organizarion
+  client_type: Organization
 
 two:
   id: 2
@@ -24,7 +24,7 @@ two:
   email: bruno2@bruno.com
   client: uottawa
   area: [Electrical/Électrique]
-  client_type: Organizarion
+  client_type: Organization
 
 three:
   id: 3
@@ -38,4 +38,4 @@ three:
   email: bruno2@bruno.com
   client: uottawa
   area: [Electrical/Électrique]
-  client_type: Organizarion
+  client_type: Organization
