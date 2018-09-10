@@ -39,3 +39,17 @@ three:
   client: uottawa
   area: [Electrical/Électrique]
   client_type: Organization
+
+four:
+  id: 4
+  user_id: 1
+  admin_id: 1337
+  approved: 1
+  title: ProjectProposal4
+  description: description4
+  youtube_link: null
+  username: bruno3
+  email: bruno2@bruno.com
+  client: uottawa
+  area: [Electrical/Électrique]
+  client_type: Organization
