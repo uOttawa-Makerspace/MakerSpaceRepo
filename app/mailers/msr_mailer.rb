@@ -67,6 +67,7 @@ class MsrMailer < ApplicationMailer
 	end
 
 	def send_checklist_reminder(email)
+		@email = email
 		mail(to: email, subject: 'Checklist Reminder')
 	end
 
