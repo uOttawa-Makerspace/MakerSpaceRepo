@@ -88,7 +88,7 @@ every :sunday, :at => '4:45pm' do
   runner "MsrMailer.send_checklist_reminder('slema053@uOttawa.ca').deliver_now"
 end
 
-every :tuesday, :at => '5:49pm' do
+every :tuesday, :at => '5:53pm' do
   runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca').deliver_now"
 end
 
