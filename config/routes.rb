@@ -1,5 +1,15 @@
 Rails.application.routes.draw do
 
+  resources :project_proposals do
+    collection do
+      post :approval
+      post :disapproval
+      get :join_project_proposal
+      get :unjoin_project_proposal
+      get :projects_assigned
+      get :projects_completed
+    end
+  end
   root "static_pages#home"
 
   # STATIC PAGES
@@ -102,6 +112,7 @@ Rails.application.routes.draw do
         post 'bulk_add_certifications'
         patch 'set_role'
         delete 'delete_repository'
+        delete 'delete_project_proposal'
         delete 'delete_user'
         get 'manage_roles'
 
@@ -129,8 +140,10 @@ Rails.application.routes.draw do
     resources :settings, only: [:index] do
       collection do
         post 'add_category'
+        post 'add_area'
         # post 'rename_category'
         post 'remove_category'
+        post 'remove_area'
         post 'add_equipment'
         post 'rename_equipment'
         post 'remove_equipment'

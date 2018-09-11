@@ -126,11 +126,12 @@ function load() {
   });
   
   //CATEGORY-EQUIPMENT-CERTIFICATION STUFF (START)
-  
+    // edit page
   $('div#category-container').children().each(function(){
     var cat_item = $(this);
-    var x = document.getElementById("repository_categories");
-    
+    var x = document.querySelector("#repository_categories, #project_proposal_categories");
+    var id = x.id
+
     for (var i=0; i<x.options.length;i++) {
         if (x.options[i].childNodes[0].nodeValue === cat_item[0].childNodes[0].nodeValue){
             x.remove(i);
@@ -142,7 +143,7 @@ function load() {
       var option = document.createElement("option");
       option.text = cat_item[0].innerText;
       x.add(option);
-      sort_options("repository_categories");
+      sort_options(id);
       var index = $(cat_item).index();
       categoryArray.splice(index, 1);
       $(cat_item).remove();
@@ -198,7 +199,7 @@ function load() {
 
   });
 
-  
+  //TODO: make a function to get any object
 //Get categories
   $(document).ready(function() {
     $('#repository_categories').on('change', function(e) {
@@ -219,7 +220,7 @@ function load() {
         $("div#category-container").append(data);
         var last = $("div#category-container")[0].children.length - 1;
         var child = $("div#category-container")[0].children[last];
-        
+
         $(child).click(function(){
           var index = $(child).index();
           var option = document.createElement("option");
@@ -229,10 +230,45 @@ function load() {
           categoryArray.splice(index, 1);
           $(child).remove();
         });
-        
+
       }, 'html');
     });
   });
+
+    //Get categories for project proposals
+    $(document).ready(function() {
+        $('#project_proposal_categories').on('change', function(e) {
+            var val = e.target.options[e.target.selectedIndex].text;
+            e.target.remove(e.target.selectedIndex);
+            e.target.selectedIndex = 0;
+            if($("div#category-container").children().length === 5){
+                return false;
+            }
+            for (var i=0; i<categoryArray.length; i++) {
+                if (val==categoryArray[i]) {
+                    return false;
+                }
+            }
+            e.preventDefault();
+            categoryArray.push(val);
+            $.get('/template/category', { 'category' : val }, function(data){
+                $("div#category-container").append(data);
+                var last = $("div#category-container")[0].children.length - 1;
+                var child = $("div#category-container")[0].children[last];
+
+                $(child).click(function(){
+                    var index = $(child).index();
+                    var option = document.createElement("option");
+                    option.text = categoryArray[index];
+                    document.getElementById("project_proposal_categories").add(option);
+                    sort_options("project_proposal_categories");
+                    categoryArray.splice(index, 1);
+                    $(child).remove();
+                });
+
+            }, 'html');
+        });
+    });
   
   //Get pieces of equipment
   $(document).ready(function() {
@@ -387,7 +423,44 @@ function load() {
     }
     
   });
-  
+
+    $("form#new_project_proposal, form.edit_project_proposal").submit(function(e){
+        e.preventDefault();
+        var validate = validation_proposal();
+
+        var _this = $(this),
+            uri   = _this[0].action,
+            form  = new FormData(_this[0]);
+
+        for (var i = 0; i < categoryArray.length; i++) {
+            form.append("categories[]", categoryArray[i]);
+        };
+
+        if( validate ){
+            document.getElementById("status-save").innerHTML = "<img src='/assets/loader-65526d2bb686aee87b0257dcbc756449cffeebf62d6646ba9a9979de8b51111a.gif' height='15px'> Saving project...";
+            $.ajax({
+                url: uri,
+                type: "POST",
+                data: form,
+                dataType: 'json',
+                processData: false,
+                contentType: false
+            }).done(function(e) {
+                window.location.href = '/project_proposals'
+            })
+                .fail(function(e) {
+                    if( e.responseText === "not signed in" ){ window.location.href = '/login' }
+                    var span = $('<span>').addClass('form-error repo-form');
+                    span.text(e.responseText);
+                    $('input#repository_title').before(span);
+                    console.log('error');
+                });
+        } else {
+            //TODO: jQuery(window).scrollTop(jQuery('[class$="form-error"]:first').position().top);
+        }
+
+    });
+
   $('div#file-container').children().each(function(){
     var file_item = $(this);
     
@@ -519,6 +592,7 @@ function setAutoComplete(data){
   });
 };
 
+// To delete the category from edit or new
 function sort_options (id) {
   $("#" + id).html($("#" + id + " option").sort(function (a, b) {
     if (!(a.text.includes("Select"))&&!(b.text.includes("Select"))) {

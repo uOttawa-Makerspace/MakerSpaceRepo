@@ -10,6 +10,8 @@ class User < ActiveRecord::Base
   has_many :lab_sessions, dependent: :destroy
   has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories
+  has_many :project_proposals
+  has_many :project_joins
 
   validates :name,
     presence: { message: "Your name is required." },

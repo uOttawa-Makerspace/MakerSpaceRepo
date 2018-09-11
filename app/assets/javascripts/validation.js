@@ -38,3 +38,45 @@ function validation(){
 
 	return ret;
 }
+
+function validation_proposal(){
+    var title = $("input#project_proposal_title");
+    var name = $("input#project_proposal_username");
+    var email = $("input#project_proposal_email");
+    var client = $("input#project_proposal_client");
+    $('span.form-error.repo-form').remove();
+    var span = $('<span>').addClass('form-error repo-form');
+    var regex = /^[-a-zA-Z\d\s]*$/;
+
+    if( name.val().length === 0 ){
+        span.text("Your name is required");
+        $('input#project_proposal_username').before(span);
+        return false;
+    }
+
+    if( email.val().length === 0 ){
+        span.text("Your email is required");
+        $('input#project_proposal_email').before(span);
+        return false;
+    }
+
+    if( client.val().length === 0 ){
+        span.text("Client is required");
+        $('input#project_proposal_client').before(span);
+        return false;
+    }
+
+
+    if( title.val().length === 0 ){
+        span.text("Project title is required.");
+        $('input#project_proposal_title').before(span);
+        return false;
+    }
+
+    if( !regex.test(title.val()) ){
+        span.text("Project title may only contain letters and numbers.");
+        $('input#project_proposal_title').before(span);
+        return false;
+    }
+    return true
+}

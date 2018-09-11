@@ -11,17 +11,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180720181658) do
+ActiveRecord::Schema.define(version: 20180828204729) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
+  create_table "area_options", force: :cascade do |t|
+    t.string   "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "categories", force: :cascade do |t|
     t.integer  "repository_id"
     t.string   "name"
-    t.datetime "created_at",         null: false
-    t.datetime "updated_at",         null: false
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
     t.integer  "category_option_id"
+    t.integer  "project_proposal_id"
   end
 
   add_index "categories", ["category_option_id"], name: "index_categories_on_category_option_id", using: :btree
@@ -117,6 +124,29 @@ ActiveRecord::Schema.define(version: 20180720181658) do
 
   add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
 
+  create_table "project_joins", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "project_proposal_id"
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
+  end
+
+  create_table "project_proposals", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "admin_id"
+    t.integer  "approved"
+    t.string   "title"
+    t.text     "description"
+    t.string   "youtube_link"
+    t.datetime "created_at",                null: false
+    t.datetime "updated_at",                null: false
+    t.string   "username"
+    t.string   "email"
+    t.string   "client"
+    t.string   "area",         default: [],              array: true
+    t.string   "client_type"
+  end
+
   create_table "repo_files", force: :cascade do |t|
     t.integer  "repository_id"
     t.datetime "created_at",        null: false
@@ -133,21 +163,22 @@ ActiveRecord::Schema.define(version: 20180720181658) do
     t.integer  "user_id"
     t.string   "title"
     t.string   "description"
-    t.datetime "created_at",                    null: false
-    t.datetime "updated_at",                    null: false
+    t.datetime "created_at",                          null: false
+    t.datetime "updated_at",                          null: false
     t.string   "category"
     t.string   "license"
     t.string   "github"
     t.string   "github_url"
-    t.integer  "like",          default: 0
+    t.integer  "like",                default: 0
     t.string   "user_username"
     t.integer  "make_id"
-    t.integer  "make",          default: 0
+    t.integer  "make",                default: 0
     t.string   "slug"
     t.string   "share_type"
     t.string   "password"
-    t.boolean  "featured",      default: false
+    t.boolean  "featured",            default: false
     t.string   "youtube_link"
+    t.integer  "project_proposal_id"
   end
 
   add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree

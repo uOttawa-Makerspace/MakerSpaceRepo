@@ -1,0 +1,11 @@
+<% provide(:title, "Projects Assigned") %>
+
+<% if flash[:notice] %>
+    <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+
+<% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+<% end %>
+
+<%= render :partial => 'listing', :locals => {:tittle => "List of Projects Assigned", :approval => 1} %>

@@ -1,0 +1,172 @@
+<% provide(:title, "#{@project_proposal.title}") %>
+<% if flash[:notice] %>
+    <div id="notice"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+<% end %>
+
+<section id="show-repository">
+  <section id="repository-photos">
+    <% if @project_proposal.youtube_link.present? %>
+        <%= youtube_video(@project_proposal.youtube_link) %>
+    <% end%>
+    <br></br>
+    <% if @user.admin?%>
+        <%= link_to "Approve", approval_project_proposals_path(:id => @project_proposal.id), method: :post,
+                    class: "green-button", data: {confirm: 'Are you sure? This will approve the project.'} %>
+        <%= link_to "Disapprove", disapproval_project_proposals_path(id: @project_proposal.id), method: :post,
+                    class: "delete-button", data: {confirm: 'Are you sure? This will disapprove the project.'} %>
+    <% end %>
+    <% if @project_proposal.description.present? %>
+        <div class="repo-desc">
+          <div class="titlepp">DESCRIPTION</div>
+          <div class="description"><%= @project_proposal.description.html_safe %></div>
+        </div>
+    <% end %>
+    <div class="repo-desc">
+        <br></br>
+        <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
+        <% if @project_join.present? %>
+        <%= link_to "Leave Project", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
+                    class: "delete-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
+        <% elsif @user.id.present? %>
+        <%= link_to "Join Project", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
+                    class: "coldblue-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
+      <% end %>
+      <br></br>
+      <% if @project_proposal.project_joins.present? %>
+        <div>Users that joined this project:</div>
+        <div>
+        <% @project_proposal.project_joins.find_each do |pj| %>
+          <% user_pj = User.find(pj.user_id).username %>
+              <div class="username"><%= link_to user_pj, user_path(user_pj) %></div>
+        <% end %>
+        </div>
+      <% end %>
+      <br><br><br>
+      <% if @user.admin?%>
+          <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
+                      class: "delete-button", data: {confirm: 'Are you sure?'} %>
+          <br></br>
+          <% if @project_proposal.approved.present? &&  @project_proposal.admin_id.present? %>
+              <% admin_username = User.find(@project_proposal.admin_id).username %>
+              <div> This project was reviwed by:
+                <p class="username"><%= link_to admin_username, user_path(admin_username) %></p>
+              </div>
+          <% elsif @project_proposal.approved.present? %>
+              <div class="title">This project was reviwed.</div>
+          <% else %>
+              <div class="title">This project was not reviwed yet.</div>
+          <% end %>
+      <% end %>
+    </div>
+  </section>
+  <section id="info">
+    <% if @project_proposal.user_id.eql?(@user.id) || @user.role.eql?("admin") %>
+        <%= link_to fa_icon("pencil", text: 'Edit project proposal'),
+                    edit_project_proposal_path(@project_proposal), class: 'edit-repo-link' %>
+    <% end %>
+    <div id="repo-title">
+      <%= "Project Proposal: #{@project_proposal.title}" %>
+    </div>
+    <div id="repo-info">
+      <div class="repo-info-item">
+        <div class="title">PROPOSED BY</div>
+        <% if @project_proposal.user_id %>
+            <% project_username = User.find(@project_proposal.user_id).username%>
+            <div class="name"><%= link_to project_username, user_path(project_username) %></div>
+        <% else %>
+            <div class="date"><%= @project_proposal.try(:username) %></div>
+        <% end %>
+      </div>
+      <div class="repo-info-item">
+        <div class="title">PROPOSED ON</div>
+        <div class="date"><%= @project_proposal.created_at.strftime("%b %e %Y") %></div>
+      </div>
+      <div class="repo-info-item">
+        <div class="title">CONTACT</div>
+        <div class="date"><%= @project_proposal.email %></div>
+      </div>
+      <% if @user.admin? %>
+        <div class="repo-info-item">
+          <div class="title">VALIDATION</div>
+            <% case @project_proposal.approved
+                 when 0 %><div class="disapproved"><%= "Disapproved" %></div>
+                <% when 1 %><div class="approved"><%= "Approved" %></div>
+            <% when nil %><div><%= "Not Validated" %></div>
+            <% end %>
+        </div>
+      <% end %>
+      <% if @categories.present? %>
+          <div class="repo-info-item">
+            <div class="title">CATEGORIES</div>
+            <% @categories.each do |t| %>
+                <span class="tags"><%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase) %></span>
+            <% end %>
+          </div>
+      <% end %>
+      <% if @user.id.present? %>
+        <div class="repo-info-item">
+        <%= link_to "Create Repository", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
+                    class: "coldgreen-button",
+                    data: {confirm: 'This action will create a repository related to this project proposal'} %>
+        </div>
+      <% end %>
+      <div class="repo-info-item">
+        <div class="report">
+          <%= link_to fa_icon('flag', text: 'Report inapropriate'), report_repository_path(@project_proposal.id), class: 'repository_report' %>
+          <div class="spinner">
+            <div class="rect1"></div>
+            <div class="rect2"></div>
+            <div class="rect3"></div>
+            <div class="rect4"></div>
+            <div class="rect5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<% if @repositories.present? %>
+  <section id="repositories-index">
+    <div class="title">REPOSITORIES CREATED FROM THIS PROJECT PROPOSAL:</div> <br>
+    <section id="repository-filter">
+      <div class="sort">sort by/classer par</div>
+      <nav>
+        <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
+        <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
+        <ul class="filter">
+          <li><%= link_to 'Newest/Plus récent', project_proposal_path(sort: :newest) %></li>
+          <li><%= link_to 'Most Likes/Plus d\'Aimes', project_proposal_path(sort: :most_likes) %></li>
+          <li><%= link_to 'Most Makes/Plus de fabrications', project_proposal_path(sort: :most_makes) %></li>
+          <li><%= link_to 'Recently Updated/Récemment mis à jour', project_proposal_path(sort: :recently_updated) %></li>
+        </ul>
+      </nav>
+    </section>
+
+    <section id="repositories-container">
+      <div class="pagination"><%= will_paginate @repositories %></div><br>
+      <% @repositories.each do |repository| %>
+          <div class="repository-container">
+
+            <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')"  %> >
+              <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
+            </div>
+
+            <div class="repo-info">
+              <div class="left">
+                <div class="title">
+                  <%= link_to repository.title, repository_path(user_username: repository.user_username, slug: repository.slug) %>
+                </div>
+                <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
+                <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+              </div>
+              <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
+            </div>
+          </div>
+      <% end %>
+    </section>
+  </section>
+<% end %>

@@ -1,0 +1,27 @@
+one:
+  id: 1
+  name: Mechanical/Mécanique
+
+two:
+  id: 2
+  name: Electrical/Électrique
+
+three:
+  id: 3
+  name: Civil
+
+four:
+  id: 4
+  name: Biomedical/Biomédicale
+
+five:
+  id: 5
+  name: Software/Logiciel
+
+six:
+  id: 6
+  name: Chemical/Chimique
+
+seven:
+  id: 7
+  name: Other

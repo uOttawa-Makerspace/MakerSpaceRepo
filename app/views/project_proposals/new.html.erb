@@ -1,0 +1,63 @@
+<% provide(:title, "New Project Proposal") %>
+<section id="new-repo">
+  <div class="title">New Project Proposal<br>Nouvelle Proposition de Projet</div>
+
+  <%= form_for @project_proposal, url: {controller: "project_proposals", action: "create"}, html: { multipart: true } do |f| %>
+      <br>
+      <%= f.label :username, "Name/Nom" %>
+      <div>What is your name? <br> Quel est votre nom?</div>
+      <%= f.text_field :username, class: 'repo' , autofocus: true %>
+      <br>
+      <%= f.label :email, "Email/Adresse Courriel" %>
+      <div>What is your email? <br> Quel est votre adresse courriel?</div>
+      <%= f.text_field :email, class: 'repo' %>
+      <br>
+      <%= f.label :client_type, "Client Type/Type de Client" %>
+      <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
+      <div class = 'checkbox-list'>
+        <%= f.radio_button :client_type, 'Organization', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label :client_type, 'Organization', :id => 'type', :style => 'display:inline' %>
+        <br>
+        <%= f.radio_button :client_type, 'Individual', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label :client_type, 'Individual', :id => 'type', :style => 'display:inline' %>
+      </div>
+      <br>
+      <%= f.label :client, "Client/Client" %>
+      <div>Who is the client? <br> Qui est le client?</div>
+      <%= f.text_field :client, class: 'repo' %>
+      <br>
+      <%= f.label :title, "Title/Titre" %>
+      <div>Great project titles are short and memorable.<br>Des titres de projets génial sont court et mémorable.</div>
+      <%= f.text_field :title, class: 'repo' %>
+      <br>
+      <%= f.label :area, "Area/Domaine" %>
+      <div>Which area(s) does your project touch on? <br> Votre projet touche sur quel(s) domaine(s)?</div>
+      <div class = 'checkbox-list'>
+      <%= f.collection_check_boxes :area, AreaOption.show_options, :name, :name do |b| %>
+          <%= b.label { b.check_box + b.text } %>
+      <% end %>
+      </div>
+      <br> <br>
+      <%= f.label :description %>
+      <div style="width: 420px;">
+        <%= f.text_area :description, class: 'repo', id: 'redactor' %>
+      </div>
+      <br>
+      <%= f.label :youtube_link, "Youtube Link" %>
+      <div>Project similar in Youtube<br>Projet similaire sur Youtube</div>
+      <%= f.text_field :youtube_link, class: 'repo' %>
+      <br>
+      <%= f.label :categories, "Categories/Catégories" %>
+      <div>Choose at most 5 categories that fit your project.<br>Choisi un maximum de 5 catégories qui convent à ton projet</div>
+      <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category.../Sélectionne une catégorie..." %>
+      <div id="category-container"></div>
+
+      <br>
+      <br>
+      <br>
+      <%= f.submit "Create Project Proposal/Créer une proposition de projet", class: "save-button", id: "waiting-save-button" %>
+      <span id="status-save"></span>
+
+  <% end %>
+
+</section>

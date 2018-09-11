@@ -1,0 +1,55 @@
+one:
+  id: 1
+  user_id: 1
+  admin_id: null
+  approved: null
+  title: ProjectProposal1
+  description: description1
+  youtube_link: null
+  username: bruno
+  email: bruno@bruno.com
+  client: uottawa
+  area: [Mechanical/Mécanique, Biomedical]
+  client_type: Organization
+
+two:
+  id: 2
+  user_id: 2
+  admin_id: 1337
+  approved: 0
+  title: ProjectProposal2
+  description: description2
+  youtube_link: null
+  username: bruno2
+  email: bruno2@bruno.com
+  client: uottawa
+  area: [Electrical/Électrique]
+  client_type: Organization
+
+three:
+  id: 3
+  user_id: 1
+  admin_id: 1337
+  approved: 1
+  title: ProjectProposal3
+  description: description3
+  youtube_link: null
+  username: bruno3
+  email: bruno2@bruno.com
+  client: uottawa
+  area: [Electrical/Électrique]
+  client_type: Organization
+
+four:
+  id: 4
+  user_id: 1
+  admin_id: 1337
+  approved: 1
+  title: ProjectProposal4
+  description: description4
+  youtube_link: null
+  username: bruno3
+  email: bruno2@bruno.com
+  client: uottawa
+  area: [Electrical/Électrique]
+  client_type: Organization

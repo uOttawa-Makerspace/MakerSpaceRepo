@@ -1,0 +1,151 @@
+// Place all the styles related to the ProjectProposals controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+@import "lib";
+
+.checkbox-list {
+  label#type{
+    color: #555;
+    font: 300 0.9em 'Raleway', sans-serif;
+  }
+}
+
+div.titlepp{
+  color: #366;
+  font-size: 2rem;
+  padding-bottom: 0.5rem;
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #366;
+}
+
+.blue-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.4rem 0.6rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 10px;
+  background-color: darkblue;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+    color: aquamarine;
+  }
+
+}
+
+.green-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.4rem 0.6rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 10px;
+  background-color: forestgreen;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+    color: aquamarine;
+  }
+
+}
+
+.coldblue-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.4rem 0.6rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 10px;
+  background-color: #1155cc;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+    color: aquamarine;
+  }
+
+}
+
+.coldgreen-button{
+  font: 300 1em 'Raleway', sans-serif;
+  padding: 0.4rem 0.6rem;
+  border: none;
+  text-transform: uppercase;
+  color: #777;
+  letter-spacing: 0.15em;
+  border-radius: 10px;
+  background-color: #357777;
+  color: #fff;
+  margin-bottom: 20px;
+
+  &:hover{
+    cursor: pointer;
+    color: aquamarine;
+  }
+
+}
+
+div.approved{
+  color: #19c1a5;
+  font-weight: 500;
+  i{
+    padding-right: 5px;
+    color: #777;
+  }
+}
+
+div.disapproved{
+  color: #FF0000;
+  font-weight: 500;
+  i{
+    padding-right: 5px;
+    color: #777;
+  }
+}
+
+.username{
+  @include transition(100ms);
+  color: #19c1a5;
+  font-weight: 500;
+
+  i{
+    padding-right: 5px;
+    color: #777;
+  }
+
+  &:hover{
+    color: #5f9ea0;
+  }
+}
+
+
+.admin_username{
+  @include transition(100ms);
+  color: blue;
+  font-weight: 500;
+
+  i{
+    padding-right: 5px;
+    color: #777;
+  }
+
+  &:hover{
+    color: dodgerblue;
+  }
+}
+
+.spacing_table td {
+  padding: 10px;
+}
