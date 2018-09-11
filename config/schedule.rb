@@ -40,55 +40,56 @@ every :monday, :at => '7am' do
   runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'bruno.mrlima@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
 
-every :monday, :at => '11:45am' do
+# Canada is 4 hours behind
+every :monday, :at => '3:45pm' do
   runner "MsrMailer.send_checklist_reminder('kpara084@uOttawa.ca').deliver_now"
 end
 
-every :monday, :at => '7:45pm' do
+every :monday, :at => '11:45pm' do
   runner "MsrMailer.send_checklist_reminder('ngnyr040@uOttawa.ca').deliver_now"
 end
 
-every :tuesday, :at => '11:45am' do
+every :tuesday, :at => '3:45pm' do
   runner "MsrMailer.send_checklist_reminder('mghod021@uOttawa.ca').deliver_now"
 end
 
-every :tuesday, :at => '7:45pm' do
+every :tuesday, :at => '11:45pm' do
   runner "MsrMailer.send_checklist_reminder('sbouc057@uOttawa.ca').deliver_now"
 end
 
-every :wednesday, :at => '11:45am' do
+every :wednesday, :at => '3:45pm' do
   runner "MsrMailer.send_checklist_reminder('bmont037@uOttawa.ca').deliver_now"
 end
 
-every :wednesday, :at => '7:45pm' do
+every :wednesday, :at => '11:45pm' do
   runner "MsrMailer.send_checklist_reminder('jpool092@uOttawa.ca').deliver_now"
 end
 
-every :thursday, :at => '11:45am' do
+every :thursday, :at => '3:45pm' do
   runner "MsrMailer.send_checklist_reminder('mghod021@uOttawa.ca').deliver_now"
 end
 
-every :thursday, :at => '7:45pm' do
+every :thursday, :at => '11:45pm' do
   runner "MsrMailer.send_checklist_reminder('inku036@uOttawa.ca').deliver_now"
 end
 
-every :friday, :at => '11:45am' do
+every :friday, :at => '3:45pm' do
   runner "MsrMailer.send_checklist_reminder('bsami021@uOttawa.ca').deliver_now"
 end
 
-every :friday, :at => '7:45pm' do
+every :friday, :at => '11:45pm' do
   runner "MsrMailer.send_checklist_reminder('inku036@uOttawa.ca').deliver_now"
 end
 
-every :sunday, :at => '10:45am' do
+every :sunday, :at => '2:45pm' do
   runner "MsrMailer.send_checklist_reminder('jlian009@uOttawa.ca').deliver_now"
 end
 
-every :sunday, :at => '4:45pm' do
+every :sunday, :at => '8:45pm' do
   runner "MsrMailer.send_checklist_reminder('slema053@uOttawa.ca').deliver_now"
 end
 
-every :tuesday, :at => '10:05pm' do
+every :tuesday, :at => '10:20pm' do
   runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca').deliver_now"
 end
 
