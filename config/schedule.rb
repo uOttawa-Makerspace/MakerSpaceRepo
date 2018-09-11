@@ -40,6 +40,58 @@ every :monday, :at => '7am' do
   runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'bruno.mrlima@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
 
+every :monday, :at => '11:45am' do
+  runner "MsrMailer.send_checklist_reminder('kpara084@uOttawa.ca').deliver_now"
+end
+
+every :monday, :at => '7:45pm' do
+  runner "MsrMailer.send_checklist_reminder('ngnyr040@uOttawa.ca').deliver_now"
+end
+
+every :tuesday, :at => '11:45am' do
+  runner "MsrMailer.send_checklist_reminder('mghod021@uOttawa.ca').deliver_now"
+end
+
+every :tuesday, :at => '7:45pm' do
+  runner "MsrMailer.send_checklist_reminder('sbouc057@uOttawa.ca').deliver_now"
+end
+
+every :wednesday, :at => '11:45am' do
+  runner "MsrMailer.send_checklist_reminder('bmont037@uOttawa.ca').deliver_now"
+end
+
+every :wednesday, :at => '7:45pm' do
+  runner "MsrMailer.send_checklist_reminder('jpool092@uOttawa.ca').deliver_now"
+end
+
+every :thursday, :at => '11:45am' do
+  runner "MsrMailer.send_checklist_reminder('mghod021@uOttawa.ca').deliver_now"
+end
+
+every :thursday, :at => '7:45pm' do
+  runner "MsrMailer.send_checklist_reminder('inku036@uOttawa.ca').deliver_now"
+end
+
+every :friday, :at => '11:45am' do
+  runner "MsrMailer.send_checklist_reminder('bsami021@uOttawa.ca').deliver_now"
+end
+
+every :friday, :at => '7:45pm' do
+  runner "MsrMailer.send_checklist_reminder('inku036@uOttawa.ca').deliver_now"
+end
+
+every :sunday, :at => '10:45am' do
+  runner "MsrMailer.send_checklist_reminder('jlian009@uOttawa.ca').deliver_now"
+end
+
+every :sunday, :at => '4:45pm' do
+  runner "MsrMailer.send_checklist_reminder('slema053@uOttawa.ca').deliver_now"
+end
+
+every :tuesday, :at => '5:49pm' do
+  runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca').deliver_now"
+end
+
 # Use this file to easily define all of your cron jobs.
 #
 # It's helpful, but not entirely necessary to understand cron before proceeding.
