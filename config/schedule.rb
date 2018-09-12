@@ -24,7 +24,7 @@ every 1.month do
 end
 
 # At 7am of First day of every week
-every :monday, :at => '7am' do
+every :monday, :at => '11am' do
   runner "MsrMailer.send_weekly_report('hanis@uottawa.ca', 'bruno.mrlima@gmail.com', 'makerspace@uottawa.ca', ReportGenerator.new_user_report,
           ReportGenerator.unique_visitors_report,
           ReportGenerator.lab_session_report,
@@ -36,7 +36,7 @@ end
 
 
 # At 7:30am of First day of every week
-every :monday, :at => '7am' do
+every :monday, :at => '11am' do
   runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'bruno.mrlima@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
 
@@ -87,10 +87,6 @@ end
 
 every :sunday, :at => '8:45pm' do
   runner "MsrMailer.send_checklist_reminder('slema053@uOttawa.ca').deliver_now"
-end
-
-every :tuesday, :at => '10:20pm' do
-  runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca').deliver_now"
 end
 
 # Use this file to easily define all of your cron jobs.
