@@ -66,9 +66,9 @@ every :wednesday, :at => '11:45 pm' do
   runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca').deliver_now"
 end
 
-every :thursday, :at => '4:19 pm' do
-  runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca').deliver_now"
+every :thursday, :at => '4:25 pm' do
   runner "MsrMailer.send_checklist_reminder('mghod021@uottawa.ca').deliver_now"
+  runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca').deliver_now"
 end
 
 every :thursday, :at => '11:45 pm' do
