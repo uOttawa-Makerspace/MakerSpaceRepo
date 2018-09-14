@@ -73,8 +73,8 @@ every :thursday, :at => '7:45 pm' do
   runner "MsrMailer.send_checklist_reminder('inku036@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
 end
 
-every :friday, :at => '11:45 am' do
-  runner "MsrMailer.send_checklist_reminder('bsami021@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+every :friday, :at => '4:35 pm' do
+  runner "MsrMailer.send_checklist_reminder('slema053@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
 end
 
 every :friday, :at => '7:45 pm' do
@@ -86,7 +86,7 @@ every :sunday, :at => '10:45 am' do
 end
 
 every :sunday, :at => '4:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('slema053@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+  runner "MsrMailer.send_checklist_reminder('bsami021@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
 end
 
 # Use this file to easily define all of your cron jobs.
