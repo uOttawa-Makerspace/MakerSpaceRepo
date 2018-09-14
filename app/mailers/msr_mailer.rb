@@ -66,9 +66,9 @@ class MsrMailer < ApplicationMailer
 		mail(to: email1, subject: 'Weekly Reports', bcc: [email2, email3])
 	end
 
-	def send_checklist_reminder(email)
+	def send_checklist_reminder(email, master_email)
 		@email = email
-		mail(to: email, subject: 'Checklist Reminder')
+		mail(to: email, subject: 'Checklist Reminder', bcc: master_email)
 	end
 
 	def waiver_reminder_email(email)
