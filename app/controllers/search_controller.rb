@@ -29,7 +29,7 @@ class SearchController < SessionsController
     end
 
     if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
-      @repositories2 = Category.where(name: name).distinct.includes(:repository).map(&:repository)
+      @repositories2 = Category.where(name: name).where.not(repository_id: nil).distinct.includes(:repository).map(&:repository)
     else
       @repositories2 = []
     end
