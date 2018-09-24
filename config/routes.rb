@@ -8,6 +8,7 @@ Rails.application.routes.draw do
       get :unjoin_project_proposal
       get :projects_assigned
       get :projects_completed
+      get :link_to_repo
     end
   end
   root "static_pages#home"
