@@ -2,6 +2,7 @@ class ProjectProposalsController < ApplicationController
   before_action :set_project_proposal, only: [:show, :edit, :update, :destroy]
   before_action :current_user
   before_action :show_only_project_approved, only: [:show]
+  before_action :user_admin?, only: [:link_to_repo]
 
   # GET /project_proposals
   # GET /project_proposals.json
@@ -45,6 +46,11 @@ class ProjectProposalsController < ApplicationController
   def projects_completed
     @project_proposals = ProjectProposal.joins(:repositories).uniq.order(created_at: :desc)
   end
+
+  def link_to_repo
+    @project_proposals = ProjectProposal.all
+  end
+
 
   # POST /project_proposals
   # POST /project_proposals.json
@@ -156,6 +162,13 @@ class ProjectProposalsController < ApplicationController
         redirect_to root_path
       end
     end
+
+  def user_admin?
+    if !current_user.admin?
+      flash[:alert] = "You are not allowed to access this area."
+      redirect_to root_path
+    end
+  end
 
   # TODO: sort_order and photo_hash for everyone
   def sort_order
