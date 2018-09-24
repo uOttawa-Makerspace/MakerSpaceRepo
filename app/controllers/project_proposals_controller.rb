@@ -135,6 +135,20 @@ class ProjectProposalsController < ApplicationController
     end
   end
 
+  def search_repository
+    unless params[:query].blank?
+      @query = params[:query]
+      @repositories = Repository.where('LOWER(title) like LOWER(?) OR
+                           LOWER(user_username) like LOWER(?) OR
+                           LOWER(category) like LOWER(?)',
+                          "%#{@query}%", "%#{@query}%", "%#{@query}%")
+                                .order(:updated_at)
+    else
+      redirect_to (:back)
+      flash[:alert] = "Invalid parameters!"
+    end
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_project_proposal

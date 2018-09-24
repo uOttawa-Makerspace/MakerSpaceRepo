@@ -9,6 +9,7 @@ Rails.application.routes.draw do
       get :projects_assigned
       get :projects_completed
       get :link_to_repo
+      get :search_repository
     end
   end
   root "static_pages#home"
