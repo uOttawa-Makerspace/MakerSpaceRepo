@@ -36,6 +36,7 @@
         <li><%= link_to 'Projects Available', project_proposals_path %></li>
         <li><%= link_to 'Projects Assigned', projects_assigned_project_proposals_path %></li>
         <li><%= link_to 'Projects Completed', projects_completed_project_proposals_path %></li>
+        <%= content_tag :li, link_to('Link Repo to Proposal', link_to_repo_project_proposals_path) if @user.admin? %>
       </ul>
     </span>
   <% end %>
