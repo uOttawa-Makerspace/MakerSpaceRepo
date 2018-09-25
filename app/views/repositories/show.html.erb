@@ -125,18 +125,20 @@
         <span class="license"><%= link_to @repository.license, license_url[@repository.license] %></span>
       </div>
       <% end %>
-      <% if @user.admin? %>
-        <div class="repo-info-item">
-          <div class="title">Linked to Project Proposal:</div>
-          <div class="name">
-          <% if @repository.project_proposal %>
-                <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
-                <%= @repository.project_proposal.title %>
-          <% else %>
-                None
-          <% end %>
-          </div>
+
+      <div class="repo-info-item">
+        <div class="title">Linked to Project Proposal:</div>
+        <div class="name">
+        <% if @repository.project_proposal %>
+              <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
+              <%= @repository.project_proposal.title %>
+        <% else %>
+              None
+        <% end %>
         </div>
+      </div>
+
+      <% if @user.admin? %>
         <div class="repo-info-item">
           <div class="title">Link to Project Proposal:</div>
           <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
@@ -145,10 +147,9 @@
               <br> </br>
               <%= f.submit "Link", class: "save-button" %>
           <% end %>
+          </div>
         </div>
       <% end %>
-    </div>
-
 
 
   </section>
