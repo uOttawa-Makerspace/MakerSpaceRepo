@@ -14,6 +14,7 @@ class RepositoriesController < SessionsController
     @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
     @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
+    @project_proposals = ProjectProposal.all.pluck(:title, :id)
   end
 
   def download
@@ -124,6 +125,19 @@ class RepositoriesController < SessionsController
         flash[:alert] = "Incorrect password. Try again!"
         format.html { redirect_to password_entry_repository_path(@repository.user_username, @repository.slug)}
       end
+    end
+  end
+
+  def link_to_pp
+    repository = Repository.find params[:repo][:repository_id]
+    project_proposal_id = params[:repo][:project_proposal_id]
+    repository.project_proposal_id = project_proposal_id
+    if repository.save
+      flash[:notice] = "This Repository was linked to the selected Project Proposal"
+      redirect_to :back
+    else
+      flash[:alert] = "Something went wrong."
+      redirect_to :back
     end
   end
 
