@@ -200,6 +200,7 @@ Rails.application.routes.draw do
     collection do
       get 'download_files', path: ':slug/download_files'
       get 'download', path: ':slug/download'
+      patch :link_to_pp
     end
     member do
       get 'password_entry', path: '/password_entry'
