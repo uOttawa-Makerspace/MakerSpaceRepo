@@ -14,7 +14,7 @@ class RepositoriesController < SessionsController
     @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
     @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
-    @project_proposals = ProjectProposal.all.pluck(:title, :id)
+    @project_proposals = ProjectProposal.all.where(:approved => 1).pluck(:title, :id)
   end
 
   def download
