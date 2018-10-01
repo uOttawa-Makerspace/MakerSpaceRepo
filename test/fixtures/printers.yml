@@ -1,0 +1,64 @@
+one:
+  id: 1
+  model: Ultimaker 2+
+  number: 1
+two:
+  id: 2
+  model: Ultimaker 2+
+  number: 2
+three:
+  id: 3
+  model: Ultimaker 2+
+  number: 3
+four:
+  id: 4
+  model: Ultimaker 2+
+  number: 4
+five:
+  id: 5
+  model: Ultimaker 2+
+  number: 5
+six:
+  id: 6
+  model: Ultimaker 2+
+  number: 6
+seven:
+  id: 7
+  model: Ultimaker 2+
+  number: 7
+eight:
+  id: 8
+  model: Ultimaker 2+
+  number: 8
+nine:
+  id: 9
+  model: Ultimaker 2+
+  number: 9
+ten:
+  id: 10
+  model: Ultimaker 2+
+  number: 10
+eleven:
+  id: 11
+  model: Ultimaker 2+
+  number: 11
+twelve:
+  id: 12
+  model: Replicator 2
+  number: 1
+thirteen:
+  id: 13
+  model: Replicator 2
+  number: 2
+fourteen:
+  id: 14
+  model: Replicator 2
+  number: 3
+sixteen:
+  id: 15
+  model: Replicator 2
+  number: 4
+seventeen:
+  id: 16
+  model: Replicator 2
+  number: 5
