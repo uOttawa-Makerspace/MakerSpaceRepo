@@ -11,8 +11,8 @@ class User < ActiveRecord::Base
   has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories
   has_many :project_proposals
-  has_many :project_joins
-  has_many :printer_sessions
+  has_many :project_joins,     dependent: :destroy
+  has_many :printer_sessions,     dependent: :destroy
 
   validates :name,
     presence: { message: "Your name is required." },
