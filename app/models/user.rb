@@ -12,6 +12,7 @@ class User < ActiveRecord::Base
   accepts_nested_attributes_for :repositories
   has_many :project_proposals
   has_many :project_joins
+  has_many :printer_sessions
 
   validates :name,
     presence: { message: "Your name is required." },
