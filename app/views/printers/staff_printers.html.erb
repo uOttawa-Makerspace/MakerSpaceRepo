@@ -7,6 +7,8 @@
 
     <div>
       <h2>Ultimaker 2+</h2>
+      <div><%= "Last Update: Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
+      <br>
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
@@ -16,6 +18,8 @@
 
 
       <h2>Replicator 2 (MakerBot)</h2>
+      <div><%= "Last Update: Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
+      <br>
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
@@ -24,6 +28,8 @@
       <% end %>
 
       <h2>Replicator 2x (MakerBot)</h2>
+      <div><%= "Last Update: Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
+      <br>
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
@@ -32,6 +38,8 @@
       <% end %>
 
       <h2>Dremel</h2>
+      <div><%= "Last Update: Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
+      <br>
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
