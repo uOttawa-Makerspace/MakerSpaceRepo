@@ -2,6 +2,7 @@ class PrintersController < ApplicationController
   layout 'staff_area'
 
   def staff_printers
+    @users = User.all.pluck(:name, :id)
     @printers = Printer.all
     @last_session_ultimaker = PrinterSession.joins(:printer).order(created_at: :desc)
                                       .where("printers.model = ?", "Ultimaker 2+").last

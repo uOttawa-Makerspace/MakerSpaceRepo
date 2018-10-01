@@ -10,43 +10,48 @@
 
     <div>
       <h2>Ultimaker 2+</h2>
-      <div><%= "Last Update: Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
+      <div><%= "Last Update: Printer Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
       <br>
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
-          <%= f.select(:printer_id, @printers.where(:model => "Ultimaker 2+").pluck(:number, :id) , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:printer_id, @printers.where(:model => "Ultimaker 2+").pluck(:number, :id) , {prompt: "Choose Number..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:user_id, @users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.submit "Submit", class: "save-button" %>
       <% end %>
 
 
+
       <h2>Replicator 2 (MakerBot)</h2>
-      <div><%= "Last Update: Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
+      <div><%= "Last Update: Printer Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
       <br>
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
           <%= f.select(:printer_id, @printers.where(:model => "Replicator 2").pluck(:number, :id) , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:user_id, @users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.submit "Submit", class: "save-button" %>
       <% end %>
 
       <h2>Replicator 2x (MakerBot)</h2>
-      <div><%= "Last Update: Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
+      <div><%= "Last Update: Printer Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
       <br>
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
           <%= f.select(:printer_id, @printers.where(:model => "Replicator 2x").pluck(:number, :id) , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:user_id, @users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.submit "Submit", class: "save-button" %>
       <% end %>
 
       <h2>Dremel</h2>
-      <div><%= "Last Update: Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
+      <div><%= "Last Update: Printer Number: #{@last_session_ultimaker.printer.number} | User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
       <br>
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
           <%= f.select(:printer_id, @printers.where(:model => "Dremel").pluck(:number, :id) , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:user_id, @users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.submit "Submit", class: "save-button" %>
       <% end %>
 
