@@ -2,7 +2,7 @@
 
   <div class="edit-column">
 
-    <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path%></h2>
+    <h2><%= link_to "Welcome #{@space.name.capitalize}", staff_dashboard_index_path%></h2>
 
     <div style="float:right;">
       <%=link_to "Download Summary",
@@ -16,6 +16,16 @@
       <%= text_field_tag 'query', nil, placeholder: 'Search users by name, username, email...', class:'profile-text' %><br>
       <%= submit_tag "Search", class: 'update-button' %>
     <% end %>
+    </div>
+
+    <div>
+      <h2>Ultimaker 2+</h2>
+
+      <h2>Repicator 2 (MakerBot)</h2>
+
+      <h2>Replicator 2x (MakerBot)</h2>
+
+      <h2>Dremel</h2>
     </div>
 
     <table class="staff-users-table">
