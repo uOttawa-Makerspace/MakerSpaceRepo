@@ -1,0 +1,45 @@
+<section class="page-contents">
+
+  <div class="edit-column">
+
+    <div class="title">Manage 3D-Printers Usage</div>
+
+
+    <div>
+      <h2>Ultimaker 2+</h2>
+      <div>Number</div>
+      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+          <%= f.hidden_field :user_id, value: current_user.id %>
+          <%= f.select(:printer_id, @printers , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.submit "Submit", class: "save-button" %>
+      <% end %>
+
+
+      <h2>Repicator 2 (MakerBot)</h2>
+      <div>Number</div>
+      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+          <%= f.hidden_field :user_id, value: current_user.id %>
+          <%= f.select(:printer_id, @printers , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.submit "Submit", class: "save-button" %>
+      <% end %>
+
+      <h2>Replicator 2x (MakerBot)</h2>
+      <div>Number</div>
+      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+          <%= f.hidden_field :user_id, value: current_user.id %>
+          <%= f.select(:printer_id, @printers , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.submit "Submit", class: "save-button" %>
+      <% end %>
+
+      <h2>Dremel</h2>
+      <div>Number</div>
+      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+          <%= f.hidden_field :user_id, value: current_user.id %>
+          <%= f.select(:printer_id, @printers , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.submit "Submit", class: "save-button" %>
+      <% end %>
+
+    </div>
+
+  </div>
+</section>

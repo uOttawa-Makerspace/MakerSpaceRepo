@@ -1,7 +1,6 @@
 class StaffDashboardController < StaffAreaController
 
   def index
-    @printers = Printer.all
   end
 
   def sign_out_users
@@ -103,11 +102,6 @@ class StaffDashboardController < StaffAreaController
       format.html
       format.csv {send_data ReportGenerator.present_users_report(@space.id, @user.id)}
     end
-  end
-
-  def link_printer_to_user
-
-
   end
 
  end

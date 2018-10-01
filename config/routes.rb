@@ -10,6 +10,14 @@ Rails.application.routes.draw do
       get :projects_completed
     end
   end
+
+  resources :printers do
+    collection do
+      get :staff_printers
+      patch :link_printer_to_user
+    end
+  end
+
   root "static_pages#home"
 
   # STATIC PAGES

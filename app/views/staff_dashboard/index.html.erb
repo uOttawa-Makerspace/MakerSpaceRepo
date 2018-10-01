@@ -18,22 +18,8 @@
     <% end %>
     </div>
 
-    <div>
-      <h2>Ultimaker 2+</h2>
-      <div class="title">Link to Project Proposal:</div>
-      <%= form_for :printer, url: {controller: "staff_dashboard", action: "link_printer_to_user"}, method: :patch do |f| %>
-          <%= f.hidden_field :user_id, value: @repository.id %>
-          <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
-          <br> </br>
-          <%= f.submit "Link", class: "save-button" %>
-      <% end %>
-    </div>
-
-      <h2>Repicator 2 (MakerBot)</h2>
-
-      <h2>Replicator 2x (MakerBot)</h2>
-
-      <h2>Dremel</h2>
+    <div class="container">
+      <div><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'update-button'%></div>
     </div>
 
     <table class="staff-users-table">

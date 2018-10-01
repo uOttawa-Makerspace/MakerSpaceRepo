@@ -1,3 +1,14 @@
 // Place all the styles related to the StaffDashboard controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+
+div.container {
+  height: 4em;
+  position: relative }
+div.container div {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-right: -50%;
+  transform: translate(-50%, -50%) }
