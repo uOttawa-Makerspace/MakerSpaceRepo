@@ -10,16 +10,16 @@
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
-          <%= f.select(:printer_id, @printers , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:printer_id, @printers.where(:model => "Ultimaker 2+").pluck(:number, :id) , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.submit "Submit", class: "save-button" %>
       <% end %>
 
 
-      <h2>Repicator 2 (MakerBot)</h2>
+      <h2>Replicator 2 (MakerBot)</h2>
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
-          <%= f.select(:printer_id, @printers , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:printer_id, @printers.where(:model => "Replicator 2").pluck(:number, :id) , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.submit "Submit", class: "save-button" %>
       <% end %>
 
@@ -27,7 +27,7 @@
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
-          <%= f.select(:printer_id, @printers , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:printer_id, @printers.where(:model => "Replicator 2x").pluck(:number, :id) , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.submit "Submit", class: "save-button" %>
       <% end %>
 
@@ -35,7 +35,7 @@
       <div>Number</div>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.hidden_field :user_id, value: current_user.id %>
-          <%= f.select(:printer_id, @printers , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:printer_id, @printers.where(:model => "Dremel").pluck(:number, :id) , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.submit "Submit", class: "save-button" %>
       <% end %>
 
