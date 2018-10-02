@@ -13,7 +13,7 @@ class PrintersController < ApplicationController
     printer_id = params[:printer][:printer_id]
     user_id = params[:printer][:user_id]
     if PrinterSession.create(:printer_id => printer_id, :user_id => user_id)
-      flash[:notice] = "Project Session Created"
+      flash[:notice] = "Printer Session Created"
     else
       flash[:alert] = "Something went wrong"
     end
