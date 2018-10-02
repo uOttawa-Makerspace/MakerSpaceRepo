@@ -1,8 +1,8 @@
 class PrintersController < ApplicationController
+  before_action :current_user
   layout 'staff_area'
 
   def staff_printers
-    @user = current_user
     @printers = Printer.all
     @list_users = User.all.pluck(:name, :id)
     @last_session_ultimaker = get_last_session("Ultimaker 2+")
@@ -12,7 +12,6 @@ class PrintersController < ApplicationController
   end
 
   def staff_printers_updates
-    @user = current_user
     @list_users = User.all.pluck(:name, :id)
     @printers = Printer.all
     @last_session_ultimaker = get_last_session("Ultimaker 2+")
