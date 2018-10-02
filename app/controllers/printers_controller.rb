@@ -3,10 +3,22 @@ class PrintersController < ApplicationController
 
   def staff_printers
     @user = current_user
+    @printers = Printer.all
+    @list_users = User.all.pluck(:name, :id)
+    @last_session_ultimaker = get_last_session("Ultimaker 2+")
+    @last_session_replicator2 = get_last_session("Replicator 2")
+    @last_session_replicator2x = get_last_session("Replicator 2x")
+    @last_session_dremel = get_last_session("Dremel")
+  end
+
+  def staff_printers_updates
+    @user = current_user
     @list_users = User.all.pluck(:name, :id)
     @printers = Printer.all
-    @last_session_ultimaker = PrinterSession.joins(:printer).order(created_at: :desc)
-                                      .where("printers.model = ?", "Ultimaker 2+").first
+    @last_session_ultimaker = get_last_session("Ultimaker 2+")
+    @last_session_replicator2 = get_last_session("Replicator 2")
+    @last_session_replicator2x = get_last_session("Replicator 2x")
+    @last_session_dremel = get_last_session("Dremel")
   end
 
   def link_printer_to_user
@@ -18,6 +30,11 @@ class PrintersController < ApplicationController
       flash[:alert] = "Something went wrong"
     end
     redirect_to :back
+  end
+
+  def get_last_session(printer_model)
+    return PrinterSession.joins(:printer).order(created_at: :desc)
+               .where("printers.model = ?", printer_model).first
   end
 
 end

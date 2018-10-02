@@ -14,6 +14,7 @@ Rails.application.routes.draw do
   resources :printers do
     collection do
       get :staff_printers
+      get :staff_printers_updates
       patch :link_printer_to_user
     end
   end
