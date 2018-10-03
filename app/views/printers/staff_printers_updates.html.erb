@@ -10,28 +10,33 @@
 
     <div>
       <h2>Ultimaker 2+</h2>
-      <div><%= "Last Update: Printer Number: #{@last_session_ultimaker.printer.number} |
-                User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
-      <%= render 'printers/updates' %>
-      <br>
+      <% @ultimaker_printer_ids.each do |printer_id| %>
+          <% last_session = Printer.get_last_number_session(printer_id) %>
+          <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
+                                                        :printer_id => last_session.printer_id} if last_session %>
+      <% end %>
 
       <h2>Replicator 2 (MakerBot)</h2>
-      <div><%= "Last Update: Printer Number: #{@last_session_replicator2.printer.number} |
-                User: #{@last_session_replicator2.user.username.capitalize}" if @last_session_replicator2 %></div>
-      <%= render 'printers/updates' %>
-      <br>
+      <% @replicator2_printer_ids.each do |printer_id| %>
+          <% last_session = Printer.get_last_number_session(printer_id) %>
+          <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
+                                                        :printer_id => last_session.printer_id} if last_session %>
+      <% end %>
 
       <h2>Replicator 2x (MakerBot)</h2>
-      <div><%= "Last Update: Printer Number: #{@last_session_replicator2x.printer.number} |
-                User: #{@last_session_replicator2x.user.username.capitalize}" if @last_session_replicator2x %></div>
-      <%= render 'printers/updates' %>
-      <br>
+      <% @replicator2x_printer_ids.each do |printer_id| %>
+          <% last_session = Printer.get_last_number_session(printer_id) %>
+          <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
+                                                        :printer_id => last_session.printer_id} if last_session %>
+      <% end %>
 
       <h2>Dremel</h2>
-      <div><%= "Last Update: Printer Number: #{@last_session_dremel.printer.number} |
-                User: #{@last_session_dremel.user.username.capitalize}" if @last_session_dremel %></div>
-      <%= render 'printers/updates' %>
-      <br>
+      <% @dremel_printer_ids.each do |printer_id| %>
+          <% last_session = Printer.get_last_number_session(printer_id) %>
+          <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
+                                                        :printer_id => last_session.printer_id} if last_session %>
+      <% end %>
+
 
     </div>
   </div>

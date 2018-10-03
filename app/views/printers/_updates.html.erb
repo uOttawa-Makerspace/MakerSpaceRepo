@@ -1,1 +1,4 @@
-<!--add the printers and number and update here-->
+<div><%= "Printer Number: #{Printer.find(printer_id).number} | Last User:" %>
+  <%= User.find(user_id).name.capitalize %>
+</div>
+<br />
