@@ -150,9 +150,11 @@ Rails.application.routes.draw do
       collection do
         post 'add_category'
         post 'add_area'
+        post 'add_printer'
         # post 'rename_category'
         post 'remove_category'
         post 'remove_area'
+        post 'remove_printer'
         post 'add_equipment'
         post 'rename_equipment'
         post 'remove_equipment'

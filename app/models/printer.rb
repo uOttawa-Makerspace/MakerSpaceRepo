@@ -1,5 +1,6 @@
 class Printer < ActiveRecord::Base
   has_many :printer_sessions,     dependent: :destroy
+  scope :show_options, -> { order("lower(model) ASC").all }
 
   def self.get_printer_ids(model)
     return Printer.where(:model => model).pluck(:id)
