@@ -1,5 +1,5 @@
 class PrintersController < ApplicationController
-  before_action :current_user, :ensure_staff
+  before_action :current_user, :user_staff
   layout 'staff_area'
 
   def staff_printers
@@ -31,11 +31,11 @@ class PrintersController < ApplicationController
 
   private
 
-  def ensure_staff
+  def user_staff
     @user = current_user
     unless @user.staff? || @user.admin?
       flash[:alert] = "You cannot access this area."
-      redirect_to '/'
+      redirect_to '/' and return
     end
   end
 
