@@ -45,6 +45,7 @@
     <br>
     <%= form_for @printer, url: {controller: "admin/settings", action: "remove_printer"} do |f| %>
         <%= f.label :remove_a_printer, class: "profile-label" %>
+        <!--TODO: here it should show printer and number for selection -->
         <%= select_tag :remove_printer, options_from_collection_for_select(Printer.show_options, :id, :model), class: "profile-select", include_blank: "Select a printer..." %>
         <%= f.submit "Remove", class: 'save-button' %>
   <% end %>
