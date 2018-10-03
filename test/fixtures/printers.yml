@@ -1,64 +1,116 @@
 one:
   id: 1
   model: Ultimaker 2+
-  number: 1
+  number: UM2P - 01
 two:
   id: 2
   model: Ultimaker 2+
-  number: 2
+  number: UM2P - 02
 three:
   id: 3
   model: Ultimaker 2+
-  number: 3
+  number: UM2P - 03
 four:
   id: 4
   model: Ultimaker 2+
-  number: 4
+  number: UM2P - 04
 five:
   id: 5
   model: Ultimaker 2+
-  number: 5
+  number: UM2P - 06
 six:
   id: 6
   model: Ultimaker 2+
-  number: 6
+  number: UM2P - 07
 seven:
   id: 7
   model: Ultimaker 2+
-  number: 7
+  number: UM2P - 09
 eight:
   id: 8
-  model: Ultimaker 2+
-  number: 8
+  model: Ultimaker 2+ - 0.8 mm
+  number: UM2P - 10
 nine:
   id: 9
   model: Ultimaker 2+
-  number: 9
+  number: UM2P - 12
 ten:
   id: 10
-  model: Ultimaker 2+
-  number: 10
+  model: Ultimaker 2+ - 0.8 mm
+  number: UM2P - 13
 eleven:
   id: 11
-  model: Ultimaker 2+
-  number: 11
+  model: Ultimaker 2+ - 0.8 mm
+  number: UM2P - 16
 twelve:
   id: 12
-  model: Replicator 2
-  number: 1
+  model: Ultimaker 2+
+  number: UM2P - 17
 thirteen:
   id: 13
-  model: Replicator 2
-  number: 2
+  model: Ultimaker 2+
+  number: UM2P - 18
 fourteen:
   id: 14
-  model: Replicator 2
-  number: 3
-sixteen:
+  model: Ultimaker 2+
+  number: UM2P - 19
+fifteen:
   id: 15
-  model: Replicator 2
-  number: 4
-seventeen:
+  model: Ultimaker 2+
+  number: UM2P - 08
+sixteen:
   id: 16
+  model: Ultimaker 2+
+  number: UM2P - 14
+seventeeen:
+  id: 17
   model: Replicator 2
-  number: 5
+  number: RPL2 - 01
+eightteeen:
+  id: 18
+  model: Replicator 2
+  number: RPL2 - 02
+nineteeen:
+  id: 19
+  model: Replicator 2
+  number: RPL2 - 03
+twenty:
+  id: 20
+  model: Replicator 2
+  number: RPL2 - 04
+twentyone:
+  id: 21
+  model: Replicator 2
+  number: RPL2 - 05
+twentytwo:
+  id: 22
+  model: Replicator 2
+  number: RPL2 - 06
+twentythree:
+  id: 23
+  model: Ultimaker 3
+  number: UM3 - 01
+twentyfour:
+  id: 24
+  model: Dremel
+  number: 1-17
+twentyfive:
+  id: 25
+  model: Dremel
+  number: 10-17
+twentysix:
+  id: 26
+  model: Dremel
+  number: 2-18
+twentyseven:
+  id: 27
+  model: Dremel
+  number: 8-17
+twentyeight:
+  id: 28
+  model: Ultimaker 2+
+  number: UM2P - 05
+twentynine:
+  id: 29
+  model: Ultimaker 2+
+  number: UM2P - 11
