@@ -16,15 +16,15 @@
                                                         :printer_id => last_session.printer_id} if last_session %>
       <% end %>
 
-      <h2>Replicator 2 (MakerBot)</h2>
-      <% @replicator2_printer_ids.each do |printer_id| %>
+      <h2>Ultimaker 3</h2>
+      <% @ultimaker3_printer_ids.each do |printer_id| %>
           <% last_session = Printer.get_last_number_session(printer_id) %>
           <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
                                                         :printer_id => last_session.printer_id} if last_session %>
       <% end %>
 
-      <h2>Replicator 2x (MakerBot)</h2>
-      <% @replicator2x_printer_ids.each do |printer_id| %>
+      <h2>Replicator 2 (MakerBot)</h2>
+      <% @replicator2_printer_ids.each do |printer_id| %>
           <% last_session = Printer.get_last_number_session(printer_id) %>
           <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
                                                         :printer_id => last_session.printer_id} if last_session %>
