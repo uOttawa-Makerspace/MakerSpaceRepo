@@ -21,22 +21,22 @@
 
 
 
+      <h2>Ultimaker 3</h2>
+      <div><%= "Last Update: Printer Number: #{@last_session_ultimaker3.printer.number} |
+                User: #{@last_session_ultimaker3.user.username.capitalize}" if @last_session_ultimaker3 %></div>
+      <br>
+      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+          <%= f.select(:printer_id, @printers.where(:model => "Ultimaker 3").pluck(:number, :id) , {prompt: "Choose Number..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:user_id, @list_users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.submit "Submit", class: "save-button" %>
+      <% end %>
+
       <h2>Replicator 2 (MakerBot)</h2>
       <div><%= "Last Update: Printer Number: #{@last_session_replicator2.printer.number} |
                 User: #{@last_session_replicator2.user.username.capitalize}" if @last_session_replicator2 %></div>
       <br>
       <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
           <%= f.select(:printer_id, @printers.where(:model => "Replicator 2").pluck(:number, :id) , {prompt: "Choose Number..."} , {:class => "link_pp", :id => "options"}) %>
-          <%= f.select(:user_id, @list_users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
-          <%= f.submit "Submit", class: "save-button" %>
-      <% end %>
-
-      <h2>Replicator 2x (MakerBot)</h2>
-      <div><%= "Last Update: Printer Number: #{@last_session_replicator2x.printer.number} |
-                User: #{@last_session_replicator2x.user.username.capitalize}" if @last_session_replicator2x %></div>
-      <br>
-      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
-          <%= f.select(:printer_id, @printers.where(:model => "Replicator 2x").pluck(:number, :id) , {prompt: "Choose Number..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.select(:user_id, @list_users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
           <%= f.submit "Submit", class: "save-button" %>
       <% end %>
