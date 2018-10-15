@@ -6,7 +6,7 @@ class PrintersController < ApplicationController
     @printers = Printer.all
     @list_users = User.all.pluck(:name, :id)
     @last_session_ultimaker = Printer.get_last_model_session("Ultimaker 2+")
-    @last_session_ultimaker_3 = Printer.get_last_model_session("Ultimaker 3")
+    @last_session_ultimaker3 = Printer.get_last_model_session("Ultimaker 3")
     @last_session_replicator2 = Printer.get_last_model_session("Replicator 2")
     @last_session_dremel = Printer.get_last_model_session("Dremel")
   end
