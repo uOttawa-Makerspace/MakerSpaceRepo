@@ -13,28 +13,32 @@
       <% @ultimaker_printer_ids.each do |printer_id| %>
           <% last_session = Printer.get_last_number_session(printer_id) %>
           <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
-                                                        :printer_id => last_session.printer_id} if last_session %>
+                                                        :printer_id => last_session.printer_id,
+                                                        :created_at => last_session.created_at.strftime(" | %A, %m/%d/%Y at %I:%M%p")} if last_session %>
       <% end %>
 
       <h2>Ultimaker 3</h2>
       <% @ultimaker3_printer_ids.each do |printer_id| %>
           <% last_session = Printer.get_last_number_session(printer_id) %>
           <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
-                                                        :printer_id => last_session.printer_id} if last_session %>
+                                                        :printer_id => last_session.printer_id,
+                                                        :created_at => last_session.created_at.strftime(" | %A, %m/%d/%Y at %I:%M%p")} if last_session %>
       <% end %>
 
       <h2>Replicator 2 (MakerBot)</h2>
       <% @replicator2_printer_ids.each do |printer_id| %>
           <% last_session = Printer.get_last_number_session(printer_id) %>
           <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
-                                                        :printer_id => last_session.printer_id} if last_session %>
+                                                        :printer_id => last_session.printer_id,
+                                                        :created_at => last_session.created_at.strftime(" | %A, %m/%d/%Y at %I:%M%p")} if last_session %>
       <% end %>
 
       <h2>Dremel</h2>
       <% @dremel_printer_ids.each do |printer_id| %>
           <% last_session = Printer.get_last_number_session(printer_id) %>
           <%= render :partial => 'updates', :locals => {:user_id => last_session.user_id,
-                                                        :printer_id => last_session.printer_id} if last_session %>
+                                                        :printer_id => last_session.printer_id,
+                                                        :created_at => last_session.created_at.strftime(" | %A, %m/%d/%Y at %I:%M%p")} if last_session %>
       <% end %>
 
 

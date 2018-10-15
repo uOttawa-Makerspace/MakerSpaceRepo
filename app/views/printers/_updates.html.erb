@@ -1,5 +1,6 @@
 <div><%= "Printer Number: #{Printer.find(printer_id).number} | Last User:" %>
   <% username = User.find(user_id).username%>
   <b class="username"><%= link_to username.capitalize, user_path(username) %></b>
+  <%= created_at %>
 </div>
 <br />
