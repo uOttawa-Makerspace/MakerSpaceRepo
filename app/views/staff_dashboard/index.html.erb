@@ -18,6 +18,10 @@
     <% end %>
     </div>
 
+    <div class="container">
+      <div><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'update-button'%></div>
+    </div>
+
     <table class="staff-users-table">
         Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%>
         <% if @space.signed_in_users.present? %>

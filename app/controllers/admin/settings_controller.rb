@@ -6,6 +6,7 @@ class Admin::SettingsController < AdminAreaController
     @cat_option = CategoryOption.new
     @pi_option = PiReader.new
     @area_option = AreaOption.new
+    @printer = Printer.new
   end
 
   def add_category
@@ -26,6 +27,17 @@ class Admin::SettingsController < AdminAreaController
       @area_option = AreaOption.new(area_params)
       @area_option.save
       flash[:notice] = "Area added successfully!"
+    end
+    redirect_to admin_settings_path
+  end
+
+  def add_printer
+    if !params[:printer][:model].present? || !params[:printer][:number].present?
+      flash[:alert] = "Invalid printer model or number"
+    else
+      @printer = Printer.new(printer_params)
+      @printer.save
+      flash[:notice] = "Printer added successfully!"
     end
     redirect_to admin_settings_path
   end
@@ -63,12 +75,26 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
 
+  def remove_printer
+    if params[:remove_printer]!=""
+      Printer.where(id: params[:remove_printer]).destroy_all
+      flash[:notice] = "Printer removed successfully!"
+    else
+      flash[:alert] = "Please select a Printer."
+    end
+    redirect_to admin_settings_path
+  end
+
   def cat_params
     params.require(:category_option).permit(:name)
   end
 
   def area_params
     params.require(:area_option).permit(:name)
+  end
+
+  def printer_params
+    params.require(:printer).permit(:model, :number)
   end
 
   def add_equipment

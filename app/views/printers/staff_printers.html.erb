@@ -1,0 +1,62 @@
+<section class="page-contents">
+
+  <div class="edit-column">
+
+    <div class="title">Manage 3D-Printers Usage</div>
+
+    <div class="container">
+      <div><%= link_to "View Last Updates All 3D-Printers", staff_printers_updates_printers_path, class: 'update-button'%></div>
+    </div>
+
+    <div>
+      <h2>Ultimaker 2+</h2>
+      <div><%= "Last Update: Printer Number: #{@last_session_ultimaker.printer.number} |
+                User: #{@last_session_ultimaker.user.username.capitalize}" if @last_session_ultimaker %></div>
+      <br>
+      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+          <%= f.select(:printer_id, @printers.where(:model => "Ultimaker 2+").pluck(:number, :id) , {prompt: "Choose Number..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:user_id, @list_users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.submit "Submit", class: "save-button" %>
+      <% end %>
+
+
+
+      <h2>Replicator 2 (MakerBot)</h2>
+      <div><%= "Last Update: Printer Number: #{@last_session_replicator2.printer.number} |
+                User: #{@last_session_replicator2.user.username.capitalize}" if @last_session_replicator2 %></div>
+      <br>
+      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+          <%= f.select(:printer_id, @printers.where(:model => "Replicator 2").pluck(:number, :id) , {prompt: "Choose Number..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:user_id, @list_users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.submit "Submit", class: "save-button" %>
+      <% end %>
+
+      <h2>Replicator 2x (MakerBot)</h2>
+      <div><%= "Last Update: Printer Number: #{@last_session_replicator2x.printer.number} |
+                User: #{@last_session_replicator2x.user.username.capitalize}" if @last_session_replicator2x %></div>
+      <br>
+      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+          <%= f.select(:printer_id, @printers.where(:model => "Replicator 2x").pluck(:number, :id) , {prompt: "Choose Number..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:user_id, @list_users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.submit "Submit", class: "save-button" %>
+      <% end %>
+
+      <h2>Dremel</h2>
+      <div><%= "Last Update: Printer Number: #{@last_session_dremel.printer.number} |
+                User: #{@last_session_dremel.user.username.capitalize}" if @last_session_dremel %></div>
+      <br>
+      <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+          <%= f.select(:printer_id, @printers.where(:model => "Dremel").pluck(:number, :id) , {prompt: "Choose Number..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.select(:user_id, @list_users , {prompt: "Choose User..."} , {:class => "link_pp", :id => "options"}) %>
+          <%= f.submit "Submit", class: "save-button" %>
+      <% end %>
+
+    </div>
+  </div>
+</section>
+
+<script>
+    $(document).ready(function() {
+        $(".link_pp").select2({});
+    });
+</script>

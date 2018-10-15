@@ -10,6 +10,15 @@ Rails.application.routes.draw do
       get :projects_completed
     end
   end
+
+  resources :printers do
+    collection do
+      get :staff_printers
+      get :staff_printers_updates
+      patch :link_printer_to_user
+    end
+  end
+
   root "static_pages#home"
 
   # STATIC PAGES
@@ -141,9 +150,11 @@ Rails.application.routes.draw do
       collection do
         post 'add_category'
         post 'add_area'
+        post 'add_printer'
         # post 'rename_category'
         post 'remove_category'
         post 'remove_area'
+        post 'remove_printer'
         post 'add_equipment'
         post 'rename_equipment'
         post 'remove_equipment'
