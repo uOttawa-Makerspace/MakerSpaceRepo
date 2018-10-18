@@ -6,7 +6,7 @@ class MsrMailer < ApplicationMailer
 		mail(to: @user.email, subject: "Welcome to MakerRepo")
 	end
 
-	def self.send_ommic
+	def send_ommic
 		attachments['ommic1.png'] = File.read(asset_path('mail/ommic1.png'))
 		attachments['ommic2.jpg'] = File.read(asset_path('mail/ommic2.jpg'))
 		attachments['ommic1.jpg'] = File.read(asset_path('mail/ommic1.jpg'))
