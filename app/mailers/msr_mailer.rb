@@ -7,11 +7,10 @@ class MsrMailer < ApplicationMailer
 	end
 
 	def send_ommic
-		all_users = User.all
 		attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
 		attachments['ommic2.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic2.jpg")
 		attachments['ommic1.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic3.jpg")
-		mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students', bcc: all_users.map(&:email).uniq)
+		mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students')
 	end
 
 	def repo_report(repository)
