@@ -7,11 +7,15 @@ class MsrMailer < ApplicationMailer
 	end
 
 	def send_ommic
-		@user = User.find_by_email('bmont037@uottawa.ca')
-		attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
-		attachments['ommic2.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic2.jpg")
-		attachments['ommic1.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic3.jpg")
-		mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students', bcc: 'zalfa033@uottawa.ca')
+		all_users = User.where(:role => 'admin')
+		all_users.each do |user|
+			@user = user
+			attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
+			attachments['ommic2.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic2.jpg")
+			attachments['ommic1.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic3.jpg")
+			mail(to: user.email, subject: 'OMMIC Conference | Discount for students', bcc: 'zalfa033@uottawa.ca')
+		end
+
 	end
 
 	def repo_report(repository)
