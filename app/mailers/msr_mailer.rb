@@ -7,7 +7,7 @@ class MsrMailer < ApplicationMailer
 	end
 
 	def send_ommic
-		User.all.pluck(:email).each_slice(700) {|a|
+		User.all.pluck(:email).each_slice(100) {|a|
 			attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
 			attachments['ommic2.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic2.jpg")
 			attachments['ommic1.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic3.jpg")
