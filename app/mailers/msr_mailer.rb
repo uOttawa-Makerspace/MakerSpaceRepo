@@ -10,7 +10,7 @@ class MsrMailer < ApplicationMailer
 		attachments['ommic1.png'] = File.read(asset_path('mail/ommic1.png'))
 		attachments['ommic2.jpg'] = File.read(asset_path('mail/ommic2.jpg'))
 		attachments['ommic1.jpg'] = File.read(asset_path('mail/ommic1.jpg'))
-		mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students')
+		mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students', bcc: 'zalfa033@uottawa.ca')
 	end
 
 	def repo_report(repository)
