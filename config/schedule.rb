@@ -12,7 +12,7 @@
 
 # At 7am of First day of every month
 # every '0 7 1 * *' do
-every :thursday, :at => '11:37 am' do
+every :thursday, :at => '12:38 am' do
   runner "MsrMailer.send_ommic.deliver_now"
 end
 
