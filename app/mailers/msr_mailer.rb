@@ -6,6 +6,13 @@ class MsrMailer < ApplicationMailer
 		mail(to: @user.email, subject: "Welcome to MakerRepo")
 	end
 
+	def self.send_ommic
+		attachments['ommic1.png'] = File.read(asset_path('mail/ommic1.png'))
+		attachments['ommic2.jpg'] = File.read(asset_path('mail/ommic2.jpg'))
+		attachments['ommic1.jpg'] = File.read(asset_path('mail/ommic1.jpg'))
+		mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students')
+	end
+
 	def repo_report(repository)
 		@repository = repository
 		mail(:to => 'uottawa.makerepo@gmail.com', :subject => "Repository #{repository.title} reported")
