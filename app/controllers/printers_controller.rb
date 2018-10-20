@@ -21,12 +21,16 @@ class PrintersController < ApplicationController
   def link_printer_to_user
     printer_id = params[:printer][:printer_id]
     user_id = params[:printer][:user_id]
-    if PrinterSession.create(:printer_id => printer_id, :user_id => user_id)
+    if !printer_id.present? || !user_id.present?
+      flash[:alert] = "Please add both printer and user."
+      redirect_to staff_printers_printers_path
+    elsif PrinterSession.create(:printer_id => printer_id, :user_id => user_id)
       flash[:notice] = "Printer Session Created"
+      redirect_to staff_printers_printers_path
     else
       flash[:alert] = "Something went wrong"
+      redirect_to staff_printers_printers_path
     end
-    redirect_to :back
   end
 
   private
