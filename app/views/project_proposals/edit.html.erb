@@ -33,7 +33,7 @@
       <div>Great project titles are short and memorable.</div>
       <%= f.text_field :title, class: 'repo' %>
       <br>
-      <%= f.label :area, "Area/Domaine" %>
+      <%= f.label :area, "Client Level of Interest" %>
       <div>Which area(s) does your project touch on? <br> Votre projet touche sur quel(s) domaine(s)?</div>
       <div class = 'checkbox-list'>
         <%= f.collection_check_boxes :area, AreaOption.show_options, :name, :name do |b| %>
