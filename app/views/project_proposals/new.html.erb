@@ -30,13 +30,32 @@
       <div>Great project titles are short and memorable.<br>Des titres de projets génial sont court et mémorable.</div>
       <%= f.text_field :title, class: 'repo' %>
       <br>
-      <%= f.label :area, "Area/Domaine" %>
-      <div>Which area(s) does your project touch on? <br> Votre projet touche sur quel(s) domaine(s)?</div>
+      <%= f.label :client_interest, "Client Level of Interest/Niveau d'intérêt du Client" %>
+      <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
       <div class = 'checkbox-list'>
-      <%= f.collection_check_boxes :area, AreaOption.show_options, :name, :name do |b| %>
-          <%= b.label { b.check_box + b.text } %>
-      <% end %>
+        <%= f.radio_button :client_interest, 'Low', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label :client_type, 'Low', :id => 'type', :style => 'display:inline' %>
+        <br>
+        <%= f.radio_button :client_interest, 'Medium', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label :client_type, 'Medium', :id => 'type', :style => 'display:inline' %>
+        <br>
+        <%= f.radio_button :client_interest, 'High', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label :client_type, 'High', :id => 'type', :style => 'display:inline' %>
       </div>
+      <br />
+      <%= f.label :client_background, "Client Background/Fond de Client" %>
+      <div>What is the client background?<br>Quel est le fond du client?</div>
+      <%= f.text_field :client_background, class: 'repo' %>
+      <br />
+      <%= f.label :supervisor_background, "Supervisor Background/Fond de Superviseur" %>
+      <div>What is the supervisor background?<br>Quel est le fond du superviseur?</div>
+      <%= f.text_field :supervisor_background, class: 'repo' %>
+      <br />
+      <!--<div class = 'checkbox-list'>-->
+      <!--<%= f.collection_check_boxes :area, AreaOption.show_options, :name, :name do |b| %>-->
+          <!--<%= b.label { b.check_box + b.text } %>-->
+      <!--<% end %>-->
+      <!--</div>-->
       <br> <br>
       <%= f.label :description %>
       <div style="width: 420px;">
