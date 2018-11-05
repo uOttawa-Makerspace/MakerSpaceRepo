@@ -137,7 +137,9 @@ class ProjectProposalsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_proposal_params
-      params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description, :youtube_link, :username, :email, :client, :client_type ,:area => [])
+      params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description,
+                                               :youtube_link, :username, :email, :client, :client_type,
+                                               :client_interest, :client_background, :supervisor_background ,:area => [])
     end
 
     def create_categories
