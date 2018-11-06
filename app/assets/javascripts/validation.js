@@ -45,7 +45,7 @@ function validation_proposal(){
     var email = $("input#project_proposal_email");
     var client = $("input#project_proposal_client");
     var client_background = $("input#project_proposal_client_background");
-    var supervisor_background = $("input#project_proposal_supervisor_background");
+    var description = $("#redactor");
     $('span.form-error.repo-form').remove();
     var span = $('<span>').addClass('form-error repo-form');
     var regex = /^[-a-zA-Z\d\s]*$/;
@@ -84,6 +84,12 @@ function validation_proposal(){
     if( client_background.val().length === 0 ){
         span.text("Client background is required.");
         $('input#project_proposal_client_background').before(span);
+        return false;
+    }
+
+    if( description.val().length === 0 ){
+        span.text("Description is required.");
+        $('#redactor').before(span);
         return false;
     }
     return true
