@@ -3,8 +3,9 @@ class PrintersController < ApplicationController
   layout 'staff_area'
 
   def staff_printers
+    @list_users = User.where(id: LabSession.where("sign_out_time > ? AND space_id = ?", Time.zone.now, 1).pluck(:user_id)).pluck(:name, :id)
+
     @printers = Printer.all
-    @list_users = User.all.pluck(:name, :id)
     @last_session_ultimaker = Printer.get_last_model_session("Ultimaker 2+")
     @last_session_ultimaker3 = Printer.get_last_model_session("Ultimaker 3")
     @last_session_replicator2 = Printer.get_last_model_session("Replicator 2")
