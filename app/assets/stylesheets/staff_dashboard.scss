@@ -2,10 +2,10 @@
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
 
-div.container {
+div#printer-div {
   height: 4em;
   position: relative }
-div.container div {
+div.container div#printer-div-2 {
   margin: 0;
   position: absolute;
   top: 50%;
