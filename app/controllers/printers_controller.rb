@@ -5,7 +5,6 @@ class PrintersController < ApplicationController
   def staff_printers
     @printers = Printer.all
     @list_users = User.joins(:lab_sessions).where("lab_sessions.sign_out_time > ? AND lab_sessions.space_id = ?", Time.zone.now, 1).pluck(:name, :id)
-    @list_users = User.all.pluck(:name, :id)
     @last_session_ultimaker = Printer.get_last_model_session("Ultimaker 2+")
     @last_session_ultimaker3 = Printer.get_last_model_session("Ultimaker 3")
     @last_session_replicator2 = Printer.get_last_model_session("Replicator 2")
