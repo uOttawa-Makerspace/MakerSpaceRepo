@@ -23,7 +23,7 @@
     </div>
 
     <table class="staff-users-table">
-        Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%>
+      <p>Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%></p>
         <% if @space.signed_in_users.present? %>
           <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'download-button' %>
         <%end%>
@@ -104,7 +104,7 @@
     <br></br>
 
     <table class="staff-recent-users-table">
-      Users recently signed out of <%=@space.name%></h2>
+      <p>Users recently signed out of <%=@space.name%></p>
       <tr>
         <th class="name-header">Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
         <th class="email-header">Email <span onclick="sortTable('staff-recent-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
