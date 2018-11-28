@@ -14,9 +14,9 @@
     <br></br>
     <% if @user.admin?%>
         <%= link_to "Approve", approval_project_proposals_path(:id => @project_proposal.id), method: :post,
-                    class: "green-button", data: {confirm: 'Are you sure? This will approve the project.'} %>
+                    class: "btn btn-success", data: {confirm: 'Are you sure? This will approve the project.'} %>
         <%= link_to "Disapprove", disapproval_project_proposals_path(id: @project_proposal.id), method: :post,
-                    class: "delete-button", data: {confirm: 'Are you sure? This will disapprove the project.'} %>
+                    class: "btn btn-danger", data: {confirm: 'Are you sure? This will disapprove the project.'} %>
     <% end %>
     <% if @project_proposal.description.present? %>
         <div class="repo-desc">
@@ -29,10 +29,10 @@
         <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
         <% if @project_join.present? %>
         <%= link_to "Leave Project", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
-                    class: "delete-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
+                    class: "btn btn-danger", data: {confirm: 'Are you sure that you want to join this project?'} %>
         <% elsif @user.id.present? %>
         <%= link_to "Join Project", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
-                    class: "coldblue-button", data: {confirm: 'Are you sure that you want to join this project?'} %>
+                    class: "btn btn-primary", data: {confirm: 'Are you sure that you want to join this project?'} %>
       <% end %>
       <br></br>
       <% if @project_proposal.project_joins.present? %>
@@ -47,17 +47,17 @@
       <br><br><br>
       <% if @user.admin?%>
           <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
-                      class: "delete-button", data: {confirm: 'Are you sure?'} %>
+                      class: "btn btn-danger", data: {confirm: 'Are you sure?'} %>
           <br></br>
           <% if @project_proposal.approved.present? &&  @project_proposal.admin_id.present? %>
               <% admin_username = User.find(@project_proposal.admin_id).username %>
-              <div> This project was reviwed by:
+              <div> This project was reviewed by:
                 <p class="username"><%= link_to admin_username, user_path(admin_username) %></p>
               </div>
           <% elsif @project_proposal.approved.present? %>
-              <div class="title">This project was reviwed.</div>
+              <div class="title">This project was reviewed.</div>
           <% else %>
-              <div class="title">This project was not reviwed yet.</div>
+              <div class="title">This project was not reviewed yet.</div>
           <% end %>
       <% end %>
     </div>
@@ -109,7 +109,7 @@
       <% if @user.id.present? %>
         <div class="repo-info-item">
         <%= link_to "Create Repository", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
-                    class: "coldgreen-button",
+                    class: "btn btn-success",
                     data: {confirm: 'This action will create a repository related to this project proposal'} %>
         </div>
       <% end %>

@@ -27,6 +27,7 @@ gem 'aws-sdk', '~> 2.0'
 gem 'rubyzip', '~> 1.1', require: 'zip'
 gem 'will_paginate'
 gem 'mocha'
+gem 'bootstrap', '~> 4.1.3'
 gem "select2-rails"
 gem 'whenever', require: false
 gem 'youtube_id'

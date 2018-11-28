@@ -7,16 +7,18 @@
   <%= form_for @repository, url: {controller: "repositories", action: "update"}, html: { multipart: true } do |f| %>
 
     <br>
+    <div class="form-group">
     <%= f.label :title, "Title" %>
     <div>Great project titles are short and memorable.</div>
-    <%= f.text_field :title, class: 'repo' %>
-
+    <%= f.text_field :title, class: 'repo form-control' %>
+    </div>
+    <div class="form-group">
     <br>
     <%= f.label :description %>
     <div style="width: 420px;">
-      <%= f.text_area :description, class: 'repo', id: 'redactor' %>
+      <%= f.text_area :description, class: 'repo form-control', id: 'redactor' %>
     </div>
-
+    </div>
     <%= label_tag :file, "Project files" %>
     <label class="custom-instructable-upload">
       <%= file_field_tag 'files[]', type: :files, multiple: true %>
@@ -39,7 +41,7 @@
     <%= label_tag :photo, "Gallery" %>
     <div>A maximum of five photos can be uploaded per repository.</div>
     <div class="repo-image">
-      <div id="dragndrop">
+      <div id="dragndrop"</div>>
         <%= fa_icon 'cloud-upload'%>
         <p>Drag &amp; Drop</p>
       </div>
@@ -59,15 +61,15 @@
     <% end %>
     <%= hidden_field_tag 'deleteimages' %>
     </div>
-
+    <div class="form-group">
     <%= f.label :youtube_link, "Youtube Link" %>
     <div>Your project will be better understood with a 1 min Youtube video.<br>Votre projet sera mieux compris avec une vidéo Youtube de 1 minute</div>
-    <%= f.text_field :youtube_link, class: 'repo' %>
-
+    <%= f.text_field :youtube_link, class: 'repo form-control' %>
+    </div>
     <br>
     <%= f.label :categories %>
     <div>Choose at most 5 categories that fit your project.</div>
-    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category..." %>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), include_blank: "Select a category..." %>
 
     <div id="category-container">
       <% @categories.each do |category| %>
@@ -103,9 +105,9 @@
           <div id = "change_pass"><input type="checkbox" , id= "change", onclick= "togglePass();">Change Password</div>
         <% end %>
 
-        <div id="pass">
+        <div id="pass" class="form-group">
           <br>
-          <%= text_field_tag :password, nil, placeholder: 'Password', id:'password', style: "display: none;" %>
+          <%= password_field :password, nil, placeholder: 'Password', id: 'password', style: "display: none;", class: "form-control" %>
         </div>
 
     </div>
@@ -115,7 +117,7 @@
     <br>
     <br>
     <% content_tag "repository[slug]", @repository.slug%>
-    <%= f.submit "Update Project", class: "save-button", id: "waiting-save-button" %>
+    <%= f.submit "Update Project", class: "btn btn-primary", id: "waiting-save-button" %>
     <span id="status-save"></span>
     <% if flash[:alert] %>
       <div id="alert"><%= flash[:alert] %></div>

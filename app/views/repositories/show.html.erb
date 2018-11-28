@@ -26,10 +26,10 @@
     <% if @user.admin?%>
         Currently Featured: <%=  @repository.featured.to_s.upcase %><br></br>
         <%= link_to "Feature / Unfeature", pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
-            class: "pin-button" %>
+            class: "btn btn-primary" %>
         <br></br>
         <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
-            class: "delete-button", data: {confirm: 'Are you sure?'} %>
+            class: "btn btn-danger", data: {confirm: 'Are you sure?'} %>
     <% end %>
 
 
@@ -142,10 +142,12 @@
         <div class="repo-info-item">
           <div class="title">Link to Project Proposal:</div>
           <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
+            <div class="form-group">
               <%= f.hidden_field :repository_id, value: @repository.id %>
-              <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+              <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
               <br> </br>
-              <%= f.submit "Link", class: "save-button" %>
+              <%= f.submit "Link", class: "btn btn-primary" %>
+            </div>
           <% end %>
           </div>
         </div>
@@ -157,10 +159,10 @@
   <section id="repo-comments">
     <div class="title">Comments</div>
     <%= form_tag comments_create_path, id: 'comment', remote: true do %>
-      <div style="max-width: 50rem">
-        <%= text_area_tag 'content', nil, rows: 5, id: 'comment-redactor' %>
+      <div style="max-width: 50rem" class="form-group">
+        <%= text_area_tag 'content', nil, rows: 5, id: 'comment-redactor', class: "form-control" %>
       </div>
-      <%= submit_tag 'Post comment' %>
+      <%= submit_tag 'Post comment', class: "btn btn-primary" %>
     <% end %>
 
     <div id="comment-filters">

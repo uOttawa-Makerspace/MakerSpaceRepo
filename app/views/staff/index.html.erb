@@ -18,9 +18,11 @@
 
     <div>
       <%= form_tag(staff_dashboard_change_space_path, method: "put", action: "change_space") do %>
+        <div class="form-group">
         <% label_tag 'space_name' %>
-        <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "space-selector" %><br></br>
-      <%= submit_tag "update", class: "update-button" %>
+        <%= select_tag 'space_name', options_from_collection_for_select(Space.all, 'name', 'name'), prompt: 'choose different space', class: "form-control" %><br></br>
+      <%= submit_tag "update", class: "btn btn-primary" %>
+        </div>
       <%end%>
     </div>
 

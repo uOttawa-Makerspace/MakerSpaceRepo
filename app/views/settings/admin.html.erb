@@ -9,19 +9,22 @@
 
   <%= form_for @user, url: change_password_user_path(@user.username) do |f| %>
 
+    <div class="form-group">
     <%= f.label :old_password, "Old Password", class: "profile-label" %>
     <%= content_tag :span, flash[:alert], class: 'form-error' if flash[:alert] %>
-    <%= f.password_field :old_password, value: nil, class: "profile-text", autofocus: true %>
-
+    <%= f.password_field :old_password, value: nil, class: "profile-text form-control", autofocus: true %>
+    </div>
+    <div class="form-group">
     <%= f.label :password, "New Password", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:password].first, class: 'form-error' %>
-    <%= f.password_field :password, value: nil, class: "profile-text" %>
-
+    <%= f.password_field :password, value: nil, class: "profile-text form-control" %>
+    </div>
+    <div class="form-group">
     <%= f.label :password_confirmation, "New Password Confirmation", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:password_confirmation].first, class: 'form-error' %>
-    <%= f.password_field :password_confirmation, class: "profile-text" %>
-
-    <%= f.submit "Update Password", class: "save-button" %>
+    <%= f.password_field :password_confirmation, class: "profile-text form-control" %>
+    </div>
+    <%= f.submit "Update Password", class: "btn btn-secondary" %>
 
   <% end %>
 
@@ -34,9 +37,10 @@
   <% unless github? %>
     <div class="info">
       You currently do not have a github account linked to MakerRepo.
+      <br><br>
     </div>
     <%= link_to fa_icon("github", text: 'Authorize access to your Github'),
-      github_authorize_path, class: 'github-auth' %>
+      github_authorize_path, class: 'btn btn-secondary' %>
   <% else %>
     <div class="github-info">
       Connected as: <%= link_to "@#{@client.login}", @client_info.html_url %>
