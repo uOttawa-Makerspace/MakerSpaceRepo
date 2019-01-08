@@ -8,24 +8,27 @@
       <%=link_to "Download Summary",
           staff_dashboard_present_users_report_path(format: "csv" ),
           action: :training_report,
-          class:"download-button" %>
+          class:"btn btn-secondary" %>
     </div>
 
     <div class="search-form" style="display:inline"> Search for users to sign them in or out of <%=@space.name.capitalize%>:
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
-      <%= text_field_tag 'query', nil, placeholder: 'Search users by name, username, email...', class:'profile-text' %><br>
-      <%= submit_tag "Search", class: 'update-button' %>
+        <div class="form-group">
+      <%= text_field_tag 'query', nil, placeholder: 'Search users by name, username, email...', class:'form-control' %><br>
+        </div>
+      <%= submit_tag "Search", class: 'btn btn-primary' %>
     <% end %>
     </div>
+    <br />
 
-    <div class="container" id="printer-div">
-      <div id="printer-div-2"><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'update-button'%></div>
+    <div class="container" style="padding-left: 0px!important;">
+      <div><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'btn btn-secondary'%></div>
     </div>
-
+    <br>
     <table class="staff-users-table">
-      <p>Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%></p>
+        <p>Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%></p>
         <% if @space.signed_in_users.present? %>
-          <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'download-button' %>
+          <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary' %>
         <%end%>
         <tr>
           <th class="name-header">Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
@@ -34,7 +37,6 @@
           <th class="email-header"> # of visits <br> (Past 2 months)<span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header">Sign Out of <%=@space.name.capitalize%></th>
         </tr>
-
         <% @space.signed_in_users.each do |user| %>
 
         <%if user.read_and_accepted_waiver_form%>

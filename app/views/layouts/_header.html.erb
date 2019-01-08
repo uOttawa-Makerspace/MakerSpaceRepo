@@ -1,63 +1,84 @@
 <section id="header">
-  <div class="inner">
-  <% unless signed_in? %>
-    <span class="header-menu-item not-signed-in"><%= link_to 'Sign Up<br>Créer un Compte'.html_safe, new_user_path %></span>
-    <span class="header-menu-item not-signed-in"><%= link_to 'Log In<br>Connexion'.html_safe, login_path %></span>
-    <span class="header-menu-item"><%= link_to 'Explore<br>Explorer'.html_safe, explore_path %></span>
-    <span class="header-menu-item menu-button no-padding" id="menu-button2"><%= link_to 'Project Proposals<br>Propositions de Projet'.html_safe, project_proposals_path %>
-      <ul id="menu2">
-        <li><%= link_to 'Propose a Project', new_project_proposal_path %></li>
-        <li><%= link_to 'Projects Available', project_proposals_path %></li>
-        <li><%= link_to 'Projects Assigned', projects_assigned_project_proposals_path %></li>
-        <li><%= link_to 'Projects Completed', projects_completed_project_proposals_path %></li>
-      </ul>
-    </span>
-  <% else %>
-    <span class="header-menu-item menu-button" id="menu-button1">
-      <%= link_to user_path(@user.username) do %>
-        <%= image_tag @user.avatar.url, class: 'main-avatar-thumbnail', alt: 'Avatar' %>
-        <%= @user.username %>
-      <% end %>
-      <ul id="menu1">
-        <li><%= link_to 'Profile', user_path(@user.username) %></li>
-        <li><%= link_to 'Liked', likes_user_path(@user.username) %></li>
-        <li><%= link_to 'Settings', settings_profile_path  %></li>
-        <li><%= link_to 'Help', help_path  %></li>
-        <%= content_tag :li, link_to('Admin Area', admin_index_path ) if @user.admin? %>
-        <%= content_tag :li, link_to('Staff Area', staff_index_path ) if @user.staff? %>
-        <li><%= link_to 'Sign Out', logout_path %></li>
-      </ul>
-    </span>
-    <span class="header-menu-item"><%= link_to 'Create<br>Créer'.html_safe, new_repository_path(@user.username) %></span>
-    <span class="header-menu-item"><%= link_to 'Explore<br>Découvrez'.html_safe, explore_path %></span>
-    <span class="header-menu-item menu-button no-padding" id="menu-button2"><%= link_to 'Project Proposals<br>Propositions de Projet'.html_safe, project_proposals_path %>
-      <ul id="menu2">
-        <li><%= link_to 'Propose a Project', new_project_proposal_path %></li>
-        <li><%= link_to 'Projects Available', project_proposals_path %></li>
-        <li><%= link_to 'Projects Assigned', projects_assigned_project_proposals_path %></li>
-        <li><%= link_to 'Projects Completed', projects_completed_project_proposals_path %></li>
-      </ul>
-    </span>
-  <% end %>
-  <span id = "side-menu" onclick="toggleNav()">&#9776;</span>
-  <div id="mySidenav" class="sidenav">
-    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-    <a id="item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537" target="_blank">Makerspace Events</a>
-    <a id="item" href="https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765" target="_blank">Brunsfield Events</a>
-    <a id="item" href="http://volunteer.makerepo.com/" target="_blank">Volunteers</a>
-    <a id="item" href="http://volunteer.makerepo.com/resources.html" target="_blank">Resources</a>
-    <a id="item" href="https://uottawa-makerspace.myshopify.com/" target="_blank">Makerstore</a>
-    <%= link_to 'Calendar'.html_safe, calendar_path, id: "item" %>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <span id="side-menu" onclick="toggleNav()">&#9776;</span>
+    <div id="mySidenav" class="sidenav">
+      <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+      <a id="item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537" target="_blank">Makerspace
+        Events</a>
+      <a id="item" href="https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765" target="_blank">Brunsfield
+        Events</a>
+      <a id="item" href="http://volunteer.makerepo.com/" target="_blank">Volunteers</a>
+      <a id="item" href="http://volunteer.makerepo.com/resources.html" target="_blank">Resources</a>
+      <a id="item" href="https://uottawa-makerspace.myshopify.com/" target="_blank">Makerstore</a>
+      <%= link_to 'Calendar'.html_safe, calendar_path, id: "item" %>
 
-  </div>
+    </div>
+    <a class="navbar-brand" href="/">Maker<b>Repo</b></a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <form class="form-inline my-2 my-lg-0" action="/search" method="get">
+      <input class="form-control mr-sm-2" type="search" name="q" id="q" placeholder="Search" aria-label="Search">
+      <button class="btn btn-outline-success my-2 my-sm-0" type="submit" style="height: auto">
+        <i class="fa fa-search"></i></button>
+    </form>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent" style="
+    justify-content: flex-end; margin-right:5px!important">
+      <ul class="navbar-nav mr-auto" style="margin-right:15px!important;">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="/project_proposals" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Project Proposals<br>Propositions de Projet
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="/project_proposals/new">Propose a Project</a>
+            <a class="dropdown-item" href="/project_proposals">Projects Available</a>
+            <a class="dropdown-item" href="/project_proposals/projects_assigned">Projects Assigned</a>
+            <a class="dropdown-item" href="/project_proposals/projects_completed">Projects Completed</a>
+          </div>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/explore">Explore<br>Découvrez</a>
+        </li>
 
-  <span class="msr-logo">
-    <%= link_to root_path do %>Maker<b>Repo</b><% end %>
-    <%= form_tag search_path, method: :get, class: 'header-search' do %>
-      <%= fa_icon('search') %>
-      <%= text_field_tag 'q', nil, placeholder: 'Search' %>
-    <% end %>
-  </span>
+        <% unless signed_in? %>
+          <li class="nav-item">
+            <a class="nav-link" href="/login">Login<br>Connection</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/new">Sign Up<br>Creer un compte</a>
+          </li>
+        <% else %>
+          <li class="nav-item">
+            <a class="nav-link" href="<%= new_repository_path(@user.username) %>">Create<br>Créer</a>
+          </li>
+          <span class="header-menu-item menu-button" id="menu-button1">
+        <%= link_to user_path(@user.username) do %>
+          <%= image_tag @user.avatar.url, class: 'main-avatar-thumbnail', alt: 'Avatar' %>
+              </span>
+        <% end %>
+
+
+            <li class="nav-item dropdown user_dropdown">
+              <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <%= @user.username %>
+              </a>
+              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                <a class="dropdown-item" href="<%= user_path(@user.username) %>">Profile</a>
+                <a class="dropdown-item" href="<%= likes_user_path(@user.username) %>">Liked</a>
+                <a class="dropdown-item" href="<%= settings_profile_path %>">Settings</a>
+                <a class="dropdown-item" href="<%= help_path %>">Help</a>
+                <%= link_to('Admin Area', admin_index_path, class: "dropdown-item") if @user.admin? %>
+                <%= link_to('Staff Area', staff_index_path, class: "dropdown-item") if @user.staff? %>
+                <a class="dropdown-item" href="<%= logout_path %>">Sign Out</a>
+              </div>
+            </li>
+        <% end %>
+      </ul>
+    </div>
+  </nav>
+
+
+
   </div>
 </section>
 <section id="header-end"></section>

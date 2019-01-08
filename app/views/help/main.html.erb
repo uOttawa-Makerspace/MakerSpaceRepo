@@ -12,18 +12,23 @@
   </div>
   <div class="issue-report">
     <%= form_tag send_email_path, method: :put do %>
+      <div class="form-group">
       <%= label_tag :name , "Full Name" %>
-      <%= text_field_tag :name,'', autofocus: true, :required => true %>
-
+      <%= text_field_tag :name,'', autofocus: true, :required => true, :class => 'form-control' %>
+      </div>
+      <div class="form-group">
       <%= label_tag :email %>
-      <%= text_field_tag :email,'', autofocus: true, :required => true %>
-
+      <%= text_field_tag :email,'', autofocus: true, :required => true, :class => 'form-control' %>
+      </div>
+      <div class="form-group">
       <%= label_tag :subject %>
-      <%= text_field_tag :subject,'', autofocus: true, :required => true %>
+      <%= text_field_tag :subject,'', autofocus: true, :required => true, :class => 'form-control' %>
+      </div>
+      <div class="form-group">
       <%= label_tag :comments %>
-      <%= text_area_tag :comments,'', autofocus: true, :required => true, placeholder: "Please explain your issue." %>
-
-      <%= submit_tag("Submit", class: 'submit-button') %>
+      <%= text_area_tag :comments,'', autofocus: true, :required => true, placeholder: "Please explain your issue.", :class => 'form-control' %>
+      </div>
+      <%= submit_tag("Submit", class: 'btn btn-primary large') %>
     <% end %>
   </div>
 </section>

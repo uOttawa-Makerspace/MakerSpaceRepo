@@ -10,7 +10,11 @@
 // Read Sprockets README (https://github.com/rails/sprockets#sprockets-directives) for details
 // about supported directives.
 //
-//= require_tree .
 //= require select2
+//= require jquery
+//= require popper
+//= require bootstrap-sprockets
+//= require redactor-rails
+//= require_tree .
 
 Turbolinks.enableProgressBar();

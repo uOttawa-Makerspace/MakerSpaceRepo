@@ -73,7 +73,6 @@ section#home-1{
 section#home-2{
   text-align: center;
   margin-top:0.2rem;
-  padding-bottom: 2rem;
   div.col{
     @include span-columns(4, 0.15);
     display: inline-block;
@@ -151,6 +150,13 @@ div#birds{
 div.penta canvas{
   margin: 0 auto;
   display: block;
+}
+.col-md-4 {
+  padding-left: 2px!important;
+  padding-right: 2px!important;
+}
+.width_auto {
+  width: auto;
 }
 
 @media screen and (max-width: 700px){
