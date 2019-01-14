@@ -52,17 +52,17 @@
             <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>
             <% if @user.admin? %>
                 <td>
-                <%= link_to 'Show', project_proposal, class: "green-button" %>
+                <%= link_to 'Show', project_proposal, class: "btn btn-success" %>
                   <br />
                   <br />
-                <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "blue-button" %>
+                <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "btn btn-primary" %>
                   <br />
                   <br />
                 <%= link_to 'Delete', project_proposal, method: :delete,
-                                                    class: "delete-button", data: { confirm: 'Are you sure?' } %>
+                                                    class: "btn btn-danger", data: { confirm: 'Are you sure?' } %>
                 </td>
             <% else %>
-                <td><%= link_to 'Show', project_proposal, class: "green-button" %></td>
+                <td><%= link_to 'Show', project_proposal, class: "btn btn-success" %></td>
             <% end %>
           </tr>
         <% end %>

@@ -5,8 +5,10 @@
 
     <div class="search-form" style="display:inline"> Search for users to sign them in or out of <%=@space.name.capitalize%>:
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
-      <%= text_field_tag 'query', nil, placeholder: 'Search users by name, username, email...', class:'profile-text' %><br>
-      <%= submit_tag "Search", class: 'update-button' %>
+        <div class="form-group">
+      <%= text_field_tag 'query', nil, placeholder: 'Search users by name, username, email...', class:'form-control' %><br>
+        </div>
+      <%= submit_tag "Search", class: 'btn btn-primary' %>
     <% end %>
     </div>
 

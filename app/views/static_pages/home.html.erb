@@ -10,74 +10,99 @@
   <!--//TODO: Make this pretty. We need bootstrap ASAP!-->
   <div class="row">
     <div class="primary column">
-      <p id="challenge">The Center of Entrepreneurship and Engineering Design at the University of Ottawa
-        needs your help to launch the 5th annual MakerSpace Design Challenge. </p>
-      <p id="challenge_body">The goal of the MakerSpace Design Challenge is to bring to life an interdisciplinary design that
-        solves a problem or fills a need in the community. As a CEED partner, your organization has been working
-        closely with our teams to develop unique product(s) that will benefit your ongoing growth. This competition is
-        another opportunity to push our students to use their acquired knowledge, skills and creativity to innovate solutions
-        in their field while gaining practical experience. </p>
-      <p id="challenge_link">We are reaching out to you for ideas or needs that you might have for this year's competition. Please follow the link
-        below to describe your challenge:
-        <br />
-        <br />
-        <b><%= link_to "Google Form", "https://goo.gl/forms/TJoXhUEI7B8QueLo2", target: :_blank, id: 'link' %> </b>
-      </p>
-    </div>
-
-    <div class="terciary column">
-      <div id="makerrepo">
-        <p>MakerRepo</p>
+      <div class="alert alert-warning alert-dismissible fade show width_auto" role="alert">
+        The Center of Entrepreneurship and Engineering Design at the University of Ottawa
+        needs your help to launch the 5th annual MakerSpace Design Challenge.
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="height: auto">
+          <span>&times;</span>
+        </button>
       </div>
+      <div class="alert alert-warning alert-dismissible fade show width_auto" role="alert">
+      The goal of the MakerSpace Design Challenge is to bring to life an interdisciplinary design
+      that
+      solves a problem or fills a need in the community. As a CEED partner, your organization has been working
+      closely with our teams to develop unique product(s) that will benefit your ongoing growth. This competition is
+      another opportunity to push our students to use their acquired knowledge, skills and creativity to innovate
+      solutions
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="height: auto">
+        <span>&times;</span>
+      </button>
+    </div>
+      <div class="alert alert-warning alert-dismissible fade show width_auto" role="alert">
+        We are reaching out to you for ideas or needs that you might have for this year's
+        competition. Please follow the link
+        below to describe your challenge: <br>
+        <%= link_to "Google Form", "https://goo.gl/forms/TJoXhUEI7B8QueLo2", class:"alert-link", target: :_blank, id: 'link' %>
+
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="height: auto">
+          <span>&times;</span>
+        </button>
+      </div>
+
     </div>
   </div>
 
-  <div id="ceed">
-    <%= image_tag("ceed.svg") %>
-  </div>
 </section>
 
 <section id="home-2">
-	<div class="col">
+  <div class="row">
+    <div class="col-md-4">
     <span class="platform-item">
       <%= image_tag("wearables.jpg") %>
-      <div><%= link_to("Wearable<br>Technologie Portable".html_safe, category_path(slug: 'wearable'))%></div>
+      <div><%= link_to("Wearable<br>Technologie Portable".html_safe, category_path(slug: 'wearable')) %></div>
 		</span>
+    </div>
+    <div class="col-md-4">
 		<span class="platform-item">
 			<%= image_tag("motherboard.jpg") %>
-      <div><%= link_to("Mobile Development<br>Développement Mobile".html_safe, category_path(slug: 'mobile-development'))%></div>
+      <div><%= link_to("Mobile Development<br>Développement Mobile".html_safe, category_path(slug: 'mobile-development')) %></div>
 		</span>
+    </div>
+    <div class="col-md-4">
     <span class="platform-item">
 			<%= image_tag("three-d.jpg") %>
-      <div><%= link_to("GNG2101/GNG2501".html_safe, category_path(slug: 'gng2101/gng2501'))%></div>
+      <div><%= link_to("GNG2101/GNG2501".html_safe, category_path(slug: 'gng2101/gng2501')) %></div>
 		</span>
-	</div>
-	<div class="col">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
 		<span class="platform-item">
       <%= image_tag("bio-medical.jpg") %>
-      <div><%= link_to("Health Sciences<br>Sciences de la Santé".html_safe, category_path(slug: 'health-sciences'))%></div>
+      <div><%= link_to("Health Sciences<br>Sciences de la Santé".html_safe, category_path(slug: 'health-sciences')) %></div>
 		</span>
+    </div>
+    <div class="col-md-4">
     <span class="platform-item">
 			<%= image_tag("iot.jpg") %>
-      <div><%= link_to("Internet of Things<br>Internet des Objets".html_safe, category_path(slug: 'internet-of-things'))%></div>
+      <div><%= link_to("Internet of Things<br>Internet des Objets".html_safe, category_path(slug: 'internet-of-things')) %></div>
 		</span>
+    </div>
+    <div class="col-md-4">
     <span class="platform-item">
       <%= image_tag("three-d.jpg") %>
-      <div><%= link_to("GNG1103/GNG1503".html_safe, category_path(slug: 'gng1103/gng1503'))%></div>
+      <div><%= link_to("GNG1103/GNG1503".html_safe, category_path(slug: 'gng1103/gng1503')) %></div>
     </span>
-	</div>
-  <div class="col">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
     <span class="platform-item">
 			<%= image_tag("vr.jpg") %>
-      <div><%= link_to("Virtual Reality<br>Réalité Virtuelle".html_safe, category_path(slug: 'virtual-reality'))%></div>
+      <div><%= link_to("Virtual Reality<br>Réalité Virtuelle".html_safe, category_path(slug: 'virtual-reality')) %></div>
 		</span>
+    </div>
+    <div class="col-md-4">
     <span class="platform-item">
       <%= image_tag("uoteams.jpg") %>
-      <div><%= link_to("uOttawa Team Projects<br>Projets d'Équipe uOttawa".html_safe, category_path(slug: 'uottawa-team-projects'))%></div>
+      <div><%= link_to("uOttawa Team Projects<br>Projets d'Équipe uOttawa".html_safe, category_path(slug: 'uottawa-team-projects')) %></div>
     </span>
+    </div>
+    <div class="col-md-4">
     <span class="platform-item">
 			<%= image_tag("other.jpg") %>
-      <div><%= link_to("Other Projects<br>Autres Projets".html_safe, category_path(slug: 'other-projects'))%></div>
+      <div><%= link_to("Other Projects<br>Autres Projets".html_safe, category_path(slug: 'other-projects')) %></div>
 		</span>
+    </div>
   </div>
 </section>

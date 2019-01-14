@@ -222,8 +222,8 @@ div.avatar-column{
 
 div.edit-column{
 	@include span-columns(8, 0);
-  border-left: 260px solid #f0f5f5;
-  margin-left: -260px;
+//  border-left: 260px solid #f0f5f5;
+//  margin-left: -260px;
 	padding-left: 2rem;
   color: #333;
   font: 400 1rem 'Raleway', sans-serif;

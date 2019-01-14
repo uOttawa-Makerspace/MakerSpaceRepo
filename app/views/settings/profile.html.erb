@@ -20,22 +20,24 @@
       </label>
     </div>
     <br><br>
+    <div class="form-group">
     <%= f.label :name, "Full Name/Nom", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:name].first, class: 'form-error' %>
-    <%= f.text_field :name, class: "profile-text", autofocus: true %>
-
-
+    <%= f.text_field :name, class: "profile-text form-control", autofocus: true %>
+    </div>
+    <div class="form-group">
     <%= f.label :faculty , "Faculty" , class: "profile-label" %>
     <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
-    <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
-      " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
-
+    <%= f.select( :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
+      " Social Sciences","Telfer school of Management"] , {prompt: "Choose..."}, {:class => "form-control"})%>
+    </div>
+    <div class="form-group">
     <%= f.label :program, "Program" , class: "profile-label" %>
     <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
-    <%= f.select(:program, @programs , {prompt: "Choose..."} , {:class => "programs", :id => "options"}) %><br><br>
-
+    <%= f.select(:program, @programs , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
+    </div>
     <% unless @user.read_and_accepted_waiver_form %>
-    <br><br>
+    <br><br><br>
     <section id="waivers">
       <div class="top">
         <b>
@@ -282,15 +284,15 @@ l’Événement.
         <%= f.select :year_of_study, ["1", "2", "3","4","5"] , prompt: "Select a year ..." %><br><br>
       </section>
     <% end %>
-    <br><br>
+
 
 
 <!--     <%= f.label :description, class: "profile-label" %>
     <%= content_tag :span, @user.errors[:description].first, class: 'form-error' %>
     <%= f.text_area :description, class: "profile-text" %>    -->
 
-    <%= f.submit "Save/Enregistrer", class: "save-button" %>
-
+    <%= f.submit "Save/Enregistrer", class: "btn btn-secondary" %>
+    <br><br><br>
     <% if flash[:notice] %>
       <div id="notice"><%= flash[:notice] %></div>
     <% end %>

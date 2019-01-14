@@ -2,7 +2,7 @@
 
 section#header{
   width: 100vw;
-  height: 60px;
+  height: 81px;
   position:fixed;
   z-index:5;
   background-color: #5f9ea0;
@@ -17,7 +17,7 @@ section#header{
 
 
 section#header-end{
-  height:65px;
+  height:81px;
 }
 
 span.msr-logo a{
@@ -164,7 +164,7 @@ form.header-search{
     z-index: 1;
     top: 65px;
     left: 0;
-    background-color: #5f9ea0;
+    background-color: #f8f9fa;
     overflow-x: hidden;
     transition: 0.5s;
     padding-top: 60px;
@@ -174,7 +174,7 @@ form.header-search{
   padding: 8px 8px 8px 8px;
       text-decoration: none;
       font-size: 20px;
-      color: #f1f1f1;
+      color: #000;
       display: block;
       transition: 0.3s;
       white-space: nowrap;
@@ -182,10 +182,10 @@ form.header-search{
 }
 
 .sidenav a:hover, .offcanvas a:focus{
-    color: #a3e6db;
+    color: #000;
 }
 a#item:hover{
-  color: #a3e6db;
+  color: #000;
   border-left: 5px solid #366;
 
 }
@@ -202,13 +202,13 @@ a#item:hover{
     cursor:pointer;
     top:0;
     left: 0;
-    color: #fff;
+    color: #000;
     float: left;
     padding-right: 30px;
     padding-top: 8px;
 
     &:hover{
-      color: #a3e6db;
+      color: #47474b;
     }
   }
 
@@ -220,4 +220,14 @@ a#item:hover{
 
 span.no-padding{
   padding: 0px;
+}
+.nav-link {
+  color: #000000d6!important;
+}
+.navbar-brand {
+  font-size: 30px!important;
+}
+.user_dropdown {
+  display: flex;
+  align-items: center;
 }
