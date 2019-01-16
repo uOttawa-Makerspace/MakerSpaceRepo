@@ -1,8 +1,7 @@
 default: &default
   adapter: postgresql
-  database: makerspacerepo
-  username: postgres
-  password: postgres
+  database: nicolasgnyra
+  username: nicolasgnyra
   host: localhost
   port: 5432
 
