@@ -32,6 +32,7 @@ gem "select2-rails"
 gem 'whenever', require: false
 gem 'youtube_id'
 gem 'pry-rails', :group => :development
+gem 'saml_idp'
 
 
 group :development, :test do
