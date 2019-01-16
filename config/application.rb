@@ -82,25 +82,31 @@ Q4n31ou2DuBLscfEsS+Nzo3nZWy0
 
       service_providers = {
           "wiki.makerepo.com" => {
-              response_hosts: ["wiki.makerepo.com"]
+              response_hosts: ["wiki.makerepo.com", "staff.makerepo.com"]
           }
       }
 
       config.name_id.formats = {
-          email_address: -> (p) { p[:email_address] },
-          transient: -> (p) { p[:id] },
-          persistent: -> (p) { p[:id] }
+          email_address: -> (p) { p.email },
+          transient: -> (p) { p.username },
+          persistent: -> (p) { p.username }
       }
 
       config.attributes = {
           "email_address": {
-              :getter => -> (p) { p[:email_address] }
+              :getter => -> (p) { p.email }
           },
           "username": {
-              :getter => -> (p) { p[:username] }
+              :getter => -> (p) { p.username }
           },
           "name": {
-              :getter => -> (p) { p[:name] }
+              :getter => -> (p) { p.name }
+          },
+          "is_staff": {
+              :getter => -> (p) { p.staff? }
+          },
+          "is_admin": {
+              :getter => -> (p) { p.admin? }
           }
       }
 

@@ -1,8 +1,8 @@
 Rails.application.routes.draw do
 
-  get '/saml/auth' => 'saml_idp#new'
-  get '/saml/metadata' => 'saml_idp#show'
-  post '/saml/auth' => 'saml_idp#create'
+  get '/saml/auth' => 'saml_idp#login'
+  get '/saml/metadata' => 'saml_idp#metadata'
+  post '/saml/auth' => 'saml_idp#auth'
 
   resources :project_proposals do
     collection do
@@ -204,7 +204,7 @@ Rails.application.routes.draw do
   post 'vote', to: 'users#vote', path: 'vote/:comment_id'
 
    # USER RESOURCES
-  resources :users, path: '/', param: :username, except: :edit do
+  resources :users, path: '', param: :username, except: :edit do
     get 'likes', on: :member
     patch 'change_password', on: :member
   end

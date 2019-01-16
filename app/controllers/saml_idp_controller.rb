@@ -3,24 +3,19 @@ require 'digest'
 class SamlIdpController < ActionController::Base
   include SamlIdp::Controller
 
-  unloadable unless Rails::VERSION::MAJOR >= 4
   protect_from_forgery
 
-  if Rails::VERSION::MAJOR >= 4
-    before_action :validate_saml_request, only: [:new, :create]
-  else
-    before_filter :validate_saml_request, only: [:new, :create]
+  before_action :validate_saml_request, only: [:login, :auth]
+
+  def login
+    render template: "saml/login"
   end
 
-  def new
-    render template: "saml/new"
-  end
-
-  def show
+  def metadata
     render xml: SamlIdp.metadata.signed
   end
 
-  def create
+  def auth
     if params[:email].blank? && params[:password].blank?
       @saml_idp_fail_msg = "Incorrect email or password."
     else
@@ -33,7 +28,7 @@ class SamlIdpController < ActionController::Base
         return
       end
     end
-    render :template => "saml/new"
+    render :template => "saml/login"
   end
 
   def logout
@@ -43,11 +38,7 @@ class SamlIdpController < ActionController::Base
   end
 
   def idp_authenticate(email, password) # not using params intentionally
-    user = User.authenticate(email, password)
-
-    if user
-      {:email_address => user.email, :id => Digest::SHA1.hexdigest(email), :username => user.username, :name => user.name}
-    end
+    User.authenticate(email, password)
   end
 
   private :idp_authenticate
