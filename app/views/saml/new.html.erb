@@ -1,44 +1,24 @@
-<!DOCTYPE html>
-<html class="h-100">
-<head>
-  <%= favicon_link_tag 'site-icon.jpg' %>
-  <%= stylesheet_link_tag 'vendor' %>
-  <%= stylesheet_link_tag 'application' %>
-</head>
-<body class="h-100">
-<div class="container h-100">
-  <div class="row h-100">
-    <div class="col-12 col-sm-8 offset-sm-2 col-md-6 offset-md-3 col-xl-4 offset-xl-4 h-100">
-      <div class="d-flex flex-column justify-content-center align-items-stretch h-100">
-        <div style="flex-grow: 1"></div>
+<%= render "saml/header" %>
 
-        <h1 class="text-center" style="font-size: 4rem">Maker<strong>Repo</strong></h1>
+<% if @saml_idp_fail_msg %>
+  <div id="saml_idp_fail_msg" class="alert alert-danger"><i class="fa fa-warning"></i> <%= @saml_idp_fail_msg %></div>
+<% end %>
 
-        <% if @saml_idp_fail_msg %>
-          <div id="saml_idp_fail_msg" class="alert alert-danger"><i class="fa fa-warning"></i> <%= @saml_idp_fail_msg %></div>
-        <% end %>
+<%= form_tag do %>
+  <%= hidden_field_tag("SAMLRequest", params[:SAMLRequest]) %>
+  <%= hidden_field_tag("RelayState", params[:RelayState]) %>
 
-        <%= form_tag do %>
-          <%= hidden_field_tag("SAMLRequest", params[:SAMLRequest]) %>
-          <%= hidden_field_tag("RelayState", params[:RelayState]) %>
+  <p>
+    <%= email_field_tag :email, params[:email], :autocapitalize => "off", :autocorrect => "off", :autofocus => "autofocus", :spellcheck => "false", :class => "form-control", :placeholder => "Email address – Adresse courriel" %>
+  </p>
 
-          <p>
-            <%= email_field_tag :email, params[:email], :autocapitalize => "off", :autocorrect => "off", :autofocus => "autofocus", :spellcheck => "false", :class => "form-control", :placeholder => "Email address – Adresse courriel" %>
-          </p>
+  <p>
+    <%= password_field_tag :password, params[:password], :autocapitalize => "off", :autocorrect => "off", :spellcheck => "false", :class => "form-control", :placeholder => "Password – Mot de passe" %>
+  </p>
 
-          <p>
-            <%= password_field_tag :password, params[:password], :autocapitalize => "off", :autocorrect => "off", :spellcheck => "false", :class => "form-control", :placeholder => "Password – Mot de passe" %>
-          </p>
+  <p>
+    <%= submit_tag "Sign in – Connexion", :class => "btn btn-primary w-100" %>
+  </p>
+<% end %>
 
-          <p>
-            <%= submit_tag "Sign in – Connexion", :class => "btn btn-primary w-100" %>
-          </p>
-        <% end %>
-
-        <div style="flex-grow: 2"></div>
-      </div>
-    </div>
-  </div>
-</div>
-</body>
-</html>
+<%= render "saml/footer" %>
