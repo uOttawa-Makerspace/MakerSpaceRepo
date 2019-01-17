@@ -20,10 +20,11 @@
     <% end %>
     </div>
     <br />
-
-    <div class="container" id="printer-div">
-      <div id="printer-div-2"><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'btn btn-secondary'%></div>
-    </div>
+    <% if @space.name == "Makerspace" %>
+      <div class="container" id="printer-div">
+        <div id="printer-div-2"><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'btn btn-secondary'%></div>
+      </div>
+    <% end %>
     <br>
     <table class="staff-users-table">
         <p>Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%></p>
