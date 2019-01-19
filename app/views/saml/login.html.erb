@@ -1,7 +1,9 @@
 <%= render "saml/header" %>
 
+<div class="help">Please sign in using your MakerRepo account.<br/>Veuillez vous connecter avec votre compte MakerRepo.</div>
+
 <% if @saml_idp_fail_msg %>
-  <div id="saml_idp_fail_msg" class="alert alert-danger"><i class="fa fa-warning"></i> <%= @saml_idp_fail_msg %></div>
+  <div id="saml_idp_fail_msg" class="alert alert-danger"><%= @saml_idp_fail_msg %></div>
 <% end %>
 
 <%= form_tag do %>
@@ -19,6 +21,12 @@
   <p>
     <%= submit_tag "Sign in – Connexion", :class => "btn btn-primary w-100" %>
   </p>
+
+  <a class="btn btn-link form-control" href="<%= user_path 'forgot_password' %>">I forgot my password &ndash; J'ai oublié mon mot de passe</a>
+
+  <hr/>
+
+  <a class="btn btn-light form-control" href="<%= user_path 'new' %>">Create an account &ndash; Créer un compte</a>
 <% end %>
 
 <%= render "saml/footer" %>

@@ -1,0 +1,31 @@
+html.saml-login {
+  height: 100%;
+
+  body {
+    height: 100%;
+    background-color: #fff;
+  }
+
+  .main-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  input, textarea, .btn {
+    box-shadow: none;
+  }
+
+  .brand {
+    text-align: center;
+    font-size: 4rem;
+    margin: 0;
+  }
+
+  .help {
+    text-align: center;
+    margin: 1rem 0;
+  }
+}

@@ -204,7 +204,7 @@ Rails.application.routes.draw do
   post 'vote', to: 'users#vote', path: 'vote/:comment_id'
 
    # USER RESOURCES
-  resources :users, path: '/user/', param: :username, except: :edit do
+  resources :users, path: '/', param: :username, except: :edit do
     get 'likes', on: :member
     patch 'change_password', on: :member
   end
