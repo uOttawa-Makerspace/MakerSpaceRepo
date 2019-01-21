@@ -43,7 +43,7 @@
 
   <section id="info">
 
-  <% if @repository.user_username.eql?(@user.username) || @user.role.eql?("admin") %>
+  <% if @repository.users.pluck(:email).include?(@user.email) || @user.role.eql?("admin") %>
     <%= link_to fa_icon("pencil", text: 'Edit project'),
       edit_repository_path(@repository.user_username, @repository.slug), class: 'edit-repo-link' %>
   <% end %>
