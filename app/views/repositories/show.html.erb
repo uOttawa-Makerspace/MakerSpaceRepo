@@ -152,6 +152,32 @@
           <% end %>
           </div>
         </div>
+
+        <div class="repo-info-item">
+          <div class="title">Add an owner:</div>
+          <%= form_for :repo_owner, url: {controller: "repositories", action: "add_owner"}, method: :patch do |f| %>
+              <div class="form-group">
+                <%= f.hidden_field :repository_id, value: @repository.id %>
+                <%= f.select(:owner_id, @all_users , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
+                <br> </br>
+                <%= f.submit "Add", class: "btn btn-primary" %>
+              </div>
+          <% end %>
+          </div>
+        </div>
+
+          <div class="repo-info-item">
+            <div class="title">Remove an owner:</div>
+            <%= form_for :repo_owner, url: {controller: "repositories", action: "remove_owner"}, method: :patch do |f| %>
+                <div class="form-group">
+                  <%= f.hidden_field :repository_id, value: @repository.id %>
+                  <%= f.select(:owner_id, @owners.pluck(:username, :id) , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
+                  <br> </br>
+                  <%= f.submit "Remove", class: "btn btn-danger" %>
+                </div>
+            <% end %>
+          </div>
+          </div>
       <% end %>
 
   </section>

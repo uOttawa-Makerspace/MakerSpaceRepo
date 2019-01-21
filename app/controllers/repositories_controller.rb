@@ -15,6 +15,8 @@ class RepositoriesController < SessionsController
     @comments = @repository.comments.order(comment_filter).page params[:page]
     @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
     @project_proposals = ProjectProposal.all.where(:approved => 1).pluck(:title, :id)
+    @owners = @repository.users
+    @all_users = User.where.not(id: @owners.pluck(:id)).pluck(:username, :id)
   end
 
   def download
@@ -137,6 +139,32 @@ class RepositoriesController < SessionsController
     repository.project_proposal_id = project_proposal_id
     if repository.save
       flash[:notice] = "This Repository was linked to the selected Project Proposal"
+      redirect_to :back
+    else
+      flash[:alert] = "Something went wrong."
+      redirect_to :back
+    end
+  end
+
+  def add_owner
+    repository = Repository.find params[:repo_owner][:repository_id]
+    owner_id = params[:repo_owner][:owner_id]
+    repository.users << User.find(owner_id)
+    if repository.save
+      flash[:notice] = "This owner was added to your repository"
+      redirect_to :back
+    else
+      flash[:alert] = "Something went wrong."
+      redirect_to :back
+    end
+  end
+
+  def remove_owner
+    repository = Repository.find params[:repo_owner][:repository_id]
+    owner_id = params[:repo_owner][:owner_id]
+    owner = User.find(owner_id)
+    if repository.users.delete(owner)
+      flash[:notice] = "This owner was removed from your repository"
       redirect_to :back
     else
       flash[:alert] = "Something went wrong."
