@@ -131,7 +131,6 @@
         <div class="name">
         <% if @repository.project_proposal %>
               <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
-              <%= @repository.project_proposal.title %>
         <% else %>
               None
         <% end %>
