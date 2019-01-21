@@ -137,31 +137,18 @@
         </div>
       </div>
 
-      <% if @user.admin? %>
-        <div class="repo-info-item">
-          <div class="title">Link to Project Proposal:</div>
-          <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
-            <div class="form-group">
-              <%= f.hidden_field :repository_id, value: @repository.id %>
-              <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
-              <br> </br>
-              <%= f.submit "Link", class: "btn btn-primary" %>
-            </div>
-          <% end %>
-          </div>
-        </div>
-      <% end %>
       <div class="repo-info-item">
         <div class="title">Link to Project Proposal:</div>
         <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
+          <div class="form-group">
             <%= f.hidden_field :repository_id, value: @repository.id %>
-            <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
+            <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
             <br> </br>
-            <%= f.submit "Link", class: "save-button" %>
+            <%= f.submit "Link", class: "btn btn-primary" %>
+          </div>
         <% end %>
         </div>
       </div>
-
 
   </section>
 
