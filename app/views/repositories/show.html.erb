@@ -61,7 +61,9 @@
     <div id="repo-info">
       <div class="repo-info-item">
         <div class="title">PROJECT BY</div>
-        <div class="name"><%= link_to @repository.user_username, user_path(@repository.user_username) %></div>
+        <% @repository.users.find_each do |u| %>
+            <div class="name"><%= link_to u.username, user_path(u.username) %></div>
+        <% end %>
       </div>
       <div class="repo-info-item">
         <div class="title">PUBLISHED ON</div>
