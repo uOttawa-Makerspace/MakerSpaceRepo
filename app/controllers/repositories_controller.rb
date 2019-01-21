@@ -48,7 +48,7 @@ class RepositoriesController < SessionsController
   end
 
   def edit
-    if (@repository.user_username == @user.username) || (@user.role == "admin")
+    if (@repository.users.pluck(:email).include?(@user.email)) || (@user.role == "admin")
       @photos = @repository.photos.first(5)
       @files = @repository.repo_files.order("LOWER(file_file_name)")
       @categories = @repository.categories
