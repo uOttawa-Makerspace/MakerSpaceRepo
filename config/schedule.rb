@@ -78,11 +78,11 @@ every :tuesday, :at => '9:45 am' do
 end
 
 every :tuesday, :at => '5:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('mghod021@uOttawa.ca', 'bmont037@uottawa.ca').deliver_now"
+  runner "MsrMailer.send_checklist_reminder('mghod021@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
 end
 
 every :wednesday, :at => '9:45 am' do
-  runner "MsrMailer.send_checklist_reminder('bsami021@uOttawa.ca', 'bmont037@uottawa.ca').deliver_now"
+  runner "MsrMailer.send_checklist_reminder('bsami021@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
 end
 
 every :wednesday, :at => '5:45 pm' do
@@ -94,7 +94,7 @@ every :thursday, :at => '9:45 am' do
 end
 
 every :thursday, :at => '5:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('sbouc057@uOttawa.ca', 'bmont037@uottawa.ca').deliver_now"
+  runner "MsrMailer.send_checklist_reminder('sbouc057@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
 end
 
 every :friday, :at => '9:45 am' do
@@ -106,12 +106,12 @@ every :friday, :at => '5:45 pm' do
 end
 
 every :sunday, :at => '9:45 am' do
-  runner "MsrMailer.send_checklist_reminder('jlian009@uOttawa.ca', 'bmont037@uottawa.ca').deliver_now"
+  runner "MsrMailer.send_checklist_reminder('jlian009@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
   runner "MsrMailer.send_checklist_reminder('art.fetiveau@gmail.com', 'bmont037@uottawa.ca').deliver_now"
 end
 
 every :sunday, :at => '5:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('jlian009@uOttawa.ca', 'bmont037@uottawa.ca').deliver_now"
+  runner "MsrMailer.send_checklist_reminder('jlian009@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
   runner "MsrMailer.send_checklist_reminder('art.fetiveau@gmail.com', 'bmont037@uottawa.ca').deliver_now"
 end
 
