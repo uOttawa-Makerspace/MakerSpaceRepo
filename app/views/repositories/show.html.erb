@@ -158,7 +158,7 @@
           <%= form_for :repo_owner, url: {controller: "repositories", action: "add_owner"}, method: :patch do |f| %>
               <div class="form-group">
                 <%= f.hidden_field :repository_id, value: @repository.id %>
-                <%= f.select(:owner_id, @all_users , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
+                <%= f.select(:owner_id, @all_users , {prompt: "Choose..."} , {:class => "search_users form-control", :id => "options"}) %>
                 <br> </br>
                 <%= f.submit "Add", class: "btn btn-success" %>
               </div>
@@ -171,7 +171,7 @@
             <%= form_for :repo_owner, url: {controller: "repositories", action: "remove_owner"}, method: :patch do |f| %>
                 <div class="form-group">
                   <%= f.hidden_field :repository_id, value: @repository.id %>
-                  <%= f.select(:owner_id, @owners.pluck(:username, :id) , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
+                  <%= f.select(:owner_id, @owners.pluck(:name, :id) , {prompt: "Choose..."} , {:class => "search_users form-control", :id => "options"}) %>
                   <br> </br>
                   <%= f.submit "Remove", class: "btn btn-danger" %>
                 </div>
@@ -239,6 +239,6 @@
 
 <script>
     $(document).ready(function() {
-        $(".link_pp").select2({});
+        $(".search_users").select2({});
     });
 </script>

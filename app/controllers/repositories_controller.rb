@@ -16,7 +16,7 @@ class RepositoriesController < SessionsController
     @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
     @project_proposals = ProjectProposal.all.where(:approved => 1).pluck(:title, :id)
     @owners = @repository.users
-    @all_users = User.where.not(id: @owners.pluck(:id)).pluck(:username, :id)
+    @all_users = User.where.not(id: @owners.pluck(:id)).pluck(:name, :id)
   end
 
   def download
