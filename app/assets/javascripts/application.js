@@ -10,10 +10,10 @@
 // Read Sprockets README (https://github.com/rails/sprockets#sprockets-directives) for details
 // about supported directives.
 //
-//= require select2
 //= require jquery
 //= require popper
 //= require bootstrap-sprockets
+//= require select2
 //= require redactor-rails
 //= require_tree .
 
