@@ -4,11 +4,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   def index
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
   end
 
@@ -29,11 +29,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 # New users
   def new_users
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
 
   	respond_to do |format|
@@ -45,11 +45,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 # Visitors
   def total_visits
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
 
     respond_to do |format|
@@ -61,11 +61,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 # Unique visitor
   def unique_visits
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
 
     respond_to do |format|
@@ -77,11 +77,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 # Diversity of users based on faculty
   def faculty_frequency
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
 
     respond_to do |format|
@@ -93,11 +93,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 # Diversity of users based on gender
   def gender_frequency
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
 
     respond_to do |format|
@@ -108,11 +108,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   def training
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
 
     respond_to do |format|
@@ -123,11 +123,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   def makerspace_training
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
     respond_to do |format|
       format.html
@@ -138,11 +138,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   def mtc_training
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
     respond_to do |format|
       format.html
@@ -154,11 +154,11 @@ class Admin::ReportGeneratorController < AdminAreaController
   # repositories
   def repository
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
 
     respond_to do |format|
@@ -170,11 +170,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   def peak_hrs
     unless session[:selected_dates]
-      @start_date = 1.month.ago
-      @end_date = DateTime.current
+      @start_date = 1.month.ago.beginning_of_day
+      @end_date = DateTime.current.end_of_day
     else
-      @start_date = DateTime.parse(selected_dates[0])
-      @end_date = DateTime.parse(selected_dates[1])
+      @start_date = DateTime.parse(selected_dates[0]).beginning_of_day
+      @end_date = DateTime.parse(selected_dates[1]).end_of_day
     end
     respond_to do |format|
       format.html
