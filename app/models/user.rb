@@ -120,6 +120,6 @@ class User < ActiveRecord::Base
 
   scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
-  scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_out_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace").pluck(:name, :id)}
+  scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace")}
 
 end

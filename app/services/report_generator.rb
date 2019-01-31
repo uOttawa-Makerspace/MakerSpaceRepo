@@ -113,7 +113,7 @@ class ReportGenerator
   #
   #     end
   # end
-  def self.faculty_frequency_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
+  def self.new_users_per_faculty(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
       @users = User.between_dates_picked(start_date, end_date)
       @art = @users.where('faculty' => 'Arts').length
       @civil = @users.where('faculty' => 'Civil Law').length
@@ -137,6 +137,32 @@ class ReportGenerator
         csv << ["No faculty specified (faculty/community members):", @no_faculty]
         csv << [] << ["Total users:", @users.length]
       end
+  end
+
+  def self.faculty_frequency_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
+    @users = User.frequency_between_dates(start_date, end_date)
+    @art = @users.where('faculty' => 'Arts').length
+    @civil = @users.where('faculty' => 'Civil Law').length
+    @common = @users.where('faculty' => 'Common Law').length
+    @education = @users.where('faculty' => 'Education').length
+    @engineering = @users.where('faculty' => 'Engineering').length
+    @health = @users.where('faculty' => 'Health Sciences').length
+    @medicine = @users.where('faculty' => 'Medicine').length
+    @science = @users.where('faculty' => 'Science').length
+    @social = @users.where('faculty' => 'Social Sciences').length
+    @telfer = @users.where('faculty' => 'Telfer school of Management').length
+
+    total_faculty = @art + @civil + @common + @education + @engineering + @health + @medicine + @science + @social + @telfer
+    @no_faculty = @users.length - total_faculty
+
+    CSV.generate do |csv|
+      csv << ["Faculty distribution of users signed up to MakerRepo"]
+      csv << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
+      csv << ["Engineering", @engineering] << ["Science", @science] << ["Telfer school of Management", @telfer] << ["Arts", @art] << ["Health Sciences", @health]
+      csv << ["Medicine", @medicine] << ["Social Sciences", @social] << ["Education", @education] << ["Civil Law", @civil] << ["Common Law", @common]
+      csv << ["No faculty specified (faculty/community members):", @no_faculty]
+      csv << [] << ["Total users:", @users.length]
+    end
   end
 
   def self.gender_frequency_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
