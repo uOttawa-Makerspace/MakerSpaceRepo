@@ -140,7 +140,7 @@ class ReportGenerator
     @no_faculty = @users.length - total_faculty
 
     CSV.generate do |csv|
-      csv << ["Faculty distribution of users signed up to MakerRepo"]
+      csv << ["Frequency of users in the Makerspace per faculty"]
       csv << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
       csv << ["Engineering", @engineering] << ["Science", @science] << ["Telfer school of Management", @telfer] << ["Arts", @art] << ["Health Sciences", @health]
       csv << ["Medicine", @medicine] << ["Social Sciences", @social] << ["Education", @education] << ["Civil Law", @civil] << ["Common Law", @common]
@@ -175,7 +175,7 @@ class ReportGenerator
     @unknown = @users.where('gender' => 'unknown')
 
     CSV.generate do |csv|
-      csv << ["Gender distribution of users signed up to MakerRepo"]
+      csv << ["Frequency of users in the Makerspace per gender"]
       csv << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
 
       csv << @gender_freq.keys
