@@ -48,7 +48,9 @@ class Repository < ActiveRecord::Base
   end
 
   before_destroy do
-    self.user.decrement!(:reputation, 25)
+    self.users do |u|
+      u.decrement!(:reputation, 25)
+    end
   end
 
 
