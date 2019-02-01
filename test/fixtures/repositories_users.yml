@@ -10,9 +10,9 @@ two_bob:
   repository_id: 2
   user_id: 1
 
-three_bob:
+three_mary:
   repository_id: 3
-  user_id: 1
+  user_id: 2
 
 four_bob:
   repository_id: 4
