@@ -11,8 +11,6 @@ one:
   share_type: public
   featured: false
 
-
-
 two:
   id: 2
   user_id: 2
@@ -24,7 +22,6 @@ two:
   share_type: public
   featured: true
   created_at: <%= 1.year.ago %>
-
 
 three:
   id: 3
@@ -79,3 +76,4 @@ seven:
   slug: repository7
   user_username: bob
   share_type: public
+  category: other-projects
