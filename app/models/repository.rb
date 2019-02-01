@@ -1,7 +1,7 @@
 class Repository < ActiveRecord::Base
   include BCrypt
 
-  belongs_to :user
+  has_and_belongs_to_many :users
   belongs_to :project_proposal
   has_many   :photos,   dependent: :destroy
   has_many   :repo_files,   dependent: :destroy
@@ -48,7 +48,9 @@ class Repository < ActiveRecord::Base
   end
 
   before_destroy do
-    self.user.decrement!(:reputation, 25)
+    self.users do |u|
+      u.decrement!(:reputation, 25)
+    end
   end
 
 

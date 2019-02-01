@@ -5,7 +5,7 @@ class User < ActiveRecord::Base
   has_one  :rfid,         dependent: :destroy
   has_many :upvotes,      dependent: :destroy
   has_many :comments,     dependent: :destroy
-  has_many :repositories, dependent: :destroy
+  has_and_belongs_to_many :repositories, dependent: :destroy
   has_many :certifications, dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
   has_and_belongs_to_many :training_sessions

@@ -212,6 +212,8 @@ Rails.application.routes.draw do
       get 'download_files', path: ':slug/download_files'
       get 'download', path: ':slug/download'
       patch :link_to_pp
+      patch :add_owner
+      patch :remove_owner
     end
     member do
       get 'password_entry', path: '/password_entry'
