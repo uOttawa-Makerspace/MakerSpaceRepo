@@ -78,7 +78,7 @@
             </label>
             <br><i style="font-size:0.8em;">&ensp;&ensp;&ensp;&ensp;&ensp;
               (click on one to link it to this user)</i><br>
-            <% Rfid.recent_unset.last(5).each do |rfid| %>
+            <% Rfid.recent_unset.first(5).each do |rfid| %>
               <div class="unregistered-card">
                 <%space = PiReader.find_by(pi_mac_address: rfid.mac_address).space.name rescue "unknown" %>
                   <%=
