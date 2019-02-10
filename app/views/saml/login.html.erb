@@ -22,11 +22,11 @@
     <%= submit_tag "Sign in – Connexion", :class => "btn btn-primary w-100" %>
   </p>
 
-  <a class="btn btn-link form-control" href="<%= user_path 'forgot_password' %>">I forgot my password &ndash; J'ai oublié mon mot de passe</a>
+  <a class="btn btn-link form-control" href="<%= user_path 'forgot_password' %>">I forgot my password<span class="break"></span>J'ai oublié mon mot de passe</a>
 
   <hr/>
 
-  <a class="btn btn-light form-control" href="<%= user_path 'new' %>">Create an account &ndash; Créer un compte</a>
+  <a class="btn btn-light form-control" href="<%= user_path 'new' %>">Create an account<span class="break"></span>Créer un compte</a>
 <% end %>
 
 <%= render "saml/footer" %>

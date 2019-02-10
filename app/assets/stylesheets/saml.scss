@@ -1,9 +1,31 @@
+@import "bootstrap";
+
 html.saml-login {
   height: 100%;
 
   body {
     height: 100%;
     background-color: #fff;
+  }
+
+  .btn {
+    @include media-breakpoint-down(xs) {
+      height: auto;
+    }
+
+    .break {
+      &::before {
+        content: ' – ';
+      }
+
+      @include media-breakpoint-down(xs) {
+        display: block;
+
+        &::before {
+          content: '';
+        }
+      }
+    }
   }
 
   .main-content {
@@ -22,6 +44,10 @@ html.saml-login {
     text-align: center;
     font-size: 4rem;
     margin: 0;
+
+    @include media-breakpoint-down(xs) {
+      font-size: 3rem;
+    }
   }
 
   .middle-content {
