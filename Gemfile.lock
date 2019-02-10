@@ -354,7 +354,7 @@ DEPENDENCIES
   rails_12factor
   redactor-rails (~> 0.5.0)
   rubyzip (~> 1.1)
-  saml_idp
+  saml_idp (~> 0.8.0)
   sass-rails (~> 5.0.3)
   sdoc (~> 0.4.0)
   select2-rails
@@ -368,6 +368,9 @@ DEPENDENCIES
   whenever
   will_paginate
   youtube_id
+
+RUBY VERSION
+   ruby 2.3.1p112
 
 BUNDLED WITH
    1.17.1
