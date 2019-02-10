@@ -24,8 +24,12 @@ html.saml-login {
     margin: 0;
   }
 
-  .help {
-    text-align: center;
-    margin: 1rem 0;
+  .middle-content {
+    width: 100%;
+
+    .help {
+      text-align: center;
+      margin: 1rem 0;
+    }
   }
 }
