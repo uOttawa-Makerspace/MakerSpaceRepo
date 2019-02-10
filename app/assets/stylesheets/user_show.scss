@@ -108,7 +108,8 @@ div#rfid-thing.user-info{
 		position: absolute;
 		z-index: 1;
 		overflow-y: scroll;
-		height: 90px;
+		height: 200px;
+        width: auto;
 
 		label.unregistered-label{
 			padding: 5px 8px;

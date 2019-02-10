@@ -5,7 +5,7 @@ class User < ActiveRecord::Base
   has_one  :rfid,         dependent: :destroy
   has_many :upvotes,      dependent: :destroy
   has_many :comments,     dependent: :destroy
-  has_many :repositories, dependent: :destroy
+  has_and_belongs_to_many :repositories, dependent: :destroy
   has_many :certifications, dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
   has_and_belongs_to_many :training_sessions
@@ -119,5 +119,7 @@ class User < ActiveRecord::Base
   scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
 
   scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
+
+  scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace")}
 
 end

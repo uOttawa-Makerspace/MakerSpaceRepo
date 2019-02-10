@@ -43,7 +43,7 @@
 
   <section id="info">
 
-  <% if @repository.user_username.eql?(@user.username) || @user.role.eql?("admin") %>
+  <% if @repository.users.pluck(:email).include?(@user.email) || @user.role.eql?("admin") %>
     <%= link_to fa_icon("pencil", text: 'Edit project'),
       edit_repository_path(@repository.user_username, @repository.slug), class: 'edit-repo-link' %>
   <% end %>
@@ -61,7 +61,9 @@
     <div id="repo-info">
       <div class="repo-info-item">
         <div class="title">PROJECT BY</div>
-        <div class="name"><%= link_to @repository.user_username, user_path(@repository.user_username) %></div>
+        <% @repository.users.find_each do |u| %>
+            <div class="name"><%= link_to u.username, user_path(u.username) %></div>
+        <% end %>
       </div>
       <div class="repo-info-item">
         <div class="title">PUBLISHED ON</div>
@@ -131,14 +133,13 @@
         <div class="name">
         <% if @repository.project_proposal %>
               <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
-              <%= @repository.project_proposal.title %>
         <% else %>
               None
         <% end %>
         </div>
       </div>
 
-      <% if @user.admin? %>
+      <% if @repository.users.pluck(:email).include?(@user.email) ||@user.admin? %>
         <div class="repo-info-item">
           <div class="title">Link to Project Proposal:</div>
           <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
@@ -151,18 +152,33 @@
           <% end %>
           </div>
         </div>
-      <% end %>
-      <div class="repo-info-item">
-        <div class="title">Link to Project Proposal:</div>
-        <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
-            <%= f.hidden_field :repository_id, value: @repository.id %>
-            <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "link_pp", :id => "options"}) %>
-            <br> </br>
-            <%= f.submit "Link", class: "save-button" %>
-        <% end %>
-        </div>
-      </div>
 
+        <div class="repo-info-item">
+          <div class="title">Add an owner:</div>
+          <%= form_for :repo_owner, url: {controller: "repositories", action: "add_owner"}, method: :patch do |f| %>
+              <div class="form-group">
+                <%= f.hidden_field :repository_id, value: @repository.id %>
+                <%= f.select(:owner_id, @all_users , {prompt: "Choose..."} , {:class => "search_users form-control", :id => "options"}) %>
+                <br> </br>
+                <%= f.submit "Add", class: "btn btn-success" %>
+              </div>
+          <% end %>
+          </div>
+        </div>
+
+          <div class="repo-info-item">
+            <div class="title">Remove an owner:</div>
+            <%= form_for :repo_owner, url: {controller: "repositories", action: "remove_owner"}, method: :patch do |f| %>
+                <div class="form-group">
+                  <%= f.hidden_field :repository_id, value: @repository.id %>
+                  <%= f.select(:owner_id, @owners.pluck(:name, :id) , {prompt: "Choose..."} , {:class => "search_users form-control", :id => "options"}) %>
+                  <br> </br>
+                  <%= f.submit "Remove", class: "btn btn-danger" %>
+                </div>
+            <% end %>
+          </div>
+          </div>
+      <% end %>
 
   </section>
 
@@ -223,6 +239,6 @@
 
 <script>
     $(document).ready(function() {
-        $(".link_pp").select2({});
+        $(".search_users").select2({});
     });
 </script>

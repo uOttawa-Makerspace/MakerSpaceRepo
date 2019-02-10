@@ -129,7 +129,7 @@ class RepositoriesControllerTest < ActionController::TestCase
   end
 
   test "users cannot edit other users' repositories" do
-    session[:user_id] = User.find_by(username: "bob").id
+    session[:user_id] = User.find_by(username: "sara").id
     session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
 
     get :edit, user_username: "mary", slug: "repository2"
