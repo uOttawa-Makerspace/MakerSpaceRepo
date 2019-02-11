@@ -17,7 +17,7 @@ class TrainingSession < ActiveRecord::Base
   end
 
   def courses
-    ['GNG2101', 'GNG1103', 'no course']
+    ['GNG2101', 'GNG2501', 'GNG1103', 'GNG1503', 'MCG4143', 'no course']
   end
 
   def completed?
