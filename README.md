@@ -3,7 +3,7 @@ A website where makers can publish projects. An initiative by the University of 
 [Centre for Entrepreneurship and Engineering Design (CEED)](https://engineering.uottawa.ca/CEED).
 
 ## New Developer Setup
-You must have Git and Ruby 2.3.4 installed. See [the Ruby website](https://www.ruby-lang.org/) for more information.
+You must have Git and Ruby 2.3.1 installed. See [the Ruby website](https://www.ruby-lang.org/) for more information.
 If you are on Linux or macOS, we recommend that you use [rbenv](https://github.com/rbenv/rbenv) to manage Ruby installations on your computer.
 
 ### Windows
