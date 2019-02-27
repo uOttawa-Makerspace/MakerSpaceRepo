@@ -43,10 +43,18 @@ group :development, :test do
 end
 
 group :development do
-  gem 'capistrano', '~> 3.6.1'
-  gem 'capistrano-rails'
-  gem 'capistrano3-unicorn'
   gem 'web-console', '~> 2.0'
+
+  # Capistrano deployment stuff
+  gem 'capistrano', '~> 3.9'
+  gem 'capistrano-rails'
+  gem 'capistrano-bundler'
+  gem 'capistrano-passenger', '>= 0.1.1'
+  gem 'capistrano-rbenv', '~> 2.1'
+
+  # ssh deployment
+  gem 'ed25519', '~> 1.2'
+  gem 'bcrypt_pbkdf', '~> 1.0'
 end
 
 group :test do
