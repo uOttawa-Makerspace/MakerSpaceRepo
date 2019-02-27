@@ -1,0 +1,17 @@
+<%= render "saml/header" %>
+
+<p class="text-center" style="font-size: 2rem;">Redirecting&hellip;<br/>Redirection en cours&hellip;</p>
+
+<%= form_tag(saml_acs_url, :class => "d-none") do %>
+  <%= hidden_field_tag("SAMLResponse", @saml_response) %>
+  <%= hidden_field_tag("RelayState", params[:RelayState]) %>
+  <%= submit_tag "Submit" %>
+<% end %>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.forms[0].submit();
+    }, false);
+</script>
+
+<%= render "saml/footer" %>

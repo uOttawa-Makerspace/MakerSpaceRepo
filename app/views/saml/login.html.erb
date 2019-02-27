@@ -1,0 +1,32 @@
+<%= render "saml/header" %>
+
+<div class="help">Please sign in using your MakerRepo account.<br/>Veuillez vous connecter avec votre compte MakerRepo.</div>
+
+<% if @saml_idp_fail_msg %>
+  <div id="saml_idp_fail_msg" class="alert alert-danger"><%= @saml_idp_fail_msg %></div>
+<% end %>
+
+<%= form_tag do %>
+  <%= hidden_field_tag("SAMLRequest", params[:SAMLRequest]) %>
+  <%= hidden_field_tag("RelayState", params[:RelayState]) %>
+
+  <p>
+    <%= email_field_tag :email, params[:email], :autocapitalize => "off", :autocorrect => "off", :autofocus => "autofocus", :spellcheck => "false", :class => "form-control", :placeholder => "Email address – Adresse courriel" %>
+  </p>
+
+  <p>
+    <%= password_field_tag :password, params[:password], :autocapitalize => "off", :autocorrect => "off", :spellcheck => "false", :class => "form-control", :placeholder => "Password – Mot de passe" %>
+  </p>
+
+  <p>
+    <%= submit_tag "Sign in – Connexion", :class => "btn btn-primary w-100" %>
+  </p>
+
+  <a class="btn btn-link form-control" href="<%= user_path 'forgot_password' %>">I forgot my password<span class="break"></span>J'ai oublié mon mot de passe</a>
+
+  <hr/>
+
+  <a class="btn btn-light form-control" href="<%= user_path 'new' %>">Create an account<span class="break"></span>Créer un compte</a>
+<% end %>
+
+<%= render "saml/footer" %>

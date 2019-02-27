@@ -23,5 +23,44 @@ module MakerSpaceRepo
 
     # Do not swallow errors in after_commit/after_rollback callbacks.
     config.active_record.raise_in_transactional_callbacks = true
+
+    SamlIdp.configure do |config|
+      config.x509_certificate = IO.read "certs/saml.crt"
+      config.secret_key = IO.read "certs/saml.key"
+
+      service_providers = {
+          "wiki.makerepo.com" => {
+              response_hosts: ["wiki.makerepo.com", "staff.makerepo.com"]
+          }
+      }
+
+      config.name_id.formats = {
+          email_address: -> (p) { p.email },
+          transient: -> (p) { p.username },
+          persistent: -> (p) { p.username }
+      }
+
+      config.attributes = {
+          "email_address": {
+              :getter => -> (p) { p.email }
+          },
+          "username": {
+              :getter => -> (p) { p.username }
+          },
+          "name": {
+              :getter => -> (p) { p.name }
+          },
+          "is_staff": {
+              :getter => -> (p) { p.staff? }
+          },
+          "is_admin": {
+              :getter => -> (p) { p.admin? }
+          }
+      }
+
+      config.service_provider.finder = ->(issuer_or_entity_id) do
+        service_providers[issuer_or_entity_id]
+      end
+    end
   end
 end
