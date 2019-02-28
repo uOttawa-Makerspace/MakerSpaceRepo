@@ -1,5 +1,6 @@
 $(document).on('ready page:load', function () {
     var nav = $('nav.navbar');
+    var chevron = $('.down-indicator');
 
     function doTransition(to) {
         nav.removeClass('navbar-dark navbar-light bg-light');
@@ -17,10 +18,11 @@ $(document).on('ready page:load', function () {
     });
 
     $(window).on('scroll', function () {
-        console.log('scroll');
         if ($(this).scrollTop() > 0) {
+            chevron.css('opacity', 0);
             doTransition('bg-light navbar-light');
         } else {
+            chevron.css('opacity', 1);
             doTransition('navbar-dark');
         }
     }).trigger('scroll');
