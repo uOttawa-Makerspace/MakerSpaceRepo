@@ -24,8 +24,13 @@ $theme-colors: (
 @import "lib";
 @import "font-awesome";
 
+html {
+  height: 100%;
+}
+
 body{
   margin: 0;
+  padding-top: 6rem;
   position: relative;
   overflow-x: hidden;
   background-color: rgba(238,238,238,0.5);
@@ -87,6 +92,10 @@ input, textarea{
 
 input:focus, textarea:focus, select:focus{
   outline: none;
+}
+
+input.form-control, textarea.form-control {
+  box-shadow: none;
 }
 
 div.seperator{
