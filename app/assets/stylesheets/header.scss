@@ -1,23 +1,28 @@
 @import "lib";
 
-section#header{
-  width: 100vw;
-  height: 81px;
-  position:fixed;
-  z-index:5;
-  background-color: #5f9ea0;
-  border-bottom: 5px solid #366;
-
-  .inner{
-    max-width: 70rem;
-    margin: 0 auto;
-  }
+body {
+  padding-top: 80px;
 }
 
+.navbar {
+  // TODO remove when old button/input CSS is completely removed
+  button {
+    width: auto;
+    height: auto;
+    float: none;
+  }
 
+  // TODO remove when old button/input CSS is completely removed
+  input, textarea {
+    box-shadow: none;
+  }
 
-section#header-end{
-  height:81px;
+  .avatar {
+    height: 40px;
+    width: 40px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
 }
 
 span.msr-logo a{
