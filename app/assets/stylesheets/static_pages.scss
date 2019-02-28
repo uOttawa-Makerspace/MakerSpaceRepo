@@ -1,5 +1,7 @@
 @import "lib";
 
+$body-top-padding: 80px; // equivalent to navbar height
+
 section#home-header {
   overflow: hidden;
   position: relative;
@@ -10,11 +12,11 @@ section#home-header {
   align-items: center;
   justify-content: center;
 
-  margin-top: -81px;
+  margin-top: -$body-top-padding;
   min-height: 100vh;
 
   .container {
-    margin: 81px auto;
+    margin: $body-top-padding auto;
     height: 100%;
 
     .row {
@@ -45,7 +47,7 @@ section#home-header {
 #under-top {
   visibility: hidden;
   position: relative;
-  top: -81px;
+  top: -$body-top-padding;
 }
 
 @keyframes down-indicator {
