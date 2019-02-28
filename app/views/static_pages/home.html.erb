@@ -13,24 +13,25 @@
         <div class="jumbotron text-center">
           <h1 class="display-3 mb-1">Welcome to Maker<strong>Repo</strong>!</h1>
           <p class="lead mb-4">Browse projects built using spaces provided by CEED & publish your own!</p>
-          <p>
-            <%= link_to "Create an account", user_path('new'), class: "btn btn-primary btn-lg" %>
-          </p>
+          <p><%= link_to "Sign Up", user_path('new'), class: "btn btn-primary btn-lg" %></p>
+
           <hr class="my-5"/>
+
           <h1>Makerspace Design Challenge</h1>
-          <p>The Center of Entrepreneurship and Engineering Design at the University of Ottawa needs your help to launch
-            the 5th annual Makerspace Design Challenge!
+          <p>
+            <strong>
+              The Center of Entrepreneurship and Engineering Design at the University of Ottawa needs your help to
+              launch the 5th annual Makerspace Design Challenge!
+            </strong>
           </p>
           <p>
             The goal of the Makerspace Design Challenge is to bring to life an interdisciplinary design that solves a
-            problem or fills a need in the community.
-            As a CEED partner, your organization has been working closely with our teams to develop unique product(s)
-            that will benefit your ongoing growth.
-            This competition is another opportunity to push our students to use their acquired knowledge, skills and
-            creativity to innovate solutions.
-            We are reaching out to you for ideas or needs that you might have for this year's competition.
+            problem or fills a need in the community. As a CEED partner, your organization has been working closely with
+            our teams to develop unique product(s) that will benefit your ongoing growth. This competition is another
+            opportunity to push our students to use their acquired knowledge, skills and creativity to create innovative
+            solutions. We are reaching out to you for ideas or needs that you might have for this year's competition.
           </p>
-          <%= link_to "Pitch your idea", "https://goo.gl/forms/TJoXhUEI7B8QueLo2", class: "btn btn-success btn-lg", target: "_blank" %>
+          <p><%= link_to "Pitch your idea", "https://goo.gl/forms/TJoXhUEI7B8QueLo2", class: "btn btn-success btn-lg", target: "_blank" %></p>
         </div>
       </div>
     </div>
@@ -41,46 +42,46 @@
   <div class="row items">
     <div class="col-xl-4 col-md-6 platform-item">
       <%= image_tag "wearables.jpg", class: "background" %>
-      <%= link_to "Wearable<br>Technologie Portable".html_safe, category_path(slug: "wearable"), class: "overlay" %>
+      <%= link_to "Wearables<br>Technologie portable".html_safe, category_path(slug: "wearable"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-md-6 platform-item">
       <%= image_tag "motherboard.jpg", class: "background" %>
-      <%= link_to "Mobile Development<br>Développement Mobile".html_safe, category_path(slug: "mobile-development"), class: "overlay" %>
+      <%= link_to "Mobile Development<br>Développement mobile".html_safe, category_path(slug: "mobile-development"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-md-6 platform-item">
       <%= image_tag "three-d.jpg", class: "background" %>
-      <%= link_to "GNG2101/GNG2501".html_safe, category_path(slug: "gng2101/gng2501"), class: "overlay" %>
+      <%= link_to "GNG&nbsp;2101/2501".html_safe, category_path(slug: "gng2101/gng2501"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-md-6 platform-item">
       <%= image_tag "bio-medical.jpg", class: "background" %>
-      <%= link_to "Health Sciences<br>Sciences de la Santé".html_safe, category_path(slug: "health-sciences"), class: "overlay" %>
+      <%= link_to "Health Sciences<br>Sciences de la santé".html_safe, category_path(slug: "health-sciences"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-md-6 platform-item">
       <%= image_tag "iot.jpg", class: "background" %>
-      <%= link_to "Internet of Things<br>Internet des Objets".html_safe, category_path(slug: "internet-of-things"), class: "overlay" %>
+      <%= link_to "Internet of Things<br>Internet des objets".html_safe, category_path(slug: "internet-of-things"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-md-6 platform-item">
       <%= image_tag "three-d.jpg", class: "background" %>
-      <%= link_to "GNG1103/GNG1503".html_safe, category_path(slug: "gng1103/gng1503"), class: "overlay" %>
+      <%= link_to "GNG&nbsp;1103/1503".html_safe, category_path(slug: "gng1103/gng1503"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-md-6 platform-item">
       <%= image_tag "vr.jpg", class: "background" %>
-      <%= link_to "Virtual Reality<br>Réalité Virtuelle".html_safe, category_path(slug: "virtual-reality"), class: "overlay" %>
+      <%= link_to "Virtual Reality<br>Réalité virtuelle".html_safe, category_path(slug: "virtual-reality"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-md-6 platform-item">
       <%= image_tag "uoteams.jpg", class: "background" %>
-      <%= link_to "uOttawa Team Projects<br>Projets d'Équipe uOttawa".html_safe, category_path(slug: "uottawa-team-projects"), class: "overlay" %>
+      <%= link_to "uOttawa Team Projects<br>Projets d'équipe uOttawa".html_safe, category_path(slug: "uottawa-team-projects"), class: "overlay" %>
     </div>
     <div class="col-xl-4 col-md-6 platform-item">
       <%= image_tag "other.jpg", class: "background" %>
-      <%= link_to "Other Projects<br>Autres Projets".html_safe, category_path(slug: "other-projects"), class: "overlay" %>
+      <%= link_to "Other Projects<br>Autres projets".html_safe, category_path(slug: "other-projects"), class: "overlay" %>
     </div>
   </div>
 </section>
