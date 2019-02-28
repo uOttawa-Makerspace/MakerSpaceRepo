@@ -26,7 +26,7 @@
 
   transition: background-color ease-in-out 500ms;
 
-  .navbar-brand, .nav-link {
+  &.transition .navbar-brand, &.transition .nav-link {
     transition: color ease-in-out 500ms;
   }
 }

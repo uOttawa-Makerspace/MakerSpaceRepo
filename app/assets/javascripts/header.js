@@ -1,22 +1,27 @@
 $(document).on('ready page:load', function () {
-    console.log('page load');
-
     var nav = $('nav.navbar');
 
+    function doTransition(to) {
+        nav.removeClass('navbar-dark navbar-light bg-light');
+        nav.addClass('transition');
+        nav.addClass(to);
+    }
+
     if (!nav.hasClass('static_pages home')) {
-        nav.removeClass('navbar-dark');
-        nav.addClass('bg-light', 'navbar-light');
+        doTransition('bg-light navbar-light');
         return;
     }
+
+    nav.on('transitionend webkitTransitionEnd oTransitionEnd otransitionend MSTransitionEnd', function () {
+        nav.removeClass('transition');
+    });
 
     $(window).on('scroll', function () {
         console.log('scroll');
         if ($(this).scrollTop() > 0) {
-            nav.removeClass('navbar-dark');
-            nav.addClass('bg-light', 'navbar-light');
+            doTransition('bg-light navbar-light');
         } else {
-            nav.removeClass('bg-light', 'navbar-light');
-            nav.addClass('navbar-dark');
+            doTransition('navbar-dark');
         }
     }).trigger('scroll');
 });
