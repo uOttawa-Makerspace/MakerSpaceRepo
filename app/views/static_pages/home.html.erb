@@ -13,8 +13,11 @@
         <div class="jumbotron text-center">
           <h1 class="title">Welcome to Maker<strong>Repo</strong>!</h1>
           <p class="lead mb-4">Browse projects built using spaces provided by CEED & publish your own!</p>
-          <p><%= link_to "Sign Up", user_path('new'), class: "btn btn-primary btn-lg" %></p>
-        </div>
+          <% if signed_in? %>
+            <p><%= link_to "My Profile", user_path(current_user.username), class: "btn btn-primary btn-lg" %></p>
+          <% else  %>
+            <p><%= link_to "Sign Up", user_path('new'), class: "btn btn-primary btn-lg" %></p>
+          <% end %>
       </div>
     </div>
   </div>
