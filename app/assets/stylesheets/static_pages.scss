@@ -1,6 +1,6 @@
 @import "lib";
 
-$body-top-padding: 80px; // equivalent to navbar height
+$body-top-padding: 6rem; // equivalent to navbar height
 
 section#home-header {
   overflow: hidden;
@@ -20,14 +20,18 @@ section#home-header {
     font-weight: 300;
     line-height: 1.2;
 
+    // TODO replace these with Bootstrap mixins
+    // md
     @media (max-width: 991.98px) {
       font-size: 4rem;
     }
 
+    // sm
     @media (max-width: 767.98px) {
       font-size: 3.5rem;
     }
 
+    // xs
     @media (max-width: 575.98px) {
       font-size: 3rem;
     }
@@ -116,7 +120,12 @@ section#home-categories {
       color: white;
       text-shadow: 0 0 10px black;
       font-weight: lighter;
-      font-size: 2rem;
+      font-size: 1.75rem;
+
+      // TODO replace with Bootstrap mixins
+      @media (max-width: 767.98px) {
+        font-size: 1.25rem;
+      }
 
       &:hover, &:focus, &:active {
         color: white;
