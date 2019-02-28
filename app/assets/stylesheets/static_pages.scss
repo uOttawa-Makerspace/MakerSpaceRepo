@@ -1,4 +1,5 @@
 @import "lib";
+@import "bootstrap";
 
 $body-top-padding: 6rem; // equivalent to navbar height
 
@@ -20,19 +21,15 @@ section#home-header {
     font-weight: 300;
     line-height: 1.2;
 
-    // TODO replace these with Bootstrap mixins
-    // md
-    @media (max-width: 991.98px) {
-      font-size: 4rem;
+    @include media-breakpoint-down(md) {
+      font-size: 4.5rem;
     }
 
-    // sm
-    @media (max-width: 767.98px) {
+    @include media-breakpoint-down(sm) {
       font-size: 3.5rem;
     }
 
-    // xs
-    @media (max-width: 575.98px) {
+    @include media-breakpoint-down(xs) {
       font-size: 3rem;
     }
   }
@@ -123,7 +120,7 @@ section#home-categories {
       font-size: 1.75rem;
 
       // TODO replace with Bootstrap mixins
-      @media (max-width: 767.98px) {
+      @include media-breakpoint-down(sm) {
         font-size: 1.25rem;
       }
 
