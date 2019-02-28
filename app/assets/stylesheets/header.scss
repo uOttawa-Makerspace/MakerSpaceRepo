@@ -23,6 +23,12 @@
   .navbar-brand {
     font-size: 2rem;
   }
+
+  transition: background-color ease-in-out 500ms;
+
+  .navbar-brand, .nav-link {
+    transition: color ease-in-out 500ms;
+  }
 }
 
 span.msr-logo a{

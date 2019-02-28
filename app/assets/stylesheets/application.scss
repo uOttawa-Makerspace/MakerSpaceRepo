@@ -29,15 +29,17 @@ $navbar-light-hover-color: rgba(0, 0, 0, 1.0);
 
 html {
   height: 100%;
+  overflow: auto;
 }
 
-body{
+body {
+  min-height: 100%;
   margin: 0;
-  padding-top: 6rem;
-  position: relative;
-  overflow-x: hidden;
+  padding: 6rem 0 0 0;
   background-color: rgba(238,238,238,0.5);
   font-family: 'Raleway', helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
 h1{
@@ -113,6 +115,6 @@ span.form-error{
 }
 
 html.turbolinks-progress-bar::before {
-  background-color: #fff !important;
+  background-color: theme-color("primary") !important;
   height: 10px !important;
 }

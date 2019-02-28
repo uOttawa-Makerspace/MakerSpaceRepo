@@ -1,8 +1,22 @@
-function toggleNav(){
-    var toggleWidth = document.getElementById("mySidenav").style.width == "250px" ? "0" : "250px";
-    $('#mySidenav').animate({ width: toggleWidth });
-}
+$(document).on('ready page:load', function () {
+    console.log('page load');
 
-function closeNav() {
-    document.getElementById("mySidenav").style.width = "0";
-}
+    var nav = $('nav.navbar');
+
+    if (!nav.hasClass('static_pages home')) {
+        nav.removeClass('navbar-dark');
+        nav.addClass('bg-light', 'navbar-light');
+        return;
+    }
+
+    $(window).on('scroll', function () {
+        console.log('scroll');
+        if ($(this).scrollTop() > 0) {
+            nav.removeClass('navbar-dark');
+            nav.addClass('bg-light', 'navbar-light');
+        } else {
+            nav.removeClass('bg-light', 'navbar-light');
+            nav.addClass('navbar-dark');
+        }
+    }).trigger('scroll');
+});
