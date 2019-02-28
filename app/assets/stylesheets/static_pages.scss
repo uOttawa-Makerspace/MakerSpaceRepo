@@ -1,13 +1,65 @@
 @import "lib";
 
 section#home-header {
+  overflow: hidden;
+  position: relative;
   background-image: image-url("face.jpg");
   background-size: cover;
   background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  .jumbotron {
-    margin: 3rem 0;
-    background: rgba(255, 255, 255, 0.8);
+  margin-top: -81px;
+  min-height: 100vh;
+
+  .container {
+    margin: 81px auto;
+    height: 100%;
+
+    .row {
+      height: 100%;
+
+      .jumbotron {
+        margin: 3rem 0;
+        background: rgba(255, 255, 255, 0.8);
+      }
+    }
+  }
+
+  .down-indicator {
+    display: block;
+    height: 8rem;
+    position: absolute;
+    text-align: center;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    .chevron {
+      animation: down-indicator ease-in-out infinite 2s;
+    }
+  }
+}
+
+#under-top {
+  visibility: hidden;
+  position: relative;
+  top: -81px;
+}
+
+@keyframes down-indicator {
+  0% {
+    margin-top: 0;
+    color: transparent;
+  }
+  50% {
+    margin-top: 3rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    margin-top: 3rem;
+    color: transparent;
   }
 }
 
