@@ -18,7 +18,7 @@ $(document).on('ready page:load', function () {
     });
 
     $(window).on('scroll', function () {
-        if ($(this).scrollTop() > 0) {
+        if ($(this).scrollTop() > 10) {
             chevron.css('opacity', 0);
             doTransition('bg-light navbar-light');
         } else {
