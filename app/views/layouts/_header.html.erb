@@ -1,12 +1,13 @@
-<nav class="navbar navbar-expand-xl navbar-light bg-light fixed-top <%= controller_name %> <%= action_name %>">
+<nav class="navbar navbar-expand-xl navbar-light bg-dark-gradient fixed-top <%= controller_name %> <%= action_name %>">
+  <div class="background"></div>
   <a class="navbar-brand" href="/">Maker<strong>Repo</strong></a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
-    <form class="form-inline my-2 my-xl-0" action="/search" method="get">
+    <form class="form-inline form-search" action="/search" method="get">
       <div class="input-group">
-        <input class="form-control" type="search" name="q" id="q" placeholder="Search" aria-label="Search">
+        <input class="form-control" type="search" name="q" id="q" placeholder="<%= t('navbar.search') %>" aria-label="Search">
         <div class="input-group-append">
           <button class="btn btn-primary" type="submit" style="height: auto">
             <i class="fa fa-search"></i>
@@ -15,43 +16,46 @@
       </div>
     </form>
 
-    <ul class="navbar-nav ml-auto align-items-xl-center">
+    <ul class="navbar-nav mr-auto align-items-xl-baseline">
       <li class="nav-item">
-        <a class="nav-link" href="/explore">Explore<br>Explorer</a>
+        <a class="nav-link" href="/explore"><%= t('navbar.explore') %></a>
       </li>
 
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="/project_proposals" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          Project Proposals<br>Propositions de projet
+          <%= t('navbar.project_proposals') %>
         </a>
         <div class="dropdown-menu">
-          <a class="dropdown-item" href="/project_proposals/new">Propose a Project</a>
-          <a class="dropdown-item" href="/project_proposals">Projects Available</a>
-          <a class="dropdown-item" href="/project_proposals/projects_assigned">Projects Assigned</a>
-          <a class="dropdown-item" href="/project_proposals/projects_completed">Projects Completed</a>
+          <a class="dropdown-item" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
+          <a class="dropdown-item" href="/project_proposals"><%= t('navbar.proposed_projects') %></a>
+          <a class="dropdown-item" href="/project_proposals/projects_assigned"><%= t('navbar.assigned_projects') %></a>
+          <a class="dropdown-item" href="/project_proposals/projects_completed"><%= t('navbar.completed_projects') %></a>
         </div>
       </li>
 
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="/project_proposals" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          More<br>Plus
+          <%= t('navbar.more') %>
         </a>
 
         <div class="dropdown-menu">
-          <a class="dropdown-item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537">Makerspace Events</a>
-          <a class="dropdown-item" href="https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765">Brunsfield Events</a>
-          <a class="dropdown-item" href="http://volunteer.makerepo.com/">Volunteers</a>
-          <a class="dropdown-item" href="http://volunteer.makerepo.com/resources.html">Resources</a>
-          <a class="dropdown-item" href="https://makerstore.ca/">Makerstore</a>
+          <a class="dropdown-item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537"><%= t('navbar.makerspace_events') %></a>
+          <a class="dropdown-item" href="https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765"><%= t('navbar.brunsfield_events') %></a>
+          <a class="dropdown-item" href="http://volunteer.makerepo.com/"><%= t('navbar.volunteering') %></a>
+          <a class="dropdown-item" href="http://volunteer.makerepo.com/resources.html"><%= t('navbar.resources') %></a>
+          <a class="dropdown-item" href="https://makerstore.ca/"><%= t('navbar.makerstore') %></a>
         </div>
       </li>
+    </ul>
+
+    <ul class="navbar-nav ml-auto align-items-xl-baseline">
 
       <% unless signed_in? %>
-        <li class="nav-item"><a class="nav-link" href="/login">Sign In<br>Connexion</a></li>
-        <li class="nav-item"><a class="nav-link" href="/new">Create an account<br>Créer un compte</a></li>
+        <li class="nav-item"><a class="nav-link" href="/login"><%= t('navbar.sign_in') %></a></li>
+        <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
       <% else %>
         <li class="nav-item">
-          <a class="nav-link" href="<%= new_repository_path(@user.username) %>">Create a project<br>Créer un projet</a>
+          <a class="nav-link" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
         </li>
 
         <li class="nav-item dropdown">
@@ -60,16 +64,24 @@
             <%= @user.username %>
           </a>
           <div class="dropdown-menu">
-            <a class="dropdown-item" href="<%= user_path(@user.username) %>">Profile</a>
-            <a class="dropdown-item" href="<%= likes_user_path(@user.username) %>">Liked</a>
-            <a class="dropdown-item" href="<%= settings_profile_path %>">Settings</a>
-            <%= link_to('Admin Area', admin_index_path, class: "dropdown-item") if @user.admin? %>
-            <%= link_to('Staff Area', staff_index_path, class: "dropdown-item") if @user.staff? %>
-            <a class="dropdown-item" href="<%= help_path %>">Help</a>
-            <a class="dropdown-item" href="<%= logout_path %>">Sign Out</a>
+            <a class="dropdown-item" href="<%= user_path(@user.username) %>"><%= t('navbar.user.profile') %></a>
+            <a class="dropdown-item" href="<%= likes_user_path(@user.username) %>"><%= t('navbar.user.liked') %></a>
+            <a class="dropdown-item" href="<%= settings_profile_path %>"><%= t('navbar.user.settings') %></a>
+            <%= link_to(t('navbar.user.admin_area'), admin_index_path, class: "dropdown-item") if @user.admin? %>
+            <%= link_to(t('navbar.user.staff_area'), staff_index_path, class: "dropdown-item") if @user.staff? %>
+            <a class="dropdown-item" href="<%= help_path %>"><%= t('navbar.user.help') %></a>
+            <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
           </div>
         </li>
         <% end %>
+
+      <li class="navbar-divider"></li>
+
+      <% locales_change.each do |locale| %>
+        <li class="nav-item">
+          <a class="nav-link" href="?locale=<%= locale %>"><%= t('name', locale: locale) %></a>
+        </li>
+      <% end %>
     </ul>
   </div>
 </nav>

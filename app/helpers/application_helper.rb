@@ -19,6 +19,12 @@ module ApplicationHelper
     current_user.access_token.present?
   end
 
+  def locales_change
+    locales = I18n.available_locales.clone
+    locales.delete(I18n.locale)
+    locales
+  end
+
   def license_url
     {"Creative Commons - Attribution" => licenses_cca_path,
      "Creative Commons - Attribution - Share Alike" => licenses_ccasa_path,

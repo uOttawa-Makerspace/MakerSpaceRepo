@@ -1,6 +1,10 @@
 @import "lib";
+@import "bootstrap";
 
 .navbar {
+  position: relative;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0)) !important;
+
   // TODO remove when old button/input CSS is completely removed
   button {
     width: auto;
@@ -11,6 +15,40 @@
   // TODO remove when old button/input CSS is completely removed
   input, textarea {
     box-shadow: none;
+  }
+
+  .background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+  }
+
+  .navbar-divider {
+    position: relative;
+    bottom: -0.6rem;
+    height: 2rem;
+    border-left: 1px solid;
+    margin: 0 0.25rem;
+  }
+
+  &.navbar-light .navbar-divider {
+    border-color: $navbar-light-color;
+  }
+
+  &.navbar-dark .navbar-divider {
+    border-color: $navbar-dark-color;
+  }
+
+  @include media-breakpoint-down(lg) {
+    .navbar-divider {
+      bottom: 0;
+      height: auto;
+      border-left: none;
+      border-bottom: 1px solid;
+    }
   }
 
   .avatar {
@@ -24,10 +62,20 @@
     font-size: 2rem;
   }
 
-  transition: background-color ease-in-out 500ms;
+  &.transition {
+    $transition-duration: .35s; // from bootstrap variable $transition-collapse
 
-  &.transition .navbar-brand, &.transition .nav-link {
-    transition: color ease-in-out 500ms;
+    transition: all ease-in-out $transition-duration;
+
+    .navbar-brand, .nav-link, .navbar-divider, .background {
+      transition: all ease-in-out $transition-duration;
+    }
+  }
+
+  @include media-breakpoint-up(xl) {
+    .form-search {
+      margin: 0 1rem 0 2rem;
+    }
   }
 }
 

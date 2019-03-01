@@ -11,12 +11,12 @@
     <div class="row">
       <div class="col-12">
         <div class="jumbotron text-center">
-          <h1 class="title">Welcome to Maker<strong>Repo</strong>!</h1>
-          <p class="lead mb-4">Browse projects built using spaces provided by CEED & publish your own!</p>
+          <h1 class="title"><%= t('home.welcome_html') %></h1>
+          <p class="lead mb-4"><%= t('home.welcome_desc_html') %></p>
           <% if signed_in? %>
-            <p><%= link_to "My Profile", user_path(current_user.username), class: "btn btn-primary btn-lg" %></p>
+            <p><%= link_to t('home.my_profile'), user_path(current_user.username), class: "btn btn-primary btn-lg" %></p>
           <% else  %>
-            <p><%= link_to "Sign Up", user_path('new'), class: "btn btn-primary btn-lg" %></p>
+            <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
           <% end %>
         </div>
       </div>
@@ -33,50 +33,50 @@
 <section id="home-categories">
   <div class="row items">
     <div class="col-12 text-center mt-3">
-      <h1>Categories &ndash; Catégories</h1>
+      <h1><%= t('home.categories_title') %></h1>
     </div>
     <div class="col-xl-4 col-sm-6 platform-item">
       <%= image_tag "wearables.jpg", class: "background" %>
-      <%= link_to "Wearables<br>Technologie portable".html_safe, category_path(slug: "wearable"), class: "overlay" %>
+      <%= link_to t("home.categories.wearables"), category_path(slug: "wearable"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
       <%= image_tag "motherboard.jpg", class: "background" %>
-      <%= link_to "Mobile Development<br>Développement mobile".html_safe, category_path(slug: "mobile-development"), class: "overlay" %>
+      <%= link_to t("home.categories.mobile_development"), category_path(slug: "mobile-development"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
       <%= image_tag "three-d.jpg", class: "background" %>
-      <%= link_to "GNG&nbsp;2101/2501".html_safe, category_path(slug: "gng2101/gng2501"), class: "overlay" %>
+      <%= link_to t("home.categories.gng_2101"), category_path(slug: "gng2101/gng2501"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
       <%= image_tag "bio-medical.jpg", class: "background" %>
-      <%= link_to "Health Sciences<br>Sciences de la santé".html_safe, category_path(slug: "health-sciences"), class: "overlay" %>
+      <%= link_to t("home.categories.health_sciences"), category_path(slug: "health-sciences"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
       <%= image_tag "iot.jpg", class: "background" %>
-      <%= link_to "Internet of Things<br>Internet des objets".html_safe, category_path(slug: "internet-of-things"), class: "overlay" %>
+      <%= link_to t("home.categories.iot"), category_path(slug: "internet-of-things"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
       <%= image_tag "three-d.jpg", class: "background" %>
-      <%= link_to "GNG&nbsp;1103/1503".html_safe, category_path(slug: "gng1103/gng1503"), class: "overlay" %>
+      <%= link_to t("home.categories.gng_1103"), category_path(slug: "gng1103/gng1503"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
       <%= image_tag "vr.jpg", class: "background" %>
-      <%= link_to "Virtual Reality<br>Réalité virtuelle".html_safe, category_path(slug: "virtual-reality"), class: "overlay" %>
+      <%= link_to t("home.categories.vr"), category_path(slug: "virtual-reality"), class: "overlay" %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
       <%= image_tag "uoteams.jpg", class: "background" %>
-      <%= link_to "uOttawa Team Projects<br>Projets d'équipe uOttawa".html_safe, category_path(slug: "uottawa-team-projects"), class: "overlay" %>
+      <%= link_to t("home.categories.team_projects"), category_path(slug: "uottawa-team-projects"), class: "overlay" %>
     </div>
     <div class="col-xl-4 col-sm-6 platform-item">
       <%= image_tag "other.jpg", class: "background" %>
-      <%= link_to "Other Projects<br>Autres projets".html_safe, category_path(slug: "other-projects"), class: "overlay" %>
+      <%= link_to t("home.categories.other_projects"), category_path(slug: "other-projects"), class: "overlay" %>
     </div>
   </div>
 </section>

@@ -1,15 +1,27 @@
 $(document).on('ready page:load', function () {
     var nav = $('nav.navbar');
     var chevron = $('.down-indicator');
+    var collapse = nav.find('.navbar-collapse');
+    var background = nav.find('.background');
 
-    function doTransition(to) {
-        nav.removeClass('navbar-dark navbar-light bg-light');
-        nav.addClass('transition');
-        nav.addClass(to);
+    function doTransition(dark, animate = true) {
+        if (animate) {
+            nav.addClass('transition');
+        }
+
+        if (dark) {
+            nav.removeClass('navbar-light');
+            background.removeClass('bg-light');
+            nav.addClass('navbar-dark');
+        } else {
+            nav.removeClass('navbar-dark');
+            nav.addClass('navbar-light');
+            background.addClass('bg-light');
+        }
     }
 
     if (!nav.hasClass('static_pages home')) {
-        doTransition('bg-light navbar-light');
+        doTransition(false, false);
         return;
     }
 
@@ -17,13 +29,19 @@ $(document).on('ready page:load', function () {
         nav.removeClass('transition');
     });
 
+    collapse.on('show.bs.collapse hide.bs.collapse', function () {
+        doTransition(nav.hasClass('static_pages home') && $(window).scrollTop() <= 10 && collapse.hasClass('show'));
+    });
+
     $(window).on('scroll', function () {
-        if ($(this).scrollTop() > 10) {
-            chevron.css('opacity', 0);
-            doTransition('bg-light navbar-light');
-        } else {
+        doTransition(nav.hasClass('static_pages home') && $(window).scrollTop() <= 10 && !collapse.hasClass('show'));
+
+        if ($(window).scrollTop() <= 10) {
             chevron.css('opacity', 1);
-            doTransition('navbar-dark');
+        } else {
+            chevron.css('opacity', 0);
         }
-    }).trigger('scroll');
+    });
+
+    doTransition(true, false);
 });

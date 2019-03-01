@@ -1,14 +1,12 @@
 <footer class="footer mt-auto py-3">
   <ul class="footer-items">
-    <li><%= link_to "About Us<br>À propos de nous".html_safe, about_path %></li>
-    <li><%= link_to "Terms of Service<br>Conditions d'utilisation".html_safe, tos_path %></li>
-    <li><%= link_to "Hours of Operation<br>Heures d'ouverture".html_safe, hours_path %></li>
-    <li><%= link_to "Contact Us<br>Contactez-nous".html_safe, contact_path %></li>
-    <li><%= link_to "Help<br>Aide".html_safe, help_path %></li>
+    <li><%= link_to t('footer.about'), about_path %></li>
+    <li><%= link_to t('footer.tos'), tos_path %></li>
+    <li><%= link_to t('footer.hours'), hours_path %></li>
+    <li><%= link_to t('footer.contact_us'), contact_path %></li>
+    <li><%= link_to t('footer.help'), help_path %></li>
   </ul>
   <div class="copyright">
-    Copyright &copy; <%= Time.current.year %>
-    <a href="https://engineering.uottawa.ca/CEED">Centre for Entrepreneurship and Engineering Design</a> and
-    <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">MakerRepo Contributors</a>
+    <%= t('footer.copyright_html') % Time.now.year %>
   </div>
 </footer>
