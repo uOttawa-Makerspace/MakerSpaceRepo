@@ -4,7 +4,7 @@ $(document).on('ready page:load', function () {
     var collapse = nav.find('.navbar-collapse');
     var background = nav.find('.background');
 
-    function doTransition(dark, animate = true) {
+    function doTransition(dark, animate) {
         if (animate) {
             nav.addClass('transition');
         }
