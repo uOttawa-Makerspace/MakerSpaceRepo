@@ -6,13 +6,11 @@ class SessionsController < ApplicationController
   before_action :authorized_repo_ids
 
   def login_authentication
-
-    @user = User.authenticate(params[:username_email], params[:password])
+    @user = sign_in(params[:username_email], params[:password])
 
     respond_to do |format|
       if @user
         session[:back] = root_path if session[:back].nil?
-        session[:user_id], cookies[:user_id] = @user.id, { value: @user.id, expires: 1.day.from_now }
         format.html { redirect_to session[:back] }
         format.json { render json: { role: :guest }, status: :ok }
       else
@@ -27,7 +25,7 @@ class SessionsController < ApplicationController
 
   def login
     if signed_in?
-      flash[:alert] = "You are currently logged in, you can not make a new account."
+      flash[:alert] = "You are already logged in."
       redirect_to root_path
     end
     @user = User.new
@@ -44,21 +42,14 @@ class SessionsController < ApplicationController
   end
 
   def logout
-    disconnect_user
+    sign_out
     @user = User.new
     redirect_to root_path
   end
 
-  def disconnect_user
-    session[:user_id] = nil
-    session[:authorized_repo_ids] = nil
-    session[:selected_dates] = nil
-    cookies.delete :user_id
-  end
-
   def session_expiry
     get_session_time_left
-    disconnect_user if @session_time_left <= 0
+    sign_out if @session_time_left <= 0
   end
 
   def update_activity_time

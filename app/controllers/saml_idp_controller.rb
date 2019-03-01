@@ -2,12 +2,15 @@ require 'digest'
 
 class SamlIdpController < ActionController::Base
   include SamlIdp::Controller
+  include ApplicationHelper
 
   protect_from_forgery
 
   before_action :validate_saml_request, only: [:login, :auth]
 
   def login
+    @current_user = current_user if signed_in?
+
     render template: "saml/login"
   end
 
@@ -16,14 +19,30 @@ class SamlIdpController < ActionController::Base
   end
 
   def auth
-    user = User.authenticate(params[:email], params[:password])
-    if user.nil?
-      @saml_idp_fail_msg = "Incorrect email or password – Nom d'utilisateur ou mot de passe incorrect"
+    @current_user = case params[:submit]
+                    when "sign_in"
+                      user = sign_in(params[:username], params[:password])
+
+                      if user.nil?
+                        @error_message = "Invalid username/password"
+                      end
+
+                      user
+                    when "current_user"
+                      current_user if signed_in?
+                    when "logout"
+                      sign_out
+                      nil
+                    else
+                      @error_message = "Invalid request"
+                      nil
+                    end
+
+    if @current_user.nil?
+      render template: "saml/login"
     else
-      @saml_response = encode_response user
-      render :template => "saml/saml_post", :layout => false
-      return
+      @saml_response = encode_response @current_user
+      render template: "saml/saml_post", layout: false
     end
-    render :template => "saml/login"
   end
 end

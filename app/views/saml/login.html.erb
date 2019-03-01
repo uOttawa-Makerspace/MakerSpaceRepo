@@ -1,32 +1,49 @@
 <%= render "saml/header" %>
 
-<div class="help">Please sign in using your MakerRepo account.<br/>Veuillez vous connecter avec votre compte MakerRepo.</div>
+<div class="help">
+  <% if not @current_user.nil? %>
+    You are current signed in as<br/>Vous êtes connecté en tant que<br/><strong><%= @current_user.name %> (<%= @current_user.username %>)</strong>
+  <% else %>
+    Please sign in using your MakerRepo account.<br/>Veuillez vous connecter avec votre compte MakerRepo.
+  <% end %>
+</div>
 
-<% if @saml_idp_fail_msg %>
-  <div id="saml_idp_fail_msg" class="alert alert-danger"><%= @saml_idp_fail_msg %></div>
+<% if @error_message %>
+  <div class="alert alert-danger"><%= @error_message %></div>
 <% end %>
 
 <%= form_tag do %>
   <%= hidden_field_tag("SAMLRequest", params[:SAMLRequest]) %>
   <%= hidden_field_tag("RelayState", params[:RelayState]) %>
 
-  <p>
-    <%= email_field_tag :email, params[:email], :autocapitalize => "off", :autocorrect => "off", :autofocus => "autofocus", :spellcheck => "false", :class => "form-control", :placeholder => "Email address – Adresse courriel" %>
-  </p>
+  <% if not @current_user.nil? %>
+    <div class="form-group">
+      <button class="btn btn-primary w-100" type="submit" name="submit" value="current_user">Use this account &ndash; Utiliser ce compte</button>
+    </div>
 
-  <p>
-    <%= password_field_tag :password, params[:password], :autocapitalize => "off", :autocorrect => "off", :spellcheck => "false", :class => "form-control", :placeholder => "Password – Mot de passe" %>
-  </p>
+    <div class="form-group">
+      <button class="btn btn-light w-100" type="submit" name="submit" value="logout">Use another account &ndash; Utiliser un autre compte</button>
+      <p class="small text-muted text-center">This will sign you out of MakerRepo<br/>Ceci vous déconnectera de MakerRepo</p>
+    </div>
+  <% else %>
+    <div class="form-group">
+      <%= email_field_tag :username, params[:username], :autocapitalize => "off", :autocorrect => "off", :autofocus => "autofocus", :spellcheck => "false", :class => "form-control", :placeholder => "Email address – Adresse courriel" %>
+    </div>
 
-  <p>
-    <%= submit_tag "Sign in – Connexion", :class => "btn btn-primary w-100" %>
-  </p>
+    <div class="form-group">
+      <%= password_field_tag :password, params[:password], :autocapitalize => "off", :autocorrect => "off", :spellcheck => "false", :class => "form-control", :placeholder => "Password – Mot de passe" %>
+    </div>
 
-  <a class="btn btn-link form-control" href="<%= user_path 'forgot_password' %>">I forgot my password<span class="break"></span>J'ai oublié mon mot de passe</a>
+    <div class="form-group">
+      <button class="btn btn-primary w-100" type="submit" name="submit" value="sign_in">Sign in &ndash; Connexion</button>
+    </div>
 
-  <hr/>
+    <a class="btn btn-link w-100" href="<%= user_path 'forgot_password' %>">I forgot my password<span class="break"></span>J'ai oublié mon mot de passe</a>
 
-  <a class="btn btn-light form-control" href="<%= user_path 'new' %>">Create an account<span class="break"></span>Créer un compte</a>
+    <hr/>
+
+    <a class="btn btn-light w-100" href="<%= user_path 'new' %>">Create an account<span class="break"></span>Créer un compte</a>
+  <% end %>
 <% end %>
 
 <%= render "saml/footer" %>
