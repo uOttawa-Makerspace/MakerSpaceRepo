@@ -5,7 +5,7 @@ $(document).on('ready page:load', function () {
     var background = nav.find('.background');
 
     function doTransition(dark, animate) {
-        if (animate) {
+        if (typeof animate === 'undefined' || animate === true) {
             nav.addClass('transition');
         }
 
