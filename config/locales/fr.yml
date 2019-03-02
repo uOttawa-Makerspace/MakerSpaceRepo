@@ -96,6 +96,11 @@ fr:
       username_or_email: "Nom d'utilisateur ou adresse courriel"
       password: "Mot de passe"
       forgot_password: "J'ai oublié mon mot de passe"
+  static_pages:
+    forgot_password:
+      title: "Mot de passe oublié"
+      email: "Adresse courriel"
+      submit: "Soumettre"
   activerecord:
     errors:
       models:

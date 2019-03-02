@@ -1,7 +1,7 @@
 @import "lib";
 @import "bootstrap";
 
-section#signup, section#login {
+section#signup, section#login, section#forgot-password {
   // TODO maybe move this into global styles?
   .container.page {
     background: white;

@@ -96,6 +96,11 @@ en:
       username_or_email: "Username or Email Address"
       password: "Password"
       forgot_password: "I forgot my password"
+  static_pages:
+    forgot_password:
+      title: "Forgot Password"
+      email: "Email address"
+      submit: "Submit"
   activerecord:
     errors:
       models:
