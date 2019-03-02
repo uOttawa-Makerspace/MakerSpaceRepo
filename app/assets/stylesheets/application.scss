@@ -83,17 +83,19 @@ u{
   text-decoration: none;
 }
 
+// TODO figure out why this is here and move it to the right place
 ul{
   list-style-type: none;
   margin:0;
   padding:0;
 }
 
+// TODO figure out why this is here and move it to the right place
 li{
   display: block;
 }
 
-input, textarea{
+input:not(.btn .form-control), textarea:not(.form-control) {
   @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
 }
 

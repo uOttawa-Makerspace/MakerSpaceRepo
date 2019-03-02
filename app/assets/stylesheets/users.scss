@@ -3,14 +3,14 @@
 
 section#signup, section#login {
   // TODO maybe move this into global styles?
-  .container {
+  .container.page {
     background: white;
     padding-top: 3rem;
     padding-bottom: 3rem;
     margin-bottom: 3rem;
   }
 
-  // TODO remove when old button/input CSS is completely removed
+  // TODO remove when old CSS is completely removed
   .waiver ul {
     list-style-type: disc;
     margin-bottom: 1rem;
@@ -30,26 +30,8 @@ section#signup, section#login {
     }
   }
 
-  // TODO remove when old button/input CSS is completely removed
-  button {
-    width: auto;
-    height: auto;
-    float: none;
-  }
-
   .bootstrap-select > .dropdown-toggle {
     width: 100%;
-  }
-
-  // TODO remove when old button/input CSS is completely removed
-  input, textarea {
-    box-shadow: none;
-  }
-
-  // TODO remove when old button/input CSS is completely removed
-  select {
-    max-width: none;
-    position: static;
   }
 
   .form-group.attach {
@@ -72,7 +54,7 @@ section#signup, section#login {
     }
   }
 
-  label.required::after, .required-info::after, span.required::after {
+  label.required::after, span.required::after {
     content: '*';
     color: #aa0000;
     margin-left: 0.25rem;

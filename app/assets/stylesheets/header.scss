@@ -5,18 +5,6 @@
   position: relative;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0)) !important;
 
-  // TODO remove when old button/input CSS is completely removed
-  button {
-    width: auto;
-    height: auto;
-    float: none;
-  }
-
-  // TODO remove when old button/input CSS is completely removed
-  input, textarea {
-    box-shadow: none;
-  }
-
   .background {
     position: absolute;
     top: 0;
