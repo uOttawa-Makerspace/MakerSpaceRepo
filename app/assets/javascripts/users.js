@@ -1,9 +1,4 @@
 $(document).on('ready page:load', function () {
-    $('select').selectpicker({
-        windowPadding: [80, 0, 0, 0],
-        virtualScroll: 20
-    });
-
     $("[data-show]").on('change', function () {
         var selector = $(this).data('show');
         var show = $(this).prop('checked');
