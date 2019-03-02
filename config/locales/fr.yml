@@ -89,7 +89,7 @@ fr:
         personal_projects: "Projets personnels"
         business: "Compagnie"
         how_heard_about_us: "Comment avez-vous entendu parler de nous?"
-        accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation au service."
+        accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation."
   sessions:
     login:
       sign_in: "Connexion"
