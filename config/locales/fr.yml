@@ -90,6 +90,12 @@ fr:
         business: "Compagnie"
         how_heard_about_us: "Comment avez-vous entendu parler de nous?"
         accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation au service."
+  sessions:
+    login:
+      sign_in: "Connexion"
+      username_or_email: "Nom d'utilisateur ou adresse courriel"
+      password: "Mot de passe"
+      forgot_password: "J'ai oublié mon mot de passe"
   activerecord:
     errors:
       models:
