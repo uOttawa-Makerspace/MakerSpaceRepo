@@ -22,7 +22,6 @@ Turbolinks.enableProgressBar();
 // needed since by default bootstrap-select doesn't register page:load events
 $(document).on('ready page:load', function () {
     $('.bootstrap-select').selectpicker({
-        windowPadding: [80, 0, 0, 0],
-        virtualScroll: 20
+        windowPadding: [80, 0, 0, 0]
     });
 });
