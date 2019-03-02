@@ -35,8 +35,9 @@ section#signup, section#login, section#forgot-password {
   }
 
   .form-group.attach {
-    input {
+    .form-control {
       border-radius: 0;
+      position: relative;
 
       &:first-child {
         border-top-left-radius: $input-border-radius;
@@ -47,10 +48,14 @@ section#signup, section#login, section#forgot-password {
         border-bottom-left-radius: $input-border-radius;
         border-bottom-right-radius: $input-border-radius;
       }
+
+      &:focus {
+        z-index: 2;
+      }
     }
 
-    input + input {
-      border-top: none;
+    .form-control + .form-control {
+      margin-top: -1px;
     }
   }
 
