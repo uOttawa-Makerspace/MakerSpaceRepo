@@ -1,10 +1,12 @@
 @import "lib";
+@import "bootstrap";
 
 section#signup, section#login {
   // TODO maybe move this into global styles?
   .container {
     background: white;
-    padding: 3rem 0;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
     margin-bottom: 3rem;
   }
 
@@ -48,6 +50,26 @@ section#signup, section#login {
   select {
     max-width: none;
     position: static;
+  }
+
+  .form-group.attach {
+    input {
+      border-radius: 0;
+
+      &:first-child {
+        border-top-left-radius: $input-border-radius;
+        border-top-right-radius: $input-border-radius;
+      }
+
+      &:last-child {
+        border-bottom-left-radius: $input-border-radius;
+        border-bottom-right-radius: $input-border-radius;
+      }
+    }
+
+    input + input {
+      border-top: none;
+    }
   }
 
   label.required::after, .required-info::after, span.required::after {
