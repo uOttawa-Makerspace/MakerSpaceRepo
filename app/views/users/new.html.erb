@@ -2,7 +2,7 @@
 <section id="signup">
   <div class="container">
     <div class="row">
-      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12 text-center">
         <h1><%= t('users.new.sign_up') %></h1>
 
         <p class="required-info"><%= t('users.new.required_info') %></p>
@@ -132,7 +132,8 @@
           </div>
 
           <hr/>
-
+        </div>
+        <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
           <div class="form-group">
             <div class="custom-control custom-checkbox">
               <%= form.check_box :read_and_accepted_waiver_form, class: 'custom-control-input' %>
@@ -142,8 +143,7 @@
               <% end %>
             </div>
           </div>
-        </div>
-        <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+
           <div class="form-group text-center"><%= form.submit t('users.new.sign_up'), class: 'btn btn-primary btn-lg' %></div>
         </div>
       </div>
