@@ -1,5 +1,8 @@
 $(document).on('ready page:load', function () {
-    $('.selectpicker').selectpicker();
+    $('select').selectpicker({
+        windowPadding: [80, 0, 0, 0],
+        virtualScroll: 20
+    });
 
     $("[data-show]").on('change', function () {
         var selector = $(this).data('show');

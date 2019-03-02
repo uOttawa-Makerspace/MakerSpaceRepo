@@ -46,7 +46,7 @@
 
           <div class="form-group">
             <%= form.label :gender, t('users.new.form.gender'), class: 'required' %>
-            <%= form.select :gender, [[t('users.new.form.male'), "Male"], [t('users.new.form.female'), "Female"], [t('users.new.form.other'), "Other"], [t('users.new.form.no_specify'), "Prefer not to specify"]], {prompt: t('users.new.form.choose')}, {class: 'form-control selectpicker'} %>
+            <%= form.select :gender, [[t('users.new.form.male'), "Male"], [t('users.new.form.female'), "Female"], [t('users.new.form.other'), "Other"], [t('users.new.form.no_specify'), "Prefer not to specify"]], {prompt: t('users.new.form.choose')}, {class: 'form-control'} %>
             <%= content_tag :div, @new_user.errors[:gender].first, class: 'invalid-feedback' %>
           </div>
 
@@ -90,14 +90,14 @@
                   [t('users.new.form.common_law'), "Common Law"], [t('users.new.form.education'), "Education"],
                   [t('users.new.form.engineering'), "Engineering"], [t('users.new.form.health_sciences'), "Health Sciences"],
                   [t('users.new.form.medicine'), "Medicine"], [t('users.new.form.science'), "Science"],
-                  [t('users.new.form.social_sciences'), "Social Sciences"], [t('users.new.form.telfer'), "Telfer School of Management"]], {prompt: t('users.new.form.choose')}, {class: 'form-control selectpicker'} %>
+                  [t('users.new.form.social_sciences'), "Social Sciences"], [t('users.new.form.telfer'), "Telfer School of Management"]], {prompt: t('users.new.form.choose')}, {class: 'form-control'} %>
               <%= content_tag :div, @new_user.errors[:faculty].first, class: 'invalid-feedback' %>
             </div>
 
             <div class="form-group">
               <% programs = ProgramList.fetch_all %>
               <%= form.label :program, t('users.new.form.program'), class: 'required' %>
-              <%= form.select :program, programs, {prompt: t('users.new.form.choose')}, {class: 'form-control selectpicker', 'data-live-search': 'true'} %>
+              <%= form.select :program, programs, {prompt: t('users.new.form.choose')}, {class: 'form-control', 'data-live-search': 'true'} %>
               <%= content_tag :div, @new_user.errors[:program].first, class: 'invalid-feedback' %>
             </div>
 
@@ -114,7 +114,7 @@
                 [t('users.new.form.course'), "Course"],
                 [t('users.new.form.personal_projects'), "Personal Projects"],
                 [t('users.new.form.business'), "Business"],
-                [t('users.new.form.other'), "Other"]], {prompt: t('users.new.form.choose')}, {class: 'form-control selectpicker'} %>
+                [t('users.new.form.other'), "Other"]], {prompt: t('users.new.form.choose')}, {class: 'form-control'} %>
             <%= content_tag :div, @new_user.errors[:use].first, class: 'invalid-feedback' %>
           </div>
 
