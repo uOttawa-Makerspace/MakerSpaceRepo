@@ -107,9 +107,9 @@ fr:
         user:
           attributes:
             name:
-              taken: "Ce nom d'utilisateur est déjà utilisé."
               too_long: "Votre nom doit comporter moins de %{count} caractères."
             username:
+              taken: "Ce nom d'utilisateur est déjà utilisé."
               invalid: "Votre nom d'utilisateur peut seulement contenir des caractères alphanumériques."
               too_long: "Votre nom doit comporter moins de %{count} caractères."
             password:
