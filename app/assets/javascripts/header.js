@@ -25,6 +25,8 @@ $(document).on('ready page:load', function () {
         return;
     }
 
+    nav.addClass('bg-dark-gradient');
+
     nav.on('transitionend webkitTransitionEnd oTransitionEnd otransitionend MSTransitionEnd', function () {
         nav.removeClass('transition');
     });
