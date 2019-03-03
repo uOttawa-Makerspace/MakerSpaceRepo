@@ -2,14 +2,6 @@
 @import "bootstrap";
 
 section#signup, section#login, section#forgot-password {
-  // TODO maybe move this into global styles?
-  .container.page {
-    background: white;
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-    margin-bottom: 3rem;
-  }
-
   // TODO remove when old CSS is completely removed
   .waiver ul {
     list-style-type: disc;

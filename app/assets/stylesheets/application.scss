@@ -118,3 +118,14 @@ html.turbolinks-progress-bar::before {
   background-color: theme-color("primary") !important;
   height: 10px !important;
 }
+
+.main {
+  flex-shrink: 0;
+  margin-bottom: auto;
+}
+
+.container.page {
+  background: white;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
