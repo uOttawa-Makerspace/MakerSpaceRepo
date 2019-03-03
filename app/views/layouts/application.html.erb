@@ -14,7 +14,9 @@
 	</head>
 	<body>
 		<%= render 'layouts/header' %>
-		<%= yield %>
+    <main class="flex-shrink-0">
+      <%= yield %>
+    </main>
 		<%= render 'layouts/footer' %>
 	</body>
 </html>

@@ -1,38 +1,50 @@
-# Files in the config/locales directory are used for internationalization
-# and are automatically loaded by Rails. If you want to use locales other
-# than English, add the necessary files in this directory.
-#
-# To use the locales, use `I18n.t`:
-#
-#     I18n.t 'hello'
-#
-# In views, this is aliased to just `t`:
-#
-#     <%= t('hello') %>
-#
-# To use a different locale, set it with `I18n.locale`:
-#
-#     I18n.locale = :es
-#
-# This would use the information in config/locales/es.yml.
-#
-# To learn more, please read the Rails Internationalization guide
-# available at http://guides.rubyonrails.org/i18n.html.
-
 en:
-  hello: "Hello world"
-
-defaults: &defaults
-  dropbox:
-    app_key: <%= ENV['DROPBOX_KEY'] %>
-    secret_key: <%= ENV['DROPBOX_SECRET'] %>
-
-development:
-  <<: *defaults
-
-test:
-  <<: *defaults
-
-production:
-  <<: *defaults
-
+  name: "English"
+  navbar:
+    explore: "Explore"
+    project_proposals: "Project Proposals"
+    propose_project: "Propose a Project"
+    proposed_projects: "Proposed Projects"
+    assigned_projects: "Assigned Projects"
+    completed_projects: "Completed Projects"
+    more: "More"
+    makerspace_events: "Makerspace Events"
+    brunsfield_events: "Brunsfield Centre Events"
+    volunteering: "Volunteering"
+    resources: "Resources"
+    makerstore: "MakerStore"
+    sign_in: "Sign In"
+    create_account: "Register"
+    search: "Search"
+    create_project: "Create Project"
+    user:
+      profile: "Profile"
+      liked: "Liked"
+      settings: "Settings"
+      admin_area: "Admin Area"
+      staff_area: "Staff Area"
+      help: "Help"
+      sign_out: "Sign Out"
+  home:
+    welcome_html: "Welcome to Maker<strong>Repo</strong>!"
+    welcome_desc_html: "Browse projects built using spaces provided by CEED & publish your own!"
+    sign_up: "Sign Up"
+    my_profile: "My Profile"
+    categories_title: "Categories"
+    categories:
+      wearables: "Wearables"
+      mobile_development: "Mobile Development"
+      gng_2101: "GNG 2101"
+      health_sciences: "Health sciences"
+      iot: "Internet of Things"
+      gng_1103: "GNG 1103"
+      vr: "Virtual Reality"
+      team_projects: "uOttawa Team Projects"
+      other_projects: "Other Projects"
+  footer:
+    about: "About"
+    tos: "Terms of Service"
+    hours: "Hours of Operation"
+    contact_us: "Contact Us"
+    help: "Help"
+    copyright_html: 'Copyright &copy; %s <a href="https://engineering.uottawa.ca/CEED">Centre for Entrepreneurship and Engineering Design</a> and <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">MakerRepo Contributors</a>'

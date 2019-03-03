@@ -14,16 +14,34 @@
  *= require select2-bootstrap
  *= require_tree .
  */
+
+/* Theming stuff */
+$theme-colors: (
+  "primary": rgb(95, 158, 160) // "MakerRepo Green"
+);
+
+$navbar-light-color: rgba(0, 0, 0, 0.7);
+$navbar-light-hover-color: rgba(0, 0, 0, 1.0);
+$navbar-dark-color: rgba(255, 255, 255, 0.7);
+$navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
+
 @import "bootstrap";
 @import "lib";
 @import "font-awesome";
 
-body{
+html {
+  height: 100%;
+  overflow: auto;
+}
+
+body {
+  min-height: 100%;
   margin: 0;
-  position: relative;
-  overflow-x: hidden;
+  padding: 5rem 0 0 0;
   background-color: rgba(238,238,238,0.5);
   font-family: 'Raleway', helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
 h1{
@@ -83,6 +101,10 @@ input:focus, textarea:focus, select:focus{
   outline: none;
 }
 
+input.form-control, textarea.form-control {
+  box-shadow: none;
+}
+
 div.seperator{
   width: 100%;
   padding-top: 20px;
@@ -95,6 +117,6 @@ span.form-error{
 }
 
 html.turbolinks-progress-bar::before {
-  background-color: #fff !important;
+  background-color: theme-color("primary") !important;
   height: 10px !important;
 }

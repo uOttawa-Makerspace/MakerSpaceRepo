@@ -1,12 +1,12 @@
-<footer>
-  <div class="row">
-    <ul>
-      <li><%= fa_icon("copyright", text: "Copyright #{Time.current.year}")%></li>
-      <li><%= link_to "About Us<br>À Propos de Nous".html_safe, about_path %></li>
-      <li><%= link_to "Terms of Service<br>Termes de Service".html_safe, tos_path %></li>
-      <li><%= link_to "Hours of Operation<br>Heures d'ouverture".html_safe, hours_path %></li>
-      <li><%= link_to "Contact Us<br>Contactez Nous".html_safe, contact_path %></li>
-      <li><%= link_to "Help<br>Aide".html_safe, help_path %></li>
-    </ul>
+<footer class="footer mt-auto py-3">
+  <ul class="footer-items">
+    <li><%= link_to t('footer.about'), about_path %></li>
+    <li><%= link_to t('footer.tos'), tos_path %></li>
+    <li><%= link_to t('footer.hours'), hours_path %></li>
+    <li><%= link_to t('footer.contact_us'), contact_path %></li>
+    <li><%= link_to t('footer.help'), help_path %></li>
+  </ul>
+  <div class="copyright">
+    <%= t('footer.copyright_html') % Time.now.year %>
   </div>
 </footer>

@@ -1,177 +1,138 @@
 @import "lib";
+@import "bootstrap";
 
-html{
-  overflow-x: hidden;
-}
+$body-top-padding: 5rem; // equivalent to navbar height
 
-section#home-1{
-  background-image: image-url('face.jpg');
+section#home-header {
+  overflow: hidden;
+  position: relative;
+  background-image: image-url("face.jpg");
   background-size: cover;
-  background-attachment: fixed;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  img#ommic{  width: 350px;  }
+  margin-top: -$body-top-padding;
+  min-height: 100vh;
 
-  .row {
-    display: flex;
-    align-self: center;
-  }
-  .column {
-    flex-grow: 2;
-  }
-  .primary {
-    flex-grow: 2;
-    align-self: center;
-  }
-  p#challenge{
-    padding: 10px;
-    border-radius: 30px;
-    background-color: #333333;
-    width: 400px;
-    font: 300 2vw 'Raleway', helvetica, sans-serif;
-    text-align: center;
-    color: rgba(255,255,255,0.8);
-  }
-  p#challenge_body{
-    padding: 10px;
-    border-radius: 30px;
-    background-color: #666666;
-    width: 400px;
-    font: 300 1vw 'Raleway', helvetica, sans-serif;
-    text-align: center;
-    color: rgba(255,255,255,0.8);
-  }
+  .title {
+    font-size: 4.5rem;
+    font-weight: 300;
+    line-height: 1.2;
 
-  p#challenge_link{
-    padding: 10px;
-    border-radius: 30px;
-    background-color: #aaaaaa;
-    width: 400px;
-    font: 300 1.5vw 'Raleway', helvetica, sans-serif;
-    text-align: center;
-    color: rgba(255,255,255,0.8);
-  }
+    @include media-breakpoint-down(md) {
+      font-size: 4.5rem;
+    }
 
-  #link{
-    color: #cb8a0e;
-  }
+    @include media-breakpoint-down(sm) {
+      font-size: 3.5rem;
+    }
 
-  div#makerrepo{
-    p{
-      font: 300 7vw 'Raleway', helvetica, sans-serif;
-      text-align: right;
-      padding-top: 100px;
-      color: rgba(255,255,255,0.8);
+    @include media-breakpoint-down(xs) {
+      font-size: 3rem;
     }
   }
-  #ceed{
-    padding-left: 40vw;
-    width: 100px;
-  }
 
-}
+  .container {
+    margin: $body-top-padding auto;
+    height: 100%;
 
-section#home-2{
-  text-align: center;
-  margin-top:0.2rem;
-  div.col{
-    @include span-columns(4, 0.15);
-    display: inline-block;
-  }
-}
-
-span.platform-item img{
-
-  width: 100%;
-  display: block;
-  opacity:0.5;
-
-  &:hover{
-    cursor: pointer;
-  }
-}
-
-span.platform-item{
-  position: relative;
-  display: block;
-  margin-bottom: 1%;
-  background-color: #333333;
-
-  div{
-    width:100%;
-    height:100%;
-
-    a{
-      top:0;
-      width: 100%;
+    .row {
       height: 100%;
+
+      .jumbotron {
+        margin: 3rem 0;
+        background: rgba(255, 255, 255, 0.8);
+      }
+    }
+  }
+
+  .down-indicator {
+    display: block;
+    height: 8rem;
+    position: absolute;
+    text-align: center;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transition: opacity ease-in-out 500ms;
+
+    .chevron {
+      animation: down-indicator ease-in-out infinite 2s;
+    }
+  }
+}
+
+#under-top {
+  visibility: hidden;
+  position: relative;
+  top: -$body-top-padding;
+}
+
+@keyframes down-indicator {
+  0% {
+    margin-top: 0;
+    color: transparent;
+  }
+  50% {
+    margin-top: 3rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    margin-top: 3rem;
+    color: transparent;
+  }
+}
+
+section#home-categories {
+  .items {
+    margin: 0;
+    padding: 0.25rem;
+  }
+
+  .platform-item {
+    padding: 0.25rem;
+    display: block;
+    position: relative;
+
+    .background {
+      width: 100%;
+    }
+
+    .overlay {
       position: absolute;
-      font: 1.5vw 'Raleway', helvetica, sans-serif;
-      font-weight: lighter;
-      color: #fff;
-      text-shadow: 0 0 10px black;
+      top: 0.25rem;
+      left: 0.25rem;
+      bottom: 0.25rem;
+      right: 0.25rem;
+
+      background: rgba(0, 0, 0, 0.5);
+
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      opacity:0.9;
-      transition: background-color .2s ease-in-out;
-      -moz-transition: background-color .2s ease-in-out;
-      -webkit-transition: background-color .2s ease-in-out;
+      text-align: center;
 
+      color: white;
+      text-shadow: 0 0 10px black;
+      font-weight: lighter;
+      font-size: 1.75rem;
 
-      &:hover{
-        background-color: rgba(19, 104, 107, 0.6);
+      // TODO replace with Bootstrap mixins
+      @include media-breakpoint-down(sm) {
+        font-size: 1.25rem;
       }
 
-    }
+      &:hover, &:focus, &:active {
+        color: white;
+        text-decoration: none;
+        outline: none;
 
-  }
-}
-
-
-section#static_pages{
-  @include outer-container(64rem);
-  padding: 1.5rem 3rem;
-
-  div.title{
-    font-size: 4rem;
-    text-align: center;
-    color: #366;
-    max-width: 70%;
-    margin: 0 auto;
-    border-bottom: 3px solid #366;
-  }
-}
-
-div#birds{
-  position: absolute;
-  z-index: -1;
-}
-
-div.penta canvas{
-  margin: 0 auto;
-  display: block;
-}
-.col-md-4 {
-  padding-left: 2px!important;
-  padding-right: 2px!important;
-}
-.width_auto {
-  width: auto;
-}
-
-@media screen and (max-width: 700px){
-
-  section#home-2 div.col{
-    @include span-columns(12, 15);
-  }
-
-  span.platform-item{
-    div{
-      a{
-        font: 3.5vw 'Raleway', helvetica, sans-serif;
-        font-weight: lighter;
+        background: rgba(19, 104, 107, 0.6);
+        transition: background-color 200ms ease-in-out;
       }
     }
   }
-
 }
