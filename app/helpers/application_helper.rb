@@ -2,6 +2,22 @@ module ApplicationHelper
 
   attr_accessor :github
 
+  def sign_in(username, password)
+    user = User.authenticate(username, password)
+
+    unless user.nil?
+      session[:user_id] = user.id
+    end
+
+    user
+  end
+
+  def sign_out
+    session[:user_id] = nil
+    session[:authorized_repo_ids] = nil
+    session[:selected_dates] = nil
+  end
+
   def current_user
     @user = User.find(session[:user_id]) if signed_in?
     @user ||= User.new
