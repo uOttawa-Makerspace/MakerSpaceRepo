@@ -1,36 +1,37 @@
 language: ruby
 rvm:
-  - 2.3.1
+- 2.3.1
 
 services:
-  - postgresql
+- postgresql
 
 before_script:
-  - psql -c 'create database makerspacerepo;' -U postgres
-  - openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
+- psql -c 'create database makerspacerepo;' -U postgres
+- openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days
+  1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
 
 jobs:
   include:
-    - stage: test
-      name: "Test"
-      script:
-        - bundle exec rake db:migrate RAILS_ENV=test
-        - bundle exec rake test RAILS_ENV=test
-    - stage: deploy
-      name: "Deploy"
-      script:
-        - openssl aes-256-cbc -k $DEPLOY_KEY -d -a -in config/deploy_id_rsa_enc_travis -out config/deploy_id_rsa
-        - chmod 600 config/deploy_id_rsa
-        - eval "$(ssh-agent -s)"
-        - cat config/deploy_id_rsa
-        - ssh-add config/deploy_id_rsa
-        - bundle exec cap staging deploy
+  - stage: test
+    name: Test
+    script:
+    - bundle exec rake db:migrate RAILS_ENV=test
+    - bundle exec rake test RAILS_ENV=test
+  - stage: deploy
+    name: Deploy
+    script:
+    - openssl aes-256-cbc -k $DEPLOY_KEY -d -a -in config/deploy_id_rsa_enc_travis
+      -out config/deploy_id_rsa
+    - chmod 600 config/deploy_id_rsa
+    - eval "$(ssh-agent -s)"
+    - cat config/deploy_id_rsa
+    - ssh-add config/deploy_id_rsa
+    - bundle exec cap staging deploy
+
+stages:
+- name: deploy
+  if: branch = travis-auto-deploy
 
 env:
   global:
-    secure: cYHSnZALsU476xWGqw+Yjovx6YR6cyc/uammbzYuxV7ltcqojriTgAo2QkAWK/ZZQASjgkGIUV18gqchPbPXbw/A6RFppNKv1nwSMzy64JQiq7tqU22Pu0JEbd+h99j47SyYDPzLSr7KPxdmoUUbJPx/+8A6seKFsfrU7Hrtcagvun8gAgcxcSR2t4U8UIdiR4VNn15XkCfaTLXzApGQaLKAvGdYT2MNL1kIRNWqa69Xh7UqagNgwVRMLmgNbgZ/EC77+N3u4hGl/C+GcN6VhIR9JGXQIrBVfOD5P6TP/XQe/gMvd5BkN2RiiDYZ5ImKNp9XDJ1598By68JexYzOlwt0VKawvBu7JKcTfsZFUdrbabDCDW8GxrTWphMKolbv5ZrgMrYP+0fbhh1hCzeMC1+k7d9lbrrBkNU/fABKdbhAx3bT7pmoaY9X+xuxKEpVCvF1T1z4XbcRp7hbEwGtZM7W4LtO2BqI81ktG8X7n3jRjOogFPhFikN6m797Y0LWWwLoZv3aqW50ZylO3pLa0ZnDoYHH8P4dxs6p2F4xlEm8Lmbg8ymHTlQoGH+cms7yfmnp06ENR3qqqQdda7ppp+/O+1lp2W4Wc1UgjL/Z4xY+0pX3u3ZYlKqUhAS/bzAvu4hdF2TX8SJWSTgh1a8zqFfWhz0cgTufs+JX4ljYE8E=
-
-stages:
-#  - name: test
-  - name: deploy
-    if: branch = travis-auto-deploy
+    secure: k0jpb427qmNuH8qLoXxQHjAbwbB4n9B5RM5d/JtbYOfpY9i5jgWQ/hMSk/L4CGz8becuK7TUZRwbFNcATecL9VlOuHyHv98+V3N4FvvoqEPfkcfwlzU43uN+Hi+HAV/RMlGwoBLHBmgf3tRFsuEvxU1IS2FuvNsE4pnX/56UI0uHttcvFFnE9KQoDS0Ir8t4glofGARz42xE5rdtXIcxbgcdBtX8M/ojv6MvFJCcGldGmkphL2n7c6hEf79i7DqpFK47oi1Eksz7WWaiqW26W/40e9ih0ESBU12Yt+u4QGvUQk5MbHCHpEbPavs2RVgIi/9Qyq7Uvvn4qv/jOjlDLO4CLaloGOOU/hVDDICItWlNalccE2TDE8/KSM9NdJwXWRzo7zI0E/7BDdITYUYhM29jheILpW8eZlr0LCiAay92DHNGVBbGJ46wLKjMR0rSTT47v6WPnKdvvomt6E4Y7VYHv3zf09nNw/oBqJ80PjK7KMZzV37xjFSJCL6UBCCulDSYE2tYT2Bb98+FsQ0u9pRc0JkMS5R8DAUr/VZuKwvxpG7qceEoHag4gGZb3wHQqcmcWuM0JFsbYOM6Bbe8Zd2rHaUH6V9EsQoWUPqQ0iH9muTaztFLLT6CBku4aL5lqd8luhB6sCWQ27P4LF1K3unCV0GFAcDAMXRH7sDhlnI=
