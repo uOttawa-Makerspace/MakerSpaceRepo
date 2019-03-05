@@ -14,11 +14,11 @@ after_success:
 
 jobs:
   include:
-    - stage: build
-      name: "Build"
+    - stage: test
+      name: "Test"
       script:
-        - bundle exec rails db:migrate RAILS_ENV=test
-        - bundle exec rspec
+        - bundle exec rake db:migrate RAILS_ENV=test
+        - bundle exec rake test RAILS_ENV=test
     - stage: deploy
       name: "Deploy"
       script:
@@ -29,6 +29,6 @@ env:
     secure: cYHSnZALsU476xWGqw+Yjovx6YR6cyc/uammbzYuxV7ltcqojriTgAo2QkAWK/ZZQASjgkGIUV18gqchPbPXbw/A6RFppNKv1nwSMzy64JQiq7tqU22Pu0JEbd+h99j47SyYDPzLSr7KPxdmoUUbJPx/+8A6seKFsfrU7Hrtcagvun8gAgcxcSR2t4U8UIdiR4VNn15XkCfaTLXzApGQaLKAvGdYT2MNL1kIRNWqa69Xh7UqagNgwVRMLmgNbgZ/EC77+N3u4hGl/C+GcN6VhIR9JGXQIrBVfOD5P6TP/XQe/gMvd5BkN2RiiDYZ5ImKNp9XDJ1598By68JexYzOlwt0VKawvBu7JKcTfsZFUdrbabDCDW8GxrTWphMKolbv5ZrgMrYP+0fbhh1hCzeMC1+k7d9lbrrBkNU/fABKdbhAx3bT7pmoaY9X+xuxKEpVCvF1T1z4XbcRp7hbEwGtZM7W4LtO2BqI81ktG8X7n3jRjOogFPhFikN6m797Y0LWWwLoZv3aqW50ZylO3pLa0ZnDoYHH8P4dxs6p2F4xlEm8Lmbg8ymHTlQoGH+cms7yfmnp06ENR3qqqQdda7ppp+/O+1lp2W4Wc1UgjL/Z4xY+0pX3u3ZYlKqUhAS/bzAvu4hdF2TX8SJWSTgh1a8zqFfWhz0cgTufs+JX4ljYE8E=
 
 stages:
-  - name: build
+  - name: test
   - name: deploy
     if: branch = travis-auto-deploy
