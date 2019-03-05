@@ -25,7 +25,7 @@ jobs:
     - chmod 600 config/deploy_id_rsa
     - eval "$(ssh-agent -s)"
     - ssh-add config/deploy_id_rsa
-    - bundle exec cap staging deploy
+    - bundle exec cap develop deploy
 
 stages:
 - name: deploy
