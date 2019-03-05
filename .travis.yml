@@ -20,7 +20,6 @@ jobs:
       name: "Deploy"
       script:
         - openssl aes-256-cbc -k $DEPLOY_KEY -d -a -in config/deploy_id_rsa_enc_travis -out config/deploy_id_rsa
-        - ssh-add config/deploy_id_rsa
         - bundle exec cap staging deploy
 
 env:
