@@ -1,23 +1,27 @@
-function showField(){
-	document.getElementById("hidden").style.display = 'block';
-}
-function hideField(){
-	document.getElementById("hidden").style.display = 'none';
-}
+$(document).on('ready page:load', function () {
+    $("[data-show]").on('change', function () {
+        var selector = $(this).data('show');
+        var show = $(this).prop('checked');
 
-function showCreateButton(){
-	var fake = document.getElementById("fake-signup-button");
-	var real = document.getElementById("signup-button");
-	if(fake.style.display != 'none'){
-		fake.style.display = 'none';
-		real.style.display = 'block';
-	}else{
-			fake.style.display = 'block';
-			real.style.display = 'none';
-	}
-}
+        if (show) {
+            $(selector).css('display', 'block');
+        }
+    }).each(function () {
+        if ($(this).prop('checked')) {
+            $(this).trigger('change');
+        }
+    });
 
-function showWaiver(toShow, toHide){
-	document.getElementById(toShow).style.display = 'block';
-	document.getElementById(toHide).style.display = 'none';
-}
+    $("[data-hide]").on('change', function () {
+        var selector = $(this).data('hide');
+        var hide = $(this).prop('checked');
+
+        if (hide) {
+            $(selector).css('display', 'none');
+        }
+    }).each(function () {
+        if ($(this).prop('checked')) {
+            $(this).trigger('change');
+        }
+    });
+});

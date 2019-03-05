@@ -2,7 +2,7 @@ $(document).on('ready page:load', function () {
     var nav = $('nav.navbar');
     var chevron = $('.down-indicator');
     var collapse = nav.find('.navbar-collapse');
-    var background = nav.find('.background');
+    var background = $('<div class="background">');
 
     function doTransition(dark, animate) {
         if (typeof animate === 'undefined' || animate === true) {
@@ -21,11 +21,12 @@ $(document).on('ready page:load', function () {
     }
 
     if (!nav.hasClass('static_pages home')) {
-        doTransition(false, false);
         return;
     }
 
+    nav.removeClass('bg-light');
     nav.addClass('bg-dark-gradient');
+    nav.append(background);
 
     nav.on('transitionend webkitTransitionEnd oTransitionEnd otransitionend MSTransitionEnd', function () {
         nav.removeClass('transition');

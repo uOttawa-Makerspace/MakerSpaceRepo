@@ -205,6 +205,10 @@ Rails.application.routes.draw do
 
    # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
+    collection do
+      post :create, path: '/new'
+    end
+
     get 'likes', on: :member
     patch 'change_password', on: :member
   end

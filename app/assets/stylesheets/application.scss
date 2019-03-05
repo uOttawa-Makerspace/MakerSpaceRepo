@@ -37,7 +37,7 @@ html {
 body {
   min-height: 100%;
   margin: 0;
-  padding: 5rem 0 0 0;
+  padding: 6rem 0 0 0;
   background-color: rgba(238,238,238,0.5);
   font-family: 'Raleway', helvetica, sans-serif;
   display: flex;
@@ -83,26 +83,24 @@ u{
   text-decoration: none;
 }
 
+// TODO figure out why this is here and move it to the right place
 ul{
   list-style-type: none;
   margin:0;
   padding:0;
 }
 
+// TODO figure out why this is here and move it to the right place
 li{
   display: block;
 }
 
-input, textarea{
+input:not(.btn .form-control), textarea:not(.form-control) {
   @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
 input:focus, textarea:focus, select:focus{
   outline: none;
-}
-
-input.form-control, textarea.form-control {
-  box-shadow: none;
 }
 
 div.seperator{
@@ -119,4 +117,15 @@ span.form-error{
 html.turbolinks-progress-bar::before {
   background-color: theme-color("primary") !important;
   height: 10px !important;
+}
+
+.main {
+  flex-shrink: 0;
+  margin-bottom: auto;
+}
+
+.container.page {
+  background: white;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
 }
