@@ -35,17 +35,22 @@ Coming soon.
    $ bundle install
    ```
    
-5. Set up the database:
+5. Create X.509 certificates for SAML:
+   ```
+   $ openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes
+   ```
+   
+6. Set up the database:
    ```bash
    $ rake db:setup
    ```
    
-6. Run all tests to load clean fixtures into the database (fixtures are dummy instances of models for testing and development):
+7. Run all tests to load clean fixtures into the database (fixtures are dummy instances of models for testing and development):
    ```bash
    $ bundle exec rake
    ```
 
-7. Start the Rails server:
+8. Start the Rails server:
    ```bash
    $ rails s
    ```
