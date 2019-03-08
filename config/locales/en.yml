@@ -1,38 +1,127 @@
-# Files in the config/locales directory are used for internationalization
-# and are automatically loaded by Rails. If you want to use locales other
-# than English, add the necessary files in this directory.
-#
-# To use the locales, use `I18n.t`:
-#
-#     I18n.t 'hello'
-#
-# In views, this is aliased to just `t`:
-#
-#     <%= t('hello') %>
-#
-# To use a different locale, set it with `I18n.locale`:
-#
-#     I18n.locale = :es
-#
-# This would use the information in config/locales/es.yml.
-#
-# To learn more, please read the Rails Internationalization guide
-# available at http://guides.rubyonrails.org/i18n.html.
-
 en:
-  hello: "Hello world"
-
-defaults: &defaults
-  dropbox:
-    app_key: <%= ENV['DROPBOX_KEY'] %>
-    secret_key: <%= ENV['DROPBOX_SECRET'] %>
-
-development:
-  <<: *defaults
-
-test:
-  <<: *defaults
-
-production:
-  <<: *defaults
-
+  name: "English"
+  navbar:
+    explore: "Explore"
+    project_proposals: "Project Proposals"
+    propose_project: "Propose a Project"
+    proposed_projects: "Proposed Projects"
+    assigned_projects: "Assigned Projects"
+    completed_projects: "Completed Projects"
+    more: "More"
+    makerspace_events: "Makerspace Events"
+    brunsfield_events: "Brunsfield Centre Events"
+    volunteering: "Volunteering"
+    resources: "Resources"
+    makerstore: "MakerStore"
+    sign_in: "Sign In"
+    create_account: "Register"
+    search: "Search"
+    create_project: "Create Project"
+    user:
+      profile: "Profile"
+      liked: "Liked"
+      settings: "Settings"
+      admin_area: "Admin Area"
+      staff_area: "Staff Area"
+      help: "Help"
+      sign_out: "Sign Out"
+  home:
+    welcome_html: "Welcome to Maker<strong>Repo</strong>!"
+    welcome_desc_html: "Browse projects built using spaces provided by CEED & publish your own!"
+    sign_up: "Sign Up"
+    my_profile: "My Profile"
+    categories_title: "Categories"
+    categories:
+      wearables: "Wearables"
+      mobile_development: "Mobile Development"
+      gng_2101: "GNG 2101"
+      health_sciences: "Health sciences"
+      iot: "Internet of Things"
+      gng_1103: "GNG 1103"
+      vr: "Virtual Reality"
+      team_projects: "uOttawa Team Projects"
+      other_projects: "Other Projects"
+  footer:
+    about: "About"
+    tos: "Terms of Service"
+    hours: "Hours of Operation"
+    contact_us: "Contact Us"
+    help: "Help"
+    copyright_html: 'Copyright &copy; %s <a href="https://engineering.uottawa.ca/CEED">Centre for Entrepreneurship and Engineering Design</a> and <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">MakerRepo Contributors</a>'
+  users:
+    new:
+      sign_up: "Create an account"
+      required_info: "Required fields are marked by an asterisk"
+      form:
+        full_name: "Full Name"
+        email_address: "Email Address"
+        username: "Username"
+        password: "Password"
+        password_hint: "Your password must be a minimum of 8 characters long and use at least one capital letter, one lowercase letter, and one digit."
+        password_confirmation: "Password Confirmation"
+        gender: "Gender"
+        male: "Male"
+        female: "Female"
+        other: "Other"
+        no_specify: "I prefer not to specify"
+        i_am: "I am..."
+        undergrad: "an undergraduate student"
+        grad: "a graduate student"
+        faculty_member: "a faculty member"
+        community_member: "a community member"
+        student_number: "Student Number"
+        faculty: "Faculty"
+        arts: "Arts"
+        civil_law: "Civil Law"
+        common_law: "Common Law"
+        education: "Education"
+        engineering: "Engineering"
+        health_sciences: "Health Sciences"
+        medicine: "Medicine"
+        science: "Science"
+        social_sciences: "Social Sciences"
+        telfer: "Telfer School of Management"
+        choose: "Choose..."
+        program: "Program"
+        year_of_study: "Year of Study"
+        makerrepo_for_what: "For what reason do you plan on using MakerRepo?"
+        course: "Courses"
+        personal_projects: "Personal Projects"
+        business: "Business"
+        how_heard_about_us: "How did you hear about us?"
+        accept_waiver_html: "By checking this box, <strong>I ACCEPT AND FULLY ASSUME</strong> all such (health and safety) risks, dangers and hazards which may be associated with my participation."
+  sessions:
+    login:
+      sign_in: "Sign In"
+      username_or_email: "Username or Email Address"
+      password: "Password"
+      forgot_password: "I forgot my password"
+  static_pages:
+    forgot_password:
+      title: "Forgot Password"
+      email: "Email address"
+      submit: "Submit"
+  activerecord:
+    errors:
+      models:
+        user:
+          attributes:
+            name:
+              too_long: "Your name must be less than %{count} characters."
+            username:
+              taken: "This username is already in use."
+              invalid: "Your username may only contain alphanumeric characters."
+              too_long: "Your name must be less than %{count} characters."
+            password:
+              invalid: "Your password must be a minimum of 8 characters long and use at least one capital letter, one lowercase letter, and one digit."
+            password_confirmation:
+              confirmation: "Passwords do not match."
+            email:
+              taken: "This email address is already in use."
+            how_heard_about_us:
+              too_long: "Maximum of %{count} characters."
+            read_and_accepted_waiver_form:
+              inclusion: "You must accept the terms of the waiver."
+      messages:
+        blank: "This field is required."
+        inclusion: "Selection is not valid."

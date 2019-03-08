@@ -1,322 +1,63 @@
 @import "lib";
+@import "bootstrap";
 
-input{
-	color: #666;
-}
+section#signup, section#login, section#forgot-password {
+  // TODO remove when old CSS is completely removed
+  .waiver ul {
+    list-style-type: disc;
+    margin-bottom: 1rem;
+    padding-left: 2rem;
 
-/* SIGNUP PAGE */
-section#signup {
-
-    @include outer-container(70rem);
-    background-color: #fff;
-    padding: 0 0.2rem 5rem;
-
-    label{
-  	  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
-  	  color: #777;
-    }
-
-    #required:after{content:"*"; color: #F00; font-size: 25px; display: inline;}
-
-    #required2:before{content:"*"; color: #F00; font-size: 25px;}
-
-    #required_label{
-      display: inline;
-      font-size: 12px;
-      color: #F00;
-    }
-
-		section#hidden{
-			border-top: 1px solid #F00;
-			border-bottom: 1px solid #F00;
-		}
-.select2-container .select2-selection--single {
-    box-sizing: border-box;
-    cursor: pointer;
-    display: block;
-    height: 40px;
-    user-select: none;
-    -webkit-user-select: none;
-}
- .select2-container--default .select2-selection--single .select2-selection__rendered {
-    color: #777;
-    line-height: 37px;
-    font-size: 15px;
-    font-family: 'Raleway',helvetica,sans-serif;
-}
-
-.select2-container .select2-selection--single .select2-selection__rendered {
-    display: block;
-    padding-left: 4px;
-    padding-right: 20px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-li.select2-results__option{
-  font: 4px;
-}
-.programs {
-    display: block;
-    padding: 0.1rem;
-    width: 415px;
-    height: 40px;
-    border-radius: 2px;
-    border: 1px solid #aaa;
-    margin: 0.5rem 0 1rem;
-    font: 300 1rem 'Raleway', helvetica, sans-serif;
-}
-    input:not([type=checkbox]), textarea{
-  		display: block;
-  		padding: 0.5rem;
-  		width: 400px;
-  		border-radius: 2px;
-  		border: 1px solid #aaa;
-  		margin: 0.5rem 0 1rem;
-  	  font: 300 1rem 'Raleway', helvetica, sans-serif;
-    }
-
-    form {
-      margin: 0 auto;
-      max-width: 420px;
-      u{
-     	  font: 400 0.75rem 'Raleway', helvetica, sans-serif;
-     	  color: #aaa;
-     	  width: 420px;
-        display: block;
-     	  padding-top: 0.5rem;
-      }
-
-      a{
-        color: teal;
-
-        &:hover{
-          text-decoration: underline;
-        }
-      }
-    }
-
-  input.show_extra{
-    width: 15px;
-  }
-
-}
-
-
-div.signup-breadcrumb{
-  padding-top: 5%;
-  @include outer-container(100%);
-
-  div{
-    float: left;
-    width: calc(50% - 4px);
-    padding: 2rem 0;
-    font: 400 1.25rem 'Raleway', helvetica, sans-serif;
-    text-align: center;
-    color: #366;
-    border: 1px solid #eee;
-    border-bottom: 5px solid #366;
-
-    &:nth-child(1){
-      border-right-color: #366;
+    li {
+      display: list-item;
     }
   }
 
-  #create-account{
-    background-color:#eee;
-    // width: calc(100% - 4px);
+  .bootstrap-select .dropdown-menu {
+    min-width: auto !important;
     width: 100%;
 
-    float: center;
-    font: 600 1.8rem 'Raleway', helvetica, sans-serif;
-
+    & > .inner .text {
+      white-space: normal;
+    }
   }
 
-}
-
-
-span.other textarea#use{
-  display: none;
-}
-
-div.signup-title, div.login-title{
-  font: 400 2rem 'Raleway', helvetica, sans-serif;
-  color: #366;
-  padding: 2rem 0;
-  text-align: center;
-  max-width: 80%;
-  margin: 0 auto;
-}
-
-
-
-
-span#fake-signup-button{
-	display: block;
-	letter-spacing: 1px;
-	background-color: transparentize(#4bbc9c, 0.8);
-	color: #fff;
-	border: none !important;
-	padding: 0.5rem;
-	width: 300px;
-	border-radius: 2px;
-	border: 1px solid #aaa;
-	margin: 0.5rem 0 1rem;
-	font: 300 1rem 'Raleway', helvetica, sans-serif;
-
-  &:hover{
-  	cursor: pointer;
-  }
-}
-
-span#signup-button{
-	display: none;
-}
-
-input.signup-button{
-	width: auto !important;
-  letter-spacing: 1px;
-  background-color: #4bbc9c;
-  color: #fff;
-  border: none !important;
-
-  &:hover{
-  	cursor: pointer;
-  }
-}
-
-
-
-a.forgot-password{
-  text-align: center;
-  padding: 1rem 0;
-  display: block;
-  color: #366;
-  &:focus{
-    text-decoration: underline;
-  }
-}
-/* LOGIN PAGE */
-
-section#login{
-  @include outer-container(60rem);
-  background-color: #fff;
-  padding: 4rem 5rem 8rem;
-
-  label{
-    text-align: center;
-    color: #366;
-    display: block;
-
+  .bootstrap-select > .dropdown-toggle {
+    width: 100%;
   }
 
- 	input:not([type=checkbox]){
-		display: block;
-		padding: 0.5rem;
-    height: 30px;
-		width: 400px;
-		border: 1px solid #aaa;
-		margin: 0 auto;
-	  font: 400 1.09rem 'Raleway', helvetica, sans-serif;
-	  border-bottom: none;
+  .form-group.attach {
+    .form-control {
+      border-radius: 0;
+      position: relative;
 
-	  &:nth-last-child(3){
-		  border-top-left-radius: 3px;
-		  border-top-right-radius: 3px;
-	  }
- 	}
-}
+      &:first-child {
+        border-top-left-radius: $input-border-radius;
+        border-top-right-radius: $input-border-radius;
+      }
 
-div.login-title{
-	text-align: center;
-}
+      &:last-child {
+        border-bottom-left-radius: $input-border-radius;
+        border-bottom-right-radius: $input-border-radius;
+      }
 
-input.login-button{
-	width: calc(400px + 1.09rem) !important;
-  height: calc(30px + 1.09rem) !important;
-  letter-spacing: 1px;
-  background-color: #4bbc9c;
-  color: #fff;
-  border: none !important;
+      &:focus {
+        z-index: 2;
+      }
+    }
 
-  &:hover{
-  	cursor: pointer;
+    .form-control + .form-control {
+      margin-top: -1px;
+    }
   }
-}
-.github-info{
-  color: #333;
-  font-size: 0.85rem;
 
-  a{
-    color: #5f9ea0;
+  label.required::after, span.required::after {
+    content: '*';
+    color: #aa0000;
+    margin-left: 0.25rem;
   }
-}
 
-.fa-github{
-  padding-right: 0.5rem;
-}
-
-a.github-unauth{
-  display: inline;
-  float: right;
-  color: #cd5c5c;
-}
-
-a.github-auth{
-  background-color: #789;
-  color: #fff;
-  padding: 0.5rem 1rem;
-  border-radius: 3px;
-  display: inline-block;
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-
-}
-
-div.info{
-  font-size: 0.85rem;
-  color: #789;
-}
-
-a.delete{
-	background-color: #cd5c5c;
-	color: #fff;
-	padding: 0.5rem 1rem;
-	border-radius: 3px;
-  font-size: 0.85rem;
-}
-
-
-div#notice{
-  display: none;
-  position: absolute;
-  top: 81px;
-  width: 100vw;
-  left:0;right:0;
-  margin: 0 auto;
-  height: 2rem;
-  line-height: 2rem !important;
-  font-size: 75%;
-  font: 300 1.1rem 'Raleway', sans-serif;
-  background-color: #5cb85c;
-  color: #fff;
-  z-index: 2;
-  text-align: center;
-}
-
-div#alert{
-  display: none;
-  position: absolute;
-  top: 81px;
-  width: 100vw;
-  left:0;right:0;
-  margin: 0 auto;
-  height: 2rem;
-  line-height: 2rem !important;
-  font: 300 1.1rem 'Raleway', sans-serif;
-  background-color: #cd5c5c;
-  color: #fff;
-  z-index: 2;
-  text-align: center;
+  fieldset#students-only {
+    display: none;
+  }
 }

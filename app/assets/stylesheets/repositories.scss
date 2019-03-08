@@ -105,7 +105,7 @@ li.ui-menu-item {
   padding-right: 10px;
 }
 
-.select, select {
+.select, select:not(.form-control) {
   cursor: pointer;
   display: inline-block;
   position: relative;

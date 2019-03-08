@@ -15,55 +15,52 @@ class User < ActiveRecord::Base
   has_many :printer_sessions,     dependent: :destroy
 
   validates :name,
-    presence: { message: "Your name is required." },
-    length: { maximum: 50, message: 'Your name must be less than 50 characters.' }
+    presence: true,
+    length: { maximum: 50 }
 
   validates :username,
-    presence: { message: "Your username is required." },
-    uniqueness: { message: "Your username is already in use." },
-    format:     { with:    /\A[a-zA-Z\d]*\z/, message: "Your username may only contain alphanumeric characters" },
-    length: { maximum: 20, message: 'Your username must be less than 20 characters.' }
+    presence: true,
+    uniqueness: true,
+    format: { with: /\A[a-zA-Z\d]*\z/ },
+    length: { maximum: 20 }
 
   validates :email,
-    presence: { message: "Your email is required." },
-    uniqueness: { message: "Your email is already in use." }
+    presence: true,
+    uniqueness: true
 
-  validates :description,
-    length: { maximum: 250, message: 'Maximum of 250 characters.' }
+  validates :how_heard_about_us,
+    length: { maximum: 250 }
 
   validates :read_and_accepted_waiver_form,
-    inclusion: {in: [true], on: :create, message: 'You must agree to the waiver of form' }
+    inclusion: { in: [true] }, on: :create
 
   validates :password,
-    presence: { message: "Your password is required." },
-    confirmation: {message: "Your passwords do not match."},
-    format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/,
-             message: "Your passwords must have one lowercase letter, one uppercase letter, one number and be eight characters long."}
-
+    presence: true,
+    confirmation: true,
+    format: { with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/ }
 
   validates :gender,
-    presence: {message: "Your gender is required."},
-    inclusion: {in:["Male", "Female", "Other", "Prefer not to specify", "unknown"]}
+    presence: true,
+    inclusion: { in: ["Male", "Female", "Other", "Prefer not to specify", "unknown"] }
 
   validates :faculty,
-    presence: {message: "Please provide your faculty"}, if: :student?
+    presence: true, if: :student?
 
   validates :program,
-    presence: {message: "Please provide your program"}, if: :student?
+    presence: true, if: :student?
 
   validates :year_of_study,
-    presence: {message: "Please provide your year of study"}, if: :student?
+    presence: true, if: :student?
 
   validates :student_id,
-    presence: {message: "Please provide your student Number"}, if: :student?
+    presence: true, if: :student?
 
   validates :identity,
-    presence: {message: "Please identify who you are"},
-    inclusion: {in:['grad', 'undergrad', 'faculty_member', 'community_member', 'unknown']}
+    presence: true,
+    inclusion: { in: ['grad', 'undergrad', 'faculty_member', 'community_member', 'unknown'] }
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
-
 
   def self.authenticate(username_email, password)
     user = User.username_or_email(username_email)
@@ -72,7 +69,7 @@ class User < ActiveRecord::Base
 
   def self.username_or_email(username_email)
     a = self.arel_table
-    user = self.where(a[:username].eq(username_email).or(a[:email].eq(username_email))).first
+    self.where(a[:username].eq(username_email).or(a[:email].eq(username_email))).first
   end
 
   def pword
@@ -86,7 +83,7 @@ class User < ActiveRecord::Base
   end
 
   def student?
-    self.identity.eql?("grad") || self.identity.eql?("undergrad")
+    self.identity == "grad" || self.identity == "undergrad"
   end
 
   scope :unknown_identity, -> { where(identity:"unknown") }
