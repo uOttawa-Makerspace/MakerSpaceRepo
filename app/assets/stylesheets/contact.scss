@@ -15,13 +15,17 @@ section#contact-us{
   	margin-bottom: 4rem;
   }
 
+  div.card-body {
+    height: 150px!important;
+  }
+
   div.container{
     @include outer-container(100%);
   }
 
   div.space{
-    color: #366;
-    font-weight: 500;
+    color: #366!important;
+    font-weight: 500!important;
     font-size: 18px;
     margin-bottom: 0.5rem;
   }
@@ -47,6 +51,8 @@ section#contact-us{
     color: #366;
     line-height: 10mm;
     white-space: nowrap;
+    padding-bottom: 10px;
+    text-align: center;
 
     a:hover{
       text-decoration: none;
