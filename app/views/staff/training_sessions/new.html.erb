@@ -6,7 +6,7 @@
     <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
       <div class="form-group">
     <% label_tag 'training_id' %>
-    <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings, 'id', 'name'), prompt: 'select training', class: "trainer-training-course form-control" %><br>
+    <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name ASC'), 'id', 'name'), prompt: 'select training', class: "trainer-training-course form-control" %><br>
       </div>
       <div class="form-group">
     <% label_tag 'course' %>

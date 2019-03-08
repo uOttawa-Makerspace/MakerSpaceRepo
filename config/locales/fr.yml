@@ -48,3 +48,80 @@ fr:
     contact_us: "Contactez-nous"
     help: "Aide"
     copyright_html: 'Copyright &copy; %s <a href="https://genie.uottawa.ca/CGEC">Centre en génie entrepreneurial de la conception</a> et <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">les contributeurs MakerRepo</a>'
+  users:
+    new:
+      sign_up: "Créer un compte"
+      required_info: "Les champs requis sont marqués d'un astérisque"
+      form:
+        full_name: "Prénom et nom"
+        email_address: "Adresse courriel"
+        username: "Nom d'utilisateur"
+        password: "Mot de passe"
+        password_hint: "Votre mot de passe doit comporter au moins 8 caractères et utiliser au moins une lettre majuscule, une lettre minuscule et un chiffre."
+        password_confirmation: "Confirmation de mot de passe"
+        gender: "Genre"
+        male: "Homme"
+        female: "Femme"
+        other: "Autre"
+        no_specify: "Je préfère ne pas spécifier"
+        i_am: "Je suis..."
+        undergrad: "un étudiant de premier cycle"
+        grad: "un étudiant diplômé"
+        faculty_member: "un membre de la faculté"
+        community_member: "un membre de la communauté"
+        student_number: "Numéro d'étudiant"
+        faculty: "Faculté"
+        arts: "Arts"
+        civil_law: "Droit civil"
+        common_law: "Droit commun"
+        education: "Éducation"
+        engineering: "Génie"
+        health_sciences: "Sciences de la santé"
+        medicine: "Médecine"
+        science: "Sciences"
+        social_sciences: "Sciences sociales"
+        telfer: "École de gestion Telfer"
+        choose: "Sélectionnez..."
+        program: "Programme"
+        year_of_study: "Année d'études"
+        makerrepo_for_what: "Vous planifiez utiliser MakerRepo pour quelle raison?"
+        course: "Cours"
+        personal_projects: "Projets personnels"
+        business: "Compagnie"
+        how_heard_about_us: "Comment avez-vous entendu parler de nous?"
+        accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation."
+  sessions:
+    login:
+      sign_in: "Connexion"
+      username_or_email: "Nom d'utilisateur ou adresse courriel"
+      password: "Mot de passe"
+      forgot_password: "J'ai oublié mon mot de passe"
+  static_pages:
+    forgot_password:
+      title: "Mot de passe oublié"
+      email: "Adresse courriel"
+      submit: "Soumettre"
+  activerecord:
+    errors:
+      models:
+        user:
+          attributes:
+            name:
+              too_long: "Votre nom doit comporter moins de %{count} caractères."
+            username:
+              taken: "Ce nom d'utilisateur est déjà utilisé."
+              invalid: "Votre nom d'utilisateur peut seulement contenir des caractères alphanumériques."
+              too_long: "Votre nom doit comporter moins de %{count} caractères."
+            password:
+              invalid: "Votre mot de passe doit comporter au moins 8 caractères et utiliser au moins une lettre majuscule, une lettre minuscule et un chiffre."
+            password_confirmation:
+              confirmation: "Les mots de passe ne correspondent pas."
+            email:
+              taken: "Cette adresse courriel est déjà utilisée."
+            how_heard_about_us:
+              too_long: "Maximum de %{count} caractères."
+            read_and_accepted_waiver_form:
+              inclusion: "Vous devez accepter les conditions de la renonciation."
+      messages:
+        blank: "Ce champ est requis."
+        inclusion: "Sélection non valide."

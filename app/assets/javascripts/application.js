@@ -10,11 +10,15 @@
 // Read Sprockets README (https://github.com/rails/sprockets#sprockets-directives) for details
 // about supported directives.
 //
-//= require jquery
-//= require popper
-//= require bootstrap-sprockets
-//= require select2
-//= require redactor-rails
+// Do not add libraries from gems here! Put them in vendor/assets/javascripts/vendor.js instead.
+//
 //= require_tree .
 
 Turbolinks.enableProgressBar();
+
+// needed since by default bootstrap-select doesn't register page:load events
+$(document).on('ready page:load', function () {
+    $('.bootstrap-select').selectpicker({
+        windowPadding: [80, 0, 0, 0]
+    });
+});
