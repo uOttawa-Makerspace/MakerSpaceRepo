@@ -105,13 +105,19 @@ every :friday, :at => '5:45 pm' do
   runner "MsrMailer.send_checklist_reminder('nikoleeyow@gmail.com', 'bmont037@uottawa.ca').deliver_now"
 end
 
-every :sunday, :at => '9:45 am' do
+every :sunday, :at => '10:15 am' do
   runner "MsrMailer.send_checklist_reminder('jlian009@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+end
+
+every :sunday, :at => '10:15 am' do
   runner "MsrMailer.send_checklist_reminder('art.fetiveau@gmail.com', 'bmont037@uottawa.ca').deliver_now"
 end
 
-every :sunday, :at => '5:45 pm' do
+every :sunday, :at => '4:45 pm' do
   runner "MsrMailer.send_checklist_reminder('jlian009@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+end
+
+every :sunday, :at => '4:45 pm' do
   runner "MsrMailer.send_checklist_reminder('art.fetiveau@gmail.com', 'bmont037@uottawa.ca').deliver_now"
 end
 
