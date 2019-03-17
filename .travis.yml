@@ -1,4 +1,5 @@
 language: ruby
+cache: bundler
 rvm:
 - 2.5.3
 services:
@@ -28,3 +29,4 @@ stages:
 notifications:
   slack:
     secure: VRKuBv60W7DOxHVtX17UmdUh0CDd5Sgxdq+GPHwLpuQaUa4DRCoQa2MflclJZS7aNqNLteZEfXiiFkLouv7IMS24JcCq+Ha4ea/ML8sKkigf0J8aKonHrilHV930weP9x2+8Z2N4pgbl4e/FZGsaK3gsSh9um0i2x0Ma+Zat4/9s79iVs9sQEg978mj1ANstSVc16QQnfaeT6Qjxrwwif4nzAO7JrCbA5aU2Yj9ai3C6KPq5J/BvZtpclMh06vl/Oc4OnBL994cbaVjLRf8D0wLLRm+NcojCt7E9GSc27f/y49vXDrm5pKENbcN1FDj00BYG+ey4TtfKIgay8LmbBomUSlA4fdnUSL4y49DbhHMdx1pYtvUN4EPueN4ptV/GINMBBsq94kdOVY60T2GU9gDYnkXHHjtX04VzhSES9sKE+QH/qTBTk6mHIz8OGY8yyuOC3SLeqOZ5b2Qx/EgCN8hXE7Xq1Pkrl4oAEewrs6iZvQlE2B67uox6i6O6dgrNb+H+27r3rYFxjs8ffu2jJ5OJAwMDA6aJB8u01vkUBhkj3Ul/tL/HP3ROy3Q0bIz4VTnne8vRGH6jLWYuC7II4mWhko1h+jC6bvM29j/ymNNx/3fJw/m1eWqkb8RQDwjU4fDKZcMp5SgTmJdf7bfdWiEgSdHgNNbS5MlfDoqEg4E=
+

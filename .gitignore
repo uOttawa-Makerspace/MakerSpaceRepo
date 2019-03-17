@@ -30,3 +30,4 @@ sunspot-solr.pid
 
 # don't want these going out to the world!
 certs/*
+.ruby-version
