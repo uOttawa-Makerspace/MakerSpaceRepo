@@ -121,6 +121,10 @@ every :sunday, :at => '4:45 pm' do
   runner "MsrMailer.send_checklist_reminder('art.fetiveau@gmail.com', 'bmont037@uottawa.ca').deliver_now"
 end
 
+every 10.minutes do
+  runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca', 'bruno.mrlima@gmail.com').deliver_now"
+end
+
 # Use this file to easily define all of your cron jobs.
 #
 # It's helpful, but not entirely necessary to understand cron before proceeding.
