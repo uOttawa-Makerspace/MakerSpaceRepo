@@ -7,7 +7,6 @@ require 'capistrano/scm/git'
 
 # Include tasks from other gems included in your Gemfile
 require 'capistrano/rbenv'
-require 'capistrano/rbenv_install'
 require 'capistrano/bundler'
 require 'capistrano/rails/assets'
 require 'capistrano/rails/migrations'
