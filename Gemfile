@@ -51,6 +51,7 @@ group :development do
   gem 'capistrano-bundler'
   gem 'capistrano-passenger', '>= 0.1.1'
   gem 'capistrano-rbenv', '~> 2.1'
+  gem 'capistrano-rbenv-install', '~> 1.2.0'
 
   # ssh deployment
   gem 'ed25519', '~> 1.2'
