@@ -16,6 +16,11 @@
 # every :thursday, :at => '1:12 pm' do
 #   runner "MsrMailer.send_ommic.deliver_now"
 # end
+#
+
+set :whenever_identifier, ->{ "#{fetch(:application)}_#{fetch(:stage)}" }
+set :output, "log/cron_log.log"
+env :PATH, ENV['PATH']
 
 every 1.month do
   runner "MsrMailer.send_monthly_report(hanis@uottawa.ca', 'bruno.mrlima@gmail.com', 'makerspace@uottawa.ca', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
