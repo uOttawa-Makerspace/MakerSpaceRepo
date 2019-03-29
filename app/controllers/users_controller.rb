@@ -5,7 +5,6 @@ class UsersController < SessionsController
   before_action :signed_in, except: [:new, :create, :show]
 
   def create
-    #
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
 
