@@ -119,4 +119,6 @@ class User < ActiveRecord::Base
 
   scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace")}
 
+  scope :active, -> {where(:active => true)}
+
 end
