@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190121201805) do
+ActiveRecord::Schema.define(version: 20190329173224) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -286,6 +286,7 @@ ActiveRecord::Schema.define(version: 20190121201805) do
     t.string   "identity"
     t.string   "year_of_study"
     t.boolean  "read_and_accepted_waiver_form", default: false
+    t.boolean  "active",                        default: true
   end
 
   add_foreign_key "categories", "category_options"
