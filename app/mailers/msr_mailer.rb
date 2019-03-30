@@ -8,7 +8,6 @@ class MsrMailer < ApplicationMailer
 
 	def send_survey
 		# all_users = User.active.pluck(:email)
-		attachments['face_optimized.jpg'] = File.read("#{Rails.root}/app/assets/images/face_optimized.jpg")
 		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: 'bmont037@uottawa.ca')
 	end
 
