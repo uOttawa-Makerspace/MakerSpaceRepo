@@ -6,6 +6,11 @@ class MsrMailer < ApplicationMailer
 		mail(to: @user.email, subject: "Welcome to MakerRepo")
 	end
 
+	def send_survey
+		# all_users = User.active.pluck(:email)
+		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: 'bmont037@uottawa.ca')
+	end
+
 	def send_ommic
 		all_users = User.where("email like ? and length(email) = 19", "%@uottawa.ca").pluck(:email).uniq
 		attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
