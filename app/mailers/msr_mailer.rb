@@ -7,8 +7,8 @@ class MsrMailer < ApplicationMailer
 	end
 
 	def send_survey
-		# all_users = User.active.pluck(:email)
-		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: 'bmont037@uottawa.ca')
+		all_users = User.active.pluck(:email)
+		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
 	end
 
 	def send_ommic
