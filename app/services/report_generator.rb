@@ -453,12 +453,14 @@ end
     program = []
     faculty = []
     gender = []
+    identity = []
     column << ["TOTAL", total]
     uniqueVisitSeasonYear.each do |lab|
       user = User.find_by_id(lab.user_id)
       program << user.program
       faculty << user.faculty
       gender << user.gender
+      identity << user.identity
     end
 
     column << [] << ["Gender"]
@@ -479,6 +481,13 @@ end
 
     programsAll.each do |program|
       column << [program[0], program[1]]
+    end
+
+    column << [] << ["Identity"]
+    identityAll = Hash[identity.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+    identityAll.each do |identity|
+      column << [identity[0], identity[1]]
     end
   end
 
