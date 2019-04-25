@@ -194,4 +194,11 @@ class Admin::ReportGeneratorController < AdminAreaController
       format.csv {send_data ReportGenerator.unique_visits_detail_report , filename: "detail_unique_visits_per_term-#{Date.today}.csv"}
     end
   end
+
+  def unique_visits_ceed
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.unique_visits_ceed , filename: "CEED_unique_visits_per_term-#{Date.today}.csv"}
+    end
+  end
 end

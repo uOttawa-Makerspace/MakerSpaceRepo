@@ -116,6 +116,7 @@ Rails.application.routes.draw do
         get 'peak_hrs'
         get 'total_visits_per_term'
         get 'unique_visits_detail'
+        get 'unique_visits_ceed'
       end
     end
 
