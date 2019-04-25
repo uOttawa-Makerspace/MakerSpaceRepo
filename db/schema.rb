@@ -132,10 +132,13 @@ ActiveRecord::Schema.define(version: 20190329173224) do
   end
 
   create_table "printers", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at",                      null: false
+    t.datetime "updated_at",                      null: false
     t.string   "model"
     t.string   "number"
+    t.string   "status",       default: "true"
+    t.string   "availability", default: "true"
+    t.string   "color",        default: "FF0000"
   end
 
   create_table "project_joins", force: :cascade do |t|
@@ -214,6 +217,12 @@ ActiveRecord::Schema.define(version: 20190329173224) do
   end
 
   add_index "rfids", ["user_id"], name: "index_rfids_on_user_id", using: :btree
+
+  create_table "sd_signins", force: :cascade do |t|
+    t.integer  "printer_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
 
   create_table "spaces", force: :cascade do |t|
     t.string   "name"
