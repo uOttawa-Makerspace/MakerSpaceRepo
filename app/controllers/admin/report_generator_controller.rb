@@ -1,7 +1,6 @@
 class Admin::ReportGeneratorController < AdminAreaController
   layout 'admin_area'
   require 'date'
-
   def index
     unless session[:selected_dates]
       @start_date = 1.month.ago.beginning_of_day
