@@ -482,4 +482,32 @@ end
     end
   end
 
+  def self.unique_visits_ceed
+    fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
+    fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
+    column = []
+    column << ["Unique visitors in all CEED facilities "]
+
+    column << ["Fall 2017 Term", ReportGenerator.number_ceed_visits(fall_2017_begin, fall_2017_end)]
+
+    column << ["Winter 2018 Term", ReportGenerator.number_ceed_visits(winter_2018_begin, winter_2018_end)]
+
+    column << ["Summer 2018 Term", ReportGenerator.number_ceed_visits(summer_2018_begin, summer_2018_end)]
+
+    column << ["Fall 2018 Term", ReportGenerator.number_ceed_visits(fall_2018_begin, fall_2018_end)]
+
+    column << ["Winter 2019 Term", ReportGenerator.number_ceed_visits(winter_2019_begin, winter_2019_end)]
+
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
+
+  end
+
+  def self.number_ceed_visits(season_begin, season_end)
+    return LabSession.where('created_at BETWEEN ? AND ? ', season_begin , season_end).select('DISTINCT user_id').count
+  end
+
 end
