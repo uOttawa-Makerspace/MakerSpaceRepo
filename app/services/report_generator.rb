@@ -401,8 +401,6 @@ end
 
   def self.unique_visits_detail_report
 
-    include ReportGeneratorHelper
-
     fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
     fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
 
@@ -451,9 +449,11 @@ end
 
   def self.create_seasonal_report(season_begin, season_end, space, column)
     uniqueVisitSeasonYear = space.lab_sessions.where('created_at BETWEEN ? AND ? ', season_begin , season_end).select('DISTINCT user_id')
+    total = uniqueVisitSeasonYear.count
     program = []
     faculty = []
     gender = []
+    column << ["TOTAL", total]
     uniqueVisitSeasonYear.each do |lab|
       user = User.find_by_id(lab.user_id)
       program << user.program
