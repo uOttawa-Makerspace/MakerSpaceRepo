@@ -520,10 +520,11 @@ end
     fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
 
     column = []
-    column << ["Number of Trainings per Term per Space"]
+    column << ["Number of TOTAL/Unique Certifications per Term per Space"]
 
     Space.find_each do |space|
-      column << []<< [space.name]
+      column << [] << [space.name]
+      column << [] << ["Total certifications", "Unique Certifications"]
       column << ["Fall 2017 Term", ReportGenerator.number_of_certification(fall_2017_begin, fall_2017_end, space)]
       column << ["Winter 2018 Term", ReportGenerator.number_of_certification(winter_2018_begin, winter_2018_end, space)]
       column << ["Summer 2018 Term", ReportGenerator.number_of_certification(summer_2018_begin, summer_2018_end, space)]
@@ -539,7 +540,8 @@ end
   end
 
   def self.number_of_certification(date_begin, date_end, space)
-    return Certification.joins(:space).where("spaces.name = ?", space.name).where('certifications.created_at BETWEEN ? AND ? ', date_begin , date_end).count
+    certifications = Certification.joins(:space).where("spaces.name = ?", space.name).where('certifications.created_at BETWEEN ? AND ? ', date_begin , date_end)
+    return certifications.count, certifications.select('DISTINCT certifications.user_id').count
   end
 
 end
