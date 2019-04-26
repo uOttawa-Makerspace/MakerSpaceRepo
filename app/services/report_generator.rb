@@ -569,7 +569,7 @@ end
 
   def self.number_of_trainings(date_begin, date_end, space)
     count = 0
-    TrainingSession.joins(:space, :certifications).where("spaces.name = ?", space.name).where('training_sessions.created_at BETWEEN ? AND ? ', date_begin , date_end).find_each do |ts|
+    TrainingSession.joins(:space).where("spaces.name = ?", space.name).where('training_sessions.created_at BETWEEN ? AND ? ', date_begin , date_end).find_each do |ts|
       if ts.completed?
         count += 1
       end
