@@ -568,7 +568,7 @@ end
   end
 
   def self.number_of_trainings(date_begin, date_end, space)
-    return Training.joins(:space).where("spaces.name = ?", space.name).where('trainings.created_at BETWEEN ? AND ? ', date_begin , date_end).count
+    return TrainingSession.joins(:space).where("spaces.name = ?", space.name).where('training_sessions.created_at BETWEEN ? AND ? ', date_begin , date_end).count
   end
 
 end
