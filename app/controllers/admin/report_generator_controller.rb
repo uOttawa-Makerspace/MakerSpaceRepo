@@ -201,4 +201,11 @@ class Admin::ReportGeneratorController < AdminAreaController
       format.csv {send_data ReportGenerator.unique_visits_ceed , filename: "CEED_unique_visits_per_term-#{Date.today}.csv"}
     end
   end
+
+  def seasonal_training_report
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.seasonal_training_report , filename: "Trainings_per_term-#{Date.today}.csv"}
+    end
+  end
 end
