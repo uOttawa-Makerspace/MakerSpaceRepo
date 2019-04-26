@@ -515,7 +515,7 @@ end
     return LabSession.where('created_at BETWEEN ? AND ? ', season_begin , season_end).select('DISTINCT user_id').count
   end
 
-  def self.seasonal_training_report
+  def self.seasonal_certification_report
     fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
     fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
 

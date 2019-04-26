@@ -117,7 +117,7 @@ Rails.application.routes.draw do
         get 'total_visits_per_term'
         get 'unique_visits_detail'
         get 'unique_visits_ceed'
-        get 'seasonal_training_report'
+        get 'seasonal_certification_report'
       end
     end
 
