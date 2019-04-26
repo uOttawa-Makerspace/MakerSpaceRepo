@@ -544,4 +544,31 @@ end
     return certifications.count, certifications.select('DISTINCT certifications.user_id').count
   end
 
+  def self.seasonal_training_report
+    fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
+    fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
+
+    column = []
+    column << ["Number of Trainings per Term per Space"]
+
+    Space.find_each do |space|
+      column << [] << [space.name]
+      column << ["Fall 2017 Term", ReportGenerator.number_of_trainings(fall_2017_begin, fall_2017_end, space)]
+      column << ["Winter 2018 Term", ReportGenerator.number_of_trainings(winter_2018_begin, winter_2018_end, space)]
+      column << ["Summer 2018 Term", ReportGenerator.number_of_trainings(summer_2018_begin, summer_2018_end, space)]
+      column << ["Fall 2018 Term", ReportGenerator.number_of_trainings(fall_2018_begin, fall_2018_end, space)]
+      column << ["Winter 2019 Term", ReportGenerator.number_of_trainings(winter_2019_begin, winter_2019_end, space)]
+    end
+
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
+  end
+
+  def self.number_of_trainings(date_begin, date_end, space)
+    return Training.joins(:space).where("spaces.name = ?", space.name).where('trainings.created_at BETWEEN ? AND ? ', date_begin , date_end).count
+  end
+
 end

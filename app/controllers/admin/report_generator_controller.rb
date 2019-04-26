@@ -205,7 +205,14 @@ class Admin::ReportGeneratorController < AdminAreaController
   def seasonal_certification_report
     respond_to do |format|
       format.html
-      format.csv {send_data ReportGenerator.seasonal_certification_report , filename: "Trainings_per_term-#{Date.today}.csv"}
+      format.csv {send_data ReportGenerator.seasonal_certification_report , filename: "Certifications_per_term-#{Date.today}.csv"}
+    end
+  end
+
+  def seasonal_training_report
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.seasonal_training_report , filename: "Trainings_per_term-#{Date.today}.csv"}
     end
   end
 end
