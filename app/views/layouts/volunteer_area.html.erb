@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Volunteer <%= page_title(yield(:title)) %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <%= favicon_link_tag 'site-icon.jpg' %>
+    <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
+    <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+    <%= javascript_include_tag "vendor",      :debug => false %>
+    <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+  <%= csrf_meta_tags %>
+  <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
+</head>
+<body>
+	<%= render 'layouts/header' %>
+	<section id="setting" style="width:90%">
+		<div class="setting-grid">
+			<div class="setting-side-panel">
+        <div class="panel-title"><%= link_to 'Staff Area', staff_index_path %></div>
+				<ul>
+		      <li class="setting-menu-item">
+            <%= link_to 'Go To Kiosk', staff_dashboard_index_path, class: 'kiosk-button' %><br></br>
+            <%= link_to 'New Training Session', new_staff_training_session_path, class: 'new-session' %><br></br>
+            <%= link_to 'My Training Sessions', staff_training_sessions_path, class: 'my-sessions' %><br></br>
+		      </li>
+				</ul>
+			</div>
+      <% if flash[:notice] %>
+        <div id="notice"><%= flash[:notice] %></div>
+      <% end %>
+
+      <% if flash[:alert] %>
+        <div id="alert"><%= flash[:alert] %></div>
+      <% end %>
+			<%= yield %>
+
+		</div>
+	</section>
+  <%= render 'layouts/footer' %>
+</body>
+</html>
