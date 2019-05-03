@@ -1,4 +1,4 @@
-class VolunteerHoursController < ApplicationController
+class VolunteerHoursController < VolunteersController
   def index
     @user = current_user
   end
