@@ -97,6 +97,10 @@ class User < ActiveRecord::Base
     self.role.eql?("staff") || self.role.eql?("admin")
   end
 
+  def volunteer?
+    self.role.eql?("volunteer")
+  end
+
 
   def self.to_csv(attributes)
     CSV.generate do |csv|
