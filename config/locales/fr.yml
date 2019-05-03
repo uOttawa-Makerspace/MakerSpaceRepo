@@ -23,6 +23,7 @@ fr:
       settings: "Paramètres"
       admin_area: "Zone des administrateurs"
       staff_area: "Zone des employés"
+      volunteer_area: "Zone des volontaires"
       help: "Aide"
       sign_out: "Déconnexion"
   home:
