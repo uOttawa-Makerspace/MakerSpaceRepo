@@ -1,97 +1,207 @@
 <section class="page-contents">
   <div class="edit-column">
 
-    <h2>New Hour Tracking</h2>
+    <h2 class="text-center">New Hour Tracking</h2>
 
-    <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
-      <div class="form-group">
-    <% label_tag 'training_id' %>
-    <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name ASC'), 'id', 'name'), prompt: 'select training', class: "trainer-training-course form-control" %><br>
-      </div>
-      <div class="form-group">
-    <% label_tag 'course' %>
-    <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'select course', class: "trainer-training-course form-control" %><br>
-      </div>
-    <% if @user.admin? %>
-      <% label_tag 'user_id' %>
-      <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']).order('name ASC'), 'id', 'name'), prompt: 'select instructor', class: "trainer-training-course" %><br>
-    <% end %>
-    <br></br>
-      <table class="staff-table" id="staff-users-table">
-        <h3>Users Inside <%=@space.name%></h3>
-        <tr>
-          <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <%=fa_icon('arrow-down')%></th>
-          <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-        </tr>
-
-      <% @space.signed_in_users.each do |user| %>
-        <%if user.read_and_accepted_waiver_form%>
-          <tr>
-        <%else%>
-          <tr id="no-waiver">
-        <%end%>
-          <td class="action-cell">
-             <%= check_box_tag 'training_session_users[]', value=user.id%>
-          </td>
-
-          <td class="user-name">
-            <%= link_to(user.name, user_url(user.username)) %>
-          </td>
-
-          <td class="email-cell" style="horizontal-alginment:center;">
-            <%= user.email  %>
-          </td>
-
-          <td class="signed-in-cell" style="horizontal-alginment:center;">
-            <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
-          </td>
-
-          <td class="certifications-cell"><%
-            if user.certifications.first.present?
-              user.certifications.each do |certification|
-              %><%
-                unless certification.out_of_date? %>
-                <div
-                 class="cert-name"
-                 style="display:inline" >
-                 <div class="cert-holder" style="display:inline">
-                  <%= certification.training %>
-                  <div id="cert-details" style="display:inline">
-                    <%= certification.training %> <br>
-                    <%= certification.trainer %> <br>
-                    <%= certification.updated_at.strftime("%B %d, %Y")  %>
+    <div class="container my-5">
+      <div class="row">
+        <div class="col-lg-12">
+          <form id="contactForm" name="sentMessage" novalidate="novalidate" class="needs-validation">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <input class="form-control" id="name" type="text" placeholder="Nome *" required="required">
+                  <div class="invalid-feedback">
+                    Por favor digite seu nome.
                   </div>
-                  <br>
+                </div>
+                <div class="form-group">
+                  <input class="form-control" id="email" type="email" placeholder="Email *" required="required">
+                  <div class="invalid-feedback">
+                    Por favor digite seu email.
+                  </div>
+                </div>
+                <div class="form-group">
+                  <input class="form-control" id="phone" type="tel" placeholder="Telefone *" required="required">
+                  <div class="invalid-feedback">
+                    Por favor digite seu telefone.
+                  </div>
                 </div>
               </div>
-              <% else %>
-              <div
-               class="cert-name-red"
-               style="display:inline" >
-               <div class="cert-holder" style="display:inline">
-                <%= certification.training %>
-                <div id="cert-details" style="display:inline">
-                  <%= certification.training %> <br>
-                  <%= certification.trainer %> <br>
-                  <%= certification.updated_at.strftime("%B %d, %Y")  %>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <textarea class="form-control" id="message" placeholder="Sua Mensagem *" required="required"></textarea>
+                  <div class="invalid-feedback">
+                    Por favor digite sua mensagem.
+                  </div>
                 </div>
-                <br>
+              </div>
+              <div class="clearfix"></div>
+              <div class="col-lg-12 text-center">
+                <div id="success"></div>
+                <button id="sendMessageButton" class="btn btn-secondary btn-xl text-uppercase" type="submit">Mandar Mensagem</button>
               </div>
             </div>
-            <% end
-              end
-            end
-            %>
-          </td>
-        </tr>
-      <% end %>
-      </table>
-      <br>
-      <%= submit_tag "Begin Training", class:"btn btn-secondary"%>
-    <% end %>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                // Fetch all the forms we want to apply custom Bootstrap validation styles to
+                var forms = document.getElementsByClassName('needs-validation');
+                // Loop over them and prevent submission
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                        } else{
+                            var name = $("input#name").val();
+                            var email = $("input#email").val();
+                            var phone = $("input#phone").val();
+                            var message = $("textarea#message").val();
+                            var firstName = name; // For Success/Failure Message
+                            // Check for white space in name for Success/Fail message
+                            if (firstName.indexOf(' ') >= 0) {
+                                firstName = name.split(' ').slice(0, -1).join(' ');
+                            }
+                            var $this = $("button#sendMessageButton");
+                            $this.prop("disabled", true); // Disable submit button until AJAX call is complete to prevent duplicate messages
+                            $.ajax({
+                                url: '/send_contact_info',
+                                type: "POST",
+                                data: {
+                                    name: name,
+                                    phone: phone,
+                                    email: email,
+                                    message: message
+                                },
+                                cache: false,
+                                success: function() {
+                                    // Success message
+                                    $('#success').html("<div class='alert alert-success'>");
+                                    $('#success > .alert-success').html("<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;")
+                                        .append("</button>");
+                                    $('#success > .alert-success')
+                                        .append("<strong>Sua mensagem foi enviada. Entraremos em contato em breve. </strong>");
+                                    $('#success > .alert-success')
+                                        .append('</div>');
+                                    //clear all fields
+                                    // $('#contactForm').trigger("reset");
+                                },
+                                error: function() {
+                                    // Fail message
+                                    $('#success').html("<div class='alert alert-danger'>");
+                                    $('#success > .alert-danger').html("<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;")
+                                        .append("</button>");
+                                    $('#success > .alert-danger').append($("<strong>").text("Desculpe " + firstName + ", parece que os servers não estão respondendo. Por favor tentar mais tarde."));
+                                    $('#success > .alert-danger').append('</div>');
+                                    //clear all fields
+                                    // $('#contactForm').trigger("reset");
+                                },
+                            });
+                        }
+                        event.preventDefault();
+                        event.stopPropagation();
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+
+
+    <%#= form_for @new_volunteer_hour, :url => { :action => "create"} do |f| %>
+<!--      <div class="form-group">-->
+    <%# label_tag 'training_id' %>
+<!--    <%#= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name ASC'), 'id', 'name'), prompt: 'select training', class: "trainer-training-course form-control" %><br>-->
+<!--      </div>-->
+<!--      <div class="form-group">-->
+    <%# label_tag 'course' %>
+<!--    <%#= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'select course', class: "trainer-training-course form-control" %><br>-->
+<!--      </div>-->
+    <%# if @user.admin? %>
+      <%# label_tag 'user_id' %>
+<!--      <%#= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']).order('name ASC'), 'id', 'name'), prompt: 'select instructor', class: "trainer-training-course" %><br>-->
+    <%# end %>
+<!--    <br></br>-->
+<!--      <table class="staff-table" id="staff-users-table">-->
+<!--        <h3>Users Inside <%#=@space.name%></h3>-->
+<!--        <tr>-->
+<!--          <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <%#=fa_icon('arrow-down')%></th>-->
+<!--          <th>Name <span onclick="sortTable('staff-table', 1)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--          <th>Email <span onclick="sortTable('staff-table', 2)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--          <th>Signed In <span onclick="sortTable('staff-table', 3)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--          <th>Certifications <span onclick="sortTable('staff-table', 4)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--        </tr>-->
+
+      <%# @space.signed_in_users.each do |user| %>
+        <%#if user.read_and_accepted_waiver_form%>
+<!--          <tr>-->
+        <%#else%>
+<!--          <tr id="no-waiver">-->
+        <%#end%>
+<!--          <td class="action-cell">-->
+             <%#= check_box_tag 'training_session_users[]', value=user.id%>
+<!--          </td>-->
+
+<!--          <td class="user-name">-->
+            <%#= link_to(user.name, user_url(user.username)) %>
+<!--          </td>-->
+
+<!--          <td class="email-cell" style="horizontal-alginment:center;">-->
+            <%#= user.email  %>
+<!--          </td>-->
+
+<!--          <td class="signed-in-cell" style="horizontal-alginment:center;">-->
+            <%#= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
+<!--          </td>-->
+
+<!--          <td class="certifications-cell"><%#-->
+<!--            if user.certifications.first.present?-->
+<!--              user.certifications.each do |certification|-->
+              %><%#
+                unless certification.out_of_date? %>
+<!--                <div-->
+<!--                 class="cert-name"-->
+<!--                 style="display:inline" >-->
+<!--                 <div class="cert-holder" style="display:inline">-->
+                  <%#= certification.training %>
+<!--                  <div id="cert-details" style="display:inline">-->
+<!--                    <%#= certification.training %> <br>-->
+<!--                    <%#= certification.trainer %> <br>-->
+                    <%#= certification.updated_at.strftime("%B %d, %Y")  %>
+<!--                  </div>-->
+<!--                  <br>-->
+<!--                </div>-->
+<!--              </div>-->
+              <%# else %>
+<!--              <div-->
+<!--               class="cert-name-red"-->
+<!--               style="display:inline" >-->
+<!--               <div class="cert-holder" style="display:inline">-->
+                <%#= certification.training %>
+<!--                <div id="cert-details" style="display:inline">-->
+<!--                  <%#= certification.training %> <br>-->
+<!--                  <%#= certification.trainer %> <br>-->
+                  <%#= certification.updated_at.strftime("%B %d, %Y")  %>
+<!--                </div>-->
+<!--                <br>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--            <#% end-->
+<!--              end-->
+<!--            end-->
+<!--            %>-->
+<!--          </td>-->
+<!--        </tr>-->
+      <%# end %>
+<!--      </table>-->
+<!--      <br>-->
+      <%#= submit_tag "Begin Training", class:"btn btn-secondary"%>
+    <%# end %>
 
   </div>
 </section>
