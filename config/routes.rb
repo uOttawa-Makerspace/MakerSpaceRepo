@@ -200,6 +200,9 @@ Rails.application.routes.draw do
     get 'sign_out_all_users'
   end
 
+
+  resources :volunteers, only: [:index]
+
   # namespace :help do
   #   get 'main', path: '/'
   # end
