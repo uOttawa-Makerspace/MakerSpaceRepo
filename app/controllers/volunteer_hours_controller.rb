@@ -9,6 +9,7 @@ class VolunteerHoursController < VolunteersController
   end
 
   def create
+    puts "passing here"
 
   end
 end

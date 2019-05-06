@@ -203,7 +203,7 @@ Rails.application.routes.draw do
 
   resources :volunteers, only: [:index]
 
-  resources :volunteer_hours, only: [:index, :new, :show]
+  resources :volunteer_hours, only: [:index, :create, :new, :show]
 
   # namespace :help do
   #   get 'main', path: '/'
