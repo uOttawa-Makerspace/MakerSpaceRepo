@@ -9,9 +9,7 @@ class VolunteersController < ApplicationController
   private
 
   def grant_access
-    if current_user.volunteer? || current_user.admin? || current_user.staff?
-      flash.now[:notice] = "You are in the Volunteer Area."
-    else
+    unless current_user.volunteer? || current_user.admin? || current_user.staff?
       redirect_to root_path
       flash[:alert] = "You cannot access this area."
     end
