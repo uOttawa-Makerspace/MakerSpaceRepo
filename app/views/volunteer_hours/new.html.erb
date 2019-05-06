@@ -6,49 +6,45 @@
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
-          <form id="contactForm" name="sentMessage" novalidate="novalidate" class="needs-validation">
+          <%= form_for @new_volunteer_hour, :html => { :id => "contactForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
             <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <input class="form-control" id="name" type="text" placeholder="Nome *" required="required">
-                  <div class="invalid-feedback">
-                    Por favor digite seu nome.
-                  </div>
-                </div>
-                <div class="form-group">
-                  <input class="form-control" id="email" type="email" placeholder="Email *" required="required">
-                  <div class="invalid-feedback">
-                    Por favor digite seu email.
-                  </div>
-                </div>
-                <div class="form-group">
-                  <input class="form-control" id="phone" type="tel" placeholder="Telefone *" required="required">
-                  <div class="invalid-feedback">
-                    Por favor digite seu telefone.
-                  </div>
+              <div class="col-md-12">
+                <div class="form-group text-center">
+                  <%= f.label :volunteer_task, "Volunteer Task" %>
+                  <%= f.select :volunteer_task_id, @volunteer_tasks, {prompt: "Volunteer Task Title"}, {class: 'form-control selectpicker bootstrap-select', 'data-live-search': 'true'} %>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <textarea class="form-control" id="message" placeholder="Sua Mensagem *" required="required"></textarea>
+                  <%= f.label :date_of_task, "Date you worked in a task" %>
+                  <%= f.date_field :date_of_task, class: 'form-control', required: true %>
                   <div class="invalid-feedback">
-                    Por favor digite sua mensagem.
+                    Please select a date.
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <%= f.label :amount_of_hours_worked %>
+                <div class="input-group">
+                  <input id="hours" class="form-control col-4" type="number" required="required" placeholder="Hours" min="0">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text">:</span>
+                  </div>
+                  <input id="minutes" class="form-control col-4" type="number" required="required" placeholder="Minutes" min="0" max="60">
+                  <div class="invalid-feedback">
+                    Please select the amount of hours worked. (Minutes: Min -> 0 Max -> 60)
                   </div>
                 </div>
               </div>
               <div class="clearfix"></div>
               <div class="col-lg-12 text-center">
                 <div id="success"></div>
-                <button id="sendMessageButton" class="btn btn-secondary btn-xl text-uppercase" type="submit">Mandar Mensagem</button>
+                <button id="sendMessageButton" class="btn btn-secondary btn-xl text-uppercase" type="submit">Send</button>
               </div>
             </div>
-          </form>
+          <% end %>
         </div>
       </div>
     </div>
   </div>
 </section>
-
-<script>
-
-</script>
