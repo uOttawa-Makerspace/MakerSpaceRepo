@@ -1,6 +1,7 @@
 class VolunteerHoursController < VolunteersController
   def index
     @user = current_user
+    @user_volunteer_hours = VolunteerHour.where(user_id: @user.id).order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
   end
 
   def new
@@ -14,6 +15,20 @@ class VolunteerHoursController < VolunteersController
     if @volunteer_hour.save!
       redirect_to new_volunteer_hour_path
       flash[:notice] = "You've successfully sent your volunteer working hours"
+    end
+  end
+
+  def edit
+    @user = current_user
+  end
+
+  def destroy
+    if VolunteerHour.find(params[:id]).destroy
+      flash[:notice] = "Volunteer Hour Deleted"
+      redirect_to :back
+    else
+      flash[:danger] = "Something went wrong"
+      redirect_to :back
     end
   end
 

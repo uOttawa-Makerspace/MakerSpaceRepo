@@ -1,82 +1,48 @@
 <section class="page-contents">
-  <div class="edit-column">
+  <div class="edit-column text-center">
 
-    <h2>Viewing <%=@user.name.capitalize + "'s"%> Training Sessions</h2>
-    <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
+    <h2>Viewing <%=@user.name.capitalize + "'s"%> Volunteer Hours</h2>
+    <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">
 
-    <br></br>
+    <br />
+
     <table class="sessions-table">
     <tr>
-      <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Space <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Course <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Status <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Users <span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Task <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Date of Task<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Time Worked <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
       <th class="action-header">Action</th>
 
     </tr>
 
     <tbody>
-    <% @sessions = TrainingSession.where(user_id: @user.id).paginate(:page => params[:page], :per_page => 50) %>
-    <%= will_paginate @sessions %>
-    <% @sessions.each do |sesh| %>
+    <%= will_paginate @user_volunteer_hours %>
+    <% @user_volunteer_hours.each do |vh| %>
       <tr>
         <td class="date-cell">
-          <%= sesh.created_at.strftime("%I:%M %p").downcase() %>
+          <%= vh.created_at.strftime("%I:%M %p").downcase() %>
           <br>
-          <%= sesh.created_at.strftime("%b %e %Y").downcase() %>
+          <%= vh.created_at.strftime("%b %e %Y").downcase() %>
         </td>
 
         <td class="training-cell">
-          <%= sesh.training.name %>
+          <%= vh.volunteer_task.title %>
         </td>
 
         <td class="trainer-cell" style="horizontal-alginment:center;">
-          <%= link_to sesh.user.name, user_url(sesh.user.username) %>
+          <%= vh.date_of_task.strftime("%b %e %Y") %>
         </td>
 
         <td class="space-cell">
-          <%= sesh.training.space.name %>
-        </td>
-
-        <td class="course-cell">
-          <%= sesh.course %>
-        </td>
-
-        <td class="status-cell">
-          <% if sesh.completed? %>
-            COMPLETED
-          <% else %>
-            NOT COMPLETED
-          <% end %>
-        </td>
-
-        <td class="users-cell">
-            <div
-             class="users-count"
-             style="display:inline" >
-             <div class="count-holder" style="display:inline">
-              <%= sesh.users.length %>
-              <div id="sesh-users" style="display:inline">
-                <% sesh.users.each do |user| %>
-                  <div class="clickable-username">
-                    <%=link_to user.name, user_url(user.username), class: "user-link" %> <br>
-                  </div>
-                <% end %>
-              </div>
-            </div>
-          </div>
+          <%= vh.total_time %> Hours
         </td>
 
         <td class="action-cell">
         <br>
-          <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %>
-          <%=link_to "Download",
-                    training_report_staff_training_session_path(id:sesh.id, format: "csv" ),
-                    action: :training_report,
-                    class:"download-button" %>
+          <%=link_to "Edit", edit_volunteer_hour_path(vh.id), class:"visit-button" %>
+          <%=link_to "Delete", { action: :destroy, id: vh.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"destroy-button"%>
+          <%#=link_to "Download", training_report_staff_training_session_path(id:sesh.id, format: "csv" ), action: :training_report, class:"download-button" %>
         <br></br>
         </td>
 
