@@ -4,7 +4,7 @@ class VolunteerHoursController < VolunteersController
   def index
     @user = current_user
     @user_volunteer_hours = VolunteerHour.where(user_id: @user.id).order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
-    @total_hours = calculate_hours(@user_volunteer_hours.pluck(:total_time))
+    @total_hours = calculate_hours(@user_volunteer_hours.approved.pluck(:total_time))
   end
 
   def new

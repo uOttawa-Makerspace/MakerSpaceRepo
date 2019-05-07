@@ -13,6 +13,7 @@
       <th>Task <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
       <th>Date of Task<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
       <th>Hours Worked <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Approved?<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
       <th class="action-header">Action</th>
 
     </tr>
@@ -37,6 +38,10 @@
 
         <td>
           <%= vh.total_time %> Hours
+        </td>
+
+        <td>
+          <%= return_approval(vh.approval) %>
         </td>
 
         <td class="action-cell">
