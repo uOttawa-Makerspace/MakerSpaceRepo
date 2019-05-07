@@ -13,7 +13,7 @@ class VolunteerHoursController < VolunteersController
     @volunteer_hour.user_id = @user.try(:id)
     if @volunteer_hour.save!
       redirect_to new_volunteer_hour_path
-      flash[:notice] = "You have send your tracking hours"
+      flash[:notice] = "You've successfully sent your volunteer working hours"
     end
   end
 
