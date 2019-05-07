@@ -48,12 +48,12 @@
             <td class="action-cell">
               <% if vh.approval.nil? %>
                 <%=link_to "Edit", edit_volunteer_hour_path(vh.id), class:"visit-button" %>
+
                 <%=link_to "Delete", { action: :destroy, id: vh.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"destroy-button"%>
               <% else %>
                 Processed
               <% end %>
               <%#=link_to "Download", training_report_staff_training_session_path(id:sesh.id, format: "csv" ), action: :training_report, class:"download-button" %>
-              <br></br>
             </td>
 
           </tr>

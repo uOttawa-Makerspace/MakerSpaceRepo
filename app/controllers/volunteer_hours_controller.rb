@@ -26,11 +26,13 @@ class VolunteerHoursController < VolunteersController
   end
 
   def destroy
-    if VolunteerHour.find(params[:id]).destroy
+    volunteer_hour = VolunteerHour.find(params[:id])
+    if (volunteer_hour && !volunteer_hour.was_processed?) || current_user.admin?
+      volunteer_hour.destroy
       flash[:notice] = "Volunteer Hour Deleted"
       redirect_to :back
-    else
-      flash[:danger] = "Something went wrong"
+    elsif
+      flash[:alert] = "Something went wrong or this volunteer hour was processed."
       redirect_to :back
     end
   end
