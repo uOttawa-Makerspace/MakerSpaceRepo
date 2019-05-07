@@ -7,59 +7,59 @@
 
     <br />
 
-    <table class="table sessions-table">
-    <tr>
-      <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Task <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Date of Task<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Hours Worked <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Approved?<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-      <th class="action-header">Action</th>
+    <div class="table-responsive">
+      <table class="table sessions-table">
 
-    </tr>
+        <tr>
+          <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Task <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Date of Task<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Hours Worked <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Approved?<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th class="action-header">Action</th>
+        </tr>
 
-    <tbody>
-    <%= will_paginate @user_volunteer_hours %>
-    <% @user_volunteer_hours.each do |vh| %>
-      <tr>
-        <td>
-          <%= vh.created_at.strftime("%I:%M %p").downcase() %>
-          <br>
-          <%= vh.created_at.strftime("%b %e %Y").downcase() %>
-        </td>
+        <tbody>
+        <%= will_paginate @user_volunteer_hours %>
+        <% @user_volunteer_hours.each do |vh| %>
+          <tr>
+            <td>
+              <%= vh.created_at.strftime("%I:%M %p").downcase() %>
+              <br>
+              <%= vh.created_at.strftime("%b %e %Y").downcase() %>
+            </td>
 
-        <td>
-          <%= vh.volunteer_task.title %>
-        </td>
+            <td>
+              <%= vh.volunteer_task.title %>
+            </td>
 
-        <td>
-          <%= vh.date_of_task.strftime("%b %e %Y") %>
-        </td>
+            <td>
+              <%= vh.date_of_task.strftime("%b %e %Y") %>
+            </td>
 
-        <td>
-          <%= vh.total_time %> Hours
-        </td>
+            <td>
+              <%= vh.total_time %> Hours
+            </td>
 
-        <td>
-          <%= return_approval(vh.approval) %>
-        </td>
+            <td>
+              <%= return_approval(vh.approval) %>
+            </td>
 
-        <td class="action-cell">
-        <br>
-          <% if vh.approval.nil? %>
-            <%=link_to "Edit", edit_volunteer_hour_path(vh.id), class:"visit-button" %>
-            <%=link_to "Delete", { action: :destroy, id: vh.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"destroy-button"%>
-          <% else %>
-            Processed
-          <% end %>
-          <%#=link_to "Download", training_report_staff_training_session_path(id:sesh.id, format: "csv" ), action: :training_report, class:"download-button" %>
-        <br></br>
-        </td>
+            <td class="action-cell">
+              <% if vh.approval.nil? %>
+                <%=link_to "Edit", edit_volunteer_hour_path(vh.id), class:"visit-button" %>
+                <%=link_to "Delete", { action: :destroy, id: vh.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"destroy-button"%>
+              <% else %>
+                Processed
+              <% end %>
+              <%#=link_to "Download", training_report_staff_training_session_path(id:sesh.id, format: "csv" ), action: :training_report, class:"download-button" %>
+              <br></br>
+            </td>
 
-      </tr>
-    <% end %>
-    </tbody>
-  </table>
-
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
