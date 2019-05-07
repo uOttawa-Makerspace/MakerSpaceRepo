@@ -1,7 +1,8 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
-    <h2>Viewing <%=@user.name.capitalize + "'s"%> Volunteer Hours</h2>
+    <h2><%=@user.name.capitalize + "'s"%> Volunteer Hours</h2>
+    <h5>Total volunteer hours until now: <b><%= @total_hours %> hours</b></h5>
     <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">
 
     <br />
@@ -11,7 +12,7 @@
       <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
       <th>Task <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
       <th>Date of Task<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Time Worked <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+      <th>Hours Worked <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
       <th class="action-header">Action</th>
 
     </tr>
@@ -20,21 +21,21 @@
     <%= will_paginate @user_volunteer_hours %>
     <% @user_volunteer_hours.each do |vh| %>
       <tr>
-        <td class="date-cell">
+        <td>
           <%= vh.created_at.strftime("%I:%M %p").downcase() %>
           <br>
           <%= vh.created_at.strftime("%b %e %Y").downcase() %>
         </td>
 
-        <td class="training-cell">
+        <td>
           <%= vh.volunteer_task.title %>
         </td>
 
-        <td class="trainer-cell" style="horizontal-alginment:center;">
+        <td>
           <%= vh.date_of_task.strftime("%b %e %Y") %>
         </td>
 
-        <td class="space-cell">
+        <td>
           <%= vh.total_time %> Hours
         </td>
 
