@@ -30,7 +30,7 @@ class VolunteerHoursController < VolunteersController
 
   def destroy
     volunteer_hour = VolunteerHour.find(params[:id])
-    if (volunteer_hour && !volunteer_hour.was_processed?) || current_user.admin?
+    if (volunteer_hour && !volunteer_hour.was_processed?) || current_user.staff?
       volunteer_hour.destroy
       flash[:notice] = "Volunteer Hour Deleted"
     elsif
@@ -52,7 +52,7 @@ class VolunteerHoursController < VolunteersController
 
   def validate_user_for_editing
     volunteer_hour = VolunteerHour.find(params[:id])
-    if (current_user.id != volunteer_hour.user_id) && !current_user.admin?
+    if (current_user.id != volunteer_hour.user_id) && !current_user.staff?
       flash[:alert] = "You are not authorized to edit this."
       redirect_to volunteer_hours_path
     end
