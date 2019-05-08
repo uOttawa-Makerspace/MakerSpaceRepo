@@ -1,4 +1,5 @@
 class VolunteerHoursController < VolunteersController
+  before_action :validate_user_for_editing, only:[:edit]
   include VolunteerHoursHelper
 
   def index
@@ -23,6 +24,8 @@ class VolunteerHoursController < VolunteersController
 
   def edit
     @user = current_user
+    @volunteer_hour = VolunteerHour.find(params[:id])
+    @volunteer_tasks = VolunteerTask.all.order(created_at: :desc).pluck(:title, :id)
   end
 
   def destroy
@@ -30,16 +33,28 @@ class VolunteerHoursController < VolunteersController
     if (volunteer_hour && !volunteer_hour.was_processed?) || current_user.admin?
       volunteer_hour.destroy
       flash[:notice] = "Volunteer Hour Deleted"
-      redirect_to :back
     elsif
       flash[:alert] = "Something went wrong or this volunteer hour was processed."
-      redirect_to :back
     end
+    redirect_to volunteer_hours_path
+  end
+
+  def update
+    flash[:notice] = "passing"
+    redirect_to edit_volunteer_hour_path
   end
 
   private
 
   def volunteer_hour_params
     params.require(:volunteer_hour).permit(:volunteer_task_id, :date_of_task, :total_time)
+  end
+
+  def validate_user_for_editing
+    volunteer_hour = VolunteerHour.find(params[:id])
+    if (current_user.id != volunteer_hour.user_id) && !current_user.admin?
+      flash[:alert] = "You are not authorized to edit this."
+      redirect_to volunteer_hours_path
+    end
   end
 end
