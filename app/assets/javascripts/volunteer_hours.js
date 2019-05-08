@@ -19,3 +19,20 @@ $(document).on('ready load', function () {
         });
     }, false);
 });
+
+// $(function defineHoursMinutes(){
+//     if($('body').is('.edit')){
+//         var val_total_time_hidden = Number($("#total_time_hidden").val());
+//         var val_hours = Math.floor(val_total_time_hidden);
+//         var val_minutes = (val_total_time_hidden%1)*60;
+//         var hour = $("input#hours");
+//         var minutes = $("input#minutes");
+//         hour.value = val_hours;
+//         minutes.value = val_minutes;
+//         console.log("hour");
+//         console.log(val_hours);
+//         console.log("minutes");
+//         console.log(val_minutes);
+//         console.log(hour);
+//     }
+// });

@@ -3,6 +3,8 @@
 
     <h2 class="text-center">Edit Hour Tracking</h2>
 
+    <h5 class="text-center">This volunteer hour: <b><%= @volunteer_hour.total_time %> hours</b></h5>
+
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
@@ -26,11 +28,11 @@
               <div class="col-md-6">
                 <%= f.label :amount_of_hours_worked %>
                 <div class="input-group">
-                  <input id="hours" class="form-control col-4" type="number" required="required" placeholder="Hours" min="0" value="10">
+                  <input id="hours" class="form-control col-4" type="number" required="required" placeholder="Hours" min="0" value="<%= @hour %>">
                   <div class="input-group-prepend">
                     <span class="input-group-text">:</span>
                   </div>
-                  <input id="minutes" class="form-control col-4" type="number" required="required" placeholder="Minutes" min="0" max="60" step="5">
+                  <input id="minutes" class="form-control col-4" type="number" required="required" placeholder="Minutes" min="0" max="60" step="5" value="<%= @minutes %>">
                   <div class="invalid-feedback">
                     Please select the amount of hours worked. (Minutes: Multiple of 5, Min -> 0, Max -> 60)
                   </div>

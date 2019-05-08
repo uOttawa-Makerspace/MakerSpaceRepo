@@ -23,9 +23,10 @@ class VolunteerHoursController < VolunteersController
   end
 
   def edit
-    @user = current_user
     @volunteer_hour = VolunteerHour.find(params[:id])
     @volunteer_tasks = VolunteerTask.all.order(created_at: :desc).pluck(:title, :id)
+    @hour = @volunteer_hour.total_time.floor
+    @minutes = ((@volunteer_hour.total_time%1)*60).to_i
   end
 
   def destroy
@@ -40,8 +41,13 @@ class VolunteerHoursController < VolunteersController
   end
 
   def update
-    flash[:notice] = "passing"
-    redirect_to edit_volunteer_hour_path
+    volunteer_hour = VolunteerHour.find(params[:id])
+    if volunteer_hour.update(volunteer_hour_params)
+      flash[:notice] = "Volunteer hour updated"
+    else
+      flash[:alert] = "Something went wrong"
+    end
+    redirect_to volunteer_hours_path
   end
 
   private
