@@ -1,8 +1,9 @@
 class VolunteerTasksController < ApplicationController
-  before_action :grant_acccess
+  layout 'volunteer'
+  before_action :grant_access
 
   def index
-    @volunteer_tasks = VolunteerTask.all.order(created_at: :desc)
+    @volunteer_tasks = VolunteerTask.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
   end
 
   private
