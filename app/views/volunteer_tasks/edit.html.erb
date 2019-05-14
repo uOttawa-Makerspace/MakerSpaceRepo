@@ -1,1 +1,48 @@
-Edit
+<section class="page-contents">
+  <div class="edit-column">
+
+    <h2 class="text-center">Edit Volunteer Task</h2>
+
+    <div class="container my-5">
+      <div class="row">
+        <div class="col-lg-12">
+          <%= form_for @volunteer_task, url: {controller: "volunteer_tasks", action: "update"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group text-center">
+                  <%= f.label :title, "Title" %>
+                  <%= f.text_field :title, class: 'form-control', required: true %>
+                  <div class="invalid-feedback">
+                    Please provide a title.
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group text-center">
+                  <%= f.label :description, "Task Description" %>
+                  <%= f.text_area :description ,class: 'form-control', required: true %>
+                  <div class="invalid-feedback">
+                    Please provide a description.
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group text-center">
+                  <%= f.label :active, "Volunteer task active?" %>
+                  <br />
+                  <%= f.radio_button :active, true %>
+                  <%= label :active, 'Yes' %>
+                  <%= f.radio_button :active, false %>
+                  <%= label :active, 'No' %>
+                </div>
+              </div>
+              <div class="col-lg-12 text-center">
+                <%= f.submit "Update Volunteer Task", class: "btn btn-secondary btn-xl text-uppercase" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

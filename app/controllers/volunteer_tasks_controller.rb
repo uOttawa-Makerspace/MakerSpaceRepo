@@ -21,7 +21,17 @@ class VolunteerTasksController < ApplicationController
   end
 
   def edit
+    @volunteer_task = VolunteerTask.find(params[:id])
+  end
 
+  def update
+    volunteer_task = VolunteerTask.find(params[:id])
+    if volunteer_task.update(volunteer_task_params)
+      flash[:notice] = "Volunteer task updated"
+    else
+      flash[:alert] = "Something went wrong"
+    end
+    redirect_to volunteer_tasks_path
   end
 
   def destroy
@@ -44,6 +54,6 @@ class VolunteerTasksController < ApplicationController
   end
 
   def volunteer_task_params
-    params.require(:volunteer_task).permit(:title, :description)
+    params.require(:volunteer_task).permit(:title, :description, :active)
   end
 end
