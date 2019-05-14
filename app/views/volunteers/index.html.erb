@@ -4,10 +4,15 @@
     <h2 class="text-center">Welcome to the Volunteer Area</h2>
     <br>
     <div id="staff-buttons">
-      <%= link_to ('Track your hours'), new_volunteer_hour_path, class: "staff-button"%>
-      <br /> <br />
-      <%= link_to 'See your hours', volunteer_hours_path, class: "staff-button"%>
-      <br /> <br />
+      <% if current_user.volunteer? %>
+        <%= link_to ('Track your hours'), new_volunteer_hour_path, class: "staff-button"%>
+        <br /> <br />
+        <%= link_to 'See your hours', volunteer_hours_path, class: "staff-button"%>
+        <br /> <br />
+      <% else %>
+        <%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "staff-button" %><br></br>
+        <%= link_to 'New Volunteer Task', new_volunteer_task_path, class: "staff-button" %><br></br>
+      <% end %>
     </div>
 
 
