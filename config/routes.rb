@@ -203,6 +203,8 @@ Rails.application.routes.draw do
 
   resources :volunteers, only: [:index]
 
+  resources :volunteer_tasks
+
   resources :volunteer_hours, only: [:index, :create, :new, :edit, :destroy, :update]
 
   # namespace :help do
