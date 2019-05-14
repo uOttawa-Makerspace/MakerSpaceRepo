@@ -1,5 +1,6 @@
 class VolunteerHoursController < VolunteersController
   before_action :validate_user_for_editing, only:[:edit]
+  before_action :validate_staff_for_request, only:[:volunteer_hour_requests]
   include VolunteerHoursHelper
 
   def index
@@ -50,6 +51,12 @@ class VolunteerHoursController < VolunteersController
     redirect_to volunteer_hours_path
   end
 
+  def volunteer_hour_requests
+    @new_volunteer_hour_requests = VolunteerHour.not_processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
+    @old_volunteer_hour_requests = VolunteerHour.processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
+    @total_volunteer_hour_requests = @new_volunteer_hour_requests.count
+  end
+
   private
 
   def volunteer_hour_params
@@ -60,6 +67,13 @@ class VolunteerHoursController < VolunteersController
     volunteer_hour = VolunteerHour.find(params[:id])
     if (current_user.id != volunteer_hour.user_id) && !current_user.staff?
       flash[:alert] = "You are not authorized to edit this."
+      redirect_to volunteer_hours_path
+    end
+  end
+
+  def validate_staff_for_request
+    if !current_user.staff?
+      flash[:alert] = "You are not authorized access this area"
       redirect_to volunteer_hours_path
     end
   end

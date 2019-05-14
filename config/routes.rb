@@ -205,7 +205,11 @@ Rails.application.routes.draw do
 
   resources :volunteer_tasks
 
-  resources :volunteer_hours, only: [:index, :create, :new, :edit, :destroy, :update]
+  resources :volunteer_hours, only: [:index, :create, :new, :edit, :destroy, :update] do
+    collection do
+      get :volunteer_hour_requests
+    end
+  end
 
   # namespace :help do
   #   get 'main', path: '/'
