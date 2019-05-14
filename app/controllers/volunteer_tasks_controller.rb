@@ -1,6 +1,10 @@
 class VolunteerTasksController < ApplicationController
   before_action :grant_acccess
 
+  def index
+    @volunteer_tasks = VolunteerTask.all.order(created_at: :desc)
+  end
+
   private
 
   def grant_access
