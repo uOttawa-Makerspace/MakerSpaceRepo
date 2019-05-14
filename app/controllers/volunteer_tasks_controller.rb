@@ -6,6 +6,20 @@ class VolunteerTasksController < ApplicationController
     @volunteer_tasks = VolunteerTask.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
   end
 
+  def edit
+
+  end
+
+  def destroy
+    volunteer_task = VolunteerHour.find(params[:id])
+    if volunteer_task.destroy
+      flash[:notice] = "Volunteer Task Deleted"
+    else
+      flash[:alert] = "Something went wrong"
+    end
+    redirect_to volunteer_hours_path
+  end
+
   private
 
   def grant_access
