@@ -6,18 +6,32 @@ class VolunteerTasksController < ApplicationController
     @volunteer_tasks = VolunteerTask.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
   end
 
+  def new
+    @user = current_user
+    @new_volunteer_task = VolunteerTask.new
+  end
+
+  def create
+    @volunteer_task = VolunteerTask.new(volunteer_task_params)
+    @volunteer_task.user_id = @user.try(:id)
+    if @volunteer_task.save!
+      redirect_to new_volunteer_task_path
+      flash[:notice] = "You've successfully created a new Volunteer Task"
+    end
+  end
+
   def edit
 
   end
 
   def destroy
-    volunteer_task = VolunteerHour.find(params[:id])
+    volunteer_task = VolunteerTask.find(params[:id])
     if volunteer_task.destroy
       flash[:notice] = "Volunteer Task Deleted"
     else
       flash[:alert] = "Something went wrong"
     end
-    redirect_to volunteer_hours_path
+    redirect_to volunteer_tasks_path
   end
 
   private
@@ -27,5 +41,9 @@ class VolunteerTasksController < ApplicationController
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
     end
+  end
+
+  def volunteer_task_params
+    params.require(:volunteer_task).permit(:title, :description)
   end
 end
