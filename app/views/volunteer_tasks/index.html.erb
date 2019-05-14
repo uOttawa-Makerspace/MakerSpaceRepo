@@ -45,12 +45,8 @@
             </td>
 
             <td class="action-cell">
-              <%# if vt.approval.nil? %>
-                <%#=link_to "Edit", edit_volunteer_hour_path(vt.id), class:"btn-block visit-button mb-1 mt-0" %>
-                <%#=link_to "Delete", { action: :destroy, id: vt.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"btn-block destroy-button mb-1 mr-0"%>
-              <%# else %>
-<!--                Processed-->
-              <%# end %>
+              <%=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" %>
+              <%=link_to "Delete", { action: :destroy, id: vt.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer task?' }, class:"btn-block destroy-button mb-1 mr-0"%>
             </td>
 
           </tr>
