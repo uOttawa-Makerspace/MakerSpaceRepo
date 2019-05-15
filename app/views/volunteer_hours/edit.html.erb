@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="edit-column">
 
-    <h2 class="text-center">Edit Hour Tracking</h2>
+    <h2 class="text-center">Edit <%=@volunteer_hour.user.name.capitalize + "'s"%> Hour Tracking</h2>
 
     <h5 class="text-center">This volunteer hour: <b><%= @volunteer_hour.total_time %> hours</b></h5>
 
@@ -39,6 +39,20 @@
                 </div>
                 <%= f.hidden_field :total_time, id: "total_time_hidden" %>
               </div>
+              <% if current_user.staff? %>
+                <div class="col-md-12">
+                  <div class="form-group text-center">
+                    <%= f.label :approval, "Volunteer hour approved?" %>
+                    <br />
+                    <%= f.radio_button :approval, true %>
+                    <%= label :approval, 'Yes' %>
+                    <%= f.radio_button :approval, false %>
+                    <%= label :approval, 'No' %>
+                    <%= f.radio_button :approval, nil %>
+                    <%= label :approval, 'Not Accessed' %>
+                  </div>
+                </div>
+              <% end %>
               <div class="col-lg-12 text-center">
                 <%= f.submit "Update Volunteer Hour", class: "btn btn-secondary btn-xl text-uppercase" %>
               </div>

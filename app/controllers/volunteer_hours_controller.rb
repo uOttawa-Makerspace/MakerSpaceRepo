@@ -60,7 +60,7 @@ class VolunteerHoursController < VolunteersController
   private
 
   def volunteer_hour_params
-    params.require(:volunteer_hour).permit(:volunteer_task_id, :date_of_task, :total_time)
+    params.require(:volunteer_hour).permit(:volunteer_task_id, :date_of_task, :total_time, :approval)
   end
 
   def validate_user_for_editing
