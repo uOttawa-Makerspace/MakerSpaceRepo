@@ -13,4 +13,12 @@ module VolunteerHoursHelper
       "Not Approved"
     end
   end
+
+  def define_redirect(role)
+    if role == 'volunteer'
+      redirect_to volunteer_hours_path
+    else
+      redirect_to volunteer_hour_requests_volunteer_hours_path
+    end
+  end
 end

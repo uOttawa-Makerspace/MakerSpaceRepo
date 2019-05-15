@@ -48,7 +48,7 @@ class VolunteerHoursController < VolunteersController
     else
       flash[:alert] = "Something went wrong"
     end
-    redirect_to volunteer_hours_path
+    define_redirect(current_user.role)
   end
 
   def volunteer_hour_requests
