@@ -38,7 +38,7 @@ class VolunteerHoursController < VolunteersController
     elsif
       flash[:alert] = "Something went wrong or this volunteer hour was processed."
     end
-    redirect_to volunteer_hours_path
+    define_redirect(current_user.role)
   end
 
   def update
