@@ -23,9 +23,9 @@
         <% @volunteer_tasks.each do |vt| %>
           <tr>
             <td>
-              <%= vt.created_at.strftime("%I:%M %p").downcase() %>
+              <%= vt.created_at.strftime("%b %e %Y") %>
               <br>
-              <%= vt.created_at.strftime("%b %e %Y").downcase() %>
+              <%= vt.created_at.strftime("%I:%M %p").downcase() %>
             </td>
 
             <td>
