@@ -57,6 +57,16 @@ class VolunteerHoursController < VolunteersController
     @total_volunteer_hour_requests = @new_volunteer_hour_requests.count
   end
 
+  def update_approval
+    volunteer_hour = VolunteerHour.find(params[:id])
+    if volunteer_hour.update_attributes(:approval => params[:approval])
+      flash[:notice] = "Volunteer hour updated"
+    else
+      flash[:alert] = "Something went wrong"
+    end
+    define_redirect(current_user.role)
+  end
+
   private
 
   def volunteer_hour_params

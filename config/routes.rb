@@ -208,6 +208,7 @@ Rails.application.routes.draw do
   resources :volunteer_hours, only: [:index, :create, :new, :edit, :destroy, :update] do
     collection do
       get :volunteer_hour_requests
+      put :update_approval
     end
   end
 

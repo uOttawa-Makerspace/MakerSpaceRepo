@@ -13,11 +13,12 @@
       <table class="table sessions-table">
 
         <tr>
-          <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Task <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Date of Task<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Hours Worked <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Approved?<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>User<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Task <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Date of Task<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Hours Worked <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Approve?<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header">Action</th>
         </tr>
 
@@ -25,6 +26,10 @@
         <%= will_paginate @new_volunteer_hour_requests %>
         <% @new_volunteer_hour_requests.each do |vh| %>
           <tr>
+            <td class = "username">
+              <%= link_to vh.user.name.capitalize, user_path(vh.user.username) %>
+            </td>
+
             <td>
               <%= vh.created_at.strftime("%b %e %Y") %>
               <br>
@@ -43,8 +48,9 @@
               <%= vh.total_time %> Hours
             </td>
 
-            <td>
-              <%= return_approval(vh.approval) %>
+            <td class="action-cell">
+              <%= link_to (fa_icon('times')), {controller: :volunteer_hours, action: :update_approval, id: vh.id,  approval: false},  method: :put, class: 'x-button' %>
+              <%= link_to (fa_icon('check')), {controller: :volunteer_hours, action: :update_approval, id: vh.id,  approval: true},  method: :put, class: 'check-button' %>
             </td>
 
             <td class="action-cell">
@@ -72,11 +78,12 @@
       <table class="table sessions-table-2">
 
         <tr>
-          <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Task <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Date of Task<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Hours Worked <span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Approved?<span onclick="sortTable('sessions-table-2', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>User<span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Date Submitted <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Task <span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Date of Task<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Hours Worked <span onclick="sortTable('sessions-table-2', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Approved?<span onclick="sortTable('sessions-table-2', 5)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header">Action</th>
         </tr>
 
@@ -84,6 +91,10 @@
         <%= will_paginate @old_volunteer_hour_requests %>
         <% @old_volunteer_hour_requests.each do |vh| %>
           <tr>
+            <td class = "username">
+              <%= link_to vh.user.name.capitalize, user_path(vh.user.username) %>
+            </td>
+
             <td>
               <%= vh.created_at.strftime("%b %e %Y") %>
               <br>
