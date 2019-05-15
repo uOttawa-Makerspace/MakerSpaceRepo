@@ -209,6 +209,7 @@ Rails.application.routes.draw do
     collection do
       get :volunteer_hour_requests
       put :update_approval
+      get :volunteer_hour_per_user
     end
   end
 

@@ -1,6 +1,6 @@
 class VolunteerHoursController < VolunteersController
   before_action :validate_user_for_editing, only:[:edit]
-  before_action :validate_staff_for_request, only:[:volunteer_hour_requests]
+  before_action :validate_staff_for_request, only:[:volunteer_hour_requests, :volunteer_hour_per_user]
   include VolunteerHoursHelper
 
   def index
@@ -65,6 +65,10 @@ class VolunteerHoursController < VolunteersController
       flash[:alert] = "Something went wrong"
     end
     define_redirect(current_user.role)
+  end
+
+  def volunteer_hour_per_user
+
   end
 
   private
