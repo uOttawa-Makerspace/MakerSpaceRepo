@@ -36,8 +36,8 @@
               <%= vt.description %>
             </td>
 
-            <td>
-              <%= vt.user.username %>
+            <td class = "username">
+              <%= link_to vt.user.name.capitalize, user_path(vt.user.username) %>
             </td>
 
             <td>
