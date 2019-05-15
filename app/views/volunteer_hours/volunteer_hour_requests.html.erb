@@ -26,9 +26,9 @@
         <% @new_volunteer_hour_requests.each do |vh| %>
           <tr>
             <td>
-              <%= vh.created_at.strftime("%I:%M %p").downcase() %>
+              <%= vh.created_at.strftime("%b %e %Y") %>
               <br>
-              <%= vh.created_at.strftime("%b %e %Y").downcase() %>
+              <%= vh.created_at.strftime("%I:%M %p").downcase() %>
             </td>
 
             <td>
@@ -85,9 +85,9 @@
         <% @old_volunteer_hour_requests.each do |vh| %>
           <tr>
             <td>
-              <%= vh.created_at.strftime("%I:%M %p").downcase() %>
+              <%= vh.created_at.strftime("%b %e %Y") %>
               <br>
-              <%= vh.created_at.strftime("%b %e %Y").downcase() %>
+              <%= vh.created_at.strftime("%I:%M %p").downcase() %>
             </td>
 
             <td>
