@@ -68,7 +68,10 @@ class VolunteerHoursController < VolunteersController
   end
 
   def volunteer_hour_per_user
-
+    volunteer_hours = VolunteerHour.all
+    @total_volunteer_hours_requested = volunteer_hours.sum(:total_time)
+    @total_volunteer_hour_approved = volunteer_hours.approved.sum(:total_time)
+    @total_volunteer_hour_rejected = volunteer_hours.rejected.sum(:total_time)
   end
 
   private
