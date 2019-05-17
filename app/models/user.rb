@@ -13,6 +13,8 @@ class User < ActiveRecord::Base
   has_many :project_proposals
   has_many :project_joins,     dependent: :destroy
   has_many :printer_sessions,     dependent: :destroy
+  has_many :volunteer_hours
+  has_many :volunteer_tasks
 
   validates :name,
     presence: true,
