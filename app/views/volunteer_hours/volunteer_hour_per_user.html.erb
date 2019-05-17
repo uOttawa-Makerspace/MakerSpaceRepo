@@ -1,0 +1,63 @@
+<section class="page-contents">
+  <div class="edit-column text-center">
+
+    <h2>Volunteer hour per user</h2>
+    <h5>Total volunteer hours <b>requested</b> until now: <b><%= @total_volunteer_hours_requested %> hours</b></h5>
+    <h5>Total volunteer hours <b class="text-success">approved</b> until now: <b><%= @total_volunteer_hour_approved %> hours</b></h5>
+    <h5>Total volunteer hours <b class="text-danger">rejected</b> until now: <b><%= @total_volunteer_hour_rejected %> hours</b></h5>
+
+    <% if !@users_with_volunteer_hours.blank? %>
+
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: User" class="form-control mx-auto">
+
+      <br />
+
+      <div>
+        <table class="table sessions-table">
+
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Total Time Worked</th>
+              <th>Information</th>
+            </tr>
+          </thead>
+
+          <tbody>
+          <% i = 0 %>
+          <%= will_paginate @users_with_volunteer_hours %>
+          <% @users_with_volunteer_hours.each do |user| %>
+            <tr data-toggle="collapse" id="row<%= i %>" data-target=".row<%= i %>">
+              <td class = "username">
+                <%= link_to user.name.capitalize, user_path(user.username) %>
+              </td>
+              <td class="">
+                <b><%= user.volunteer_hours.approved.sum(:total_time) %></b>
+              </td>
+              <td>
+                <i class="fa fa-plus"></i>
+              </td>
+            </tr>
+            <tr class="collapse row<%= i %>">
+              <td colspan="3">
+                <table class="table sessions-table">
+                  <thead>
+                  <% user.volunteer_hours.processed.order(approval: :desc).each do |vh| %>
+                    <tr>
+                      <th><%= vh.volunteer_task.title %></th>
+                      <th>Time Worked: <%= vh.total_time %></th>
+                      <th><%= return_approval(vh.approval) %></th>
+                    </tr>
+                  <% end %>
+                  </thead>
+                </table>
+              </td>
+            </tr>
+            <% i += 1 %>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</section>

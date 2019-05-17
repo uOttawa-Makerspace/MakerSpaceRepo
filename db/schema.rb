@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190329173224) do
+ActiveRecord::Schema.define(version: 20190507221421) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -296,6 +296,25 @@ ActiveRecord::Schema.define(version: 20190329173224) do
     t.string   "year_of_study"
     t.boolean  "read_and_accepted_waiver_form", default: false
     t.boolean  "active",                        default: true
+  end
+
+  create_table "volunteer_hours", force: :cascade do |t|
+    t.integer  "volunteer_task_id",                                       null: false
+    t.integer  "user_id",                                                 null: false
+    t.datetime "date_of_task"
+    t.decimal  "total_time",        precision: 9, scale: 2, default: 0.0
+    t.datetime "created_at",                                              null: false
+    t.datetime "updated_at",                                              null: false
+    t.boolean  "approval"
+  end
+
+  create_table "volunteer_tasks", force: :cascade do |t|
+    t.string   "title",       default: ""
+    t.text     "description", default: ""
+    t.integer  "user_id"
+    t.boolean  "active",      default: true
+    t.datetime "created_at",                 null: false
+    t.datetime "updated_at",                 null: false
   end
 
   add_foreign_key "categories", "category_options"

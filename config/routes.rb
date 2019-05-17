@@ -200,6 +200,19 @@ Rails.application.routes.draw do
     get 'sign_out_all_users'
   end
 
+
+  resources :volunteers, only: [:index]
+
+  resources :volunteer_tasks
+
+  resources :volunteer_hours, only: [:index, :create, :new, :edit, :destroy, :update] do
+    collection do
+      get :volunteer_hour_requests
+      put :update_approval
+      get :volunteer_hour_per_user
+    end
+  end
+
   # namespace :help do
   #   get 'main', path: '/'
   # end
