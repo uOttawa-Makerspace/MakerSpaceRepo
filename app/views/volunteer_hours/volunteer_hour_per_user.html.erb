@@ -3,8 +3,8 @@
 
     <h2>Volunteer hour per user</h2>
     <h5>Total volunteer hours <b>requested</b> until now: <b><%= @total_volunteer_hours_requested %> hours</b></h5>
-    <h5>Total volunteer hours <b class="text-success">approved</b> until now: <b><%= @total_volunteer_hour_approved %> hours</b></h5>
-    <h5>Total volunteer hours <b class="text-danger">rejected</b> until now: <b><%= @total_volunteer_hour_rejected %> hours</b></h5>
+    <h5>Total volunteer hours <b class="text-success">approved</b> until now: <b><%= @total_volunteer_hour_approved || 0 %> hours</b></h5>
+    <h5>Total volunteer hours <b class="text-danger">rejected</b> until now: <b><%= @total_volunteer_hour_rejected || 0 %> hours</b></h5>
 
     <% if !@users_with_volunteer_hours.blank? %>
 

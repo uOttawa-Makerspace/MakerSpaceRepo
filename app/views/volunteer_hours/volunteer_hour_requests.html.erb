@@ -74,62 +74,69 @@
 
     <h5>Requests processed</h5>
 
-    <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">
+    <% if !@old_volunteer_hour_requests.blank? %>
 
-    <br />
+      <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">
 
-    <div class="table-responsive">
-      <table class="table sessions-table-2">
+      <br />
 
-        <tr>
-          <th>User<span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Date Submitted <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Task <span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Date of Task<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Hours Worked <span onclick="sortTable('sessions-table-2', 4)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Approved?<span onclick="sortTable('sessions-table-2', 5)"><%=fa_icon('arrow-down')%></span></th>
-          <th class="action-header">Action</th>
-        </tr>
+      <div class="table-responsive">
+        <table class="table sessions-table-2">
 
-        <tbody>
-        <%= will_paginate @old_volunteer_hour_requests %>
-        <% @old_volunteer_hour_requests.each do |vh| %>
           <tr>
-            <td class = "username">
-              <%= link_to vh.user.name.capitalize, user_path(vh.user.username) %>
-            </td>
-
-            <td>
-              <%= vh.created_at.strftime("%b %e %Y") %>
-              <br>
-              <%= vh.created_at.strftime("%I:%M %p").downcase() %>
-            </td>
-
-            <td>
-              <%= vh.volunteer_task.title %>
-            </td>
-
-            <td>
-              <%= vh.date_of_task.strftime("%b %e %Y") %>
-            </td>
-
-            <td>
-              <%= vh.total_time %> Hours
-            </td>
-
-            <td>
-              <%= return_approval(vh.approval) %>
-            </td>
-
-            <td class="action-cell">
-              <%=link_to "Edit", edit_volunteer_hour_path(vh.id), class:"btn-block visit-button mb-1 mt-0" %>
-              <%=link_to "Delete", { action: :destroy, id: vh.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"btn-block destroy-button mb-1 mr-0"%>
-            </td>
-
+            <th>User<span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Task <span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date of Task<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Hours Worked <span onclick="sortTable('sessions-table-2', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Approved?<span onclick="sortTable('sessions-table-2', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th class="action-header">Action</th>
           </tr>
-        <% end %>
-        </tbody>
-      </table>
+
+          <tbody>
+          <%= will_paginate @old_volunteer_hour_requests %>
+          <% @old_volunteer_hour_requests.each do |vh| %>
+            <tr>
+              <td class = "username">
+                <%= link_to vh.user.name.capitalize, user_path(vh.user.username) %>
+              </td>
+
+              <td>
+                <%= vh.created_at.strftime("%b %e %Y") %>
+                <br>
+                <%= vh.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+              <td>
+                <%= vh.volunteer_task.title %>
+              </td>
+
+              <td>
+                <%= vh.date_of_task.strftime("%b %e %Y") %>
+              </td>
+
+              <td>
+                <%= vh.total_time %> Hours
+              </td>
+
+              <td>
+                <%= return_approval(vh.approval) %>
+              </td>
+
+              <td class="action-cell">
+                <%=link_to "Edit", edit_volunteer_hour_path(vh.id), class:"btn-block visit-button mb-1 mt-0" %>
+                <%=link_to "Delete", { action: :destroy, id: vh.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"btn-block destroy-button mb-1 mr-0"%>
+              </td>
+
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+    <% else %>
+      <div class="m-5">
+        No requests processed yet.
+      </div>
+    <% end %>
     </div>
   </div>
 </section>
