@@ -23,6 +23,7 @@ en:
       settings: "Settings"
       admin_area: "Admin Area"
       staff_area: "Staff Area"
+      volunteer_area: "Volunteer Area"
       help: "Help"
       sign_out: "Sign Out"
   home:

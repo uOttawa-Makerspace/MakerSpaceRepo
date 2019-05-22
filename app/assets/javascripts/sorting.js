@@ -1,6 +1,6 @@
-function findSession(table_class) {
+function findSession(table_class, id = 'query') {
   var input, filter, table, tr, i;
-  input = document.getElementById("query");
+  input = document.getElementById(id);
   filter = input.value.toUpperCase();
   table = document.getElementsByClassName(table_class)[0];
   tr = table.getElementsByTagName("tr");
