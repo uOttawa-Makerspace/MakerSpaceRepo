@@ -8,7 +8,7 @@
     <table>
       <h3>Admins on Makerepo</h3>
 
-      <tr>
+      <tr class="text-center">
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
         <th class="email-header">Email</th>
@@ -40,7 +40,7 @@
     <table>
       <h3>Staff on Makerepo</h3>
 
-      <tr>
+      <tr class="text-center">
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
         <th class="email-header">Email</th>
@@ -66,6 +66,38 @@
           <%= link_to fa_icon("eye"), user_url(staff.username) %>
         </td>
       </tr>
+      <%end%>
+    </table>
+    <br><br>
+    <table>
+      <h3>Volunteers on Makerepo</h3>
+
+      <tr class="text-center">
+        <th class="name-header">Username</th>
+        <th class="name-header">Name</th>
+        <th class="email-header">Email</th>
+        <th class="email-header">View</th>
+      </tr>
+
+      <% @volunteers.each do |volunteer| %>
+        <tr>
+          <td class="username-cell">
+            <%=link_to volunteer.username, user_url(volunteer.username)%>
+          </td>
+
+          <td class="name-cell">
+            <%=volunteer.name%>
+          </td>
+
+          <td class="email-cell">
+            <%=volunteer.email%>
+          </td>
+
+
+          <td class="link-table">
+            <%= link_to fa_icon("eye"), user_url(volunteer.username) %>
+          </td>
+        </tr>
       <%end%>
     </table>
   </div>
