@@ -22,7 +22,13 @@
                 <%= t('home.become_volunteer.one_click') %>
               </strong>
             </p>
-            <p><%= link_to t('home.become_volunteer.button'), "#", class: "btn btn-success btn-lg" %></p>
+            <%= form_for @request, url: {controller: "volunteer_requests", action: "create"} do |f| %>
+              <div class="mx-auto col-md-6">
+                <%= f.text_area :interests, placeholder: "Your interests and important certifications that it's not listed in your MakeRepo profile (e.g. Solidworks, Inkscape, Cura, ...)" ,class: 'form-control'%>
+              </div>
+              <br />
+              <%= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg" %>
+            <% end %>
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
             <hr class="my-5"/>
