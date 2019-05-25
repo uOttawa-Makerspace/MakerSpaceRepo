@@ -38,6 +38,7 @@ en:
       find_more: "Find More About it"
       one_click: "Request it in one click:"
       button: "Request to be Volunteer"
+      placeholder_text: "Your interests and important certifications that it's not listed in your MakeRepo profile (e.g. Solidworks, Inkscape, Cura, ...)"
     sign_up: "Sign Up"
     my_profile: "My Profile"
     categories_title: "Categories"
