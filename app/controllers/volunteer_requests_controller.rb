@@ -20,6 +20,16 @@ class VolunteerRequestsController < ApplicationController
     @certifications = @user.certifications
   end
 
+  def update_approval
+    volunteer_request = VolunteerRequest.find(params[:id])
+    if volunteer_request.update_attributes(:approval => params[:approval])
+      flash[:notice] = "Volunteer Request updated"
+    else
+      flash[:alert] = "Something went wrong"
+    end
+    redirect_to volunteer_requests_path
+  end
+
   private
 
   def grant_access

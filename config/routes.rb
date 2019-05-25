@@ -205,7 +205,11 @@ Rails.application.routes.draw do
 
   resources :volunteer_tasks
 
-  resources :volunteer_requests, only: [:index, :create, :show]
+  resources :volunteer_requests, only: [:index, :create, :show] do
+    collection do
+      put :update_approval
+    end
+  end
 
   resources :volunteer_hours, only: [:index, :create, :new, :edit, :destroy, :update] do
     collection do
