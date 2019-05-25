@@ -25,6 +25,7 @@
               <%= link_to 'Track hours', new_volunteer_hour_path %><br></br>
               <%= link_to 'See hours', volunteer_hours_path%><br></br>
             <% elsif current_user.staff? %>
+              <%= link_to 'Volunteer Requests', volunteer_requests_path %><br></br>
               <%= link_to 'Volunteer Tasks', volunteer_tasks_path %><br></br>
               <%= link_to 'New Volunteer Task', new_volunteer_task_path %><br></br>
               <%= link_to 'Volunteer Hour Requests', volunteer_hour_requests_volunteer_hours_path %><br></br>
