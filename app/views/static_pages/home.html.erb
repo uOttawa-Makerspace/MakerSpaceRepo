@@ -15,22 +15,31 @@
           <p class="lead mb-4"><%= t('home.welcome_desc_html') %></p>
           <% if signed_in? %>
             <p><%= link_to t('home.my_profile'), user_path(current_user.username), class: "btn btn-primary btn-lg" %></p>
+            <hr class="my-5"/>
+            <h1>Want to be a Volunteer?</h1>
+            <p>
+              <strong>
+                Request it in one click:
+              </strong>
+            </p>
+            <p><%= link_to "Request to be Volunteer", "#", class: "btn btn-success btn-lg" %></p>
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
+            <hr class="my-5"/>
+            <h1>Want to be a Volunteer?</h1>
+            <p>
+              <strong>
+                Make a request in 3 steps:
+              </strong>
+            </p>
+            <p>
+              <%= t('home.become_volunteer.request_1') %> <br />
+              <%= t('home.become_volunteer.request_2') %> <br />
+              <%= t('home.become_volunteer.request_3') %>
+            </p>
+            <p><%= link_to "Find More About it", 'https://volunteer.makerepo.com/', class: "btn btn-success btn-lg", target: "_blank" %></p>
           <% end %>
-          <!--Put your announcement here
-          <hr class="my-5"/>
-          <h1>Announcement Tittle</h1>
-          <p>
-            <strong>
-              Announcement Subtitle
-            </strong>
-          </p>
-          <p>
-           Announcemente Info
-          </p>
-          <p><%= link_to "label", "link", class: "btn btn-success btn-lg", target: "_blank" %></p>
-          -->
+
         </div>
       </div>
     </div>

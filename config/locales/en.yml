@@ -29,6 +29,10 @@ en:
   home:
     welcome_html: "Welcome to Maker<strong>Repo</strong>!"
     welcome_desc_html: "Browse projects built using spaces provided by CEED & publish your own!"
+    become_volunteer:
+      request_1: "1) Sign in or register an account."
+      request_2: "2) Click in the button 'Request to be Volunteer'."
+      request_3: "3) Wait until your request is accepted."
     sign_up: "Sign Up"
     my_profile: "My Profile"
     categories_title: "Categories"
