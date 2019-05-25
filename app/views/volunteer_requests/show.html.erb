@@ -3,27 +3,31 @@
 
     <h2>Volunteer Request</h2>
 
-    Name:
+    Name: <%= @user.name.capitalize %>
 
     <br />
 
-    Year of Study:
+    Year of Study: <%= @user.year_of_study %>
 
     <br />
 
-    Program:
+    Faculty: <%= @user.faculty %>
+
+    <br />
+
+    Program: <%= @user.program %>
 
     <br/>
 
-    Current Role:
+    Current Role: <%= @user.role %>
 
     <br />
 
-    Email:
+    Email: <%= @user.email %>
 
     <br />
 
-    Interests:
+    Interests: <%= @volunteer_request.interests %>
 
     <br />
 
