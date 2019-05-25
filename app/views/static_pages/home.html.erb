@@ -27,7 +27,8 @@
                 <%= f.text_area :interests, placeholder: t('home.become_volunteer.placeholder_text') ,class: 'form-control'%>
               </div>
               <br />
-              <%= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg" %>
+              <% state = true if VolunteerRequest.find_by_user_id(current_user.id) %>
+              <%= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg", disabled: state %>
             <% end %>
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
