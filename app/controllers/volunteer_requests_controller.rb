@@ -15,7 +15,9 @@ class VolunteerRequestsController < ApplicationController
   end
 
   def show
-
+    @volunteer_request = VolunteerRequest.find(params[:id])
+    @user = @volunteer_request.user
+    @certifications = @user.certifications
   end
 
   private

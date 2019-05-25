@@ -1,1 +1,48 @@
-Show
+<section class="page-contents">
+  <div class="edit-column text-center">
+
+    <h2>Volunteer Request</h2>
+
+    Name:
+
+    <br />
+
+    Year of Study:
+
+    <br />
+
+    Program:
+
+    <br/>
+
+    Current Role:
+
+    <br />
+
+    Email:
+
+    <br />
+
+    Interests:
+
+    <br />
+
+    <div>
+      <hr>
+      <div class="title">Certifications</div>
+      <% if @certifications.present? %>
+        <div>This user is currently certified to use the following pieces of equipment:</div>
+        <div>
+          <% @certifications.each do |certification| %>
+            <p> <b><%= certification.training %></b></p>
+          <% end %>
+        </div>
+      <% else %>
+        <div>This user has no certifications so far.</div>
+      <% end %>
+    </div>
+
+    <br />
+
+  </div>
+</section>
