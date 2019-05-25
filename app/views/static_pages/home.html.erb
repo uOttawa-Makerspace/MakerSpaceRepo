@@ -16,20 +16,20 @@
           <% if signed_in? %>
             <p><%= link_to t('home.my_profile'), user_path(current_user.username), class: "btn btn-primary btn-lg" %></p>
             <hr class="my-5"/>
-            <h1>Want to be a Volunteer?</h1>
+            <h1><%= t('home.become_volunteer.want') %></h1>
             <p>
               <strong>
-                Request it in one click:
+                <%= t('home.become_volunteer.one_click') %>
               </strong>
             </p>
-            <p><%= link_to "Request to be Volunteer", "#", class: "btn btn-success btn-lg" %></p>
+            <p><%= link_to t('home.become_volunteer.button'), "#", class: "btn btn-success btn-lg" %></p>
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
             <hr class="my-5"/>
-            <h1>Want to be a Volunteer?</h1>
+            <h1><%= t('home.become_volunteer.want') %></h1>
             <p>
               <strong>
-                Make a request in 3 steps:
+                <%= t('home.become_volunteer.make') %>
               </strong>
             </p>
             <p>
@@ -37,7 +37,7 @@
               <%= t('home.become_volunteer.request_2') %> <br />
               <%= t('home.become_volunteer.request_3') %>
             </p>
-            <p><%= link_to "Find More About it", 'https://volunteer.makerepo.com/', class: "btn btn-success btn-lg", target: "_blank" %></p>
+            <p><%= link_to t('home.become_volunteer.find_more'), 'https://volunteer.makerepo.com/', class: "btn btn-success btn-lg", target: "_blank" %></p>
           <% end %>
 
         </div>
