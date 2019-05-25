@@ -13,43 +13,31 @@
 
           <tr>
             <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Title <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Description<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Created by <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Active<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Interests<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Sent by <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
             <th class="action-header">Action</th>
           </tr>
 
           <tbody>
-          <%= will_paginate @volunteer_tasks %>
-          <% @volunteer_tasks.each do |vt| %>
+          <%= will_paginate @volunteer_requests %>
+          <% @volunteer_requests.each do |vr| %>
             <tr>
               <td>
-                <%= vt.created_at.strftime("%b %e %Y") %>
+                <%= vr.created_at.strftime("%b %e %Y") %>
                 <br>
-                <%= vt.created_at.strftime("%I:%M %p").downcase() %>
+                <%= vr.created_at.strftime("%I:%M %p").downcase() %>
               </td>
 
               <td>
-                <%= vt.title %>
-              </td>
-
-              <td>
-                <%= vt.description %>
+                <%= vr.interests %>
               </td>
 
               <td class = "username">
-                <%= link_to vt.user.name.capitalize, user_path(vt.user.username) %>
-              </td>
-
-              <td>
-                <%= return_active(vt.active) %>
+                <%= link_to vr.user.name.capitalize, user_path(vr.user.username) %>
               </td>
 
               <td class="action-cell">
-                <%=link_to "Show", volunteer_task_path(vt.id), class:"btn-block download-button mt-0 mr-0" %> <br /> <br />
-                <%=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" %>
-                <%=link_to "Delete", { controller: :volunteer_tasks ,action: :destroy, id: vt.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer task?' }, class:"btn-block destroy-button mb-1 mr-0"%>
+                <%=link_to "Show", volunteer_request_path(vr.id), class:"btn-block download-button mt-0 mr-0" %> <br /> <br />
               </td>
 
             </tr>
@@ -59,7 +47,7 @@
       </div>
     <% else %>
       <div class="m-5">
-        No Tasks were created yet.
+        No Volunteer Requests
       </div>
     <% end %>
   </div>
