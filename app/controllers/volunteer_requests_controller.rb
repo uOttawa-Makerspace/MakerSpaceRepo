@@ -1,6 +1,8 @@
 class VolunteerRequestsController < ApplicationController
+  layout 'volunteer'
+  before_action :grant_access, only: [:index, :show]
   def index
-
+    @volunteer_requests = VolunteerRequest.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
   end
 
   def create
@@ -17,6 +19,13 @@ class VolunteerRequestsController < ApplicationController
   end
 
   private
+
+  def grant_access
+    if !current_user.staff?
+      flash[:alert] = "You cannot access this area."
+      redirect_to root_path
+    end
+  end
 
   def request_params
     params.require(:volunteer_request).permit(:interests)
