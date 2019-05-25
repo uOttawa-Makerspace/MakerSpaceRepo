@@ -16,6 +16,7 @@
             <th>Sent By<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
             <th>Interests<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
             <th>Email<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Approve?<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
             <th class="action-header">Action</th>
           </tr>
 
@@ -39,6 +40,11 @@
 
               <td>
                 <%= vr.user.email %>
+              </td>
+
+              <td class="action-cell">
+                <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: false}, method: :put, class: 'x-button' %>
+                <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: true}, method: :put, class: 'check-button' %>
               </td>
 
 
