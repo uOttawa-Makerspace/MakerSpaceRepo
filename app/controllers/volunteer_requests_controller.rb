@@ -2,7 +2,7 @@ class VolunteerRequestsController < ApplicationController
   layout 'volunteer'
   before_action :grant_access, only: [:index, :show]
   def index
-    @volunteer_requests = VolunteerRequest.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
+    @volunteer_requests = VolunteerRequest.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
   end
 
   def create
