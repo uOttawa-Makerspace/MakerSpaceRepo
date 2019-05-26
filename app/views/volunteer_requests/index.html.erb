@@ -1,7 +1,14 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
+
+<!--    <h5>Total volunteer hours <b class="text-success">approved</b> until now: <b><%#= @total_volunteer_hour_approved || 0 %> hours</b></h5>-->
+<!--    <h5>Total volunteer hours <b class="text-danger">rejected</b> until now: <b><%#= @total_volunteer_hour_rejected || 0 %> hours</b></h5>-->
+
     <h2>Volunteer Requests</h2>
+
+    <h5>Total number of Volunteers: <b><%= @total_volunteers %></b></h5>
+    <h5>Total Number of Volunteers requests: <b><%= @all_volunteer_requests %></b></h5>
 
     <% if !@pending_volunteer_requests.blank? %>
 

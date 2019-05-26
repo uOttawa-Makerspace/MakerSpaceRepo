@@ -2,6 +2,8 @@ class VolunteerRequestsController < ApplicationController
   layout 'volunteer'
   before_action :grant_access, only: [:index, :show]
   def index
+    @total_volunteers = User.where(role: "volunteer").count
+    @all_volunteer_requests = VolunteerRequest.all.count
     @pending_volunteer_requests = VolunteerRequest.not_processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
     @processed_volunteer_requests = VolunteerRequest.processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
   end
