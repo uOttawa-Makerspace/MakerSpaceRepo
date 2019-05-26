@@ -25,7 +25,13 @@ class VolunteerRequestsController < ApplicationController
 
   def update_approval
     volunteer_request = VolunteerRequest.find(params[:id])
+    user = volunteer_request.user
     if volunteer_request.update_attributes(:approval => params[:approval])
+      if volunteer_request.approval == true
+        user.update_attributes(:role => "volunteer")
+      else
+        user.update_attributes(:role => "regular_user")
+      end
       flash[:notice] = "Volunteer Request updated"
     else
       flash[:alert] = "Something went wrong"
