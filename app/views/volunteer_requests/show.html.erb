@@ -35,6 +35,12 @@
 
     <br />
 
+    Reject:
+    <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: false}, method: :put, class: 'x-button' %>
+    <br />
+    Approve:
+    <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: true}, method: :put, class: 'check-button' %>
+
     <div>
       <hr>
       <div class="title">Certifications</div>
