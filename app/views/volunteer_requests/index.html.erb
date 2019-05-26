@@ -1,0 +1,134 @@
+<section class="page-contents">
+  <div class="edit-column text-center">
+
+    <h2>Volunteer Requests</h2>
+
+    <h5>Total number of Volunteers: <b><%= @total_volunteers %></b></h5>
+    <h5>Total Number of Volunteers requests: <b><%= @all_volunteer_requests %></b></h5>
+
+    <% if !@pending_volunteer_requests.blank? %>
+
+      <h5>Pending Volunteer Requests</h5>
+
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
+
+      <br />
+
+      <div class="table-responsive">
+        <table class="table sessions-table">
+
+          <tr>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Sent By<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Interests<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Email<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Approve?<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th class="action-header">Action</th>
+          </tr>
+
+          <tbody>
+          <%= will_paginate @pending_volunteer_requests %>
+          <% @pending_volunteer_requests.each do |vr| %>
+            <tr>
+              <td>
+                <%= vr.created_at.strftime("%b %e %Y") %>
+                <br>
+                <%= vr.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+              <td class = "username">
+                <%= link_to vr.user.name.capitalize, user_path(vr.user.username) %>
+              </td>
+
+              <td>
+                <%= vr.interests %>
+              </td>
+
+              <td>
+                <%= vr.user.email %>
+              </td>
+
+              <td class="action-cell">
+                <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: false}, method: :put, class: 'x-button' %>
+                <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: true}, method: :put, class: 'check-button' %>
+              </td>
+
+
+              <td class="action-cell">
+                <%=link_to "Show", volunteer_request_path(vr.id), class:"btn-block download-button mt-0 mr-0" %> <br /> <br />
+              </td>
+
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+      <% else %>
+      <div class="m-5">
+        🎉 No pending Volunteer Requests! 🎉
+      </div>
+      <% end %>
+
+     <% if !@processed_volunteer_requests.blank? %>
+
+      <h5>Processed Volunteer Requests</h5>
+
+      <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
+
+      <div class="table-responsive">
+        <table class="table sessions-table-2">
+
+          <tr>
+            <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Sent By<span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Interests<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Email<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Approve?<span onclick="sortTable('sessions-table-2', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th class="action-header">Action</th>
+          </tr>
+
+          <tbody>
+          <%= will_paginate @processed_volunteer_requests %>
+          <% @processed_volunteer_requests.each do |vr| %>
+            <tr>
+              <td>
+                <%= vr.created_at.strftime("%b %e %Y") %>
+                <br>
+                <%= vr.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+              <td class = "username">
+                <%= link_to vr.user.name.capitalize, user_path(vr.user.username) %>
+              </td>
+
+              <td>
+                <%= vr.interests %>
+              </td>
+
+              <td>
+                <%= vr.user.email %>
+              </td>
+
+              <td class="action-cell">
+                <%= return_approval(vr.approval) %> <br />
+                <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: false}, method: :put, class: 'x-button' %>
+                <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: true}, method: :put, class: 'check-button' %>
+              </td>
+
+
+              <td class="action-cell">
+                <%=link_to "Show", volunteer_request_path(vr.id), class:"btn-block download-button mt-0 mr-0" %> <br /> <br />
+              </td>
+
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="m-5">
+        No Volunteer Requests
+      </div>
+    <% end %>
+  </div>
+</section>
