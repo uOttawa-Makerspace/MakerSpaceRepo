@@ -1,0 +1,67 @@
+<section class="page-contents">
+  <div class="text-right">
+    Reject: <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: false}, method: :put, class: 'x-button' %>
+    Approve: <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: true}, method: :put, class: 'check-button' %>
+  </div>
+  <div class="edit-column text-center">
+
+    <h2>Volunteer Request</h2>
+
+    <div class="row">
+      <div class="col-md-4">
+        <b>Name:</b> <%= @user_request.name.capitalize %>
+      </div>
+
+      <div class="col-md-4">
+        <b>Year of Study:</b> <%= @user_request.year_of_study %>
+      </div>
+
+      <div class="col-md-4">
+        <b>Faculty: </b><%= @user_request.faculty %>
+      </div>
+
+      <br />
+      <br />
+
+      <div class="col-md-4">
+        <b>Program:</b> <%= @user_request.program %>
+      </div>
+
+      <div class="col-md-4">
+        <b>Current Role:</b> <%= @user_request.role %>
+      </div>
+
+      <div class="col-md-4">
+        <b>Email:</b> <%= @user_request.email %>
+      </div>
+    </div>
+
+    <br />
+
+    <p><b>Interests:</b></p>
+
+    <div class="jumbotron text-center">
+      <%= @volunteer_request.interests %>
+    </div>
+
+    <p><b>Status:</b> <%= return_approval(@volunteer_request.approval) %></p>
+
+    <div>
+      <hr>
+      <div class="title">Certifications</div>
+      <% if @certifications.present? %>
+        <div>This user is currently certified to use the following pieces of equipment:</div>
+        <div>
+          <% @certifications.each do |certification| %>
+            <p> <b><%= certification.training %></b></p>
+          <% end %>
+        </div>
+      <% else %>
+        <div>This user has no certifications so far.</div>
+      <% end %>
+    </div>
+
+    <br />
+
+  </div>
+</section>

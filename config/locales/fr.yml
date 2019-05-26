@@ -29,6 +29,16 @@ fr:
   home:
     welcome_html: "Bienvenue sur Maker<strong>Repo</strong>&#8201;!"
     welcome_desc_html: "Parcourez des projets créés dans les espaces du CGEC et publiez les vôtres&#8201;!"
+    become_volunteer:
+      want: "Voulez-vous être Bénévole?"
+      make: "Faire une demande en 3 étapes:"
+      request_1: "1) Connectez-vous ou créez un compte."
+      request_2: "2) Cliquez sur le bouton 'Demande de bénévolat'."
+      request_3: "3) Attendez que votre demande soit acceptée."
+      find_more: "En savoir plus"
+      one_click: "Demandez-le en un clic:"
+      button: "Demande de Bénévolat"
+      placeholder_text: "Vos centres d'intérêt et les certifications importantes qui ne figurent pas dans votre profil MakeRepo (par exemple, Solidworks, Inkscape, Cura, ...)"
     sign_up: "Créer un compte"
     my_profile: "Mon profil"
     categories_title: "Catégories"

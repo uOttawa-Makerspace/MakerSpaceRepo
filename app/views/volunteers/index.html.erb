@@ -10,6 +10,7 @@
         <%= link_to 'See your hours', volunteer_hours_path, class: "staff-button"%>
         <br /> <br />
       <% else %>
+        <%= link_to 'Volunteer Requests', volunteer_requests_path, class: "staff-button" %><br></br>
         <%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "staff-button" %><br></br>
         <%= link_to 'New Volunteer Task', new_volunteer_task_path, class: "staff-button" %><br></br>
         <%= link_to 'Volunteer Hour Requests', volunteer_hour_requests_volunteer_hours_path, class: "staff-button" %><br></br>

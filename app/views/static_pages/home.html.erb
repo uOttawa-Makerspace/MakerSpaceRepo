@@ -15,22 +15,38 @@
           <p class="lead mb-4"><%= t('home.welcome_desc_html') %></p>
           <% if signed_in? %>
             <p><%= link_to t('home.my_profile'), user_path(current_user.username), class: "btn btn-primary btn-lg" %></p>
+            <hr class="my-5"/>
+            <h1><%= t('home.become_volunteer.want') %></h1>
+            <p>
+              <strong>
+                <%= t('home.become_volunteer.one_click') %>
+              </strong>
+            </p>
+            <%= form_for @request, url: {controller: "volunteer_requests", action: "create"} do |f| %>
+              <div class="mx-auto col-md-6">
+                <%= f.text_area :interests, placeholder: t('home.become_volunteer.placeholder_text') ,class: 'form-control'%>
+              </div>
+              <br />
+              <% state = true if VolunteerRequest.find_by_user_id(current_user.id) %>
+              <%= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg", disabled: state %>
+            <% end %>
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
+            <hr class="my-5"/>
+            <h1><%= t('home.become_volunteer.want') %></h1>
+            <p>
+              <strong>
+                <%= t('home.become_volunteer.make') %>
+              </strong>
+            </p>
+            <p>
+              <%= t('home.become_volunteer.request_1') %> <br />
+              <%= t('home.become_volunteer.request_2') %> <br />
+              <%= t('home.become_volunteer.request_3') %>
+            </p>
+            <p><%= link_to t('home.become_volunteer.find_more'), 'https://volunteer.makerepo.com/', class: "btn btn-success btn-lg", target: "_blank" %></p>
           <% end %>
-          <!--Put your announcement here
-          <hr class="my-5"/>
-          <h1>Announcement Tittle</h1>
-          <p>
-            <strong>
-              Announcement Subtitle
-            </strong>
-          </p>
-          <p>
-           Announcemente Info
-          </p>
-          <p><%= link_to "label", "link", class: "btn btn-success btn-lg", target: "_blank" %></p>
-          -->
+
         </div>
       </div>
     </div>
