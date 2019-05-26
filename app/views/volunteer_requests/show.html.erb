@@ -1,45 +1,50 @@
 <section class="page-contents">
+  <div class="text-right">
+    Reject: <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: false}, method: :put, class: 'x-button' %>
+    Approve: <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: true}, method: :put, class: 'check-button' %>
+  </div>
   <div class="edit-column text-center">
 
     <h2>Volunteer Request</h2>
 
-    Name: <%= @user_request.name.capitalize %>
+    <div class="row">
+      <div class="col-md-4">
+        <b>Name:</b> <%= @user_request.name.capitalize %>
+      </div>
+
+      <div class="col-md-4">
+        <b>Year of Study:</b> <%= @user_request.year_of_study %>
+      </div>
+
+      <div class="col-md-4">
+        <b>Faculty: </b><%= @user_request.faculty %>
+      </div>
+
+      <br />
+      <br />
+
+      <div class="col-md-4">
+        <b>Program:</b> <%= @user_request.program %>
+      </div>
+
+      <div class="col-md-4">
+        <b>Current Role:</b> <%= @user_request.role %>
+      </div>
+
+      <div class="col-md-4">
+        <b>Email:</b> <%= @user_request.email %>
+      </div>
+    </div>
 
     <br />
 
-    Year of Study: <%= @user_request.year_of_study %>
+    <p><b>Interests:</b></p>
 
-    <br />
+    <div class="jumbotron text-center">
+      <%= @volunteer_request.interests %>
+    </div>
 
-    Faculty: <%= @user_request.faculty %>
-
-    <br />
-
-    Program: <%= @user_request.program %>
-
-    <br/>
-
-    Current Role: <%= @user_request.role %>
-
-    <br />
-
-    Email: <%= @user_request.email %>
-
-    <br />
-
-    Approval: <%= return_approval(@volunteer_request.approval) %>
-
-    <br />
-
-    Interests: <%= @volunteer_request.interests %>
-
-    <br />
-
-    Reject:
-    <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: false}, method: :put, class: 'x-button' %>
-    <br />
-    Approve:
-    <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: true}, method: :put, class: 'check-button' %>
+    <p><b>Status:</b> <%= return_approval(@volunteer_request.approval) %></p>
 
     <div>
       <hr>
