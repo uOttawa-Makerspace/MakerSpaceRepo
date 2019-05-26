@@ -2,7 +2,8 @@ class VolunteerRequestsController < ApplicationController
   layout 'volunteer'
   before_action :grant_access, only: [:index, :show]
   def index
-    @volunteer_requests = VolunteerRequest.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
+    @pending_volunteer_requests = VolunteerRequest.not_processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
+    @processed_volunteer_requests = VolunteerRequest.processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
   end
 
   def create
@@ -16,8 +17,8 @@ class VolunteerRequestsController < ApplicationController
 
   def show
     @volunteer_request = VolunteerRequest.find(params[:id])
-    @user = @volunteer_request.user
-    @certifications = @user.certifications
+    @user_request = @volunteer_request.user
+    @certifications = @user_request.certifications
   end
 
   def update_approval
