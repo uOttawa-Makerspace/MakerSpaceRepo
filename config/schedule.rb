@@ -70,61 +70,65 @@ end
 # Niko nikoleeyow@Gmail.com
 # Arthur art.fetiveau@gmail.com
 # Sarah shodg076@uottawa.ca
-every :monday, :at => '9:45 am' do
-  runner "MsrMailer.send_checklist_reminder('jaredpoole123@gmail.com', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :monday, :at => '5:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('nikoleeyow@gmail.com', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :tuesday, :at => '9:45 am' do
-  runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca', 'bruno.mrlima@gmail.com').deliver_now"
-end
-
-every :tuesday, :at => '5:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('mghod021@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :wednesday, :at => '9:45 am' do
-  runner "MsrMailer.send_checklist_reminder('bsami021@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :wednesday, :at => '5:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('shodg076@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :thursday, :at => '9:45 am' do
-  runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca', 'bruno.mrlima@gmail.com').deliver_now"
-end
-
-every :thursday, :at => '5:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('sbouc057@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :friday, :at => '9:45 am' do
-  runner "MsrMailer.send_checklist_reminder('shodg076@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :friday, :at => '5:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('nikoleeyow@gmail.com', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :sunday, :at => '10:15 am' do
-  runner "MsrMailer.send_checklist_reminder('jlian009@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :sunday, :at => '10:15 am' do
-  runner "MsrMailer.send_checklist_reminder('art.fetiveau@gmail.com', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :sunday, :at => '4:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('jlian009@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
-end
-
-every :sunday, :at => '4:45 pm' do
-  runner "MsrMailer.send_checklist_reminder('art.fetiveau@gmail.com', 'bmont037@uottawa.ca').deliver_now"
-end
+#
+# #########
+# every :monday, :at => '9:45 am' do
+#   runner "MsrMailer.send_checklist_reminder('jaredpoole123@gmail.com', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :monday, :at => '5:45 pm' do
+#   runner "MsrMailer.send_checklist_reminder('nikoleeyow@gmail.com', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :tuesday, :at => '9:45 am' do
+#   runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca', 'bruno.mrlima@gmail.com').deliver_now"
+# end
+#
+# every :tuesday, :at => '5:45 pm' do
+#   runner "MsrMailer.send_checklist_reminder('mghod021@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :wednesday, :at => '9:45 am' do
+#   runner "MsrMailer.send_checklist_reminder('bsami021@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :wednesday, :at => '5:45 pm' do
+#   runner "MsrMailer.send_checklist_reminder('shodg076@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :thursday, :at => '9:45 am' do
+#   runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca', 'bruno.mrlima@gmail.com').deliver_now"
+# end
+#
+# every :thursday, :at => '5:45 pm' do
+#   runner "MsrMailer.send_checklist_reminder('sbouc057@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :friday, :at => '9:45 am' do
+#   runner "MsrMailer.send_checklist_reminder('shodg076@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :friday, :at => '5:45 pm' do
+#   runner "MsrMailer.send_checklist_reminder('nikoleeyow@gmail.com', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :sunday, :at => '10:15 am' do
+#   runner "MsrMailer.send_checklist_reminder('jlian009@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :sunday, :at => '10:15 am' do
+#   runner "MsrMailer.send_checklist_reminder('art.fetiveau@gmail.com', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :sunday, :at => '4:45 pm' do
+#   runner "MsrMailer.send_checklist_reminder('jlian009@uottawa.ca', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# every :sunday, :at => '4:45 pm' do
+#   runner "MsrMailer.send_checklist_reminder('art.fetiveau@gmail.com', 'bmont037@uottawa.ca').deliver_now"
+# end
+#
+# ########
 
 # every 10.minutes do
 #   runner "MsrMailer.send_checklist_reminder('bmont037@uottawa.ca', 'bruno.mrlima@gmail.com').deliver_now"
