@@ -39,7 +39,7 @@
                 </div>
                 <%= f.hidden_field :total_time, id: "total_time_hidden" %>
               </div>
-              <% if current_user.staff? %>
+              <% if current_user.staff? && !@volunteer_hour.approval.nil? %>
                 <div class="col-md-12">
                   <div class="form-group text-center">
                     <%= f.label :approval, "Volunteer hour approved?" %>
@@ -48,8 +48,6 @@
                     <%= label :approval, 'Yes' %>
                     <%= f.radio_button :approval, false %>
                     <%= label :approval, 'No' %>
-                    <%= f.radio_button :approval, nil %>
-                    <%= label :approval, 'Not Accessed' %>
                   </div>
                 </div>
               <% end %>
