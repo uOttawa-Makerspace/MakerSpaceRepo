@@ -23,12 +23,32 @@
               </strong>
             </p>
             <%= form_for @request, url: {controller: "volunteer_requests", action: "create"} do |f| %>
-              <div class="mx-auto col-md-6">
+              <div class="mx-auto col-md-6 pastInfo" >
                 <%= f.text_area :interests, placeholder: t('home.become_volunteer.placeholder_text') ,class: 'form-control'%>
+                <br />
+                <input type="button" value="Next" onclick="showHideDivs()" class="btn btn-success btn-lg" />
               </div>
-              <br />
-              <% state = true if VolunteerRequest.find_by_user_id(current_user.id) %>
-              <%= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg", disabled: state %>
+
+              <div class="mx-auto col-md-6 nextInfo" style="display:none;" >
+                More info comes here <br />
+
+                <div class="mx-auto col-md-12">
+
+                </div>
+
+                <%= f.radio_button :interests, 'Beginner', :checked => true, :style => 'display:inline' %>
+                <%= f.label :interests, 'Beginner', :style => 'display:inline' %>
+                <br />
+                <%= f.radio_button :interests, 'Intermediate', :style => 'display:inline' %>
+                <%= f.label :interests, 'Intermediate', :style => 'display:inline' %>
+                <br />
+                <%= f.radio_button :interests, 'Advanced', :style => 'display:inline' %>
+                <%= f.label :interests, 'Advanced', :style => 'display:inline' %>
+                <br />
+                <% state = true if VolunteerRequest.find_by_user_id(current_user.id) %>
+                <%= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg nextInfo", disabled: state %>
+              </div>
+
             <% end %>
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
