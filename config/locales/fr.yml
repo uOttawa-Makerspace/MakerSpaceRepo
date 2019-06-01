@@ -36,7 +36,7 @@ fr:
       request_2: "2) Cliquez sur le bouton 'Demande de bénévolat'."
       request_3: "3) Attendez que votre demande soit acceptée."
       find_more: "En savoir plus"
-      one_click: "Demandez-le en un clic:"
+      few_clicks: "Demandez-le en quelques clics."
       button: "Demande de Bénévolat"
       placeholder_text: "Vos centres d'intérêt et les certifications importantes qui ne figurent pas dans votre profil MakeRepo (par exemple, Solidworks, Inkscape, Cura, ...)"
     sign_up: "Créer un compte"

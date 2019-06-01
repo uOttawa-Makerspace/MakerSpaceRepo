@@ -6,5 +6,6 @@ function showHideDivs(){
     }
     for (var i = 0; i < nextInfos.length; i++) {
         nextInfos[i].style.display = "inline-block";
+        nextInfos[i].className += " passInfo";
     }
 }
