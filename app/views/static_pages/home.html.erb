@@ -35,11 +35,11 @@
                   <div class="mx-auto col-12">
                     <p>In what space are you interested to become a volunteer?</p>
                     <div class="d-inline-block text-left">
-                      <%= f.radio_button :interests, 'Makerspace', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Makerspace', :style => 'display:inline' %>
+                      <%= f.radio_button :space_id, Space.find_by_name("Makerspace").id, :style => 'display:inline' %>
+                      <%= f.label :space_id, 'Makerspace', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Brunsfield Center', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Brunsfield Center', :style => 'display:inline' %>
+                      <%= f.radio_button :space_id, Space.find_by_name("Brunsfield").id, :style => 'display:inline' %>
+                      <%= f.label :space_id, 'Brunsfield Center', :style => 'display:inline' %>
                       <br />
                     </div>
                     <p>Please inform us your level of expertise</p>
@@ -49,14 +49,14 @@
 
                     <b>3D Printing</b> <br />
                     <div class="d-inline-block text-left">
-                      <%= f.radio_button :interests, 'Beginner', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Beginner', :style => 'display:inline' %>
+                      <%= f.radio_button :printing, 'Beginner', :style => 'display:inline' %>
+                      <%= f.label :printing, 'Beginner', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Intermediate', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.radio_button :printing, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.label :printing, 'Intermediate', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Advanced', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Advanced', :style => 'display:inline' %>
+                      <%= f.radio_button :printing, 'Advanced', :style => 'display:inline' %>
+                      <%= f.label :printing, 'Advanced', :style => 'display:inline' %>
                       <br />
                     </div>
                   </div>
@@ -64,14 +64,14 @@
                   <div class="max-auto col-lg-2 col-md-4">
                     <b>Laser Cutting</b> <br />
                     <div class="d-inline-block text-left">
-                      <%= f.radio_button :interests, 'Beginner', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Beginner', :style => 'display:inline' %>
+                      <%= f.radio_button :laser_cutting, 'Beginner', :style => 'display:inline' %>
+                      <%= f.label :laser_cutting, 'Beginner', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Intermediate', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.radio_button :laser_cutting, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.label :laser_cutting, 'Intermediate', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Advanced', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Advanced', :style => 'display:inline' %>
+                      <%= f.radio_button :laser_cutting, 'Advanced', :style => 'display:inline' %>
+                      <%= f.label :laser_cutting, 'Advanced', :style => 'display:inline' %>
                       <br />
                     </div>
                   </div>
@@ -79,14 +79,14 @@
                   <div class="mx-auto col-lg-2 col-md-4">
                     <b>Virtual Reality (VR)</b> <br />
                     <div class="d-inline-block text-left">
-                      <%= f.radio_button :interests, 'Beginner', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Beginner', :style => 'display:inline' %>
+                      <%= f.radio_button :virtual_reality, 'Beginner', :style => 'display:inline' %>
+                      <%= f.label :virtual_reality, 'Beginner', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Intermediate', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.radio_button :virtual_reality, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.label :virtual_reality, 'Intermediate', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Advanced', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Advanced', :style => 'display:inline' %>
+                      <%= f.radio_button :virtual_reality, 'Advanced', :style => 'display:inline' %>
+                      <%= f.label :virtual_reality, 'Advanced', :style => 'display:inline' %>
                       <br />
                     </div>
                   </div>
@@ -94,14 +94,14 @@
                   <div class="mx-auto col-lg-2 col-md-4">
                     <b>Arduino</b> <br />
                     <div class="d-inline-block text-left">
-                      <%= f.radio_button :interests, 'Beginner', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Beginner', :style => 'display:inline' %>
+                      <%= f.radio_button :arduino, 'Beginner', :style => 'display:inline' %>
+                      <%= f.label :arduino, 'Beginner', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Intermediate', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.radio_button :arduino, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.label :arduino, 'Intermediate', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Advanced', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Advanced', :style => 'display:inline' %>
+                      <%= f.radio_button :arduino, 'Advanced', :style => 'display:inline' %>
+                      <%= f.label :arduino, 'Advanced', :style => 'display:inline' %>
                       <br />
                     </div>
                   </div>
@@ -109,14 +109,14 @@
                   <div class="mx-auto col-lg-2 col-md-4">
                     <b>Embroidery</b> <br />
                     <div class="d-inline-block text-left">
-                      <%= f.radio_button :interests, 'Beginner', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Beginner', :style => 'display:inline' %>
+                      <%= f.radio_button :embroidery, 'Beginner', :style => 'display:inline' %>
+                      <%= f.label :embroidery, 'Beginner', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Intermediate', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.radio_button :embroidery, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.label :embroidery, 'Intermediate', :style => 'display:inline' %>
                       <br />
-                      <%= f.radio_button :interests, 'Advanced', :style => 'display:inline' %>
-                      <%= f.label :interests, 'Advanced', :style => 'display:inline' %>
+                      <%= f.radio_button :embroidery, 'Advanced', :style => 'display:inline' %>
+                      <%= f.label :embroidery, 'Advanced', :style => 'display:inline' %>
                       <br />
                     </div>
                   </div>
