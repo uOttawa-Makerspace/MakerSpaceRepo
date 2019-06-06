@@ -314,6 +314,7 @@ ActiveRecord::Schema.define(version: 20190606192136) do
     t.datetime "updated_at",                   null: false
     t.integer  "user_id"
     t.boolean  "approval"
+    t.integer  "space_id"
     t.string   "printing"
     t.string   "laser_cutting"
     t.string   "virtual_reality"
