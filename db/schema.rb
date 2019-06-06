@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190525215349) do
+ActiveRecord::Schema.define(version: 20190606192136) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -309,11 +309,16 @@ ActiveRecord::Schema.define(version: 20190525215349) do
   end
 
   create_table "volunteer_requests", force: :cascade do |t|
-    t.text     "interests",  default: ""
-    t.datetime "created_at",              null: false
-    t.datetime "updated_at",              null: false
+    t.text     "interests",       default: ""
+    t.datetime "created_at",                   null: false
+    t.datetime "updated_at",                   null: false
     t.integer  "user_id"
     t.boolean  "approval"
+    t.string   "printing"
+    t.string   "laser_cutting"
+    t.string   "virtual_reality"
+    t.string   "arduino"
+    t.string   "embroidery"
   end
 
   create_table "volunteer_tasks", force: :cascade do |t|
