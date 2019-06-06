@@ -29,6 +29,9 @@ class VolunteerRequestsController < ApplicationController
     if volunteer_request.update_attributes(:approval => params[:approval])
       if volunteer_request.approval == true
         user.update_attributes(:role => "volunteer")
+        Skill.create(:user_id => user.id, :printing => volunteer_request.printing,
+                     :laser_cutting => volunteer_request.laser_cutting, :virtual_reality => volunteer_request.virtual_reality,
+                     :embroidery => volunteer_request.embroidery, :arduino => volunteer_request.arduino)
       else
         user.update_attributes(:role => "regular_user")
       end
