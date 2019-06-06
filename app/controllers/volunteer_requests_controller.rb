@@ -49,6 +49,6 @@ class VolunteerRequestsController < ApplicationController
   end
 
   def request_params
-    params.require(:volunteer_request).permit(:interests)
+    params.require(:volunteer_request).permit(:interests, :space_id, :printing, :arduino, :laser_cutting, :embroidery, :virtual_reality)
   end
 end
