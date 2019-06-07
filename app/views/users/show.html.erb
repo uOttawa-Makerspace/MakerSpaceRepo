@@ -28,16 +28,18 @@
         </div>
       </div>
     <% end %>
-    <div class="skills">
-      <div class="text-center">
-        <b>Skills:</b> <br />
-        3D Printing: <b><%= @repo_user.skill.printing %></b> <br />
-        Laser Cutting: <b><%= @repo_user.skill.laser_cutting %></b> <br />
-        Virtual Reality (VR): <b><%= @repo_user.skill.virtual_reality %></b> <br />
-        Embroidery: <b><%= @repo_user.skill.embroidery %></b> <br />
-        Arduino: <b><%= @repo_user.skill.arduino %></b> <br />
+    <% if @repo_user.skill %>
+      <div class="skills">
+        <div class="text-center">
+          <b>Skills:</b> <br />
+          3D Printing: <b><%= @repo_user.skill.printing %></b> <br />
+          Laser Cutting: <b><%= @repo_user.skill.laser_cutting %></b> <br />
+          Virtual Reality (VR): <b><%= @repo_user.skill.virtual_reality %></b> <br />
+          Embroidery: <b><%= @repo_user.skill.embroidery %></b> <br />
+          Arduino: <b><%= @repo_user.skill.arduino %></b> <br />
+        </div>
       </div>
-    </div>
+    <% end %>
   <% else %>
     <div class="user-avatar">
       <%= image_tag @repo_user.avatar.url %>
