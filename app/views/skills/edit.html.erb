@@ -3,13 +3,12 @@
 <%= form_for @skills, url: {controller: "skills", action: "update"}, method: :patch do |f| %>
 
   <div class="edit-column">
-    <div class="setting-title">Update Skills</div>
+    <div class="setting-title text-center">Update Skills</div>
     <br />
 
     <div class="row">
 
-      <div class="mx-auto col-lg-2 col-md-4">
-
+      <div class="mx-auto col-md-4 col-6">
         <b>3D Printing</b> <br />
         <div class="d-inline-block text-left">
           <%= f.radio_button :printing, 'Beginner', :style => 'display:inline' %>
@@ -21,10 +20,11 @@
           <%= f.radio_button :printing, 'Advanced', :style => 'display:inline' %>
           <%= f.label :printing, 'Advanced', :style => 'display:inline' %>
           <br />
+          <br />
         </div>
       </div>
 
-      <div class="max-auto col-lg-2 col-md-4">
+      <div class="max-auto col-md-4 col-6">
         <b>Laser Cutting</b> <br />
         <div class="d-inline-block text-left">
           <%= f.radio_button :laser_cutting, 'Beginner', :style => 'display:inline' %>
@@ -36,10 +36,11 @@
           <%= f.radio_button :laser_cutting, 'Advanced', :style => 'display:inline' %>
           <%= f.label :laser_cutting, 'Advanced', :style => 'display:inline' %>
           <br />
+          <br />
         </div>
       </div>
 
-      <div class="mx-auto col-lg-2 col-md-4">
+      <div class="mx-auto col-md-4 col-6">
         <b>Virtual Reality (VR)</b> <br />
         <div class="d-inline-block text-left">
           <%= f.radio_button :virtual_reality, 'Beginner', :style => 'display:inline' %>
@@ -51,10 +52,11 @@
           <%= f.radio_button :virtual_reality, 'Advanced', :style => 'display:inline' %>
           <%= f.label :virtual_reality, 'Advanced', :style => 'display:inline' %>
           <br />
+          <br />
         </div>
       </div>
 
-      <div class="mx-auto col-lg-2 col-md-4">
+      <div class="mx-auto col-md-4 col-6">
         <b>Arduino</b> <br />
         <div class="d-inline-block text-left">
           <%= f.radio_button :arduino, 'Beginner', :style => 'display:inline' %>
@@ -66,10 +68,11 @@
           <%= f.radio_button :arduino, 'Advanced', :style => 'display:inline' %>
           <%= f.label :arduino, 'Advanced', :style => 'display:inline' %>
           <br />
+          <br />
         </div>
       </div>
 
-      <div class="mx-auto col-lg-2 col-md-4">
+      <div class="mx-auto col-md-4 col-6">
         <b>Embroidery</b> <br />
         <div class="d-inline-block text-left">
           <%= f.radio_button :embroidery, 'Beginner', :style => 'display:inline' %>
@@ -81,11 +84,12 @@
           <%= f.radio_button :embroidery, 'Advanced', :style => 'display:inline' %>
           <%= f.label :embroidery, 'Advanced', :style => 'display:inline' %>
           <br />
+          <br />
         </div>
       </div>
-
-      <%= f.submit "Update Skills", class: "btn btn-success btn-lg" %>
-
     </div>
+      <div class="col-md-4 mx-auto col-6">
+        <%= f.submit "Update Skills", class: "btn btn-success btn-lg" %>
+      </div>
   </div>
 <% end %>
