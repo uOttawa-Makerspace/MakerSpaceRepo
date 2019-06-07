@@ -6,6 +6,12 @@ class VolunteersController < ApplicationController
     @user = current_user
   end
 
+  def emails
+    @all_emails = User.where(:role => "volunteer").pluck(:email)
+    @active_emails = User.where(:role => "volunteer").joins(:skill).where("skills.active =?", true).pluck(:email)
+    @unactive_emails = User.where(:role => "volunteer").joins(:skill).where("skills.active =?", false).pluck(:email)
+  end
+
   private
 
   def grant_access

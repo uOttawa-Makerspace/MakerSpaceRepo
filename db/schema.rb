@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190606203002) do
+ActiveRecord::Schema.define(version: 20190607205127) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -231,8 +231,9 @@ ActiveRecord::Schema.define(version: 20190606203002) do
     t.string   "virtual_reality"
     t.string   "arduino"
     t.string   "embroidery"
-    t.datetime "created_at",      null: false
-    t.datetime "updated_at",      null: false
+    t.datetime "created_at",                     null: false
+    t.datetime "updated_at",                     null: false
+    t.boolean  "active",          default: true
   end
 
   create_table "spaces", force: :cascade do |t|
@@ -307,6 +308,7 @@ ActiveRecord::Schema.define(version: 20190606203002) do
     t.string   "year_of_study"
     t.boolean  "read_and_accepted_waiver_form", default: false
     t.boolean  "active",                        default: true
+    t.datetime "last_seen_at"
   end
 
   create_table "volunteer_hours", force: :cascade do |t|
