@@ -261,4 +261,6 @@ Rails.application.routes.draw do
     delete :destroy, path: '/:id/destroy'
   end
 
+  resources :skills, only: [:edit]
+
 end
