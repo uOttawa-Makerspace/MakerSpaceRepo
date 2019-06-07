@@ -3,15 +3,30 @@
 
     <h2 class="text-center">Welcome to the Volunteer Area</h2>
     <br>
-    <div id="staff-buttons">
-      <% @emails.each do |email| %>
-        <div class="col-md-3">
-          <%= email %> <br />
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4">
+          <h5>All Volunteer's Emails</h5>
+          <% @emails.each do |email| %>
+            <%= email %> <br />
+          <% end %>
         </div>
-      <% end %>
+
+        <div class="col-md-4">
+          <h5>Active Volunteer's Emails</h5>
+          <% @emails.each do |email| %>
+            <%= email %> <br />
+          <% end %>
+        </div>
+
+        <div class="col-md-4">
+          <h5>Unactive Volunteer's Emails</h5>
+          <% @emails.each do |email| %>
+            <%= email %> <br />
+          <% end %>
+        </div>
+      </div>
     </div>
-
-
   </div>
 </section>
 
