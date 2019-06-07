@@ -81,6 +81,8 @@ Rails.application.routes.draw do
     get 'admin'
   end
 
+  resources :skills, only: [:edit, :update]
+
   get 'help', to: 'help#main'
   put 'send_email', to:'help#send_email'
 
@@ -260,7 +262,5 @@ Rails.application.routes.draw do
     post :create, path: '/:slug'
     delete :destroy, path: '/:id/destroy'
   end
-
-  resources :skills, only: [:edit]
 
 end
