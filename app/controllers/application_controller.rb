@@ -5,7 +5,7 @@ class ApplicationController < ActionController::Base
   include ApplicationHelper
 
   before_action :set_locale
-  before_action :set_last_seen_at, if: proc { user_signed_in? && (user.last_seen_at.nil? || user.last_seen_at < 15.minutes.ago) }
+  before_action :set_last_seen_at, if: proc { signed_in? && (current_user.last_seen_at.nil? || current_user.last_seen_at < 15.minutes.ago) }
 
 
   def set_locale
@@ -15,6 +15,7 @@ class ApplicationController < ActionController::Base
 
   private
   def set_last_seen_at
-    current_user.update_column(:last_seen_at, Time.now)
+    current_user.update_attribute(:last_seen_at, Time.current)
+    session[:last_seen_at] = Time.current
   end
 end
