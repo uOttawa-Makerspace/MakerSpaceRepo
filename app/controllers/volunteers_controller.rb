@@ -7,7 +7,9 @@ class VolunteersController < ApplicationController
   end
 
   def emails
-    @emails = User.where(:role => "volunteer").pluck(:email)
+    @all_emails = User.where(:role => "volunteer").pluck(:email)
+    @active_emails = User.where(:role => "volunteer").joins(:skill).where("skills.active =?", true).pluck(:email)
+    @unactive_emails = User.where(:role => "volunteer").joins(:skill).where("skills.active =?", false).pluck(:email)
   end
 
   private
