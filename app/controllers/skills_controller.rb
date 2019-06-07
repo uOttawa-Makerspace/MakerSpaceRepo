@@ -25,7 +25,7 @@ class SkillsController < ApplicationController
   end
 
   def check_user
-    unless current_user.eql?(Skill.find(params[:id]).user) || current_user.admin?
+    unless current_user.eql?(Skill.find(params[:id]).user) || current_user.admin? || current_user.staff?
       flash[:alert] = "You are not allowed in this section"
       redirect_to root_path
     end
