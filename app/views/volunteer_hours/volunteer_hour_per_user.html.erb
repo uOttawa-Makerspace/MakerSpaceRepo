@@ -2,6 +2,7 @@
   <div class="edit-column text-center">
 
     <h2>Volunteer hour per user</h2>
+    <h5>Total number of Volunteers: <b><%= @total_volunteers %></b></h5>
     <h5>Total volunteer hours <b>requested</b> until now: <b><%= @total_volunteer_hours_requested %> hours</b></h5>
     <h5>Total volunteer hours <b class="text-success">approved</b> until now: <b><%= @total_volunteer_hour_approved || 0 %> hours</b></h5>
     <h5>Total volunteer hours <b class="text-danger">rejected</b> until now: <b><%= @total_volunteer_hour_rejected || 0 %> hours</b></h5>
