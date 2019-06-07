@@ -15,6 +15,7 @@ class User < ActiveRecord::Base
   has_many :printer_sessions,     dependent: :destroy
   has_many :volunteer_hours
   has_many :volunteer_tasks
+  has_one :skill
 
   validates :name,
     presence: true,

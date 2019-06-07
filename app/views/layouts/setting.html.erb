@@ -13,20 +13,31 @@
 </head>
 <body>
 	<%= render 'layouts/header' %>
+  <% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+  <% end %>
+  <% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+  <% end %>
 	<section id="setting">
 		<div class="setting-grid">
 			<div class="setting-side-panel">
 				<ul>
 		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
-            current_page?(action: 'profile') %> >
+            current_page?(action: 'profile', controller: 'settings') %> >
 		      	<%= link_to 'Edit settings', settings_profile_path %>
 		      </li>
 		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
-            current_page?(action: 'admin') %> >
+            current_page?(action: 'admin', controller: 'settings') %> >
 		      	<%= link_to 'Account Settings', settings_admin_path %>
 		      </li>
+          <% if @user.skill %>
+            <li class="setting-menu-item" >
+              <%= link_to 'Update Skills', edit_skill_path(@user.skill.id) %>
+            </li>
+          <% end %>
 		      <li>
-		      <%= link_to "View Profile", user_path(@user.username), class: 'vp-button' if current_page?(action: 'profile') %>
+		      <%= link_to "View Profile", user_path(@user.username), class: 'vp-button' if current_page?(action: 'profile', controller: 'settings') %>
 		      </li>
 				</ul>
 			</div>

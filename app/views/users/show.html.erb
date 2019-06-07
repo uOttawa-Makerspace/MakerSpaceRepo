@@ -5,7 +5,7 @@
 
 <section id="user-show">
 
-  <% if @repo_user.eql?(@user) %>
+  <% if @repo_user.eql?(@user) && !@user.volunteer? %>
     <%= link_to fa_icon("cog", text: ' Edit Profile'), settings_profile_path, class: 'edit-user-profile' %>
 
     <%= link_to settings_profile_path do %>
@@ -17,6 +17,29 @@
       </div>
     <% end %>
 
+  <% elsif (@repo_user.eql?(@user) && @user.volunteer?) || (@user.admin?)%>
+    <%= link_to fa_icon("cog", text: ' Edit Profile'), settings_profile_path, class: 'edit-user-profile' %>
+
+    <%= link_to settings_profile_path do %>
+      <div class="user-avatar">
+        <%= image_tag @repo_user.avatar.url %>
+        <div class="edit-avatar">
+          Change avatar
+        </div>
+      </div>
+    <% end %>
+    <% if @repo_user.skill %>
+      <div class="skills">
+        <div class="text-center">
+          <b>Skills:</b> <br />
+          3D Printing: <b><%= @repo_user.skill.printing %></b> <br />
+          Laser Cutting: <b><%= @repo_user.skill.laser_cutting %></b> <br />
+          Virtual Reality (VR): <b><%= @repo_user.skill.virtual_reality %></b> <br />
+          Embroidery: <b><%= @repo_user.skill.embroidery %></b> <br />
+          Arduino: <b><%= @repo_user.skill.arduino %></b> <br />
+        </div>
+      </div>
+    <% end %>
   <% else %>
     <div class="user-avatar">
       <%= image_tag @repo_user.avatar.url %>
@@ -171,7 +194,6 @@
         </div>
       </div>
   </div>
-
 
   <section id="user-show-links">
     <% active = params[:show].eql?("makes") ? ["#eee", "#5f9ea0", "#eee"] : params[:show].eql?("projects_assigned") ? ["#eee", "#eee", "#5f9ea0"] :  ["#5f9ea0", "#eee", "#eee"]%>

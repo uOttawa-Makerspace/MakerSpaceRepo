@@ -10,6 +10,12 @@ section#user-show{
 	background-color: #fff;
 	padding-bottom: 3rem;
 
+    div.skills{
+      margin: 25rem 0;
+      @include span-columns(4.5,5);
+      position: absolute;
+    }
+
 	div.user-avatar{
 		margin: 3rem 0;
 		@include span-columns(4.5,5);

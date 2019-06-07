@@ -36,7 +36,7 @@ en:
       request_2: "2) Click in the button 'Request to be Volunteer'."
       request_3: "3) Wait until your request is accepted."
       find_more: "Find More About it"
-      one_click: "Request it in one click:"
+      few_clicks: "Request it in a few clicks."
       button: "Request to be Volunteer"
       placeholder_text: "Your interests and important certifications that it's not listed in your MakeRepo profile (e.g. Solidworks, Inkscape, Cura, ...)"
     sign_up: "Sign Up"
