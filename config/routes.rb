@@ -202,7 +202,11 @@ Rails.application.routes.draw do
   end
 
 
-  resources :volunteers, only: [:index]
+  resources :volunteers, only: [:index] do
+    collection do
+      get :emails
+    end
+  end
 
   resources :volunteer_tasks
 

@@ -6,6 +6,10 @@ class VolunteersController < ApplicationController
     @user = current_user
   end
 
+  def emails
+
+  end
+
   private
 
   def grant_access
