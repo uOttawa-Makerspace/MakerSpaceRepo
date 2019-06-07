@@ -72,7 +72,7 @@ class VolunteerHoursController < VolunteersController
     @total_volunteer_hours_requested = VolunteerHour.sum(:total_time)
     @total_volunteer_hour_approved = total_hours_by_approval[true]
     @total_volunteer_hour_rejected = total_hours_by_approval[false]
-    @users_with_volunteer_hours = User.joins(:volunteer_hours).distinct.paginate(:page => params[:page], :per_page => 15)
+    @users_with_volunteer_hours = User.where(role: "volunteer").joins(:volunteer_hours).distinct.paginate(:page => params[:page], :per_page => 15)
   end
 
   private
