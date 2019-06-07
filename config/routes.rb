@@ -81,6 +81,8 @@ Rails.application.routes.draw do
     get 'admin'
   end
 
+  resources :skills, only: [:edit, :update]
+
   get 'help', to: 'help#main'
   put 'send_email', to:'help#send_email'
 
@@ -131,7 +133,6 @@ Rails.application.routes.draw do
         delete 'delete_project_proposal'
         delete 'delete_user'
         get 'manage_roles'
-
       end
     end
 

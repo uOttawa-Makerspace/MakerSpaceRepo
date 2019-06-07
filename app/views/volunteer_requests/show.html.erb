@@ -44,6 +44,56 @@
       <%= @volunteer_request.interests %>
     </div>
 
+    <div class="row">
+      <div class="mx-auto col-12">
+        <p>Space requested:</p>
+        <div class="d-inline-block">
+          <b><%= @volunteer_request.space.name %></b>
+        </div>
+        <br />
+        <br />
+        <p>Skills:</p>
+      </div>
+
+      <div class="mx-auto col-md-4">
+
+        <b>3D Printing</b> <br />
+        <div class="d-inline-block">
+          <%= @volunteer_request.printing %>
+        </div>
+      </div>
+
+      <div class="max-auto col-md-4">
+        <b>Laser Cutting</b> <br />
+        <div class="d-inline-block">
+          <%= @volunteer_request.laser_cutting %>
+        </div>
+      </div>
+
+      <div class="mx-auto col-md-4">
+        <b>Virtual Reality (VR)</b> <br />
+        <div class="d-inline-block">
+          <%= @volunteer_request.virtual_reality %>
+        </div>
+      </div>
+
+      <div class="mx-auto col-md-4">
+        <b>Arduino</b> <br />
+        <div class="d-inline-block">
+          <%= @volunteer_request.arduino %>
+        </div>
+      </div>
+
+      <div class="mx-auto col-md-4">
+        <b>Embroidery</b> <br />
+        <div class="d-inline-block">
+          <%= @volunteer_request.embroidery %>
+        </div>
+      </div>
+
+
+    </div>
+
     <p><b>Status:</b> <%= return_approval(@volunteer_request.approval) %></p>
 
     <div>
