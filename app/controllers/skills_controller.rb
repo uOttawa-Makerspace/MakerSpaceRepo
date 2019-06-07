@@ -1,6 +1,7 @@
 class SkillsController < ApplicationController
   before_action :current_user
   before_action :signed_in?
+  before_action :check_user
   layout "setting"
 
   def edit
@@ -21,6 +22,13 @@ class SkillsController < ApplicationController
 
   def skill_params
     params.require(:skill).permit(:printing, :laser_cutting, :arduino, :virtual_reality, :embroidery)
+  end
+
+  def check_user
+    unless current_user.eql?(Skill.find(params[:id]).user) || current_user.admin?
+      flash[:alert] = "You are not allowed in this section"
+      redirect_to root_path
+    end
   end
 
 end
