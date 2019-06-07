@@ -126,7 +126,7 @@
                 <br />
 
 
-                <% state = true if VolunteerRequest.find_by_user_id(current_user.id) %>
+                <% state = true if VolunteerRequest.find_by(user_id: current_user.id) %>
                 <%= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg nextInfo", disabled: state %>
               </div>
 
