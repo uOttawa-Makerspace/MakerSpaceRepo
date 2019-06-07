@@ -7,7 +7,7 @@ class VolunteersController < ApplicationController
   end
 
   def emails
-
+    @emails = User.where(:role => "volunteer").pluck(:email)
   end
 
   private
