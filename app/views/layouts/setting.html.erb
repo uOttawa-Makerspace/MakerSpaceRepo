@@ -13,6 +13,12 @@
 </head>
 <body>
 	<%= render 'layouts/header' %>
+  <% if flash[:notice] %>
+  <div id="notice"><%= flash[:notice] %></div>
+  <% end %>
+  <% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+  <% end %>
 	<section id="setting">
 		<div class="setting-grid">
 			<div class="setting-side-panel">
