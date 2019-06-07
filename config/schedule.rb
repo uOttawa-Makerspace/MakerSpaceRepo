@@ -50,6 +50,10 @@ every :monday, :at => '7am' do
   runner "MsrMailer.send_training_report('hanis@uottawa.ca', 'bruno.mrlima@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca', 'makerspace@uottawa.ca', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report).deliver_now"
 end
 
+every :sunday, :at => '1am' do
+  rake "active_volunteers:check_volunteers_status"
+end
+
 # Checklist Reminder
 
 # emails list:
