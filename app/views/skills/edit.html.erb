@@ -87,6 +87,22 @@
           <br />
         </div>
       </div>
+
+      <div class="mx-auto col-md-4 col-6">
+        <b>Soldering</b> <br />
+        <div class="d-inline-block text-left">
+          <%= f.radio_button :soldering, 'Beginner', :style => 'display:inline' %>
+          <%= f.label :soldering, 'Beginner', :style => 'display:inline' %>
+          <br />
+          <%= f.radio_button :soldering, 'Intermediate', :style => 'display:inline' %>
+          <%= f.label :soldering, 'Intermediate', :style => 'display:inline' %>
+          <br />
+          <%= f.radio_button :soldering, 'Advanced', :style => 'display:inline' %>
+          <%= f.label :soldering, 'Advanced', :style => 'display:inline' %>
+          <br />
+          <br />
+        </div>
+      </div>
     </div>
       <div class="col-md-4 mx-auto col-6">
         <%= f.submit "Update Skills", class: "btn btn-success btn-lg" %>
