@@ -45,7 +45,7 @@
                     <p>Please inform us your level of expertise</p>
                   </div>
 
-                  <div class="mx-auto col-lg-2 col-md-4">
+                  <div class="mx-auto col-md-4">
 
                     <b>3D Printing</b> <br />
                     <div class="d-inline-block text-left">
@@ -61,7 +61,7 @@
                     </div>
                   </div>
 
-                  <div class="max-auto col-lg-2 col-md-4">
+                  <div class="max-auto col-md-4">
                     <b>Laser Cutting</b> <br />
                     <div class="d-inline-block text-left">
                       <%= f.radio_button :laser_cutting, 'Beginner', :style => 'display:inline' %>
@@ -76,7 +76,7 @@
                     </div>
                   </div>
 
-                  <div class="mx-auto col-lg-2 col-md-4">
+                  <div class="mx-auto col-md-4">
                     <b>Virtual Reality (VR)</b> <br />
                     <div class="d-inline-block text-left">
                       <%= f.radio_button :virtual_reality, 'Beginner', :style => 'display:inline' %>
@@ -91,7 +91,7 @@
                     </div>
                   </div>
 
-                  <div class="mx-auto col-lg-2 col-md-4">
+                  <div class="mx-auto col-md-4">
                     <b>Arduino</b> <br />
                     <div class="d-inline-block text-left">
                       <%= f.radio_button :arduino, 'Beginner', :style => 'display:inline' %>
@@ -106,7 +106,7 @@
                     </div>
                   </div>
 
-                  <div class="mx-auto col-lg-2 col-md-4">
+                  <div class="mx-auto col-md-4">
                     <b>Embroidery</b> <br />
                     <div class="d-inline-block text-left">
                       <%= f.radio_button :embroidery, 'Beginner', :style => 'display:inline' %>
@@ -117,6 +117,25 @@
                       <br />
                       <%= f.radio_button :embroidery, 'Advanced', :style => 'display:inline' %>
                       <%= f.label :embroidery, 'Advanced', :style => 'display:inline' %>
+                      <br />
+                    </div>
+                  </div>
+
+                  <div class="mx-auto col-md-4">
+                    <b>Soldering</b> <br />
+                    <div class="d-inline-block text-left">
+                      <%= f.radio_button :soldering, 'Beginner', :style => 'display:inline' %>
+                      <%= f.label :soldering, 'Beginner', :style => 'display:inline' %>
+                      <br />
+                      <%= f.radio_button :soldering, 'Intermediate', :style => 'display:inline' %>
+                      <%= f.label :soldering, 'Intermediate', :style => 'display:inline' %>
+                      <br />
+                      <%= f.radio_button :soldering, 'Advanced', :style => 'display:inline' %>
+                      <%= f.label :soldering, 'Advanced', :style => 'display:inline' %>
+                      <br />
+                      <%= f.radio_button :soldering, 'No Experience', :style => 'display:inline' %>
+                      <%= f.label :soldering, 'No Experience', :style => 'display:inline' %>
+                      <br />
                       <br />
                     </div>
                   </div>
