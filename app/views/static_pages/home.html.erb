@@ -35,7 +35,7 @@
                   <div class="mx-auto col-12">
                     <p>In what space are you interested to become a volunteer?</p>
                     <div class="d-inline-block text-left">
-                      <%= f.radio_button :space_id, Space.find_by_name("Makerspace").id, :style => 'display:inline' %>
+                      <%= f.radio_button :space_id, Space.find_by_name("Makerspace").id, :style => 'display:inline', checked: true %>
                       <%= f.label :space_id, 'Makerspace', :style => 'display:inline' %>
                       <br />
                       <%= f.radio_button :space_id, Space.find_by_name("Brunsfield Centre").id, :style => 'display:inline' %>
@@ -58,6 +58,9 @@
                       <%= f.radio_button :printing, 'Advanced', :style => 'display:inline' %>
                       <%= f.label :printing, 'Advanced', :style => 'display:inline' %>
                       <br />
+                      <%= f.radio_button :printing, 'No Experience', :style => 'display:inline' %>
+                      <%= f.label :printing, 'No Experience', :style => 'display:inline' %>
+                      <br />
                     </div>
                   </div>
 
@@ -72,6 +75,9 @@
                       <br />
                       <%= f.radio_button :laser_cutting, 'Advanced', :style => 'display:inline' %>
                       <%= f.label :laser_cutting, 'Advanced', :style => 'display:inline' %>
+                      <br />
+                      <%= f.radio_button :laser_cutting, 'No Experience', :style => 'display:inline' %>
+                      <%= f.label :laser_cutting, 'No Experience', :style => 'display:inline' %>
                       <br />
                     </div>
                   </div>
@@ -88,6 +94,9 @@
                       <%= f.radio_button :virtual_reality, 'Advanced', :style => 'display:inline' %>
                       <%= f.label :virtual_reality, 'Advanced', :style => 'display:inline' %>
                       <br />
+                      <%= f.radio_button :virtual_reality, 'No Experience', :style => 'display:inline' %>
+                      <%= f.label :virtual_reality, 'No Experience', :style => 'display:inline' %>
+                      <br />
                     </div>
                   </div>
 
@@ -103,6 +112,9 @@
                       <%= f.radio_button :arduino, 'Advanced', :style => 'display:inline' %>
                       <%= f.label :arduino, 'Advanced', :style => 'display:inline' %>
                       <br />
+                      <%= f.radio_button :arduino, 'No Experience', :style => 'display:inline' %>
+                      <%= f.label :arduino, 'No Experience', :style => 'display:inline' %>
+                      <br />
                     </div>
                   </div>
 
@@ -117,6 +129,9 @@
                       <br />
                       <%= f.radio_button :embroidery, 'Advanced', :style => 'display:inline' %>
                       <%= f.label :embroidery, 'Advanced', :style => 'display:inline' %>
+                      <br />
+                      <%= f.radio_button :embroidery, 'No Experience', :style => 'display:inline' %>
+                      <%= f.label :embroidery, 'No Experience', :style => 'display:inline' %>
                       <br />
                     </div>
                   </div>
