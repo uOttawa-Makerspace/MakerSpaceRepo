@@ -46,9 +46,9 @@
 
     <div class="row">
       <div class="mx-auto col-12">
-        <p>Space requested:</p>
+        <p><b>Space requested:</b></p>
         <div class="d-inline-block">
-          <b><%= @volunteer_request.space.name %></b>
+          <%= @volunteer_request.space.name %>
         </div>
         <br />
         <br />
@@ -61,6 +61,8 @@
         <div class="d-inline-block">
           <%= @volunteer_request.printing %>
         </div>
+        <br />
+        <br />
       </div>
 
       <div class="max-auto col-md-4">
@@ -68,6 +70,8 @@
         <div class="d-inline-block">
           <%= @volunteer_request.laser_cutting %>
         </div>
+        <br />
+        <br />
       </div>
 
       <div class="mx-auto col-md-4">
@@ -75,6 +79,8 @@
         <div class="d-inline-block">
           <%= @volunteer_request.virtual_reality %>
         </div>
+        <br />
+        <br />
       </div>
 
       <div class="mx-auto col-md-4">
@@ -82,6 +88,8 @@
         <div class="d-inline-block">
           <%= @volunteer_request.arduino %>
         </div>
+        <br />
+        <br />
       </div>
 
       <div class="mx-auto col-md-4">
@@ -89,6 +97,17 @@
         <div class="d-inline-block">
           <%= @volunteer_request.embroidery %>
         </div>
+        <br />
+        <br />
+      </div>
+
+      <div class="mx-auto col-md-4">
+        <b>Soldering</b> <br />
+        <div class="d-inline-block">
+          <%= @volunteer_request.soldering %>
+        </div>
+        <br />
+        <br />
       </div>
 
 
