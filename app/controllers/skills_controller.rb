@@ -21,7 +21,7 @@ class SkillsController < ApplicationController
   private
 
   def skill_params
-    params.require(:skill).permit(:printing, :laser_cutting, :arduino, :virtual_reality, :embroidery)
+    params.require(:skill).permit(:printing, :laser_cutting, :arduino, :virtual_reality, :embroidery, :soldering)
   end
 
   def check_user
