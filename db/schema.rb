@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190610211853) do
+ActiveRecord::Schema.define(version: 20190610212058) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -334,6 +334,7 @@ ActiveRecord::Schema.define(version: 20190610211853) do
     t.string   "virtual_reality", default: "No Experience"
     t.string   "arduino",         default: "No Experience"
     t.string   "embroidery",      default: "No Experience"
+    t.string   "soldering",       default: "No Experience"
   end
 
   create_table "volunteer_tasks", force: :cascade do |t|
