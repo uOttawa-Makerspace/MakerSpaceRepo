@@ -31,7 +31,8 @@ class VolunteerRequestsController < ApplicationController
         user.update_attributes(:role => "volunteer")
         Skill.create(:user_id => user.id, :printing => volunteer_request.printing,
                      :laser_cutting => volunteer_request.laser_cutting, :virtual_reality => volunteer_request.virtual_reality,
-                     :embroidery => volunteer_request.embroidery, :arduino => volunteer_request.arduino)
+                     :embroidery => volunteer_request.embroidery, :arduino => volunteer_request.arduino,
+                     :soldering => volunteer_request.soldering)
       else
         user.update_attributes(:role => "regular_user")
       end
@@ -52,6 +53,6 @@ class VolunteerRequestsController < ApplicationController
   end
 
   def request_params
-    params.require(:volunteer_request).permit(:interests, :space_id, :printing, :arduino, :laser_cutting, :embroidery, :virtual_reality)
+    params.require(:volunteer_request).permit(:interests, :space_id, :printing, :arduino, :laser_cutting, :embroidery, :virtual_reality, :soldering)
   end
 end
