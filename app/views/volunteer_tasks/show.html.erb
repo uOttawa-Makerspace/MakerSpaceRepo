@@ -9,17 +9,21 @@
       <%= @volunteer_task.description %>
     </div>
 
-    <div>
-      <p>Join this project:</p>
-      <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
-        <div>
-          <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-          <%= f.submit "Join", class: "btn btn-primary" %>
-        </div>
-        <br />
-      <% end %>
-
-    </div>
+    <% if @volunteer_task.volunteer_task_joins.pluck(:user_id).include?(current_user.id) %>
+      <p><b>You've joined this volunteer task.</b></p>
+      <br />
+    <% else %>
+      <div>
+        <p>Join this project:</p>
+        <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
+          <div>
+            <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
+            <%= f.submit "Join", class: "btn btn-primary" %>
+          </div>
+          <br />
+        <% end %>
+      </div>
+    <% end %>
 
     <div class="row">
       <div class="col-6">
