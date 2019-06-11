@@ -13,6 +13,7 @@
       <p>Join this project:</p>
       <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
         <div>
+          <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
           <%= f.submit "Join", class: "btn btn-primary" %>
         </div>
         <br />
