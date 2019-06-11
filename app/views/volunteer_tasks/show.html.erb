@@ -9,6 +9,18 @@
       <%= @volunteer_task.description %>
     </div>
 
+    <div>
+      <p>Join this project:</p>
+      <%= form_for @new_volunteer_join, url: {controller: volunteer_task_joins, action: create} do |f| %>
+        <div class="form-control">
+          <%= f.summit "Join", class: "btn btn-primary" %>
+        </div>
+
+
+      <% end %>
+
+    </div>
+
     <div class="row">
       <div class="col-6">
         <h5>Responsable Staff:</h5>
