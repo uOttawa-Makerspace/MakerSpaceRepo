@@ -210,6 +210,8 @@ Rails.application.routes.draw do
 
   resources :volunteer_tasks
 
+  resources :volunteer_task_joins, only: [:create]
+
   resources :volunteer_requests, only: [:index, :create, :show] do
     collection do
       put :update_approval

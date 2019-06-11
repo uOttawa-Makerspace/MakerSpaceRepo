@@ -11,12 +11,11 @@
 
     <div>
       <p>Join this project:</p>
-      <%= form_for @new_volunteer_join, url: {controller: volunteer_task_joins, action: create} do |f| %>
-        <div class="form-control">
-          <%= f.summit "Join", class: "btn btn-primary" %>
+      <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
+        <div>
+          <%= f.submit "Join", class: "btn btn-primary" %>
         </div>
-
-
+        <br />
       <% end %>
 
     </div>
