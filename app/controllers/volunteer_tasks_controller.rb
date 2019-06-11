@@ -23,6 +23,7 @@ class VolunteerTasksController < ApplicationController
 
   def show
     @volunteer_task = VolunteerTask.find(params[:id])
+    @new_volunteer_join = VolunteerTaskJoin.new
   end
 
   def edit
