@@ -20,6 +20,10 @@ class VolunteerTasksController < ApplicationController
     end
   end
 
+  def show
+    @volunteer_request = VolunteerTask.find(params[:id])
+  end
+
   def edit
     @volunteer_task = VolunteerTask.find(params[:id])
   end
