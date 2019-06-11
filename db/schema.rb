@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190611180342) do
+ActiveRecord::Schema.define(version: 20190611201137) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -340,7 +340,7 @@ ActiveRecord::Schema.define(version: 20190611180342) do
   create_table "volunteer_task_joins", force: :cascade do |t|
     t.integer  "user_id"
     t.integer  "volunteer_task_id"
-    t.string   "type",              default: "Volunteer"
+    t.string   "user_type",         default: "Volunteer"
     t.datetime "created_at",                              null: false
     t.datetime "updated_at",                              null: false
   end
