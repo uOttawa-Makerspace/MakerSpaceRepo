@@ -48,6 +48,7 @@
 
               <td class="action-cell">
                 <%=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" %>
+                <%=link_to "Show", volunteer_task_path(vt.id), class:"btn-block show-button mt-0 mb-1" %>
                 <%=link_to "Delete", { controller: :volunteer_tasks ,action: :destroy, id: vt.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer task?' }, class:"btn-block destroy-button mb-1 mr-0"%>
               </td>
 
