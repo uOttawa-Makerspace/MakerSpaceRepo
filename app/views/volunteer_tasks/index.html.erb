@@ -15,8 +15,10 @@
             <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Title <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
             <th>Description<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Created by <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Active<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Active<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <% if current_user.staff? %>
+              <th>Created by <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <% end %>
             <th class="action-header">Action</th>
           </tr>
 
@@ -38,13 +40,15 @@
                 <%= vt.description %>
               </td>
 
-              <td class = "username">
-                <%= link_to vt.user.name.capitalize, user_path(vt.user.username) %>
-              </td>
-
               <td>
                 <%= return_active(vt.active) %>
               </td>
+
+              <% if current_user.staff? %>
+                <td class = "username">
+                  <%= link_to vt.user.name.capitalize, user_path(vt.user.username) %>
+                </td>
+              <% end %>
 
               <td class="action-cell">
                 <%=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" if current_user.staff?%>
