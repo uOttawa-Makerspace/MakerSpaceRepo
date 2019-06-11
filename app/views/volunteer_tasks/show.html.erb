@@ -30,6 +30,7 @@
         <h5>Responsable Staff:</h5>
         <% @volunteer_task.volunteer_task_joins.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?", "Staff", "Admin").find_each do |staff_join| %>
           <%= link_to staff_join.user.name.capitalize, user_path(staff_join.user.username), class: "username" %>
+          <br />
         <% end %>
       </div>
 
@@ -37,6 +38,7 @@
         <h5>Responsable Volunteers:</h5>
         <% @volunteer_task.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_join| %>
           <%= link_to volunteer_join.user.name.capitalize, user_path(volunteer_join.user.username), class: "username" %>
+          <br />
         <% end %>
       </div>
     </div>
