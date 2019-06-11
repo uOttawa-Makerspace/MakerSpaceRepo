@@ -1,7 +1,7 @@
 class VolunteerTasksController < ApplicationController
   layout 'volunteer'
-  before_action :grant_access, except: [:show]
-  before_action :volunteer_access, only: [:show]
+  before_action :grant_access, except: [:show, :index]
+  before_action :volunteer_access, only: [:show, :index]
 
   def index
     @volunteer_tasks = VolunteerTask.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
