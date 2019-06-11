@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190610212058) do
+ActiveRecord::Schema.define(version: 20190611180342) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -335,6 +335,14 @@ ActiveRecord::Schema.define(version: 20190610212058) do
     t.string   "arduino",         default: "No Experience"
     t.string   "embroidery",      default: "No Experience"
     t.string   "soldering",       default: "No Experience"
+  end
+
+  create_table "volunteer_task_joins", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "volunteer_task_id"
+    t.string   "type",              default: "Volunteer"
+    t.datetime "created_at",                              null: false
+    t.datetime "updated_at",                              null: false
   end
 
   create_table "volunteer_tasks", force: :cascade do |t|
