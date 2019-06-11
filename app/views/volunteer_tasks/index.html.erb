@@ -14,10 +14,9 @@
           <tr>
             <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Title <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Description<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Active<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Active<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
-              <th>Created by <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Created by <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
             <% end %>
             <th class="action-header">Action</th>
           </tr>
@@ -34,10 +33,6 @@
 
               <td>
                 <%= vt.title %>
-              </td>
-
-              <td>
-                <%= vt.description %>
               </td>
 
               <td>
