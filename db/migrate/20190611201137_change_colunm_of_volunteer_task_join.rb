@@ -1,9 +1,9 @@
 class ChangeColunmOfVolunteerTaskJoin < ActiveRecord::Migration
-  def up
-    change_column :volunteer_task_joins, :user_type, :string
+  def self.up
+    rename_column :volunteer_task_joins, :type, :user_type
   end
 
-  def down
-    change_column :volunteer_task_joins, :type, :string
+  def self.down
+
   end
 end
