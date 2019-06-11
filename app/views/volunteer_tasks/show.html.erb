@@ -24,14 +24,14 @@
     <div class="row">
       <div class="col-6">
         <h5>Responsable Staff:</h5>
-        <% @volunteer_task.volunteer_task_joins.where(type: "Staff").find_each do |staff_join| %>
+        <% @volunteer_task.volunteer_task_joins.where(user_type: "Staff").find_each do |staff_join| %>
             <%= staff_join.user.name.capitalize %>
         <% end %>
       </div>
 
       <div class="col-6">
         <h5>Responsable Volunteers:</h5>
-        <% @volunteer_task.volunteer_task_joins.where(type: "Volunteer").find_each do |volunteer_join| %>
+        <% @volunteer_task.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_join| %>
           <%= volunteer_join.user.name.capitalize %>
         <% end %>
       </div>
