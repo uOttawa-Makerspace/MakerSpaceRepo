@@ -1,4 +1,4 @@
-class CreateVolunteerTaskJoin < ActiveRecord::Migration
+class CreateVolunteerTaskJoins < ActiveRecord::Migration
   def change
     create_table :volunteer_task_joins do |t|
       t.integer :user_id
