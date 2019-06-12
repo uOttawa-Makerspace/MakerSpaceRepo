@@ -26,6 +26,22 @@
                   </div>
                 </div>
               </div>
+
+              <div class="mx-auto col-md-12 text-center">
+                <b>Status:</b> <br />
+                <div class="d-inline-block text-left">
+                  <%= f.radio_button :status, 'open', :style => 'display:inline' %>
+                  <%= f.label :status, 'Open', :style => 'display:inline' %>
+                  <br />
+                  <%= f.radio_button :status, 'in progress', :style => 'display:inline' %>
+                  <%= f.label :status, 'In Progress', :style => 'display:inline' %>
+                  <br />
+                  <%= f.radio_button :status, 'completed', :style => 'display:inline' %>
+                  <%= f.label :status, 'Completed', :style => 'display:inline' %>
+                  <br />
+                  <br />
+                </div>
+              </div>
               <div class="col-lg-12 text-center">
                 <%= f.submit "Create task", class: "btn btn-secondary btn-xl text-uppercase" %>
               </div>
