@@ -58,5 +58,21 @@
         <% end %>
       </div>
     </div>
+
+    <hr>
+
+    <div class="row">
+      <div class="col-12">
+        <% if !@volunteer_task.require_trainings.blank? %>
+          <p>Certifications needed:</p>
+          <% @volunteer_task.require_trainings.find_each do |rt| %>
+            <%= rt.training.name.capitalize %>
+          <% end  %>
+        <% else %>
+          <p>No certification needed.</p>
+        <% end %>
+      </div>
+
+    </div>
   </div>
 </section>
