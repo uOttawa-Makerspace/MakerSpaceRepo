@@ -12,6 +12,9 @@
     <% if @volunteer_task.volunteer_task_joins.pluck(:user_id).include?(current_user.id) %>
       <p><b>You've joined this volunteer task.</b></p>
       <br />
+    <% elsif @volunteer_task.status != "open" %>
+      <p><b>You can't join this task because it is in progress or completed.</b></p>
+      <br />
     <% else %>
       <div>
         <p>Join this project:</p>
