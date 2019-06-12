@@ -64,7 +64,7 @@
     <div class="row">
       <div class="col-12">
         <% if !@volunteer_task.require_trainings.blank? %>
-          <p>Certifications needed:</p>
+          <p><b>Certifications needed:</b></p>
           <% @volunteer_task.require_trainings.find_each do |rt| %>
             <%= rt.training.name.capitalize %>
           <% end  %>
@@ -73,13 +73,23 @@
         <% end %>
       </div>
 
-      <% if current_user.staff? %>
-<!--        <div class="col-12">-->
-          <%#= form_for @new_required_training, url: {controller: "required_trainings", action: "create"} do |f| %>
-            <%# f.submit "Add Certification", class: "btn btn-primary" %>
-          <%# end %>
+      <br />
+      <br />
+      <br />
+      <br />
 
-<!--        </div>-->
+      <% if current_user.staff? %>
+
+        <div class="col-12">
+          <p>Add Required Training to Volunteer Task:</p>
+          <%= form_for @new_required_training, url: {controller: "require_trainings", action: "create"} do |f| %>
+            <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
+            <%= f.select :training_id, @trainings, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+            <br />
+            <br />
+            <%= f.submit "Add Required Certification", class: "btn btn-primary mb-5" %>
+          <% end %>
+        </div>
 
       <% end %>
       </div>
