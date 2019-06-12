@@ -16,7 +16,9 @@
       <p class="text-danger"><b>You can't join this task because it is in progress or completed.</b></p>
       <br />
     <% elsif !@volunteer_task.require_trainings.blank? %>
-      LOGIC WILL COME HERE
+      <% if @user_trainings.include?(@volunteer_task_trainings) %>
+        IS THIS WORKING
+      <% end %>
       <br />
       <br />
 

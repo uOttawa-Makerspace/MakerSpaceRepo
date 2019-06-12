@@ -1,5 +1,6 @@
 class VolunteerTasksController < ApplicationController
   layout 'volunteer'
+  include VolunteerTasksHelper
   before_action :grant_access, except: [:show, :index]
   before_action :volunteer_access, only: [:show, :index]
 
@@ -27,7 +28,8 @@ class VolunteerTasksController < ApplicationController
     @new_required_training = RequireTraining.new
     trainings_already_added = @volunteer_task.require_trainings.pluck(:training_id)
     @trainings = Training.where.not(id: trainings_already_added).pluck(:name, :id)
-    # @user_trainings = current_user.training_sessions.pluck(:training_id).uniq
+    @user_trainings = user_trainings
+    @volunteer_task_trainings = volunteer_task_trainings
   end
 
   def edit
