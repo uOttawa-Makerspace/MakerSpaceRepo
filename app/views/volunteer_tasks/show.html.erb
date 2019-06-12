@@ -28,13 +28,20 @@
       </div>
     <% end %>
 
-    <div class="col-12">
-      <b>Status:</b> <%= @volunteer_task.status.capitalize %>
-      <br />
-      <br />
-    </div>
-
     <div class="row">
+
+      <div class="col-6">
+        <b>Status:</b> <%= @volunteer_task.status.capitalize %>
+        <br />
+        <br />
+      </div>
+
+      <div class="col-6">
+        <b>Space:</b> <%= @volunteer_task.space.name.capitalize %>
+        <br />
+        <br />
+      </div>
+
       <div class="col-6">
         <h5>Responsable Staff:</h5>
         <% @volunteer_task.volunteer_task_joins.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?", "Staff", "Admin").find_each do |staff_join| %>
