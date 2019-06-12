@@ -62,7 +62,7 @@
     <hr>
 
     <div class="row">
-      <div class="col-12">
+      <div class="col-12 mb-5">
         <% if !@volunteer_task.require_trainings.blank? %>
           <p><b>Certifications needed:</b></p>
           <% @volunteer_task.require_trainings.find_each do |rt| %>
@@ -73,11 +73,6 @@
           <p>No certification needed.</p>
         <% end %>
       </div>
-
-      <br />
-      <br />
-      <br />
-      <br />
 
       <% if current_user.staff? %>
 
