@@ -27,7 +27,7 @@
                 </div>
               </div>
 
-              <div class="mx-auto col-md-12 text-center">
+              <div class="mx-auto col-md-6 text-center">
                 <b>Status:</b> <br />
                 <div class="d-inline-block text-left">
                   <%= f.radio_button :status, 'open', :style => 'display:inline' %>
@@ -38,6 +38,19 @@
                   <br />
                   <%= f.radio_button :status, 'completed', :style => 'display:inline' %>
                   <%= f.label :status, 'Completed', :style => 'display:inline' %>
+                  <br />
+                  <br />
+                </div>
+              </div>
+
+              <div class="mx-auto col-md-6 text-center">
+                <b>Space:</b> <br />
+                <div class="d-inline-block text-left">
+                  <%= f.radio_button :space_id, Space.find_by(name: "Makerspace").id, :style => 'display:inline' %>
+                  <%= f.label :space_id, 'Makerspace', :style => 'display:inline' %>
+                  <br />
+                  <%= f.radio_button :space_id, Space.find_by(name: "Brunsfield Centre").id, :style => 'display:inline' %>
+                  <%= f.label :space_id, 'Brunsfield Centre', :style => 'display:inline' %>
                   <br />
                   <br />
                 </div>
