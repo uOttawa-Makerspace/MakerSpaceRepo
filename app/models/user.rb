@@ -17,6 +17,7 @@ class User < ActiveRecord::Base
   has_many :volunteer_tasks
   has_one :skill
   has_many :volunteer_task_joins
+  has_many :training_sessions
 
   validates :name,
     presence: true,

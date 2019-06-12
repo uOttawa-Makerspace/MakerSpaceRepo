@@ -15,6 +15,11 @@
     <% elsif @volunteer_task.status != "open" %>
       <p class="text-danger"><b>You can't join this task because it is in progress or completed.</b></p>
       <br />
+    <% elsif !@volunteer_task.require_trainings.blank? %>
+      LOGIC WILL COME HERE
+      <br />
+      <br />
+
     <% else %>
       <div>
         <p>Join this project:</p>

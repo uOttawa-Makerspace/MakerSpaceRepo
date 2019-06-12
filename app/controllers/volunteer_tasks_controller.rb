@@ -27,6 +27,7 @@ class VolunteerTasksController < ApplicationController
     @new_required_training = RequireTraining.new
     trainings_already_added = @volunteer_task.require_trainings.pluck(:training_id)
     @trainings = Training.where.not(id: trainings_already_added).pluck(:name, :id)
+    # @user_trainings = current_user.training_sessions.pluck(:training_id).uniq
   end
 
   def edit
