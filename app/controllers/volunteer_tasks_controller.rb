@@ -30,6 +30,8 @@ class VolunteerTasksController < ApplicationController
     @trainings = Training.where.not(id: trainings_already_added).pluck(:name, :id)
     @user_trainings = user_trainings
     @volunteer_task_trainings = volunteer_task_trainings
+    puts @user_trainings
+    puts @volunteer_task_trainings
   end
 
   def edit

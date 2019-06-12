@@ -16,15 +16,27 @@
       <p class="text-danger"><b>You can't join this task because it is in progress or completed.</b></p>
       <br />
     <% elsif !@volunteer_task.require_trainings.blank? %>
-      <% if @user_trainings.include?(@volunteer_task_trainings) %>
-        IS THIS WORKING
+      <% if @user_trainings >= @volunteer_task_trainings %>
+        <div>
+          <p>You have all the requirement to join this task.</p>
+          <p>Join this task:</p>
+          <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
+            <div>
+              <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
+              <%= f.submit "Join", class: "btn btn-primary" %>
+            </div>
+            <br />
+          <% end %>
+        </div>
+      <% else %>
+        <p>You don't meet the requirements to join this task. Please complete the proper trainings.</p>
       <% end %>
       <br />
       <br />
 
     <% else %>
       <div>
-        <p>Join this project:</p>
+        <p>Join this task:</p>
         <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
           <div>
             <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
