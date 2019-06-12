@@ -6,6 +6,7 @@ class Space < ActiveRecord::Base
   has_many :training_sessions, through: :trainings
   has_many :certifications, through: :training_sessions
   has_many :volunteer_requests
+  has_many :volunteer_tasks
 
   validates :name,  presence: { message: "A name is required for the space"}, uniqueness: { message: "Space already exists"}
 
