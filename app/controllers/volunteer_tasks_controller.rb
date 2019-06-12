@@ -25,7 +25,8 @@ class VolunteerTasksController < ApplicationController
     @volunteer_task = VolunteerTask.find(params[:id])
     @new_volunteer_join = VolunteerTaskJoin.new
     @new_required_training = RequireTraining.new
-    @trainings = Training.all.pluck(:name, :id)
+    trainings_already_added = @volunteer_task.require_trainings.pluck(:training_id)
+    @trainings = Training.where.not(id: trainings_already_added).pluck(:name, :id)
   end
 
   def edit
