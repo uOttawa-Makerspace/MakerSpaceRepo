@@ -350,9 +350,9 @@ ActiveRecord::Schema.define(version: 20190612160545) do
     t.text     "description", default: ""
     t.integer  "user_id"
     t.boolean  "active",      default: true
-    t.datetime "created_at",                 null: false
-    t.datetime "updated_at",                 null: false
-    t.string   "status"
+    t.datetime "created_at",                   null: false
+    t.datetime "updated_at",                   null: false
+    t.string   "status",      default: "open"
   end
 
   add_foreign_key "categories", "category_options"
