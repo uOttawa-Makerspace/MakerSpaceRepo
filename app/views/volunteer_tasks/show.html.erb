@@ -67,6 +67,7 @@
           <p><b>Certifications needed:</b></p>
           <% @volunteer_task.require_trainings.find_each do |rt| %>
             <%= rt.training.name.capitalize %>
+            <br />
           <% end  %>
         <% else %>
           <p>No certification needed.</p>
