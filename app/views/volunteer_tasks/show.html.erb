@@ -73,6 +73,17 @@
         <% end %>
       </div>
 
+      <% if current_user.staff? %>
+<!--        <div class="col-12">-->
+          <%#= form_for @new_required_training, url: {controller: "required_trainings", action: "create"} do |f| %>
+            <%# f.submit "Add Certification", class: "btn btn-primary" %>
+          <%# end %>
+
+<!--        </div>-->
+
+      <% end %>
+      </div>
+
     </div>
   </div>
 </section>
