@@ -14,11 +14,12 @@
           <tr>
             <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Title <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Active<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
             <th>Staff<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
             <th>Volunteers<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
-              <th>Created by <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Active<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Created by <span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
             <% end %>
             <th class="action-header">Action</th>
           </tr>
@@ -38,7 +39,7 @@
               </td>
 
               <td>
-                <%= return_active(vt.active) %>
+                <%= vt.status.capitalize %>
               </td>
 
               <td class = "username">
@@ -57,6 +58,10 @@
               </td>
 
               <% if current_user.staff? %>
+                <td>
+                  <%= return_active(vt.active) %>
+                </td>
+
                 <td class = "username">
                   <%= link_to vt.user.name.capitalize, user_path(vt.user.username) %>
                 </td>
