@@ -14,7 +14,8 @@ class VolunteersController < ApplicationController
   end
 
   def volunteer_list
-
+    @active_volunteers = User.where(role: "volunteer").joins(:skill).where("skills.active = ?", true)
+    @unactive_volunteers = User.where(role: "volunteer").joins(:skill).where("skills.active = ?", false)
   end
 
   private
