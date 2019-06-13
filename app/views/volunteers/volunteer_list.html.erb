@@ -2,141 +2,159 @@
   <div class="edit-column text-center">
 
     <h2>List of Volunteers</h2>
-    <h5>Total volunteer hours requests pending: <b><%= @total_volunteer_hour_requests %></b></h5>
+    <h5>Total active volunteers: <b><%= @active_volunteers.count%></b></h5>
+    <h5>Total unactive volunteers: <b><%= @unactive_volunteers.count%></b></h5>
 
-    <% if !@new_volunteer_hour_requests.blank? %>
-      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">
+    <% if !@active_volunteers.blank? %>
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
 
       <br />
 
-      <h5>Requests pending</h5>
+      <h5>Active Volunteers</h5>
 
       <div class="table-responsive">
         <table class="table sessions-table">
 
           <tr>
-            <th>User<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Task <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Date of Task<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Hours Worked <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Approve?<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th class="action-header">Action</th>
+            <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Tasks<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Year<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Program<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>3D printing<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Laser Cutting<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Virtual Reality<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Arduino<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Embroidery<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Soldering<span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications<span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
           </tr>
 
           <tbody>
-          <%= will_paginate @new_volunteer_hour_requests %>
-          <% @new_volunteer_hour_requests.each do |vh| %>
+          <% @active_volunteers.each do |v| %>
             <tr>
+              <%= skills = v.skill %>
               <td class = "username">
-                <%= link_to vh.user.name.capitalize, user_path(vh.user.username) %>
+                <%= link_to v.name.capitalize, user_path(v.username) %>
               </td>
-
               <td>
-                <%= vh.created_at.strftime("%m/%e/%Y (%b)") %>
-                <br>
-                <%= vh.created_at.strftime("%I:%M %p").downcase() %>
+                <%= v.email %>
               </td>
-
               <td>
-                <%= vh.volunteer_task.title %>
+                <% v.volunteer_task_joins.each do |vtj| %>
+                  <%= vtj.volunteer_task.title.capitalize %>
+                  <br />
+                <% end %>
               </td>
-
               <td>
-                <%= vh.date_of_task.strftime("%m/%e/%Y (%b)") %>
+                <%= v.year_of_study %>
               </td>
-
               <td>
-                <%= vh.total_time %> Hours
+                <%= v.program %>
               </td>
-
-              <td class="action-cell">
-                <%= link_to (fa_icon('times')), {controller: :volunteer_hours, action: :update_approval, id: vh.id,  approval: false}, method: :put, class: 'x-button' %>
-                <%= link_to (fa_icon('check')), {controller: :volunteer_hours, action: :update_approval, id: vh.id,  approval: true}, method: :put, class: 'check-button' %>
+              <td>
+                <%= skills.printing %>
               </td>
-
-              <td class="action-cell">
-                <%=link_to "Edit", edit_volunteer_hour_path(vh.id), class:"btn-block visit-button mb-1 mt-0" %>
-                <%=link_to "Delete", { action: :destroy, id: vh.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"btn-block destroy-button mb-1 mr-0"%>
+              <td>
+                <%= skills.laser_cutting %>
               </td>
-
+              <td>
+                <%= skills.virtual_reality %>
+              </td>
+              <td>
+                <%= skills.arduino %>
+              </td>
+              <td>
+                <%= skills.embroidery %>
+              </td>
+              <td>
+                <%= skills.soldering %>
+              </td>
+              <td>
+                <% v.certifications.each do |cert| %>
+                  <%= cert.training.capitalize %>
+                  <br />
+                <% end %>
+              </td>
             </tr>
           <% end %>
           </tbody>
         </table>
       </div>
 
-    <% else %>
-      <div class="m-5">
-        🎉Congratz! Your work is done! No more requests today. 🎉
-      </div>
-    <% end %>
+      <% end %>
 
-    <h5>Requests processed</h5>
+    <%# else %>
+<!--      <div class="m-5">-->
+<!--        🎉Congratz! Your work is done! No more requests today. 🎉-->
+<!--      </div>-->
+    <%# end %>
 
-    <% if !@old_volunteer_hour_requests.blank? %>
+<!--    <h5>Requests processed</h5>-->
 
-      <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">
+    <%# if !@old_volunteer_hour_requests.blank? %>
 
-      <br />
+<!--      <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">-->
 
-      <div class="table-responsive">
-        <table class="table sessions-table-2">
+<!--      <br />-->
 
-          <tr>
-            <th>User<span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Task <span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Date of Task<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Hours Worked <span onclick="sortTable('sessions-table-2', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Approved?<span onclick="sortTable('sessions-table-2', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th class="action-header">Action</th>
-          </tr>
+<!--      <div class="table-responsive">-->
+<!--        <table class="table sessions-table-2">-->
 
-          <tbody>
-          <%= will_paginate @old_volunteer_hour_requests %>
-          <% @old_volunteer_hour_requests.each do |vh| %>
-            <tr>
-              <td class = "username">
-                <%= link_to vh.user.name.capitalize, user_path(vh.user.username) %>
-              </td>
+<!--          <tr>-->
+<!--            <th>User<span onclick="sortTable('sessions-table-2', 0)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--            <th>Date Submitted <span onclick="sortTable('sessions-table-2', 1)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--            <th>Task <span onclick="sortTable('sessions-table-2', 2)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--            <th>Date of Task<span onclick="sortTable('sessions-table-2', 3)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--            <th>Hours Worked <span onclick="sortTable('sessions-table-2', 4)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--            <th>Approved?<span onclick="sortTable('sessions-table-2', 5)"><%#=fa_icon('arrow-down')%></span></th>-->
+<!--            <th class="action-header">Action</th>-->
+<!--          </tr>-->
 
-              <td>
-                <%= vh.created_at.strftime("%m/%e/%Y (%b)") %>
-                <br>
-                <%= vh.created_at.strftime("%I:%M %p").downcase() %>
-              </td>
+<!--          <tbody>-->
+          <%#= will_paginate @old_volunteer_hour_requests %>
+          <%# @old_volunteer_hour_requests.each do |vh| %>
+<!--            <tr>-->
+<!--              <td class = "username">-->
+                <%#= link_to vh.user.name.capitalize, user_path(vh.user.username) %>
+<!--              </td>-->
 
-              <td>
-                <%= vh.volunteer_task.title %>
-              </td>
+<!--              <td>-->
+                <%#= vh.created_at.strftime("%m/%e/%Y (%b)") %>
+<!--                <br>-->
+                <%#= vh.created_at.strftime("%I:%M %p").downcase() %>
+<!--              </td>-->
 
-              <td>
-                <%= vh.date_of_task.strftime("%m/%e/%Y (%b)") %>
-              </td>
+<!--              <td>-->
+                <%#= vh.volunteer_task.title %>
+<!--              </td>-->
 
-              <td>
-                <%= vh.total_time %> Hours
-              </td>
+<!--              <td>-->
+                <%#= vh.date_of_task.strftime("%m/%e/%Y (%b)") %>
+<!--              </td>-->
 
-              <td>
-                <%= return_approval(vh.approval) %>
-              </td>
+<!--              <td>-->
+<!--                <%#= vh.total_time %> Hours-->
+<!--              </td>-->
 
-              <td class="action-cell">
-                <%=link_to "Edit", edit_volunteer_hour_path(vh.id), class:"btn-block visit-button mb-1 mt-0" %>
-                <%=link_to "Delete", { action: :destroy, id: vh.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"btn-block destroy-button mb-1 mr-0"%>
-              </td>
+<!--              <td>-->
+                <%#= return_approval(vh.approval) %>
+<!--              </td>-->
 
-            </tr>
-          <% end %>
-          </tbody>
-        </table>
-    <% else %>
-      <div class="m-5">
-        No requests processed yet.
-      </div>
-    <% end %>
-    </div>
+<!--              <td class="action-cell">-->
+                <%#=link_to "Edit", edit_volunteer_hour_path(vh.id), class:"btn-block visit-button mb-1 mt-0" %>
+                <%#=link_to "Delete", { action: :destroy, id: vh.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this volunteer hour?' }, class:"btn-block destroy-button mb-1 mr-0"%>
+<!--              </td>-->
+
+<!--            </tr>-->
+          <%# end %>
+<!--          </tbody>-->
+<!--        </table>-->
+    <%# else %>
+<!--      <div class="m-5">-->
+<!--        No requests processed yet.-->
+<!--      </div>-->
+    <%# end %>
+<!--    </div>-->
   </div>
 </section>
