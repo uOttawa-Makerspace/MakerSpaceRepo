@@ -13,6 +13,10 @@ class VolunteersController < ApplicationController
     @unactive_emails = User.where(:role => "volunteer").joins(:skill).where("skills.active =?", false).pluck(:email)
   end
 
+  def volunteer_list
+
+  end
+
   private
 
   def grant_access
