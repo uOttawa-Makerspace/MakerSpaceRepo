@@ -22,3 +22,10 @@ $(document).on('ready page:load', function () {
         windowPadding: [80, 0, 0, 0]
     });
 });
+
+$(document).ready(function(){
+
+    var clipboard = new Clipboard('.clipboard-btn');
+    console.log(clipboard);
+
+});
