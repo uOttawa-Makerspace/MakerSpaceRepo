@@ -11,8 +11,8 @@ module VolunteerTasksHelper
 
   def user_trainings
     user_trainings = Set.new
-    current_user.training_sessions.find_each do |ts|
-      user_trainings << ts.training_id
+    current_user.certifications.find_each do |cert|
+      user_trainings << cert.training_session.training_id
     end
     return user_trainings
   end
