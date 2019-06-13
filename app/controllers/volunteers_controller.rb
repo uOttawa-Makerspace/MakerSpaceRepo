@@ -3,6 +3,7 @@ class VolunteersController < ApplicationController
   before_action :current_user
   before_action :grant_access
   before_action :check_skills
+  before_action :grant_access_list, only: [:volunteer_list]
   def index
     @user = current_user
   end
@@ -30,6 +31,13 @@ class VolunteersController < ApplicationController
   def check_skills
     unless current_user.skill
       Skill.create(:user_id => current_user.id)
+    end
+  end
+
+  def grant_access_list
+    unless current_user.admin? || current_user.staff?
+      redirect_to root_path
+      flash[:alert] = "You cannot access this area."
     end
   end
 end
