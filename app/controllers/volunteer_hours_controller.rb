@@ -11,7 +11,8 @@ class VolunteerHoursController < VolunteersController
 
   def new
     @new_volunteer_hour = VolunteerHour.new
-    @volunteer_tasks = VolunteerTask.active.order(created_at: :desc).pluck(:title, :id)
+    @volunteer_tasks = VolunteerTask.joins(:volunteer_task_joins).where("volunteer_task_joins.user_id = ?", current_user.id).
+        order(created_at: :desc).pluck(:title, :id)
   end
 
   def create

@@ -26,14 +26,42 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-12">
+              <div class="col-md-4">
                 <div class="form-group text-center">
                   <%= f.label :active, "Volunteer task active?" %>
                   <br />
                   <%= f.radio_button :active, true %>
                   <%= label :active, 'Yes' %>
+                  <br />
                   <%= f.radio_button :active, false %>
                   <%= label :active, 'No' %>
+                </div>
+              </div>
+              <div class="mx-auto col-md-4 text-center">
+                Status: <br />
+                <div class="d-inline-block text-left">
+                  <%= f.radio_button :status, 'open', :style => 'display:inline' %>
+                  <%= f.label :status, 'Open', :style => 'display:inline' %>
+                  <br />
+                  <%= f.radio_button :status, 'in progress', :style => 'display:inline' %>
+                  <%= f.label :status, 'In Progress', :style => 'display:inline' %>
+                  <br />
+                  <%= f.radio_button :status, 'completed', :style => 'display:inline' %>
+                  <%= f.label :status, 'Completed', :style => 'display:inline' %>
+                  <br />
+                  <br />
+                </div>
+              </div>
+              <div class="mx-auto col-md-4 text-center">
+                Space: <br />
+                <div class="d-inline-block text-left">
+                  <%= f.radio_button :space_id, Space.find_by(name: "Makerspace").id, :style => 'display:inline' %>
+                  <%= f.label :space_id, 'Makerspace', :style => 'display:inline' %>
+                  <br />
+                  <%= f.radio_button :space_id, Space.find_by(name: "Brunsfield Centre").id, :style => 'display:inline' %>
+                  <%= f.label :space_id, 'Brunsfield Centre', :style => 'display:inline' %>
+                  <br />
+                  <br />
                 </div>
               </div>
               <div class="col-lg-12 text-center">

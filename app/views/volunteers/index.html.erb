@@ -9,6 +9,8 @@
         <br /> <br />
         <%= link_to 'See your hours', volunteer_hours_path, class: "staff-button"%>
         <br /> <br />
+        <%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "staff-button"%>
+        <br /> <br />
         <%= link_to 'Update Skills', edit_skill_path(current_user.skill.id), class: "staff-button"%>
         <br /> <br />
       <% else %>
@@ -18,6 +20,7 @@
         <%= link_to 'Volunteer Hour Requests', volunteer_hour_requests_volunteer_hours_path, class: "staff-button" %><br></br>
         <%= link_to 'Volunteer Hour Per User', volunteer_hour_per_user_volunteer_hours_path, class: "staff-button" %><br></br>
         <%= link_to 'List of Emails', emails_volunteers_path, class: "staff-button" %><br></br>
+        <%= link_to 'List of Volunteers', volunteer_list_volunteers_path, class: "staff-button" %><br></br>
       <% end %>
     </div>
 

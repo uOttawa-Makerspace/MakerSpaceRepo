@@ -6,24 +6,42 @@
     <div class="container">
       <div class="row">
         <div class="col-md-4">
-          <h5>All Volunteer's Emails (<%= @all_emails.count %>)</h5>
-          <% @all_emails.each do |email| %>
-            <%= email %> <br />
-          <% end %>
+        <h5>All Volunteer's Emails (<%= @all_emails.count %>)</h5>
+          <div id="email-1">
+            <% @all_emails.each do |email| %>
+              <%= email %> <br />
+            <% end %>
+          </div>
+          <br />
+          <button class="clipboard-btn btn btn-primary" data-clipboard-action="copy" data-clipboard-target="#email-1">
+            Copy All Emails
+          </button>
         </div>
 
         <div class="col-md-4">
           <h5>Active Volunteer's Emails (<%= @active_emails.count %>)</h5>
-          <% @active_emails.each do |email| %>
-            <%= email %> <br />
-          <% end %>
+          <div id="email-2">
+            <% @active_emails.each do |email| %>
+              <%= email %> <br />
+            <% end %>
+          </div>
+          <br />
+          <button class="clipboard-btn btn btn-primary" data-clipboard-action="copy" data-clipboard-target="#email-2">
+            Copy Active Emails
+          </button>
         </div>
 
         <div class="col-md-4">
           <h5>Unactive Volunteer's Emails (<%= @unactive_emails.count %>)</h5>
-          <% @unactive_emails.each do |email| %>
-            <%= email %> <br />
-          <% end %>
+          <div id="email-3">
+            <% @unactive_emails.each do |email| %>
+              <%= email %> <br />
+            <% end %>
+          </div>
+          <br />
+          <button class="clipboard-btn btn btn-primary" data-clipboard-action="copy" data-clipboard-target="#email-3">
+            Copy Unactive Emails
+          </button>
         </div>
       </div>
     </div>

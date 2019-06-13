@@ -33,6 +33,7 @@ gem 'whenever', require: false
 gem 'youtube_id'
 gem 'pry-rails', :group => :development
 gem 'saml_idp', '~> 0.8.0'
+gem 'clipboard-rails'
 
 
 group :development, :test do

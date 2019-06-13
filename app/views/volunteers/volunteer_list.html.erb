@@ -1,0 +1,174 @@
+<section class="page-contents">
+  <div class="edit-column text-center">
+
+    <h2>List of Volunteers</h2>
+    <h5>Total active volunteers: <b><%= @active_volunteers.count%></b></h5>
+    <h5>Total unactive volunteers: <b><%= @unactive_volunteers.count%></b></h5>
+
+    <% if !@active_volunteers.blank? %>
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
+
+      <br />
+
+      <h5>Active Volunteers</h5>
+
+      <div class="table-responsive">
+        <table class="table sessions-table">
+
+          <tr>
+            <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Tasks<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Year<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Program<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>3D printing<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Laser Cutting<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Virtual Reality<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Arduino<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Embroidery<span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Soldering<span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications<span onclick="sortTable('sessions-table', 11)"><%=fa_icon('arrow-down')%></span></th>
+          </tr>
+
+          <tbody>
+          <% @active_volunteers.each do |v| %>
+            <tr>
+              <% skills = v.skill %>
+              <td class = "username">
+                <%= link_to v.name.capitalize, user_path(v.username) %>
+              </td>
+              <td>
+                <%= v.email %>
+              </td>
+              <td>
+                <% v.volunteer_task_joins.each do |vtj| %>
+                  <%= vtj.volunteer_task.title.capitalize %>
+                  <br />
+                <% end %>
+              </td>
+              <td>
+                <%= v.year_of_study %>
+              </td>
+              <td>
+                <%= v.program %>
+              </td>
+              <td>
+                <%= skills.printing %>
+              </td>
+              <td>
+                <%= skills.laser_cutting %>
+              </td>
+              <td>
+                <%= skills.virtual_reality %>
+              </td>
+              <td>
+                <%= skills.arduino %>
+              </td>
+              <td>
+                <%= skills.embroidery %>
+              </td>
+              <td>
+                <%= skills.soldering %>
+              </td>
+              <td>
+                <% v.certifications.each do |cert| %>
+                  <%= cert.training.capitalize %>
+                  <br />
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+
+    <% else %>
+      <div class="m-5">
+        There's no active volunteers.
+      </div>
+    <% end %>
+
+    <% if !@unactive_volunteers.blank? %>
+      <input type="text" id="query-2" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
+
+      <br />
+
+      <h5>Unactive Volunteers</h5>
+
+      <div class="table-responsive">
+        <table class="table sessions-table-2">
+
+          <tr>
+            <th>Name<span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Email<span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Tasks<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Year<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Program<span onclick="sortTable('sessions-table-2', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>3D printing<span onclick="sortTable('sessions-table-2', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Laser Cutting<span onclick="sortTable('sessions-table-2', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Virtual Reality<span onclick="sortTable('sessions-table-2', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Arduino<span onclick="sortTable('sessions-table-2', 8)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Embroidery<span onclick="sortTable('sessions-table-2', 9)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Soldering<span onclick="sortTable('sessions-table-2', 10)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications<span onclick="sortTable('sessions-table-2', 11)"><%=fa_icon('arrow-down')%></span></th>
+          </tr>
+
+          <tbody>
+          <% @unactive_volunteers.each do |v| %>
+            <tr>
+              <% skills = v.skill %>
+              <td class = "username">
+                <%= link_to v.name.capitalize, user_path(v.username) %>
+              </td>
+              <td>
+                <%= v.email %>
+              </td>
+              <td>
+                <% v.volunteer_task_joins.each do |vtj| %>
+                  <%= vtj.volunteer_task.title.capitalize %>
+                  <br />
+                <% end %>
+              </td>
+              <td>
+                <%= v.year_of_study %>
+              </td>
+              <td>
+                <%= v.program %>
+              </td>
+              <td>
+                <%= skills.printing %>
+              </td>
+              <td>
+                <%= skills.laser_cutting %>
+              </td>
+              <td>
+                <%= skills.virtual_reality %>
+              </td>
+              <td>
+                <%= skills.arduino %>
+              </td>
+              <td>
+                <%= skills.embroidery %>
+              </td>
+              <td>
+                <%= skills.soldering %>
+              </td>
+              <td>
+                <% v.certifications.each do |cert| %>
+                  <%= cert.training.capitalize %>
+                  <br />
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+
+    <% else %>
+      <div class="m-5">
+        There's no unactive volunteers.
+      </div>
+    <% end %>
+  </div>
+</section>
