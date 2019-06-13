@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190610212058) do
+ActiveRecord::Schema.define(version: 20190612203627) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -208,6 +208,13 @@ ActiveRecord::Schema.define(version: 20190610212058) do
     t.integer "repository_id", null: false
   end
 
+  create_table "require_trainings", force: :cascade do |t|
+    t.integer  "volunteer_task_id"
+    t.integer  "training_id"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
+  end
+
   create_table "rfids", force: :cascade do |t|
     t.integer  "user_id"
     t.string   "card_number"
@@ -337,13 +344,23 @@ ActiveRecord::Schema.define(version: 20190610212058) do
     t.string   "soldering",       default: "No Experience"
   end
 
+  create_table "volunteer_task_joins", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "volunteer_task_id"
+    t.string   "user_type",         default: "Volunteer"
+    t.datetime "created_at",                              null: false
+    t.datetime "updated_at",                              null: false
+  end
+
   create_table "volunteer_tasks", force: :cascade do |t|
     t.string   "title",       default: ""
     t.text     "description", default: ""
     t.integer  "user_id"
     t.boolean  "active",      default: true
-    t.datetime "created_at",                 null: false
-    t.datetime "updated_at",                 null: false
+    t.datetime "created_at",                   null: false
+    t.datetime "updated_at",                   null: false
+    t.string   "status",      default: "open"
+    t.integer  "space_id"
   end
 
   add_foreign_key "categories", "category_options"

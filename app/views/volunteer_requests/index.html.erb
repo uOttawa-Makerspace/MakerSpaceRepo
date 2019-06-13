@@ -92,7 +92,7 @@
           <% @processed_volunteer_requests.each do |vr| %>
             <tr>
               <td>
-                <%= vr.created_at.strftime("%b %e %Y") %>
+                <%= vr.created_at.strftime("%m/%e/%Y (%b)") %>
                 <br>
                 <%= vr.created_at.strftime("%I:%M %p").downcase() %>
               </td>

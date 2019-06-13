@@ -205,10 +205,13 @@ Rails.application.routes.draw do
   resources :volunteers, only: [:index] do
     collection do
       get :emails
+      get :volunteer_list
     end
   end
 
   resources :volunteer_tasks
+
+  resources :volunteer_task_joins, only: [:create]
 
   resources :volunteer_requests, only: [:index, :create, :show] do
     collection do
@@ -223,6 +226,8 @@ Rails.application.routes.draw do
       get :volunteer_hour_per_user
     end
   end
+
+  resources :require_trainings, only: [:create]
 
   # namespace :help do
   #   get 'main', path: '/'

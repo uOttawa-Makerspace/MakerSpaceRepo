@@ -10,3 +10,4 @@
 //= require bootstrap-sprockets
 //= require select2
 //= require turbolinks
+//= require clipboard
