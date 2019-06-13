@@ -13,15 +13,15 @@
 
           <tr>
             <th class="action-header">Action</th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Title <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Staff<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Volunteers<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Space<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Title <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Staff<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Volunteers<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Space<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
-              <th>Active<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
-              <th>Created by <span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Active<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Created by <span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
             <% end %>
           </tr>
 
@@ -38,7 +38,7 @@
               </td>
 
               <td>
-                <%= vt.created_at.strftime("%b %e %Y") %>
+                <%= vt.created_at.strftime("%m/%e/%Y (%b)") %>
                 <br>
                 <%= vt.created_at.strftime("%I:%M %p").downcase() %>
               </td>
