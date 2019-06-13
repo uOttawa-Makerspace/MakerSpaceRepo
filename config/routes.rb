@@ -205,6 +205,7 @@ Rails.application.routes.draw do
   resources :volunteers, only: [:index] do
     collection do
       get :emails
+      get :volunteer_list
     end
   end
 
