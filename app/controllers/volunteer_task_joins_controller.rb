@@ -15,13 +15,13 @@ class VolunteerTaskJoinsController < ApplicationController
 
   def destroy
     volunteer_join = VolunteerTaskJoin.find(params[:id])
-    if (volunteer_hour && !volunteer_hour.was_processed?) || current_user.staff?
-      volunteer_hour.destroy
-      flash[:notice] = "Volunteer Hour Deleted"
+    if volunteer_join
+      volunteer_join.destroy
+      flash[:notice] = "User was removed from the Volunteer Task"
     elsif
-    flash[:alert] = "Something went wrong or this volunteer hour was processed."
+    flash[:alert] = "Something went wrong"
     end
-    define_redirect(current_user.role)
+    redirect_to :back
   end
 
   private
