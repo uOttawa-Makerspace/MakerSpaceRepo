@@ -9,7 +9,7 @@ class VolunteerTaskJoinsController < ApplicationController
     volunteer_join.user_type = volunteer_join.user.role.capitalize
     if volunteer_join.save!
       redirect_to :back
-      flash[:notice] = "You've successfully joined this volunteer task."
+      flash[:notice] = "An user was successfully joined to this volunteer task."
     end
   end
 
