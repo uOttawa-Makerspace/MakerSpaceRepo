@@ -30,9 +30,10 @@ class VolunteerTasksController < ApplicationController
     @trainings = Training.where.not(id: trainings_already_added).pluck(:name, :id)
     @user_trainings = user_trainings
     @volunteer_task_trainings = volunteer_task_trainings
-    @new_volunteer_task_join = VolunteerTaskJoin.new
-    @volunteers = User.where(:role => "volunteer").pluck(:name, :id)
-    @staff = User.where("users.role = ? OR users.role = ?", "staff", "admin").pluck(:name, :id)
+    if current_user.staff?
+      @volunteers = User.where(:role => "volunteer").where.not(:id => @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
+      @staff = User.where("users.role = ? OR users.role = ?", "staff", "admin").where.not(:id => @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
+    end
   end
 
   def edit

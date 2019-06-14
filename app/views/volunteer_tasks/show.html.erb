@@ -108,7 +108,7 @@
 
         <div class="col-md-6">
           <p>Add Staff Responsible for the Task:</p>
-          <%= form_for @new_volunteer_task_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
+          <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
             <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
             <%= f.select :user_id, @staff, {prompt: "Choose Staff"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
             <br />
@@ -119,7 +119,7 @@
 
         <div class="col-md-6">
           <p>Add Volunteer to this Task:</p>
-          <%= form_for @new_volunteer_task_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
+          <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
             <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
             <%= f.select :user_id, @volunteers, {prompt: "Choose Volunteer"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
             <br />
