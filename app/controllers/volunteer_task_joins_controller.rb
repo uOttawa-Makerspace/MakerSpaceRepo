@@ -14,7 +14,8 @@ class VolunteerTaskJoinsController < ApplicationController
   end
 
   def destroy
-    volunteer_join = VolunteerTaskJoin.find(params[:id])
+    volunteer_join = VolunteerTaskJoin.find_by(:user_id => params[:volunteer_join][:user_id],
+                                               :volunteer_task_id => params[:volunteer_join][volunteer_task_id])
     if volunteer_join
       volunteer_join.destroy
       flash[:notice] = "User was removed from the Volunteer Task"
