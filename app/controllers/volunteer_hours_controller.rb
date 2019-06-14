@@ -36,7 +36,7 @@ class VolunteerHoursController < VolunteersController
     if (volunteer_hour && !volunteer_hour.was_processed?) || current_user.staff?
       volunteer_hour.destroy
       flash[:notice] = "Volunteer Hour Deleted"
-    elsif
+    else
       flash[:alert] = "Something went wrong or this volunteer hour was processed."
     end
     define_redirect(current_user.role)
