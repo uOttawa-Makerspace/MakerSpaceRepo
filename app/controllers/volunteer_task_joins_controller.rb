@@ -21,14 +21,13 @@ class VolunteerTaskJoinsController < ApplicationController
     if volunteer_join.destroy
       flash[:notice] = "User was removed from the Volunteer Task"
     else
-    flash[:alert] = "Something went wrong"
+      flash[:alert] = "Something went wrong"
     end
-    redirect_to volunteer_task_path(volunteer_task_id)
   end
 
   private
 
   def volunteer_task_joins_params
-    params.require(:volunteer_task_join).permit(:volunteer_task_id)
+    params.require(:volunteer_task_join).permit(:volunteer_task_id, :user_id)
   end
 end
