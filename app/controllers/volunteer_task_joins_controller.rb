@@ -13,7 +13,7 @@ class VolunteerTaskJoinsController < ApplicationController
     end
   end
 
-  def destroy
+  def remove
     user_id = params[:volunteer_task_join][:user_id]
     volunteer_task_id = params[:volunteer_task_join][:volunteer_task_id]
     volunteer_join = VolunteerTaskJoin.find_by(:user_id => user_id,
@@ -23,6 +23,7 @@ class VolunteerTaskJoinsController < ApplicationController
     else
       flash[:alert] = "Something went wrong"
     end
+    redirect_to :back
   end
 
   private

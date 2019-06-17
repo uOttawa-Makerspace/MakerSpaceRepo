@@ -211,7 +211,11 @@ Rails.application.routes.draw do
 
   resources :volunteer_tasks
 
-  resources :volunteer_task_joins, only: [:create, :destroy]
+  resources :volunteer_task_joins, only: [:create] do
+    collection do
+      post :remove
+    end
+  end
 
   resources :volunteer_requests, only: [:index, :create, :show] do
     collection do
