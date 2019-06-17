@@ -18,9 +18,9 @@
             <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
             <th>Staff<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <th>Volunteers<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Space<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Space<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
-              <th>Active<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
               <th>Created by <span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
             <% end %>
           </tr>
@@ -67,14 +67,17 @@
               </td>
 
               <td>
+                <% vt.require_trainings.find_each do |rt| %>
+                  <%= rt.training.name.capitalize %>
+                  <br />
+                <% end  %>
+              </td>
+
+              <td>
                 <%= vt.space.name.capitalize %>
               </td>
 
               <% if current_user.staff? %>
-                <td>
-                  <%= return_active(vt.active) %>
-                </td>
-
                 <td class = "username">
                   <%= link_to vt.user.name.capitalize, user_path(vt.user.username) %>
                 </td>

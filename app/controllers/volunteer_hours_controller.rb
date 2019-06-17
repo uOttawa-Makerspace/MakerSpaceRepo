@@ -7,9 +7,7 @@ class VolunteerHoursController < VolunteersController
     @user = current_user
     @user_volunteer_hours = VolunteerHour.where(user_id: @user.id).order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
     @total_hours = calculate_hours(@user_volunteer_hours.approved.pluck(:total_time))
-  end
 
-  def new
     @new_volunteer_hour = VolunteerHour.new
     @volunteer_tasks = VolunteerTask.joins(:volunteer_task_joins).where("volunteer_task_joins.user_id = ?", current_user.id).
         order(created_at: :desc).pluck(:title, :id)
@@ -19,7 +17,7 @@ class VolunteerHoursController < VolunteersController
     @volunteer_hour = VolunteerHour.new(volunteer_hour_params)
     @volunteer_hour.user_id = @user.try(:id)
     if @volunteer_hour.save!
-      redirect_to new_volunteer_hour_path
+      redirect_to volunteer_hours_path
       flash[:notice] = "You've successfully sent your volunteer working hours"
     end
   end
@@ -36,7 +34,7 @@ class VolunteerHoursController < VolunteersController
     if (volunteer_hour && !volunteer_hour.was_processed?) || current_user.staff?
       volunteer_hour.destroy
       flash[:notice] = "Volunteer Hour Deleted"
-    elsif
+    else
       flash[:alert] = "Something went wrong or this volunteer hour was processed."
     end
     define_redirect(current_user.role)
