@@ -1,0 +1,23 @@
+<div class="col-md-6">
+  <p>Remove Staff Responsible from this Task:</p>
+  <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "destroy"} do |f| %>
+    <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
+    <%= f.select :user_id, @staff_in_task, {prompt: "Choose Staff"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+    <br />
+    <br />
+    <%= f.submit "Remove Staff", class: "btn btn-danger mb-5",
+                 data: { confirm: 'Are you sure that you want to remove this user?' } %>
+  <% end %>
+</div>
+
+<div class="col-md-6">
+  <p>Remove Volunteer from this Task:</p>
+  <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "destroy", method: :delete} do |f| %>
+    <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
+    <%= f.select :user_id, @volunteers_in_task, {prompt: "Choose Volunteer"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+    <br />
+    <br />
+    <%= f.submit "Remove Volunteer", class: "btn btn-danger mb-5",
+                 data: { confirm: 'Are you sure that you want to remove this user?' } %>
+  <% end %>
+</div>
