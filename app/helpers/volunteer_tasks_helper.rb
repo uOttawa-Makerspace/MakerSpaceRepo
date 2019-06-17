@@ -1,14 +1,5 @@
 module VolunteerTasksHelper
 
-  def return_active(active)
-    case active
-    when true
-      "Yes"
-    when false
-      "No"
-    end
-  end
-
   def user_trainings
     user_trainings = Set.new
     current_user.certifications.find_each do |cert|
