@@ -42,6 +42,9 @@
                 <%= v.email %>
               </td>
               <td>
+                <%= v.volunteer_request.space.name.capitalize %>
+              </td>
+              <td>
                 <% v.volunteer_task_joins.each do |vtj| %>
                   <%= vtj.volunteer_task.title.capitalize %>
                   <br />
