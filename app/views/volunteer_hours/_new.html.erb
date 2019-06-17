@@ -22,12 +22,12 @@
           </div>
           <div class="col-md-6">
             <%= f.label :amount_of_hours_worked %>
-            <div class="input-group">
-              <input id="hours" class="form-control col-4" type="number" required="required" placeholder="Hours" min="0">
+            <div class="input-group mx-auto">
+              <input id="hours" class="form-control col-6" type="number" required="required" placeholder="Hours" min="0">
               <div class="input-group-prepend">
                 <span class="input-group-text">:</span>
               </div>
-              <input id="minutes" class="form-control col-4" type="number" required="required" placeholder="Minutes" min="0" max="55" step="5">
+              <input id="minutes" class="form-control col-6" type="number" required="required" placeholder="Minutes" min="0" max="55" step="5">
               <div class="invalid-feedback">
                 Please select the amount of hours worked. (Minutes: Multiple of 5, Min -> 0, Max -> 55)
               </div>
