@@ -18,16 +18,17 @@
           <tr>
             <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Tasks<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Year<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Program<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>3D printing<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Laser Cutting<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Virtual Reality<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Arduino<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Embroidery<span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Soldering<span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Certifications<span onclick="sortTable('sessions-table', 11)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Space<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Tasks<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Year<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Program<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>3D printing<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Laser Cutting<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Virtual Reality<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Arduino<span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Embroidery<span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Soldering<span onclick="sortTable('sessions-table', 11)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications<span onclick="sortTable('sessions-table', 12)"><%=fa_icon('arrow-down')%></span></th>
           </tr>
 
           <tbody>
@@ -39,6 +40,9 @@
               </td>
               <td>
                 <%= v.email %>
+              </td>
+              <td>
+                <%= v.volunteer_request.space.name.capitalize %>
               </td>
               <td>
                 <% v.volunteer_task_joins.each do |vtj| %>
@@ -99,18 +103,19 @@
         <table class="table sessions-table-2">
 
           <tr>
-            <th>Name<span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Email<span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Tasks<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Year<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Program<span onclick="sortTable('sessions-table-2', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>3D printing<span onclick="sortTable('sessions-table-2', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Laser Cutting<span onclick="sortTable('sessions-table-2', 6)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Virtual Reality<span onclick="sortTable('sessions-table-2', 7)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Arduino<span onclick="sortTable('sessions-table-2', 8)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Embroidery<span onclick="sortTable('sessions-table-2', 9)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Soldering<span onclick="sortTable('sessions-table-2', 10)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Certifications<span onclick="sortTable('sessions-table-2', 11)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Space<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Tasks<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Year<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Program<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>3D printing<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Laser Cutting<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Virtual Reality<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Arduino<span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Embroidery<span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Soldering<span onclick="sortTable('sessions-table', 11)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications<span onclick="sortTable('sessions-table', 12)"><%=fa_icon('arrow-down')%></span></th>
           </tr>
 
           <tbody>
@@ -122,6 +127,9 @@
               </td>
               <td>
                 <%= v.email %>
+              </td>
+              <td>
+                <%= v.volunteer_request.space.name.capitalize %>
               </td>
               <td>
                 <% v.volunteer_task_joins.each do |vtj| %>
