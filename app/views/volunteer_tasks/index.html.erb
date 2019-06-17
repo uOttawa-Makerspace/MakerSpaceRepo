@@ -21,8 +21,7 @@
             <th>Certifications<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
             <th>Space<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
-              <th>Active<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
-              <th>Created by <span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Created by <span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
             <% end %>
           </tr>
 
@@ -79,10 +78,6 @@
               </td>
 
               <% if current_user.staff? %>
-                <td>
-                  <%= return_active(vt.active) %>
-                </td>
-
                 <td class = "username">
                   <%= link_to vt.user.name.capitalize, user_path(vt.user.username) %>
                 </td>
