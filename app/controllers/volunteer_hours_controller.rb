@@ -7,6 +7,7 @@ class VolunteerHoursController < VolunteersController
     @user = current_user
     @user_volunteer_hours = VolunteerHour.where(user_id: @user.id).order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
     @total_hours = calculate_hours(@user_volunteer_hours.approved.pluck(:total_time))
+
     @new_volunteer_hour = VolunteerHour.new
     @volunteer_tasks = VolunteerTask.joins(:volunteer_task_joins).where("volunteer_task_joins.user_id = ?", current_user.id).
         order(created_at: :desc).pluck(:title, :id)

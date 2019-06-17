@@ -1,49 +1,44 @@
-<section class="page-contents">
-  <div class="edit-column">
+<h2 class="text-center">New Hour Tracking</h2>
 
-    <h2 class="text-center">New Hour Tracking</h2>
-
-    <div class="container my-5">
-      <div class="row">
-        <div class="col-lg-12">
-          <%= form_for @new_volunteer_hour, url: {controller: "volunteer_hours", action: "create"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
-            <div class="row">
-              <div class="col-md-12">
-                <div class="form-group text-center">
-                  <%= f.label :volunteer_task, "Volunteer Task" %>
-                  <%= f.select :volunteer_task_id, @volunteer_tasks, {prompt: "Choose Volunteer Task ..."}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <%= f.label :date_of_task, "Date you worked in a task" %>
-                  <%= f.date_field :date_of_task, class: 'form-control', required: true %>
-                  <div class="invalid-feedback">
-                    Please select a date.
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <%= f.label :amount_of_hours_worked %>
-                <div class="input-group">
-                  <input id="hours" class="form-control col-4" type="number" required="required" placeholder="Hours" min="0">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text">:</span>
-                  </div>
-                  <input id="minutes" class="form-control col-4" type="number" required="required" placeholder="Minutes" min="0" max="55" step="5">
-                  <div class="invalid-feedback">
-                    Please select the amount of hours worked. (Minutes: Multiple of 5, Min -> 0, Max -> 55)
-                  </div>
-                </div>
-                <%= f.hidden_field :total_time, id: "total_time_hidden" %>
-              </div>
-              <div class="col-lg-12 text-center">
-                <%= f.submit "send", class: "btn btn-secondary btn-xl text-uppercase" %>
+<div class="container my-5">
+  <div class="row">
+    <div class="col-lg-12">
+      <%= form_for @new_volunteer_hour, url: {controller: "volunteer_hours", action: "create"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group text-center">
+              <%= f.label :volunteer_task, "Volunteer Task" %>
+              <%= f.select :volunteer_task_id, @volunteer_tasks, {prompt: "Choose Volunteer Task ..."}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <%= f.label :date_of_task, "Date you worked in a task" %>
+              <%= f.date_field :date_of_task, class: 'form-control', required: true %>
+              <div class="invalid-feedback">
+                Please select a date.
               </div>
             </div>
-          <% end %>
+          </div>
+          <div class="col-md-6">
+            <%= f.label :amount_of_hours_worked %>
+            <div class="input-group">
+              <input id="hours" class="form-control col-4" type="number" required="required" placeholder="Hours" min="0">
+              <div class="input-group-prepend">
+                <span class="input-group-text">:</span>
+              </div>
+              <input id="minutes" class="form-control col-4" type="number" required="required" placeholder="Minutes" min="0" max="55" step="5">
+              <div class="invalid-feedback">
+                Please select the amount of hours worked. (Minutes: Multiple of 5, Min -> 0, Max -> 55)
+              </div>
+            </div>
+            <%= f.hidden_field :total_time, id: "total_time_hidden" %>
+          </div>
+          <div class="col-lg-12 text-center">
+            <%= f.submit "send", class: "btn btn-secondary btn-xl text-uppercase" %>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
   </div>
-</section>
+</div>
