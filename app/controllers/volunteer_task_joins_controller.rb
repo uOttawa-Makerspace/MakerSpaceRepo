@@ -14,6 +14,7 @@ class VolunteerTaskJoinsController < ApplicationController
   end
 
   def remove
+    # TODO: Make this 'destroy' instead of 'remove'
     user_id = params[:volunteer_task_join][:user_id]
     volunteer_task_id = params[:volunteer_task_join][:volunteer_task_id]
     volunteer_join = VolunteerTaskJoin.find_by(:user_id => user_id,
