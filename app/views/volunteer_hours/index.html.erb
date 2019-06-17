@@ -5,6 +5,9 @@
     <h5>Total volunteer hours until now: <b><%= @total_hours %> hours</b></h5>
 
     <% if !@user_volunteer_hours.blank? %>
+
+      <%= render :partial => 'new' %>
+
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">
 
       <br />
