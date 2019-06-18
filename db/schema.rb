@@ -18,7 +18,7 @@ ActiveRecord::Schema.define(version: 20190618212808) do
 
   create_table "announcements", force: :cascade do |t|
     t.text     "description"
-    t.string   "public"
+    t.string   "public_goal"
     t.integer  "user_id"
     t.boolean  "active",      default: true
     t.datetime "created_at",                 null: false
