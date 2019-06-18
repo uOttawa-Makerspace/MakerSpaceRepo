@@ -1,62 +1,42 @@
 <section class="page-contents">
   <div class="edit-column">
 
-    <h2 class="text-center">New Volunteer Task</h2>
+    <h2 class="text-center">Create Announcements</h2>
 
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
-          <%= form_for @new_volunteer_task, url: {controller: "volunteer_tasks", action: "create"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+          <%= form_for @announcement, url: {controller: "announcements", action: "create"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
             <div class="row">
               <div class="col-md-12">
                 <div class="form-group text-center">
-                  <%= f.label :title, "Title" %>
-                  <%= f.text_field :title, placeholder: "Volunteer Task title", class: 'form-control', required: true %>
+                  <%= f.label :description, "Announcement" %>
+                  <%= f.text_field :description, placeholder: "Write your announcement here", class: 'form-control', required: true %>
                   <div class="invalid-feedback">
-                    Please provide a title.
+                    Please write your announcement
                   </div>
                 </div>
               </div>
-              <div class="col-md-12">
-                <div class="form-group text-center">
-                  <%= f.label :description, "Task Description" %>
-                  <%= f.text_area :description, placeholder: "Volunteer Task description" ,class: 'form-control', required: true %>
-                  <div class="invalid-feedback">
-                    Please provide a description.
-                  </div>
-                </div>
-              </div>
-
-              <div class="mx-auto col-md-6 text-center">
-                <b>Status:</b> <br />
+              <div class="mx-auto col-md-12 text-center">
+                <b>Select to what public you want this to appear</b> <br />
                 <div class="d-inline-block text-left">
-                  <%= f.radio_button :status, 'open', :style => 'display:inline' %>
-                  <%= f.label :status, 'Open', :style => 'display:inline' %>
+                  <%= f.radio_button :public, 'volunteer', :style => 'display:inline' %>
+                  <%= f.label :public, 'Volunteers', :style => 'display:inline' %>
                   <br />
-                  <%= f.radio_button :status, 'in progress', :style => 'display:inline' %>
-                  <%= f.label :status, 'In Progress', :style => 'display:inline' %>
+                  <%= f.radio_button :public, 'regular_user', :style => 'display:inline' %>
+                  <%= f.label :public, 'Regular Users', :style => 'display:inline' %>
                   <br />
-                  <%= f.radio_button :status, 'completed', :style => 'display:inline' %>
-                  <%= f.label :status, 'Completed', :style => 'display:inline' %>
+                  <%= f.radio_button :public, 'staff', :style => 'display:inline' %>
+                  <%= f.label :public, 'Staff', :style => 'display:inline' %>
                   <br />
-                  <br />
-                </div>
-              </div>
-
-              <div class="mx-auto col-md-6 text-center">
-                <b>Space:</b> <br />
-                <div class="d-inline-block text-left">
-                  <%= f.radio_button :space_id, Space.find_by(name: "Makerspace").id, checked: true, :style => 'display:inline' %>
-                  <%= f.label :space_id, 'Makerspace', :style => 'display:inline' %>
-                  <br />
-                  <%= f.radio_button :space_id, Space.find_by(name: "Brunsfield Centre").id, :style => 'display:inline' %>
-                  <%= f.label :space_id, 'Brunsfield Centre', :style => 'display:inline' %>
+                  <%= f.radio_button :public, 'admin', :style => 'display:inline' %>
+                  <%= f.label :public, 'Admins', :style => 'display:inline' %>
                   <br />
                   <br />
                 </div>
               </div>
               <div class="col-lg-12 text-center">
-                <%= f.submit "Create task", class: "btn btn-secondary btn-xl text-uppercase" %>
+                <%= f.submit "Create Announcement", class: "btn btn-secondary btn-xl text-uppercase" %>
               </div>
             </div>
           <% end %>
