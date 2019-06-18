@@ -4,6 +4,7 @@ class CreateAnnouncements < ActiveRecord::Migration
       t.text :description
       t.string :public
       t.integer :user_id
+      t.boolean :active
 
 
       t.timestamps null: false
