@@ -1,0 +1,97 @@
+<section class="page-contents">
+  <div class="edit-column text-center">
+
+    <h2>Volunteer Tasks</h2>
+
+    <% if !@volunteer_tasks.blank? %>
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
+
+      <br />
+
+      <div class="table-responsive">
+        <table class="table sessions-table">
+
+          <tr>
+            <th class="action-header">Action</th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Title <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Staff<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Volunteers<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Space<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <% if current_user.staff? %>
+              <th>Created by <span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+            <% end %>
+          </tr>
+
+          <tbody>
+          <%= will_paginate @volunteer_tasks %>
+          <% @volunteer_tasks.each do |vt| %>
+            <tr>
+              <td class="action-cell">
+                <%=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" if current_user.staff?%>
+                <%=link_to "Show", volunteer_task_path(vt.id), class:"btn-block show-button mt-0 mb-1" %>
+                <%=link_to "Delete", { controller: :volunteer_tasks ,action: :destroy, id: vt.id }, method: :delete,
+                           data: { confirm: 'Are you sure that you want to delete this volunteer task? If you delete it, it will also delete all the volunteers hours related to it.' },
+                           class:"btn-block destroy-button mb-1 mr-0" if current_user.staff?%>
+              </td>
+
+              <td>
+                <%= vt.created_at.strftime("%m/%e/%Y (%b)") %>
+                <br>
+                <%= vt.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+              <td>
+                <%= vt.title %>
+              </td>
+
+              <td>
+                <%= vt.status.capitalize %>
+              </td>
+
+              <td class = "username">
+                <% vt.volunteer_task_joins.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
+                                                 "Staff", "Admin").find_each do |staff_joins| %>
+                  <%= link_to staff_joins.user.name.capitalize, user_path(staff_joins.user.username) %>
+                  <br />
+                <% end %>
+              </td>
+
+              <td class = "username">
+                <% vt.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_joins| %>
+                  <%= link_to volunteer_joins.user.name.capitalize, user_path(volunteer_joins.user.username) %>
+                  <br />
+                <% end %>
+              </td>
+
+              <td>
+                <% vt.require_trainings.find_each do |rt| %>
+                  <%= rt.training.name.capitalize %>
+                  <br />
+                <% end  %>
+              </td>
+
+              <td>
+                <%= vt.space.name.capitalize %>
+              </td>
+
+              <% if current_user.staff? %>
+                <td class = "username">
+                  <%= link_to vt.user.name.capitalize, user_path(vt.user.username) %>
+                </td>
+              <% end %>
+
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="m-5">
+        No Tasks were created yet.
+      </div>
+    <% end %>
+  </div>
+</section>
