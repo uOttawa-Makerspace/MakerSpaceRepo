@@ -20,9 +20,9 @@ ActiveRecord::Schema.define(version: 20190618212808) do
     t.text     "description"
     t.string   "public"
     t.integer  "user_id"
-    t.boolean  "active"
-    t.datetime "created_at",  null: false
-    t.datetime "updated_at",  null: false
+    t.boolean  "active",      default: true
+    t.datetime "created_at",                 null: false
+    t.datetime "updated_at",                 null: false
   end
 
   create_table "area_options", force: :cascade do |t|
