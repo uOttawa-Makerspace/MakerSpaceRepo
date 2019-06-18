@@ -8,7 +8,7 @@ class AnnouncementsController < ApplicationController
     @announcement.user_id = current_user.id
     if @announcement.save!
       redirect_to announcements_path
-      flash[:notice] = "You've successfully created an announcement for #{@announement.public.capitalize}"
+      flash[:notice] = "You've successfully created an announcement for #{@announement.public_goal.capitalize}"
     end
 
   end
@@ -20,6 +20,6 @@ class AnnouncementsController < ApplicationController
   private
 
   def announcement_params
-    params.require(:announcement).permit(:description, :public)
+    params.require(:announcement).permit(:description, :public_goal)
   end
 end
