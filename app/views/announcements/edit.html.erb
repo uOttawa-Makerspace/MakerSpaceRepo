@@ -1,12 +1,12 @@
 <section class="page-contents">
   <div class="edit-column">
 
-    <h2 class="text-center">Edit Volunteer Task</h2>
+    <h2 class="text-center">Edit Announcement</h2>
 
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
-          <%= form_for @volunteer_task, url: {controller: "volunteer_tasks", action: "update"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+          <%= form_for @announcement, url: {controller: "announcements", action: "update"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
             <div class="row">
               <div class="col-md-12">
                 <div class="form-group text-center">
