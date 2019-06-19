@@ -27,7 +27,7 @@
   <% if current_user.admin? %>
     <% Announcement.active.admins.find_each do |a| %>
       <div class="alert alert-secondary text-center" role="alert">
-        <%= a.description %>
+        <b>To Admins:</b> <%= a.description %>
       </div>
     <% end %>
   <% end %>
@@ -35,7 +35,7 @@
   <% if current_user.staff? %>
   <% Announcement.active.staff.find_each do |a| %>
     <div class="alert alert-info text-center" role="alert">
-      <%= a.description %>
+      <b>To Staff:</b> <%= a.description %>
     </div>
   <% end %>
 <% end %>
@@ -43,7 +43,7 @@
   <% if !Announcement.active.all_users.blank? %>
     <% Announcement.active.all_users.find_each do |a| %>
       <div class="alert alert-primary text-center" role="alert">
-        <%= a.description %>
+        <b>To All Users: </b><%= a.description %>
       </div>
     <% end %>
   <% end %>
@@ -51,7 +51,7 @@
   <% if !Announcement.active.volunteers.blank? %>
   <% Announcement.active.volunteers.find_each do |a| %>
     <div class="alert alert-warning text-center" role="alert">
-      <%= a.description %>
+      <b>To Volunteers:</b> <%= a.description %>
     </div>
   <% end %>
 <% end %>
