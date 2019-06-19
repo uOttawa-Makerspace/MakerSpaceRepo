@@ -15,6 +15,13 @@
 </head>
 <body data-no-turbolink="true">
 	<%= render 'layouts/header' %>
+  <% if !Announcement.active.volunteers.blank? %>
+  <% Announcement.active.volunteers.find_each do |a| %>
+    <div class="alert alert-warning text-center" role="alert">
+      <%= a.description %>
+    </div>
+  <% end %>
+<% end %>
 	<section id="setting" style="width:90%">
 		<div class="setting-grid">
 			<div class="setting-side-panel">
@@ -40,9 +47,6 @@
 		      </li>
 				</ul>
 			</div>
-      <%# if Announcement.activewhere() %>
-<!--        <div id="notice"><%#= flash[:notice] %></div>-->
-      <%# end %>
 
       <% if flash[:notice] %>
         <div id="notice"><%= flash[:notice] %></div>
