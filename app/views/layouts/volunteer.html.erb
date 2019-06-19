@@ -24,6 +24,22 @@
     <div id="alert"><%= flash[:alert] %></div>
   <% end %>
 
+  <% if current_user.admin? %>
+    <% Announcement.active.admins.find_each do |a| %>
+      <div class="alert alert-secondary text-center" role="alert">
+        <%= a.description %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <% if current_user.staff? %>
+  <% Announcement.active.staff.find_each do |a| %>
+    <div class="alert alert-info text-center" role="alert">
+      <%= a.description %>
+    </div>
+  <% end %>
+<% end %>
+
   <% if !Announcement.active.all_users.blank? %>
     <% Announcement.active.all_users.find_each do |a| %>
       <div class="alert alert-primary text-center" role="alert">
