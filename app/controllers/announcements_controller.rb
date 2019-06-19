@@ -12,6 +12,10 @@ class AnnouncementsController < ApplicationController
     @announcement = Announcement.find(params[:id])
   end
 
+  def edit
+    @announcement = Announcement.find(params[:id])
+  end
+
   def create
     announcement = Announcement.new(announcement_params)
     announcement.user_id = current_user.id
