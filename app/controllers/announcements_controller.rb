@@ -15,7 +15,7 @@ class AnnouncementsController < ApplicationController
   end
 
   def update
-    announcement = VolunteerTask.find(params[:id])
+    announcement = Announcement.find(params[:id])
     if announcement.update(announcement_params)
       flash[:notice] = "Announcement updated"
     else
@@ -25,7 +25,13 @@ class AnnouncementsController < ApplicationController
   end
 
   def destroy
-
+    announcement = Announcement.find(params[:id])
+    if announcement.destroy
+      flash[:notice] = "Announcement Deleted"
+    else
+      flash[:alert] = "Something went wrong"
+    end
+    redirect_to announcements_path
   end
 
   private
