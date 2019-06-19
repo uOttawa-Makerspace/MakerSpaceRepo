@@ -18,6 +18,8 @@ module AnnouncementsHelper
       return "Regular Users"
     when "admin"
       return "Admins"
+    when "all"
+      return "All Users"
     end
   end
 end
