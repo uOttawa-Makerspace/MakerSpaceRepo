@@ -1,5 +1,6 @@
 class AnnouncementsController < ApplicationController
   layout 'volunteer'
+  before_action :grant_access
   def index
     @announcements = Announcement.all.order(created_at: :asc)
   end
@@ -50,5 +51,12 @@ class AnnouncementsController < ApplicationController
 
   def announcement_params
     params.require(:announcement).permit(:description, :public_goal, :active)
+  end
+
+  def grant_access
+    unless current_user.admin? || current_user.staff?
+      redirect_to root_path
+      flash[:alert] = "You cannot access this area."
+    end
   end
 end
