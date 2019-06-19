@@ -211,6 +211,8 @@ Rails.application.routes.draw do
 
   resources :volunteer_tasks
 
+  resources :announcements
+
   resources :volunteer_task_joins, only: [:create] do
     collection do
       post :remove
