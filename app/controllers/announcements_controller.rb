@@ -1,4 +1,5 @@
 class AnnouncementsController < ApplicationController
+  layout 'volunteer'
   def new
     @announcement = Announcement.new
   end
