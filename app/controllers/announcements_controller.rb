@@ -1,5 +1,9 @@
 class AnnouncementsController < ApplicationController
   layout 'volunteer'
+  def index
+    @announcements = Announcement.all.order(created_at: :asc)
+  end
+
   def new
     @announcement = Announcement.new
   end
