@@ -17,7 +17,7 @@
                   </div>
                 </div>
               </div>
-              <div class="mx-auto col-md-12 text-center">
+              <div class="mx-auto col-md-6 text-center">
                 <b>Select to what public you want this to appear</b> <br />
                 <div class="d-inline-block text-left">
                   <%= f.radio_button :public_goal, 'volunteer', :style => 'display:inline' %>
@@ -32,6 +32,17 @@
                   <%= f.radio_button :public_goal, 'admin', :style => 'display:inline' %>
                   <%= f.label :public_goal, 'Admins', :style => 'display:inline' %>
                   <br />
+                  <br />
+                </div>
+              </div>
+              <div class="mx-auto col-md-6 text-center">
+                <b>Select if this announcements is active</b> <br />
+                <div class="d-inline-block text-left">
+                  <%= f.radio_button :active, true, :style => 'display:inline' %>
+                  <%= f.label :active, 'Yes', :style => 'display:inline' %>
+                  <br />
+                  <%= f.radio_button :active, false, :style => 'display:inline' %>
+                  <%= f.label :active, 'No', :style => 'display:inline' %>
                   <br />
                 </div>
               </div>
