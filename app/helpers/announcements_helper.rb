@@ -7,4 +7,17 @@ module AnnouncementsHelper
       return "No"
     end
   end
+
+  def return_public(public)
+    case public
+    when "volunteer"
+      return "Volunteers"
+    when "staff"
+      return "Staff"
+    when "regular_user"
+      return "Regular Users"
+    when "admin"
+      return "Admins"
+    end
+  end
 end
