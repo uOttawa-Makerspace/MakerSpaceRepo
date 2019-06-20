@@ -5,7 +5,8 @@
 
     <h5>Total number of Volunteers: <b><%= @total_volunteers %></b></h5>
     <h5>Total Number of Volunteers requests: <b><%= @all_volunteer_requests %></b></h5>
-
+    <h5>Pending Volunteers requests: <b><%= @pending_volunteer_requests.count%></b></h5>
+    <br />
     <% if !@pending_volunteer_requests.blank? %>
 
       <h5>Pending Volunteer Requests</h5>
