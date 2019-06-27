@@ -1,0 +1,183 @@
+<h1>List of prints    <%= link_to "New Print Order", new_print_order_path, {class: 'btn btn-primary'} %></h1>
+<table class="table">
+  <thead>
+  <tr>
+    <th style="text-align: center;" scope="col">User</th>
+    <th style="text-align: center;" scope="col">Print ID</th>
+    <th style="text-align: center;" scope="col">Comments</th>
+    <th style="text-align: center;" scope="col">Download</th>
+    <th style="text-align: center;" scope="col">Approved by staff ?</th>
+    <th style="text-align: center;" scope="col">Quote approved by user?</th>
+    <% if @user.admin? or @user.staff? %>
+      <th style="text-align: center;" scope="col">Staff Assigned</th>
+    <% end %>
+    <th style="text-align: center;" scope="col">Printed ?</th>
+    <th style="text-align: center;" scope="col">Delete</th>
+  </tr>
+  </thead>
+  <tbody>
+  <% @print_order.each do |prints| %>
+    <tr>
+      <th style="text-align: center;" scope="row"><%= @users.where(["id = ? ", prints.userid]).pluck(:name).first %></th>
+      <td style="text-align: center;"><%= prints.id %></td>
+      <td><%= prints.comments %></td>
+      <td>
+        <% if prints.file_file_name %><a href="<%= prints.file.url %>">
+        <button class="btn btn-primary">Download</button>
+      </a>
+        <% end %></td>
+
+      <% if @user.admin? %>
+        <% if prints.approved %>
+          <td>Approved</td>
+        <% elsif prints.approved == false %>
+          <td>Disapproved</td>
+        <% else %>
+          <td>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#quote_modal">
+              Approve
+            </button>
+            <div class="modal fade" id="quote_modal" tabindex="-1" role="dialog" aria-labelledby="quote_modal" aria-hidden="true">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Quote</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body">
+                    <%= form_for prints, url: print_order_path(prints) do |f| %>
+                      <%= f.hidden_field :approved, :value => true %>
+                      <%= f.label :quote, "Quote (In CAD) " %>
+                      <div class="form-group">
+                        <%= f.text_field :quote, placeholder: "15.98", class: "form-control" %>
+                      </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button class="btn btn-primary" type="submit">Approve</button>
+                    <% end %>
+                    </div>
+                    </div>
+              </div>
+            </div>
+            <br><br>
+
+            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#disapprove">
+              Disapprove
+            </button>
+            <div class="modal fade" id="disapprove" tabindex="-1" role="dialog" aria-labelledby="disapprove" aria-hidden="true">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Quote</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body">
+                    <%= form_for prints, url: print_order_path(prints) do |f| %>
+                      <%= f.hidden_field :approved, :value => false %>
+                      <%= f.label :StaffComments, "Comments (Why is it not approved ?)" %>
+                      <div class="form-group">
+                        <%= f.text_field :StaffComments, placeholder: "The size won't fit", class: "form-control" %>
+                      </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button class="btn btn-danger" type="submit">Disapprove</button>
+                    <% end %>
+                    </div>
+                    </div>
+              </div>
+            </div>
+        <% end %>
+      <% else %>
+        <% if prints.approved %>
+          <td>Approved</td>
+        <% elsif prints.approved == false %>
+          <td>Disapproved</td>
+        <% else %>
+          <td>Not Yet</td>
+        <% end %>
+      <% end %>
+
+      <% if prints.userid == @user.id and prints.approved %>
+        <td>
+          <% if prints.UserApproval %>
+            Approved
+          <% elsif prints.UserApproval == false %>
+            Disapproved
+          <% else %>
+            <b>Quoted price : <%= prints.quote %>$</b>
+            <br>
+            <%= form_for prints, url: print_order_path(prints) do |f| %>
+              <%= f.hidden_field :UserApproval, :value => true %>
+              <button class="btn btn-primary" type="submit">I Accept the quote</button>
+            <% end %>
+            <br>
+            <%= form_for prints, url: print_order_path(prints) do |f| %>
+              <%= f.hidden_field :UserApproval, :value => false %>
+              <button class="btn btn-danger" type="submit">I don't accept it</button>
+            <% end %>
+          <% end %>
+        </td>
+      <% else %>
+        <% if prints.UserApproval %>
+          <td>Approved</td>
+        <% elsif prints.UserApproval == false %>
+          <td>Disapproved</td>
+        <% else %>
+          <td>Not Yet/Can't be</td>
+        <% end %>
+      <% end %>
+
+      <% if @user.admin? or @user.staff? %>
+
+        <% if prints.staffid.present? %>
+          <td><%= @users.find(prints.staffid).name %></td>
+        <% elsif prints.UserApproval and prints.approved %>
+          <%= form_for prints, url: print_order_path(prints) do |f| %>
+            <%= f.hidden_field :staffid, :value => @user.id %>
+            <td>
+              <button class="btn btn-primary" type="submit">I will print it</button>
+            </td>
+          <% end %>
+        <% else %>
+          <td>Not Yet</td>
+        <% end %>
+
+
+        <% if prints.approved == false %>
+          <td>Won't be printed</td>
+        <% elsif prints.UserApproval == false %>
+          <td>Won't be printed</td>
+        <% elsif prints.printed %>
+          <td>Printed</td>
+        <% elsif prints.printed == false %>
+          <td>Not Printed</td>
+        <% elsif prints.UserApproval and prints.approved and prints.staffid.present? %>
+          <%= form_for prints, url: print_order_path(prints) do |f| %>
+            <%= f.hidden_field :printed, :value => true %>
+            <td>
+              <button class="btn btn-primary" type="submit">I Printed it</button>
+            </td>
+          <% end %>
+        <% else %>
+          <td>Not Yet</td>
+        <% end %>
+      <% else %>
+        <% if prints.printed %>
+          <td>Printed</td>
+        <% elsif prints.printed == false %>
+          <td>Not Printed</td>
+        <% else %>
+          <td>Not Yet/Won't be</td>
+        <% end %>
+      <% end %>
+      <td><%= button_to 'Delete', print_order_path(prints), method: :delete, data: {confirm: 'Are you sure?'}, class: "btn btn-danger" %></td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>

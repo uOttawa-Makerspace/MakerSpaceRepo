@@ -4,6 +4,8 @@ Rails.application.routes.draw do
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
 
+  resources :print_order
+
   resources :project_proposals do
     collection do
       post :approval
