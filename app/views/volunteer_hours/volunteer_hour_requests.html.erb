@@ -38,8 +38,8 @@
                 <%= vh.created_at.strftime("%I:%M %p").downcase() %>
               </td>
 
-              <td>
-                <%= vh.volunteer_task.title %>
+              <td class = "volunteer_task">
+                <%= link_to vh.volunteer_task.title, volunteer_task_path(vh.volunteer_task.id) %>
               </td>
 
               <td>
@@ -107,8 +107,8 @@
                 <%= vh.created_at.strftime("%I:%M %p").downcase() %>
               </td>
 
-              <td>
-                <%= vh.volunteer_task.title %>
+              <td class = "volunteer_task">
+                  <%= link_to vh.volunteer_task.title, volunteer_task_path(vh.volunteer_task.id) %>
               </td>
 
               <td>

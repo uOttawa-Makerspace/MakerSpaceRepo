@@ -1,0 +1,19 @@
+// Place all the styles related to the volunteers controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+@import "lib";
+
+.volunteer_task{
+  @include transition(100ms);
+  color: brown;
+  font-weight: 500;
+
+  i{
+    padding-right: 5px;
+    color: #777;
+  }
+
+  &:hover{
+    color: #730E15;
+  }
+}
