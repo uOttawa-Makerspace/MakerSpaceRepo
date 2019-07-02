@@ -206,6 +206,7 @@ Rails.application.routes.draw do
     collection do
       get :emails
       get :volunteer_list
+      get :getting_started
     end
   end
 
