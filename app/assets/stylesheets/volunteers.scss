@@ -10,3 +10,16 @@
   color: green - 30;
   font-size: 1.4em;
 }
+
+section#volunteers-getting-started {
+  .title {
+    color: #366;
+    font-size: 2rem;
+    padding-bottom: 0.5rem;
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #366;
+  }
+}
