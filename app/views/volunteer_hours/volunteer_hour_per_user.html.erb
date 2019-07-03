@@ -45,7 +45,9 @@
                   <thead>
                   <% user.volunteer_hours.processed.order(approval: :desc).each do |vh| %>
                     <tr>
-                      <th><%= vh.volunteer_task.title %></th>
+                      <th class = "volunteer_task">
+                        <%= link_to vh.volunteer_task.title, volunteer_task_path(vh.volunteer_task.id) %>
+                      </th>
                       <th>Time Worked: <%= vh.total_time %></th>
                       <th><%= return_approval(vh.approval) %></th>
                     </tr>
