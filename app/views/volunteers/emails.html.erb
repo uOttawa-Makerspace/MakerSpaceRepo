@@ -5,41 +5,42 @@
     <br>
     <div class="container">
       <div class="row">
-        <div class="col-md-4">
-        <h5>All Volunteer's Emails (<%= @all_emails.count %>)</h5>
-          <div id="email-1">
+        <div class="col-md-6">
+        <h5 class="text-center">All Volunteer's Emails (<%= @all_emails.count %>)</h5>
+          <div id="email-1" class="mx-auto col-6">
             <% @all_emails.each do |email| %>
               <%= email %> <br />
             <% end %>
           </div>
           <br />
-          <button class="clipboard-btn btn btn-primary" data-clipboard-action="copy" data-clipboard-target="#email-1">
+          <button class="clipboard-btn btn btn-primary col-md-12 mx-auto" data-clipboard-action="copy" data-clipboard-target="#email-1">
             Copy All Emails
           </button>
         </div>
 
-        <div class="col-md-4">
-          <h5>Active Volunteer's Emails (<%= @active_emails.count %>)</h5>
-          <div id="email-2">
+        <div class="col-md-6 mb-5">
+          <h5 class="text-center">Active Volunteer's Emails (<%= @active_emails.count %>)</h5>
+          <div id="email-2" class="mx-auto col-6">
             <% @active_emails.each do |email| %>
               <%= email %> <br />
             <% end %>
           </div>
           <br />
-          <button class="clipboard-btn btn btn-primary" data-clipboard-action="copy" data-clipboard-target="#email-2">
+          <button class="clipboard-btn btn btn-primary mx-auto col-md-12" data-clipboard-action="copy" data-clipboard-target="#email-2">
             Copy Active Emails
           </button>
         </div>
 
-        <div class="col-md-4">
-          <h5>Unactive Volunteer's Emails (<%= @unactive_emails.count %>)</h5>
+
+        <div class="col-md-12" class="mx-auto col-6">
+          <h5 class="text-center">Unactive Volunteer's Emails (<%= @unactive_emails.count %>)</h5>
           <div id="email-3">
             <% @unactive_emails.each do |email| %>
               <%= email %> <br />
             <% end %>
           </div>
           <br />
-          <button class="clipboard-btn btn btn-primary" data-clipboard-action="copy" data-clipboard-target="#email-3">
+          <button class="clipboard-btn btn btn-primary mx-auto col-md-12" data-clipboard-action="copy" data-clipboard-target="#email-3">
             Copy Unactive Emails
           </button>
         </div>
