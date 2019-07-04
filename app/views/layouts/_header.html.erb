@@ -50,7 +50,7 @@
     <ul class="navbar-nav ml-auto align-items-xl-baseline">
 
       <% unless signed_in? %>
-        <li class="nav-item"><a class="nav-link" href="/login"><%= t('navbar.sign_in') %></a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="modal" data-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
         <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
       <% else %>
         <li class="nav-item">
