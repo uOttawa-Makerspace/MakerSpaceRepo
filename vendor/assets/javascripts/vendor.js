@@ -11,3 +11,4 @@
 //= require select2
 //= require turbolinks
 //= require clipboard
+//= require bootbox
