@@ -10,8 +10,8 @@ class SessionsController < ApplicationController
 
     respond_to do |format|
       if @user
-        session[:back] = root_path if session[:back].nil?
-        format.html { redirect_to session[:back] }
+        # session[:back] = root_path if session[:back].nil?
+        format.html { redirect_to :back }
         format.json { render json: { role: :guest }, status: :ok }
       else
         @user = User.new
