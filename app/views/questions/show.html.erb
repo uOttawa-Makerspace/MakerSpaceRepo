@@ -1,118 +1,13 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
-    <h2>Volunteer Task: <%= @volunteer_task.title.capitalize %></h2>
+    <h2>Question in "<%= @question.category %>"</h2>
     <br />
 
-    <div class="jumbotron text-center">
-      <b>Description:</b>
-      <%= @volunteer_task.description %>
-    </div>
-
-    <% if @volunteer_task.volunteer_task_joins.pluck(:user_id).include?(current_user.id) %>
-      <p class="text-success"><b>You've joined this volunteer task.</b></p>
-      <br />
-    <% elsif @volunteer_task.status != "open" %>
-      <p class="text-danger"><b>You can't join this task because it is in progress or completed.</b></p>
-      <br />
-    <% elsif !@volunteer_task.require_trainings.blank? %>
-      <% if @user_trainings >= @volunteer_task_trainings %>
-        <div>
-          <p>You have all the requirement to join this task.</p>
-          <p>Join this task:</p>
-          <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
-            <div>
-              <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-              <%= f.submit "Join", class: "btn btn-primary" %>
-            </div>
-            <br />
-          <% end %>
-        </div>
-      <% else %>
-        <p>You don't meet the requirements to join this task. Please complete the proper trainings.</p>
-      <% end %>
-      <br />
-      <br />
-
-    <% else %>
-      <div>
-        <p>Join this task:</p>
-        <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
-          <div>
-            <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%= f.submit "Join", class: "btn btn-primary" %>
-          </div>
-          <br />
-        <% end %>
-      </div>
-    <% end %>
-
-    <div class="row">
-
-      <div class="col-6">
-        <b>Status:</b> <%= @volunteer_task.status.capitalize %>
-        <br />
-        <br />
-      </div>
-
-      <div class="col-6">
-        <b>Space:</b> <%= @volunteer_task.space.name.capitalize %>
-        <br />
-        <br />
-      </div>
-
-      <div class="col-6">
-        <h5>Responsable Staff:</h5>
-        <% @volunteer_task.volunteer_task_joins.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?", "Staff", "Admin").find_each do |staff_join| %>
-          <%= link_to staff_join.user.name.capitalize, user_path(staff_join.user.username), class: "username" %>
-          <br />
-        <% end %>
-      </div>
-
-      <div class="col-6">
-        <h5>Responsable Volunteers:</h5>
-        <% @volunteer_task.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_join| %>
-          <%= link_to volunteer_join.user.name.capitalize, user_path(volunteer_join.user.username), class: "username" %>
-          <br />
-        <% end %>
-      </div>
+    <div class="jumbotron text-left break">
+      <%= @question.description %>
     </div>
 
     <hr>
-
-    <div class="row">
-      <div class="col-12 mb-5">
-        <% if !@volunteer_task.require_trainings.blank? %>
-          <p><b>Certifications needed:</b></p>
-          <% @volunteer_task.require_trainings.find_each do |rt| %>
-            <%= rt.training.name.capitalize %>
-            <br />
-          <% end  %>
-        <% else %>
-          <p>No certification needed.</p>
-        <% end %>
-      </div>
-
-      <% if current_user.staff? %>
-
-        <div class="col-12">
-          <p>Add Required Training to Volunteer Task:</p>
-          <%= form_for @new_required_training, url: {controller: "require_trainings", action: "create"} do |f| %>
-            <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%= f.select :training_id, @trainings, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
-            <br />
-            <br />
-            <%= f.submit "Add Required Certification", class: "btn btn-primary mb-5" %>
-          <% end %>
-        </div>
-
-        <%= render "volunteer_task_joins/new" %>
-
-        <%= render "volunteer_task_joins/remove" %>
-
-      <% end %>
-      </div>
-
-    </div>
   </div>
 </section>
