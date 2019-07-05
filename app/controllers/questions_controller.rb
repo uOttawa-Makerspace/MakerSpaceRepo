@@ -28,13 +28,13 @@ class QuestionsController < ApplicationController
   end
 
   def update
-    volunteer_task = VolunteerTask.find(params[:id])
-    if volunteer_task.update(volunteer_task_params)
-      flash[:notice] = "Volunteer task updated"
+    question = Question.find(params[:id])
+    if question.update(volunteer_task_params)
+      flash[:notice] = "Question updated"
     else
       flash[:alert] = "Something went wrong"
     end
-    redirect_to volunteer_tasks_path
+    redirect_to questions_path
   end
 
   def destroy
