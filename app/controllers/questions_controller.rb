@@ -24,7 +24,7 @@ class QuestionsController < ApplicationController
   end
 
   def edit
-    @volunteer_task = VolunteerTask.find(params[:id])
+    @question = Question.find(params[:id])
   end
 
   def update
