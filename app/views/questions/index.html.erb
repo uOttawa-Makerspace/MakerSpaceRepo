@@ -3,6 +3,8 @@
 
     <h2>Questions</h2>
 
+    <%= link_to "New Question", new_question_path, :class=>"btn btn-primary" %>
+
     <% if !@questions.blank? %>
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: category, description, ..." class="form-control mx-auto">
 
