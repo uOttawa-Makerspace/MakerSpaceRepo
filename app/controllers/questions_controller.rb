@@ -9,6 +9,23 @@ class QuestionsController < ApplicationController
 
   def new
     @new_question = Question.new
+    @categories = ["Basic Training",
+                   "Mill Training",
+                   "Lathe Training",
+                   "MIG Training",
+                   "TIG Training",
+                   "General Satefy",
+                   "Basic 3D Printing",
+                   "Advanced 3D Printing",
+                   "Basic Laser Cutting",
+                   "Advanced Laser Cutting",
+                   "Basic Arduino",
+                   "Advanced Arduino",
+                   "Embroidery",
+                   "CAD modeling",
+                   "3D Scanning",
+                   "Virtual Reality",
+                   "Soldering"]
   end
 
   def create
