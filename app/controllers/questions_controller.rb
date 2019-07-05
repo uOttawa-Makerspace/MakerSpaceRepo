@@ -9,23 +9,7 @@ class QuestionsController < ApplicationController
 
   def new
     @new_question = Question.new
-    @categories = ["Basic Training",
-                   "Mill Training",
-                   "Lathe Training",
-                   "MIG Training",
-                   "TIG Training",
-                   "General Satefy",
-                   "Basic 3D Printing",
-                   "Advanced 3D Printing",
-                   "Basic Laser Cutting",
-                   "Advanced Laser Cutting",
-                   "Basic Arduino",
-                   "Advanced Arduino",
-                   "Embroidery",
-                   "CAD modeling",
-                   "3D Scanning",
-                   "Virtual Reality",
-                   "Soldering"]
+    @categories = Question::CATEGORIES
   end
 
   def create
@@ -43,11 +27,12 @@ class QuestionsController < ApplicationController
 
   def edit
     @question = Question.find(params[:id])
+    @categories = Question::CATEGORIES
   end
 
   def update
     question = Question.find(params[:id])
-    if question.update(volunteer_task_params)
+    if question.update(question_params)
       flash[:notice] = "Question updated"
     else
       flash[:alert] = "Something went wrong"
