@@ -1,24 +1,21 @@
 class QuestionsController < ApplicationController
-  layout 'volunteer'
-  include VolunteerTasksHelper
-  before_action :grant_access, except: [:show, :index]
-  before_action :volunteer_access, only: [:show, :index]
+  before_action :current_user
+  before_action :grant_access
 
   def index
-    @volunteer_tasks = VolunteerTask.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
+    @questions = Question.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
   end
 
   def new
-    @user = current_user
-    @new_volunteer_task = VolunteerTask.new
+    @new_question = Question.new
   end
 
   def create
-    @volunteer_task = VolunteerTask.new(volunteer_task_params)
-    @volunteer_task.user_id = @user.try(:id)
-    if @volunteer_task.save!
-      redirect_to volunteer_tasks_path
-      flash[:notice] = "You've successfully created a new Volunteer Task"
+    @question = Question.new(question_params)
+    @question.user_id = @user.id
+    if @question.save!
+      redirect_to questions_path
+      flash[:notice] = "You've successfully created a new question!"
     end
   end
 
@@ -65,20 +62,13 @@ class QuestionsController < ApplicationController
   private
 
   def grant_access
-    if !current_user.staff?
+    unless current_user.staff? || current_user.admin?
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
     end
   end
 
-  def volunteer_access
-    if !current_user.staff? && !current_user.volunteer?
-      flash[:alert] = "You cannot access this area."
-      redirect_to root_path
-    end
-  end
-
-  def volunteer_task_params
-    params.require(:volunteer_task).permit(:title, :description, :status, :space_id)
+  def question_params
+    params.require(:question).permit(:description, :category)
   end
 end
