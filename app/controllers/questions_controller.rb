@@ -1,4 +1,5 @@
 class QuestionsController < ApplicationController
+  layout 'staff_area'
   before_action :current_user
   before_action :grant_access
 
