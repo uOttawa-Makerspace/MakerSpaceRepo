@@ -38,13 +38,13 @@ class QuestionsController < ApplicationController
   end
 
   def destroy
-    volunteer_task = VolunteerTask.find(params[:id])
-    if volunteer_task.destroy
-      flash[:notice] = "Volunteer Task Deleted"
+    question = Question.find(params[:id])
+    if question.destroy
+      flash[:notice] = "Question Deleted"
     else
       flash[:alert] = "Something went wrong"
     end
-    redirect_to volunteer_tasks_path
+    redirect_to questions_path
   end
 
   private
