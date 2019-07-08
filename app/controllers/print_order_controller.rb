@@ -31,7 +31,7 @@ class PrintOrderController < ApplicationController
       @print_order.update(print_order_params)
 
       if params[:print_order][:approved] == "true"
-        MsrMailer.send_print_quote(@user, @print_order.quote).deliver_now
+        MsrMailer.send_print_quote(@user, @print_order.quote, params[:print_order][:StaffComments]).deliver_now
       elsif params[:print_order][:approved] == "false"
         MsrMailer.send_print_disapproval(@user, params[:print_order][:StaffComments]).deliver_now
       elsif params[:print_order][:printed] == "true"

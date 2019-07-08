@@ -3,6 +3,9 @@
 </p>
 <p style="  font: 400 1.1em 'Raleway', sans-serif;color: #555;">
   The total price for your piece is <%= @quote %>$ ! You can accept the quote by going in your makerepo account.
+  <%if  @comments.present? %>
+    Here are comments from staff : <%= @comments %>
+  <% end %>
 </p>
 <p style="  font: 400 1.1em 'Raleway', sans-serif;color: #555;">
   Best regards,<br>
