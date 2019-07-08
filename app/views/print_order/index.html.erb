@@ -157,7 +157,7 @@
           <td>Printed</td>
         <% elsif prints.printed == false %>
           <td>Not Printed</td>
-        <% elsif prints.UserApproval and prints.approved and prints.staffid.present? %>
+        <% elsif prints.UserApproval and prints.approved and prints.staffid.present? and (@user.admin? or @user == prints.staffid) %>
           <%= form_for prints, url: print_order_path(prints) do |f| %>
             <%= f.hidden_field :printed, :value => true %>
             <td>
