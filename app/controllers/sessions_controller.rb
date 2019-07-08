@@ -10,8 +10,11 @@ class SessionsController < ApplicationController
 
     respond_to do |format|
       if @user
-        # session[:back] = root_path if session[:back].nil?
-        format.html { redirect_to :back }
+        if request.env['HTTP_REFERER'] == login_authentication_url
+          format.html { redirect_to root_path }
+        else
+          format.html { redirect_to :back }
+        end
         format.json { render json: { role: :guest }, status: :ok }
       else
         @user = User.new
