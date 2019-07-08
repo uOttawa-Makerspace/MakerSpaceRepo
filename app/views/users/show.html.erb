@@ -17,7 +17,7 @@
       </div>
     <% end %>
 
-  <% elsif (@repo_user.eql?(@user) && @user.volunteer?) || (@user.admin?)%>
+  <% elsif (@repo_user.eql?(@user) && @user.volunteer?) || (@user.staff?)%>
     <%= link_to fa_icon("cog", text: ' Edit Profile'), settings_profile_path, class: 'edit-user-profile' %>
 
     <%= link_to settings_profile_path do %>
