@@ -437,6 +437,44 @@ end
 
   end
 
+  def self.total_visits_detail_report
+
+    fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
+    fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
+
+    header = ["Facility", "Fall 2017", "Winter 2018", "Summer 2018", "Fall 2019", "Winter 2019"]
+
+    column = []
+    column << ["Detailed informaton of unique users viasiting CEED facilities "]
+    column << header
+
+    Space.all.each do |space|
+      column << []<< [space.name]
+
+      column << ["Fall 2017 Term"]
+      ReportGenerator.create_seasonal_report_total_visits(fall_2017_begin, fall_2017_end, space, column)
+
+      column << ["Winter 2018 Term"]
+      ReportGenerator.create_seasonal_report_total_visits(winter_2018_begin, winter_2018_end, space, column)
+
+      column << ["Summer 2018 Term"]
+      ReportGenerator.create_seasonal_report_total_visits(summer_2018_begin, summer_2018_end, space, column)
+
+      column << ["Fall 2018 Term"]
+      ReportGenerator.create_seasonal_report_total_visits(fall_2018_begin, fall_2018_end, space, column)
+
+      column << ["Winter 2019 Term"]
+      ReportGenerator.create_seasonal_report_total_visits(winter_2019_begin, winter_2019_end, space, column)
+    end
+
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
+
+  end
+
   def self.date_season_range(year)
     begin_fall = DateTime.new(year, 9, 1).beginning_of_day
     end_fall = DateTime.new(year,12, 31).end_of_day
@@ -449,6 +487,50 @@ end
 
   def self.create_seasonal_report(season_begin, season_end, space, column)
     uniqueVisitSeasonYear = space.lab_sessions.where('created_at BETWEEN ? AND ? ', season_begin , season_end).select('DISTINCT user_id')
+    total = uniqueVisitSeasonYear.count
+    program = []
+    faculty = []
+    gender = []
+    identity = []
+    column << ["TOTAL", total]
+    uniqueVisitSeasonYear.each do |lab|
+      user = User.find_by_id(lab.user_id)
+      program << user.program
+      faculty << user.faculty
+      gender << user.gender
+      identity << user.identity
+    end
+
+    column << [] << ["Gender"]
+    gendersAll = Hash[gender.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+    gendersAll.each do |gender|
+      column << [gender[0], gender[1]]
+    end
+    column << [] << ["Faculty"]
+    facultyAll = Hash[faculty.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+    facultyAll.each do |faculty|
+      column << [faculty[0], faculty[1]]
+    end
+
+    column << [] << ["Program"]
+    programsAll = Hash[program.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+    programsAll.each do |program|
+      column << [program[0], program[1]]
+    end
+
+    column << [] << ["Identity"]
+    identityAll = Hash[identity.group_by {|x| x}.map {|k,v| [k,v.count]}]
+
+    identityAll.each do |identity|
+      column << [identity[0], identity[1]]
+    end
+  end
+
+  def self.create_seasonal_report_total_visits(season_begin, season_end, space, column)
+    uniqueVisitSeasonYear = space.lab_sessions.where('created_at BETWEEN ? AND ? ', season_begin , season_end)
     total = uniqueVisitSeasonYear.count
     program = []
     faculty = []

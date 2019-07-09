@@ -195,6 +195,13 @@ class Admin::ReportGeneratorController < AdminAreaController
     end
   end
 
+  def total_visits_detail
+    respond_to do |format|
+      format.html
+      format.csv {send_data ReportGenerator.total_visits_detail_report , filename: "detail_total_visits_per_term-#{Date.today}.csv"}
+    end
+  end
+
   def unique_visits_ceed
     respond_to do |format|
       format.html
