@@ -1,5 +1,6 @@
 class VolunteerRequestsController < ApplicationController
   layout 'volunteer'
+  include VolunteerRequestsHelper
   before_action :grant_access, only: [:index, :show]
   def index
     @total_volunteers = User.where(role: "volunteer").count
@@ -9,6 +10,7 @@ class VolunteerRequestsController < ApplicationController
   end
 
   def create
+    already_requested?(current_user.id)
     @volunteer_request = VolunteerRequest.new(request_params)
     @volunteer_request.user_id = current_user.id
     if @volunteer_request.save!
