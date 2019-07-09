@@ -54,30 +54,27 @@
               </strong>
             </p>
             <%= form_for @request, url: {controller: "volunteer_requests", action: "create"} do |f| %>
-              <div class="mx-auto col-md-6 pastInfo" >
-                <%= f.text_area :interests, placeholder: t('home.become_volunteer.placeholder_text') ,class: 'form-control'%>
-                <br />
-                <input type="button" value="Next" onclick="showHideDivs()" class="btn btn-success btn-lg" />
+              <div class="tab mx-auto col-md-6" >
+                <p>Interests:</p>
+                <%= f.text_area :interests, placeholder: t('home.become_volunteer.placeholder_text'), class: 'form-control form-element' %>
               </div>
 
-              <div class="mx-auto col-md-12 nextInfo" style="display:none;" >
+              <div class="col-12 tab">
+                <p>In what space are you interested to become a volunteer?</p>
+                <div class="d-inline-block text-left">
+                  <%= f.radio_button :space_id, Space.find_by_name("Makerspace").id, :style => 'display:inline !important', checked: true %>
+                  <%= f.label :space_id, 'Makerspace', :style => 'display:inline !important' %>
+                  <br />
+                  <%= f.radio_button :space_id, Space.find_by_name("Brunsfield Centre").id, :style => 'display:inline' %>
+                  <%= f.label :space_id, 'Brunsfield Centre', :style => 'display:inline' %>
+                  <br />
+                </div>
+              </div>
 
+              <div class="tab">
+                <p class="text-center">Please inform us your level of expertise</p>
                 <div class="row">
-                  <div class="mx-auto col-12">
-                    <p>In what space are you interested to become a volunteer?</p>
-                    <div class="d-inline-block text-left">
-                      <%= f.radio_button :space_id, Space.find_by_name("Makerspace").id, :style => 'display:inline', checked: true %>
-                      <%= f.label :space_id, 'Makerspace', :style => 'display:inline' %>
-                      <br />
-                      <%= f.radio_button :space_id, Space.find_by_name("Brunsfield Centre").id, :style => 'display:inline' %>
-                      <%= f.label :space_id, 'Brunsfield Centre', :style => 'display:inline' %>
-                      <br />
-                    </div>
-                    <p>Please inform us your level of expertise</p>
-                  </div>
-
                   <div class="mx-auto col-md-4">
-
                     <b>3D Printing</b> <br />
                     <div class="d-inline-block text-left">
                       <%= f.radio_button :printing, 'Beginner', :style => 'display:inline' %>
@@ -185,16 +182,20 @@
                       <br />
                     </div>
                   </div>
-
-
                 </div>
-                <br />
-
-
-                <% state = true if VolunteerRequest.find_by(user_id: current_user.id) %>
-                <%= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg nextInfo", disabled: state %>
               </div>
-
+              <br />
+              <div class="text-center">
+                <button type="button" id="prevBtn" onclick="nextPrev(-1)">Previous</button>
+                <button type="button" id="nextBtn" onclick="nextPrev(1)">Next</button>
+                <% state = true if VolunteerRequest.find_by(user_id: current_user.id) %>
+                <%= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg", disabled: state, id: "finalBtn", style: "display: none;" %>
+              </div>
+              <div style="text-align:center;margin-top:40px;">
+                <span class="step"></span>
+                <span class="step"></span>
+                <span class="step"></span>
+              </div>
             <% end %>
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
@@ -275,3 +276,4 @@
     </div>
   </div>
 </section>
+
