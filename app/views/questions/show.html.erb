@@ -13,6 +13,7 @@
     <div class="text-left">
       <%= @question.answers.find_each do |a| %>
         <%= a.description %>
+        <%= a.correct %>
         <br />
       <% end %>
 

@@ -15,6 +15,7 @@ class QuestionsController < ApplicationController
 
   def create
     @new_question = current_user.questions.new(question_params)
+    @new_question.answers.first.correct = true
     if @new_question.save!
       redirect_to questions_path
       flash[:notice] = "You've successfully created a new question!"
