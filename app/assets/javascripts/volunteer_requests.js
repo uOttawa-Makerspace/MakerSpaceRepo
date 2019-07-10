@@ -1,7 +1,3 @@
-$(document).on('ready page:load', function () {
-    showTab(currentTab); // Display the current tab
-});
-
 var currentTab = 0; // Current tab is set to be the first tab (0)
 
 function nextPrev(n) {
