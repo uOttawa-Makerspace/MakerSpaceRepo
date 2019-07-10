@@ -11,7 +11,7 @@
     <hr>
 
     <div class="text-left">
-      <% @question.answers.order('random()').each do |a| %>
+      <% @question.answers.randomize_answers.each do |a| %>
         <% if a.correct %>
           <p class="correct-answers"><%= a.description %></p>
         <% else %>
