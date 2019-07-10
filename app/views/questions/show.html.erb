@@ -4,17 +4,19 @@
     <h2>Question in "<%= @question.category %>"</h2>
     <br />
 
-    <div class="jumbotron text-left word-break">
-      <%= @question.description %>
+    <div class=" text-left word-break">
+      <h2><b><%= @question.description %></b></h2>
     </div>
 
     <hr>
 
     <div class="text-left">
-      <%= @question.answers.find_each do |a| %>
-        <%= a.description %>
-        <%= a.correct %>
-        <br />
+      <% @question.answers.order('random()').each do |a| %>
+        <% if a.correct %>
+          <p class="correct-answers"><%= a.description %></p>
+        <% else %>
+          <p class="answers"><%= a.description %></p>
+        <% end  %>
       <% end %>
 
     </div>
