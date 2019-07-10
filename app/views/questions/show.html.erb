@@ -9,5 +9,13 @@
     </div>
 
     <hr>
+
+    <div class="text-left">
+      <%= @question.answers.find_each do |a| %>
+        <%= a.description %>
+        <br />
+      <% end %>
+
+    </div>
   </div>
 </section>
