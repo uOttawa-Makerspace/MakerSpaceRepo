@@ -10,7 +10,7 @@ class QuestionsController < ApplicationController
   def new
     @new_question = Question.new
     @categories = Question::CATEGORIES
-    @new_question.answers.new
+    5.times{@new_question.answers.new}
   end
 
   def create
