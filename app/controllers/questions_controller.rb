@@ -10,12 +10,12 @@ class QuestionsController < ApplicationController
   def new
     @new_question = Question.new
     @categories = Question::CATEGORIES
+    @new_question.answers.new
   end
 
   def create
-    @question = Question.new(question_params)
-    @question.user_id = @user.id
-    if @question.save!
+    @new_question = current_user.questions.new(question_params)
+    if @new_question.save!
       redirect_to questions_path
       flash[:notice] = "You've successfully created a new question!"
     end
@@ -60,6 +60,6 @@ class QuestionsController < ApplicationController
   end
 
   def question_params
-    params.require(:question).permit(:description, :category)
+    params.require(:question).permit(:description, :category, answers_attributes:[:description])
   end
 end
