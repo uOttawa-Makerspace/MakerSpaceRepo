@@ -11,22 +11,22 @@ class MsrMailer < ApplicationMailer
 		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
 	end
 
-	def send_print_quote(user, quote, comments)
+	def send_print_quote(user, quote, comments, filename)
 	  @user = user
 	  @quote = quote
 		@comments = comments
-		mail(to: "art.fetiveau@gmail.com", subject: 'Print Request Approval')
+		mail(to: @user.email, subject: 'Print Request Approval : ' + filename)
 	end
 
-	def send_print_disapproval(user, comments)
+	def send_print_disapproval(user, comments, filename)
 		@user = user
 		@comments = comments
-		mail(to: @user.email, subject: 'Print Request Disapproval')
+		mail(to: @user.email, subject: 'Print Request Disapproval : '+filename)
 	end
 
-	def send_print_finished(user)
+	def send_print_finished(user, filename)
 		@user = user
-		mail(to: @user.email, subject: 'Your print is ready !')
+		mail(to: @user.email, subject: 'Your print : '+ filename +' is ready !')
 	end
 
 	def send_ommic

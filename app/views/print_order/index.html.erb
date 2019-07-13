@@ -16,7 +16,7 @@
   </tr>
   </thead>
   <tbody>
-  <% @print_order.each do |prints| %>
+  <% @print_order.order(id: :desc).each do |prints| %>
     <tr>
       <th style="text-align: center;" scope="row"><%= @users.where(["id = ? ", prints.userid]).pluck(:name).first %></th>
       <td style="text-align: center;"><%= prints.id %></td>
@@ -51,7 +51,7 @@
                       <%= f.hidden_field :approved, :value => true %>
                       <%= f.label :quote, "Quote (In CAD) " %>
                       <div class="form-group">
-                        <%= f.text_field :quote, placeholder: "15.98", class: "form-control" %>
+                        <%= f.text_field :quote, placeholder: "15.98", class: "form-control", :required => true %>
                       </div>
                       <%= f.label :quote, "Comments for client " %>
                       <div class="form-group">
@@ -118,12 +118,12 @@
             <br>
             <%= form_for prints, url: print_order_path(prints) do |f| %>
               <%= f.hidden_field :UserApproval, :value => true %>
-              <button class="btn btn-primary" type="submit">I Accept the quote</button>
+              <%= f.submit "I accept the quote", class: 'btn btn-primary', data: {confirm: 'Are you sure?'} %>
             <% end %>
             <br>
             <%= form_for prints, url: print_order_path(prints) do |f| %>
               <%= f.hidden_field :UserApproval, :value => false %>
-              <button class="btn btn-danger" type="submit">I don't accept it</button>
+              <%= f.submit "I don't accept it", class: 'btn btn-danger', data: {confirm: 'Are you sure?'} %>
             <% end %>
           <% end %>
         </td>

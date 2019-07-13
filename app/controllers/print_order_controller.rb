@@ -31,11 +31,11 @@ class PrintOrderController < ApplicationController
       @print_order.update(print_order_params)
 
       if params[:print_order][:approved] == "true"
-        MsrMailer.send_print_quote(@user, @print_order.quote, params[:print_order][:StaffComments]).deliver_now
+        MsrMailer.send_print_quote(@user, @print_order.quote, params[:print_order][:StaffComments], @print_order.file_file_name).deliver_now
       elsif params[:print_order][:approved] == "false"
-        MsrMailer.send_print_disapproval(@user, params[:print_order][:StaffComments]).deliver_now
+        MsrMailer.send_print_disapproval(@user, params[:print_order][:StaffComments], @print_order.file_file_name).deliver_now
       elsif params[:print_order][:printed] == "true"
-        MsrMailer.send_print_finished(@user).deliver_now
+        MsrMailer.send_print_finished(@user, @print_order.file_file_name).deliver_now
       end
 
       redirect_to print_order_index_path
