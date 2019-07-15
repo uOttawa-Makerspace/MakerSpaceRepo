@@ -18,10 +18,19 @@
                   Category:
                   <%= f.select(:category, @categories , {} , {:class => "form-control"}) %>
                   <br />
-                  Image:
-                  <%= f.file_field :image %>
+                  <br />
+
+                  <label class="image-upload">
+                    <%= file_field_tag 'images[]', type: :files, multiple: true %>
+                    Choose an image...
+                  </label>
+                  <br />
+
+                  <div class="mx-auto" id="image-container"></div>
+
                 </div>
               </div>
+              <br />
 
               <div class="col-md-12">
                 <div class="form-group text-center">
