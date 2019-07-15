@@ -8,6 +8,8 @@
       <h2><b><%= @question.description %></b></h2>
     </div>
 
+    <%= image_tag @question.image.url(:medium) %>
+
     <hr>
 
     <div class="text-left">
