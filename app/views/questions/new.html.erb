@@ -17,6 +17,9 @@
                   <br />
                   Category:
                   <%= f.select(:category, @categories , {} , {:class => "form-control"}) %>
+                  <br />
+                  Image:
+                  <%= f.file_field :image %>
                 </div>
               </div>
 
