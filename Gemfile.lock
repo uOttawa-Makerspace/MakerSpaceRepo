@@ -198,6 +198,8 @@ GEM
       slop (~> 3.4)
     pry-rails (0.3.7)
       pry (>= 0.10.4)
+    quick_random_records (0.3.1)
+      activerecord (>= 3)
     rack (1.6.11)
     rack-test (0.6.3)
       rack (>= 1.0)
@@ -369,6 +371,7 @@ DEPENDENCIES
   progress_bar (~> 1.0.3)
   pry (~> 0.10.1)
   pry-rails
+  quick_random_records
   railroady
   rails (~> 4.2)
   rails_12factor
