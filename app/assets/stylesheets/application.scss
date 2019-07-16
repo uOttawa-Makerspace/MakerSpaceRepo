@@ -130,6 +130,10 @@ html.turbolinks-progress-bar::before {
   padding-bottom: 3rem;
 }
 
+.word-break {
+  word-break: break-all;
+}
+
 .invalid {
   background-color: #ffdddd;
 }

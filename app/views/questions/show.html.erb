@@ -1,0 +1,26 @@
+<section class="page-contents">
+  <div class="edit-column text-center">
+
+    <h2>Question in "<%= @question.category %>"</h2>
+    <br />
+
+    <div class=" text-left word-break">
+      <h2><b><%= @question.description %></b></h2>
+    </div>
+
+    <%= image_tag @question.image.url(:medium) if !@question.image.blank? %>
+
+    <hr>
+
+    <div class="text-left">
+      <% @question.answers.randomize_answers.each do |a| %>
+        <% if a.correct %>
+          <p class="correct-answers"><%= a.description %></p>
+        <% else %>
+          <p class="answers"><%= a.description %></p>
+        <% end  %>
+      <% end %>
+
+    </div>
+  </div>
+</section>
