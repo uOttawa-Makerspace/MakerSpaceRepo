@@ -1,0 +1,18 @@
+<section>
+  <div>
+    <h2>Exams</h2>
+    <% if !@exams.blank? %>
+      <% @xams.find_each do |e| %>
+        <%= e.category  %>
+        <%=link_to "Show", exam_path(e.id), class:"btn-block show-button" %>
+        <%=link_to "Delete", { controller: :exams ,action: :destroy, id: e.id }, method: :delete,
+                   data: { confirm: 'Are you sure that you want to delete this exam?' },
+                   class:"btn-block destroy-button"%>
+      <% end  %>
+    <% else %>
+      <div class="m-5">
+        You have no exams.
+      </div>
+    <% end %>
+  </div>
+</section>
