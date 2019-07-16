@@ -21,12 +21,13 @@
                   <br />
 
                   <label class="image-upload">
-                    <%= f.file_field :image %>
+                    <%= f.file_field :image, id: "pictureInput"%>
                     Choose an image...
                   </label>
                   <br />
+                  <br />
 
-                  <div class="mx-auto" id="image-container"></div>
+                  <div id="image-target" class="mx-auto"></div>
 
                 </div>
               </div>

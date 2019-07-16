@@ -20,3 +20,10 @@ label.image-upload{
     cursor:pointer;
   }
 }
+
+#image-target{
+  img {
+    max-width:200px;
+    height:auto;
+  }
+}

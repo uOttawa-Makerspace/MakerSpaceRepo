@@ -1,4 +1,4 @@
-$(document).on('ready load', function () {
+$(document).on('ready page:load', function () {
     'use strict';
     window.addEventListener('load', function() {
         var forms = document.getElementsByClassName('needs-validation');
@@ -12,4 +12,18 @@ $(document).on('ready load', function () {
             }, false);
         });
     }, false);
+
+    $('#pictureInput').on('change', function(event) {
+        var files = event.target.files;
+        var image = files[0]
+        var reader = new FileReader();
+        reader.onload = function(file) {
+            var img = new Image();
+            console.log(file);
+            img.src = file.target.result;
+            $('#image-target').html(img);
+        }
+        reader.readAsDataURL(image);
+        console.log(files);
+    });
 });
