@@ -25,5 +25,10 @@ $(document).on('ready page:load', function () {
         }
         reader.readAsDataURL(image);
         console.log(files);
+
+        var editImage = document.getElementById("edit-image");
+        if(editImage){
+         editImage.style.display = "none";
+        }
     });
 });

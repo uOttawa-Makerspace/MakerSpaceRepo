@@ -24,10 +24,15 @@
                   <%= f.file_field :image, id: "pictureInput"%>
                   Choose an image...
                 </label>
+
                 <br />
                 <br />
 
                 <div id="image-target" class="mx-auto text-center"></div>
+
+                <div class="text-center" id="edit-image">
+                  <%= image_tag @question.image.url(:medium) if !@question.image.blank? %>
+                </div>
 
               </div>
 
