@@ -1,6 +1,6 @@
-<section>
+<section class="container">
   <div class="text-center">
-    <% @exam.exam_questions do |eq| %>
+    <% @exam.exam_questions.find_each do |eq| %>
       <div class=" text-left word-break">
         <h2><b><%= eq.question.description %></b></h2>
       </div>
