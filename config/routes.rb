@@ -213,6 +213,8 @@ Rails.application.routes.draw do
 
   resources :questions
 
+  resources :exams, only: [:index, :create, :show]
+
   resources :volunteer_tasks
 
   resources :announcements
