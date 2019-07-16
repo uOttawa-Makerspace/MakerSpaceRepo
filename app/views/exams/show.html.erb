@@ -1,5 +1,19 @@
 <section>
-  <div>
-    <%= @exam.category %>
+  <div class="text-center">
+    <% @exam.exam_questions do |eq| %>
+      <div class=" text-left word-break">
+        <h2><b><%= eq.question.description %></b></h2>
+      </div>
+      <%= image_tag eq.question.image.url(:medium) if !eq.question.image.blank? %>
+      <div class="text-left">
+        <% eq.question.answers.randomize_answers.each do |a| %>
+          <% if a.correct %>
+            <p class="correct-answers"><%= a.description %></p>
+          <% else %>
+            <p class="answers"><%= a.description %></p>
+          <% end  %>
+        <% end %>
+      </div>
+    <% end %>
   </div>
 </section>
