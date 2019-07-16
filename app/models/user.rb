@@ -21,6 +21,7 @@ class User < ActiveRecord::Base
   has_many :training_sessions
   has_many :announcements
   has_many :questions
+  has_many :exams
 
   validates :name,
     presence: true,
