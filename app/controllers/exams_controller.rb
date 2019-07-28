@@ -14,7 +14,7 @@ class ExamsController < ApplicationController
   def create
     @new_exam = current_user.exams.new(exam_params)
     @new_exam.save!
-    ExamQuestion.create_exam(@new_exam.id, @new_exam.category, 3)
+    ExamQuestion.create_exam_questions(@new_exam.id, @new_exam.category, 3)
     if @new_exam.save!
       redirect_to exams_path
       flash[:notice] = "You've successfully created a new exam!"
