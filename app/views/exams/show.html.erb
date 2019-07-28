@@ -7,13 +7,17 @@
       <%= image_tag eq.question.image.url(:medium) if !eq.question.image.blank? %>
       <div class="text-left">
         <% eq.question.answers.randomize_answers.each do |a| %>
-          <% if a.correct %>
-            <p class="correct-answers"><%= a.description %></p>
-          <% else %>
-            <p class="answers"><%= a.description %></p>
-          <% end  %>
+          <p class="answers"><%= a.description %></p>
         <% end %>
       </div>
     <% end %>
   </div>
 </section>
+
+<script>
+  $(document).click(function(event) {
+      $(event.target).removeClass("answers");
+      $(event.target).addClass("correct-answers");
+      // alert($(event.target).text());
+  });
+</script>
