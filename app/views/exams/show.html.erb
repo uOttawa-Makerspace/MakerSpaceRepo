@@ -7,7 +7,7 @@
       <%= image_tag eq.question.image.url(:medium) if !eq.question.image.blank? %>
       <div class="text-left">
         <% eq.question.answers.randomize_answers.each do |a| %>
-          <p class="answers"><%= a.description %></p>
+          <p class="answers" onclick="questionResponse()"><%= a.description %></p>
         <% end %>
       </div>
     <% end %>
@@ -15,9 +15,12 @@
 </section>
 
 <script>
-  $(document).click(function(event) {
-      $(event.target).removeClass("answers");
-      $(event.target).addClass("correct-answers");
-      // alert($(event.target).text());
-  });
+  function questionResponse(){
+      var clickedAnswer = $(event.target);
+      var allAnswersSelected = clickedAnswer.parent().children("p.selected-answers");
+      allAnswersSelected.removeClass('selected-answers');
+      allAnswersSelected.addClass('answers');
+      clickedAnswer.removeClass('answers');
+      clickedAnswer.addClass('selected-answers');
+  }
 </script>
