@@ -7,7 +7,7 @@
       <%= image_tag eq.question.image.url(:medium) if !eq.question.image.blank? %>
       <div class="text-left">
         <% eq.question.answers.randomize_answers.each do |a| %>
-          <p class="answers" onclick="questionResponse()"><%= a.description %></p>
+          <p class="answers" onclick="questionResponse(<%= a.id %>)"><%= a.description %></p>
         <% end %>
       </div>
     <% end %>
@@ -15,7 +15,19 @@
 </section>
 
 <script>
-  function questionResponse(){
+  function questionResponse(answer_id){
+      $.ajax({
+          url: "/exams/testing",
+          type: "POST",
+          dataType: 'json',
+          data: {
+              answer_id: answer_id
+          }
+      });
+      changeAnswerClass()
+  }
+
+  function changeAnswerClass(){
       var clickedAnswer = $(event.target);
       var allAnswersSelected = clickedAnswer.parent().children("p.selected-answers");
       allAnswersSelected.removeClass('selected-answers');
