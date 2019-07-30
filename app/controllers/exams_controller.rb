@@ -35,14 +35,6 @@ class ExamsController < ApplicationController
     redirect_to exams_path
   end
 
-  def testing
-    puts "answer_id:"
-    puts params[:answer_id]
-    respond_to do |format|
-      format.js { render nothing: true }
-    end
-  end
-
   private
 
   def grant_access
