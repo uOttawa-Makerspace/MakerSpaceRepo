@@ -6,6 +6,10 @@ class QuestionResponsesController < ApplicationController
   def create
     puts "answer_id:"
     puts params[:answer_id]
+    puts "answer_id:"
+    puts params[:question_id]
+    puts "answer_id:"
+    puts params[:exam_id]
     respond_to do |format|
       format.js { render nothing: true }
     end

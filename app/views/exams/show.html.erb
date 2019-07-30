@@ -7,7 +7,9 @@
       <%= image_tag eq.question.image.url(:medium) if !eq.question.image.blank? %>
       <div class="text-left">
         <% eq.question.answers.randomize_answers.each do |a| %>
-          <p class="answers" onclick="questionResponse(<%= a.id %>)"><%= a.description %></p>
+          <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= eq.question.id %>, <%= a.id %>)">
+            <%= a.description %>
+          </p>
         <% end %>
       </div>
     <% end %>
