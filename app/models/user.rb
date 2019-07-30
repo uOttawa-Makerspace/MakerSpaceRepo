@@ -22,6 +22,7 @@ class User < ActiveRecord::Base
   has_many :announcements
   has_many :questions
   has_many :exams
+  has_many :question_responses
 
   validates :name,
     presence: true,
