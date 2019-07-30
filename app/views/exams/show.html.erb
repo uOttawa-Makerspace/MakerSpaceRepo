@@ -13,26 +13,3 @@
     <% end %>
   </div>
 </section>
-
-<script>
-  function questionResponse(answer_id){
-      $.ajax({
-          url: "/exams/testing",
-          type: "POST",
-          dataType: 'json',
-          data: {
-              answer_id: answer_id
-          }
-      });
-      changeAnswerClass()
-  }
-
-  function changeAnswerClass(){
-      var clickedAnswer = $(event.target);
-      var allAnswersSelected = clickedAnswer.parent().children("p.selected-answers");
-      allAnswersSelected.removeClass('selected-answers');
-      allAnswersSelected.addClass('answers');
-      clickedAnswer.removeClass('answers');
-      clickedAnswer.addClass('selected-answers');
-  }
-</script>
