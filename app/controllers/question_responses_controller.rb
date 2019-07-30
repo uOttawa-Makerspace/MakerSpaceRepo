@@ -1,25 +1,38 @@
 class QuestionResponsesController < ApplicationController
   before_action :current_user
 
-
-
   def create
-    puts "answer_id:"
-    puts params[:answer_id]
-    puts "answer_id:"
-    puts params[:question_id]
-    puts "answer_id:"
-    puts params[:exam_id]
+    correct = Answer.find(params[:answer_id]).correct
+    response = QuestionResponse.where(question_response_params_check).last
+    if response
+      update_response(response, correct)
+    else
+      response = current_user.question_responses.new(question_response_params)
+      response.correct = correct
+      response.save!
+    end
     respond_to do |format|
       format.js { render nothing: true }
     end
-  #   @new_exam = current_user.exams.new(exam_params)
-  #   @new_exam.save!
-  #   ExamQuestion.create_exam_questions(@new_exam.id, @new_exam.category, 3)
-  #   if @new_exam.save!
-  #     redirect_to exams_path
-  #     flash[:notice] = "You've successfully created a new exam!"
-  #   end
+  end
+
+  private
+
+  def question_response_params
+    params.permit(:answer_id, :question_id, :exam_id)
+  end
+
+  def question_response_params_check
+    params.permit(:question_id, :exam_id)
+  end
+
+  def question_response_params_update
+    params.permit(:answer_id)
+  end
+
+  def update_response(response, correct)
+    response.update_attributes(question_response_params_update)
+    response.update_attributes(correct: correct)
   end
 
 end
