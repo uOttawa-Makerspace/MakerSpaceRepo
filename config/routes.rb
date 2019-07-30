@@ -219,6 +219,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :question_responses, only: [:create]
+
   resources :volunteer_tasks
 
   resources :announcements
