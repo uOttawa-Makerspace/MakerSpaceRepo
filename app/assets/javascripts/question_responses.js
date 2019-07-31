@@ -1,3 +1,7 @@
+$(document).on.load(
+
+);
+
 function questionResponse(exam_id, question_id, answer_id){
     $.ajax({
         url: "/question_responses#create",

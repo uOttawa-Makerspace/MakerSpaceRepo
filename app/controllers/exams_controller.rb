@@ -38,7 +38,7 @@ class ExamsController < ApplicationController
   private
 
   def grant_access
-    unless current_user.staff? || current_user.admin?
+    unless current_user.staff? || current_user.admin? || @exam.current_user.eql?(current_user)
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
     end
