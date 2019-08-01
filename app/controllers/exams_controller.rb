@@ -1,5 +1,6 @@
 class ExamsController < ApplicationController
   before_action :current_user
+  before_action :set_exam
   before_action :grant_access
 
   def index
@@ -24,7 +25,7 @@ class ExamsController < ApplicationController
   def show
     @exam = Exam.find(params[:id])
     @questions_not_answered = @exam.questions.joins('LEFT JOIN question_responses ON questions.id = question_responses.question_id').where("question_responses.question_id IS NULL")
-    @questions_answered = @exam.questions.joins(:question_responses).where("question_responses.user_id = ?", current_user.id)
+    @question_responses = @exam.question_responses.where(user_id: current_user.id)
   end
 
   def destroy
@@ -39,8 +40,12 @@ class ExamsController < ApplicationController
 
   private
 
+  def set_exam
+    @exam = Exam.find(params[:id]) || Exam.new
+  end
+
   def grant_access
-    unless current_user.staff? || current_user.admin? || @exam.current_user.eql?(current_user)
+    unless current_user.staff? || current_user.admin? || @exam.user.eql?(current_user)
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
     end

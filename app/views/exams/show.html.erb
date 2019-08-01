@@ -16,19 +16,25 @@
   </div>
 
   <div class="text-center">
-    <% @questions_answered.find_each do |q| %>
+    <% @question_responses.find_each do |qr| %>
       <div class=" text-left word-break">
-        <h2><b><%= q.description %></b></h2>
+        <% question = qr.question %>
+        <h2><b><%= question.description %></b></h2>
       </div>
-      <%= image_tag q.image.url(:medium) if !q.image.blank? %>
+      <%= image_tag question.image.url(:medium) if !question.image.blank? %>
       <div class="text-left">
-        <% q.answers.randomize_answers.each do |a| %>
-          <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= q.id %>, <%= a.id %>)">
+        <% question.answers.randomize_answers.each do |a| %>
+          <% if qr.answer.eql?(a) %>
+          <p class="selected-answers" onclick="questionResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
             <%= a.description %>
           </p>
-        <% end %>
+          <% else %>
+            <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
+              <%= a.description %>
+            </p>
+          <% end %>
+        <% end  %>
       </div>
     <% end %>
   </div>
-
 </section>
