@@ -1,7 +1,9 @@
 <!--//TODO: Too much logic here}-->
 <section class="container">
   <div class="text-center">
+    <% i = 1  %>
     <% @questions.find_each do |q| %>
+      Question <%= i %>
       <% if !q.question_responses.where("question_responses.user_id = ?", current_user.id).present? %>
         <div class=" text-left word-break">
           <h2><b><%= q.description %></b></h2>
@@ -14,30 +16,29 @@
             </p>
           <% end %>
         </div>
+      <% else %>
+        <% q.question_responses.where("question_responses.user_id = ?", current_user.id).find_each do |qr| %>
+          <div class=" text-left word-break">
+            <% question = qr.question %>
+            <h2><b><%= question.description %></b></h2>
+          </div>
+          <%= image_tag question.image.url(:medium) if !question.image.blank? %>
+          <div class="text-left">
+            <% question.answers.randomize_answers.each do |a| %>
+              <% if qr.answer.eql?(a) %>
+                <p class="selected-answers" onclick="questionResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
+                  <%= a.description %>
+                </p>
+              <% else %>
+                <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
+                  <%= a.description %>
+                </p>
+              <% end %>
+            <% end  %>
+          </div>
+        <% end %>
       <% end %>
+      <% i+=1 %>
     <% end  %>
-  </div>
-
-  <div class="text-center">
-    <% @question_responses.find_each do |qr| %>
-      <div class=" text-left word-break">
-        <% question = qr.question %>
-        <h2><b><%= question.description %></b></h2>
-      </div>
-      <%= image_tag question.image.url(:medium) if !question.image.blank? %>
-      <div class="text-left">
-        <% question.answers.randomize_answers.each do |a| %>
-          <% if qr.answer.eql?(a) %>
-          <p class="selected-answers" onclick="questionResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
-            <%= a.description %>
-          </p>
-          <% else %>
-            <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
-              <%= a.description %>
-            </p>
-          <% end %>
-        <% end  %>
-      </div>
-    <% end %>
   </div>
 </section>
