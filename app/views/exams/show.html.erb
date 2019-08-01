@@ -1,18 +1,21 @@
+<!--//TODO: Too much logic here}-->
 <section class="container">
   <div class="text-center">
-    <% @questions_not_answered.find_each do |q| %>
-      <div class=" text-left word-break">
-        <h2><b><%= q.description %></b></h2>
-      </div>
-      <%= image_tag q.image.url(:medium) if !q.image.blank? %>
-      <div class="text-left">
-        <% q.answers.randomize_answers.each do |a| %>
-          <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= q.id %>, <%= a.id %>)">
-            <%= a.description %>
-          </p>
-        <% end %>
-      </div>
-    <% end %>
+    <% @questions.find_each do |q| %>
+      <% if !q.question_responses.where("question_responses.user_id = ?", current_user.id).present? %>
+        <div class=" text-left word-break">
+          <h2><b><%= q.description %></b></h2>
+        </div>
+        <%= image_tag q.image.url(:medium) if !q.image.blank? %>
+        <div class="text-left">
+          <% q.answers.randomize_answers.each do |a| %>
+            <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= q.id %>, <%= a.id %>)">
+              <%= a.description %>
+            </p>
+          <% end %>
+        </div>
+      <% end %>
+    <% end  %>
   </div>
 
   <div class="text-center">

@@ -1,7 +1,7 @@
 class ExamsController < ApplicationController
   before_action :current_user
   before_action :set_exam
-  before_action :grant_access
+  before_action :grant_access, only: [:show]
 
   def index
     @exams = Exam.all.order(category: :desc).paginate(:page => params[:page], :per_page => 50)
@@ -23,8 +23,9 @@ class ExamsController < ApplicationController
   end
 
   def show
+    # TODO: Fix the logic in show.html. Too much logic.
     @exam = Exam.find(params[:id])
-    @questions_not_answered = @exam.questions.joins('LEFT JOIN question_responses ON questions.id = question_responses.question_id').where("question_responses.question_id IS NULL")
+    @questions = @exam.questions
     @question_responses = @exam.question_responses.where(user_id: current_user.id)
   end
 
@@ -41,7 +42,7 @@ class ExamsController < ApplicationController
   private
 
   def set_exam
-    @exam = Exam.find(params[:id]) || Exam.new
+    @exam = Exam.find_by(id: params[:id]) || Exam.new
   end
 
   def grant_access
