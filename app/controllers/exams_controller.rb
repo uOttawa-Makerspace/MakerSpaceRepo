@@ -23,6 +23,8 @@ class ExamsController < ApplicationController
 
   def show
     @exam = Exam.find(params[:id])
+    @questions_not_answered = @exam.questions.joins('LEFT JOIN question_responses ON questions.id = question_responses.question_id').where("question_responses.question_id IS NULL")
+    @questions_answered = @exam.questions.joins(:question_responses).where("question_responses.user_id = ?", current_user.id)
   end
 
   def destroy

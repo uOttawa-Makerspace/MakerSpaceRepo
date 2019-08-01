@@ -1,17 +1,31 @@
 <section class="container">
   <div class="text-center">
-    <% @exam.exam_questions.find_each do |eq| %>
+    <% @questions_not_answered.find_each do |q| %>
       <div class=" text-left word-break">
-        <h2><b><%= eq.question.description %></b></h2>
+        <h2><b><%= q.description %></b></h2>
       </div>
-      <%= image_tag eq.question.image.url(:medium) if !eq.question.image.blank? %>
+      <%= image_tag q.image.url(:medium) if !q.image.blank? %>
       <div class="text-left">
-        <% eq.question.answers.randomize_answers.each do |a| %>
-          <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= eq.question.id %>, <%= a.id %>)">
+        <% q.answers.randomize_answers.each do |a| %>
+          <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= q.id %>, <%= a.id %>)">
             <%= a.description %>
           </p>
         <% end %>
       </div>
     <% end %>
   </div>
+
+  <%# @questions_not_answered.find_each do |eq| %>
+<!--    <div class=" text-left word-break">-->
+<!--      <h2><b><%#= eq.question.description %></b></h2>-->
+<!--    </div>-->
+    <%#= image_tag eq.question.image.url(:medium) if !eq.question.image.blank? %>
+<!--    <div class="text-left">-->
+      <%# eq.question.answers.randomize_answers.each do |a| %>
+<!--        <p class="answers" onclick="questionResponse(<%#= @exam.id %>,<%#= eq.question.id %>, <%#= a.id %>)">-->
+          <%#= a.description %>
+<!--        </p>-->
+      <%# end %>
+<!--    </div>-->
+  <%# end %>
 </section>
