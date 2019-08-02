@@ -6,6 +6,7 @@
     <th style="text-align: center;" scope="col">Print ID</th>
     <th style="text-align: center;" scope="col">Comments</th>
     <th style="text-align: center;" scope="col">Download</th>
+    <th style="text-align: center;" scope="col">Expedited</th>
     <th style="text-align: center;" scope="col">Approved by staff ?</th>
     <th style="text-align: center;" scope="col">Quote approved by user?</th>
     <% if @user.admin? or @user.staff? %>
@@ -26,6 +27,11 @@
         <button class="btn btn-primary">Download</button>
       </a>
         <% end %></td>
+      <% if prints.expedited == true %>
+        <td>Yes</td>
+      <% else %>
+        <td>No</td>
+      <% end %>
 
       <% if @user.admin? %>
         <% if prints.approved %>

@@ -54,7 +54,7 @@ class PrintOrderController < ApplicationController
     private
 
     def print_order_params
-      params.require(:print_order).permit(:userid, :comments, :approved, :printed, :file, :quote, :UserApproval, :StaffComments, :staffid)
+      params.require(:print_order).permit(:userid, :comments, :approved, :printed, :file, :quote, :UserApproval, :StaffComments, :staffid, :expedited)
     end
 
 end
