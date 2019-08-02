@@ -1,6 +1,8 @@
 class ExamQuestion < ActiveRecord::Base
   belongs_to :exam
   belongs_to :question
+  # has_many :question_responses
+  # has_one :user, through: :exam
 
   def self.create_exam_questions(exam_id, category, n_questions)
     random_questions = Question.where(category: category).random_records(n_questions)
