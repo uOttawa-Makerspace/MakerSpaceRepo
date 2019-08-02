@@ -1,17 +1,44 @@
 <div class="padding">
   <h2>New Print Order</h2>
-  <p>*** All prints must be picked up at UOttawa Makerspace in Ottawa, you will be contacted by email at each steps up to pickup. The quote is available as soon as a staff member puts it on the system and it will be sent to you by email waiting for your approval before being printed ***</p>
-  <p>*** All payments will go through secured payment (<a href="https://makerstore.ca/">Makerstore.ca</a>) With methods available : Cash / Debit Card (Visa Debit, interac <b>might</b> work) / Credit Card (Visa / Mastercard)</p>
+  <p>*** All prints must be picked up at UOttawa Makerspace in Ottawa, you will be contacted by email at each steps up
+    to pickup. The quote is available as soon as a staff member puts it on the system and it will be sent to you by
+    email waiting for your approval before being printed ***</p>
+  <p>*** All payments will go through secured payment (<a href="https://makerstore.ca/">Makerstore.ca</a>) With methods
+    available : Cash / Debit Card (Visa Debit, interac <b>might</b> work) / Credit Card (Visa / Mastercard)</p>
   <%= form_for(@print_order, multipart: true, url: print_order_index_path) do |f| %>
     <div class="form-group">
       <label>STL File</label>
       <%= f.file_field :file, style: "display: block!important;", :required => true %>
     </div>
+    <fieldset class="form-group">
+      <div class="row">
+        <legend class="col-form-label col-sm-2 pt-0">Quality</legend>
+        <div class="col-sm-10">
+          <div class="form-check">
+            <input type="radio" class="form-check-input" name="print_order[comments]" value="Low Quality"> Low Quality<br>
+          </div>
+          <div class="form-check">
+            <input type="radio" checked class="form-check-input" name="print_order[comments]" value="Medium Quality"> Medium Quality<br>
+          </div>
+          <div class="form-check">
+            <input type="radio" class="form-check-input" name="print_order[comments]" value="High Quality"> High Quality<br>
+          </div>
 
-    <div class="form-group">
-      <label>Comments </label>
-      <%= f.text_area :comments, class: "form-control" %>
-    </div>
+          <script type="text/javascript" charset="utf-8">
+              function changeradioother() {
+                  var other = document.getElementById("other");
+                  other.value = document.getElementById("inputother").value;
+              }
+          </script>
+
+          <div class="form-check">
+            <input type="radio" class="form-check-input" id="other" name="print_order[comments]" value="">Other <input id="inputother" type="text" onchange="changeradioother()" />
+          </div>
+      </div>
+      </div>
+    </fieldset>
+
+
     <%= f.hidden_field :userid, :value => current_user.id %>
 
 
