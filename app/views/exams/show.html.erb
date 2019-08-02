@@ -1,9 +1,8 @@
 <!--//TODO: Too much logic here}-->
 <section class="container">
   <div class="text-center">
-    <% i = 1  %>
-    <% @questions.find_each do |q| %>
-      Question <%= i %>
+    <% @questions.find_each.each_with_index do |q, i| %>
+      Question <%= i + 1 %>
       <% if !q.question_responses.where("question_responses.user_id = ?", current_user.id).present? %>
         <div class=" text-left word-break">
           <h2><b><%= q.description %></b></h2>
@@ -38,7 +37,6 @@
           </div>
         <% end %>
       <% end %>
-      <% i+=1 %>
       <br />
     <% end %>
 
