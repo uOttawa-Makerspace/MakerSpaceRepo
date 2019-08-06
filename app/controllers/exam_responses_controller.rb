@@ -4,21 +4,26 @@ class ExamResponsesController < ApplicationController
 
   def create
     permitted_params = exam_response_params
-    response_id = permitted_params[:response_id]
-    exam_id = permitted_params[:exam_id]
+    exam = Exam.find(permitted_params[:exam_id])
     answer = Answer.find(permitted_params[:answer_id])
-    if response_id
-      response = ExamResponse.find(response_id)
+    question = answer.question
+    response = question.response_for_exam(exam)
+    if response
       response.update_attributes(answer_id: answer.id, correct: answer.correct)
     else
-      question_id = answer.question.id
-      exam_question_id = ExamQuestion.where(exam_id: exam_id, question_id: question_id).last.id
+      exam_question_id = ExamQuestion.where(exam_id: exam.id, question_id: question.id).last.id
       response = ExamResponse.new(exam_question_id: exam_question_id, answer_id: answer.id, correct: answer.correct)
       response.save!
     end
     respond_to do |format|
       format.js { render nothing: true }
     end
+  end
+
+  def get_response_id
+    question = Answer.find(params[:answer_id]).question
+    response = question.response_for_exam(params[:exam_id])
+    return response.id if response
   end
 
   private
@@ -33,4 +38,5 @@ class ExamResponsesController < ApplicationController
   def exam_response_params
     params.permit(:answer_id, :exam_id, :response_id)
   end
+
 end

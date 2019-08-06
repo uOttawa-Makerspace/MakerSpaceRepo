@@ -5,11 +5,11 @@
 <div class="text-left">
   <% question.answers.randomize_answers.each do |a| %>
     <% if response.answer.eql?(a) %>
-      <p class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>, <%= response.id %>)">
+      <p class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
         <%= a.description %>
       </p>
     <% else %>
-      <p class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>, <%= response.id %>)">
+      <p class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
         <%= a.description %>
       </p>
     <% end %>
