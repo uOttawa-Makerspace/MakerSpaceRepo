@@ -10,7 +10,7 @@
         <%= image_tag q.image.url(:medium) if !q.image.blank? %>
         <div class="text-left">
           <% q.answers.randomize_answers.each do |a| %>
-            <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= q.id %>, <%= a.id %>)">
+            <p class="answers" onclick="examResponse(<%= @exam.id %>,<%= q.id %>, <%= a.id %>)">
               <%= a.description %>
             </p>
           <% end %>
@@ -25,11 +25,11 @@
           <div class="text-left">
             <% question.answers.randomize_answers.each do |a| %>
               <% if qr.answer.eql?(a) %>
-                <p class="selected-answers" onclick="questionResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
+                <p class="selected-answers" onclick="examResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
                   <%= a.description %>
                 </p>
               <% else %>
-                <p class="answers" onclick="questionResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
+                <p class="answers" onclick="examResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
                   <%= a.description %>
                 </p>
               <% end %>

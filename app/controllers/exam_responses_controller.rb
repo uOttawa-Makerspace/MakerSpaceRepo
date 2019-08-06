@@ -1,9 +1,9 @@
-class QuestionResponsesController < ApplicationController
+class ExamResponsesController < ApplicationController
   before_action :current_user
 
   def create
     correct = Answer.find(params[:answer_id]).correct
-    response = QuestionResponse.where(question_response_params_check).last
+    response = ExamResponse.where(question_response_params_check).last
     if response
       update_response(response, correct)
     else

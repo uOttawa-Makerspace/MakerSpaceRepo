@@ -1,6 +1,6 @@
 class CreateQuestionResponses < ActiveRecord::Migration
   def change
-    create_table :question_responses do |t|
+    create_table :examResponses do |t|
       t.integer :user_id
       t.integer :exam_id
       t.integer :question_id

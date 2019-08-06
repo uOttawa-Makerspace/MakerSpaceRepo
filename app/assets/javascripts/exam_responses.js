@@ -1,4 +1,4 @@
-function questionResponse(exam_id, question_id, answer_id){
+function examResponse(exam_id, question_id, answer_id){
     $.ajax({
         url: "/question_responses#create",
         type: "POST",

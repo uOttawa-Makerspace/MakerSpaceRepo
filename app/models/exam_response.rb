@@ -1,4 +1,4 @@
-class QuestionResponse < ActiveRecord::Base
+class ExamResponse < ActiveRecord::Base
   belongs_to :user
   belongs_to :exam
   belongs_to :question
