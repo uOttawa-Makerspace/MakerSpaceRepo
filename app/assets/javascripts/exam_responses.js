@@ -1,11 +1,10 @@
-function examResponse(exam_id, question_id, answer_id){
+function examResponse(exam_id, answer_id){
     $.ajax({
-        url: "/question_responses#create",
+        url: "/exam_responses#create",
         type: "POST",
         dataType: 'json',
         data: {
             exam_id: exam_id,
-            question_id: question_id,
             answer_id: answer_id
         }
     });

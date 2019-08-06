@@ -7,7 +7,7 @@ class ExamResponsesController < ApplicationController
     if response
       update_response(response, correct)
     else
-      response = current_user.question_responses.new(question_response_params)
+      response = current_user.exam_responses.new(question_response_params)
       response.correct = correct
       response.save!
     end
