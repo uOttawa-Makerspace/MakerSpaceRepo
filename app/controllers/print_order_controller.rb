@@ -7,7 +7,7 @@ class PrintOrderController < ApplicationController
       if (@user.staff? || @user.admin?)
         @print_order = PrintOrder.all
       else
-        @print_order = PrintOrder.where(userid: @user.id)
+        @print_order = PrintOrder.where(user_id: @user.id)
       end
 
     end
@@ -27,7 +27,7 @@ class PrintOrderController < ApplicationController
 
     def update
       @print_order = PrintOrder.find(params[:id])
-      @user = User.find(@print_order.userid)
+      @user = User.find(@print_order.user_id)
       @print_order.update(print_order_params)
 
       if params[:print_order][:approved] == "true"
@@ -55,7 +55,7 @@ class PrintOrderController < ApplicationController
     private
 
     def print_order_params
-      params.require(:print_order).permit(:userid, :comments, :approved, :printed, :file, :quote, :UserApproval, :StaffComments, :staffid, :expedited)
+      params.require(:print_order).permit(:user_id, :comments, :approved, :printed, :file, :quote, :UserApproval, :StaffComments, :staffid, :expedited)
     end
 
 end

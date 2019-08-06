@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190802204114) do
+ActiveRecord::Schema.define(version: 20190806210822) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -134,7 +134,7 @@ ActiveRecord::Schema.define(version: 20190802204114) do
   add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
 
   create_table "print_orders", force: :cascade do |t|
-    t.integer  "userid"
+    t.integer  "user_id"
     t.boolean  "approved"
     t.boolean  "printed"
     t.text     "comments"

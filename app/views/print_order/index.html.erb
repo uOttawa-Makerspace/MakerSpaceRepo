@@ -19,7 +19,7 @@
   <tbody>
   <% @print_order.order(id: :desc).each do |prints| %>
     <tr>
-      <th style="text-align: center;" scope="row"><%= @users.where(["id = ? ", prints.userid]).pluck(:name).first %></th>
+      <th style="text-align: center;" scope="row"><%= @users.where(["id = ? ", prints.user_id]).pluck(:name).first %></th>
       <td style="text-align: center;"><%= prints.id %></td>
       <td><%= prints.comments %></td>
       <td>
@@ -113,7 +113,7 @@
         <% end %>
       <% end %>
 
-      <% if prints.userid == @user.id and prints.approved %>
+      <% if prints.user_id == @user.id and prints.approved %>
         <td>
           <% if prints.UserApproval %>
             Approved
