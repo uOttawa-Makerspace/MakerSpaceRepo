@@ -27,7 +27,14 @@ class MsrMailer < ApplicationMailer
 	def send_print_finished(user, filename)
 		@user = user
 		mail(to: @user.email, subject: 'Your print : '+ filename +' is ready !')
-	end
+  end
+
+  def send_invoice(name, quote, number)
+    @name = name
+    @quote = quote
+    @number = number
+    mail(to: "uomakerspaceprintinvoices@gmail.com", subject: 'Invoice for Order #' + @number.to_s + ' ')
+  end
 
 	def send_ommic
 		all_users = User.where("email like ? and length(email) = 19", "%@uottawa.ca").pluck(:email).uniq

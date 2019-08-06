@@ -36,6 +36,7 @@ class PrintOrderController < ApplicationController
         MsrMailer.send_print_disapproval(@user, params[:print_order][:StaffComments], @print_order.file_file_name).deliver_now
       elsif params[:print_order][:printed] == "true"
         MsrMailer.send_print_finished(@user, @print_order.file_file_name).deliver_now
+        MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id).deliver_now
       end
 
       redirect_to print_order_index_path

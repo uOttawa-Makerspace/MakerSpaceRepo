@@ -7,11 +7,11 @@
 
 <div class="padding">
   <h2>New Print Order</h2>
-  <p>*** All prints must be picked up at UOttawa Makerspace in Ottawa, you will be contacted by email at each steps up
+  <p>*** All prints must be picked up at UOttawa Makerspace in Ottawa, ON, you will be contacted by email at each steps up
     to pickup. The quote is available as soon as a staff member puts it on the system and it will be sent to you by
-    email waiting for your approval before being printed. Expedited option will take about 24h on top of the print time from the moment that you accepted the quote ***</p>
-  <p>*** All payments will go through secured payment (<a href="https://makerstore.ca/">Makerstore.ca</a>) With methods
-    available : Cash / Debit Card (Visa Debit, interac <b>might</b> work) / Credit Card (Visa / Mastercard)</p>
+    email, waiting for your approval before being printed. Expedited option will take about 24h on top of the print time from the moment that you accepted the quote ***</p>
+  <p>*** All payments will go through secured payment wall (<a href="https://makerstore.ca/">Makerstore.ca</a>) With methods
+    available : Cash / Debit Card (Visa Debit or Mastercard Debit Only) / Credit Card (Visa / Mastercard) ***</p>
   <%= form_for(@print_order, multipart: true, url: print_order_index_path) do |f| %>
     <div class="form-group">
       <label>STL File</label>
@@ -56,9 +56,7 @@
           </div>
     </fieldset>
 
-
-
-
+    
     <%= f.hidden_field :userid, :value => current_user.id %>
 
 
