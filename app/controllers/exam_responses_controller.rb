@@ -20,12 +20,6 @@ class ExamResponsesController < ApplicationController
     end
   end
 
-  def get_response_id
-    question = Answer.find(params[:answer_id]).question
-    response = question.response_for_exam(params[:exam_id])
-    return response.id if response
-  end
-
   private
 
   def grant_access
