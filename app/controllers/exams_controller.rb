@@ -2,6 +2,7 @@ class ExamsController < ApplicationController
   before_action :current_user
   before_action :set_exam
   before_action :grant_access, only: [:show]
+  before_action :check_exam_status, only: [:show]
 
   def index
     @exams = current_user.exams.order(category: :desc).paginate(:page => params[:page], :per_page => 50)
@@ -66,5 +67,12 @@ class ExamsController < ApplicationController
 
   def exam_params
     params.require(:exam).permit(:category)
+  end
+
+  def check_exam_status
+    unless (@exam.status == Exam::STATUS[:incomplete] || @exam.status == Exam::STATUS[:not_started])
+      flash[:alert] = "You cannot access an exam after being finished."
+      redirect_to exams_path
+    end
   end
 end
