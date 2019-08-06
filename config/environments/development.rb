@@ -39,7 +39,7 @@ Rails.application.configure do
   # Raises error for missing translations
   # config.action_view.raise_on_missing_translations = true
 
-  config.console = Pry  
+  config.console = Pry
 
   Octokit.configure do |c|
     c.client_id        = ENV['GITHUB_APP_KEY']
@@ -55,8 +55,8 @@ Rails.application.configure do
   config.action_mailer.smtp_settings = {
     :address => "smtp.sendgrid.net",
     :port => 587,
-    :user_name => "makerepomakerepo",
-    :password => "1RandomPasswordWhichIWillNotRememberInTheFuture",
+    :user_name => ENV['SMTP_USER'],
+    :password => ENV['SMTP_PASSWORD'],
     :authentication => 'plain',
     :enable_starttls_auto => true
   }
@@ -65,11 +65,11 @@ Rails.application.configure do
 
   config.paperclip_defaults = {
       storage: :s3,
-      s3_credentials: {
-          bucket: Rails.application.secrets.s3_bucket_name,
-          access_key_id: Rails.application.secrets.access_key_id,
-          secret_access_key: Rails.application.secrets.secret_access_key,
-          s3_region: Rails.application.secrets.s3_region
+      s3_region: ENV.fetch('AWS_REGION', "us-west-2"),
+  s3_credentials: {
+          bucket: ENV.fetch('S3_BUCKET_NAME', "makerspace-testing-for-real"),
+          access_key_id: ENV.fetch('AWS_ACCESS_KEY_ID', "wrong"),
+          secret_access_key: ENV.fetch('AWS_SECRET_ACCESS_KEY', "wrong"),
       }
   }
 

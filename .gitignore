@@ -9,6 +9,9 @@
 /public/system
 config.ru
 
+# Ignore Credentials
+/config/local_env.yml
+
 # Ignore the default SQLite database.
 /db/*.sqlite3
 /db/*.sqlite3-journal
