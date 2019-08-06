@@ -4,7 +4,7 @@ class ExamsController < ApplicationController
   before_action :grant_access, only: [:show]
 
   def index
-    @exams = Exam.all.order(category: :desc).paginate(:page => params[:page], :per_page => 50)
+    @exams = current_user.exams.order(category: :desc).paginate(:page => params[:page], :per_page => 50)
   end
 
   def new
