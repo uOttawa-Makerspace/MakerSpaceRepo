@@ -24,6 +24,7 @@ class ExamsController < ApplicationController
 
   def show
     @exam = Exam.find(params[:id])
+    @exam.update_attributes(:status => Exam::STATUS[:incomplete]) if @exam.status == Exam::STATUS[:not_started]
     @questions = @exam.questions
   end
 
