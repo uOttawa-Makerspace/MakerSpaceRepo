@@ -5,7 +5,6 @@ class Exam < ActiveRecord::Base
   has_many :exam_responses #, through :exam_questions
 
   STATUS = { :not_started => "not started",
-              :started => "started",
               :incomplete => "incomplete",
               :passed => "passed",
               :failed => "failed"}
