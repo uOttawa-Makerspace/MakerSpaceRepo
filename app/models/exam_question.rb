@@ -1,7 +1,7 @@
 class ExamQuestion < ActiveRecord::Base
   belongs_to :exam
   belongs_to :question
-  has_one    :question_response
+  has_one    :exam_response
 
   # has_one :user, through: :exam
 

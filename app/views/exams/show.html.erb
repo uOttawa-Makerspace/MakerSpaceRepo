@@ -47,19 +47,16 @@
 <!--//TODO: Too much logic here}-->
 <section class="container">
   <div class="text-center">
-    <% @questions.find_each.each_with_index do |q, i| %>
+    <% @questions.find_each.each_with_index do |question, i| %>
       Question <%= i + 1 %>
-        <div class=" text-left word-break">
-          <h2><b><%= q.description %></b></h2>
-        </div>
-        <%= image_tag q.image.url(:medium) if !q.image.blank? %>
-        <div class="text-left">
-          <% q.answers.randomize_answers.each do |a| %>
-            <p class="answers" onclick="examResponse(<%= @exam.id %>,<%= q.id %>, <%= a.id %>)">
-              <%= a.description %>
-            </p>
-          <% end %>
-        </div>
-      <% end %>
+      <%=
+        response = question.response_for_exam(@exam)
+        if response
+          render partial: "question_with_response", locals: {question: question, response: response}
+        else
+          render partial: "question_without_response", locals: {question: question}
+        end
+      %>
+    <% end %>
   </div>
 </section>
