@@ -213,7 +213,11 @@ Rails.application.routes.draw do
 
   resources :questions
 
-  resources :exams, only: [:index, :create, :show, :destroy]
+  resources :exams, only: [:index, :create, :show, :destroy] do
+    collection do
+      get :finish_exam
+    end
+  end
 
   resources :exam_responses, only: [:create]
 

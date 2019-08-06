@@ -11,10 +11,9 @@ class Exam < ActiveRecord::Base
 
   SCORE_TO_PASS = 75
 
-  def self.calculate_score
-    exam_responses = self.exam_responses
-    all = exam_responses.count
-    right = exam_responses.where(correct: true)
-    return (right*100.0/all).round
+  def calculate_score
+    all_questions = self.exam_questions.count
+    exam_responses_right = self.exam_responses.where(correct: true).count
+    return (exam_responses_right*100.0/all_questions).round
   end
 end
