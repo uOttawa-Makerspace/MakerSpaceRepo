@@ -215,7 +215,7 @@ Rails.application.routes.draw do
 
   resources :exams, only: [:index, :create, :show, :destroy]
 
-  resources :examResponses, only: [:create]
+  resources :exam_responses, only: [:create]
 
   resources :volunteer_tasks
 
