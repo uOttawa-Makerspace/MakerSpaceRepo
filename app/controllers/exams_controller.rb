@@ -38,6 +38,14 @@ class ExamsController < ApplicationController
     redirect_to exams_path
   end
 
+  def finish_exam
+    exam = Exam.find(params[:exam_id])
+    exam.update_attributes(status: status)
+    status = exam.status
+    flash[:notice] = "You completed and #{status} the exam."
+    redirect_to exams_path
+  end
+
   private
 
   def set_exam
