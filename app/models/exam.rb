@@ -8,4 +8,13 @@ class Exam < ActiveRecord::Base
               :incomplete => "incomplete",
               :passed => "passed",
               :failed => "failed"}
+
+  SCORE_TO_PASS = 75
+
+  def self.calculate_score
+    exam_responses = self.exam_responses
+    all = exam_responses.count
+    right = exam_responses.where(correct: true)
+    return (right*100.0/all).round
+  end
 end

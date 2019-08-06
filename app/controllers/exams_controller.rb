@@ -40,9 +40,14 @@ class ExamsController < ApplicationController
 
   def finish_exam
     exam = Exam.find(params[:exam_id])
-    exam.update_attributes(status: status)
-    status = exam.status
-    flash[:notice] = "You completed and #{status} the exam."
+    score = exam.calculate_score
+    if score < Exam::SCORE_TO_PASS
+      status = Exam::STATUS[:failed]
+    else
+      status = Exam::STATUS[:passed]
+    end
+    exam.update_attributes(status: status, score: score)
+    flash[:notice] = "Score: #{score}. You #{status} the exam."
     redirect_to exams_path
   end
 
