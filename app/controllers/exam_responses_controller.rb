@@ -1,10 +1,12 @@
 class ExamResponsesController < ApplicationController
   before_action :current_user
+  before_action :grant_access
 
   def create
-    response_id = params[:response_id]
-    exam_id = params[:exam_id]
-    answer = Answer.find(params[:answer_id])
+    permitted_params = exam_response_params
+    response_id = permitted_params[:response_id]
+    exam_id = permitted_params[:exam_id]
+    answer = Answer.find(permitted_params[:answer_id])
     if response_id
       response = ExamResponse.find(response_id)
       response.update_attributes(answer_id: answer.id, correct: answer.correct)
@@ -21,21 +23,14 @@ class ExamResponsesController < ApplicationController
 
   private
 
+  def grant_access
+    unless Exam.find(exam_response_params[:exam_id]).user.eql?(current_user)
+      flash[:danger] = "Do not try this"
+      redirect_to :root
+    end
+  end
+
   def exam_response_params
-    params.permit(:answer_id, :exam_id)
+    params.permit(:answer_id, :exam_id, :response_id)
   end
-
-  def question_response_params_check
-    params.permit( :exam_id)
-  end
-
-  def exam_response_params_update
-    params.permit(:answer_id)
-  end
-
-  def update_response(response, correct)
-    response.update_attributes(exam_response_params_update)
-    response.update_attributes(correct: correct)
-  end
-
 end
