@@ -66,8 +66,8 @@ class RepositoriesController < SessionsController
     @repository = Repository.new(repository_params)
     @repository.user_id = @user.id
     @repository.users << @user
-    @repository.user_user
-    name = @user.username
+    @repository.user_username = @user.username
+
     if @repository.save
       @user.increment!(:reputation, 25)
       create_photos
