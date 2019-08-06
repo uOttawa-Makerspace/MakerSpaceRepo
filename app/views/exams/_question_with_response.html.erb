@@ -4,12 +4,12 @@
 <%= image_tag question.image.url(:medium) if !question.image.blank? %>
 <div class="text-left">
   <% question.answers.randomize_answers.each do |a| %>
-    <% if qr.answer.eql?(response) %>
-      <p class="selected-answers" onclick="examResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
+    <% if response.answer.eql?(a) %>
+      <p class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>, <%= response.id %>)">
         <%= a.description %>
       </p>
     <% else %>
-      <p class="answers" onclick="examResponse(<%= @exam.id %>,<%= question.id %>, <%= a.id %>)">
+      <p class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>, <%= response.id %>)">
         <%= a.description %>
       </p>
     <% end %>

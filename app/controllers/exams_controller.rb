@@ -26,7 +26,7 @@ class ExamsController < ApplicationController
     # TODO: Fix the logic in show.html. Too much logic.
     @exam = Exam.find(params[:id])
     @questions = @exam.questions
-    @exam_responses = @exam.exam_responses.where(user_id: current_user.id)
+    # @exam_responses = @exam.exam_responses.where(user_id: current_user.id)
   end
 
   def destroy
