@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190806210822) do
+ActiveRecord::Schema.define(version: 20190806215710) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -23,6 +23,14 @@ ActiveRecord::Schema.define(version: 20190806210822) do
     t.boolean  "active",      default: true
     t.datetime "created_at",                 null: false
     t.datetime "updated_at",                 null: false
+  end
+
+  create_table "answers", force: :cascade do |t|
+    t.integer  "question_id"
+    t.text     "description"
+    t.boolean  "correct",     default: false
+    t.datetime "created_at",                  null: false
+    t.datetime "updated_at",                  null: false
   end
 
   create_table "area_options", force: :cascade do |t|
@@ -84,6 +92,30 @@ ActiveRecord::Schema.define(version: 20190806210822) do
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "exam_questions", force: :cascade do |t|
+    t.integer  "exam_id"
+    t.integer  "question_id"
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+  end
+
+  create_table "exam_responses", force: :cascade do |t|
+    t.integer  "exam_question_id"
+    t.integer  "answer_id"
+    t.boolean  "correct"
+    t.datetime "created_at",       null: false
+    t.datetime "updated_at",       null: false
+  end
+
+  create_table "exams", force: :cascade do |t|
+    t.integer  "user_id"
+    t.string   "category"
+    t.datetime "created_at",                         null: false
+    t.datetime "updated_at",                         null: false
+    t.string   "status",     default: "not started"
+    t.integer  "score"
   end
 
   create_table "lab_sessions", force: :cascade do |t|
@@ -166,7 +198,6 @@ ActiveRecord::Schema.define(version: 20190806210822) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
   end
 
   create_table "project_joins", force: :cascade do |t|
@@ -193,6 +224,18 @@ ActiveRecord::Schema.define(version: 20190806210822) do
     t.string   "client_interest"
     t.string   "client_background"
     t.string   "supervisor_background"
+  end
+
+  create_table "questions", force: :cascade do |t|
+    t.integer  "user_id"
+    t.text     "description"
+    t.string   "category"
+    t.datetime "created_at",         null: false
+    t.datetime "updated_at",         null: false
+    t.string   "image_file_name"
+    t.string   "image_content_type"
+    t.integer  "image_file_size"
+    t.datetime "image_updated_at"
   end
 
   create_table "repo_files", force: :cascade do |t|
