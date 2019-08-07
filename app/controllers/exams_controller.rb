@@ -23,6 +23,18 @@ class ExamsController < ApplicationController
     end
   end
 
+  def create_from_training
+    @current_training_session.users.find_each do |user|
+      new_exam = user.exams.new(exam_params)
+      new_exam.save!
+      ExamQuestion.create_exam_questions(new_exam.id, new_exam.category, 3)
+      if @new_exam.save!
+        redirect_to :back
+        flash[:notice] = "You've successfully sent exams to all users in this training."
+      end
+    end
+  end
+
   def show
     @exam = Exam.find(params[:id])
     @exam.update_attributes(:status => Exam::STATUS[:incomplete]) if @exam.status == Exam::STATUS[:not_started]

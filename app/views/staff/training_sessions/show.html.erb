@@ -113,12 +113,15 @@
         </td>
         </tr>
       <% end %>
-      </table>
-      <br>
+    </table>
+    <br>
+    <% if Question.where(category: @current_training_session.training).count > 20  %>
+      <%= link_to "Send Exams", create_from_training_exams_path(@current_training_session), class:'certify-button' %>
+    <% else %>
       <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>
-      <br>
-
-    <br></br>
+    <% end %>
+    <br />
+    <br />
     <table class="space-users-table">
         Users inside <%=@current_training_session.space.name%>
         <tr>

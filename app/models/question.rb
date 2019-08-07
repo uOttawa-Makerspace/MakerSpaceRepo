@@ -35,4 +35,27 @@ class Question < ActiveRecord::Base
                 "3D Scanning",
                 "Virtual Reality",
                 "Soldering"]
+
+  # ["3D Printing Basics",
+  #  "3D scanning",
+  #  "Advanced 3D Printing",
+  #  "Arduino Basics",
+  #  "Basic Lathe Training",
+  #  "Basic Mill Training",
+  #  "Basic TIG ",
+  #  "Basic Training",
+  #  "Embroidery",
+  #  "GNG 3D Printing training",
+  #  "GNG 3D printing training",
+  #  "GNG Laser training",
+  #  "GNG laser training",
+  #  "Laser Cutting Basics",
+  #  "MCG Basic Lathe Training",
+  #  "MCG Basic Mill Training ",
+  #  "Makerspace Volunteer",
+  #  "Mig Welding Training",
+  #  "PCB Design",
+  #  "Soldeing Basics",
+  #  "Tig Welding Training",
+  #  "Welding Safety and Basic MIG"]
 end
