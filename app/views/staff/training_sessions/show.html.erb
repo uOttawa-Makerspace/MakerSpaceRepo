@@ -2,45 +2,50 @@
   <div class="edit-column">
     <div style="font-weight:bold;font-size:1.4em;">Training Session #<%= @current_training_session.id %></div>
 
-    <div style="float:right;">Created On: <%= @current_training_session.created_at.strftime("%D at %l:%M%P") %></div><br>
+    <div style="float:right;">Created On: <%= @current_training_session.created_at.strftime("%D at %l:%M%P") %></div>
+    <br />
     <div style="float:right;">Updated On: <%= @current_training_session.updated_at.strftime("%D at %l:%M%P") %></div>
-
-    <div>Space: <span style="font-weight:bold;"> <%=@space.name.capitalize %></span></div>
-    <div>Status:
+    <div>Space: <span style="font-weight:bold;"> <%= @space.name.capitalize %></span></div>
+    <div>
+      Status:
       <% if @current_training_session.completed? %>
       <span style="color:#006633;"> Completed </span>
-      <%else%>
+      <% else %>
       <span style="color:#700000;"> Incomplete </span>
-      <%end%>
+      <% end %>
     </div>
-    <br>
+    <br />
     <% unless @current_training_session.completed? %>
       <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
         <div>Trainer: <%= @staff.name %></div>
         <% if @user.admin?%>
           <% label_tag 'changed_params[user_id]' %>
-          <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: ['staff','admin']).order('name ASC'), 'id', 'name'), prompt: 'change trainer', class: "trainer-training-course" %><br></br>
+          <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: ['staff','admin']).order('name ASC'), 'id', 'name'), prompt: 'change trainer', class: "trainer-training-course" %>
+          <br />
         <% end %>
         <div>
-          Training Type: <%= @current_training_session.training.name %><br>
+          Training Type: <%= @current_training_session.training.name %>
+          <br />
           <% label_tag 'changed_params[training_id]' %>
-          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings.order('name ASC'), 'id', 'name'), prompt: 'change training', class: "trainer-training-course" %><br></br>
+          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings.order('name ASC'), 'id', 'name'), prompt: 'change training', class: "trainer-training-course" %>
+          <br />
           <div>
             Course: <%= @current_training_session.course %>
           </div>
           <% label_tag 'changed_params[course]' %>
-          <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'change course', class: "trainer-training-course" %><br>
+          <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'change course', class: "trainer-training-course" %>
+          <br />
         </div>
-        <br>
+        <br />
         <%= submit_tag "Update", class: 'btn btn-secondary' %>
       <% end %>
     <% else %>
       <div>Trainer: <%= @staff.name %></div>
       <div>Training: <%= @current_training_session.training.name %></div>
-      <div>Course: <%= @current_training_session.course %></div><br>
+      <div>Course: <%= @current_training_session.course %></div>
+      <br />
     <% end %>
-    <br>
-
+    <br />
     <table class="training-session-users-table">
         Users in this training session
         <tr>
@@ -124,69 +129,68 @@
         </tr>
 
       <% @current_training_session.space.signed_in_users.each do |user| %>
-      <% unless @current_training_session.users.include? user %>
-      <tr>
-
-        <td class="action-cell">
-          <%= link_to(fa_icon('check-circle'), {controller: :training_sessions, action: :update, id: @current_training_session.id, added_users: [user.username], changed_params: {course: ''} },
-                method: :patch, class: 'check-button') %>
-        </td>
-
-        <td class="user-name">
-          <%= link_to(user.name, user_url(user.username)) %>
-        </td>
-
-        <td class="email-cell" style="horizontal-alginment:center;">
-          <%= user.email  %>
-        </td>
-
-        <td class="certifications-cell">
-          <% if user.certifications.first.present? user.certifications.each do |certification| %>
-            <% unless certification.out_of_date? %>
-            <div class="cert-name" style="display:inline" >
-             <div class="cert-holder" style="display:inline">
-               <%= certification.training %>
-               <div id="cert-details" style="display:inline">
-                 <%= certification.training %> <br>
-                 <%= certification.trainer %> <br>
-                 <%= certification.updated_at.strftime("%B %d, %Y")  %>
-               </div>
-               <br>
-             </div>
-            </div>
-          <% else %>
-            <div class="cert-name-red" style="display:inline" >
-              <div class="cert-holder" style="display:inline">
-                <%= certification.training %>
-                <div id="cert-details" style="display:inline">
-                  <%= certification.training %> <br>
-                  <%= certification.trainer %> <br>
-                  <%= certification.updated_at.strftime("%B %d, %Y") %>
-                </div>
-                <br>
-              </div>
-            </div>
-          <% end
-            end
-          end
-          %>
-        </td>
+        <% unless @current_training_session.users.include? user %>
+          <tr>
+            <td class="action-cell">
+              <%= link_to(fa_icon('check-circle'),
+                          {controller: :training_sessions,
+                           action: :update,
+                           id: @current_training_session.id,
+                           added_users: [user.username],
+                           changed_params: {course: ''} },
+                          method: :patch, class: 'check-button') %>
+            </td>
+            <td class="user-name">
+              <%= link_to(user.name, user_url(user.username)) %>
+            </td>
+            <td class="email-cell" style="horizontal-alginment:center;">
+              <%= user.email  %>
+            </td>
+            <td class="certifications-cell">
+              <% if user.certifications.first.present? %>
+                <% user.certifications.each do |certification| %>
+                  <% unless certification.out_of_date? %>
+                    <div class="cert-name" style="display:inline" >
+                      <div class="cert-holder" style="display:inline">
+                        <%= certification.training %>
+                        <div id="cert-details" style="display:inline">
+                          <%= certification.training %> <br>
+                          <%= certification.trainer %> <br>
+                          <%= certification.updated_at.strftime("%B %d, %Y") %>
+                        </div>
+                        <br />
+                      </div>
+                    </div>
+                  <% else %>
+                    <div class="cert-name-red" style="display:inline" >
+                      <div class="cert-holder" style="display:inline">
+                        <%= certification.training %>
+                        <div id="cert-details" style="display:inline">
+                          <%= certification.training %> <br>
+                          <%= certification.trainer %> <br>
+                          <%= certification.updated_at.strftime("%B %d, %Y") %>
+                        </div>
+                        <br />
+                      </div>
+                    </div>
+                  <% end %>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
         <% end %>
-      </tr>
       <% end %>
     </table>
-
-    <br>
-    <% if @user.admin? || @current_training_session.user == @user%>
-      <%=link_to "Destroy", { action: :destroy }, method: :delete, data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
-        class:"destroy-button",
-        style:"float:right;float:top;"%>
+    <br />
+    <% if @user.admin? || @current_training_session.user == @user %>
+      <%= link_to "Destroy", { action: :destroy },
+                  method: :delete,
+                  data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
+                  class:"destroy-button",
+                  style:"float:right;float:top;" %>
     <% end %>
-    <br></br>
-
-    <br></br>
-
+    <br />
+    <br />
   </div>
-  <br></br>
-
 </section>
+<br />
