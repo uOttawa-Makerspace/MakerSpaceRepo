@@ -29,9 +29,9 @@ class PrintOrderController < ApplicationController
       @print_order.update(print_order_params)
 
       if params[:print_order][:approved] == "true"
-        MsrMailer.send_print_quote(@user, @print_order.quote, params[:print_order][:StaffComments], @print_order.file_file_name).deliver_now
+        MsrMailer.send_print_quote(@user, @print_order.quote, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
       elsif params[:print_order][:approved] == "false"
-        MsrMailer.send_print_disapproval(@user, params[:print_order][:StaffComments], @print_order.file_file_name).deliver_now
+        MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
       elsif params[:print_order][:printed] == "true"
         MsrMailer.send_print_finished(@user, @print_order.file_file_name).deliver_now
         MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id).deliver_now
@@ -53,7 +53,7 @@ class PrintOrderController < ApplicationController
     private
 
     def print_order_params
-      params.require(:print_order).permit(:user_id, :comments, :approved, :printed, :file, :quote, :UserApproval, :StaffComments, :staffid, :expedited)
+      params.require(:print_order).permit(:user_id, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
     end
 
 end

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190618212808) do
+ActiveRecord::Schema.define(version: 20190807205851) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -94,6 +94,30 @@ ActiveRecord::Schema.define(version: 20190618212808) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "exam_questions", force: :cascade do |t|
+    t.integer  "exam_id"
+    t.integer  "question_id"
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+  end
+
+  create_table "exam_responses", force: :cascade do |t|
+    t.integer  "exam_question_id"
+    t.integer  "answer_id"
+    t.boolean  "correct"
+    t.datetime "created_at",       null: false
+    t.datetime "updated_at",       null: false
+  end
+
+  create_table "exams", force: :cascade do |t|
+    t.integer  "user_id"
+    t.string   "category"
+    t.datetime "created_at",                         null: false
+    t.datetime "updated_at",                         null: false
+    t.string   "status",     default: "not started"
+    t.integer  "score"
+  end
+
   create_table "lab_sessions", force: :cascade do |t|
     t.integer  "user_id"
     t.datetime "sign_in_time"
@@ -153,9 +177,9 @@ ActiveRecord::Schema.define(version: 20190618212808) do
     t.integer  "file_file_size"
     t.datetime "file_updated_at"
     t.float    "quote"
-    t.integer  "staffid"
-    t.boolean  "UserApproval"
-    t.text     "StaffComments"
+    t.integer  "staff_id"
+    t.boolean  "user_approval"
+    t.text     "staff_comments"
     t.boolean  "expedited"
   end
 

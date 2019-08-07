@@ -61,7 +61,7 @@
                       </div>
                       <%= f.label :quote, "Comments for client " %>
                       <div class="form-group">
-                        <%= f.text_field :StaffComments, placeholder: "I will need to add supports", class: "form-control" %>
+                        <%= f.text_field :staff_comments, placeholder: "I will need to add supports", class: "form-control" %>
                       </div>
                       </div>
                       <div class="modal-footer">
@@ -89,9 +89,9 @@
                   <div class="modal-body">
                     <%= form_for prints, url: print_order_path(prints) do |f| %>
                       <%= f.hidden_field :approved, :value => false %>
-                      <%= f.label :StaffComments, "Comments (Why is it not approved ?)" %>
+                      <%= f.label :staff_comments, "Comments (Why is it not approved ?)" %>
                       <div class="form-group">
-                        <%= f.text_field :StaffComments, placeholder: "The size won't fit", class: "form-control" %>
+                        <%= f.text_field :staff_comments, placeholder: "The size won't fit", class: "form-control" %>
                       </div>
                       </div>
                       <div class="modal-footer">
@@ -115,28 +115,28 @@
 
       <% if prints.user_id == @user.id and prints.approved %>
         <td>
-          <% if prints.UserApproval %>
+          <% if prints.user_approval %>
             Approved
-          <% elsif prints.UserApproval == false %>
+          <% elsif prints.user_approval == false %>
             Disapproved
           <% else %>
             <b>Quoted price : <%= prints.quote %>$</b>
             <br>
             <%= form_for prints, url: print_order_path(prints) do |f| %>
-              <%= f.hidden_field :UserApproval, :value => true %>
+              <%= f.hidden_field :user_approval, :value => true %>
               <%= f.submit "I accept the quote", class: 'btn btn-primary', data: {confirm: 'Are you sure?'} %>
             <% end %>
             <br>
             <%= form_for prints, url: print_order_path(prints) do |f| %>
-              <%= f.hidden_field :UserApproval, :value => false %>
+              <%= f.hidden_field :user_approval, :value => false %>
               <%= f.submit "I don't accept it", class: 'btn btn-danger', data: {confirm: 'Are you sure?'} %>
             <% end %>
           <% end %>
         </td>
       <% else %>
-        <% if prints.UserApproval %>
+        <% if prints.user_approval %>
           <td>Approved</td>
-        <% elsif prints.UserApproval == false %>
+        <% elsif prints.user_approval == false %>
           <td>Disapproved</td>
         <% else %>
           <td>Not Yet/Can't be</td>
@@ -145,11 +145,11 @@
 
       <% if @user.admin? or @user.staff? %>
 
-        <% if prints.staffid.present? %>
-          <td><%= User.find(prints.staffid).name %></td>
-        <% elsif prints.UserApproval and prints.approved %>
+        <% if prints.staff_id.present? %>
+          <td><%= User.find(prints.staff_id).name %></td>
+        <% elsif prints.user_approval and prints.approved %>
           <%= form_for prints, url: print_order_path(prints) do |f| %>
-            <%= f.hidden_field :staffid, :value => @user.id %>
+            <%= f.hidden_field :staff_id, :value => @user.id %>
             <td>
               <button class="btn btn-primary" type="submit">I will print it</button>
             </td>
@@ -161,13 +161,13 @@
 
         <% if prints.approved == false %>
           <td>Won't be printed</td>
-        <% elsif prints.UserApproval == false %>
+        <% elsif prints.user_approval == false %>
           <td>Won't be printed</td>
         <% elsif prints.printed %>
           <td>Printed</td>
         <% elsif prints.printed == false %>
           <td>Not Printed</td>
-        <% elsif prints.UserApproval and prints.approved and prints.staffid.present? and (@user.admin? or @user == prints.staffid) %>
+        <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user == prints.staff_id) %>
           <%= form_for prints, url: print_order_path(prints) do |f| %>
             <%= f.hidden_field :printed, :value => true %>
             <td>
