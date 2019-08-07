@@ -19,7 +19,9 @@
   <tbody>
   <% @print_order.order(id: :desc).each do |prints| %>
     <tr>
-      <th style="text-align: center;" scope="row"><%= prints.user.name %></th>
+      <th class = "username" style="text-align: center;" scope="row">
+        <%= link_to prints.user.name.capitalize, user_path(prints.user.username) %>
+      </th>
       <td style="text-align: center;"><%= prints.id %></td>
       <td><%= prints.comments %></td>
       <td>
@@ -146,7 +148,10 @@
       <% if @user.admin? or @user.staff? %>
 
         <% if prints.staff_id.present? %>
-          <td><%= User.find(prints.staff_id).name %></td>
+          <% staff = User.find(prints.staff_id)  %>
+          <td class = "username">
+            <%= link_to staff.name.capitalize, user_path(staff.username) %>
+          </td>
         <% elsif prints.user_approval and prints.approved %>
           <%= form_for prints, url: print_order_path(prints) do |f| %>
             <%= f.hidden_field :staff_id, :value => @user.id %>
