@@ -6,7 +6,7 @@
       <div class="table-responsive">
         <table class="table">
           <tr>
-            <th>Date Submitted</th>
+            <th>Date Created</th>
             <th>Category</th>
             <th>Status</th>
             <th>Score</th>
@@ -23,8 +23,8 @@
               <td>
                 <%= e.category %>
               </td>
-              <td class="word-break">
-                <%= e.status.capitalize %>
+              <td>
+                <b><%= e.status.capitalize %></b>
               </td>
               <td>
                 <%= e.score || "NA" %>
