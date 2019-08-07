@@ -3,13 +3,11 @@ class PrintOrderController < ApplicationController
   before_action :signed_in
 
   def index
-      @users = User.all
       if (@user.staff? || @user.admin?)
         @print_order = PrintOrder.all
       else
         @print_order = PrintOrder.where(user_id: @user.id)
       end
-
     end
 
     def show

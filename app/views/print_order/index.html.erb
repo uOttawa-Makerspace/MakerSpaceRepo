@@ -19,7 +19,7 @@
   <tbody>
   <% @print_order.order(id: :desc).each do |prints| %>
     <tr>
-      <th style="text-align: center;" scope="row"><%= @users.where(["id = ? ", prints.user_id]).pluck(:name).first %></th>
+      <th style="text-align: center;" scope="row"><%= prints.user.name %></th>
       <td style="text-align: center;"><%= prints.id %></td>
       <td><%= prints.comments %></td>
       <td>
@@ -146,7 +146,7 @@
       <% if @user.admin? or @user.staff? %>
 
         <% if prints.staffid.present? %>
-          <td><%= @users.find(prints.staffid).name %></td>
+          <td><%= User.find(prints.staffid).name %></td>
         <% elsif prints.UserApproval and prints.approved %>
           <%= form_for prints, url: print_order_path(prints) do |f| %>
             <%= f.hidden_field :staffid, :value => @user.id %>
