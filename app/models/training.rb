@@ -6,4 +6,8 @@ class Training < ActiveRecord::Base
 
   validates :name, presence: true, uniqueness: true
   validates :space_id, presence: true
+
+  def self.all_training_names
+    self.order(name: :asc).pluck(:name)
+  end
 end
