@@ -24,6 +24,7 @@ fr:
       admin_area: "Zone des administrateurs"
       staff_area: "Zone des employés"
       volunteer_area: "Zone des volontaires"
+      printorder: "Commander une impression"
       help: "Aide"
       sign_out: "Déconnexion"
   home:

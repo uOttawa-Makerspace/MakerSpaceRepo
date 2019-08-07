@@ -106,7 +106,7 @@ Rails.application.configure do
       bucket: Rails.application.secrets.s3_bucket_name,
       access_key_id: Rails.application.secrets.access_key_id,
       secret_access_key: Rails.application.secrets.secret_access_key,
-      s3_region: "us-west-2"
+      s3_region: "s3-us-west-2"
     }
   }
 

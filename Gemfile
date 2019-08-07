@@ -46,6 +46,7 @@ end
 
 group :development do
   gem 'web-console', '~> 2.0'
+  gem "letter_opener" # Open emails in development
 
   # Capistrano deployment stuff
   gem 'capistrano', '~> 3.9'

@@ -1,0 +1,16 @@
+<p style="  font: 400 1.3em 'Raleway', sans-serif;color: #555;">
+<h1>Hello, your print request has been approved by a staff member !</h1>
+</p>
+<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #555;">
+  The total price for your piece is $<%= @quote %>. You can accept or decline the quote by loging in your makerepo account.
+  <br />
+  <% if @comments.present? %>
+    Comments from staff: <br />
+    <b><%= @comments %></b>
+  <% end %>
+</p>
+<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #555;">
+  Best regards,<br>
+  The Makerspace Team
+</p>
+

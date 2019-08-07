@@ -11,6 +11,31 @@ class MsrMailer < ApplicationMailer
 		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
 	end
 
+	def send_print_quote(user, quote, comments, filename)
+	  @user = user
+	  @quote = quote
+		@comments = comments
+		mail(to: @user.email, subject: 'Print Request Approval : ' + filename)
+	end
+
+	def send_print_disapproval(user, comments, filename)
+		@user = user
+		@comments = comments
+		mail(to: @user.email, subject: 'Print Request Disapproval : '+filename)
+	end
+
+	def send_print_finished(user, filename)
+		@user = user
+		mail(to: @user.email, subject: 'Your print : '+ filename +' is ready !')
+  end
+
+  def send_invoice(name, quote, number)
+    @name = name
+    @quote = quote
+    @number = number
+    mail(to: "uomakerspaceprintinvoices@gmail.com", subject: 'Invoice for Order #' + @number.to_s + ' ')
+  end
+
 	def send_ommic
 		all_users = User.where("email like ? and length(email) = 19", "%@uottawa.ca").pluck(:email).uniq
 		attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
