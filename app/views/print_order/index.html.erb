@@ -1,5 +1,5 @@
 <h1>List of prints    <%= link_to "New Print Order", new_print_order_path, {class: 'btn btn-primary'} %></h1>
-<table class="table">
+<table class="table table-striped">
   <thead>
   <tr>
     <th style="text-align: center;" scope="col">User</th>
@@ -9,7 +9,7 @@
     <th style="text-align: center;" scope="col">Expedited</th>
     <th style="text-align: center;" scope="col">Approved by staff ?</th>
     <th style="text-align: center;" scope="col">Quote approved by user?</th>
-    <% if @user.admin? or @user.staff? %>
+    <% if @user.admin? || @user.staff? %>
       <th style="text-align: center;" scope="col">Staff Assigned</th>
     <% end %>
     <th style="text-align: center;" scope="col">Printed ?</th>
