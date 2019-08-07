@@ -120,6 +120,7 @@ Rails.application.routes.draw do
         get 'peak_hrs'
         get 'total_visits_per_term'
         get 'unique_visits_detail'
+        get 'total_visits_detail'
         get 'unique_visits_ceed'
         get 'seasonal_certification_report'
         get 'seasonal_training_report'
@@ -208,8 +209,11 @@ Rails.application.routes.draw do
     collection do
       get :emails
       get :volunteer_list
+      get :getting_started
     end
   end
+
+  resources :questions
 
   resources :volunteer_tasks
 

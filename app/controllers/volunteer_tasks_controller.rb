@@ -17,7 +17,7 @@ class VolunteerTasksController < ApplicationController
     @volunteer_task = VolunteerTask.new(volunteer_task_params)
     @volunteer_task.user_id = @user.try(:id)
     if @volunteer_task.save!
-      redirect_to volunteer_tasks_path
+      redirect_to new_volunteer_task_path
       flash[:notice] = "You've successfully created a new Volunteer Task"
     end
   end

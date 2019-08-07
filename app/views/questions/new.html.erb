@@ -1,0 +1,58 @@
+<section class="page-contents">
+  <div class="edit-column">
+
+    <h2 class="text-center">New Question</h2>
+
+    <div class="container my-5">
+      <div class="row">
+        <div class="col-lg-12">
+          <%= form_for @new_question, url: {controller: "questions", action: "create"}, :html => { class:"needs-validation", novalidate: 'novalidate', multipart: true } do |f| %>
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group text-center">
+                  <%= f.text_area :description, placeholder: "Write your question here...", class: 'form-control', required: true %>
+                  <div class="invalid-feedback">
+                    Please provide the question description.
+                  </div>
+                  <br />
+                  Category:
+                  <%= f.select(:category, @categories , {} , {:class => "form-control"}) %>
+                  <br />
+                  <br />
+
+                  <label class="image-upload">
+                    <%= f.file_field :image, id: "pictureInput"%>
+                    Choose an image...
+                  </label>
+                  <br />
+                  <br />
+
+                  <div id="image-target" class="mx-auto"></div>
+
+                </div>
+              </div>
+              <br />
+
+              <div class="col-md-12">
+                <div class="form-group text-center">
+                  <p class="text-success">Type the <b>first answer</b> as the correct answer:</p>
+                  <%= f.fields_for :answers do |af| %>
+                    <%= af.text_area :description, placeholder: "Write the answers here...", class: 'form-control', required: true %>
+                    <div class="invalid-feedback">
+                      Please provide Answers
+                    </div>
+                    <br />
+                  <% end %>
+                </div>
+              </div>
+
+              <div class="col-lg-12 text-center">
+                <%= f.submit "Create question", class: "btn btn-secondary btn-xl text-uppercase" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

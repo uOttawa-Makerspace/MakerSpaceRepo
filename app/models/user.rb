@@ -20,6 +20,7 @@ class User < ActiveRecord::Base
   has_many :volunteer_task_joins
   has_many :training_sessions
   has_many :announcements
+  has_many :questions
 
   validates :name,
     presence: true,

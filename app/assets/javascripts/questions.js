@@ -12,4 +12,23 @@ $(document).on('ready page:load', function () {
             }, false);
         });
     }, false);
+
+    $('#pictureInput').on('change', function(event) {
+        var files = event.target.files;
+        var image = files[0]
+        var reader = new FileReader();
+        reader.onload = function(file) {
+            var img = new Image();
+            console.log(file);
+            img.src = file.target.result;
+            $('#image-target').html(img);
+        }
+        reader.readAsDataURL(image);
+        console.log(files);
+
+        var editImage = document.getElementById("edit-image");
+        if(editImage){
+         editImage.style.display = "none";
+        }
+    });
 });

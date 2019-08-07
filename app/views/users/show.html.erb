@@ -17,7 +17,7 @@
       </div>
     <% end %>
 
-  <% elsif (@repo_user.eql?(@user) && @user.volunteer?) || (@user.admin?)%>
+  <% elsif (@repo_user.eql?(@user) && @user.volunteer?) || (@user.staff?)%>
     <%= link_to fa_icon("cog", text: ' Edit Profile'), settings_profile_path, class: 'edit-user-profile' %>
 
     <%= link_to settings_profile_path do %>
@@ -196,7 +196,7 @@
       </div>
   </div>
 
-  <section id="user-show-links">
+  <section id="user-show-links" class="m-5">
     <% active = params[:show].eql?("makes") ? ["#eee", "#5f9ea0", "#eee"] : params[:show].eql?("projects_assigned") ? ["#eee", "#eee", "#5f9ea0"] :  ["#5f9ea0", "#eee", "#eee"]%>
     <%= link_to "#{user_path(show: :repositories)}#user-show-links", style: 'border-color:'<< active[0] do %>
       <span class="number"><%= @repositories.count %></span> REPOS
@@ -209,7 +209,7 @@
     <% end %>
   </section>
 
-  <section id="repositories-container">
+  <section id="repositories-container" class="m-5">
 
   <% if @repositories.empty? or params[:show].eql?('makes') and @makes.empty? %>
     <%= content_tag :div, "#{@repo_user.username} doesn't have any repositories yet.", class: "empty-repo" %>
