@@ -1,4 +1,4 @@
-class PrintOrderController < ApplicationController
+class PrintOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in
 
@@ -20,7 +20,7 @@ class PrintOrderController < ApplicationController
 
     def create
       @print_order = PrintOrder.create(print_order_params)
-      redirect_to print_order_index_path
+      redirect_to print_orders_path
     end
 
     def update
@@ -37,13 +37,13 @@ class PrintOrderController < ApplicationController
         MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id).deliver_now
       end
 
-      redirect_to print_order_index_path
+      redirect_to print_orders_path
     end
 
     def destroy
       @print_order = PrintOrder.find(params[:id])
       @print_order.destroy
-      redirect_to print_order_index_path
+      redirect_to print_orders_path
     end
 
     def edit

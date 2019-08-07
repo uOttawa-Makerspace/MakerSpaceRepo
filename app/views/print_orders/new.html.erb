@@ -5,7 +5,7 @@
     email, waiting for your approval before being printed. Expedited option will take about 24h on top of the print time from the moment that you accepted the quote ***</p>
   <p>*** All payments will go through secured payment wall (<a href="https://makerstore.ca/">Makerstore.ca</a>) With methods
     available : Cash / Debit Card (Visa Debit or Mastercard Debit Only) / Credit Card (Visa / Mastercard) ***</p>
-  <%= form_for(@print_order, multipart: true, url: print_order_index_path) do |f| %>
+  <%= form_for(@print_order, multipart: true, url: print_orders_path) do |f| %>
     <div class="form-group">
       <label>STL File</label>
       <%= f.file_field :file, style: "display: block!important;", :required => true %>
