@@ -27,6 +27,7 @@ class ExamsController < ApplicationController
     training_session = TrainingSession.find(params[:training_session_id])
     training_session.users.find_each do |user|
       create_exam_and_exam_questions(user, training_session)
+      # SEND EMAIL
     end
     redirect_to staff_training_session_path(training_session.id)
   end
@@ -36,6 +37,7 @@ class ExamsController < ApplicationController
     user = User.find(params[:user_id])
     create_exam_and_exam_questions(user, training_session)
     redirect_to staff_training_session_path(training_session.id)
+    # SEND EMAIL
   end
 
   def show
@@ -58,12 +60,15 @@ class ExamsController < ApplicationController
     exam = Exam.find(params[:exam_id])
     user = exam.user
     score = exam.calculate_score
+    training_session = exam.training_session
     if score < Exam::SCORE_TO_PASS
       status = Exam::STATUS[:failed]
-      training_session = exam.training_session
       create_exam_and_exam_questions(user, training_session) if user.exams.where(training_session_id: training_session.id).count < 2
+      # SEND EMAIL
     else
       status = Exam::STATUS[:passed]
+      Certification.certify_user(training_session.id, user.id)
+      # SEND EMAIL
     end
     exam.update_attributes(status: status, score: score)
     flash[:notice] = "Score: #{score}. You #{status} the exam."
