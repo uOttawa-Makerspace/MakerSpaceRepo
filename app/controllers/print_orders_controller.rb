@@ -3,15 +3,12 @@ class PrintOrdersController < ApplicationController
   before_action :signed_in
 
   def index
+    #TODO: Too much logic in index.html.erb
       if (@user.staff? || @user.admin?)
         @print_order = PrintOrder.all
       else
         @print_order = @user.print_orders
       end
-    end
-
-    def show
-      @print_order = PrintOrder.find(params[:id])
     end
 
     def new
