@@ -115,8 +115,12 @@
         <td>
           <% exams = @current_training_session.exams.where(user_id: user.id) %>
           <% if !exams.blank? %>
-            <% exams.each do |exam| %>
+            <% exams.each_with_index do |exam, i| %>
+              E<%= i + 1 %>:
               <%= exam.status.capitalize %><br />
+              <%= link_to "Resend Exam",
+                          create_for_single_user_exams_path(training_session_id: @current_training_session.id, user_id: user.id),
+                          class:'btn btn-secondary' if exam.failed? && user.exams.count < 2 %>
             <% end %>
           <% else  %>
             <%= "NA" %><br />
@@ -125,12 +129,15 @@
         </tr>
       <% end %>
     </table>
-    <br>
-    <% if Question.where(category: @current_training_session.training.name).count >= $n_exams_question %>
-      <%= link_to "Send Exams", create_from_training_exams_path(current_training_session_id: @current_training_session.id), class:'certify-button' %>
-    <% else %>
-      <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>
-    <% end %>
+    <br />
+    <br />
+    <div class="text-center">
+      <% if Question.where(category: @current_training_session.training.name).count >= $n_exams_question %>
+        <%= link_to "Send Exams", create_from_training_exams_path(training_session_id: @current_training_session.id), class:'certify-button' %>
+      <% else %>
+        <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>
+      <% end %>
+    </div>
     <br />
     <br />
     <table class="space-users-table">
@@ -196,15 +203,15 @@
       <% end %>
     </table>
     <br />
-    <% if @user.admin? || @current_training_session.user == @user %>
-      <%= link_to "Destroy", { action: :destroy },
-                  method: :delete,
-                  data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
-                  class:"destroy-button",
-                  style:"float:right;float:top;" %>
-    <% end %>
-    <br />
     <br />
   </div>
+  <br />
+  <% if @user.admin? || @current_training_session.user == @user %>
+    <%= link_to "Destroy", { action: :destroy },
+                method: :delete,
+                data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
+                class:"destroy-button",
+                style:"float:right;" %>
+  <% end %>
 </section>
 <br />

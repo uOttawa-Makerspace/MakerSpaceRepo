@@ -17,4 +17,8 @@ class Exam < ActiveRecord::Base
     exam_responses_right = self.exam_responses.where(correct: true).count
     return (exam_responses_right*100.0/all_questions).round
   end
+
+  def failed?
+    self.status == "failed"
+  end
 end

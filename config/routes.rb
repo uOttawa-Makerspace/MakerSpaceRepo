@@ -217,6 +217,7 @@ Rails.application.routes.draw do
     collection do
       get :finish_exam
       get :create_from_training
+      get :create_for_single_user
     end
   end
 
