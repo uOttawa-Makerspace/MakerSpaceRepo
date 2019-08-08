@@ -11,6 +11,7 @@ class TrainingSession < ActiveRecord::Base
   validate :is_staff
 
   before_save :check_course
+  has_many :exams
 
   def is_staff
     errors.add(:string, "user must be staff") unless self.user.staff?

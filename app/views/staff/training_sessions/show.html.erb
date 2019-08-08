@@ -53,6 +53,7 @@
           <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
           <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><%=fa_icon('arrow-down')%></span></th>
         </tr>
 
       <% @current_training_session.users.each do |user| %>
@@ -111,12 +112,14 @@
             <% end %>
           <% end %>
         </td>
+        <td>
+          <%= user.exams %>
+        </td>
         </tr>
       <% end %>
     </table>
     <br>
-    <%# if Question.where(category: @current_training_session.training).count >= 20  %>
-    <% if Question.where(category: "Basic Training").count >= 3  %>
+    <% if Question.where(category: @current_training_session.training).count >= $n_exams_question %>
       <%= link_to "Send Exams", create_from_training_exams_path(@current_training_session), class:'certify-button' %>
     <% else %>
       <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>

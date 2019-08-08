@@ -16,7 +16,7 @@ class ExamsController < ApplicationController
   def create
     @new_exam = current_user.exams.new(exam_params)
     @new_exam.save!
-    ExamQuestion.create_exam_questions(@new_exam.id, @new_exam.category, 3)
+    ExamQuestion.create_exam_questions(@new_exam.id, @new_exam.category, $n_exams_question)
     if @new_exam.save!
       redirect_to exams_path
       flash[:notice] = "You've successfully created a new exam!"
@@ -25,10 +25,10 @@ class ExamsController < ApplicationController
 
   def create_from_training
     @current_training_session.users.find_each do |user|
-      new_exam = user.exams.new(exam_params)
+      new_exam = user.exams.new(:training_session_id => @current_training_session.id,
+                                :category => @current_training_session.training.name)
       new_exam.save!
-      ExamQuestion.create_exam_questions(new_exam.id, new_exam.category, 3)
-      if @new_exam.save!
+      if new_exam.create_exam_questions(new_exam.id, new_exam.category, $n_exams_question)
         redirect_to :back
         flash[:notice] = "You've successfully sent exams to all users in this training."
       end
