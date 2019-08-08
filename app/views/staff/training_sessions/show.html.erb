@@ -48,7 +48,7 @@
     <br />
     <table class="training-session-users-table">
         Users in this training session
-        <tr>
+        <tr class="text-center">
           <th class="action-header">Remove From This Session</th>
           <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
@@ -115,7 +115,8 @@
       <% end %>
     </table>
     <br>
-    <% if Question.where(category: @current_training_session.training).count > 20  %>
+    <%# if Question.where(category: @current_training_session.training).count >= 20  %>
+    <% if Question.where(category: "Basic Training").count >= 3  %>
       <%= link_to "Send Exams", create_from_training_exams_path(@current_training_session), class:'certify-button' %>
     <% else %>
       <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>
@@ -124,7 +125,7 @@
     <br />
     <table class="space-users-table">
         Users inside <%=@current_training_session.space.name%>
-        <tr>
+        <tr class="text-center">
           <th class="action-header">Add To This Session</th>
           <th>Name <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
           <th>Email <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
