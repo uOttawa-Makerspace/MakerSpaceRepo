@@ -65,6 +65,7 @@ class ExamsController < ApplicationController
       status = Exam::STATUS[:failed]
       create_exam_and_exam_questions(user, training_session) if user.exams.where(training_session_id: training_session.id).count < 2
       # SEND EMAIL
+      # TODO: Prevent user to go back to exam after finished
     else
       status = Exam::STATUS[:passed]
       Certification.certify_user(training_session.id, user.id)
