@@ -4,7 +4,7 @@ Rails.application.routes.draw do
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
 
-  resources :print_orders
+  resources :print_orders, only: [:index, :create, :update, :new]
 
   resources :project_proposals do
     collection do
