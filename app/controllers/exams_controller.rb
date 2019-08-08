@@ -56,9 +56,12 @@ class ExamsController < ApplicationController
 
   def finish_exam
     exam = Exam.find(params[:exam_id])
+    user = exam.user
     score = exam.calculate_score
     if score < Exam::SCORE_TO_PASS
       status = Exam::STATUS[:failed]
+      training_session = exam.training_session
+      create_exam_and_exam_questions(user, training_session) if user.exams.where(training_session_id: training_session.id).count < 2
     else
       status = Exam::STATUS[:passed]
     end
