@@ -20,6 +20,8 @@ class Question < ActiveRecord::Base
 
   CATEGORIES = (Training.all_training_names << "General Satefy").sort
 
+  # TODO: Clean this when finished
+
   # CATEGORIES = ["Basic Training",
   #               "Mill Training",
   #               "Lathe Training",
