@@ -54,6 +54,7 @@
           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
           <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
           <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th>Training's Cert.<span onclick="sortTable('training-session-users-table', 5)"><%=fa_icon('arrow-down')%></span></th>
         </tr>
 
       <% @current_training_session.users.each do |user| %>
@@ -126,6 +127,9 @@
             <%= "NA" %><br />
           <% end %>
         </td>
+        <td>
+          <%= @current_training_session.certifications.where(user_id: user.id).last.try(:training) || "None"%>
+        </td>
         </tr>
       <% end %>
     </table>
@@ -133,7 +137,7 @@
     <br />
     <div class="text-center">
       <% if Question.where(category: @current_training_session.training.name).count >= $n_exams_question %>
-        <%= link_to "Send Exams", create_from_training_exams_path(training_session_id: @current_training_session.id), class:'certify-button' %>
+        <%= link_to "Send Exams", create_from_training_exams_path(training_session_id: @current_training_session.id), class:'certify-button' if !@current_training_session.exams.present? %>
       <% else %>
         <%= link_to "Certify", certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class:'certify-button' %>
       <% end %>
