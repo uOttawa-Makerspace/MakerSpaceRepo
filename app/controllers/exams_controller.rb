@@ -24,15 +24,18 @@ class ExamsController < ApplicationController
   end
 
   def create_from_training
-    @current_training_session.users.find_each do |user|
-      new_exam = user.exams.new(:training_session_id => @current_training_session.id,
-                                :category => @current_training_session.training.name)
+    current_training_session = TrainingSession.find(params[:current_training_session_id])
+    current_training_session.users.find_each do |user|
+      new_exam = user.exams.new(:training_session_id => current_training_session.id,
+                                :category => current_training_session.training.name)
       new_exam.save!
-      if new_exam.create_exam_questions(new_exam.id, new_exam.category, $n_exams_question)
-        redirect_to :back
+      if ExamQuestion.create_exam_questions(new_exam.id, new_exam.category, $n_exams_question)
         flash[:notice] = "You've successfully sent exams to all users in this training."
+      else
+        flash[:alert] = "Something went wrong"
       end
     end
+    redirect_to staff_training_session_path(current_training_session.id)
   end
 
   def show
@@ -71,7 +74,7 @@ class ExamsController < ApplicationController
   end
 
   def grant_access
-    unless @exam.user.eql?(current_user)
+    unless @exam.user.eql?(current_user) || current_user.staff?
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
     end

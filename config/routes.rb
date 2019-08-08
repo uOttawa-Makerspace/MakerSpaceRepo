@@ -216,7 +216,7 @@ Rails.application.routes.draw do
   resources :exams, only: [:index, :create, :show, :destroy] do
     collection do
       get :finish_exam
-      post :create_from_training
+      get :create_from_training
     end
   end
 
