@@ -96,4 +96,10 @@ class MsrMailer < ApplicationMailer
 
 		mail(to: "webmaster@makerepo.com", subject: "Issue Report")
 	end
+
+	def send_exam(user)
+		@user = user
+		email = @user.email
+		mail(to: email, subject: 'Exam was sent to you')
+	end
 end
