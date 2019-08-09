@@ -27,7 +27,7 @@ class ExamsController < ApplicationController
     training_session = TrainingSession.find(params[:training_session_id])
     training_session.users.find_each do |user|
       create_exam_and_exam_questions(user, training_session)
-      # SEND EMAIL
+      MsrMailer.send_exam(user, training_session).deliver_now
     end
     redirect_to staff_training_session_path(training_session.id)
   end
@@ -65,14 +65,13 @@ class ExamsController < ApplicationController
     if score < Exam::SCORE_TO_PASS
       status = Exam::STATUS[:failed]
       create_exam_and_exam_questions(user, training_session) if user.exams.where(training_session_id: training_session.id).count < 2
-      # SEND EMAIL
       # TODO: Prevent user to go back to exam after finished
     else
       status = Exam::STATUS[:passed]
       Certification.certify_user(training_session.id, user.id)
-      # SEND EMAIL
     end
     exam.update_attributes(status: status, score: score)
+    MsrMailer.finishing_exam(user, exam).deliver_now
     flash[:notice] = "Score: #{score}. You #{status} the exam."
     redirect_to exams_path
   end
@@ -84,7 +83,6 @@ class ExamsController < ApplicationController
                               :category => training_session.training.name)
     new_exam.save!
     if ExamQuestion.create_exam_questions(new_exam.id, new_exam.category, $n_exams_question)
-      MsrMailer.send_exam(user, training_session).deliver_now
       flash[:notice] = "You've successfully sent exams to all users in this training."
     else
       flash[:alert] = "Something went wrong"

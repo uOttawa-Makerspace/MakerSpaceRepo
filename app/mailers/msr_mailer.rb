@@ -103,4 +103,12 @@ class MsrMailer < ApplicationMailer
 		email = @user.email
 		mail(to: email, subject: 'Exam was sent to you')
 	end
+
+	def finishing_exam(user, exam)
+		@user = user
+		@exam = exam
+		@training_session = exam.training_session
+		email = @user.email
+		mail(to: email, subject: 'You finished your exam')
+	end
 end
