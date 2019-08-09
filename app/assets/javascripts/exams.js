@@ -1,11 +1,7 @@
-$(document).on('ready load', function () {
-    window.addEventListener( "pageshow", function ( event ) {
-        var historyTraversal = event.persisted ||
-            ( typeof window.performance != "undefined" &&
-                window.performance.navigation.type === 2 );
-        if ( historyTraversal ) {
-            // Handle page restore.
-            window.location.reload();
-        }
+jQuery( document ).ready(function( $ ) {
+    //Use this inside your document ready jQuery
+    $(window).on('popstate', function() {
+        location.reload(true);
     });
+
 });
