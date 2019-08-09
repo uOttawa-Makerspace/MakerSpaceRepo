@@ -7,6 +7,7 @@
         <table class="table">
           <tr>
             <th>Date Created</th>
+            <th>Expires at</th>
             <th>Category</th>
             <th>Status</th>
             <th>Score</th>
@@ -16,9 +17,14 @@
           <% @exams.find_each do |e| %>
             <tr>
               <td>
-                <%= e.created_at.strftime("%m/%e/%Y (%b)") %>
+                <%= e.created_at.strftime("%b %e, %Y") %>
                 <br>
                 <%= e.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+              <td>
+                <%= e.expired_at.strftime("%b %e, %Y") %>
+                <br>
+                <%= e.expired_at.strftime("%I:%M %p").downcase() %>
               </td>
               <td>
                 <%= e.category %>

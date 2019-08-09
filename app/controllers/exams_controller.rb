@@ -81,7 +81,7 @@ class ExamsController < ApplicationController
 
   def create_exam_and_exam_questions(user, training_session)
     new_exam = user.exams.new(:training_session_id => training_session.id,
-                              :category => training_session.training.name)
+                              :category => training_session.training.name, :expired_at => DateTime.now + 3.days)
     new_exam.save!
     if ExamQuestion.create_exam_questions(new_exam.id, new_exam.category, $n_exams_question)
       flash[:notice] = "You've successfully sent exams to all users in this training."

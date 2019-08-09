@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190808175714) do
+ActiveRecord::Schema.define(version: 20190809194701) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -117,6 +117,7 @@ ActiveRecord::Schema.define(version: 20190808175714) do
     t.string   "status",              default: "not started"
     t.integer  "score"
     t.integer  "training_session_id"
+    t.datetime "expired_at"
   end
 
   create_table "lab_sessions", force: :cascade do |t|
