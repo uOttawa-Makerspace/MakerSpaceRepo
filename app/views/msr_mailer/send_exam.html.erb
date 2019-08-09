@@ -1,0 +1,20 @@
+<section style="padding-left: 8vw;padding-top: 5vw;">
+<p style="font: 400 1.3em 'Raleway', sans-serif;color: #333;"><h1>
+    Hello, <%= @user.name %>!
+ </h1>
+</p>
+
+<br style="font: 400 1.1em 'Raleway', sans-serif;color: #333; line-height: 35px;">
+  You are receiving this email because you were in the <b><%= @exam.training.name %> Training</b> </br>
+  Sign in to your account: <a href="http://makerepo.com/login" target="_blank"> LogIn </a> <br />
+  and check all the exams available <%= link_to "Exams", exams_path %>. <br />
+  You have 3 days to complete the exam. <br />
+
+</p>
+
+
+<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #333;">
+  Cheers,<br>
+  The MakerRepo Team
+</p>
+</section>
