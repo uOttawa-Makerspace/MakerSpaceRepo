@@ -3,7 +3,6 @@ namespace :exams do
   desc "Check if exams are expired"
   task check_expired_exams: :environment do
     Exam.where("expired_at > ? AND (status = ? OR status = ?)", DateTime.now, "not started", "incomplete").find_each do |exam|
-      puts exam.user.name
       user = exam.user
       score = exam.calculate_score
       training_session = exam.training_session
