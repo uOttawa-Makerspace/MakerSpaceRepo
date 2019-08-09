@@ -15,7 +15,7 @@
       <br />
     <% end %>
 
-    <%= link_to "Finish Exam", finish_exam_exams_path(exam_id: @exam.id), class: "btn btn-primary my-5",
+    <%= button_to "Finish Exam", finish_exam_exams_path(exam_id: @exam.id), class: "btn btn-primary my-5",
                 data: { confirm: "Are you sure you want to submit your exam? You won't be able to make any changes after your exam submission. Questions not answered will be considered wrong."  } %>
   </div>
 </section>
