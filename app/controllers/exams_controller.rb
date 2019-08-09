@@ -41,6 +41,7 @@ class ExamsController < ApplicationController
   end
 
   def show
+    # TODO: User cannot open new tab when clicking "Finish Exam"
     @exam = Exam.find(params[:id])
     @exam.update_attributes(:status => Exam::STATUS[:incomplete]) if @exam.status == Exam::STATUS[:not_started]
     @questions = @exam.questions
