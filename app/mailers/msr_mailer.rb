@@ -111,4 +111,13 @@ class MsrMailer < ApplicationMailer
 		email = @user.email
 		mail(to: email, subject: 'You finished your exam')
 	end
+
+	def exam_results_staff(user, exam)
+		@user = user
+		@exam = exam
+		@training_session = exam.training_session
+		@staff = @training_session.user
+		email = @staff.email
+		mail(to: email, subject: "#{@user.name.split.first.capitalize} finished an exam")
+	end
 end

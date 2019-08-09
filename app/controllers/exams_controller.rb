@@ -72,6 +72,7 @@ class ExamsController < ApplicationController
     end
     exam.update_attributes(status: status, score: score)
     MsrMailer.finishing_exam(user, exam).deliver_now
+    MsrMailer.exam_results_staff(user, exam).deliver_now
     flash[:notice] = "Score: #{score}. You #{status} the exam."
     redirect_to exams_path
   end
