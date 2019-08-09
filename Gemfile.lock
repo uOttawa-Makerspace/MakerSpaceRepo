@@ -151,6 +151,8 @@ GEM
     kgio (2.11.2)
     launchy (2.3.0)
       addressable (~> 2.3)
+    letter_opener (1.7.0)
+      launchy (~> 2.2)
     loofah (2.2.3)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
@@ -363,6 +365,7 @@ DEPENDENCIES
   jquery-ui-rails (~> 5.0.5)
   kaminari (~> 0.16.3)
   launchy (~> 2.3.0)
+  letter_opener
   mocha
   octokit (~> 3.0)
   paperclip (~> 5.2.0)

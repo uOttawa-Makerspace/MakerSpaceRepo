@@ -84,6 +84,7 @@ class ExamsController < ApplicationController
                               :category => training_session.training.name)
     new_exam.save!
     if ExamQuestion.create_exam_questions(new_exam.id, new_exam.category, $n_exams_question)
+      MsrMailer.send_exam(user, training_session).deliver_now
       flash[:notice] = "You've successfully sent exams to all users in this training."
     else
       flash[:alert] = "Something went wrong"
