@@ -29,7 +29,7 @@ class ExamsController < ApplicationController
       create_exam_and_exam_questions(user, training_session)
       MsrMailer.send_exam(user, training_session).deliver_now
     end
-    redirect_to staff_training_session_path(training_session.id)
+    redirect_to staff_dashboard_index_path(space_id: training_session.space.id)
   end
 
   def create_for_single_user
