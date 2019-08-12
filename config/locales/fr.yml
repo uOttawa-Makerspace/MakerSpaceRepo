@@ -25,6 +25,7 @@ fr:
       staff_area: "Zone des employés"
       volunteer_area: "Zone des volontaires"
       printorder: "Commander une impression"
+      laserorder: "Commander une découpe laser"
       help: "Aide"
       sign_out: "Déconnexion"
   home:
