@@ -94,6 +94,32 @@ ActiveRecord::Schema.define(version: 20190812203119) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "exam_questions", force: :cascade do |t|
+    t.integer  "exam_id"
+    t.integer  "question_id"
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+  end
+
+  create_table "exam_responses", force: :cascade do |t|
+    t.integer  "exam_question_id"
+    t.integer  "answer_id"
+    t.boolean  "correct"
+    t.datetime "created_at",       null: false
+    t.datetime "updated_at",       null: false
+  end
+
+  create_table "exams", force: :cascade do |t|
+    t.integer  "user_id"
+    t.string   "category"
+    t.datetime "created_at",                                  null: false
+    t.datetime "updated_at",                                  null: false
+    t.string   "status",              default: "not started"
+    t.integer  "score"
+    t.integer  "training_session_id"
+    t.datetime "expired_at"
+  end
+
   create_table "lab_sessions", force: :cascade do |t|
     t.integer  "user_id"
     t.datetime "sign_in_time"
@@ -175,7 +201,6 @@ ActiveRecord::Schema.define(version: 20190812203119) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
   end
 
   create_table "project_joins", force: :cascade do |t|
