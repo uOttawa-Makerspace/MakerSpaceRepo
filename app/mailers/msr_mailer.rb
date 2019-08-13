@@ -29,10 +29,15 @@ class MsrMailer < ApplicationMailer
 		mail(to: @user.email, subject: 'Your print : '+ filename +' is ready !')
   end
 
-  def send_invoice(name, quote, number)
+  def send_invoice(name, quote, number, order_type)
     @name = name
     @quote = quote
     @number = number
+		if order_type != 1
+			@order_type = "3D Printed Part"
+		else
+			@order_type = "Laser Cut/Engraving"
+		end
     mail(to: "uomakerspaceprintinvoices@gmail.com", subject: 'Invoice for Order #' + @number.to_s + ' ')
   end
 

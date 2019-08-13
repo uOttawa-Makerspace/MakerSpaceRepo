@@ -26,7 +26,7 @@ en:
       volunteer_area: "Volunteer Area"
       help: "Help"
       sign_out: "Sign Out"
-      printorder: "Order a print"
+      printorder: "Order Print/Laser Cut"
   home:
     welcome_html: "Welcome to Maker<strong>Repo</strong>!"
     welcome_desc_html: "Browse projects built using spaces provided by CEED & publish your own!"

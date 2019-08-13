@@ -1,8 +1,10 @@
-<h1>List of prints    <%= link_to "New Print Order", new_print_order_path, {class: 'btn btn-primary'} %></h1>
+<h1>List of prints / Laser Cuts    <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %></h1>
 <table class="table table-striped">
   <thead>
   <tr>
     <th style="text-align: center;" scope="col">User</th>
+    <th style="text-align: center;" scope="col">Identity</th>
+    <th style="text-align: center;" scope="col">Type</th>
     <th style="text-align: center;" scope="col">Print ID</th>
     <th style="text-align: center;" scope="col">Comments</th>
     <th style="text-align: center;" scope="col">Download</th>
@@ -19,9 +21,21 @@
   <tbody>
   <% @print_order.order(id: :desc).each do |prints| %>
     <tr>
-      <th class = "username" style="text-align: center;" scope="row">
+      <th class="username" style="text-align: center;" scope="row">
         <%= link_to prints.user.name.capitalize, user_path(prints.user.username) %>
       </th>
+      <% if (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") %>
+        <td>Internal</td>
+      <% else %>
+        <td>External</td>
+      <% end %>
+      <% if prints.order_type == 0 %>
+        <td>3D Printing</td>
+      <% elsif prints.order_type == 1 %>
+        <td>Laser Cutting</td>
+      <% else %>
+        <td>Unknown</td>
+      <% end %>
       <td style="text-align: center;"><%= prints.id %></td>
       <td><%= prints.comments %></td>
       <td>
@@ -148,8 +162,8 @@
       <% if @user.admin? or @user.staff? %>
 
         <% if prints.staff_id.present? %>
-          <% staff = User.find(prints.staff_id)  %>
-          <td class = "username">
+          <% staff = User.find(prints.staff_id) %>
+          <td class="username">
             <%= link_to staff.name.capitalize, user_path(staff.username) %>
           </td>
         <% elsif prints.user_approval and prints.approved %>
