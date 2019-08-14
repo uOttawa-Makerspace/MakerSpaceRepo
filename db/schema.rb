@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190812203119) do
+ActiveRecord::Schema.define(version: 20190814001025) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -172,8 +172,8 @@ ActiveRecord::Schema.define(version: 20190812203119) do
     t.boolean  "approved"
     t.boolean  "printed"
     t.text     "comments"
-    t.datetime "created_at",                    null: false
-    t.datetime "updated_at",                    null: false
+    t.datetime "created_at",                          null: false
+    t.datetime "updated_at",                          null: false
     t.string   "file_file_name"
     t.string   "file_content_type"
     t.integer  "file_file_size"
@@ -183,7 +183,14 @@ ActiveRecord::Schema.define(version: 20190812203119) do
     t.boolean  "user_approval"
     t.text     "staff_comments"
     t.boolean  "expedited"
-    t.integer  "order_type",        default: 0
+    t.integer  "order_type",              default: 0
+    t.text     "email"
+    t.text     "name"
+    t.datetime "timestamp_approved"
+    t.string   "final_file_file_name"
+    t.string   "final_file_content_type"
+    t.integer  "final_file_file_size"
+    t.datetime "final_file_updated_at"
   end
 
   create_table "printer_sessions", force: :cascade do |t|
