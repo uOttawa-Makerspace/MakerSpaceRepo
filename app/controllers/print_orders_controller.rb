@@ -5,9 +5,9 @@ class PrintOrdersController < ApplicationController
   def index
     #TODO: Too much logic in index.html.erb
       if (@user.staff? || @user.admin?)
-        @print_order = PrintOrder.all.order(created_at: :desc)
+        @print_order = PrintOrder.all.order(expedited: :desc, created_at: :asc)
       else
-        @print_order = @user.print_orders.order(created_at: :desc)
+        @print_order = @user.print_orders.order(expedited: :desc, created_at: :asc)
       end
     end
 
