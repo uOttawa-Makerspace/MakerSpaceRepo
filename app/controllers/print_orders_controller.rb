@@ -5,9 +5,9 @@ class PrintOrdersController < ApplicationController
   def index
     #TODO: Too much logic in index.html.erb
       if (@user.staff? || @user.admin?)
-        @print_order = PrintOrder.all
+        @print_order = PrintOrder.all.order(created_at: :desc)
       else
-        @print_order = @user.print_orders
+        @print_order = @user.print_orders.order(created_at: :desc)
       end
     end
 
@@ -50,7 +50,7 @@ class PrintOrdersController < ApplicationController
     private
 
     def print_order_params
-      params.require(:print_order).permit(:user_id, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
+      params.require(:print_order).permit(:user_id, :final_file, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
     end
 
 end

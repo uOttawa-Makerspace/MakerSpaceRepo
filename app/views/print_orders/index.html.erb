@@ -1,4 +1,5 @@
-<h1>List of prints / Laser Cuts    <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %></h1>
+<h1>List of prints / Laser
+  Cuts    <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %></h1>
 <table class="table table-striped">
   <thead>
   <tr>
@@ -7,7 +8,8 @@
     <th style="text-align: center;" scope="col">Type</th>
     <th style="text-align: center;" scope="col">Print ID</th>
     <th style="text-align: center;" scope="col">Comments</th>
-    <th style="text-align: center;" scope="col">Download</th>
+    <th style="text-align: center;" scope="col">STL/SVG</th>
+    <th style="text-align: center;" scope="col">GCode/PDF</th>
     <th style="text-align: center;" scope="col">Expedited</th>
     <th style="text-align: center;" scope="col">Approved by staff ?</th>
     <th style="text-align: center;" scope="col">Quote approved by user?</th>
@@ -19,7 +21,7 @@
   </tr>
   </thead>
   <tbody>
-  <% @print_order.order(id: :desc).each do |prints| %>
+  <% @print_order.order(expedited: :desc, id: :asc).each do |prints| %>
     <tr>
       <th class="username" style="text-align: center;" scope="row">
         <%= link_to prints.user.name.capitalize, user_path(prints.user.username) %>
@@ -39,10 +41,21 @@
       <td style="text-align: center;"><%= prints.id %></td>
       <td><%= prints.comments %></td>
       <td>
-        <% if prints.file_file_name %><a href="<%= prints.file.url %>">
-        <button class="btn btn-primary">Download</button>
-      </a>
-        <% end %></td>
+        <% if prints.file_file_name %>
+          <a href="<%= prints.file.url %>">
+            <button class="btn btn-primary">Download</button>
+          </a>
+        <% end %>
+      </td>
+      <td>
+        <% if prints.final_file_file_name %>
+          <a href="<%= prints.final_file.url %>">
+            <button class="btn btn-primary">Download</button>
+          </a>
+        <% else %>
+          Not Available
+        <% end %>
+      </td>
       <% if prints.expedited == true %>
         <td>Yes</td>
       <% else %>
@@ -75,7 +88,11 @@
                       <div class="form-group">
                         <%= f.text_field :quote, placeholder: "15.98", class: "form-control", :required => true %>
                       </div>
-                      <%= f.label :quote, "Comments for client " %>
+                      <div class="form-group">
+                        <%= f.label :final_file, "PDF/GCode" %>
+                        <%= f.file_field :final_file, style: "display: block!important;", :required => true %>
+                      </div>
+
                       <div class="form-group">
                         <%= f.text_field :staff_comments, placeholder: "I will need to add supports", class: "form-control" %>
                       </div>
@@ -132,7 +149,11 @@
       <% if prints.user_id == @user.id and prints.approved %>
         <td>
           <% if prints.user_approval %>
-            Approved
+            <% if prints.timestamp_approved %>
+              Approved on <%= prints.timestamp_approved.to_formatted_s(:short) %>
+            <% else %>
+              Approved
+            <% end %>
           <% elsif prints.user_approval == false %>
             Disapproved
           <% else %>
@@ -140,6 +161,7 @@
             <br>
             <%= form_for prints, url: print_order_path(prints) do |f| %>
               <%= f.hidden_field :user_approval, :value => true %>
+              <%= f.hidden_field :timestamp_approved, :value => DateTime.now %>
               <%= f.submit "I accept the quote", class: 'btn btn-primary', data: {confirm: 'Are you sure?'} %>
             <% end %>
             <br>
