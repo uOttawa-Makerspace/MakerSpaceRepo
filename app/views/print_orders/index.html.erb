@@ -21,7 +21,7 @@
   </tr>
   </thead>
   <tbody>
-  <% @print_order.order(expedited: :desc, id: :asc).each do |prints| %>
+  <% @print_order.each do |prints| %>
     <tr>
       <th class="username" style="text-align: center;" scope="row">
         <%= link_to prints.user.name.capitalize, user_path(prints.user.username) %>
