@@ -69,10 +69,10 @@
           <td>Disapproved</td>
         <% else %>
           <td>
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#quote_modal">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#quote_modal_<%= prints.id %>">
               Approve
             </button>
-            <div class="modal fade" id="quote_modal" tabindex="-1" role="dialog" aria-labelledby="quote_modal" aria-hidden="true">
+            <div class="modal fade" id="quote_modal_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="quote_modal_<%= prints.id %>" aria-hidden="true">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
                   <div class="modal-header">
@@ -84,10 +84,33 @@
                   <div class="modal-body">
                     <%= form_for prints, url: print_order_path(prints) do |f| %>
                       <%= f.hidden_field :approved, :value => true %>
-                      <%= f.label :quote, "Quote (In CAD) " %>
+                      <% if prints.order_type == 0 %>
+                      <%= f.label :quote, "Service Charges (In CAD) " %>
                       <div class="form-group">
-                        <%= f.text_field :quote, placeholder: "15.98", class: "form-control", :required => true %>
+                        <%= f.text_field :service_charge, placeholder: "20", class: "form-control", :required => true %>
                       </div>
+                      <%= f.label :quote, "Number of Grams" %>
+                      <div class="form-group">
+                        <%= f.text_field :grams, placeholder: "100", class: "form-control", :required => true %>
+                      </div>
+                      <%= f.label :quote, "Price Per Gram (In CAD) " %>
+                      <div class="form-group">
+                        <%= f.text_field :price_per_gram, placeholder: "15.98", class: "form-control", :required => true %>
+                      </div>
+                      <% else %>
+                        <%= f.label :quote, "Service Charges (In CAD) " %>
+                        <div class="form-group">
+                          <%= f.text_field :service_charge, placeholder: "20", class: "form-control", :required => true %>
+                        </div>
+                        <%= f.label :quote, "Material Cost (In CAD) " %>
+                        <div class="form-group">
+                          <%= f.text_field :material_cost, placeholder: "100", class: "form-control", :required => true %>
+                        </div>
+                        <%= f.label :quote, "Price Per Hour (In CAD) " %>
+                        <div class="form-group">
+                          <%= f.text_field :price_per_hour, placeholder: "15.98", class: "form-control", :required => true %>
+                        </div>
+                      <% end %>
                       <div class="form-group">
                         <%= f.label :final_file, "PDF/GCode" %>
                         <%= f.file_field :final_file, style: "display: block!important;", :required => true %>
@@ -107,10 +130,10 @@
             </div>
             <br><br>
 
-            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#disapprove">
+            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#disapprove_<%= prints.id %>">
               Disapprove
             </button>
-            <div class="modal fade" id="disapprove" tabindex="-1" role="dialog" aria-labelledby="disapprove" aria-hidden="true">
+            <div class="modal fade" id="disapprove_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="disapprove_<%= prints.id %>" aria-hidden="true">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
                   <div class="modal-header">

@@ -21,6 +21,14 @@ class PrintOrdersController < ApplicationController
     end
 
     def update
+      if params[:print_order][:timestamp_approved]
+        params[:print_order][:timestamp_approved] = DateTime.now
+      end
+      if params[:print_order][:price_per_hour] and params[:print_order][:material_cost] and params[:print_order][:service_charge]
+        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + params[:print_order][:price_per_hour].to_f + params[:print_order][:material_cost].to_f
+      elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
+        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
+      end
       @print_order = PrintOrder.find(params[:id])
       @user = @print_order.user
       @print_order.update(print_order_params)
@@ -50,7 +58,7 @@ class PrintOrdersController < ApplicationController
     private
 
     def print_order_params
-      params.require(:print_order).permit(:user_id, :final_file, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
+      params.require(:print_order).permit(:user_id, :final_file, :grams, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
     end
 
 end
