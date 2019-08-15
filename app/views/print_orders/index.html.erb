@@ -95,7 +95,7 @@
                       </div>
                       <%= f.label :quote, "Price Per Gram (In CAD) " %>
                       <div class="form-group">
-                        <%= f.text_field :price_per_gram, placeholder: "15.98", class: "form-control", :required => true %>
+                        <%= f.text_field :price_per_gram, placeholder: "0.08", class: "form-control", :required => true %>
                       </div>
                       <% else %>
                         <%= f.label :quote, "Service Charges (In CAD) " %>
@@ -106,9 +106,9 @@
                         <div class="form-group">
                           <%= f.text_field :material_cost, placeholder: "100", class: "form-control", :required => true %>
                         </div>
-                        <%= f.label :quote, "Price Per Hour (In CAD) " %>
+                        <%= f.label :quote, "Price For Hours Worked (In CAD) " %>
                         <div class="form-group">
-                          <%= f.text_field :price_per_hour, placeholder: "15.98", class: "form-control", :required => true %>
+                          <%= f.text_field :price_per_hour, placeholder: "15.00", class: "form-control", :required => true %>
                         </div>
                       <% end %>
                       <div class="form-group">
