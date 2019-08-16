@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190814001025) do
+ActiveRecord::Schema.define(version: 20190815192124) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -94,32 +94,6 @@ ActiveRecord::Schema.define(version: 20190814001025) do
     t.datetime "updated_at", null: false
   end
 
-  create_table "exam_questions", force: :cascade do |t|
-    t.integer  "exam_id"
-    t.integer  "question_id"
-    t.datetime "created_at",  null: false
-    t.datetime "updated_at",  null: false
-  end
-
-  create_table "exam_responses", force: :cascade do |t|
-    t.integer  "exam_question_id"
-    t.integer  "answer_id"
-    t.boolean  "correct"
-    t.datetime "created_at",       null: false
-    t.datetime "updated_at",       null: false
-  end
-
-  create_table "exams", force: :cascade do |t|
-    t.integer  "user_id"
-    t.string   "category"
-    t.datetime "created_at",                                  null: false
-    t.datetime "updated_at",                                  null: false
-    t.string   "status",              default: "not started"
-    t.integer  "score"
-    t.integer  "training_session_id"
-    t.datetime "expired_at"
-  end
-
   create_table "lab_sessions", force: :cascade do |t|
     t.integer  "user_id"
     t.datetime "sign_in_time"
@@ -191,6 +165,11 @@ ActiveRecord::Schema.define(version: 20190814001025) do
     t.string   "final_file_content_type"
     t.integer  "final_file_file_size"
     t.datetime "final_file_updated_at"
+    t.float    "grams"
+    t.float    "service_charge"
+    t.float    "price_per_hour"
+    t.float    "price_per_gram"
+    t.float    "material_cost"
   end
 
   create_table "printer_sessions", force: :cascade do |t|
@@ -208,6 +187,7 @@ ActiveRecord::Schema.define(version: 20190814001025) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
+    t.string   "rfid"
   end
 
   create_table "project_joins", force: :cascade do |t|

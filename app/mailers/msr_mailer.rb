@@ -11,9 +11,9 @@ class MsrMailer < ApplicationMailer
 		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
 	end
 
-	def send_print_quote(user, quote, comments, filename)
+	def send_print_quote(user, print_order, comments, filename)
 	  @user = user
-	  @quote = quote
+	  @print_order = print_order
 		@comments = comments
 		mail(to: @user.email, subject: 'Print Request Approval : ' + filename)
 	end
