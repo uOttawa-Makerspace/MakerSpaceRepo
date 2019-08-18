@@ -9,7 +9,9 @@
     <th style="text-align: center;" scope="col">Print ID</th>
     <th style="text-align: center;" scope="col">Comments</th>
     <th style="text-align: center;" scope="col">STL/SVG</th>
-    <th style="text-align: center;" scope="col">GCode/PDF</th>
+    <% if @user.admin? || @user.staff? %>
+      <th style="text-align: center;" scope="col">GCode/PDF</th>
+    <% end %>
     <th style="text-align: center;" scope="col">Expedited</th>
     <th style="text-align: center;" scope="col">Approved by staff ?</th>
     <th style="text-align: center;" scope="col">Quote approved by user?</th>
@@ -47,6 +49,7 @@
           </a>
         <% end %>
       </td>
+      <% if @user.admin? || @user.staff? %>
       <td>
         <% if prints.final_file_file_name %>
           <a href="<%= prints.final_file.url %>">
@@ -56,6 +59,7 @@
           Not Available
         <% end %>
       </td>
+      <% end %>
       <% if prints.expedited == true %>
         <td>Yes</td>
       <% else %>
@@ -85,18 +89,18 @@
                     <%= form_for prints, url: print_order_path(prints) do |f| %>
                       <%= f.hidden_field :approved, :value => true %>
                       <% if prints.order_type == 0 %>
-                      <%= f.label :quote, "Service Charges (In CAD) " %>
-                      <div class="form-group">
-                        <%= f.text_field :service_charge, placeholder: "20", class: "form-control", :required => true %>
-                      </div>
-                      <%= f.label :quote, "Number of Grams" %>
-                      <div class="form-group">
-                        <%= f.text_field :grams, placeholder: "100", class: "form-control", :required => true %>
-                      </div>
-                      <%= f.label :quote, "Price Per Gram (In CAD) " %>
-                      <div class="form-group">
-                        <%= f.text_field :price_per_gram, placeholder: "0.08", class: "form-control", :required => true %>
-                      </div>
+                        <%= f.label :quote, "Service Charges (In CAD) " %>
+                        <div class="form-group">
+                          <%= f.text_field :service_charge, placeholder: "20", class: "form-control", :required => true %>
+                        </div>
+                        <%= f.label :quote, "Number of Grams" %>
+                        <div class="form-group">
+                          <%= f.text_field :grams, placeholder: "100", class: "form-control", :required => true %>
+                        </div>
+                        <%= f.label :quote, "Price Per Gram (In CAD) " %>
+                        <div class="form-group">
+                          <%= f.text_field :price_per_gram, placeholder: "0.08", class: "form-control", :required => true %>
+                        </div>
                       <% else %>
                         <%= f.label :quote, "Service Charges (In CAD) " %>
                         <div class="form-group">
@@ -231,7 +235,7 @@
           <td>Printed</td>
         <% elsif prints.printed == false %>
           <td>Not Printed</td>
-        <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user == prints.staff_id) %>
+        <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>
           <%= form_for prints, url: print_order_path(prints) do |f| %>
             <%= f.hidden_field :printed, :value => true %>
             <td>

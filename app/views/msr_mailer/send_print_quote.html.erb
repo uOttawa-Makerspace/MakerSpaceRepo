@@ -13,6 +13,10 @@
   <br>
   Price Per Gram : $<%= @print_order.price_per_gram %>/g
   <% end %>
+  <% if @print_order.expedited == true %>
+    <br>
+  Expedited Service : $<%= @expedited_price %>
+  <% end %>
   <br>
   The total price for your piece is $<%= @print_order.quote %>. <br>
   You can accept or decline the quote by loging in your <a href="https://makerepo.com/print_orders">Makerepo account</a>.

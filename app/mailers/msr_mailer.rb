@@ -11,11 +11,12 @@ class MsrMailer < ApplicationMailer
 		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
 	end
 
-	def send_print_quote(user, print_order, comments, filename)
+	def send_print_quote(expedited_price, user, print_order, comments)
+		@expedited_price = expedited_price
 	  @user = user
 	  @print_order = print_order
 		@comments = comments
-		mail(to: @user.email, subject: 'Print Request Approval : ' + filename)
+		mail(to: @user.email, subject: 'Print Request Approval : ' + @print_order.file_file_name)
 	end
 
 	def send_print_disapproval(user, comments, filename)
@@ -24,8 +25,9 @@ class MsrMailer < ApplicationMailer
 		mail(to: @user.email, subject: 'Print Request Disapproval : '+filename)
 	end
 
-	def send_print_finished(user, filename)
+	def send_print_finished(user, filename, pickup_id)
 		@user = user
+    @pickup_id = pickup_id
 		mail(to: @user.email, subject: 'Your print : '+ filename +' is ready !')
   end
 

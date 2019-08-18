@@ -5,7 +5,7 @@ class PrintOrdersController < ApplicationController
   def index
     #TODO: Too much logic in index.html.erb
       if (@user.staff? || @user.admin?)
-        @print_order = PrintOrder.all.order(printed: :desc, approved: :desc, user_approval: :desc, expedited: :desc, created_at: :asc)
+        @print_order = PrintOrder.all.order(printed: :desc, expedited: :desc, approved: :desc, user_approval: :desc, created_at: :asc)
       else
         @print_order = @user.print_orders.order(expedited: :desc, created_at: :desc)
       end
@@ -21,24 +21,33 @@ class PrintOrdersController < ApplicationController
     end
 
     def update
+      # Surcharge for expedited services
+      expedited_price = 20
+
+      @print_order = PrintOrder.find(params[:id])
       if params[:print_order][:timestamp_approved]
         params[:print_order][:timestamp_approved] = DateTime.now
       end
+
       if params[:print_order][:price_per_hour] and params[:print_order][:material_cost] and params[:print_order][:service_charge]
         params[:print_order][:quote] = params[:print_order][:service_charge].to_f + params[:print_order][:price_per_hour].to_f + params[:print_order][:material_cost].to_f
       elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
         params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
       end
-      @print_order = PrintOrder.find(params[:id])
+
+      if @print_order.expedited == true
+        params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+      end
+
       @user = @print_order.user
       @print_order.update(print_order_params)
 
       if params[:print_order][:approved] == "true"
-        MsrMailer.send_print_quote(@user, @print_order, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
+        MsrMailer.send_print_quote(expedited_price, @user, @print_order, params[:print_order][:staff_comments]).deliver_now
       elsif params[:print_order][:approved] == "false"
         MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
       elsif params[:print_order][:printed] == "true"
-        MsrMailer.send_print_finished(@user, @print_order.file_file_name).deliver_now
+        MsrMailer.send_print_finished(@user, @print_order.file_file_name, @print_order.id).deliver_now
         MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
       end
 
