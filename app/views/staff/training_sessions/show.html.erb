@@ -114,7 +114,7 @@
           <% end %>
         </td>
         <td>
-          <% exams = @current_training_session.exams.where(user_id: user.id) %>
+          <% exams = @current_training_session.exams.where(user_id: user.id).order(:created_at) %>
           <% if !exams.blank? %>
             <% exams.each_with_index do |exam, i| %>
               E<%= i + 1 %>:
