@@ -49,7 +49,7 @@
       <h3 style="font-weight:bold;">New <%=@space.name.capitalize%> Training:</h3>
       <%= form_for admin_trainings_path, :url => { :action => "create", controller: 'admin/trainings'} do |f| %>
         <%= hidden_field_tag 'training_params[space_id]', @space.id %>
-        <%= text_field_tag 'training_params[name]', nil, placeholder: 'Enter a unique name', style: 'width:220px;height:18px;' %><tb>
+        <%= text_field_tag 'training_params[name]', nil, placeholder: 'Enter a unique name', style: 'width:220px;height:18px;' %>
         <%= submit_tag "Add", class:"save-button"%>
       <%end%>
       <br>

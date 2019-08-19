@@ -35,6 +35,7 @@ gem 'pry-rails', :group => :development
 gem 'saml_idp', '~> 0.8.0'
 gem 'clipboard-rails'
 gem 'bootbox-rails', '~>0.4'
+gem 'quick_random_records'
 
 
 group :development, :test do
@@ -45,6 +46,7 @@ group :development, :test do
 end
 
 group :development do
+  gem "letter_opener"
   gem 'web-console', '~> 2.0'
   gem "letter_opener" # Open emails in development
 

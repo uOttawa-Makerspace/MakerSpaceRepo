@@ -215,6 +215,16 @@ Rails.application.routes.draw do
 
   resources :questions
 
+  resources :exams, only: [:index, :create, :show, :destroy] do
+    collection do
+      get :finish_exam
+      get :create_from_training
+      get :create_for_single_user
+    end
+  end
+
+  resources :exam_responses, only: [:create]
+
   resources :volunteer_tasks
 
   resources :announcements

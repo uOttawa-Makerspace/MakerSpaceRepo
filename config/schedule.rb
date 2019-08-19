@@ -54,6 +54,10 @@ every :sunday, :at => '1am' do
   rake "active_volunteers:check_volunteers_status"
 end
 
+every :day, :at => '11:59pm' do
+  rake "exams:check_expired_exams"
+end
+
 # Checklist Reminder
 
 # emails list:
