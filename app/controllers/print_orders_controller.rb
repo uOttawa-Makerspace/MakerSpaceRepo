@@ -16,6 +16,16 @@ class PrintOrdersController < ApplicationController
     end
 
     def create
+      if params[:print_order][:material] and params[:print_order][:comments]
+        params[:print_order][:comments] = params[:print_order][:material]+", "+params[:print_order][:comments]
+      end
+
+      if params[:print_order][:comments] and params[:print_order][:sst]
+        if params[:print_order][:sst] == "true"
+          params[:print_order][:comments] = "SST, "+params[:print_order][:comments]
+        end
+      end
+
       @print_order = PrintOrder.create(print_order_params)
       redirect_to print_orders_path
     end
@@ -25,6 +35,7 @@ class PrintOrdersController < ApplicationController
       expedited_price = 20
 
       @print_order = PrintOrder.find(params[:id])
+
       if params[:print_order][:timestamp_approved]
         params[:print_order][:timestamp_approved] = DateTime.now
       end
@@ -67,7 +78,7 @@ class PrintOrdersController < ApplicationController
     private
 
     def print_order_params
-      params.require(:print_order).permit(:user_id, :final_file, :grams, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
+      params.require(:print_order).permit(:user_id, :final_file, :sst, :material, :grams, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
     end
 
 end
