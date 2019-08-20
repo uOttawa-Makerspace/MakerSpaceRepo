@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190815192124) do
+ActiveRecord::Schema.define(version: 20190820163338) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -196,6 +196,8 @@ ActiveRecord::Schema.define(version: 20190815192124) do
     t.float    "price_per_hour"
     t.float    "price_per_gram"
     t.float    "material_cost"
+    t.boolean  "sst"
+    t.text     "material"
   end
 
   create_table "printer_sessions", force: :cascade do |t|
