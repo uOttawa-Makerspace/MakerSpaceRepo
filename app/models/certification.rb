@@ -7,6 +7,7 @@ class Certification < ActiveRecord::Base
   validates :training_session, presence: { message: "A training session is required." }
   validate :unique_cert
 
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
   def training
     return self.training_session.training.name
@@ -45,6 +46,8 @@ class Certification < ActiveRecord::Base
     return true
   end
 
-  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
+  def self.certify_user(training_session_id, user_id)
+    self.create(user_id: user_id, training_session_id: training_session_id)
+  end
 
 end

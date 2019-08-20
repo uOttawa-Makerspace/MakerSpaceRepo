@@ -4,6 +4,8 @@ Rails.application.routes.draw do
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
 
+  resources :print_orders, only: [:index, :create, :update, :new, :destroy]
+
   resources :project_proposals do
     collection do
       post :approval
@@ -212,6 +214,16 @@ Rails.application.routes.draw do
   end
 
   resources :questions
+
+  resources :exams, only: [:index, :create, :show, :destroy] do
+    collection do
+      get :finish_exam
+      get :create_from_training
+      get :create_for_single_user
+    end
+  end
+
+  resources :exam_responses, only: [:create]
 
   resources :volunteer_tasks
 

@@ -6,6 +6,7 @@
   border-radius: 10px;
   font-size: 20px;
   border-color: black;
+  width: auto;
 }
 
 .correct-answers{
@@ -16,4 +17,15 @@
   border-radius: 10px;
   font-size: 20px;
   border-color: green;
+}
+
+.selected-answers{
+  border: 2px solid #d9d6d6;
+  padding: 10px;
+  padding-left: 20px;
+  background-color: #357777;
+  border-radius: 10px;
+  font-size: 20px;
+  color: white;
+  border-color: rgba(203, 160, 0, 0.9);
 }

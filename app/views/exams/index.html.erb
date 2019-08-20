@@ -1,0 +1,62 @@
+<section class="container">
+  <div class="text-center">
+    <h2>Exams</h2>
+    <% if !@exams.blank? %>
+      <br />
+      <div class="table-responsive">
+        <table class="table">
+          <tr>
+            <th>Date Created</th>
+            <th>Expires at</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Score</th>
+            <th class="action-header">Action</th>
+          </tr>
+          <tbody>
+          <% @exams.find_each do |e| %>
+            <tr>
+              <td>
+                <%= e.created_at.strftime("%b %e, %Y") %>
+                <br>
+                <%= e.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+              <td>
+                <%= e.expired_at.strftime("%b %e, %Y") %>
+                <br>
+                <%= e.expired_at.strftime("%I:%M %p").downcase() %>
+              </td>
+              <td>
+                <%= e.category %>
+              </td>
+              <td>
+                <b><%= e.status.capitalize %></b>
+              </td>
+              <td>
+                <%= e.score || "NA" %>
+              </td>
+              <td class="action-cell">
+                <% if e.status == "not started" %>
+                  <%= link_to "Start Exam", exam_path(e.id), class:"btn btn-primary" %>
+                <% elsif e.status == "incomplete" %>
+                  <%= link_to "Resume Exam", exam_path(e.id), class:"btn btn-primary" %>
+                <% else %>
+                  NA
+                  <br />
+                <% end %>
+                <%=link_to "Delete", { controller: :exams ,action: :destroy, id: e.id }, method: :delete,
+                           data: { confirm: 'Are you sure that you want to delete this exam?' } if current_user.admin?%>
+              </td>
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="m-5">
+        You have no exams.
+      </div>
+    <% end %>
+  </div>
+</section>
+

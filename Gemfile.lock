@@ -151,6 +151,8 @@ GEM
     kgio (2.11.2)
     launchy (2.3.0)
       addressable (~> 2.3)
+    letter_opener (1.7.0)
+      launchy (~> 2.2)
     loofah (2.2.3)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
@@ -198,6 +200,8 @@ GEM
       slop (~> 3.4)
     pry-rails (0.3.7)
       pry (>= 0.10.4)
+    quick_random_records (0.3.1)
+      activerecord (>= 3)
     rack (1.6.11)
     rack-test (0.6.3)
       rack (>= 1.0)
@@ -361,6 +365,7 @@ DEPENDENCIES
   jquery-ui-rails (~> 5.0.5)
   kaminari (~> 0.16.3)
   launchy (~> 2.3.0)
+  letter_opener
   mocha
   octokit (~> 3.0)
   paperclip (~> 5.2.0)
@@ -369,6 +374,7 @@ DEPENDENCIES
   progress_bar (~> 1.0.3)
   pry (~> 0.10.1)
   pry-rails
+  quick_random_records
   railroady
   rails (~> 4.2)
   rails_12factor

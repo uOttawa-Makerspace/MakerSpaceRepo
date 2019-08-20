@@ -24,8 +24,10 @@ en:
       admin_area: "Admin Area"
       staff_area: "Staff Area"
       volunteer_area: "Volunteer Area"
+      exams: "Exams"
       help: "Help"
       sign_out: "Sign Out"
+      printorder: "Order Print/Laser Cut"
   home:
     welcome_html: "Welcome to Maker<strong>Repo</strong>!"
     welcome_desc_html: "Browse projects built using spaces provided by CEED & publish your own!"

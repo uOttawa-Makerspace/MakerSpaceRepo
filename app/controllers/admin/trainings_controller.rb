@@ -10,6 +10,7 @@ class Admin::TrainingsController < AdminAreaController
 
   def create
     @new_training = Training.new(training_params)
+    # @new_training << Space.find(params[:space_id])
     if @new_training.save
       flash[:notice] = "Training added successfully!"
     else

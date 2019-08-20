@@ -1,0 +1,23 @@
+<section style="padding-left: 8vw;padding-top: 5vw;">
+<p style="font: 400 1.3em 'Raleway', sans-serif;color: #333;"><h1>
+    Hello, <%= @user.name.capitalize %>!
+ </h1>
+</p>
+
+<br style="font: 400 1.1em 'Raleway', sans-serif;color: #333; line-height: 35px;">
+  You are receiving this email because you were in the <b><%= @training_session.training.name %> at uOttawa.</b> </br>
+  You finished your exam. Your score was <%= @exam.score %>. You <%= @exam.status %> the exam. <br />
+  <% if @exam.status == "passed" %>
+    Congratulations. Your certification is already available in your profile.
+  <% else %>
+    If this is your first try, you will be able to try one more time. <br />
+    Check <%= link_to "Exams", exams_url %> for new exams.
+  <% end %>
+</p>
+
+
+<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #333;">
+  Cheers,<br>
+  The MakerRepo Team
+</p>
+</section>

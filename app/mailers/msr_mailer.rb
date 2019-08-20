@@ -11,6 +11,38 @@ class MsrMailer < ApplicationMailer
 		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
 	end
 
+	def send_print_quote(expedited_price, user, print_order, comments)
+		@expedited_price = expedited_price
+	  @user = user
+	  @print_order = print_order
+		@comments = comments
+		mail(to: @user.email, subject: 'Print Request Approval : ' + @print_order.file_file_name)
+	end
+
+	def send_print_disapproval(user, comments, filename)
+		@user = user
+		@comments = comments
+		mail(to: @user.email, subject: 'Print Request Disapproval : '+filename)
+	end
+
+	def send_print_finished(user, filename, pickup_id)
+		@user = user
+    @pickup_id = pickup_id
+		mail(to: @user.email, subject: 'Your print : '+ filename +' is ready !')
+  end
+
+  def send_invoice(name, quote, number, order_type)
+    @name = name
+    @quote = quote
+    @number = number
+		if order_type != 1
+			@order_type = "3D Printed Part"
+		else
+			@order_type = "Laser Cut/Engraving"
+		end
+    mail(to: "uomakerspaceprintinvoices@gmail.com", subject: 'Invoice for Order #' + @number.to_s + ' ')
+  end
+
 	def send_ommic
 		all_users = User.where("email like ? and length(email) = 19", "%@uottawa.ca").pluck(:email).uniq
 		attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
@@ -95,5 +127,29 @@ class MsrMailer < ApplicationMailer
 		@comments = comments
 
 		mail(to: "webmaster@makerepo.com", subject: "Issue Report")
+	end
+
+	def send_exam(user, training_session)
+		@user = user
+		@training_session = training_session
+		email = @user.email
+		mail(to: email, subject: 'Exam was sent to you')
+	end
+
+	def finishing_exam(user, exam)
+		@user = user
+		@exam = exam
+		@training_session = exam.training_session
+		email = @user.email
+		mail(to: email, subject: 'You finished your exam')
+	end
+
+	def exam_results_staff(user, exam)
+		@user = user
+		@exam = exam
+		@training_session = exam.training_session
+		@staff = @training_session.user
+		email = @staff.email
+		mail(to: email, subject: "#{@user.name.split.first.capitalize} finished an exam")
 	end
 end

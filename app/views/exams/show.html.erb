@@ -1,0 +1,21 @@
+<section class="container">
+  <div class="text-center">
+    <% @questions.find_each.each_with_index do |question, i| %>
+      Question <%= i + 1 %>
+      <%=
+        response = question.response_for_exam(@exam)
+        if response
+          render partial: "question_with_response", locals: {question: question, response: response}
+        else
+          render partial: "question_without_response", locals: {question: question}
+        end
+      %>
+      <br />
+      <br />
+      <br />
+    <% end %>
+
+    <%= link_to "Finish Exam", finish_exam_exams_path(exam_id: @exam.id), class: "btn btn-primary my-5",
+                data: { confirm: "Are you sure you want to submit your exam? You won't be able to make any changes after your exam submission. Questions not answered will be considered wrong."  } %>
+  </div>
+</section>
