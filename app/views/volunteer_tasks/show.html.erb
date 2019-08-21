@@ -82,9 +82,9 @@
 
     <div class="row">
       <div class="col-12 mb-5">
-        <% if !@volunteer_task.require_trainings.blank? %>
+        <% if !@required_trainings.blank? %>
           <p><b>Certifications needed:</b></p>
-          <% @volunteer_task.require_trainings.find_each do |rt| %>
+          <% @required_trainings.find_each do |rt| %>
             <%= rt.training.name.capitalize %>
             <br />
           <% end  %>
@@ -103,6 +103,17 @@
             <br />
             <br />
             <%= f.submit "Add Required Certification", class: "btn btn-primary mb-5" %>
+          <% end %>
+        </div>
+
+        <div class="col-12">
+          <p>Remove Required Training from Volunteer Task:</p>
+          <%= form_for @new_required_training, url: {controller: "require_trainings", action: "remove_trainings"} do |f| %>
+            <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
+            <%= f.select :training_id, @trainings_already_added, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+            <br />
+            <br />
+            <%= f.submit "Remove Required Certification", class: "btn btn-danger mb-5" %>
           <% end %>
         </div>
 
