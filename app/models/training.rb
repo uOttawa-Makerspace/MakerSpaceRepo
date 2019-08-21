@@ -1,6 +1,5 @@
 class Training < ActiveRecord::Base
-  belongs_to :space
-  # has_and_belongs_to_many :space
+  has_and_belongs_to_many :spaces
   has_many :training_sessions, dependent: :destroy
   has_many :certifications, through: :training_sessions
   has_many :require_trainings
