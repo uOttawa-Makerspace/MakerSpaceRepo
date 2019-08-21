@@ -249,7 +249,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :require_trainings, only: [:create]
+  resources :require_trainings, only: [:create, :destroy]
 
   # namespace :help do
   #   get 'main', path: '/'
