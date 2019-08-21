@@ -9,6 +9,17 @@ class RequireTrainingsController < VolunteerTasksController
     end
   end
 
+  def destroy
+    require_training = RequireTraining.find(params[:id])
+    if require_training && current_user.staff?
+      require_training.destroy
+      flash[:notice] = "You've successfully deleted this required training"
+    else
+      flash[:alert] = "Something went wrong"
+    end
+    redirect_to :back
+  end
+
   private
 
   def require_training_params
