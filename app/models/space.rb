@@ -9,7 +9,7 @@ class Space < ActiveRecord::Base
   has_many :volunteer_tasks
 
   before_destroy do
-    training.each { |training| training.destroy }
+    trainings.each { |training| training.destroy }
   end
 
   validates :name,  presence: { message: "A name is required for the space"}, uniqueness: { message: "Space already exists"}
