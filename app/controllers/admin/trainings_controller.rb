@@ -10,7 +10,7 @@ class Admin::TrainingsController < AdminAreaController
 
   def create
     @new_training = Training.new(training_params)
-    # @new_training << Space.find(params[:space_id])
+    @new_training.spaces << Space.find(params[:space_id])
     if @new_training.save
       flash[:notice] = "Training added successfully!"
     else
@@ -39,7 +39,7 @@ class Admin::TrainingsController < AdminAreaController
   private
 
   def training_params
-      params.require(:training_params).permit(:name, :space_id)
+      params.require(:training_params).permit(:name)
   end
 
   def changed_training

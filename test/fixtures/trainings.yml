@@ -1,14 +1,11 @@
 lathe_1:
   id: 1
   name: lathe_1
-  space_id: 4
 
 welding_3:
   id: 2
   name: welding_3
-  space_id: 4
 
 soldering:
   id: 3
   name: soldering
-  space_id: 1

@@ -9,7 +9,7 @@ class Admin::TrainingsControllerTest < ActionController::TestCase
   end
 
   test "admin can add training" do
-    post :create, training_params: {name: "soldering_1", space_id: 1}
+    post :create, training_params: {name: "soldering_1"}, space_id: 1
     assert_equal flash[:notice], "Training added successfully!"
     assert Training.find_by(name: "soldering_1").present?
     assert_redirected_to admin_settings_path

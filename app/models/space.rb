@@ -8,10 +8,6 @@ class Space < ActiveRecord::Base
   has_many :volunteer_requests, dependent: :destroy
   has_many :volunteer_tasks, dependent: :destroy
 
-  before_destroy do
-    trainings.each { |training| training.delete }
-  end
-
   validates :name,  presence: { message: "A name is required for the space"}, uniqueness: { message: "Space already exists"}
 
   def signed_in_users
