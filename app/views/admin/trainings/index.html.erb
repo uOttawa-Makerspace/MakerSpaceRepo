@@ -1,0 +1,28 @@
+<section class="page-contents">
+  <div class="edit-column">
+    <div class="title">Admin Trainings Manager</div>
+
+    <p class="text-center"><%= link_to "New Training", new_admin_training_path, class: "btn btn-secondary" %></p>
+    <br />
+
+    <% @trainings.each do |t| %>
+      <h2 class="text-center">Training: <%= t.name %> <%= link_to "Edit", edit_admin_training_path(t.id), class:"btn btn-primary" %></h2>
+      <br />
+      <table class="table mb-5">
+        <tr class="text-center">
+          <th>Space</th>
+          <th>Training Sessions</th>
+          <th>Certifications</th>
+        </tr>
+
+        <% t.spaces.find_each do |s| %>
+          <tr>
+            <td><%= s.name %></td>
+            <td><%= t.training_sessions.where(space_id: s.id).count %></td>
+            <td><%= t.certifications.joins(:training_session).where("training_sessions.space_id = ?", s.id).count %></td>
+          </tr>
+        <% end %>
+      </table>
+    <% end %>
+  </div>
+</section>

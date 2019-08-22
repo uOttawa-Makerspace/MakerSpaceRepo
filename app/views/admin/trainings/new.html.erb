@@ -1,0 +1,24 @@
+<section class="page-contents">
+  <div class="edit-column">
+    <h2 class="text-center">New Training</h2>
+    <%= form_for @new_training, url: {controller: "admin/trainings", action: "create"} do |f| %>
+      <div class="container">
+        <div class="row text-center">
+          <div class="col-md-12 form-group">
+            Name: <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
+          </div>
+
+          <div class="form-check">
+            <%= f.collection_check_boxes( :space_ids, @spaces, :id, :name, bootstrap: {check_inline: true}, class: "") do |b| %>
+              <%= b.label(:"data-value" => b.value) { b.check_box + b.text } %>
+            <% end %>
+          </div>
+
+          <div class="col-md-12 form-group my-5">
+            <%= f.submit "Create Training", class: "btn btn-secondary btn-xl text-uppercase" %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</section>
