@@ -4,6 +4,10 @@ class Admin::TrainingsController < AdminAreaController
 
   layout 'admin_area'
 
+  def index
+    @trainings = Training.all.order(:name)
+  end
+
   def new
     @new_training = Training.new
   end

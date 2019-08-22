@@ -1,1 +1,25 @@
-HERE
+<section class="page-contents">
+  <div class="edit-column">
+    <div class="title">Admin Trainings Manager</div>
+
+    <% @trainings.find_each do |t| %>
+      <h2 class="text-center">Training: <%= t.name %></h2>
+      <br />
+      <table class="table">
+        <tr class="text-center">
+          <th>Space</th>
+          <th>Training Sessions</th>
+          <th>Certifications</th>
+        </tr>
+
+        <% t.spaces.find_each do |s| %>
+          <tr>
+            <td><%= s.name.capitalize %></td>
+            <td><%= t.training_sessions.where(space_id: s.id).count %></td>
+            <td><%= t.certifications.joins(:training_session).where("training_sessions.space_id = ?", s.id).count %></td>
+          </tr>
+        <% end %>
+      </table>
+    <% end %>
+  </div>
+</section>
