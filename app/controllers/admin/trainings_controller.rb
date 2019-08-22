@@ -42,7 +42,7 @@ class Admin::TrainingsController < AdminAreaController
     if @changed_training.destroy
       flash[:notice] = "Training removed successfully"
     end
-    redirect_to :back
+    redirect_to admin_trainings_path
   end
 
   private

@@ -1,6 +1,7 @@
 makerspace:
   id: 1
   name: Makerspace
+  trainings: soldering
 
 brunsfield:
   id: 2
@@ -13,3 +14,4 @@ sandbox:
 mtc:
   id: 4
   name: MTC
+  trainings: welding_3, lathe_1

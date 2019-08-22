@@ -1,11 +1,14 @@
 lathe_1:
   id: 1
   name: lathe_1
+  spaces: mtc
 
 welding_3:
   id: 2
   name: welding_3
+  spaces: mtc
 
 soldering:
   id: 3
   name: soldering
+  spaces: mtc

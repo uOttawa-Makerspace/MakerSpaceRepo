@@ -20,5 +20,9 @@
         </div>
       </div>
     <% end %>
+
+    <%=link_to "Delete", { controller: "admin/trainings" ,action: :destroy, id: @training.id }, method: :delete,
+               data: { confirm: 'Are you sure that you want to delete this training. This will delete all the training sessions as well.?' },
+               class:"btn btn-danger"%>
   </div>
 </section>

@@ -29,7 +29,7 @@ class Admin::TrainingsControllerTest < ActionController::TestCase
     delete :destroy, id: trainings(:lathe_1)
     assert_equal flash[:notice], "Training removed successfully"
     refute Training.find_by(name: "lathe_1").present?
-    assert_redirected_to admin_settings_path
+    assert_redirected_to admin_trainings_path
   end
 
 end
