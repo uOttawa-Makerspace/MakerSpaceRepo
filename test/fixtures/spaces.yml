@@ -1,6 +1,8 @@
+# TODO: Make this associate with training and training_sessions
 makerspace:
   id: 1
   name: Makerspace
+  trainings: soldering
 
 brunsfield:
   id: 2
@@ -13,3 +15,4 @@ sandbox:
 mtc:
   id: 4
   name: MTC
+  trainings: welding_3, lathe_1

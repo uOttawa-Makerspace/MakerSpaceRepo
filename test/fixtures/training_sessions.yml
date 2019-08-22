@@ -3,6 +3,7 @@ lathe_1_session:
   training_id: 1
   user_id: 777
   course: GNG2205
+  space_id: 4
 
 
 welding_3_session:
@@ -10,6 +11,7 @@ welding_3_session:
   training_id: 2
   user_id: 1337
   course: GNG1105
+  space_id: 4
 
 
 old_soldering_session:
@@ -18,3 +20,4 @@ old_soldering_session:
   user_id: 777
   course: GNG1105
   created_at: <%=1.day.ago%>
+  space_id: 1

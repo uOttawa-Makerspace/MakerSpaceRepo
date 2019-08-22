@@ -143,11 +143,9 @@ Rails.application.routes.draw do
       delete 'destroy', path: '/edit/'
     end
 
-    resources :trainings, only: [:index, :create, :update, :destroy] do
-    end
+    resources :pi_readers, only: [:update]
 
-    resources :pi_readers, only: [:update] do
-    end
+    resources :trainings
 
     resources :training_sessions do
       get 'index', path: '/'

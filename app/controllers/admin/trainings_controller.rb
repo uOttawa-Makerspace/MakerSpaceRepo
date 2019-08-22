@@ -4,19 +4,28 @@ class Admin::TrainingsController < AdminAreaController
 
   layout 'admin_area'
 
+  def index
+    @trainings = Training.all.order(:name)
+  end
+
   def new
     @new_training = Training.new
+    @spaces = Space.all.order(:name)
+  end
+
+  def edit
+    @training = Training.find(params[:id])
+    @spaces = Space.all.order(:name)
   end
 
   def create
     @new_training = Training.new(training_params)
-    # @new_training << Space.find(params[:space_id])
     if @new_training.save
       flash[:notice] = "Training added successfully!"
     else
       flash[:alert] = "Input is invalid"
     end
-    redirect_to :back
+    redirect_to admin_trainings_path
   end
 
   def update
@@ -26,20 +35,20 @@ class Admin::TrainingsController < AdminAreaController
     else
       flash[:alert] = "Input is invalid"
     end
-    redirect_to admin_settings_path
+    redirect_to admin_trainings_path
   end
 
   def destroy
     if @changed_training.destroy
       flash[:notice] = "Training removed successfully"
     end
-    redirect_to :back
+    redirect_to admin_trainings_path
   end
 
   private
 
   def training_params
-      params.require(:training_params).permit(:name, :space_id)
+      params.require(:training).permit(:name, space_ids: [])
   end
 
   def changed_training

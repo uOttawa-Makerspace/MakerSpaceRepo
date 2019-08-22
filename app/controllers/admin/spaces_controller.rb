@@ -20,6 +20,7 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def edit
+    @new_training = Training.new
     unless @space = Space.find(params[:id])
       flash[:alert] = "Not Found"
       redirect_to :back
