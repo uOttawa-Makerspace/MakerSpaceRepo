@@ -5,24 +5,39 @@
     <p class="text-center"><%= link_to "New Training", new_admin_training_path, class: "btn btn-secondary" %></p>
     <br />
 
-    <% @trainings.each do |t| %>
-      <h2 class="text-center">Training: <%= t.name %> <%= link_to "Edit", edit_admin_training_path(t.id), class:"btn btn-primary" %></h2>
       <br />
-      <table class="table mb-5">
+      <table class="table table-striped mb-5">
         <tr class="text-center">
-          <th>Space</th>
+          <th>Training</th>
+          <th>Spaces</th>
           <th>Training Sessions</th>
           <th>Certifications</th>
+          <th>Action</th>
         </tr>
 
-        <% t.spaces.find_each do |s| %>
+        <% @trainings.each do |t| %>
           <tr>
-            <td><%= s.name %></td>
-            <td><%= t.training_sessions.where(space_id: s.id).count %></td>
-            <td><%= t.certifications.joins(:training_session).where("training_sessions.space_id = ?", s.id).count %></td>
+<!--            TODO: This code is aweful! Find out a better way!-->
+            <td><%= t.name %></td>
+              <td>
+                <% t.spaces.order(:name).each do |s| %>
+                  <%= s.name %> <br />
+                <% end %>
+              </td>
+              <td>
+                <% t.spaces.order(:name).each do |s| %>
+                  <%= t.training_sessions.where(space_id: s.id).count %><br />
+                <% end %>
+              </td>
+              <td>
+                <% t.spaces.order(:name).each do |s| %>
+                  <%= t.certifications.joins(:training_session).where("training_sessions.space_id = ?", s.id).count %> <br />
+                <% end %>
+              </td>
+            <td><%= link_to "Edit", edit_admin_training_path(t.id), class:"btn btn-primary" %></td>
           </tr>
         <% end %>
+
       </table>
-    <% end %>
   </div>
 </section>
