@@ -145,7 +145,7 @@ Rails.application.routes.draw do
 
     resources :pi_readers, only: [:update]
 
-    resources :trainings, only: [:index, :create, :update, :destroy]
+    resources :trainings
 
     resources :training_sessions do
       get 'index', path: '/'

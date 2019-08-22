@@ -12,6 +12,10 @@ class Admin::TrainingsController < AdminAreaController
     @new_training = Training.new
   end
 
+  def edit
+
+  end
+
   def create
     space = Space.find(params["/admin/trainings"][:space_id])
     @new_training = Training.new(training_params)
