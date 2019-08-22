@@ -18,9 +18,7 @@ class Admin::TrainingsController < AdminAreaController
   end
 
   def create
-    space = Space.find(params[:training][:space_id])
     @new_training = Training.new(training_params)
-    @new_training.spaces << space
     if @new_training.save
       flash[:notice] = "Training added successfully!"
     else
