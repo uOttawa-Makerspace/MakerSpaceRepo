@@ -4,10 +4,16 @@
     <%= form_for @training, url: {controller: "admin/trainings", action: "update"} do |f| %>
       <div class="container">
         <div class="row text-center">
-            <div class="col-md-12 form-group">
-              Name: <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
+          <div class="col-md-12 form-group">
+            Name: <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
+          </div>
+          <% @spaces.each do |s| %>
+            <div class="form-check">
+              <%= f.check_box :spaces, {multiple: true}, s, false %>
+              <%= f.label s.name %>
             </div>
-            <div class="col-md-12 form-group">
+          <% end %>
+            <div class="col-md-12 form-group my-5">
               <%= f.submit "Update Training", class: "btn btn-secondary btn-xl text-uppercase" %>
             </div>
         </div>

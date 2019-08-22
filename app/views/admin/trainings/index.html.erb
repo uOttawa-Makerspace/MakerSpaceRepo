@@ -18,7 +18,7 @@
 
         <% t.spaces.find_each do |s| %>
           <tr>
-            <td><%= s.name.capitalize %></td>
+            <td><%= s.name %></td>
             <td><%= t.training_sessions.where(space_id: s.id).count %></td>
             <td><%= t.certifications.joins(:training_session).where("training_sessions.space_id = ?", s.id).count %></td>
           </tr>

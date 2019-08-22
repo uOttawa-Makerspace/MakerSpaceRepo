@@ -14,6 +14,7 @@ class Admin::TrainingsController < AdminAreaController
 
   def edit
     @training = Training.find(params[:id])
+    @spaces = Space.all.order(:name)
   end
 
   def create
