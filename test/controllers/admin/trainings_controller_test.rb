@@ -12,7 +12,7 @@ class Admin::TrainingsControllerTest < ActionController::TestCase
     post :create, training: {name: "soldering_1", space_id: 1}
     assert_equal flash[:notice], "Training added successfully!"
     assert Training.find_by(name: "soldering_1").present?
-    assert_redirected_to admin_settings_path
+    assert_redirected_to admin_trainings_path
   end
 
   test "admin can rename training" do
