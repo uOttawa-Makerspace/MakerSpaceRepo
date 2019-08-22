@@ -1,5 +1,17 @@
 <section class="page-contents">
   <div class="edit-column">
-    EDIT HERE
+    <h2 class="text-center">Edting <b><%= @training.name.capitalize %></b> Training</h2>
+    <%= form_for @training, url: {controller: "admin/trainings", action: "update"} do |f| %>
+      <div class="container">
+        <div class="row text-center">
+            <div class="col-md-12 form-group">
+              Name: <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
+            </div>
+            <div class="col-md-12 form-group">
+              <%= f.submit "Update Training", class: "btn btn-secondary btn-xl text-uppercase" %>
+            </div>
+        </div>
+      </div>
+    <% end %>
   </div>
 </section>

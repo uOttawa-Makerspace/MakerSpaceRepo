@@ -47,7 +47,7 @@
     <div>
       </br>
       <h3 style="font-weight:bold;">New <%=@space.name.capitalize%> Training:</h3>
-      <%= form_for admin_trainings_path, :url => { :action => "create", controller: 'admin/trainings'} do |f| %>
+      <%= form_for @new_training, :url => { :action => "create", controller: 'admin/trainings'} do |f| %>
         <%= f.hidden_field :space_id, value: @space.id %>
         <%= f.text_field :name, placeholder: 'Enter a unique name', class: "form-control"%>
         <div class="text-center">

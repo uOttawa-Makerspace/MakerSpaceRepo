@@ -13,11 +13,11 @@ class Admin::TrainingsController < AdminAreaController
   end
 
   def edit
-
+    @training = Training.find(params[:id])
   end
 
   def create
-    space = Space.find(params["/admin/trainings"][:space_id])
+    space = Space.find(params[:training][:space_id])
     @new_training = Training.new(training_params)
     @new_training.spaces << space
     if @new_training.save
@@ -35,7 +35,7 @@ class Admin::TrainingsController < AdminAreaController
     else
       flash[:alert] = "Input is invalid"
     end
-    redirect_to admin_settings_path
+    redirect_to admin_trainings_path
   end
 
   def destroy
@@ -48,7 +48,7 @@ class Admin::TrainingsController < AdminAreaController
   private
 
   def training_params
-      params.require("/admin/trainings").permit(:name)
+      params.require(:training).permit(:name)
   end
 
   def changed_training
