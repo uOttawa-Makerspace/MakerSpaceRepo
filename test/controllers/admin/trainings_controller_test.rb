@@ -16,12 +16,12 @@ class Admin::TrainingsControllerTest < ActionController::TestCase
   end
 
   test "admin can rename training" do
-    patch :update, training:: {name: "soldering_5"},
+    patch :update, training: {name: "soldering_5"},
       id: trainings(:lathe_1)
     assert_equal flash[:notice], "Training renamed successfully"
     refute Training.find_by(name: "lathe_1").present?
     assert Training.find_by(name: "soldering_5").present?
-    assert_redirected_to admin_settings_path
+    assert_redirected_to admin_trainings_path
   end
 
   test "admin can remove training" do
