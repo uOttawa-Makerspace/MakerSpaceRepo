@@ -5,11 +5,10 @@
     <p class="text-center"><%= link_to "New Training", new_admin_training_path, class: "btn btn-secondary" %></p>
     <br />
 
-    <% @trainings.find_each do |t| %>
-      <h2 class="text-center">Training: <%= t.name %></h2>
-      <p class="text-right"><%= link_to "Edit", edit_admin_training_path(t.id), class:"btn btn-primary" %></p>
+    <% @trainings.each do |t| %>
+      <h2 class="text-center">Training: <%= t.name %> <%= link_to "Edit", edit_admin_training_path(t.id), class:"btn btn-primary" %></h2>
       <br />
-      <table class="table">
+      <table class="table mb-5">
         <tr class="text-center">
           <th>Space</th>
           <th>Training Sessions</th>

@@ -10,6 +10,7 @@ class Admin::TrainingsController < AdminAreaController
 
   def new
     @new_training = Training.new
+    @spaces = Space.all.order(:name)
   end
 
   def edit
@@ -24,7 +25,7 @@ class Admin::TrainingsController < AdminAreaController
     else
       flash[:alert] = "Input is invalid"
     end
-    redirect_to :back
+    redirect_to admin_trainings_path
   end
 
   def update
