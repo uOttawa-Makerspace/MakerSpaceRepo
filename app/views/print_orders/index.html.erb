@@ -34,7 +34,11 @@
         <td>External</td>
       <% end %>
       <% if prints.order_type == 0 %>
-        <td>3D Printing</td>
+        <% if prints.grams %>
+          <td>3D Printing (<%= prints.grams %>g)</td>
+        <% else %>
+          <td>3D Printing</td>
+        <% end %>
       <% elsif prints.order_type == 1 %>
         <td>Laser Cutting</td>
       <% else %>
@@ -200,7 +204,11 @@
         </td>
       <% else %>
         <% if prints.user_approval %>
-          <td>Approved</td>
+          <% if prints.timestamp_approved %>
+            <td>Approved on <%= prints.timestamp_approved.to_formatted_s(:short) %></td>
+          <% else %>
+            <td>Approved</td>
+          <% end %>
         <% elsif prints.user_approval == false %>
           <td>Disapproved</td>
         <% else %>
