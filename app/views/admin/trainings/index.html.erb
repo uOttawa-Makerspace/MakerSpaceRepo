@@ -17,20 +17,20 @@
 
         <% @trainings.each do |t| %>
           <tr>
-<!--            TODO: This code is aweful! Find out a better way!-->
             <td><%= t.name %></td>
+            <% spaces = t.spaces.order(:name) %>
               <td>
-                <% t.spaces.order(:name).each do |s| %>
+                <% spaces.each do |s| %>
                   <%= s.name %> <br />
                 <% end %>
               </td>
               <td>
-                <% t.spaces.order(:name).each do |s| %>
+                <% spaces.each do |s| %>
                   <%= t.training_sessions.where(space_id: s.id).count %><br />
                 <% end %>
               </td>
               <td>
-                <% t.spaces.order(:name).each do |s| %>
+                <% spaces.each do |s| %>
                   <%= t.certifications.joins(:training_session).where("training_sessions.space_id = ?", s.id).count %> <br />
                 <% end %>
               </td>
