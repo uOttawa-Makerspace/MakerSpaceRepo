@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
-    <h2>Question in "<%= @question.category %>"</h2>
+    <h2>Question in "<%= @question.training.name if @question.training %>"</h2>
     <br />
 
     <div class=" text-left word-break">
