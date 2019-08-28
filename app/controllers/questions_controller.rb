@@ -28,7 +28,7 @@ class QuestionsController < ApplicationController
 
   def edit
     @question = Question.find(params[:id])
-    @categories = Question::CATEGORIES
+    @categories = Training.all.pluck(:name, :id)
   end
 
   def update
