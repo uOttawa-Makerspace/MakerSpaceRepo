@@ -12,7 +12,7 @@ namespace :exams do
           new_exam = user.exams.new(:training_session_id => training_session.id,
                                     :category => training_session.training.name, :expired_at => DateTime.now + 3.days)
           new_exam.save!
-          ExamQuestion.create_exam_questions(new_exam.id, new_exam.category, $n_exams_question)
+          ExamQuestion.create_exam_questions(new_exam.id, new_exam.training.id, $n_exams_question)
         end
       else
         status = Exam::STATUS[:passed]
