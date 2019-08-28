@@ -65,7 +65,6 @@ class ExamsController < ApplicationController
     if score < Exam::SCORE_TO_PASS
       status = Exam::STATUS[:failed]
       create_exam_and_exam_questions(user, training_session) if user.exams.where(training_session_id: training_session.id).count < 2
-      # TODO: Prevent user to go back to exam after finished
     else
       status = Exam::STATUS[:passed]
       Certification.certify_user(training_session.id, user.id)
@@ -83,7 +82,7 @@ class ExamsController < ApplicationController
     new_exam = user.exams.new(:training_session_id => training_session.id,
                               :category => training_session.training.name, :expired_at => DateTime.now + 3.days)
     new_exam.save!
-    if ExamQuestion.create_exam_questions(new_exam.id, new_exam.category, $n_exams_question)
+    if ExamQuestion.create_exam_questions(new_exam.id, new_exam.training.id, $n_exams_question)
       flash[:notice] = "You've successfully sent exams to all users in this training."
     else
       flash[:alert] = "Something went wrong"
