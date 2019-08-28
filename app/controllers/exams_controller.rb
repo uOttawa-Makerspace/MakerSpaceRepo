@@ -10,7 +10,7 @@ class ExamsController < ApplicationController
 
   def new
     @new_exam = Exam.new
-    @categories = Question::CATEGORIES
+    @categories = Training.all.pluck(:name, :id)
   end
 
   def create
