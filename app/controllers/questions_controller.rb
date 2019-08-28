@@ -9,7 +9,7 @@ class QuestionsController < ApplicationController
 
   def new
     @new_question = Question.new
-    @categories = Question::CATEGORIES
+    @categories = Training.all.pluck(:name, :id)
     5.times{@new_question.answers.new}
   end
 
