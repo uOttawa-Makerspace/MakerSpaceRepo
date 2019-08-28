@@ -16,7 +16,7 @@ class ExamsController < ApplicationController
   def create
     @new_exam = current_user.exams.new(exam_params)
     @new_exam.save!
-    ExamQuestion.create_exam_questions(@new_exam.id, @new_exam.category, $n_exams_question)
+    ExamQuestion.create_exam_questions(@new_exam.id, @new_exam.training.id, $n_exams_question)
     if @new_exam.save!
       redirect_to exams_path
       flash[:notice] = "You've successfully created a new exam!"
@@ -102,7 +102,7 @@ class ExamsController < ApplicationController
   end
 
   def exam_params
-    params.require(:exam).permit(:category)
+    params.require(:exam).permit(trainings_attributes:[:id])
   end
 
   def check_exam_status
