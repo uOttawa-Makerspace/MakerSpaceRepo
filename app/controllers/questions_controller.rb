@@ -9,7 +9,7 @@ class QuestionsController < ApplicationController
 
   def new
     @new_question = Question.new
-    @categories = Question::CATEGORIES
+    @categories = Training.all.pluck(:name, :id)
     5.times{@new_question.answers.new}
   end
 
@@ -28,7 +28,7 @@ class QuestionsController < ApplicationController
 
   def edit
     @question = Question.find(params[:id])
-    @categories = Question::CATEGORIES
+    @categories = Training.all.pluck(:name, :id)
   end
 
   def update
@@ -61,6 +61,6 @@ class QuestionsController < ApplicationController
   end
 
   def question_params
-    params.require(:question).permit(:description, :category, :image, answers_attributes:[:id, :description, :correct])
+    params.require(:question).permit(:description, :training_id, :image, answers_attributes:[:id, :description, :correct])
   end
 end
