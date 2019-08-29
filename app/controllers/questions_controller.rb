@@ -9,7 +9,7 @@ class QuestionsController < ApplicationController
 
   def new
     @new_question = Question.new
-    @categories = Training.all.pluck(:name, :id)
+    @categories = Training.all.order(:name).pluck(:name, :id)
     5.times{@new_question.answers.new}
   end
 
@@ -28,7 +28,7 @@ class QuestionsController < ApplicationController
 
   def edit
     @question = Question.find(params[:id])
-    @categories = Training.all.pluck(:name, :id)
+    @categories = Training.all.order(:name).pluck(:name, :id)
   end
 
   def update
