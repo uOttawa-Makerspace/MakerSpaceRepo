@@ -89,8 +89,8 @@
                       <span aria-hidden="true">&times;</span>
                     </button>
                   </div>
-                  <div class="modal-body">
-                    <%= form_for prints, url: print_order_path(prints) do |f| %>
+                  <%= form_for prints, url: print_order_path(prints) do |f| %>
+                <div class="modal-body">
                       <%= f.hidden_field :approved, :value => true %>
                       <% if prints.order_type == 0 %>
                         <%= f.label :quote, "Service Charges (In CAD) " %>
@@ -131,9 +131,9 @@
                       <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                         <button class="btn btn-primary" type="submit">Approve</button>
-                    <% end %>
                     </div>
-                    </div>
+                  <% end %>
+                </div>
               </div>
             </div>
             <br><br>
@@ -150,8 +150,8 @@
                       <span aria-hidden="true">&times;</span>
                     </button>
                   </div>
+                  <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <div class="modal-body">
-                    <%= form_for prints, url: print_order_path(prints) do |f| %>
                       <%= f.hidden_field :approved, :value => false %>
                       <%= f.label :staff_comments, "Comments (Why is it not approved ?)" %>
                       <div class="form-group">
@@ -161,9 +161,9 @@
                       <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                         <button class="btn btn-danger" type="submit">Disapprove</button>
-                    <% end %>
                     </div>
-                    </div>
+                  <% end %>
+                </div>
               </div>
             </div>
         <% end %>
@@ -262,7 +262,13 @@
           <td>Not Yet/Won't be</td>
         <% end %>
       <% end %>
+      <% if @user.admin? %>
       <td><%= button_to 'Delete', print_order_path(prints), method: :delete, data: {confirm: 'Are you sure?'}, class: "btn btn-danger" %></td>
+      <% elsif prints.staff_id.present? == false %>
+        <td><%= button_to 'Delete', print_order_path(prints), method: :delete, data: {confirm: 'Are you sure?'}, class: "btn btn-danger" %></td>
+    <% else %>
+        <td>Can not delete</td>
+      <% end %>
     </tr>
   <% end %>
   </tbody>
