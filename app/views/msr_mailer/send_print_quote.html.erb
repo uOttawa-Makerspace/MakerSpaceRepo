@@ -8,10 +8,18 @@
   Material Cost : $<%= @print_order.material_cost %>
   <br>
   Price for hours worked : $<%= @print_order.price_per_hour %>
-  <% else %>
+  <% elsif @print_order.order_type == 0 and (@print_order.sst == true) %>
   Number of Grams : <%= @print_order.grams %>
   <br>
   Price Per Gram : $<%= @print_order.price_per_gram %>/g
+    <br>
+    Number of Grams (Support Material) : <%= @print_order.grams2 %>
+    <br>
+    Price Per Gram (Support Material) : $<%= @print_order.price_per_gram2 %>/g
+  <% else %>
+    Number of Grams : <%= @print_order.grams %>
+    <br>
+    Price Per Gram : $<%= @print_order.price_per_gram %>/g
   <% end %>
   <% if @print_order.expedited == true %>
     <br>

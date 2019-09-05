@@ -105,6 +105,17 @@
                         <div class="form-group">
                           <%= f.text_field :price_per_gram, placeholder: "0.08", class: "form-control", :required => true %>
                         </div>
+                        <% if prints.sst == true %>
+                      <%= f.label :quote, "Number of Grams (Support Material)" %>
+                      <div class="form-group">
+                        <%= f.text_field :grams2, placeholder: "100", class: "form-control", :required => true %>
+                      </div>
+                      <%= f.label :quote, "Price Per Gram (In CAD) (Support Material)" %>
+                      <div class="form-group">
+                        <%= f.text_field :price_per_gram2, placeholder: "0.08", class: "form-control", :required => true %>
+                      </div>
+                        <% end %>
+
                       <% else %>
                         <%= f.label :quote, "Service Charges (In CAD) " %>
                         <div class="form-group">
@@ -121,7 +132,7 @@
                       <% end %>
                       <div class="form-group">
                         <%= f.label :final_file, "PDF/GCode" %>
-                        <%= f.file_field :final_file, style: "display: block!important;", :required => true %>
+                        <%= f.file_field :final_file, style: "display: block!important;" %>
                       </div>
 
                       <div class="form-group">
