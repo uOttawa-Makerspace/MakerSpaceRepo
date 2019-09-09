@@ -27,6 +27,7 @@ class PrintOrdersController < ApplicationController
       end
 
       @print_order = PrintOrder.create(print_order_params)
+      MsrMailer.send_print_to_makerspace().deliver_now
       redirect_to print_orders_path
     end
 
@@ -43,7 +44,11 @@ class PrintOrdersController < ApplicationController
       if params[:print_order][:price_per_hour] and params[:print_order][:material_cost] and params[:print_order][:service_charge]
         params[:print_order][:quote] = params[:print_order][:service_charge].to_f + params[:print_order][:price_per_hour].to_f + params[:print_order][:material_cost].to_f
       elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
-        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
+        if (@print_order.sst == true) and params[:print_order][:grams2] and params[:print_order][:price_per_gram2]
+          params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f) + (params[:print_order][:grams2].to_f * params[:print_order][:price_per_gram2].to_f)
+        else
+          params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
+        end
       end
 
       if @print_order.expedited == true
@@ -57,6 +62,8 @@ class PrintOrdersController < ApplicationController
         MsrMailer.send_print_quote(expedited_price, @user, @print_order, params[:print_order][:staff_comments]).deliver_now
       elsif params[:print_order][:approved] == "false"
         MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
+      elsif params[:print_order][:user_approval] == "true"
+        MsrMailer.send_print_user_approval_to_makerspace().deliver_now
       elsif params[:print_order][:printed] == "true"
         MsrMailer.send_print_finished(@user, @print_order.file_file_name, @print_order.id).deliver_now
         MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
@@ -78,7 +85,7 @@ class PrintOrdersController < ApplicationController
     private
 
     def print_order_params
-      params.require(:print_order).permit(:user_id, :final_file, :sst, :material, :grams, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
+      params.require(:print_order).permit(:user_id, :final_file, :sst, :material, :grams, :grams2, :price_per_gram2, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
     end
 
 end
