@@ -27,6 +27,7 @@ class PrintOrdersController < ApplicationController
       end
 
       @print_order = PrintOrder.create(print_order_params)
+      MsrMailer.send_print_to_makerspace().deliver_now
       redirect_to print_orders_path
     end
 
