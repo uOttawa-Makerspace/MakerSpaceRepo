@@ -43,17 +43,21 @@ class PrintOrdersController < ApplicationController
 
       if params[:print_order][:price_per_hour] and params[:print_order][:material_cost] and params[:print_order][:service_charge]
         params[:print_order][:quote] = params[:print_order][:service_charge].to_f + params[:print_order][:price_per_hour].to_f + params[:print_order][:material_cost].to_f
+        if @print_order.expedited == true
+          params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+        end
       elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
         if (@print_order.sst == true) and params[:print_order][:grams2] and params[:print_order][:price_per_gram2]
           params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f) + (params[:print_order][:grams2].to_f * params[:print_order][:price_per_gram2].to_f)
         else
           params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
         end
+        if @print_order.expedited == true
+          params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+        end
       end
 
-      if @print_order.expedited == true
-        params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
-      end
+
 
       @user = @print_order.user
       @print_order.update(print_order_params)
