@@ -54,15 +54,15 @@
         <% end %>
       </td>
       <% if @user.admin? || @user.staff? %>
-      <td>
-        <% if prints.final_file_file_name %>
-          <a href="<%= prints.final_file.url %>">
-            <button class="btn btn-primary">Download</button>
-          </a>
-        <% else %>
-          Not Available
-        <% end %>
-      </td>
+        <td>
+          <% if prints.final_file_file_name %>
+            <a href="<%= prints.final_file.url %>">
+              <button class="btn btn-primary">Download</button>
+            </a>
+          <% else %>
+            Not Available
+          <% end %>
+        </td>
       <% end %>
       <% if prints.expedited == true %>
         <td>Yes</td>
@@ -90,9 +90,9 @@
                     </button>
                   </div>
                   <%= form_for prints, url: print_order_path(prints) do |f| %>
-                <div class="modal-body">
+                    <div class="modal-body">
                       <%= f.hidden_field :approved, :value => true %>
-                      <% if prints.order_type == 0 %>
+                      <% if prints.order_type == 0 and (prints.sst != true)%>
                         <%= f.label :quote, "Service Charges (In CAD) " %>
                         <div class="form-group">
                           <%= f.text_field :service_charge, placeholder: "20", class: "form-control", :required => true %>
@@ -105,16 +105,19 @@
                         <div class="form-group">
                           <%= f.text_field :price_per_gram, placeholder: "0.08", class: "form-control", :required => true %>
                         </div>
-                        <% if prints.sst == true %>
-                      <%= f.label :quote, "Number of Grams (Support Material)" %>
-                      <div class="form-group">
-                        <%= f.text_field :grams2, placeholder: "100", class: "form-control", :required => true %>
-                      </div>
-                      <%= f.label :quote, "Price Per Gram (In CAD) (Support Material)" %>
-                      <div class="form-group">
-                        <%= f.text_field :price_per_gram2, placeholder: "0.08", class: "form-control", :required => true %>
-                      </div>
-                        <% end %>
+                      <% elsif prints.sst == true %>
+                        <%= f.label :quote, "Service Charges (In CAD) " %>
+                        <div class="form-group">
+                          <%= f.text_field :service_charge, placeholder: "20", class: "form-control", :required => true %>
+                        </div>
+                        <%= f.label :quote, "Hours (In CAD) " %>
+                        <div class="form-group">
+                          <%= f.text_field :hours, placeholder: "10", class: "form-control", :required => true %>
+                        </div>
+                        <%= f.label :quote, "Price Per Hour (In CAD) " %>
+                        <div class="form-group">
+                          <%= f.text_field :price_per_hour, placeholder: "30.00", class: "form-control", :required => true %>
+                        </div>
 
                       <% else %>
                         <%= f.label :quote, "Service Charges (In CAD) " %>
@@ -138,10 +141,10 @@
                       <div class="form-group">
                         <%= f.text_field :staff_comments, placeholder: "I will need to add supports", class: "form-control" %>
                       </div>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button class="btn btn-primary" type="submit">Approve</button>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      <button class="btn btn-primary" type="submit">Approve</button>
                     </div>
                   <% end %>
                 </div>
@@ -162,16 +165,16 @@
                     </button>
                   </div>
                   <%= form_for prints, url: print_order_path(prints) do |f| %>
-                  <div class="modal-body">
+                    <div class="modal-body">
                       <%= f.hidden_field :approved, :value => false %>
                       <%= f.label :staff_comments, "Comments (Why is it not approved ?)" %>
                       <div class="form-group">
                         <%= f.text_field :staff_comments, placeholder: "The size won't fit", class: "form-control" %>
                       </div>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button class="btn btn-danger" type="submit">Disapprove</button>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      <button class="btn btn-danger" type="submit">Disapprove</button>
                     </div>
                   <% end %>
                 </div>
@@ -274,10 +277,10 @@
         <% end %>
       <% end %>
       <% if @user.admin? %>
-      <td><%= button_to 'Delete', print_order_path(prints), method: :delete, data: {confirm: 'Are you sure?'}, class: "btn btn-danger" %></td>
+        <td><%= button_to 'Delete', print_order_path(prints), method: :delete, data: {confirm: 'Are you sure?'}, class: "btn btn-danger" %></td>
       <% elsif prints.staff_id.present? == false %>
         <td><%= button_to 'Delete', print_order_path(prints), method: :delete, data: {confirm: 'Are you sure?'}, class: "btn btn-danger" %></td>
-    <% else %>
+      <% else %>
         <td>Can not delete</td>
       <% end %>
     </tr>
