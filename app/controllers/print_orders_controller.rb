@@ -46,12 +46,14 @@ class PrintOrdersController < ApplicationController
         if @print_order.expedited == true
           params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
         end
-      elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
-        if (@print_order.sst == true) and params[:print_order][:grams2] and params[:print_order][:price_per_gram2]
-          params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f) + (params[:print_order][:grams2].to_f * params[:print_order][:price_per_gram2].to_f)
-        else
-          params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
-        end
+        elsif params[:print_order][:price_per_hour] and params[:print_order][:hours] and params[:print_order][:service_charge]
+          params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:price_per_hour].to_f * params[:print_order][:hours].to_f)
+          if @print_order.expedited == true
+            params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+          end
+
+        elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
+        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
         if @print_order.expedited == true
           params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
         end
@@ -89,7 +91,7 @@ class PrintOrdersController < ApplicationController
     private
 
     def print_order_params
-      params.require(:print_order).permit(:user_id, :final_file, :sst, :material, :grams, :grams2, :price_per_gram2, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
+      params.require(:print_order).permit(:user_id, :hours, :final_file, :sst, :material, :grams, :grams2, :price_per_gram2, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited)
     end
 
 end

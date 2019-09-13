@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190905194112) do
+ActiveRecord::Schema.define(version: 20190913002741) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -184,6 +184,8 @@ ActiveRecord::Schema.define(version: 20190905194112) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
+    t.text     "email"
+    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -198,6 +200,7 @@ ActiveRecord::Schema.define(version: 20190905194112) do
     t.text     "material"
     t.float    "grams2"
     t.float    "price_per_gram2"
+    t.float    "hours"
   end
 
   create_table "printer_sessions", force: :cascade do |t|
@@ -215,6 +218,7 @@ ActiveRecord::Schema.define(version: 20190905194112) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
+    t.string   "rfid"
   end
 
   create_table "project_joins", force: :cascade do |t|
