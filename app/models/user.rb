@@ -73,6 +73,12 @@ class User < ActiveRecord::Base
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
 
+  scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
+  scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace")}
+  scope :active, -> {where(:active => true)}
+  scope :unknown_identity, -> { where(identity:"unknown") }
+
   def self.authenticate(username_email, password)
     user = User.username_or_email(username_email)
     user if user && user.pword == password
@@ -96,9 +102,6 @@ class User < ActiveRecord::Base
   def student?
     self.identity == "grad" || self.identity == "undergrad"
   end
-
-  scope :unknown_identity, -> { where(identity:"unknown") }
-
 
   def admin?
     self.role.eql?("admin")
@@ -128,12 +131,12 @@ class User < ActiveRecord::Base
     return self.lab_sessions.last.space.name
   end
 
-  scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
-
-  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
-
-  scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace")}
-
-  scope :active, -> {where(:active => true)}
+  def get_certifications_names
+    cert = []
+    self.certifications.each do |c|
+      cert << c.training
+    end
+    return cert
+  end
 
 end
