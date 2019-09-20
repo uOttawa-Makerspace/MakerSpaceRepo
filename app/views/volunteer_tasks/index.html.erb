@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
-    <h2>Volunteer Tasks</h2>
+    <h2>All Tasks</h2>
 
     <% if !@volunteer_tasks.blank? %>
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
@@ -17,8 +17,8 @@
             <th>Title <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
             <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
             <th>Staff<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Volunteers<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Certifications<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Users<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications Needed<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
             <th>Space<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
               <th>Created by <span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
@@ -67,9 +67,13 @@
               </td>
 
               <td>
-                <% vt.require_trainings.find_each do |rt| %>
-                  <%= rt.training.name.capitalize %>
-                  <br />
+                <% if !vt.require_trainings.blank? %>
+                  <% vt.require_trainings.find_each do |rt| %>
+                    <%= rt.training.name.capitalize %>
+                    <br />
+                  <% end %>
+                <% else %>
+                  None
                 <% end  %>
               </td>
 
