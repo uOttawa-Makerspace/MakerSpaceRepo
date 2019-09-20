@@ -16,7 +16,7 @@
             <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
             <th>Title <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
             <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Staff<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Responsable Staff<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <th>Users<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
             <th>Certifications Needed<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
             <th>Space<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
@@ -60,9 +60,13 @@
               </td>
 
               <td class = "username">
-                <% vt.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_joins| %>
-                  <%= link_to volunteer_joins.user.name.capitalize, user_path(volunteer_joins.user.username) %>
-                  <br />
+                <% if !vt.volunteer_task_joins.blank? %>
+                  <% vt.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_joins| %>
+                    <%= link_to volunteer_joins.user.name.capitalize, user_path(volunteer_joins.user.username) %>
+                    <br />
+                  <% end %>
+                <% else %>
+                  -
                 <% end %>
               </td>
 
