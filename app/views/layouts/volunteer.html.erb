@@ -51,7 +51,7 @@
   <% if !Announcement.active.volunteers.blank? %>
   <% Announcement.active.volunteers.find_each do |a| %>
     <div class="alert alert-warning text-center" role="alert">
-      <b>To Volunteers:</b> <%= a.description %>
+      <b>Development Program:</b> <%= a.description %>
     </div>
   <% end %>
 <% end %>
@@ -59,7 +59,7 @@
 	<section id="setting" style="width:100%">
 		<div class="setting-grid">
 			<div class="setting-side-panel">
-        <div class="panel-title"><%= link_to 'Volunteer Area', volunteers_path %></div>
+        <div class="panel-title"><%= link_to 'Development Program Area', volunteers_path %></div>
 				<ul>
 		      <li class="setting-menu-item">
             <% if current_user.volunteer? %>
