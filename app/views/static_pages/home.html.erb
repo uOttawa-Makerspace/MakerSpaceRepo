@@ -41,13 +41,11 @@
 
             <hr class="my-5"/>
 
-            <% if @certifications.include?("3D Printing") && @certifications.include?("Basic Training") %>
+            <% if @certifications.include?("3D Printing") && @certifications.include?("Basic Training") && !current_user.volunteer? %>
 
-<!--              <h1><%#= t('home.become_volunteer.want') %></h1>-->
               <h1>Contratulations! You can now join our development program!</h1>
               <p>
                 <strong>
-                  <%#= t('home.become_volunteer.few_clicks') %>
                   Make your request in a few clicks
                 </strong>
               </p>
@@ -187,7 +185,6 @@
                   <button type="button" id="prevBtn" onclick="nextPrev(-1)">Previous</button>
                   <button type="button" id="nextBtn" onclick="nextPrev(1)">Next</button>
                   <% state = true if VolunteerRequest.find_by(user_id: current_user.id) %>
-                  <%#= f.submit t('home.become_volunteer.button'), class: "btn btn-success btn-lg", disabled: state, id: "finalBtn", style: "display: none;" %>
                   <%= f.submit "Development Program Request", class: "btn btn-success btn-lg", disabled: state, id: "finalBtn", style: "display: none;" %>
                 </div>
                 <div style="text-align:center;margin-top:40px;">
@@ -196,6 +193,11 @@
                   <span class="step"></span>
                 </div>
               <% end %>
+
+            <% elsif current_user.volunteer? %>
+
+              <h1>You are currently enrolled in our Development Program.</h1>
+              Check your status: <%= link_to "Development Program Area", volunteers_path %>
 
             <% else %>
 
