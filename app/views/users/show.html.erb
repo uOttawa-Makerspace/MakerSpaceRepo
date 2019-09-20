@@ -179,13 +179,13 @@
               <br></br><div id="change-to" style="font-weight: bold;"> Change to:
               <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
                 <%= radio_button_tag :role, "admin" %>
-                <%= label_tag :admin %>
+                <%= label_tag "Admin" %>
                 <%= radio_button_tag :role, "staff" %>
-                <%= label_tag :staff %>
+                <%= label_tag "Staff" %>
                 <%= radio_button_tag :role, "regular_user" %>
-                <%= label_tag :regular_user %>
+                <%= label_tag "Regular User" %>
                 <%= radio_button_tag :role, "volunteer" %>
-                <%= label_tag :volunteer %>
+                <%= label_tag "Development Program" %>
                 <br></br>
               <%= submit_tag "update role", class: "btn btn-primary" %>
               <% end %>
