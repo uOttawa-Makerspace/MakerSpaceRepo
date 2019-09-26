@@ -215,18 +215,15 @@
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
             <hr class="my-5"/>
-            <h1><%= t('home.become_volunteer.want') %></h1>
-            <p>
-              <strong>
-                <%= t('home.become_volunteer.make') %>
-              </strong>
-            </p>
-            <p>
-              <%= t('home.become_volunteer.request_1') %> <br />
-              <%= t('home.become_volunteer.request_2') %> <br />
-              <%= t('home.become_volunteer.request_3') %>
-            </p>
-            <p><%= link_to t('home.become_volunteer.find_more'), 'https://volunteer.makerepo.com/', class: "btn btn-success btn-lg", target: "_blank" %></p>
+
+            <h1>Interested joining our development program?</h1>
+
+            <p>You need to complete our Basic and 3D printing training. Check our next trainings schedule:
+              <b><%= link_to "Makerspace Trainings", "https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537", target: '_blank' %> </b>
+              and
+              <b><%= link_to "MTC Trainings", "https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765", target: '_blank' %></b></p>
+
+            <p>Find out more about the development program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
           <% end %>
 
         </div>
