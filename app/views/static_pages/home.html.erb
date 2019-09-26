@@ -44,155 +44,16 @@
             <% if @certifications.include?("3D Printing") && @certifications.include?("Basic Training") && !current_user.volunteer? %>
 
               <h1>Contratulations! You can now join our development program!</h1>
+              <p>Find out more about the development program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
+
               <p>
                 <strong>
-                  Make your request in a few clicks
+                  Join the program by clicking the buttom bellow:
                 </strong>
               </p>
-              <%= form_for @request, url: {controller: "volunteer_requests", action: "create"} do |f| %>
-                <div class="tab mx-auto col-md-6" >
-                  <p>Interests:</p>
-                  <%= f.text_area :interests, placeholder: t('home.become_volunteer.placeholder_text'), class: 'form-control form-element' %>
-                </div>
 
-                <div class="col-12 tab">
-                  <p>`What space would you like to work?`</p>
-                  <div class="d-inline-block text-left">
-                    <%= f.radio_button :space_id, Space.find_by_name("Makerspace").id, :style => 'display:inline !important', checked: true %>
-                    <%= f.label :space_id, 'Makerspace', :style => 'display:inline !important' %>
-                    <br />
-                    <%= f.radio_button :space_id, Space.find_by_name("Brunsfield Centre").id, :style => 'display:inline' %>
-                    <%= f.label :space_id, 'Brunsfield Centre', :style => 'display:inline' %>
-                    <br />
-                  </div>
-                </div>
+              <p><%= link_to "Join Development Program", join_development_program_volunteers_path, class: "btn btn-primary btn-lg" %></p>
 
-                <div class="tab">
-                  <p class="text-center">Please inform us your level of expertise</p>
-                  <div class="row">
-                    <div class="mx-auto col-md-4">
-                      <b>3D Printing</b> <br />
-                      <div class="d-inline-block text-left">
-                        <%= f.radio_button :printing, 'Beginner', :style => 'display:inline' %>
-                        <%= f.label :printing, 'Beginner', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :printing, 'Intermediate', :style => 'display:inline' %>
-                        <%= f.label :printing, 'Intermediate', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :printing, 'Advanced', :style => 'display:inline' %>
-                        <%= f.label :printing, 'Advanced', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :printing, 'No Experience', :style => 'display:inline' %>
-                        <%= f.label :printing, 'No Experience', :style => 'display:inline' %>
-                        <br />
-                      </div>
-                    </div>
-
-                    <div class="max-auto col-md-4">
-                      <b>Laser Cutting</b> <br />
-                      <div class="d-inline-block text-left">
-                        <%= f.radio_button :laser_cutting, 'Beginner', :style => 'display:inline' %>
-                        <%= f.label :laser_cutting, 'Beginner', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :laser_cutting, 'Intermediate', :style => 'display:inline' %>
-                        <%= f.label :laser_cutting, 'Intermediate', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :laser_cutting, 'Advanced', :style => 'display:inline' %>
-                        <%= f.label :laser_cutting, 'Advanced', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :laser_cutting, 'No Experience', :style => 'display:inline' %>
-                        <%= f.label :laser_cutting, 'No Experience', :style => 'display:inline' %>
-                        <br />
-                      </div>
-                    </div>
-
-                    <div class="mx-auto col-md-4">
-                      <b>Virtual Reality (VR)</b> <br />
-                      <div class="d-inline-block text-left">
-                        <%= f.radio_button :virtual_reality, 'Beginner', :style => 'display:inline' %>
-                        <%= f.label :virtual_reality, 'Beginner', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :virtual_reality, 'Intermediate', :style => 'display:inline' %>
-                        <%= f.label :virtual_reality, 'Intermediate', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :virtual_reality, 'Advanced', :style => 'display:inline' %>
-                        <%= f.label :virtual_reality, 'Advanced', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :virtual_reality, 'No Experience', :style => 'display:inline' %>
-                        <%= f.label :virtual_reality, 'No Experience', :style => 'display:inline' %>
-                        <br />
-                      </div>
-                    </div>
-
-                    <div class="mx-auto col-md-4">
-                      <b>Arduino</b> <br />
-                      <div class="d-inline-block text-left">
-                        <%= f.radio_button :arduino, 'Beginner', :style => 'display:inline' %>
-                        <%= f.label :arduino, 'Beginner', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :arduino, 'Intermediate', :style => 'display:inline' %>
-                        <%= f.label :arduino, 'Intermediate', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :arduino, 'Advanced', :style => 'display:inline' %>
-                        <%= f.label :arduino, 'Advanced', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :arduino, 'No Experience', :style => 'display:inline' %>
-                        <%= f.label :arduino, 'No Experience', :style => 'display:inline' %>
-                        <br />
-                      </div>
-                    </div>
-
-                    <div class="mx-auto col-md-4">
-                      <b>Embroidery</b> <br />
-                      <div class="d-inline-block text-left">
-                        <%= f.radio_button :embroidery, 'Beginner', :style => 'display:inline' %>
-                        <%= f.label :embroidery, 'Beginner', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :embroidery, 'Intermediate', :style => 'display:inline' %>
-                        <%= f.label :embroidery, 'Intermediate', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :embroidery, 'Advanced', :style => 'display:inline' %>
-                        <%= f.label :embroidery, 'Advanced', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :embroidery, 'No Experience', :style => 'display:inline' %>
-                        <%= f.label :embroidery, 'No Experience', :style => 'display:inline' %>
-                        <br />
-                      </div>
-                    </div>
-
-                    <div class="mx-auto col-md-4">
-                      <b>Soldering</b> <br />
-                      <div class="d-inline-block text-left">
-                        <%= f.radio_button :soldering, 'Beginner', :style => 'display:inline' %>
-                        <%= f.label :soldering, 'Beginner', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :soldering, 'Intermediate', :style => 'display:inline' %>
-                        <%= f.label :soldering, 'Intermediate', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :soldering, 'Advanced', :style => 'display:inline' %>
-                        <%= f.label :soldering, 'Advanced', :style => 'display:inline' %>
-                        <br />
-                        <%= f.radio_button :soldering, 'No Experience', :style => 'display:inline' %>
-                        <%= f.label :soldering, 'No Experience', :style => 'display:inline' %>
-                        <br />
-                        <br />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <br />
-                <div class="text-center">
-                  <button type="button" id="prevBtn" onclick="nextPrev(-1)">Previous</button>
-                  <button type="button" id="nextBtn" onclick="nextPrev(1)">Next</button>
-                  <% state = true if VolunteerRequest.find_by(user_id: current_user.id) %>
-                  <%= f.submit "Development Program Request", class: "btn btn-success btn-lg", disabled: state, id: "finalBtn", style: "display: none;" %>
-                </div>
-                <div style="text-align:center;margin-top:40px;">
-                  <span class="step"></span>
-                  <span class="step"></span>
-                  <span class="step"></span>
-                </div>
-              <% end %>
 
             <% elsif current_user.volunteer? %>
 
@@ -214,6 +75,7 @@
 
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
+
             <hr class="my-5"/>
 
             <h1>Interested joining our development program?</h1>
@@ -293,3 +155,150 @@
     showTab(currentTab); // Display the current tab
 </script>
 
+
+
+
+<%#= form_for @request, url: {controller: "volunteer_requests", action: "create"} do |f| %>
+<!--  <div class="tab mx-auto col-md-6" >-->
+<!--    <p>Interests:</p>-->
+    <%#= f.text_area :interests, placeholder: t('home.become_volunteer.placeholder_text'), class: 'form-control form-element' %>
+<!--  </div>-->
+
+<!--  <div class="col-12 tab">-->
+<!--    <p>`What space would you like to work?`</p>-->
+<!--    <div class="d-inline-block text-left">-->
+      <%#= f.radio_button :space_id, Space.find_by_name("Makerspace").id, :style => 'display:inline !important', checked: true %>
+      <%#= f.label :space_id, 'Makerspace', :style => 'display:inline !important' %>
+<!--      <br />-->
+      <%#= f.radio_button :space_id, Space.find_by_name("Brunsfield Centre").id, :style => 'display:inline' %>
+      <%#= f.label :space_id, 'Brunsfield Centre', :style => 'display:inline' %>
+<!--      <br />-->
+<!--    </div>-->
+<!--  </div>-->
+
+<!--  <div class="tab">-->
+<!--    <p class="text-center">Please inform us your level of expertise</p>-->
+<!--    <div class="row">-->
+<!--      <div class="mx-auto col-md-4">-->
+<!--        <b>3D Printing</b> <br />-->
+<!--        <div class="d-inline-block text-left">-->
+          <%#= f.radio_button :printing, 'Beginner', :style => 'display:inline' %>
+          <%#= f.label :printing, 'Beginner', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :printing, 'Intermediate', :style => 'display:inline' %>
+          <%#= f.label :printing, 'Intermediate', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :printing, 'Advanced', :style => 'display:inline' %>
+          <%#= f.label :printing, 'Advanced', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :printing, 'No Experience', :style => 'display:inline' %>
+          <%#= f.label :printing, 'No Experience', :style => 'display:inline' %>
+<!--          <br />-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      <div class="max-auto col-md-4">-->
+<!--        <b>Laser Cutting</b> <br />-->
+<!--        <div class="d-inline-block text-left">-->
+          <%#= f.radio_button :laser_cutting, 'Beginner', :style => 'display:inline' %>
+          <%#= f.label :laser_cutting, 'Beginner', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :laser_cutting, 'Intermediate', :style => 'display:inline' %>
+          <%#= f.label :laser_cutting, 'Intermediate', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :laser_cutting, 'Advanced', :style => 'display:inline' %>
+          <%#= f.label :laser_cutting, 'Advanced', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :laser_cutting, 'No Experience', :style => 'display:inline' %>
+          <%#= f.label :laser_cutting, 'No Experience', :style => 'display:inline' %>
+<!--          <br />-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      <div class="mx-auto col-md-4">-->
+<!--        <b>Virtual Reality (VR)</b> <br />-->
+<!--        <div class="d-inline-block text-left">-->
+          <%#= f.radio_button :virtual_reality, 'Beginner', :style => 'display:inline' %>
+          <%#= f.label :virtual_reality, 'Beginner', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :virtual_reality, 'Intermediate', :style => 'display:inline' %>
+          <%#= f.label :virtual_reality, 'Intermediate', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :virtual_reality, 'Advanced', :style => 'display:inline' %>
+          <%#= f.label :virtual_reality, 'Advanced', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :virtual_reality, 'No Experience', :style => 'display:inline' %>
+          <%#= f.label :virtual_reality, 'No Experience', :style => 'display:inline' %>
+<!--          <br />-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      <div class="mx-auto col-md-4">-->
+<!--        <b>Arduino</b> <br />-->
+<!--        <div class="d-inline-block text-left">-->
+          <%#= f.radio_button :arduino, 'Beginner', :style => 'display:inline' %>
+          <%#= f.label :arduino, 'Beginner', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :arduino, 'Intermediate', :style => 'display:inline' %>
+          <%#= f.label :arduino, 'Intermediate', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :arduino, 'Advanced', :style => 'display:inline' %>
+          <%#= f.label :arduino, 'Advanced', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :arduino, 'No Experience', :style => 'display:inline' %>
+          <%#= f.label :arduino, 'No Experience', :style => 'display:inline' %>
+<!--          <br />-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      <div class="mx-auto col-md-4">-->
+<!--        <b>Embroidery</b> <br />-->
+<!--        <div class="d-inline-block text-left">-->
+          <%#= f.radio_button :embroidery, 'Beginner', :style => 'display:inline' %>
+          <%#= f.label :embroidery, 'Beginner', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :embroidery, 'Intermediate', :style => 'display:inline' %>
+          <%#= f.label :embroidery, 'Intermediate', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :embroidery, 'Advanced', :style => 'display:inline' %>
+          <%#= f.label :embroidery, 'Advanced', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :embroidery, 'No Experience', :style => 'display:inline' %>
+          <%#= f.label :embroidery, 'No Experience', :style => 'display:inline' %>
+<!--          <br />-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      <div class="mx-auto col-md-4">-->
+<!--        <b>Soldering</b> <br />-->
+<!--        <div class="d-inline-block text-left">-->
+          <%#= f.radio_button :soldering, 'Beginner', :style => 'display:inline' %>
+          <%#= f.label :soldering, 'Beginner', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :soldering, 'Intermediate', :style => 'display:inline' %>
+          <%#= f.label :soldering, 'Intermediate', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :soldering, 'Advanced', :style => 'display:inline' %>
+          <%#= f.label :soldering, 'Advanced', :style => 'display:inline' %>
+<!--          <br />-->
+          <%#= f.radio_button :soldering, 'No Experience', :style => 'display:inline' %>
+          <%#= f.label :soldering, 'No Experience', :style => 'display:inline' %>
+<!--          <br />-->
+<!--          <br />-->
+<!--        </div>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--  <br />-->
+<!--  <div class="text-center">-->
+<!--    <button type="button" id="prevBtn" onclick="nextPrev(-1)">Previous</button>-->
+<!--    <button type="button" id="nextBtn" onclick="nextPrev(1)">Next</button>-->
+    <%# state = true if VolunteerRequest.find_by(user_id: current_user.id) %>
+    <%#= f.submit "Development Program Request", class: "btn btn-success btn-lg", disabled: state, id: "finalBtn", style: "display: none;" %>
+<!--  </div>-->
+<!--  <div style="text-align:center;margin-top:40px;">-->
+<!--    <span class="step"></span>-->
+<!--    <span class="step"></span>-->
+<!--    <span class="step"></span>-->
+<!--  </div>-->
+<%# end %>

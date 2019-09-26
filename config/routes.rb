@@ -208,6 +208,7 @@ Rails.application.routes.draw do
       get :emails
       get :volunteer_list
       get :getting_started
+      get :join_development_program
     end
   end
 
