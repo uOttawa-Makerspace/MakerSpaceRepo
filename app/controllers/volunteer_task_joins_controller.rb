@@ -1,16 +1,21 @@
 class VolunteerTaskJoinsController < ApplicationController
   def create
     volunteer_join = VolunteerTaskJoin.new(volunteer_task_joins_params)
-    if current_user.staff?
-      volunteer_join.user_id = params[:volunteer_task_join][:user_id] || current_user.id
+    volunteer_task = volunteer_join.volunteer_task
+    if volunteer_task.volunteer_task_joins.count < volunteer_task.joins
+      if current_user.staff?
+        volunteer_join.user_id = params[:volunteer_task_join][:user_id] || current_user.id
+      else
+        volunteer_join.user_id = current_user.id
+      end
+      volunteer_join.user_type = volunteer_join.user.role.capitalize
+      if volunteer_join.save!
+        flash[:notice] = "An user was successfully joined to this volunteer task."
+      end
     else
-      volunteer_join.user_id = current_user.id
+      flash[:alert] = "This task is already full"
     end
-    volunteer_join.user_type = volunteer_join.user.role.capitalize
-    if volunteer_join.save!
-      redirect_to :back
-      flash[:notice] = "An user was successfully joined to this volunteer task."
-    end
+    redirect_to :back
   end
 
   def remove
