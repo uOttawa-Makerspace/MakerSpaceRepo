@@ -455,7 +455,7 @@ ActiveRecord::Schema.define(version: 20191007144411) do
     t.datetime "updated_at",                   null: false
     t.string   "status",      default: "open"
     t.integer  "space_id"
-    t.integer  "joins"
+    t.integer  "joins",       default: 1
   end
 
   add_foreign_key "categories", "category_options"
