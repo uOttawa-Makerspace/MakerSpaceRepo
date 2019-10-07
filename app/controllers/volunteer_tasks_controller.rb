@@ -1,7 +1,7 @@
 class VolunteerTasksController < ApplicationController
   layout 'volunteer'
   include VolunteerTasksHelper
-  before_action :grant_access, except: [:show, :index]
+  before_action :grant_access, except: [:show, :index, :your_task]
   before_action :volunteer_access, only: [:show, :index]
 
   def index
@@ -40,7 +40,7 @@ class VolunteerTasksController < ApplicationController
     end
   end
 
-  def your_tasks
+  def your_task
     @your_volunteer_tasks = current_user.volunteer_tasks
   end
 

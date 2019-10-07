@@ -224,7 +224,11 @@ Rails.application.routes.draw do
 
   resources :exam_responses, only: [:create]
 
-  resources :volunteer_tasks
+  resources :volunteer_tasks do
+    collection do
+      get :your_task
+    end
+  end
 
   resources :announcements
 
