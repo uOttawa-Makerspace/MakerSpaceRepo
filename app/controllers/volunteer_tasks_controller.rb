@@ -41,7 +41,7 @@ class VolunteerTasksController < ApplicationController
   end
 
   def your_task
-    @your_volunteer_tasks = current_user.volunteer_tasks
+    @your_volunteer_tasks = current_user.get_volunteer_tasks_from_volunteer_joins
   end
 
   def edit

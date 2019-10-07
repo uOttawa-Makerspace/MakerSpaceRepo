@@ -139,4 +139,13 @@ class User < ActiveRecord::Base
     return cert
   end
 
+  def get_volunteer_tasks_from_volunteer_joins
+    volunteer_tasks = []
+    vtjs = self.volunteer_task_joins
+    vtjs.each do |vtj|
+      volunteer_tasks << vtj.volunteer_task
+    end
+    return volunteer_tasks
+  end
+
 end
