@@ -40,6 +40,10 @@ class VolunteerTasksController < ApplicationController
     end
   end
 
+  def your_tasks
+    @your_volunteer_tasks = current_user.volunteer_tasks
+  end
+
   def edit
     @volunteer_task = VolunteerTask.find(params[:id])
   end
