@@ -58,12 +58,8 @@
 
               <div class="mx-auto col-md-4 text-center">
                 <b>How many can join this task?</b> <br />
-                <div class="d-inline-block text-left">
-                  <%= f.radio_button :space_id, Space.find_by(name: "Makerspace").id, checked: true, :style => 'display:inline' %>
-                  <%= f.label :space_id, 'Makerspace', :style => 'display:inline' %>
-                  <br />
-                  <%= f.radio_button :space_id, Space.find_by(name: "Brunsfield Centre").id, :style => 'display:inline' %>
-                  <%= f.label :space_id, 'Brunsfield Centre', :style => 'display:inline' %>
+                <div class="d-inline-block text-center">
+                  <%= f.number_field :joins, class: "form-control" %>
                   <br />
                   <br />
                 </div>
