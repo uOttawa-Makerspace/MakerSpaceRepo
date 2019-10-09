@@ -1,7 +1,7 @@
 class VolunteerTasksController < ApplicationController
   layout 'volunteer'
   include VolunteerTasksHelper
-  before_action :grant_access, except: [:show, :index, :your_task]
+  before_action :grant_access, except: [:show, :index, :your_task, :complete_task]
   before_action :volunteer_access, only: [:show, :index]
 
   def index
@@ -42,6 +42,12 @@ class VolunteerTasksController < ApplicationController
 
   def your_task
     @your_volunteer_tasks = current_user.get_volunteer_tasks_from_volunteer_joins
+  end
+
+  def complete_task
+    volunteer_task = VolunteerTask.find(params[:id])
+    volunteer_task.update_attributes(status: "completed")
+    redirect_to your_task_volunteer_tasks_path
   end
 
   def edit
