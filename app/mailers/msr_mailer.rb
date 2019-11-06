@@ -11,12 +11,12 @@ class MsrMailer < ApplicationMailer
 		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
 	end
 
-	def send_print_user_approval_to_makerspace
-		mail(to: "makerspace@uottawa.ca", subject: 'Print Order has been accepted by user on Makerepo')
+	def send_print_user_approval_to_makerspace(id)
+		mail(to: "makerspace@uottawa.ca", subject: 'Print Order has been accepted by user on Makerepo | Print ID : '+id.to_s)
 	end
 
-	def send_print_to_makerspace
-		mail(to: "makerspace@uottawa.ca", subject: 'Print Order has been submitted on Makerepo')
+	def send_print_to_makerspace(id)
+		mail(to: "makerspace@uottawa.ca", subject: 'Print Order has been submitted on Makerepo | Print ID : '+id.to_s)
 	end
 
 	def send_print_quote(expedited_price, user, print_order, comments)
