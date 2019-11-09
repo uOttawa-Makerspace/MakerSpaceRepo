@@ -24,3 +24,17 @@ function change_color(radio) {
         document.getElementById("color_form").style.display = 'none';
     }
 }
+function checkFile(yourForm){
+
+    var file = yourForm.elements['print_order[final_file]'].value;
+
+    if(file != ""){
+        yourForm.submit();
+    } else {
+        if(confirm("Do you want to continue without adding image?")) {
+            yourForm.submit();
+        } else {
+            return;
+        }
+    }
+}
