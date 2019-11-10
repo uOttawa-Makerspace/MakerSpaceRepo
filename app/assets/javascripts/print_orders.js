@@ -31,7 +31,7 @@ function checkFile(yourForm){
     if(file != ""){
         yourForm.submit();
     } else {
-        if(confirm("Do you want to continue without adding image?")) {
+        if(confirm("Do you want to continue without adding a file ?")) {
             yourForm.submit();
         } else {
             return;
