@@ -27,8 +27,13 @@ class PrintOrdersController < ApplicationController
       end
 
       @print_order = PrintOrder.create(print_order_params)
-      MsrMailer.send_print_to_makerspace().deliver_now
-      redirect_to print_orders_path
+      if @print_order.id.nil? || @print_order.id == 0
+        redirect_to print_orders_path, :alert => "The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !"
+      else
+        MsrMailer.send_print_to_makerspace(@print_order.id).deliver_now
+        redirect_to print_orders_path
+
+      end
     end
 
     def update
@@ -69,7 +74,7 @@ class PrintOrdersController < ApplicationController
       elsif params[:print_order][:approved] == "false"
         MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
       elsif params[:print_order][:user_approval] == "true"
-        MsrMailer.send_print_user_approval_to_makerspace().deliver_now
+        MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
       elsif params[:print_order][:printed] == "true"
         MsrMailer.send_print_finished(@user, @print_order.file_file_name, @print_order.id).deliver_now
         MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
