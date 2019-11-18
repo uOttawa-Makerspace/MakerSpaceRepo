@@ -5,19 +5,19 @@
   <%= form_for @project_proposal, url: {controller: "project_proposals", action: "create"}, html: { multipart: true } do |f| %>
       <br>
       <div class="form-group">
-      <%= f.label :username, "Name/Nom" %>
+      <%= f.label :username, "*Name/Nom" %>
       <div>What is your name? <br> Quel est votre nom?</div>
       <%= f.text_field :username, class: 'form-control' , autofocus: true %>
       </div>
       <br>
       <div class="form-group">
-      <%= f.label :email, "Email/Adresse Courriel" %>
+      <%= f.label :email, "*Email/Adresse Courriel" %>
       <div>What is your email? <br> Quel est votre adresse courriel?</div>
       <%= f.text_field :email, class: 'form-control' %>
       </div>
       <br>
       <div class="form-group">
-      <%= f.label :client_type, "Client Type/Type de Client" %>
+      <%= f.label :client_type, "*Client Type/Type de Client" %>
       <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
       <div class = 'checkbox-list'>
         <%= f.radio_button :client_type, 'Organization', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
@@ -29,19 +29,19 @@
       </div>
       <br>
       <div class="form-group">
-      <%= f.label :client, "Client/Client" %>
+      <%= f.label :client, "*Client/Client" %>
       <div>Who is the client? <br> Qui est le client?</div>
       <%= f.text_field :client, class: 'form-control' %>
       </div>
       <br>
       <div class="form-group">
-      <%= f.label :title, "Title/Titre" %>
+      <%= f.label :title, "*Title/Titre" %>
       <div>Great project titles are short and memorable.<br>Des titres de projets génial sont court et mémorable.</div>
       <%= f.text_field :title, class: 'form-control' %>
       </div>
       <br>
       <div class="form-group">
-      <%= f.label :client_interest, "Client Level of Interest/Niveau d'intérêt du Client" %>
+      <%= f.label :client_interest, "*Client Level of Interest/Niveau d'intérêt du Client" %>
       <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
       <div class = 'checkbox-list'>
         <%= f.radio_button :client_interest, 'Low', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
@@ -56,7 +56,7 @@
       </div>
       <br />
       <div class="form-group">
-      <%= f.label :client_background, "Client Background/Contexte du client" %>
+      <%= f.label :client_background, "*Client Background/Contexte du client" %>
       <div>What is the client background?<br>Quel est le contexte du client?</div>
       <%= f.text_field :client_background, class: 'form-control' %>
       </div>
@@ -76,7 +76,7 @@
       <br> <br>
       </div>
     <div class="form-group">
-      <%= f.label :description %>
+      <%= f.label :description, "*Description" %>
       <div style="width: 420px;">
         <%= f.text_area :description, class: 'form-control', id: 'redactor' %>
       </div>

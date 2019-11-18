@@ -45,6 +45,24 @@
         </div>
       <% end %>
       <br><br><br>
+      <% if @user.staff?%>
+        <div class="title">Client Information:</div>
+        <div class="jumbotron text-center word-break">
+          <b>Client:</b> <%= @project_proposal.client %>
+          <br />
+          <b>Client type:</b> <%= @project_proposal.client_type %>
+          <br />
+          <b>Client interest:</b> <%= @project_proposal.client_interest %>
+          <br />
+          <b>Client Background:</b> <%= @project_proposal.client_background %>
+        </div>
+
+        <div class="title">Supervisor Background:</div>
+        <div class="jumbotron text-center word-break">
+          <%= @project_proposal.client_background %>
+        </div>
+      <% end %>
+      <br /> <br />
       <% if @user.admin?%>
           <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
                       class: "btn btn-danger", data: {confirm: 'Are you sure?'} %>
@@ -60,6 +78,7 @@
               <div class="title">This project was not reviewed yet.</div>
           <% end %>
       <% end %>
+
     </div>
   </section>
   <section id="info">
@@ -147,7 +166,7 @@
     </section>
 
     <section id="repositories-container">
-      <div class="pagination"><%= will_paginate @repositories %></div><br>
+      <div class="pagination"><%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %></div><br>
       <% @repositories.each do |repository| %>
           <div class="repository-container">
 

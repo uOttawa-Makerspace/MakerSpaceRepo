@@ -5,7 +5,7 @@
   <%= form_for @repository, url: {controller: "repositories", action: "create"}, html: {multipart: true} do |f| %>
     <br>
     <div class="form-group">
-    <%= f.label :title, "Title/Titre" %>
+    <%= f.label :title, "*Title/Titre" %>
     <div>Great project titles are short and memorable.<br>Des titres de projets génial sont court et mémorable.</div>
     <%= f.text_field :title, class: 'repo form-control' %>
     </div>
@@ -26,7 +26,7 @@
 
     <div id="file-container"></div>
 
-    <%= label_tag :photo, "Gallery/Galerie" %>
+    <%= label_tag :photo, "*Gallery/Galerie" %>
     <div>A maximum of five photos can be uploaded per repository.<br>Un maximum de cinq photos peuvent être téléchargés
       par répertoire.
     </div>
@@ -51,7 +51,7 @@
     </div>
     <br>
     <div class="form-group">
-    <%= f.label :categories, "Categories/Catégories" %>
+    <%= f.label :categories, "*Categories/Catégories" %>
 
     <div>Choose at most 5 categories that fit your project.<br>Choisi un maximum de 5 catégories qui convent à ton
       projet

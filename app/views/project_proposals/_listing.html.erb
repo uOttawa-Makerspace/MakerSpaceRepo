@@ -1,7 +1,7 @@
 <% if @project_proposals.where(:approved => approval).present? %>
   <br>
   <div class="titlepp"><%= tittle %></div>
-    <table class="spacing_table">
+    <table class="spacing_table table-striped text-center">
       <thead>
         <tr>
           <th>#</th>
@@ -11,8 +11,8 @@
             <th>Client Type</th>
             <th>Client</th>
             <th>Client Interest</th>
-            <th>Client Background</th>
-            <th>Supervisor Background</th>
+<!--            <th>Client Background</th>-->
+<!--            <th>Supervisor Background</th>-->
             <th>Approved</th>
           <% end %>
           <th>Title</th>
@@ -37,8 +37,8 @@
               <td><%= project_proposal.client_type %></td>
               <td><%= project_proposal.client %></td>
               <td><%= project_proposal.client_interest %></td>
-              <td><%= project_proposal.client_background %></td>
-              <td><%= project_proposal.supervisor_background %></td>
+<!--              <td><%#= project_proposal.client_background %></td>-->
+<!--              <td><%#= project_proposal.supervisor_background %></td>-->
               <td>
                 <% case project_proposal.approved
                      when 0 %><%= "No" %>

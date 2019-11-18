@@ -28,7 +28,7 @@
           </tr>
 
           <tbody>
-          <%= will_paginate @pending_volunteer_requests %>
+          <%= will_paginate @pending_volunteer_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @pending_volunteer_requests.each do |vr| %>
             <tr>
               <td>
@@ -89,7 +89,7 @@
           </tr>
 
           <tbody>
-          <%= will_paginate @processed_volunteer_requests %>
+          <%= will_paginate @processed_volunteer_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @processed_volunteer_requests.each do |vr| %>
             <tr>
               <td>
