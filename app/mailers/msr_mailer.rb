@@ -160,4 +160,9 @@ class MsrMailer < ApplicationMailer
 		email = @staff.email
 		mail(to: email, subject: "#{@user.name.split.first.capitalize} finished an exam")
 	end
+
+	def send_new_project_proposals
+		email = 'makerlab@uottawa.ca'
+		mail(to: email, subject: "New Project Proposal")
+	end
 end
