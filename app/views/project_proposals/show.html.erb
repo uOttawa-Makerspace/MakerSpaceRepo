@@ -147,7 +147,7 @@
     </section>
 
     <section id="repositories-container">
-      <div class="pagination"><%= will_paginate @repositories %></div><br>
+      <div class="pagination"><%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %></div><br>
       <% @repositories.each do |repository| %>
           <div class="repository-container">
 

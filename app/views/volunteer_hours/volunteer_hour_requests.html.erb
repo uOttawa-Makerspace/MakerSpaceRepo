@@ -25,7 +25,7 @@
           </tr>
 
           <tbody>
-          <%= will_paginate @new_volunteer_hour_requests %>
+          <%= will_paginate @new_volunteer_hour_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @new_volunteer_hour_requests.each do |vh| %>
             <tr>
               <td class = "username">
@@ -94,7 +94,7 @@
           </tr>
 
           <tbody>
-          <%= will_paginate @old_volunteer_hour_requests %>
+          <%= will_paginate @old_volunteer_hour_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @old_volunteer_hour_requests.each do |vh| %>
             <tr>
               <td class = "username">
