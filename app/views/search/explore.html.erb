@@ -16,8 +16,8 @@
 
   <section id="repositories-container">
 
-    <div>
-      <%= will_paginate @repositories, renderer: BootstrapPagination::Rails %>
+    <div class="pagination">
+      <%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
     </div>
     <br />
 
@@ -44,7 +44,7 @@
 
   <br />
 
-  <div>
-    <%= will_paginate @repositories, renderer: BootstrapPagination::Rails %>
+  <div class="text-center">
+    <%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
   </div>
 </section>
