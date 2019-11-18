@@ -15,7 +15,12 @@
   </section>
 
   <section id="repositories-container">
-    <div class="pagination"><%= will_paginate @repositories %></div><br>
+
+    <div>
+      <%= will_paginate @repositories, renderer: BootstrapPagination::Rails %>
+    </div>
+    <br />
+
   <% @repositories.each do |repository| %>
     <div class="repository-container">
 
@@ -36,4 +41,10 @@
     </div>
   <% end %>
   </section>
+
+  <br />
+
+  <div>
+    <%= will_paginate @repositories, renderer: BootstrapPagination::Rails %>
+  </div>
 </section>
