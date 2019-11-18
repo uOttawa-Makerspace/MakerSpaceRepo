@@ -19,7 +19,7 @@
 
         <tbody>
         <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20) %>
-        <%= will_paginate @sessions %>
+        <%= will_paginate @sessions, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
         <% @sessions.each do |sesh| %>
           <tr>
             <td class="date-cell">

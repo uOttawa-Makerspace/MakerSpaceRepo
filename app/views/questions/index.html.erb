@@ -22,7 +22,7 @@
           </tr>
 
           <tbody>
-          <%= will_paginate @questions %>
+          <%= will_paginate @questions, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @questions.each do |q| %>
             <tr>
 
