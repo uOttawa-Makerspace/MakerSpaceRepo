@@ -20,7 +20,7 @@
       <br />
       <br />
     <% elsif @volunteer_task.status != "open" %>
-      <p class="text-danger"><b>You can't join this task because it is in progress or completed.</b></p>
+      <p class="text-danger"><b>You can't join this task because it is completed.</b></p>
       <br />
     <% elsif !@volunteer_task.require_trainings.blank? %>
       <% if @user_trainings >= @volunteer_task_trainings %>
