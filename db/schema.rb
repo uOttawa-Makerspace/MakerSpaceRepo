@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190913002741) do
+ActiveRecord::Schema.define(version: 20191122164932) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -452,11 +452,12 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.string   "title",       default: ""
     t.text     "description", default: ""
     t.integer  "user_id"
-    t.datetime "created_at",                   null: false
-    t.datetime "updated_at",                   null: false
+    t.datetime "created_at",                    null: false
+    t.datetime "updated_at",                    null: false
     t.string   "status",      default: "open"
     t.integer  "space_id"
     t.integer  "joins",       default: 1
+    t.string   "category",    default: "Other"
   end
 
   add_foreign_key "categories", "category_options"
