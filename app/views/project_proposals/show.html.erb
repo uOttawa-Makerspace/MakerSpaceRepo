@@ -24,6 +24,18 @@
           <div class="description"><%= @project_proposal.description.html_safe %></div>
         </div>
     <% end %>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <div>
+      <b>List of Equipments</b>: <%= @project_proposal.equipments %>
+    </div>
+
     <div class="repo-desc">
         <br></br>
         <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
