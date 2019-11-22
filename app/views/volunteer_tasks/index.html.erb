@@ -20,8 +20,9 @@
             <th>Users<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
             <th>Certifications Needed<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
             <th>Space<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Category<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
-              <th>Created by <span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Created by <span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
             <% end %>
           </tr>
 
@@ -83,6 +84,10 @@
 
               <td>
                 <%= vt.space.name.capitalize %>
+              </td>
+
+              <td>
+                <%= vt.category.capitalize %>
               </td>
 
               <% if current_user.staff? %>
