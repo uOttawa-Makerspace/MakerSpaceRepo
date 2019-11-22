@@ -11,6 +11,7 @@ class VolunteerTasksController < ApplicationController
   def new
     @user = current_user
     @new_volunteer_task = VolunteerTask.new
+    @tasks_categories = ["Events", "Projects", "Supervising", "Workshops", "Other"]
   end
 
   def create
