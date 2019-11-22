@@ -73,13 +73,18 @@
           <!--<%= b.label { b.check_box + b.text } %>-->
       <!--<% end %>-->
       <!--</div>-->
-      <br> <br>
+      <br>
       </div>
     <div class="form-group">
       <%= f.label :description, "*Description" %>
       <div style="width: 420px;">
         <%= f.text_area :description, class: 'form-control', id: 'redactor' %>
       </div>
+    </div>
+    <br />
+    <div class="form-group">
+      <%= f.label :equipments, "List of Equipments" %>
+      <%= f.text_area :equipments, class: 'form-control' %>
     </div>
       <br>
     <div class="form-group">
