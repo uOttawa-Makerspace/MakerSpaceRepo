@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190913002741) do
+ActiveRecord::Schema.define(version: 20191122002745) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -184,8 +184,6 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
-    t.text     "email"
-    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -218,7 +216,6 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
   end
 
   create_table "project_joins", force: :cascade do |t|
@@ -235,16 +232,17 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.string   "title"
     t.text     "description"
     t.string   "youtube_link"
-    t.datetime "created_at",                         null: false
-    t.datetime "updated_at",                         null: false
+    t.datetime "created_at",                                      null: false
+    t.datetime "updated_at",                                      null: false
     t.string   "username"
     t.string   "email"
     t.string   "client"
-    t.string   "area",                  default: [],              array: true
+    t.string   "area",                  default: [],                           array: true
     t.string   "client_type"
     t.string   "client_interest"
     t.string   "client_background"
     t.string   "supervisor_background"
+    t.text     "equipments",            default: "Not informed."
   end
 
   create_table "questions", force: :cascade do |t|
@@ -458,6 +456,7 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.datetime "updated_at",                   null: false
     t.string   "status",      default: "open"
     t.integer  "space_id"
+    t.integer  "joins",       default: 1
   end
 
   add_foreign_key "categories", "category_options"
