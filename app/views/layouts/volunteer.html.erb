@@ -68,7 +68,6 @@
               <%= link_to 'Volunteer Tasks', volunteer_tasks_path%> <br /> <br />
               <%= link_to 'Your Tasks', your_task_volunteer_tasks_path%> <br /> <br />
               <%= link_to 'Hours', volunteer_hours_path %><br></br>
-              <%= link_to 'Settings', edit_skill_path(current_user.skill.id)%><br />
             <% elsif current_user.staff? %>
               <%= link_to 'Requests', volunteer_requests_path %><br></br>
 
