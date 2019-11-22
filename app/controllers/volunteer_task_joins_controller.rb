@@ -11,6 +11,9 @@ class VolunteerTaskJoinsController < ApplicationController
       volunteer_join.user_type = volunteer_join.user.role.capitalize
       if volunteer_join.save!
         flash[:notice] = "An user was successfully joined to this volunteer task."
+        staff_id = volunteer_task.volunteer_task_joins.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?", "Staff", "Admin").last.user.id
+        MsrMailer.send_notification_to_staff_for_joining_task(volunteer_task.id, volunteer_join.user_id, staff_id).deliver
+        MsrMailer.send_notification_to_volunteer_for_joining_task(volunteer_task.id, volunteer_join.user_id, staff_id).deliver
       end
     else
       flash[:alert] = "This task is already full"

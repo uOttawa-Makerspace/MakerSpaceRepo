@@ -168,14 +168,14 @@ class MsrMailer < ApplicationMailer
 
 	def send_notification_to_staff_for_joining_task(volunteer_task_id, volunteer_id, staff_id)
 		if staff_id
-			@staff = User.find(staff_id)
+			staff = User.find(staff_id)
 		else
-			@staff = nil
+			staff = nil
 		end
 		@volunteer_task = VolunteerTask.find(volunteer_task_id)
 		@volunteer = User.find(volunteer_id)
-		if @staff
-			email_staff = @staff.email
+		if staff
+			email_staff = staff.email
 		else
 			email_staff = 'volunteer@makerepo.com'
 		end
@@ -190,8 +190,8 @@ class MsrMailer < ApplicationMailer
 			@email_staff = 'volunteer@makerepo.com'
 		end
 		@volunteer_task = VolunteerTask.find(volunteer_task_id)
-		@volunteer = User.find(volunteer_id)
-		email_volunteer = @volunteer.email
+		volunteer = User.find(volunteer_id)
+		email_volunteer = volunteer.email
 		mail(to: email_volunteer, subject: "New join in task: #{@volunteer_task.title.capitalize}")
 	end
 end
