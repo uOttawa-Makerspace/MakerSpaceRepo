@@ -57,6 +57,7 @@ class ProjectProposalsController < ApplicationController
         create_categories
         format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully created.' }
         format.json { render :show, status: :created, location: @project_proposal }
+        MsrMailer.send_new_project_proposals.deliver
       else
         format.html { render :new }
         format.json { render json: @project_proposal.errors, status: :unprocessable_entity }
@@ -139,7 +140,7 @@ class ProjectProposalsController < ApplicationController
     def project_proposal_params
       params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description,
                                                :youtube_link, :username, :email, :client, :client_type,
-                                               :client_interest, :client_background, :supervisor_background ,:area => [])
+                                               :client_interest, :client_background, :supervisor_background, :equipments, :area => [])
     end
 
     def create_categories

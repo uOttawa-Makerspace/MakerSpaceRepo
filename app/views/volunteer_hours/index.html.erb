@@ -25,7 +25,7 @@
           </tr>
 
           <tbody>
-          <%= will_paginate @user_volunteer_hours %>
+          <%= will_paginate @user_volunteer_hours, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @user_volunteer_hours.each do |vh| %>
             <tr>
               <td>

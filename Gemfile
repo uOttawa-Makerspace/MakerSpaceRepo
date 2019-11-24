@@ -24,8 +24,9 @@ gem 'progress_bar', '~> 1.0.3'
 gem 'redactor-rails', '~> 0.5.0'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'aws-sdk', '~> 2.0'
-gem 'rubyzip', '~> 1.1', require: 'zip'
-gem 'will_paginate'
+gem 'rubyzip', '~> 1.3', require: 'zip'
+gem 'will_paginate', '~> 3.1.1'
+gem 'will_paginate-bootstrap4'
 gem 'mocha'
 gem 'bootstrap', '~> 4.3.1'
 gem "select2-rails"
