@@ -262,7 +262,7 @@
             <% elsif prints.user_approval == false %>
               <td>Won't be printed</td>
             <% elsif prints.printed %>
-              <td>Printed</td>
+              <td>Printed<br><%= link_to 'Invoice', print_order_invoice_url(prints), method: :get,class: "btn btn-primary", target: :_blank %></td>
             <% elsif prints.printed == false %>
               <td>Not Printed</td>
             <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>

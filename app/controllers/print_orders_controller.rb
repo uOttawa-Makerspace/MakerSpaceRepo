@@ -53,20 +53,21 @@ class PrintOrdersController < ApplicationController
     end
 
     if params[:print_order][:price_per_hour] and params[:print_order][:material_cost] and params[:print_order][:service_charge]
-      params[:print_order][:quote] = params[:print_order][:service_charge].to_f + params[:print_order][:price_per_hour].to_f + params[:print_order][:material_cost].to_f
+      params[:print_order][:quote] = params[:print_order][:service_charge].gsub(',', '.').to_f + params[:print_order][:price_per_hour].gsub(',', '.').to_f + params[:print_order][:material_cost].gsub(',', '.').to_f
       if @print_order.expedited == true
-        params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+        params[:print_order][:quote] = params[:print_order][:quote].gsub(',', '.').to_f + expedited_price.gsub(',', '.').to_f
       end
     elsif params[:print_order][:price_per_hour] and params[:print_order][:hours] and params[:print_order][:service_charge]
-      params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:price_per_hour].to_f * params[:print_order][:hours].to_f)
+      params[:print_order][:quote] = params[:print_order][:service_charge].gsub(',', '.').to_f + (params[:print_order][:price_per_hour].gsub(',', '.').to_f * params[:print_order][:hours].gsub(',', '.').to_f)
       if @print_order.expedited == true
-        params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+        params[:print_order][:quote] = params[:print_order][:quote].gsub(',', '.').to_f + expedited_price.gsub(',', '.').to_f
       end
 
     elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
-      params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
+      params[:print_order][:quote] = params[:print_order][:service_charge].gsub(',', '.').to_f + (params[:print_order][:grams].gsub(',', '.').to_f * params[:print_order][:price_per_gram].gsub(',', '.').to_f)
+      params[:print_order][:price_per_gram] = params[:print_order][:price_per_gram].gsub(',', '.')
       if @print_order.expedited == true
-        params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+        params[:print_order][:quote] = params[:print_order][:quote].gsub(',', '.').to_f + expedited_price.gsub(',', '.').to_f
       end
     end
 
@@ -96,6 +97,13 @@ class PrintOrdersController < ApplicationController
 
   def edit
     @print_order = PrintOrder.find(params[:id])
+  end
+
+  def invoice
+    @print_order = PrintOrder.find(params[:print_order_id])
+    if @print_order.printed == true
+      render :pdf => "file_name", :template => 'print_orders/pdf.html.erb'
+    end
   end
 
   private
