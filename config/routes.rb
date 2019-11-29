@@ -234,6 +234,7 @@ Rails.application.routes.draw do
   resources :volunteer_task_requests, only: [:index] do
     collection do
       get :create_request
+      put :update_approval
     end
   end
 

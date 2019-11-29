@@ -21,4 +21,14 @@ class VolunteerTaskRequestsController < ApplicationController
     redirect_to :back
   end
 
+  def update_approval
+    volunteer_task_request = VolunteerTaskRequest.find(params[:id])
+    if volunteer_task_request.update_attributes(:approval => params[:approval])
+      flash[:notice] = "Task request updated"
+    else
+      flash[:alert] = "Something went wrong"
+    end
+    redirect_to volunteer_task_requests_path
+  end
+
 end
