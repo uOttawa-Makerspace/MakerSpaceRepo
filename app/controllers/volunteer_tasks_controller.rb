@@ -33,6 +33,8 @@ class VolunteerTasksController < ApplicationController
     @trainings_already_added = Training.where(id: trainings_already_added).pluck(:name, :id)
     @user_trainings = user_trainings
     @volunteer_task_trainings = volunteer_task_trainings
+    @volunteer_task_request = VolunteerTaskRequest.where(user_id: current_user.id, volunteer_task_id: @volunteer_task.id)
+    @volunteer_task_request = @volunteer_task_request.last if @volunteer_task_request
     if current_user.staff?
       @volunteers = User.where(:role => "volunteer").where.not(:id => @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
       @staff = User.where("users.role = ? OR users.role = ?", "staff", "admin").where.not(:id => @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)

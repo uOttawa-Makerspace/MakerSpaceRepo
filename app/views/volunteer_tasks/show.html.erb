@@ -15,10 +15,16 @@
     <% if @volunteer_task.volunteer_task_joins.pluck(:user_id).include?(current_user.id) %>
       <p class="text-success"><b>You've joined this volunteer task.</b></p>
       <br />
-      <%= link_to "Send 'Task Complete'", create_request_volunteer_task_requests_path(id: @volunteer_task.id),
-                  class: "btn btn-primary", data: {confirm: "This will complete this task. Are you sure it is finished?"} %>
-      <br />
-      <br />
+      <% if @volunteer_task_request.blank? %>
+        <%= link_to "Send 'Task Complete'", create_request_volunteer_task_requests_path(id: @volunteer_task.id),
+                    class: "btn btn-primary", data: {confirm: "This will complete this task. Are you sure it is finished?"} %>
+        <br />
+        <br />
+      <% else %>
+        Your already completed this task. Your request status is under review. You can check it in the 'Requests' tab.
+        <br />
+        <br />
+      <% end %>
     <% elsif @volunteer_task.status != "open" %>
       <p class="text-danger"><b>You can't join this task because it is completed.</b></p>
       <br />
