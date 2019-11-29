@@ -6,7 +6,7 @@
 
     <h5>Total requests: <b><%= @volunteer_task_requests.count %></b></h5>
     <h5>Pending requests: <b><%= @pending_volunteer_task_requests.count %></b></h5>
-    <h5>Total requests completed: <b><%= @processed_volunteer_requests.count %></b></h5>
+    <h5>Total requests completed: <b><%= @processed_volunteer_task_requests.count %></b></h5>
     <br />
     <% if !@pending_volunteer_task_requests.not_processed.blank? %>
 
@@ -94,7 +94,7 @@
               </td>
 
               <td>
-                Waiting for approval
+                <%= vtr.status %>
               </td>
 
               <!--              <td class="action-cell">-->

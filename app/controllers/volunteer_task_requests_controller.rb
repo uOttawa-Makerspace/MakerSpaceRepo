@@ -5,7 +5,7 @@ class VolunteerTaskRequestsController < ApplicationController
     current_user.staff? ? @volunteer_task_requests = VolunteerTaskRequest.all : @volunteer_task_requests = current_user.volunteer_task_requests
     @total_volunteers = User.where(role: "volunteer").count
     @pending_volunteer_task_requests = @volunteer_task_requests.not_processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
-    @processed_volunteer_requests = @volunteer_task_requests.processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
+    @processed_volunteer_task_requests = @volunteer_task_requests.processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
   end
 
   def create_request
