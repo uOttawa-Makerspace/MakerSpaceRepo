@@ -3,11 +3,11 @@
 
     <h2>Your Requests</h2>
 
-    <h5>Total Requests: <b><%= @volunteer_task_requests.count %></b></h5>
-    <h5>Total Requests Approved: <b><%= @volunteer_task_requests.approved %></b></h5>
-    <h5>Pending requests: <b><%= @volunteer_task_requests.not_processed %></b></h5>
+    <h5>Total requests: <b><%= @volunteer_task_requests.count %></b></h5>
+    <h5>Pending requests: <b><%= @pending_volunteer_task_requests.count %></b></h5>
+    <h5>Total requests completed: <b><%= @processed_volunteer_requests.count %></b></h5>
     <br />
-    <% if !@pending_volunteer_requests.blank? %>
+    <% if !@pending_volunteer_task_requests.not_processed.blank? %>
 
       <h5>Pending Requests</h5>
 
@@ -20,44 +20,38 @@
 
           <tr>
             <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Sent By<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Interests<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Email<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Approve?<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th class="action-header">Action</th>
+            <th>Task<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+<!--            <th class="action-header">Action</th>-->
           </tr>
 
           <tbody>
-          <%= will_paginate @pending_volunteer_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-          <% @pending_volunteer_requests.each do |vr| %>
+          <%= will_paginate @pending_volunteer_task_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+          <% @pending_volunteer_task_requests.each do |vtr| %>
             <tr>
               <td>
-                <%= vr.created_at.strftime("%b %e %Y") %>
+                <%= vtr.created_at.strftime("%b %e %Y") %>
                 <br>
-                <%= vr.created_at.strftime("%I:%M %p").downcase() %>
+                <%= vtr.created_at.strftime("%I:%M %p").downcase() %>
               </td>
 
               <td class = "username">
-                <%= link_to vr.user.name.capitalize, user_path(vr.user.username) %>
+                <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id) %>
               </td>
 
               <td>
-                <%= vr.interests %>
+                Waiting for approval
               </td>
 
-              <td>
-                <%= vr.user.email %>
-              </td>
-
-              <td class="action-cell">
-                <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: false}, method: :put, class: 'x-button' %>
-                <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: true}, method: :put, class: 'check-button' %>
-              </td>
+<!--              <td class="action-cell">-->
+                <%#= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: false}, method: :put, class: 'x-button' %>
+                <%#= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: true}, method: :put, class: 'check-button' %>
+<!--              </td>-->
 
 
-              <td class="action-cell">
-                <%=link_to "Show", volunteer_request_path(vr.id), class:"btn-block download-button mt-0 mr-0" %> <br /> <br />
-              </td>
+<!--              <td class="action-cell">-->
+<!--                <%#=link_to "Show", volunteer_request_path(vr.id), class:"btn-block download-button mt-0 mr-0" %> <br /> <br />-->
+<!--              </td>-->
 
             </tr>
           <% end %>
@@ -70,7 +64,7 @@
       </div>
       <% end %>
 
-     <% if !@processed_volunteer_requests.blank? %>
+     <% if !@processed_volunteer_task_requests.blank? %>
 
       <h5>Processed Requests</h5>
 
@@ -80,46 +74,39 @@
         <table class="table sessions-table-2">
 
           <tr>
-            <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Sent By<span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Interests<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Email<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Approve?<span onclick="sortTable('sessions-table-2', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th class="action-header">Action</th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Task<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <!--            <th class="action-header">Action</th>-->
           </tr>
 
           <tbody>
-          <%= will_paginate @processed_volunteer_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-          <% @processed_volunteer_requests.each do |vr| %>
+          <%= will_paginate @processed_volunteer_task_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+          <% @processed_volunteer_task_requests.each do |vtr| %>
             <tr>
               <td>
-                <%= vr.created_at.strftime("%m/%e/%Y (%b)") %>
+                <%= vtr.created_at.strftime("%b %e %Y") %>
                 <br>
-                <%= vr.created_at.strftime("%I:%M %p").downcase() %>
+                <%= vtr.created_at.strftime("%I:%M %p").downcase() %>
               </td>
 
               <td class = "username">
-                <%= link_to vr.user.name.capitalize, user_path(vr.user.username) %>
+                <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id) %>
               </td>
 
               <td>
-                <%= vr.interests %>
+                Waiting for approval
               </td>
 
-              <td>
-                <%= vr.user.email %>
-              </td>
-
-              <td class="action-cell">
-                <%= return_approval(vr.approval) %> <br />
-                <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: false}, method: :put, class: 'x-button' %>
-                <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: true}, method: :put, class: 'check-button' %>
-              </td>
+              <!--              <td class="action-cell">-->
+              <%#= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: false}, method: :put, class: 'x-button' %>
+              <%#= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: vr.id,  approval: true}, method: :put, class: 'check-button' %>
+              <!--              </td>-->
 
 
-              <td class="action-cell">
-                <%=link_to "Show", volunteer_request_path(vr.id), class:"btn-block download-button mt-0 mr-0" %> <br /> <br />
-              </td>
+              <!--              <td class="action-cell">-->
+              <!--                <%#=link_to "Show", volunteer_request_path(vr.id), class:"btn-block download-button mt-0 mr-0" %> <br /> <br />-->
+              <!--              </td>-->
 
             </tr>
           <% end %>
@@ -128,7 +115,7 @@
       </div>
     <% else %>
       <div class="m-5">
-        No Requests
+        No Completed Requests.
       </div>
     <% end %>
   </div>

@@ -231,7 +231,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :volunteer_task_requests, only: [:create] do
+  resources :volunteer_task_requests, only: [:index] do
     collection do
       get :create_request
     end
