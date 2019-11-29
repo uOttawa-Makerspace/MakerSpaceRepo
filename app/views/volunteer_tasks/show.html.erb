@@ -15,7 +15,7 @@
     <% if @volunteer_task.volunteer_task_joins.pluck(:user_id).include?(current_user.id) %>
       <p class="text-success"><b>You've joined this volunteer task.</b></p>
       <br />
-      <%= link_to "Send 'Task Complete'", complete_task_volunteer_tasks_path(id: @volunteer_task.id),
+      <%= link_to "Send 'Task Complete'", create_request_volunteer_task_requests_path(id: @volunteer_task.id),
                   class: "btn btn-primary", data: {confirm: "This will complete this task. Are you sure it is finished?"} %>
       <br />
       <br />

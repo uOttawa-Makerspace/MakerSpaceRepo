@@ -231,6 +231,12 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :volunteer_task_requests, only: [:create] do
+    collection do
+      get :create_request
+    end
+  end
+
   resources :announcements
 
   resources :volunteer_task_joins, only: [:create] do
