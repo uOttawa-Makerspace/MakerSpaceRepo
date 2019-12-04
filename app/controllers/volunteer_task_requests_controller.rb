@@ -24,6 +24,8 @@ class VolunteerTaskRequestsController < ApplicationController
   def update_approval
     volunteer_task_request = VolunteerTaskRequest.find(params[:id])
     if volunteer_task_request.update_attributes(:approval => params[:approval])
+      volunteer_task_join = volunteer_task_request.volunteer_task.volunteer_task_join
+      volunteer_task_join.update_attributes(active: false)
       flash[:notice] = "Task request updated"
     else
       flash[:alert] = "Something went wrong"
