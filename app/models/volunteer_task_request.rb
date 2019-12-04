@@ -18,7 +18,8 @@ class VolunteerTaskRequest < ActiveRecord::Base
     return status
   end
 
-  def volunteer_task_join(user_id)
+  def volunteer_task_join
+    user_id = self.user_id
     self.volunteer_task.volunteer_task_joins.where(user_id: user_id, active: true).last
   end
 end
