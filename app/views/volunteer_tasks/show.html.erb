@@ -34,7 +34,7 @@
           <p>You have all the requirement to join this task.</p>
           <p>Join this task:</p>
 
-          <% if @volunteer_task.volunteer_task_joins.count < @volunteer_task.joins %>
+          <% if @volunteer_task.volunteer_task_joins.active.count < @volunteer_task.joins %>
             <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
               <div>
                 <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
@@ -55,7 +55,7 @@
       <br />
 
     <% else %>
-      <% if @volunteer_task.volunteer_task_joins.count < @volunteer_task.joins %>
+      <% if @volunteer_task.volunteer_task_joins.active.count < @volunteer_task.joins %>
         <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
           <div>
             <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
