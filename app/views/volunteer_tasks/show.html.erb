@@ -94,7 +94,7 @@
 
       <div class="col-6">
         <h5>Responsable Volunteers:</h5>
-        <% @volunteer_task.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_join| %>
+        <% @volunteer_task.volunteer_task_joins.active.where(user_type: "Volunteer").find_each do |volunteer_join| %>
           <%= link_to volunteer_join.user.name.capitalize, user_path(volunteer_join.user.username), class: "username" %>
           <br />
         <% end %>
