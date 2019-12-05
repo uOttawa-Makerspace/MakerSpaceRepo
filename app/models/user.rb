@@ -150,4 +150,8 @@ class User < ActiveRecord::Base
     return volunteer_tasks
   end
 
+  def get_total_cc
+    self.cc_moneys.sum(:cc)
+  end
+
 end
