@@ -142,7 +142,7 @@ class User < ActiveRecord::Base
 
   def get_volunteer_tasks_from_volunteer_joins
     volunteer_tasks = []
-    vtjs = self.volunteer_task_joins
+    vtjs = self.volunteer_task_joins.active
     vtjs.each do |vtj|
       volunteer_tasks << vtj.volunteer_task
     end
