@@ -45,7 +45,7 @@
                 <%= v.volunteer_request.space.name.capitalize %>
               </td>
               <td class="volunteer_task">
-                <% v.volunteer_task_joins.each do |vtj| %>
+                <% v.volunteer_task_joins.active.each do |vtj| %>
                   <%= link_to vtj.volunteer_task.title, volunteer_task_path(vtj.volunteer_task.id) %>
                   <br />
                 <% end %>

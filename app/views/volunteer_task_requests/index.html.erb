@@ -21,8 +21,9 @@
 
           <tr>
             <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Task<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date Updated <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Task<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
               <th class="action-header">Action</th>
             <% end %>
@@ -33,9 +34,15 @@
           <% @pending_volunteer_task_requests.each do |vtr| %>
             <tr>
               <td>
-                <%= vtr.created_at.strftime("%b %e %Y") %>
+                <%= vtr.created_at.strftime("%Y-%m-%d") %>
                 <br>
                 <%= vtr.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+              <td>
+                <%= vtr.updated_at.strftime("%Y-%m-%d") %>
+                <br>
+                <%= vtr.updated_at.strftime("%I:%M %p").downcase() %>
               </td>
 
               <td class = "username">
@@ -73,9 +80,10 @@
         <table class="table sessions-table-2">
 
           <tr>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Task<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date Updated <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Task<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
             <!--            <th class="action-header">Action</th>-->
           </tr>
 
@@ -84,9 +92,15 @@
           <% @processed_volunteer_task_requests.each do |vtr| %>
             <tr>
               <td>
-                <%= vtr.created_at.strftime("%b %e %Y") %>
+                <%= vtr.created_at.strftime("%Y-%m-%d") %>
                 <br>
                 <%= vtr.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+              <td>
+                <%= vtr.updated_at.strftime("%Y-%m-%d") %>
+                <br>
+                <%= vtr.updated_at.strftime("%I:%M %p").downcase() %>
               </td>
 
               <td class = "username">
