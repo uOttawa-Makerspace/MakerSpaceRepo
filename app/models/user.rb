@@ -25,6 +25,7 @@ class User < ActiveRecord::Base
   has_many :exam_responses
   has_many :print_orders
   has_many :volunteer_task_requests
+  has_many :cc_moneys
 
   validates :name,
     presence: true,

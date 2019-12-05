@@ -5,4 +5,5 @@ class VolunteerTask < ActiveRecord::Base
   has_many :volunteer_task_joins, dependent: :destroy
   has_many :require_trainings
   has_many :volunteer_task_requests
+  has_many :cc_moneys
 end
