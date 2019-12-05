@@ -14,6 +14,7 @@ class VolunteerTaskRequestsController < ApplicationController
     volunteer_task_request.volunteer_task_id = volunteer_task.id
     volunteer_task_request.user_id = current_user.id
     if volunteer_task_request.save
+      MsrMailer.send_notification_for_task_request(volunteer_task.id, volunteer_task_request.user_id).deliver
       flash[:notice] = "You've sent a request. No further action is needed."
     else
       flash[:notice] = "Something went wrong. Please try it again."
@@ -26,6 +27,7 @@ class VolunteerTaskRequestsController < ApplicationController
     if volunteer_task_request.update_attributes(:approval => params[:approval])
       volunteer_task_join = volunteer_task_request.volunteer_task_join
       volunteer_task_join.update_attributes(active: false)
+      MsrMailer.send_notification_for_task_request_update(volunteer_task_request.id).deliver
       flash[:notice] = "Task request updated"
     else
       flash[:alert] = "Something went wrong"

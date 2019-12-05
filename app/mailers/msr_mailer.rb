@@ -194,4 +194,19 @@ class MsrMailer < ApplicationMailer
 		email_volunteer = volunteer.email
 		mail(to: email_volunteer, subject: "New join in task: #{@volunteer_task.title.capitalize}")
 	end
+
+	def send_notification_for_task_request(volunteer_task_id, volunteer_id)
+		@email_staff = 'volunteer@makerepo.com'
+		@volunteer_task = VolunteerTask.find(volunteer_task_id)
+		volunteer = User.find(volunteer_id)
+		email_volunteer = volunteer.email
+		mail(to: email_volunteer, subject: "New Request for task: #{@volunteer_task.title.capitalize}", bcc: @email_staff)
+	end
+
+	def send_notification_for_task_request_update(volunteer_task_request_id)
+		volunteer_task_request = VolunteerTaskRequest.find(volunteer_task_request_id)
+		@volunteer_task = volunteer_task_request.volunteer_task
+		email_volunteer = volunteer_task_request.user.email
+		mail(to: email_volunteer, subject: "Your request was updated: #{@volunteer_task.title.capitalize}")
+	end
 end
