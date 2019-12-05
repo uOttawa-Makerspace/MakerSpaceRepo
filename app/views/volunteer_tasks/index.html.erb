@@ -62,7 +62,7 @@
 
               <td class = "username">
                 <% if !vt.volunteer_task_joins.blank? %>
-                  <% vt.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_joins| %>
+                  <% vt.volunteer_task_joins.active.where(user_type: "Volunteer").find_each do |volunteer_joins| %>
                     <%= link_to volunteer_joins.user.name.capitalize, user_path(volunteer_joins.user.username) %>
                     <br />
                   <% end %>
