@@ -54,6 +54,7 @@ class VolunteerTasksController < ApplicationController
 
   def edit
     @volunteer_task = VolunteerTask.find(params[:id])
+    @tasks_categories = ["Events", "Projects", "Supervising", "Workshops", "Other"]
   end
 
   def update
