@@ -27,6 +27,11 @@ class VolunteerTaskRequestsController < ApplicationController
     if volunteer_task_request.update_attributes(:approval => params[:approval])
       volunteer_task_join = volunteer_task_request.volunteer_task_join
       volunteer_task_join.update_attributes(active: false)
+      if volunteer_task_request.approval
+        volunteer_task = volunteer_task_request.volunteer_task
+        volunteer_id = volunteer_task_request.user_id
+        CcMoney.create_cc_money_from_approval(volunteer_task.id, volunteer_id, volunteer_task.cc)
+      end
       MsrMailer.send_notification_for_task_request_update(volunteer_task_request.id).deliver
       flash[:notice] = "Task request updated"
     else

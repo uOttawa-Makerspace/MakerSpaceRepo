@@ -54,6 +54,11 @@
     <div class="username">
       <%= @repo_user.username %>
     </div>
+    <div>
+      <b>CCs:</b> <%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <b><%= current_user.get_total_cc %></b>
+    </div>
+    <br />
+    <br />
     <% if @github_username.present? %>
       <div class="user-info">
         <%= fa_icon "github-alt" %>
