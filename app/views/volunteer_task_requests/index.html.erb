@@ -23,7 +23,8 @@
             <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Date Updated <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
             <th>Task<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>User<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
               <th class="action-header">Action</th>
             <% end %>
@@ -47,6 +48,10 @@
 
               <td class = "username">
                 <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id) %>
+              </td>
+
+              <td class = "username">
+                <%= link_to vtr.user.name,  user_path(vtr.user.username) %>
               </td>
 
               <td>
@@ -83,7 +88,8 @@
             <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Date Updated <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
             <th>Task<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>User<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <!--            <th class="action-header">Action</th>-->
           </tr>
 
@@ -105,6 +111,10 @@
 
               <td class = "username">
                 <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id) %>
+              </td>
+
+              <td class = "username">
+                <%= link_to vtr.user.name,  user_path(vtr.user.username) %>
               </td>
 
               <td>
