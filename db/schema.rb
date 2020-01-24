@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20191205223200) do
+ActiveRecord::Schema.define(version: 20200124175218) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -466,16 +466,17 @@ ActiveRecord::Schema.define(version: 20191205223200) do
   end
 
   create_table "volunteer_tasks", force: :cascade do |t|
-    t.string   "title",       default: ""
-    t.text     "description", default: ""
+    t.string   "title",                               default: ""
+    t.text     "description",                         default: ""
     t.integer  "user_id"
-    t.datetime "created_at",                    null: false
-    t.datetime "updated_at",                    null: false
-    t.string   "status",      default: "open"
+    t.datetime "created_at",                                            null: false
+    t.datetime "updated_at",                                            null: false
+    t.string   "status",                              default: "open"
     t.integer  "space_id"
-    t.integer  "joins",       default: 1
-    t.string   "category",    default: "Other"
-    t.integer  "cc",          default: 0
+    t.integer  "joins",                               default: 1
+    t.string   "category",                            default: "Other"
+    t.integer  "cc",                                  default: 0
+    t.decimal  "hours",       precision: 5, scale: 2, default: 0.0
   end
 
   add_foreign_key "categories", "category_options"
