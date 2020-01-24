@@ -6,10 +6,10 @@
     <div id="staff-buttons">
       <% if current_user.volunteer? %>
         <%= link_to 'Getting Started', getting_started_volunteers_path, class: "staff-button" %> <br /> <br />
-        <%= link_to 'Skills', "#", class: "staff-button" %> <br /> <br />
+        <%= link_to 'My Stats', my_stats_volunteers_path, class: "staff-button" %> <br /> <br />
         <%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "staff-button" %> <br /> <br />
         <%= link_to 'Your Tasks', your_task_volunteer_tasks_path, class: "staff-button" %> <br /> <br />
-        <%= link_to 'Hours', volunteer_hours_path, class: "staff-button" %> <br /> <br />
+        <%= link_to 'Requests', volunteer_task_requests_path, class: "staff-button" %> <br /> <br />
       <% else %>
 <!--        <%#= link_to 'Requests', volunteer_requests_path, class: "staff-button" %><br></br>-->
         <%= link_to 'New Announcement', new_announcement_path, class: "staff-button" %><br></br>

@@ -64,11 +64,10 @@
 		      <li class="setting-menu-item">
             <% if current_user.volunteer? %>
               <%= link_to 'Getting Started', getting_started_volunteers_path %><br></br>
-              <%= link_to 'Skills', "#" %><br></br>
+              <%= link_to 'My Stats', my_stats_volunteers_path %><br></br>
               <%= link_to 'Volunteer Tasks', volunteer_tasks_path%> <br /> <br />
               <%= link_to 'Your Tasks', your_task_volunteer_tasks_path%> <br /> <br />
               <%= link_to 'Requests', volunteer_task_requests_path%> <br /> <br />
-              <%= link_to 'Hours', volunteer_hours_path %><br></br>
             <% elsif current_user.staff? %>
 <!--              <%#= link_to 'Requests', volunteer_requests_path %><br></br>-->
               <%= link_to 'Requests', volunteer_task_requests_path%> <br /> <br />
