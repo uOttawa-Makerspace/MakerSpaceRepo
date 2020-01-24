@@ -55,7 +55,9 @@
       <%= @repo_user.username %>
     </div>
     <div>
-      <b>CCs:</b> <%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <b><%= current_user.get_total_cc %></b>
+      <b>CCs:</b> <%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <b><%= @repo_user.get_total_cc %></b>
+      <br />
+      <b>Hours Worked: <%= @repo_user.get_total_hours %></b>
     </div>
     <br />
     <br />

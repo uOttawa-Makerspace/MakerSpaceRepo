@@ -154,4 +154,8 @@ class User < ActiveRecord::Base
     self.cc_moneys.sum(:cc)
   end
 
+  def get_total_hours
+    self.volunteer_hours.approved.sum(:total_time)
+  end
+
 end
