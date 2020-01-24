@@ -1,7 +1,88 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
-    <h2>Skills</h2>
+    <div class="container">
+      <div class="row">
+        <div class="mx-auto col-md-4 text-center">
+          <b>Total CCs:</b> <%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <b><%= current_user.get_total_cc %></b>
+          <br />
+        </div>
+        <div class="mx-auto col-md-4 text-center">
+          <b>Total Hours Worked: <%= current_user.get_total_hours %></b>
+        </div>
+      </div>
+
+      <br />
+      <h2>Skills</h2>
+
+      <div class="row">
+
+      </div>
+
+      <br />
+      <h2>CC and Hours</h2>
+
+      <div class="row">
+        <% if !@processed_volunteer_task_requests.blank? %>
+
+          <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
+
+          <div class="table-responsive">
+            <table class="table sessions-table-2">
+
+              <tr>
+                <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
+                <th>Date Updated <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
+                <th>CC/Hours<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
+                <th>Task<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
+                <th>Status<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+              </tr>
+
+              <tbody>
+              <%= will_paginate @processed_volunteer_task_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+              <% @processed_volunteer_task_requests.each do |vtr| %>
+                <tr>
+                  <td>
+                    <%= vtr.created_at.strftime("%Y-%m-%d") %>
+                    <br>
+                    <%= vtr.created_at.strftime("%I:%M %p").downcase() %>
+                  </td>
+
+                  <td>
+                    <%= vtr.updated_at.strftime("%Y-%m-%d") %>
+                    <br>
+                    <%= vtr.updated_at.strftime("%I:%M %p").downcase() %>
+                  </td>
+
+                  <td>
+                    <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
+                    <%= vtr.volunteer_task.cc %>
+                    <br />
+                    <%= vtr.volunteer_task.hours%> hours
+                  </td>
+
+                  <td class = "username">
+                    <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id) %>
+                  </td>
+
+                  <td>
+                    <%= vtr.status %>
+                  </td>
+
+                </tr>
+              <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="m-5">
+            No Completed Requests.
+          </div>
+        <% end %>
+
+      </div>
+
+    </div>
 
 
   </div>

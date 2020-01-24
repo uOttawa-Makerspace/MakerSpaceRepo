@@ -27,6 +27,11 @@ class VolunteersController < ApplicationController
     redirect_to volunteers_path
   end
 
+  def my_stats
+    volunteer_task_requests = current_user.volunteer_task_requests
+    @processed_volunteer_task_requests = volunteer_task_requests.processed.approved.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
+  end
+
   private
 
   def grant_access
