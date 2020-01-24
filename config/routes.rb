@@ -227,7 +227,7 @@ Rails.application.routes.draw do
 
   resources :volunteer_tasks do
     collection do
-      get :your_task
+      get :my_tasks
       get :complete_task
     end
   end
