@@ -94,6 +94,6 @@ class VolunteerTasksController < ApplicationController
   end
 
   def volunteer_task_params
-    params.require(:volunteer_task).permit(:title, :description, :status, :space_id, :joins, :category, :cc)
+    params.require(:volunteer_task).permit(:title, :description, :status, :space_id, :joins, :category, :cc, :hours)
   end
 end
