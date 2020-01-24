@@ -22,9 +22,10 @@
           <tr>
             <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Date Updated <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Task<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>User<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>CC/Hours<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Task<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>User<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
               <th class="action-header">Action</th>
             <% end %>
@@ -44,6 +45,13 @@
                 <%= vtr.updated_at.strftime("%Y-%m-%d") %>
                 <br>
                 <%= vtr.updated_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+              <td>
+                <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
+                <%= vtr.volunteer_task.cc %>
+                <br />
+                <%= vtr.volunteer_task.hours%> hours
               </td>
 
               <td class = "username">
@@ -87,9 +95,10 @@
           <tr>
             <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Date Updated <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Task<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>User<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>CC/Hours<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Task<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>User<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
             <!--            <th class="action-header">Action</th>-->
           </tr>
 
@@ -107,6 +116,13 @@
                 <%= vtr.updated_at.strftime("%Y-%m-%d") %>
                 <br>
                 <%= vtr.updated_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+              <td>
+                <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
+                <%= vtr.volunteer_task.cc %>
+                <br />
+                <%= vtr.volunteer_task.hours%> hours
               </td>
 
               <td class = "username">
