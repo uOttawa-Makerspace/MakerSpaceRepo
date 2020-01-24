@@ -13,16 +13,17 @@
 
           <tr>
             <th class="action-header">Action</th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Title <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Responsable Staff<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Users<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Certifications Needed<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Space<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Category<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+            <th>CC/Hours<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Category<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Title <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications Needed<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Space<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Responsable Staff<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Users<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
-              <th>Created by <span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Created by <span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
             <% end %>
           </tr>
 
@@ -39,9 +40,14 @@
               </td>
 
               <td>
-                <%= vt.created_at.strftime("%m/%e/%Y (%b)") %>
-                <br>
-                <%= vt.created_at.strftime("%I:%M %p").downcase() %>
+                <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
+                <%= vt.cc %>
+                <br />
+                <%= vt.hours%> hours
+              </td>
+
+              <td>
+                <%= vt.category.capitalize %>
               </td>
 
               <td>
@@ -50,6 +56,21 @@
 
               <td>
                 <%= vt.status.capitalize %>
+              </td>
+
+              <td>
+                <% if !vt.require_trainings.blank? %>
+                  <% vt.require_trainings.find_each do |rt| %>
+                    <%= rt.training.name.capitalize %>
+                    <br />
+                  <% end %>
+                <% else %>
+                  None
+                <% end  %>
+              </td>
+
+              <td>
+                <%= vt.space.name.capitalize %>
               </td>
 
               <td class = "username">
@@ -72,22 +93,9 @@
               </td>
 
               <td>
-                <% if !vt.require_trainings.blank? %>
-                  <% vt.require_trainings.find_each do |rt| %>
-                    <%= rt.training.name.capitalize %>
-                    <br />
-                  <% end %>
-                <% else %>
-                  None
-                <% end  %>
-              </td>
-
-              <td>
-                <%= vt.space.name.capitalize %>
-              </td>
-
-              <td>
-                <%= vt.category.capitalize %>
+                <%= vt.created_at.strftime("%m/%e/%Y (%b)") %>
+                <br>
+                <%= vt.created_at.strftime("%I:%M %p").downcase() %>
               </td>
 
               <% if current_user.staff? %>
