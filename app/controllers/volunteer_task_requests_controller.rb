@@ -31,6 +31,7 @@ class VolunteerTaskRequestsController < ApplicationController
         volunteer_task = volunteer_task_request.volunteer_task
         volunteer_id = volunteer_task_request.user_id
         CcMoney.create_cc_money_from_approval(volunteer_task.id, volunteer_id, volunteer_task.cc)
+        VolunteerHour.create_volunteer_hour_from_approval(volunteer_task.id, volunteer_id, volunteer_task.hours)
       end
       MsrMailer.send_notification_for_task_request_update(volunteer_task_request.id).deliver
       flash[:notice] = "Task request updated"
