@@ -2,7 +2,7 @@
   <div class="edit-column text-center">
 
     <div class="container">
-      <div class="row">
+      <div class="row my-5">
         <div class="mx-auto col-md-4 text-center">
           <b>Total CCs:</b> <%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <b><%= current_user.get_total_cc %></b>
           <br />
@@ -11,14 +11,24 @@
           <b>Total Hours Worked: <%= current_user.get_total_hours %></b>
         </div>
       </div>
+      <hr class="my-5"/>
 
-      <br />
       <h2>Skills</h2>
-
-      <div class="row">
-
+      <div class="row my-5">
+        <% Training.all.each do |train| %>
+          <div class="col-md-4 text-center my-3">
+            <b><%= train.name %> </b> <br />
+            <%= image_tag("badges/bronze.png", class: "badges") %>
+            <br />
+            Beginner
+          </div>
+          <br />
+          <br />
+          <br />
+        <% end %>
       </div>
 
+      <hr />
       <br />
       <h2>CC and Hours</h2>
 
