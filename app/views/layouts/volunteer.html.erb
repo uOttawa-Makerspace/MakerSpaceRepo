@@ -71,6 +71,7 @@
             <% elsif current_user.staff? %>
 <!--              <%#= link_to 'Requests', volunteer_requests_path %><br></br>-->
               <%= link_to 'Requests', volunteer_task_requests_path%> <br /> <br />
+              <%= link_to 'My Stats', my_stats_volunteers_path%> <br /> <br />
 
               <div class="dropright mb-3">
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -82,15 +83,15 @@
                 </div>
               </div>
 
-              <div class="dropright mb-3">
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  Hours
-                </button>
-                <div class="dropdown-menu">
-                  <%= link_to 'Hour Requests', volunteer_hour_requests_volunteer_hours_path, class: "dropdown-item" %>
-                  <%= link_to 'Hour Per User', volunteer_hour_per_user_volunteer_hours_path, class: "dropdown-item" %>
-                </div>
-              </div>
+<!--              <div class="dropright mb-3">-->
+<!--                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">-->
+<!--                  Hours-->
+<!--                </button>-->
+<!--                <div class="dropdown-menu">-->
+                  <%#= link_to 'Hour Requests', volunteer_hour_requests_volunteer_hours_path, class: "dropdown-item" %>
+                  <%#= link_to 'Hour Per User', volunteer_hour_per_user_volunteer_hours_path, class: "dropdown-item" %>
+<!--                </div>-->
+<!--              </div>-->
 
               <div class="dropright mb-3">
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
