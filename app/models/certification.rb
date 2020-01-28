@@ -10,10 +10,6 @@ class Certification < ActiveRecord::Base
 
   scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
 
-  # def training
-  #   return self.training_session.training.name
-  # end
-
   def trainer
     return self.training_session.user.name
   end
@@ -35,7 +31,7 @@ class Certification < ActiveRecord::Base
     @user_certs = self.user.certifications
     if @user_certs
       @user_certs.each do |cert|
-        if cert.training.name == self.training.name
+        if (cert.training.id == self.training.id) && (cert.level == self.level)
           errors.add(:string, "Certification already exists.")
           return false
         end
@@ -49,6 +45,10 @@ class Certification < ActiveRecord::Base
 
   def self.certify_user(training_session_id, user_id)
     self.create(user_id: user_id, training_session_id: training_session_id)
+  end
+
+  def get_badge_path
+    self.
   end
 
 end
