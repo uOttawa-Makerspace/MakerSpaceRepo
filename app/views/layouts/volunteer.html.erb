@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Volunteer <%= page_title(yield(:title)) %></title>
+  <title>Volunteer Program | <%= page_title(yield(:title)) %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <%= favicon_link_tag 'site-icon.jpg' %>
     <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
@@ -51,7 +51,7 @@
   <% if !Announcement.active.volunteers.blank? %>
   <% Announcement.active.volunteers.find_each do |a| %>
     <div class="alert alert-warning text-center" role="alert">
-      <b>To Volunteers:</b> <%= a.description %>
+      <b>Volunteer Program:</b> <%= a.description %>
     </div>
   <% end %>
 <% end %>
@@ -64,12 +64,14 @@
 		      <li class="setting-menu-item">
             <% if current_user.volunteer? %>
               <%= link_to 'Getting Started', getting_started_volunteers_path %><br></br>
-              <%= link_to 'Training', "#" %><br></br>
-              <%= link_to 'Tasks', volunteer_tasks_path%> <br /> <br />
-              <%= link_to 'Hours', volunteer_hours_path %><br></br>
-              <%= link_to 'Settings', edit_skill_path(current_user.skill.id)%><br />
+              <%= link_to 'My Stats', my_stats_volunteers_path %><br></br>
+              <%= link_to 'Volunteer Tasks', volunteer_tasks_path%> <br /> <br />
+              <%= link_to 'My Tasks', my_tasks_volunteer_tasks_path%> <br /> <br />
+              <%= link_to 'Requests', volunteer_task_requests_path%> <br /> <br />
             <% elsif current_user.staff? %>
-              <%= link_to 'Volunteer Requests', volunteer_requests_path %><br></br>
+<!--              <%#= link_to 'Requests', volunteer_requests_path %><br></br>-->
+              <%= link_to 'Requests', volunteer_task_requests_path%> <br /> <br />
+              <%= link_to 'My Stats', my_stats_volunteers_path%> <br /> <br />
 
               <div class="dropright mb-3">
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -81,15 +83,15 @@
                 </div>
               </div>
 
-              <div class="dropright mb-3">
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  Hours
-                </button>
-                <div class="dropdown-menu">
-                  <%= link_to 'Volunteer Hour Requests', volunteer_hour_requests_volunteer_hours_path, class: "dropdown-item" %>
-                  <%= link_to 'Volunteer Hour Per User', volunteer_hour_per_user_volunteer_hours_path, class: "dropdown-item" %>
-                </div>
-              </div>
+<!--              <div class="dropright mb-3">-->
+<!--                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">-->
+<!--                  Hours-->
+<!--                </button>-->
+<!--                <div class="dropdown-menu">-->
+                  <%#= link_to 'Hour Requests', volunteer_hour_requests_volunteer_hours_path, class: "dropdown-item" %>
+                  <%#= link_to 'Hour Per User', volunteer_hour_per_user_volunteer_hours_path, class: "dropdown-item" %>
+<!--                </div>-->
+<!--              </div>-->
 
               <div class="dropright mb-3">
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -97,7 +99,7 @@
                 </button>
                 <div class="dropdown-menu">
                   <%= link_to 'New', new_volunteer_task_path, class: "dropdown-item" %>
-                  <%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "dropdown-item" %>
+                  <%= link_to 'Tasks', volunteer_tasks_path, class: "dropdown-item" %>
                 </div>
               </div>
 
@@ -107,7 +109,7 @@
                 </button>
                 <div class="dropdown-menu">
                   <%= link_to 'List of Emails', emails_volunteers_path, class: "dropdown-item" %>
-                  <%= link_to 'List of Volunteers', volunteer_list_volunteers_path, class: "dropdown-item" %>
+                  <%= link_to 'List of Users in Program', volunteer_list_volunteers_path, class: "dropdown-item" %>
                 </div>
               </div>
 

@@ -71,7 +71,7 @@
       <div>This user is currently certified to use the following pieces of equipment:</div>
       <div id="cert-container">
         <% @edit_admin_user.certifications.each do |certification| %>
-          <span class="certification"><%= certification.training %></span>
+          <span class="certification"><%= certification.training.name %></span>
         <% end %>
       </div>
     <% else %>

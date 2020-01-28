@@ -122,7 +122,7 @@
         <div>This user is currently certified to use the following pieces of equipment:</div>
         <div>
           <% @certifications.each do |certification| %>
-            <p> <b><%= certification.training %></b></p>
+            <p> <b><%= certification.training.name %></b></p>
           <% end %>
         </div>
       <% else %>

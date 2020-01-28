@@ -1,7 +1,7 @@
 class VolunteerTasksController < ApplicationController
   layout 'volunteer'
   include VolunteerTasksHelper
-  before_action :grant_access, except: [:show, :index]
+  before_action :grant_access, except: [:show, :index, :my_tasks, :complete_task]
   before_action :volunteer_access, only: [:show, :index]
 
   def index
@@ -11,6 +11,7 @@ class VolunteerTasksController < ApplicationController
   def new
     @user = current_user
     @new_volunteer_task = VolunteerTask.new
+    @tasks_categories = ["Events", "Projects", "Supervising", "Workshops", "Other"]
   end
 
   def create
@@ -32,6 +33,7 @@ class VolunteerTasksController < ApplicationController
     @trainings_already_added = Training.where(id: trainings_already_added).pluck(:name, :id)
     @user_trainings = user_trainings
     @volunteer_task_trainings = volunteer_task_trainings
+    @volunteer_task_request = @volunteer_task.volunteer_task_requests.where(user_id: current_user.id).not_processed.try(:last)
     if current_user.staff?
       @volunteers = User.where(:role => "volunteer").where.not(:id => @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
       @staff = User.where("users.role = ? OR users.role = ?", "staff", "admin").where.not(:id => @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
@@ -40,8 +42,19 @@ class VolunteerTasksController < ApplicationController
     end
   end
 
+  def my_tasks
+    @your_volunteer_tasks = current_user.get_volunteer_tasks_from_volunteer_joins
+  end
+
+  def complete_task
+    volunteer_task = VolunteerTask.find(params[:id])
+    volunteer_task.update_attributes(status: "completed")
+    redirect_to my_tasks_volunteer_tasks_path
+  end
+
   def edit
     @volunteer_task = VolunteerTask.find(params[:id])
+    @tasks_categories = ["Events", "Projects", "Supervising", "Workshops", "Other"]
   end
 
   def update
@@ -81,6 +94,6 @@ class VolunteerTasksController < ApplicationController
   end
 
   def volunteer_task_params
-    params.require(:volunteer_task).permit(:title, :description, :status, :space_id)
+    params.require(:volunteer_task).permit(:title, :description, :status, :space_id, :joins, :category, :cc, :hours)
   end
 end

@@ -54,6 +54,13 @@
     <div class="username">
       <%= @repo_user.username %>
     </div>
+    <div>
+      <b>CCs:</b> <%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <b><%= @repo_user.get_total_cc %></b>
+      <br />
+      <b>Hours Worked: <%= @repo_user.get_total_hours %></b>
+    </div>
+    <br />
+    <br />
     <% if @github_username.present? %>
       <div class="user-info">
         <%= fa_icon "github-alt" %>
@@ -136,7 +143,7 @@
               <%end%>
                 <td>
                   <%=
-                    certification.training
+                    certification.training.name
                   %>
                 </td>
                 <td>
@@ -179,13 +186,13 @@
               <br></br><div id="change-to" style="font-weight: bold;"> Change to:
               <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
                 <%= radio_button_tag :role, "admin" %>
-                <%= label_tag :admin %>
+                <%= label_tag "Admin" %>
                 <%= radio_button_tag :role, "staff" %>
-                <%= label_tag :staff %>
+                <%= label_tag "Staff" %>
                 <%= radio_button_tag :role, "regular_user" %>
-                <%= label_tag :regular_user %>
+                <%= label_tag "Regular User" %>
                 <%= radio_button_tag :role, "volunteer" %>
-                <%= label_tag :volunteer %>
+                <%= label_tag "Volunteer" %>
                 <br></br>
               <%= submit_tag "update role", class: "btn btn-primary" %>
               <% end %>

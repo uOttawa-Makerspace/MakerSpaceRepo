@@ -210,6 +210,8 @@ Rails.application.routes.draw do
       get :emails
       get :volunteer_list
       get :getting_started
+      get :join_volunteer_program
+      get :my_stats
     end
   end
 
@@ -225,7 +227,19 @@ Rails.application.routes.draw do
 
   resources :exam_responses, only: [:create]
 
-  resources :volunteer_tasks
+  resources :volunteer_tasks do
+    collection do
+      get :my_tasks
+      get :complete_task
+    end
+  end
+
+  resources :volunteer_task_requests, only: [:index] do
+    collection do
+      get :create_request
+      put :update_approval
+    end
+  end
 
   resources :announcements
 
