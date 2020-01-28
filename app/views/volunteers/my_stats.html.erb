@@ -13,35 +13,6 @@
       </div>
       <hr class="my-5"/>
 
-      <h2>Skills</h2>
-      <div class="row my-5">
-        <% @certifications.each do |cert| %>
-          <div class="col-md-4 text-center my-3">
-            <b><%= cert.training.name %> </b> <br />
-            <%= image_tag(cert.get_badge_path, class: "badges") %>
-            <br />
-            <%= cert.training_session.level %>
-          </div>
-          <br />
-          <br />
-          <br />
-        <% end %>
-
-        <% @remaining_trainings.each do |training| %>
-          <div class="col-md-4 text-center my-3">
-            <b><%= training.name %> </b> <br />
-            <%= image_tag("badges/none.png", class: "badges") %>
-            <br />
-            None
-          </div>
-          <br />
-          <br />
-          <br />
-        <% end %>
-      </div>
-
-      <hr />
-      <br />
       <h2>CC and Hours</h2>
 
       <div class="row">
@@ -102,6 +73,35 @@
           </div>
         <% end %>
 
+      </div>
+
+      <hr class="my-5"/>
+
+      <h2>Skills</h2>
+      <div class="row my-5">
+        <% @certifications.each do |cert| %>
+          <div class="col-md-4 text-center my-3">
+            <b><%= cert.training.name %> </b> <br />
+            <%= image_tag(cert.get_badge_path, class: "badges") %>
+            <br />
+            <%= cert.training_session.level %>
+          </div>
+          <br />
+          <br />
+          <br />
+        <% end %>
+
+        <% @remaining_trainings.each do |training| %>
+          <div class="col-md-4 text-center my-3">
+            <b><%= training.name %> </b> <br />
+            <%= image_tag("badges/none.png", class: "badges") %>
+            <br />
+            None
+          </div>
+          <br />
+          <br />
+          <br />
+        <% end %>
       </div>
 
     </div>
