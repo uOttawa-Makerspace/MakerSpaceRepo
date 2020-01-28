@@ -31,10 +31,7 @@ class VolunteersController < ApplicationController
     volunteer_task_requests = current_user.volunteer_task_requests
     @processed_volunteer_task_requests = volunteer_task_requests.processed.approved.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
     @certifications = current_user.certifications
-    @remaining_trainings = Training.all.joins(
-        "LEFT JOIN
-            (certifications INNER JOIN training_sessions ON certifications.training_session_id = training_session.id)
-        ON trainings.id = certifications.training_id").where("certifications.user_id = ?", current_user.id)
+    @remaining_trainings = current_user.remaining_trainings
   end
 
   private

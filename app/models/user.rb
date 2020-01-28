@@ -171,4 +171,12 @@ class User < ActiveRecord::Base
     return path
   end
 
+  def remaining_trainings
+    trainings = []
+    self.certifications.each do |cert|
+      trainings << cert.training.id
+    end
+    return Training.all.where.not(id: trainings)
+  end
+
 end
