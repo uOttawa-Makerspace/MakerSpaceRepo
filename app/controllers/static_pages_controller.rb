@@ -4,6 +4,9 @@ class StaticPagesController < SessionsController
 
   def home
     @request = VolunteerRequest.new
+    if current_user
+      @certifications = current_user.get_certifications_names
+    end
   end
 
   def about

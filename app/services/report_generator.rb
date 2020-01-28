@@ -195,7 +195,7 @@ class ReportGenerator
 
     @certifications.each do |certification|
       row = []
-      row << certification.user.student_id << certification.user.name << certification.user.email << certification.training
+      row << certification.user.student_id << certification.user.name << certification.user.email << certification.training.name
       row << certification.created_at.strftime('%a, %d %b %Y %H:%M') <<  User.find(certification.training_session.user_id).name << certification.training_session.course << certification.training_session.space.name
       column << row
     end

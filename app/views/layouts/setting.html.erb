@@ -31,11 +31,6 @@
             current_page?(action: 'admin', controller: 'settings') %> >
 		      	<%= link_to 'Account Settings', settings_admin_path %>
 		      </li>
-          <% if @user.skill %>
-            <li class="setting-menu-item" >
-              <%= link_to 'Update Skills', edit_skill_path(@user.skill.id) %>
-            </li>
-          <% end %>
 		      <li>
 		      <%= link_to "View Profile", user_path(@user.username), class: 'vp-button' if current_page?(action: 'profile', controller: 'settings') %>
 		      </li>

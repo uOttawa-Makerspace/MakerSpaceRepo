@@ -13,4 +13,8 @@ class VolunteerHour < ActiveRecord::Base
       return true
     end
   end
+
+  def self.create_volunteer_hour_from_approval(volunteer_task_id, volunteer_id, hours)
+    self.create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, total_time: hours, approval: true)
+  end
 end

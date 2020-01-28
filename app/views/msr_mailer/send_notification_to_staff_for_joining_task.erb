@@ -1,0 +1,20 @@
+<section style="padding-left: 8vw;padding-top: 5vw;">
+<p style="font: 400 1.3em 'Raleway', sans-serif;color: #333;"><h1>
+    Hello!
+ </h1>
+</p>
+
+<br style="font: 400 1.1em 'Raleway', sans-serif;color: #333; line-height: 35px;">
+  The user <b><%= @volunteer.name.capitalize %></b> joined the task <b><%= @volunteer_task.title.capitalize %></b>.  <br />
+
+  Check it <%= link_to "here", "https://makerepo.com/volunteer_tasks/" + "#{@volunteer_task.id}" %>.
+  <br />
+
+</p>
+
+
+<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #333;">
+  Cheers,<br>
+  The MakerRepo Team
+</p>
+</section>
