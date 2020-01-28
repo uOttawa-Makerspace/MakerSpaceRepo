@@ -25,6 +25,10 @@ class TrainingSession < ActiveRecord::Base
     return self.certifications.length > 0
   end
 
+  def levels
+    ['Beginner', 'Intermediate', 'Advanced']
+  end
+
   private
 
   def check_course
