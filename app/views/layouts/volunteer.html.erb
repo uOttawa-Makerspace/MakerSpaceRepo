@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Development Program | <%= page_title(yield(:title)) %></title>
+  <title>Volunteer Program | <%= page_title(yield(:title)) %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <%= favicon_link_tag 'site-icon.jpg' %>
     <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
@@ -51,7 +51,7 @@
   <% if !Announcement.active.volunteers.blank? %>
   <% Announcement.active.volunteers.find_each do |a| %>
     <div class="alert alert-warning text-center" role="alert">
-      <b>Development Program:</b> <%= a.description %>
+      <b>Volunteer Program:</b> <%= a.description %>
     </div>
   <% end %>
 <% end %>
@@ -59,7 +59,7 @@
 	<section id="setting" style="width:100%">
 		<div class="setting-grid">
 			<div class="setting-side-panel">
-        <div class="panel-title"><%= link_to 'Development Program Area', volunteers_path %></div>
+        <div class="panel-title"><%= link_to 'Volunteer Area', volunteers_path %></div>
 				<ul>
 		      <li class="setting-menu-item">
             <% if current_user.volunteer? %>

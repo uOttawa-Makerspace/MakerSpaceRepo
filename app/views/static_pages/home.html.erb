@@ -43,8 +43,8 @@
 
             <% if @certifications.include?("3D Printing") && @certifications.include?("Basic Training") && !current_user.volunteer? %>
 
-              <h1>Contratulations! You can now join our development program!</h1>
-              <p>Find out more about the development program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
+              <h1>Contratulations! You can now join our volunteer program!</h1>
+              <p>Find out more about the volunteer program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
 
               <p>
                 <strong>
@@ -52,24 +52,24 @@
                 </strong>
               </p>
 
-              <p><%= link_to "Join Development Program", join_development_program_volunteers_path, class: "btn btn-primary btn-lg" %></p>
+              <p><%= link_to "Join Volunteer Program", join_volunteer_program_volunteers_path, class: "btn btn-primary btn-lg" %></p>
 
 
             <% elsif current_user.volunteer? %>
 
-              <h1>You are currently enrolled in our Development Program.</h1>
-              Check your status: <b><%= link_to "Development Program Area", volunteers_path %></b>
+              <h1>You are currently enrolled in our Volunteer Program.</h1>
+              Check your status: <b><%= link_to "Volunteer Area", volunteers_path %></b>
 
             <% else %>
 
-              <h1>Interested joining our development program?</h1>
+              <h1>Interested joining our Volunteer Program?</h1>
 
               <p>You need to complete our Basic and 3D printing training. Check our next trainings schedule:
                 <b><%= link_to "Makerspace Trainings", "https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537", target: '_blank' %> </b>
               and
                 <b><%= link_to "MTC Trainings", "https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765", target: '_blank' %></b></p>
 
-              <p>Find out more about the development program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
+              <p>Find out more about the Volunteer Program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
 
             <% end %>
 
@@ -78,14 +78,14 @@
 
             <hr class="my-5"/>
 
-            <h1>Interested joining our development program?</h1>
+            <h1>Interested joining our Volunteer Program?</h1>
 
             <p>You need to complete our Basic and 3D printing training. Check our next trainings schedule:
               <b><%= link_to "Makerspace Trainings", "https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537", target: '_blank' %> </b>
               and
               <b><%= link_to "MTC Trainings", "https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765", target: '_blank' %></b></p>
 
-            <p>Find out more about the development program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
+            <p>Find out more about the Volunteer Program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
           <% end %>
 
         </div>

@@ -1,7 +1,7 @@
 class VolunteersController < ApplicationController
   layout 'volunteer'
   before_action :current_user
-  before_action :grant_access, except: [:join_development_program]
+  before_action :grant_access, except: [:join_volunteer_program]
   before_action :check_skills
   before_action :grant_access_list, only: [:volunteer_list]
   def index
@@ -19,11 +19,11 @@ class VolunteersController < ApplicationController
     @unactive_volunteers = User.where(role: "volunteer").joins(:skill).where("skills.active = ?", false)
   end
 
-  def join_development_program
+  def join_volunteer_program
     user = current_user
     user.update_attributes(:role => "volunteer")
     Skill.create(:user_id => user.id)
-    flash[:notice] = "You've joined the development program"
+    flash[:notice] = "You've joined the Volunteer Program"
     redirect_to volunteers_path
   end
 
