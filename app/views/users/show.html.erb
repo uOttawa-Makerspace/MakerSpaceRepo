@@ -28,19 +28,6 @@
         </div>
       </div>
     <% end %>
-    <% if @repo_user.skill %>
-      <div class="skills">
-        <div class="text-center">
-          <b>Skills:</b> <br />
-          3D Printing: <b><%= @repo_user.skill.printing %></b> <br />
-          Laser Cutting: <b><%= @repo_user.skill.laser_cutting %></b> <br />
-          Virtual Reality (VR): <b><%= @repo_user.skill.virtual_reality %></b> <br />
-          Embroidery: <b><%= @repo_user.skill.embroidery %></b> <br />
-          Arduino: <b><%= @repo_user.skill.arduino %></b> <br />
-          Soldering: <b><%= @repo_user.skill.soldering %></b> <br />
-        </div>
-      </div>
-    <% end %>
   <% else %>
     <div class="user-avatar">
       <%= image_tag @repo_user.avatar.url %>
@@ -124,16 +111,20 @@
       </div>
       <br></br>
     <% end %>
-      <div class="user-certifications" style="padding-top: 200px;"><br>Certifications:
+      <div class="user-certifications" style="padding-top: 200px;">
+        <br>
+        Certifications:
         <br></br>
         <div class="user-certifications-container">
-          <table class=staff-table>
+          <table class="staff-table table table-striped text-center">
             <tr>
               <th>TRAINING</th>
               <th>TRAINER</th>
               <th>CREATED ON</th>
               <th>RENEWED ON</th>
-              <th>ACTION</th>
+              <% if current_user.admin? %>
+                <th>ACTION</th>
+              <% end %>
             </tr>
             <% @repo_user.certifications.each do |certification| %>
               <%if certification.out_of_date?%>
@@ -162,9 +153,9 @@
                 <td>
                   <%= certification.updated_at.strftime("%B %d, %Y") %>
                 </td>
+              <% if @user.admin? || (@user == certification.training_session.user)%>
                 <td class="action-cell">
                   <br>
-                  <% if @user.admin? || (@user == certification.training_session.user)%>
                       <%=
                         link_to "renew", renew_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
                         method: :patch, class: 'destroy-button', style:"background-color:#53BE6A;"
@@ -173,8 +164,9 @@
                         link_to "revoke", revoke_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
                         method: :delete, class: 'destroy-button'
                       %>
-                  <%end%><br></br>
+                  <br></br>
                 </td>
+              <%end%>
               </tr>
               <% end %>
           </table>

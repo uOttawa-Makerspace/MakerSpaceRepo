@@ -133,7 +133,7 @@
           <% end %>
         </td>
         <td>
-          <%= @current_training_session.certifications.where(user_id: user.id).last.try(:training) || "None"%>
+          <%= @current_training_session.certifications.where(user_id: user.id).last.try(:training).try(:name) || "None"%>
         </td>
         </tr>
       <% end %>
