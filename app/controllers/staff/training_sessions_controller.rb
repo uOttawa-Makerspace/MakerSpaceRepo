@@ -139,7 +139,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
     end
 
     def changed_params
-      params.require(:changed_params).permit(:training_id, :course, :user_id).reject { |_, v| v.blank? }
+      params.require(:changed_params).permit(:training_id, :course, :user_id, :level).reject { |_, v| v.blank? }
     end
 
     def verify_ownership
