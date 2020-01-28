@@ -15,10 +15,22 @@
 
       <h2>Skills</h2>
       <div class="row my-5">
-        <% Training.all.each do |train| %>
+        <% @certifications.each do |cert| %>
           <div class="col-md-4 text-center my-3">
-            <b><%= train.name %> </b> <br />
-            <%= image_tag("badges/bronze.png", class: "badges") %>
+            <b><%= cert.training.name %> </b> <br />
+            <%= image_tag("badges/none.png", class: "badges") %>
+            <br />
+            Beginner
+          </div>
+          <br />
+          <br />
+          <br />
+        <% end %>
+
+        <% @remaining_trainings.each do |training| %>
+          <div class="col-md-4 text-center my-3">
+            <b><%= training.name %> </b> <br />
+            <%= image_tag("badges/none.png", class: "badges") %>
             <br />
             Beginner
           </div>

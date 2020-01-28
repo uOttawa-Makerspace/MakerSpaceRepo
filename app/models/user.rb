@@ -136,7 +136,7 @@ class User < ActiveRecord::Base
   def get_certifications_names
     cert = []
     self.certifications.each do |c|
-      cert << c.training
+      cert << c.training.name
     end
     return cert
   end
@@ -156,6 +156,19 @@ class User < ActiveRecord::Base
 
   def get_total_hours
     self.volunteer_hours.approved.sum(:total_time)
+  end
+
+  def get_badges(training_id)
+    training_ids = []
+    self.certifications.each do |cert|
+      training_ids << cert.training_session.training.id
+    end
+    if training_ids.include?(training_id)
+      path = "badges/bronze.png"
+    else
+      path = "badges/none.png"
+    end
+    return path
   end
 
 end

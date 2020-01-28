@@ -72,7 +72,7 @@
               </td>
               <td>
                 <% v.certifications.each do |cert| %>
-                  <%= cert.training.capitalize %>
+                  <%= cert.training.name.capitalize %>
                   <br />
                 <% end %>
               </td>
@@ -155,7 +155,7 @@
               </td>
               <td>
                 <% v.certifications.each do |cert| %>
-                  <%= cert.training.capitalize %>
+                  <%= cert.training.name.capitalize %>
                   <br />
                 <% end %>
               </td>
