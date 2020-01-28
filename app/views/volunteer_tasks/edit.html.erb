@@ -32,9 +32,6 @@
                   <%= f.radio_button :status, 'open', :style => 'display:inline' %>
                   <%= f.label :status, 'Open', :style => 'display:inline' %>
                   <br />
-                  <%#= f.radio_button :status, 'in progress', :style => 'display:inline' %>
-                  <%#= f.label :status, 'In Progress', :style => 'display:inline' %>
-<!--                  <br />-->
                   <%= f.radio_button :status, 'completed', :style => 'display:inline' %>
                   <%= f.label :status, 'Completed', :style => 'display:inline' %>
                   <br />
@@ -45,7 +42,7 @@
                 <b>Space:</b> <br />
                 <div class="d-inline-block text-left">
                   <% Space.all.order(name: :asc).each do |s| %>
-                    <%= f.radio_button :space_id, s.id, checked: true, :style => 'display:inline' %>
+                    <%= f.radio_button :space_id, s.id, :style => 'display:inline' %>
                     <%= f.label :space_id, s.name.capitalize, :style => 'display:inline' %>
                     <br />
                   <% end %>
@@ -70,7 +67,7 @@
               <div class="mx-auto col-md-4 text-center">
                 <b>Choose a category:</b> <br />
                 <div class="d-inline-block text-center">
-                  <%= f.select(:category, @tasks_categories, {prompt: "Category..."} , {:class => "form-control", :selected => @tasks_categories[2]}) %>
+                  <%= f.select(:category, @tasks_categories, {prompt: "Category..."} , {:class => "form-control"}) %>
                   <br />
                   <br />
                 </div>
