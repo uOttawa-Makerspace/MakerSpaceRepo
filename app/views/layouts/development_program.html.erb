@@ -33,15 +33,15 @@
 				<ul>
 		      <li class="setting-menu-item">
             <% if current_user.volunteer? %>
-              <%= link_to 'Getting Started', getting_started_volunteers_path %><br></br>
-              <%= link_to 'Repos', my_stats_volunteers_path %><br></br>
-              <%= link_to 'Proficient Project', volunteer_tasks_path%> <br /> <br />
-              <%= link_to 'Skills/Badges', my_tasks_volunteer_tasks_path%> <br /> <br />
+              <%= link_to 'Getting Started', '#' %><br></br>
+              <%= link_to 'Repos', '#' %><br></br>
+              <%= link_to 'Proficient Project', '#' %> <br /> <br />
+              <%= link_to 'Skills/Badges', '#' %> <br /> <br />
             <% elsif current_user.staff? %>
-              <%= link_to 'Getting Started', getting_started_volunteers_path %><br></br>
-              <%= link_to 'Repos', my_stats_volunteers_path %><br></br>
-              <%= link_to 'Proficient Project', volunteer_tasks_path %> <br /> <br />
-              <%= link_to 'Skills/Badges', my_tasks_volunteer_tasks_path %> <br /> <br />
+              <%= link_to 'Getting Started', '#'  %><br></br>
+              <%= link_to 'Repos', '#'  %><br></br>
+              <%= link_to 'Proficient Project', '#' %> <br /> <br />
+              <%= link_to 'Skills/Badges', '#' %> <br /> <br />
             <% end %>
 		      </li>
 				</ul>
