@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Development Program | <%= page_title(yield(:title)) %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <%= favicon_link_tag 'site-icon.jpg' %>
+    <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
+    <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+    <%= javascript_include_tag "vendor",      :debug => false %>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.2/js/bootstrap-select.min.js"></script>
+    <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+  <%= csrf_meta_tags %>
+  <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.2/css/bootstrap-select.min.css">
+</head>
+<body data-no-turbolink="true">
+	<%= render 'layouts/header' %>
+
+  <% if flash[:notice] %>
+    <div id="notice"><%= flash[:notice] %></div>
+  <% end %>
+
+  <% if flash[:alert] %>
+    <div id="alert"><%= flash[:alert] %></div>
+  <% end %>
+
+  <% if current_user.admin? %>
+    <% Announcement.active.admins.find_each do |a| %>
+      <div class="alert alert-secondary text-center" role="alert">
+        <b>To Admins:</b> <%= a.description %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <% if current_user.staff? %>
+  <% Announcement.active.staff.find_each do |a| %>
+    <div class="alert alert-info text-center" role="alert">
+      <b>To Staff:</b> <%= a.description %>
+    </div>
+  <% end %>
+<% end %>
+
+  <% if !Announcement.active.all_users.blank? %>
+    <% Announcement.active.all_users.find_each do |a| %>
+      <div class="alert alert-primary text-center" role="alert">
+        <b>To All Users: </b><%= a.description %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <% if !Announcement.active.volunteers.blank? %>
+  <% Announcement.active.volunteers.find_each do |a| %>
+    <div class="alert alert-warning text-center" role="alert">
+      <b>Volunteer Program:</b> <%= a.description %>
+    </div>
+  <% end %>
+<% end %>
+
+	<section id="setting" style="width:100%">
+		<div class="setting-grid">
+			<div class="setting-side-panel">
+        <div class="panel-title"><%= link_to 'Volunteer Area', volunteers_path %></div>
+				<ul>
+		      <li class="setting-menu-item">
+            <% if current_user.volunteer? %>
+              <%= link_to 'Getting Started', getting_started_volunteers_path %><br></br>
+              <%= link_to 'Repos', my_stats_volunteers_path %><br></br>
+              <%= link_to 'Proficient Project', volunteer_tasks_path%> <br /> <br />
+              <%= link_to 'Skills/Badges', my_tasks_volunteer_tasks_path%> <br /> <br />
+            <% elsif current_user.staff? %>
+              <%= link_to 'Getting Started', getting_started_volunteers_path %><br></br>
+              <%= link_to 'Repos', my_stats_volunteers_path %><br></br>
+              <%= link_to 'Proficient Project', volunteer_tasks_path %> <br /> <br />
+              <%= link_to 'Skills/Badges', my_tasks_volunteer_tasks_path %> <br /> <br />
+            <% end %>
+		      </li>
+				</ul>
+			</div>
+
+			<%= yield %>
+
+		</div>
+	</section>
+  <%= render 'layouts/footer' %>
+</body>
+</html>
