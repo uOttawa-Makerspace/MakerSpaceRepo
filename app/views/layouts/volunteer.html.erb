@@ -71,8 +71,6 @@
             <% elsif current_user.staff? %>
 <!--              <%#= link_to 'Requests', volunteer_requests_path %><br></br>-->
               <%= link_to 'Requests', volunteer_task_requests_path%> <br /> <br />
-              <%= link_to 'My Stats', my_stats_volunteers_path%> <br /> <br />
-
               <div class="dropright mb-3">
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   Announcements
@@ -82,7 +80,6 @@
                   <%= link_to 'Announcements', announcements_path, class: "dropdown-item" %>
                 </div>
               </div>
-
 <!--              <div class="dropright mb-3">-->
 <!--                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">-->
 <!--                  Hours-->
@@ -112,6 +109,10 @@
                   <%= link_to 'List of Users in Program', volunteer_list_volunteers_path, class: "dropdown-item" %>
                 </div>
               </div>
+              <hr>
+              <%= link_to 'Getting Started', getting_started_volunteers_path %><br></br>
+              <%= link_to 'My Stats', my_stats_volunteers_path%> <br /> <br />
+              <%= link_to 'My Tasks', my_tasks_volunteer_tasks_path%> <br /> <br />
 
             <% end %>
 		      </li>
