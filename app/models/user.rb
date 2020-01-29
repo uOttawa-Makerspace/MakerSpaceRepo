@@ -118,6 +118,10 @@ class User < ActiveRecord::Base
     self.role.eql?("volunteer")
   end
 
+  def dev_program?
+    self.programs.include?("Development Program")
+  end
+
 
   def self.to_csv(attributes)
     CSV.generate do |csv|
@@ -178,6 +182,21 @@ class User < ActiveRecord::Base
       trainings << cert.training.id
     end
     return Training.all.where.not(id: trainings)
+  end
+
+  def return_program_status
+    if !self.get_certifications_names.include?("3D Printing" && "Basic Training")
+      status = 0
+    elsif !self.volunteer? && !self.dev_program?
+      status = 1
+    elsif self.volunteer? && !self.dev_program?
+      status = 2
+    elsif !self.volunteer? && self.dev_program?
+      status = 3
+    elsif self.volunteer? && self.dev_program?
+      status = 4
+    end
+    return status
   end
 
 end
