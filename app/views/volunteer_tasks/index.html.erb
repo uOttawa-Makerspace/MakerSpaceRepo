@@ -74,7 +74,7 @@
               </td>
 
               <td class = "username">
-                <% vt.volunteer_task_joins.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
+                <% vt.volunteer_task_joins.active.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
                                                  "Staff", "Admin").find_each do |staff_joins| %>
                   <%= link_to staff_joins.user.name.capitalize, user_path(staff_joins.user.username) %>
                   <br />
