@@ -204,6 +204,12 @@ Rails.application.routes.draw do
     get 'sign_out_all_users'
   end
 
+  resources :development_programs, only: [:index] do
+    collection do
+
+    end
+  end
+
 
   resources :volunteers, only: [:index] do
     collection do
