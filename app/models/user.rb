@@ -119,7 +119,7 @@ class User < ActiveRecord::Base
   end
 
   def dev_program?
-    self.programs.include?("Development Program")
+    self.programs.pluck(:program_type).include?(Program::DEV_PROGRAM)
   end
 
 
