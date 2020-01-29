@@ -6,4 +6,5 @@ class VolunteerTaskJoin < ActiveRecord::Base
 
   scope :active, -> {where(active: true)}
   scope :not_active, -> {where(active: false)}
+  scope :user_type_volunteer, -> {where(user_type: "Volunteer")}
 end
