@@ -24,6 +24,7 @@ fr:
       admin_area: "Zone des administrateurs"
       staff_area: "Zone des employés"
       volunteer_area: "Zone des volontaires"
+      development_program: "Programme de Développement"
       exams: "Examens"
       printorder: "Commander une impression/découpe laser"
       help: "Aide"
