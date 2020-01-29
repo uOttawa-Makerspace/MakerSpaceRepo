@@ -2,7 +2,7 @@ class VolunteerTaskJoinsController < ApplicationController
   def create
     volunteer_join = VolunteerTaskJoin.new(volunteer_task_joins_params)
     volunteer_task = volunteer_join.volunteer_task
-    if volunteer_task.volunteer_task_joins.active.count < volunteer_task.joins
+    if volunteer_task.volunteer_task_joins.active.user_type_volunteer.count < volunteer_task.joins
       if current_user.staff?
         volunteer_join.user_id = params[:volunteer_task_join][:user_id] || current_user.id
       else
