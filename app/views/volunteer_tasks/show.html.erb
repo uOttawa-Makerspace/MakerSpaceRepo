@@ -37,7 +37,7 @@
           <p>You have all the requirement to join this task.</p>
           <p>Join this task:</p>
 
-          <% if @volunteer_task.volunteer_task_joins.active.user_type_volunteer.count < @volunteer_task.joins %>
+          <% if @volunteer_task.volunteer_task_joins.active.user_type_volunteer.count < @volunteer_task.joins || current_user.staff? %>
             <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
               <div>
                 <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
@@ -58,7 +58,7 @@
       <br />
 
     <% else %>
-      <% if @volunteer_task.volunteer_task_joins.active.user_type_volunteer.count < @volunteer_task.joins %>
+      <% if @volunteer_task.volunteer_task_joins.active.user_type_volunteer.count < @volunteer_task.joins || current_user.staff? %>
         <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
           <div>
             <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
@@ -89,7 +89,7 @@
 
       <div class="col-6">
         <h5>Responsable Staff:</h5>
-        <% @volunteer_task.volunteer_task_joins.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?", "Staff", "Admin").find_each do |staff_join| %>
+        <% @volunteer_task.volunteer_task_joins.active.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?", "Staff", "Admin").find_each do |staff_join| %>
           <%= link_to staff_join.user.name.capitalize, user_path(staff_join.user.username), class: "username" %>
           <br />
         <% end %>
