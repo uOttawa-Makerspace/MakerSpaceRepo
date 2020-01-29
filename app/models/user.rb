@@ -26,6 +26,7 @@ class User < ActiveRecord::Base
   has_many :print_orders
   has_many :volunteer_task_requests
   has_many :cc_moneys
+  has_many :programs
 
   validates :name,
     presence: true,
