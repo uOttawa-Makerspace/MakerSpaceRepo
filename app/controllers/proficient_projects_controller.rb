@@ -7,6 +7,8 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def new
     @proficient_project = ProficientProject.new
+    @training_categories = Training.all.order(:name).pluck(:name, :id)
+    @training_levels = TrainingSession.return_levels
   end
 
   def show
@@ -39,7 +41,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def proficient_project_params
-    params.require(:proficient_project).permit(:title, :description)
+    params.require(:proficient_project).permit(:title, :description, :training_id, :level)
   end
 
 end
