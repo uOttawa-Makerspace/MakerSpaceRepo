@@ -13,6 +13,13 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def create
+    proficient_project = ProficientProject.new(proficient_project_params)
+    if proficient_project.save
+      flash[:notice] = "Proficient Project successfully created."
+    else
+      flash[:alert] = "Something went wrong"
+    end
+    redirect_to new_proficient_project_path
   end
 
   private
@@ -29,6 +36,10 @@ class ProficientProjectsController < DevelopmentProgramsController
       redirect_to development_programs_path
       flash[:alert] = "Only staff members can access this area."
     end
+  end
+
+  def proficient_project_params
+    params.require(:proficient_project).permit(:title, :description)
   end
 
 end
