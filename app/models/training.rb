@@ -4,6 +4,7 @@ class Training < ActiveRecord::Base
   has_many :certifications, through: :training_sessions
   has_many :require_trainings, dependent: :destroy
   has_many :questions, dependent: :destroy
+  has_many :proficient_projects, dependent: :destroy
 
   validates :name, presence: true, uniqueness: true
 
