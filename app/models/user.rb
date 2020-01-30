@@ -27,6 +27,7 @@ class User < ActiveRecord::Base
   has_many :volunteer_task_requests
   has_many :cc_moneys
   has_many :programs
+  has_and_belongs_to_many :proficient_projects
 
   validates :name,
     presence: true,

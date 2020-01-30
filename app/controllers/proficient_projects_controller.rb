@@ -1,6 +1,6 @@
 class ProficientProjectsController < DevelopmentProgramsController
   before_action :grant_access_to_project, only: [:show]
-  before_action :only_staff_access, only: [:new]
+  before_action :only_staff_access, only: [:new, :create]
 
   def index
   end
