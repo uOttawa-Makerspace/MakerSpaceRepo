@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200130224718) do
+ActiveRecord::Schema.define(version: 20200130231619) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -153,14 +153,15 @@ ActiveRecord::Schema.define(version: 20200130224718) do
 
   create_table "photos", force: :cascade do |t|
     t.integer  "repository_id"
-    t.datetime "created_at",         null: false
-    t.datetime "updated_at",         null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
     t.string   "image_file_name"
     t.string   "image_content_type"
     t.integer  "image_file_size"
     t.datetime "image_updated_at"
     t.integer  "height"
     t.integer  "width"
+    t.integer  "proficient_project_id"
   end
 
   add_index "photos", ["repository_id"], name: "index_photos_on_repository_id", using: :btree
@@ -288,12 +289,13 @@ ActiveRecord::Schema.define(version: 20200130224718) do
 
   create_table "repo_files", force: :cascade do |t|
     t.integer  "repository_id"
-    t.datetime "created_at",        null: false
-    t.datetime "updated_at",        null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
     t.string   "file_file_name"
     t.string   "file_content_type"
     t.integer  "file_file_size"
     t.datetime "file_updated_at"
+    t.integer  "proficient_project_id"
   end
 
   add_index "repo_files", ["repository_id"], name: "index_repo_files_on_repository_id", using: :btree

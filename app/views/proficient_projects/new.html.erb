@@ -19,7 +19,26 @@
               <%= f.label :level, "Level*" %>
               <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
               <br />
-              <%= f.submit "Create Project/Créer ton Projet", class: "btn btn-primary", id: "waiting-save-button" %>
+              <%= label_tag :file, "Project files"%>
+              <label class="custom-instructable-upload">
+                <%= file_field_tag 'files[]', type: :files, multiple: true %>
+                Choose files...
+              </label>
+              <div id="file-container"></div>
+              <br />
+              <%= label_tag :photo, "*Gallery" %>
+              <div class="repo-image mx-auto">
+                <div id="dragndrop">
+                  <%= fa_icon 'cloud-upload' %>
+                  <p>Drag &amp; Drop</p>
+                </div>
+                <label class="custom-image-upload">
+                  <%= file_field_tag 'images[]', type: :files, multiple: true %>
+                  or choose an image...
+                </label>
+              </div>
+              <div id="image-container" class="mx-auto"></div>
+              <%= f.submit "Create Proficient Project", class: "btn btn-primary", id: "waiting-save-button" %>
               <span id="status-save"></span>
             </div>
           <% end %>
@@ -42,31 +61,9 @@
 <!--        </div>-->
 <!--      </div>-->
 
-      <%#= label_tag :file, "Project files<br>Fichiers du Projet".html_safe %>
-      <!--    <div class="form-group"></div>-->
-      <!--    <label class="custom-instructable-upload">-->
-      <%#= file_field_tag 'files[]', type: :files, multiple: true %>
-      <!--      Choose files...<br>Sélectionner des fichiers...-->
-      <!--    </label>-->
 
-      <!--    <div id="file-container"></div>-->
 
-      <%#= label_tag :photo, "*Gallery/Galerie" %>
-      <!--    <div>A maximum of five photos can be uploaded per repository.<br>Un maximum de cinq photos peuvent être téléchargés-->
-      <!--      par répertoire.-->
-      <!--    </div>-->
-      <!--    <div class="repo-image">-->
-      <!--      <div id="dragndrop">-->
-      <%#= fa_icon 'cloud-upload' %>
-      <!--        <p>Drag &amp; Drop</p>-->
-      <!--      </div>-->
-      <!--      <label class="custom-image-upload">-->
-      <%#= file_field_tag 'images[]', type: :files, multiple: true %>
-      <!--        or choose an image.../ou choisi une image...-->
-      <!--      </label>-->
-      <!--    </div>-->
 
-      <!--    <div id="image-container"></div>-->
       <!--    <div class="form-group">-->
       <%#= f.label :youtube_link, "Youtube Link" %>
       <!--    <div>Your project will be better understood with a 1 min Youtube video.<br>Votre projet sera mieux compris avec une-->
