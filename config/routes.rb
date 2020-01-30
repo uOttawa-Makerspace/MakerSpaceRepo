@@ -210,6 +210,12 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :proficient_projects do
+    collection do
+      get :join_development_program
+    end
+  end
+
 
   resources :volunteers, only: [:index] do
     collection do
