@@ -118,6 +118,10 @@ class User < ActiveRecord::Base
     self.role.eql?("volunteer")
   end
 
+  def volunteer_program?
+    self.programs.pluck(:program_type).include?(Program::VOLUNTEER)
+  end
+
   def dev_program?
     self.programs.pluck(:program_type).include?(Program::DEV_PROGRAM)
   end
@@ -187,13 +191,13 @@ class User < ActiveRecord::Base
   def return_program_status
     if !self.get_certifications_names.include?("3D Printing" && "Basic Training")
       status = 0
-    elsif !self.volunteer? && !self.dev_program?
+    elsif !(self.volunteer? || self.volunteer_program?) && !self.dev_program?
       status = 1
-    elsif self.volunteer? && !self.dev_program?
+    elsif (self.volunteer? || self.volunteer_program?) && !self.dev_program?
       status = 2
-    elsif !self.volunteer? && self.dev_program?
+    elsif !(self.volunteer? || self.volunteer_program?) && self.dev_program?
       status = 3
-    elsif self.volunteer? && self.dev_program?
+    elsif (self.volunteer? || self.volunteer_program?) && self.dev_program?
       status = 4
     end
     return status
