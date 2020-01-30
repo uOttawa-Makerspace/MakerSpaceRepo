@@ -35,12 +35,12 @@
             <% if current_user.volunteer? %>
               <%= link_to 'Getting Started', '#' %><br></br>
               <%= link_to 'Repos', '#' %><br></br>
-              <%= link_to 'Proficiency Projects', new_proficient_project_path %> <br /> <br />
+              <%= link_to 'Proficient Projects', new_proficient_project_path %> <br /> <br />
               <%= link_to 'Skills/Badges', '#' %> <br /> <br />
             <% elsif current_user.staff? %>
               <%= link_to 'Getting Started', '#'  %><br></br>
               <%= link_to 'Repos', '#'  %><br></br>
-              <%= link_to 'Proficiency Projects', new_proficient_project_path %> <br /> <br />
+              <%= link_to 'Proficient Projects', new_proficient_project_path %> <br /> <br />
               <%= link_to 'Skills/Badges', '#' %> <br /> <br />
             <% end %>
 		      </li>
