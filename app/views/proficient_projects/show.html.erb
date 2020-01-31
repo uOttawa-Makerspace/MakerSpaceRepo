@@ -13,6 +13,7 @@
           <br />
           <%= @proficient_project.training.name %>
           <br />
+
           <div id="show-photo">
             <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
           </div>
@@ -21,6 +22,7 @@
               <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
             <% end %>
           </div>
+
         </div>
       </div>
     </div>
