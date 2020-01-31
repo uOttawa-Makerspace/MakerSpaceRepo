@@ -188,6 +188,10 @@ GEM
       cocaine (~> 0.5.5)
       mime-types
       mimemagic (~> 0.3.0)
+    pdfjs_viewer-rails (0.3.1)
+      json (> 1.8.4)
+      rails (> 4.2.0)
+      sass-rails (~> 5.0)
     pg (0.18.4)
     photoswipe-rails (4.0.8a)
     popper_js (1.14.5)
@@ -374,6 +378,7 @@ DEPENDENCIES
   mocha
   octokit (~> 3.0)
   paperclip (~> 5.2.0)
+  pdfjs_viewer-rails
   pg (~> 0.18.2)
   photoswipe-rails (~> 4.0.8a)
   progress_bar (~> 1.0.3)
