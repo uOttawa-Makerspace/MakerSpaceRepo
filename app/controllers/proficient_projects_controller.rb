@@ -15,8 +15,11 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def create
-    proficient_project = ProficientProject.new(proficient_project_params)
-    if proficient_project.save
+    @proficient_project = ProficientProject.new(proficient_project_params)
+    if @proficient_project.save
+      puts params
+      create_photos
+      create_files
       flash[:notice] = "Proficient Project successfully created."
     else
       flash[:alert] = "Something went wrong"
@@ -42,6 +45,19 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def proficient_project_params
     params.require(:proficient_project).permit(:title, :description, :training_id, :level)
+  end
+
+  def create_photos
+    params['images'].each do |img|
+      dimension = FastImage.size(img.tempfile)
+      Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
+    end if params['images'].present?
+  end
+
+  def create_files
+    params['files'].each do |f|
+      RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
+    end if params['files'].present?
   end
 
 end

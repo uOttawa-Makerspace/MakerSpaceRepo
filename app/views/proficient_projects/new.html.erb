@@ -8,7 +8,7 @@
           <%= form_for @proficient_project, url: {controller: "proficient_projects", action: "create"}, html: {multipart: true} do |f| %>
             <div class="form-group">
               <%= f.label :title, "Title*" %>
-              <%= f.text_field :title, placeholder: "Title of the proficient project...", class: 'form-control', required: true %>
+              <%= f.text_field :title, id:"repository_title", placeholder: "Title of the proficient project...", class: 'form-control', required: true %>
               <br />
               <%= f.label :description, "Description*" %>
               <%= f.text_area :description, placeholder: "Description of the proficient project...", class: 'form-control', required: true, id: 'redactor' %>
