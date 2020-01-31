@@ -1,0 +1,40 @@
+<% provide(:title, "Proficient Project") %>
+<section class="page-contents">
+  <div class="edit-column">
+    <h2 class="text-center">Proficient Project</h2>
+    <div class="container my-5">
+      <div class="row">
+        <div class="col-lg-12">
+          <%= @proficient_project.title.html_safe %>
+          <br />
+          <%= @proficient_project.description.html_safe %>
+          <br />
+          <%= @proficient_project.level %>
+          <br />
+          <%= @proficient_project.training.name %>
+          <br />
+          <div id="show-photo">
+            <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+          </div>
+          <div id="photo-slide">
+            <% @photos.each do |p| %>
+              <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
+            <% end %>
+          </div>
+          <div class="repo-info-item">
+<!--            <table><tr><td class="title">PROJECT FILES</td><td><span id="download-zip" class="bg-download"><%#= link_to fa_icon("download", text: "Download"), download_files_repositories_path(@repository.user_username, @repository.slug), :id => "download-zip-link" %></span></td></tr></table>-->
+            <div class="files-show">
+              <% @files.each do |f| %>
+                <div class="file-item-show">
+                  <u><%= fa_icon "file-text-o" %> <%= f.file.original_filename %></u><span><%= f.file.size/1000 %> KB</span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+

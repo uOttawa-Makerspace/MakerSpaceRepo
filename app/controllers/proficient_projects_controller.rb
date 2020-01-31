@@ -12,6 +12,9 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def show
+    @proficient_project= ProficientProject.find(params[:id])
+    @photos = @proficient_project.photos || []
+    @files = @proficient_project.repo_files.order("LOWER(file_file_name)")
   end
 
   def create
