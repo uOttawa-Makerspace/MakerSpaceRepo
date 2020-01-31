@@ -39,7 +39,6 @@ gem 'bootbox-rails', '~>0.4'
 gem 'quick_random_records'
 gem 'wicked_pdf'
 gem 'wkhtmltopdf-binary'
-gem 'pdfjs_viewer-rails'
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'

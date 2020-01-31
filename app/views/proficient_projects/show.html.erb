@@ -21,20 +21,16 @@
               <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
             <% end %>
           </div>
-          <div class="repo-info-item">
-<!--            <table><tr><td class="title">PROJECT FILES</td><td><span id="download-zip" class="bg-download"><%#= link_to fa_icon("download", text: "Download"), download_files_repositories_path(@repository.user_username, @repository.slug), :id => "download-zip-link" %></span></td></tr></table>-->
-            <div class="files-show">
-              <% @files.each do |f| %>
-                <div class="file-item-show">
-                  <u><%= fa_icon "file-text-o" %> <%= f.file.original_filename %></u><span><%= f.file.size/1000 %> KB</span>
-                </div>
-              <% end %>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   </div>
+    <% @files.each do |f| %>
+      <div class="embed-responsive embed-responsive-16by9">
+        <iframe class="embed-responsive-item" src="<%= f.file %>" allowfullscreen></iframe>
+        <br />
+      </div>
+    <% end %>
 
 </section>
 
