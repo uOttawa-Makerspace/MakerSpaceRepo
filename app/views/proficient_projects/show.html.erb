@@ -2,24 +2,18 @@
 <section class="page-contents">
   <div class="edit-column">
     <h2 class="text-center title"><%= @proficient_project.title.html_safe %></h2>
-    <div class="container my-5">
+    <div class="container my-4">
+      <div class="text-center">
+        <%= @proficient_project.training.name %>
+        -
+        <%= @proficient_project.level %>
+      </div>
+      <br />
       <div class="row">
-        <div class="mx-auto">
-          <%= @proficient_project.training.name %>
-          -
-          <%= @proficient_project.level %>
-        </div>
-        <br />
-        <br />
         <div class="col-lg-12">
           <div class="jumbotron text-center word-break">
             <%= @proficient_project.description.html_safe %>
           </div>
-          <br />
-          <br />
-
-          <br />
-
           <div id="show-photo">
             <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
           </div>
