@@ -3,6 +3,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :only_staff_access, only: [:new, :create]
 
   def index
+    @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
   end
 
   def new
