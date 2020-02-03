@@ -1,41 +1,60 @@
-<% provide(:title, "Proficient Project") %>
 <section class="page-contents">
-  <div class="edit-column">
-    <h2 class="text-center title"><%= @proficient_project.title.html_safe %></h2>
-    <div class="container my-4">
-      <div class="text-center">
-        <%= @proficient_project.training.name %>
-        -
-        <%= @proficient_project.level %>
-      </div>
+  <div class="edit-column text-center">
+
+    <h2>All Proficient Projects</h2>
+
+    <% if !@proficient_projects.blank? %>
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
+
       <br />
-      <div class="row">
-        <div class="col-lg-12">
-          <div class="jumbotron text-center word-break">
-            <%= @proficient_project.description.html_safe %>
-          </div>
-          <div id="show-photo">
-            <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
-          </div>
-          <div id="photo-slide">
-            <% @photos.each do |p| %>
-              <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
-            <% end %>
-          </div>
-          <br />
-          <br />
-        </div>
+
+      <div class="table-responsive">
+        <table class="table sessions-table">
+
+          <tr>
+            <th class="action-header">Action</th>
+            <th>Category<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Level<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Title <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          </tr>
+
+          <tbody>
+          <%= will_paginate @proficient_projects, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+          <% @proficient_projects.each do |pp| %>
+            <tr>
+              <td class="action-cell">
+                <%#=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" if current_user.staff?%>
+                <%=link_to "Show", proficient_project_path(pp.id), class:"btn-block show-button mt-0 mb-1" %>
+              </td>
+
+              <td>
+                <%= pp.training.name %>
+              </td>
+
+              <td>
+                <%= pp.level %>
+              </td>
+
+              <td>
+                <%= pp.title.html_safe %>
+              </td>
+
+              <td>
+                <%= pp.created_at.strftime("%m/%e/%Y") %>
+                <br>
+                <%= pp.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
       </div>
-    </div>
+    <% else %>
+      <div class="m-5">
+        There are no proficient projects.
+      </div>
+    <% end %>
   </div>
 </section>
-
-<% @files.each do |f| %>
-  <div class="embed-responsive embed-responsive-16by9">
-    <iframe class="embed-responsive-item" src="<%= f.file %>" allowfullscreen></iframe>
-    <br />
-  </div>
-<% end %>
-
-<%= render 'layouts/photoswipe' %>
-
