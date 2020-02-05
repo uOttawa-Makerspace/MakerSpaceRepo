@@ -377,7 +377,7 @@ function load() {
     
   });
 
-  $("form#new_repository, form.edit_repository").submit(function(e){
+  $("form#new_repository, form.edit_repository, form#new_proficient_project").submit(function(e){
     e.preventDefault();
     var validate = validation();
 

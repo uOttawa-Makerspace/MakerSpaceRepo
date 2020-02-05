@@ -1,0 +1,60 @@
+<section class="page-contents">
+  <div class="edit-column text-center">
+
+    <h2>All Proficient Projects</h2>
+
+    <% if !@proficient_projects.blank? %>
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
+
+      <br />
+
+      <div class="table-responsive">
+        <table class="table sessions-table">
+
+          <tr>
+            <th class="action-header">Action</th>
+            <th>Category<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Level<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Title <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          </tr>
+
+          <tbody>
+          <%= will_paginate @proficient_projects, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+          <% @proficient_projects.each do |pp| %>
+            <tr>
+              <td class="action-cell">
+                <%#=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" if current_user.staff?%>
+                <%=link_to "Show", proficient_project_path(pp.id), class:"btn-block show-button mt-0 mb-1" %>
+              </td>
+
+              <td>
+                <%= pp.training.name %>
+              </td>
+
+              <td>
+                <%= pp.level %>
+              </td>
+
+              <td>
+                <%= pp.title.html_safe %>
+              </td>
+
+              <td>
+                <%= pp.created_at.strftime("%m/%e/%Y") %>
+                <br>
+                <%= pp.created_at.strftime("%I:%M %p").downcase() %>
+              </td>
+
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="m-5">
+        There are no proficient projects.
+      </div>
+    <% end %>
+  </div>
+</section>

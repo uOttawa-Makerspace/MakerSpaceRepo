@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200128203210) do
+ActiveRecord::Schema.define(version: 20200130231619) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -153,14 +153,15 @@ ActiveRecord::Schema.define(version: 20200128203210) do
 
   create_table "photos", force: :cascade do |t|
     t.integer  "repository_id"
-    t.datetime "created_at",         null: false
-    t.datetime "updated_at",         null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
     t.string   "image_file_name"
     t.string   "image_content_type"
     t.integer  "image_file_size"
     t.datetime "image_updated_at"
     t.integer  "height"
     t.integer  "width"
+    t.integer  "proficient_project_id"
   end
 
   add_index "photos", ["repository_id"], name: "index_photos_on_repository_id", using: :btree
@@ -192,8 +193,6 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
-    t.text     "email"
-    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -226,7 +225,27 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
+  end
+
+  create_table "proficient_projects", force: :cascade do |t|
+    t.integer  "training_id"
+    t.string   "title"
+    t.text     "description"
+    t.datetime "created_at",                       null: false
+    t.datetime "updated_at",                       null: false
+    t.string   "level",       default: "Beginner"
+  end
+
+  create_table "proficient_projects_users", id: false, force: :cascade do |t|
+    t.integer "user_id",               null: false
+    t.integer "proficient_project_id", null: false
+  end
+
+  create_table "programs", force: :cascade do |t|
+    t.integer  "user_id"
+    t.string   "program_type"
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
   end
 
   create_table "project_joins", force: :cascade do |t|
@@ -270,12 +289,13 @@ ActiveRecord::Schema.define(version: 20200128203210) do
 
   create_table "repo_files", force: :cascade do |t|
     t.integer  "repository_id"
-    t.datetime "created_at",        null: false
-    t.datetime "updated_at",        null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
     t.string   "file_file_name"
     t.string   "file_content_type"
     t.integer  "file_file_size"
     t.datetime "file_updated_at"
+    t.integer  "proficient_project_id"
   end
 
   add_index "repo_files", ["repository_id"], name: "index_repo_files_on_repository_id", using: :btree
@@ -359,8 +379,8 @@ ActiveRecord::Schema.define(version: 20200128203210) do
   create_table "training_sessions", force: :cascade do |t|
     t.integer  "training_id"
     t.integer  "user_id"
-    t.datetime "created_at",  null: false
-    t.datetime "updated_at",  null: false
+    t.datetime "created_at",                       null: false
+    t.datetime "updated_at",                       null: false
     t.string   "course"
     t.integer  "space_id"
     t.string   "level",       default: "Beginner"
@@ -470,12 +490,12 @@ ActiveRecord::Schema.define(version: 20200128203210) do
   end
 
   create_table "volunteer_tasks", force: :cascade do |t|
-    t.string   "title",       default: ""
-    t.text     "description", default: ""
+    t.string   "title",                               default: ""
+    t.text     "description",                         default: ""
     t.integer  "user_id"
-    t.datetime "created_at",                   null: false
-    t.datetime "updated_at",                   null: false
-    t.string   "status",      default: "open"
+    t.datetime "created_at",                                            null: false
+    t.datetime "updated_at",                                            null: false
+    t.string   "status",                              default: "open"
     t.integer  "space_id"
     t.integer  "joins",                               default: 1
     t.string   "category",                            default: "Other"
