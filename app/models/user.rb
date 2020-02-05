@@ -190,7 +190,8 @@ class User < ActiveRecord::Base
   end
 
   def return_program_status
-    if !self.get_certifications_names.include?("3D Printing" && "Basic Training")
+    certifications = self.get_certifications_names
+    if !(certifications.include?("3D Printing") && certifications.include?("Basic Training"))
       status = 0
     elsif !(self.volunteer? || self.volunteer_program?) && !self.dev_program?
       status = 1
