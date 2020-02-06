@@ -1,7 +1,7 @@
 class DevelopmentProgramsController < ApplicationController
   layout 'development_program'
   before_action :current_user
-  before_action :grant_access
+  before_action :grant_access, except: [:join_development_program]
 
   def index
 
