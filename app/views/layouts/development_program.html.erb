@@ -33,13 +33,13 @@
           <ul>
             <li class="setting-menu-item">
               <% if current_user.volunteer? %>
-                <%= link_to 'Getting Started', '#' %><br></br>
+                <%= link_to 'Getting Started', 'https://melsa036.github.io/', target: "_blank" %><br></br>
                 <%= link_to 'Repos', '#' %><br></br>
                 <%= link_to 'Proficient Projects', proficient_projects_path %> <br /> <br />
                 <%= link_to 'New Proficient Project', new_proficient_project_path %> <br /> <br />
                 <%= link_to 'Skills/Badges', '#' %> <br /> <br />
               <% elsif current_user.staff? %>
-                <%= link_to 'Getting Started', '#'  %><br></br>
+                <%= link_to 'Getting Started', 'https://melsa036.github.io/', target: "_blank"  %><br></br>
                 <%= link_to 'Repos', '#'  %><br></br>
                 <%= link_to 'Proficient Projects', proficient_projects_path %> <br /> <br />
                 <%= link_to 'New Proficient Project', new_proficient_project_path %> <br /> <br />
