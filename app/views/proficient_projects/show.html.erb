@@ -30,6 +30,13 @@
   </div>
 </section>
 
+<% @videos.each do |f| %>
+  <div class="embed-responsive embed-responsive-16by9">
+    <iframe class="embed-responsive-item" src="<%= f.video %>" allowfullscreen></iframe>
+    <br />
+  </div>
+<% end %>
+
 <% @files.each do |f| %>
   <div class="embed-responsive embed-responsive-16by9">
     <iframe class="embed-responsive-item" src="<%= f.file %>" allowfullscreen></iframe>

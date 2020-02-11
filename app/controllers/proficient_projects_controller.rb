@@ -16,6 +16,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     @proficient_project= ProficientProject.find(params[:id])
     @photos = @proficient_project.photos || []
     @files = @proficient_project.repo_files.order(created_at: :asc)
+    @videos = @proficient_project.videos.order(created_at: :asc)
   end
 
   def create
