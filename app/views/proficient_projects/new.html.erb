@@ -25,6 +25,13 @@
                 Choose files...
               </label>
               <div id="file-container"></div>
+
+              <%= label_tag :file, "Videos"%>
+              <label class="custom-instructable-upload">
+                <%= file_field_tag 'videos[]', type: :files, multiple: true %>
+                Choose videos...
+              </label>
+              <div id="video-container"></div>
               <br />
               <%= label_tag :photo, "Gallery*" %>
               <div class="repo-image mx-auto">

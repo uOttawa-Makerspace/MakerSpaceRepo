@@ -24,6 +24,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       puts params
       create_photos
       create_files
+      create_videos
       flash[:notice] = "Proficient Project successfully created."
     else
       flash[:alert] = "Something went wrong"
@@ -62,6 +63,12 @@ class ProficientProjectsController < DevelopmentProgramsController
     params['files'].each do |f|
       RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
     end if params['files'].present?
+  end
+
+  def create_videos
+    params['videos'].each do |f|
+      Video.create(video: f, proficient_project_id: @proficient_project.id)
+    end if params['videos'].present?
   end
 
 end
