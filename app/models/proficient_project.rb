@@ -3,4 +3,5 @@ class ProficientProject < ActiveRecord::Base
   belongs_to :training
   has_many :photos
   has_many :repo_files
+  has_many :videos
 end
