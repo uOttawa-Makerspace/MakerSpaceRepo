@@ -24,8 +24,10 @@
           <% @proficient_projects.each do |pp| %>
             <tr>
               <td class="action-cell">
-                <%#=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" if current_user.staff?%>
                 <%=link_to "Show", proficient_project_path(pp.id), class:"btn-block show-button mt-0 mb-1" %>
+                <%#=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" if current_user.staff?%>
+                <%#=link_to "Delete", destroy_proficient_project_path(pp.id), class:"btn-block visit-button mb-1 mt-0" if current_user.staff?%>
+                <%=link_to 'Delete', pp, method: :delete, class: "btn btn-danger", data: {confirm: 'Are you sure?'} %>
               </td>
 
               <td>
