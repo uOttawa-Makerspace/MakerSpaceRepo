@@ -1,6 +1,6 @@
 class ProficientProjectsController < DevelopmentProgramsController
   before_action :grant_access_to_project, only: [:show]
-  before_action :only_staff_access, only: [:new, :create]
+  before_action :only_staff_access, only: [:new, :create, :edit, :update, :destroy]
   before_action :set_proficient_project, only: [:show, :destroy, :edit, :update]
   before_action :set_training_categories, only: [:new, :edit]
   before_action :set_files_photos_videos, only: [:show, :edit]
