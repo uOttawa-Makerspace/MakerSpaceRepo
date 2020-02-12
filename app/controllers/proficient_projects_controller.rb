@@ -44,7 +44,7 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def update
     if @proficient_project.update(proficient_project_params)
-      # update_photos
+      update_photos
       update_files
       respond_to do |format|
         format.html { redirect_to edit_proficient_project_path(@proficient_project.id), notice: 'Proficient Project has been successfully updated.' }
@@ -107,6 +107,25 @@ class ProficientProjectsController < DevelopmentProgramsController
     @photos = @proficient_project.photos || []
     @files = @proficient_project.repo_files.order(created_at: :asc)
     @videos = @proficient_project.videos.order(created_at: :asc)
+  end
+
+  def update_photos
+    @proficient_project.photos.each do |img|
+      if params['deleteimages'].include?(img.image_file_name) #checks if the file should be deleted
+        Photo.destroy_all(image_file_name: img.image_file_name, proficient_project_id: @proficient_project.id)
+      end
+    end if params['deleteimages'].present?
+    params['images'].each do |img|
+      filename = img.original_filename.gsub(" ", "_");
+      if @proficient_project.photos.where(image_file_name: filename).blank? #checks if file exists
+        dimension = FastImage.size(img.tempfile)
+        Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
+      else #updates existant files
+        Photo.destroy_all(image_file_name: filename, proficient_project_id: @proficient_project.id)
+        dimension = FastImage.size(img.tempfile)
+        Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
+      end
+    end if params['images'].present?
   end
 
   def update_files
