@@ -1,4 +1,5 @@
 var instructableFiles;
+var videoFiles;
 var photoFiles;
 var categoryArray;
 var equipmentArray;
@@ -83,6 +84,7 @@ function load() {
   //**************** END | download zip stuff *******************//
 
   instructableFiles = [];
+  videoFiles = [];
   photoFiles = [];
   categoryArray = [];
   equipmentArray = [];
@@ -124,6 +126,15 @@ function load() {
     }
     resetFormElement(input);
   });
+
+    $("input#videos_").change(function(){
+        var input = $(this)[0];
+        if (input.files && input.files[0]) {
+            var files = $.extend(true, [], input.files);
+            addVideos(videoFiles, files, 0);
+        }
+        resetFormElement(input);
+    });
   
   //CATEGORY-EQUIPMENT-CERTIFICATION STUFF (START)
     // edit page
@@ -389,6 +400,10 @@ function load() {
       form.append("files[]", instructableFiles[i]);
     };
 
+      for (var i = 0; i < videoFiles.length; i++) {
+          form.append("videos[]", videoFiles[i]);
+      };
+
     for (var i = 0; i < photoFiles.length; i++) {
       form.append("images[]", photoFiles[i]);
     };
@@ -473,6 +488,18 @@ function load() {
 
   });
 
+    $('div#video-container').children().each(function(){
+        var file_item = $(this);
+
+        $("span.file-remove").click(function(e){
+            var index = $(file_item).index();
+            videoFiles.splice(index, 1);
+            document.getElementById("deletefiles").value = document.getElementById("deletefiles").value + e.target.id + ",";
+            e.target.parentElement.parentElement.parentElement.remove();
+        });
+
+    });
+
 }
 
 function resetFormElement(e) {
@@ -514,6 +541,41 @@ function loadFile(filename, filesize, fileArray){
       $(child).remove();
     });
   }, 'html');
+}
+
+function addVideos(fileArray, files, index){
+    var file = files[index];
+    if (true){
+        fileArray.push(file);
+        var reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function (e) {
+            loadVideo(file.name, Math.round(file.size/1000), fileArray);
+            if( files.length !== ++index){
+                addVideos(fileArray, files, index);
+            }
+        }
+    }
+}
+
+function loadVideo(filename, filesize, fileArray){
+    var file_item = $('<div>').addClass('file-item');
+    var close_button = $('<span>').addClass('file-remove');
+    var span = $('<span>').textContent = filename;
+    file_item.append(span);
+    file_item.append(close_button);
+    $.get('/template/file', { 'file' : filename, 'size' : filesize }, function(file_item){
+        $('div#video-container').append(file_item);
+        var last = $("div#video-container")[0].children.length - 1;
+        var child = $("div#video-container")[0].children[last];
+
+        $(child.children[0].children[0].children[2].children[0]).click(function(){
+            var length = document.querySelectorAll("#video-container > table").length;
+            var index = $(child).index();
+            fileArray.splice(index-length, 1);
+            $(child).remove();
+        });
+    }, 'html');
 }
 
 function addPhotos(fileArray, files, index){
