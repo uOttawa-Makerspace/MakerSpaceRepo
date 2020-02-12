@@ -46,10 +46,8 @@ class ProficientProjectsController < DevelopmentProgramsController
     if @proficient_project.update(proficient_project_params)
       update_photos
       update_files
-      respond_to do |format|
-        format.html { redirect_to edit_proficient_project_path(@proficient_project.id), notice: 'Proficient Project has been successfully updated.' }
-        format.json { head :no_content }
-      end
+      flash[:notice] = "Proficient Project successfully updated."
+      render json: { redirect_uri: "#{proficient_project_path(@proficient_project.id)}" }
     else
       flash[:alert] = "Unable to apply the changes."
       render json: @proficient_project.errors["title"].first, status: :unprocessable_entity

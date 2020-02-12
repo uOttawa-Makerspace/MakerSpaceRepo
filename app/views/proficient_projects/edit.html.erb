@@ -37,6 +37,29 @@
               </div>
               <br />
 
+              <br />
+              <%= label_tag :photo, "Gallery*" %>
+              <div class="repo-image mx-auto">
+                <div id="dragndrop">
+                  <%= fa_icon 'cloud-upload' %>
+                  <p>Drag &amp; Drop</p>
+                </div>
+                <label class="custom-image-upload">
+                  <%= file_field_tag 'images[]', type: :files, multiple: true %>
+                  or choose an image...
+                </label>
+              </div>
+
+              <div id="image-container" class="mx-auto">
+                <% @photos.each do |img| %>
+                  <div class="image-item">
+                    <span id="<%= img.image_file_name %>" class="image-remove"></span>
+                    <img src="<%= img.image.url %>">
+                  </div>
+                <% end %>
+                <%= hidden_field_tag 'deleteimages' %>
+              </div>
+
               <div class="text-center">
                 <%= f.submit "Update Proficient Project", class: "btn btn-primary", id: "waiting-save-button" %>
                 <br />
