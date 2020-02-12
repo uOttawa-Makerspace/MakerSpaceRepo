@@ -1,7 +1,9 @@
 class ProficientProjectsController < DevelopmentProgramsController
   before_action :grant_access_to_project, only: [:show]
   before_action :only_staff_access, only: [:new, :create]
-  before_action :set_proficient_project, only: [:show, :destroy]
+  before_action :set_proficient_project, only: [:show, :destroy, :edit]
+  before_action :set_training_categories, only: [:new, :edit]
+  before_action :set_files_photos_videos, only: [:show, :edit]
 
   def index
     @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
@@ -9,14 +11,10 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def new
     @proficient_project = ProficientProject.new
-    @training_categories = Training.all.order(:name).pluck(:name, :id)
     @training_levels = TrainingSession.return_levels
   end
 
   def show
-    @photos = @proficient_project.photos || []
-    @files = @proficient_project.repo_files.order(created_at: :asc)
-    @videos = @proficient_project.videos.order(created_at: :asc)
   end
 
   def create
@@ -40,6 +38,9 @@ class ProficientProjectsController < DevelopmentProgramsController
       format.html { redirect_to proficient_projects_path, notice: 'Proficient Project has been successfully deleted.' }
       format.json { head :no_content }
     end
+  end
+
+  def edit
   end
 
   private
@@ -83,6 +84,16 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def set_proficient_project
     @proficient_project= ProficientProject.find(params[:id])
+  end
+
+  def set_training_categories
+    @training_categories = Training.all.order(:name).pluck(:name, :id)
+  end
+
+  def set_files_photos_videos
+    @photos = @proficient_project.photos || []
+    @files = @proficient_project.repo_files.order(created_at: :asc)
+    @videos = @proficient_project.videos.order(created_at: :asc)
   end
 
 end
