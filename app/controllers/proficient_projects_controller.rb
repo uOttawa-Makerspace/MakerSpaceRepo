@@ -34,6 +34,14 @@ class ProficientProjectsController < DevelopmentProgramsController
     end
   end
 
+  def destroy
+    @proficient_project.destroy
+    respond_to do |format|
+      format.html { redirect_to proficient_projects_path, notice: 'Proficient Project has been successfully deleted.' }
+      format.json { head :no_content }
+    end
+  end
+
   private
 
   def grant_access_to_project
