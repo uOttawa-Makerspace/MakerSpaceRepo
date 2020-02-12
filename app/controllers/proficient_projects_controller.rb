@@ -1,7 +1,7 @@
 class ProficientProjectsController < DevelopmentProgramsController
   before_action :grant_access_to_project, only: [:show]
   before_action :only_staff_access, only: [:new, :create]
-  before_action :set_proficient_project, only: [:show, :destroy, :edit]
+  before_action :set_proficient_project, only: [:show, :destroy, :edit, :update]
   before_action :set_training_categories, only: [:new, :edit]
   before_action :set_files_photos_videos, only: [:show, :edit]
 
@@ -41,6 +41,18 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def edit
+  end
+
+  def update
+    if @proficient_project.update(proficient_project_params)
+      # update_photos
+      update_files
+      flash[:notice] = "Proficient Project updated successfully!"
+      render json: { redirect_uri: "#{proficient_project_path(@proficient_project.id)}" }
+    else
+      flash[:alert] = "Unable to apply the changes."
+      render json: @proficient_project.errors["title"].first, status: :unprocessable_entity
+    end
   end
 
   private
@@ -94,6 +106,24 @@ class ProficientProjectsController < DevelopmentProgramsController
     @photos = @proficient_project.photos || []
     @files = @proficient_project.repo_files.order(created_at: :asc)
     @videos = @proficient_project.videos.order(created_at: :asc)
+  end
+
+  def update_files
+    @proficient_project.repo_files.each do |f|
+      if params['deletefiles'].include?(f.file_file_name) #checks if the file should be deleted
+        RepoFile.destroy_all(file_file_name: f.file_file_name, proficient_project_id: @proficient_project.id)
+      end
+    end if params['deletefiles'].present?
+
+    params['files'].each do |f|
+      filename = f.original_filename.gsub(" ", "_")
+      if @proficient_project.repo_files.where(file_file_name: filename).blank? #checks if file exists
+        RepoFile.create(file: f, repository_id: @repository.id)
+      else #updates existant files
+        RepoFile.destroy_all(file_file_name: filename, repository_id: @repository.id)
+        RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
+      end
+    end if params['files'].present?
   end
 
 end
