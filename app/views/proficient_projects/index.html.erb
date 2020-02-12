@@ -23,9 +23,10 @@
           <%= will_paginate @proficient_projects, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @proficient_projects.each do |pp| %>
             <tr>
-              <td class="action-cell">
-                <%#=link_to "Edit", edit_volunteer_task_path(vt.id), class:"btn-block visit-button mb-1 mt-0" if current_user.staff?%>
+              <td class="action-cell text-center">
                 <%=link_to "Show", proficient_project_path(pp.id), class:"btn-block show-button mt-0 mb-1" %>
+                <%=link_to "Edit", edit_proficient_project_path(pp.id), class:"btn-block edit-button ml-0 mr-0 mb-1" if current_user.admin?%>
+                <%=link_to 'Delete', pp, method: :delete, class: "btn-block destroy-button ml-0 mr-0 mb-0", data: {confirm: 'Are you sure?'} if current_user.admin?%>
               </td>
 
               <td>
