@@ -20,7 +20,6 @@ class ProficientProjectsController < DevelopmentProgramsController
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
     if @proficient_project.save
-      puts params
       create_photos
       create_files
       create_videos
@@ -47,8 +46,10 @@ class ProficientProjectsController < DevelopmentProgramsController
     if @proficient_project.update(proficient_project_params)
       # update_photos
       update_files
-      flash[:notice] = "Proficient Project updated successfully!"
-      render json: { redirect_uri: "#{proficient_project_path(@proficient_project.id)}" }
+      respond_to do |format|
+        format.html { redirect_to edit_proficient_project_path(@proficient_project.id), notice: 'Proficient Project has been successfully updated.' }
+        format.json { head :no_content }
+      end
     else
       flash[:alert] = "Unable to apply the changes."
       render json: @proficient_project.errors["title"].first, status: :unprocessable_entity
@@ -116,11 +117,12 @@ class ProficientProjectsController < DevelopmentProgramsController
     end if params['deletefiles'].present?
 
     params['files'].each do |f|
+      puts "passing!"
       filename = f.original_filename.gsub(" ", "_")
       if @proficient_project.repo_files.where(file_file_name: filename).blank? #checks if file exists
-        RepoFile.create(file: f, repository_id: @repository.id)
+        RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
       else #updates existant files
-        RepoFile.destroy_all(file_file_name: filename, repository_id: @repository.id)
+        RepoFile.destroy_all(file_file_name: filename, proficient_project_id: @proficient_project.id)
         RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
       end
     end if params['files'].present?
