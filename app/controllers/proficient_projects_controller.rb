@@ -27,10 +27,11 @@ class ProficientProjectsController < DevelopmentProgramsController
       create_files
       create_videos
       flash[:notice] = "Proficient Project successfully created."
+      render json: { redirect_uri: "#{proficient_project_path(@proficient_project.id)}" }
     else
       flash[:alert] = "Something went wrong"
+      render json: @proficient_project.errors["title"].first, status: :unprocessable_entity
     end
-    redirect_to new_proficient_project_path
   end
 
   private
