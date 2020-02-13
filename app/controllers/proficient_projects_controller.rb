@@ -46,6 +46,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     if @proficient_project.update(proficient_project_params)
       update_photos
       update_files
+      update_videos
       flash[:notice] = "Proficient Project successfully updated."
       render json: { redirect_uri: "#{proficient_project_path(@proficient_project.id)}" }
     else
@@ -134,7 +135,6 @@ class ProficientProjectsController < DevelopmentProgramsController
     end if params['deletefiles'].present?
 
     params['files'].each do |f|
-      puts "passing!"
       filename = f.original_filename.gsub(" ", "_")
       if @proficient_project.repo_files.where(file_file_name: filename).blank? #checks if file exists
         RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
@@ -143,6 +143,24 @@ class ProficientProjectsController < DevelopmentProgramsController
         RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
       end
     end if params['files'].present?
+  end
+
+  def update_videos
+    @proficient_project.videos.each do |f|
+      if params['deletevideos'].include?(f.file_file_name) #checks if the file should be deleted
+        RepoFile.destroy_all(file_file_name: f.file_file_name, proficient_project_id: @proficient_project.id)
+      end
+    end if params['deletevideos'].present?
+
+    params['videos'].each do |f|
+      filename = f.original_filename.gsub(" ", "_")
+      if @proficient_project.videos.where(video_file_name: filename).blank? #checks if video exists
+        Video.create(video: f, proficient_project_id: @proficient_project.id)
+      else #updates existant videos
+        Video.destroy_all(video_file_name: filename, proficient_project_id: @proficient_project.id)
+        Video.create(video: f, proficient_project_id: @proficient_project.id)
+      end
+    end if params['videos'].present?
   end
 
 end
