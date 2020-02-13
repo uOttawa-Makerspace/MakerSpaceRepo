@@ -491,10 +491,10 @@ function load() {
     $('div#video-container').children().each(function(){
         var file_item = $(this);
 
-        $("span.file-remove").click(function(e){
+        $("span.video-remove").click(function(e){
             var index = $(file_item).index();
             videoFiles.splice(index, 1);
-            document.getElementById("deletefiles").value = document.getElementById("deletefiles").value + e.target.id + ",";
+            document.getElementById("deletevideos").value = document.getElementById("deletevideos").value + e.target.id + ",";
             e.target.parentElement.parentElement.parentElement.remove();
         });
 

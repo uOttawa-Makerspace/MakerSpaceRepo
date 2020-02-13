@@ -147,8 +147,8 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def update_videos
     @proficient_project.videos.each do |f|
-      if params['deletevideos'].include?(f.file_file_name) #checks if the file should be deleted
-        RepoFile.destroy_all(file_file_name: f.file_file_name, proficient_project_id: @proficient_project.id)
+      if params['deletevideos'].include?(f.video_file_name) #checks if the file should be deleted
+        Video.destroy_all(video_file_name: f.video_file_name, proficient_project_id: @proficient_project.id)
       end
     end if params['deletevideos'].present?
 
