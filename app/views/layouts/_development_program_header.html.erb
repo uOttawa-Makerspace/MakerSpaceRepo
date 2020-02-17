@@ -1,0 +1,33 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+
+  <a class="navbar-brand" href="<%= development_programs_path %>">Development<strong>Program</strong></a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarSupportedContent2">
+    <ul class="navbar-nav mx-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="#">Getting Started <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">Learning Area</a>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Proficient Projects
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+          <% if current_user.admin? %>
+            <%= link_to "New proficient Projects", new_proficient_project_path, class: "dropdown-item" %>
+            <div class="dropdown-divider"></div>
+          <% end %>
+          <%= link_to "All Proficient Projects", proficient_projects_path, class: "dropdown-item"%>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">Skills/Badge</a>
+      </li>
+    </ul>
+  </div>
+
+</nav>

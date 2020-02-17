@@ -26,7 +26,9 @@
 
     <%= render :partial => 'partials/announcements' %>
 
-    <section id="setting" style="width:100%">
+    <%= render 'layouts/development_program_header' %>
+
+    <section>
       <div class="setting-grid">
         <div class="setting-side-panel">
           <div class="panel-title"><%= link_to 'Development Program', development_programs_path %></div>
