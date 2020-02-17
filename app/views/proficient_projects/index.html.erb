@@ -25,46 +25,11 @@
     </div>
     <!--Grid row-->
 
+  <div class="apple_pagination">
+    <%= will_paginate @proficient_projects, :container => false %>
+    <%= page_entries_info @proficient_projects, :model => 'proficient_project' %>
+  </div>
 </section>
-
-
-
-
-
-    <section id="projects-containers">
-      <br />
-      <% @proficient_projects.each do |product| %>
-        <div class="projects-container">
-          <% if !product.photos.blank? %>
-            <div class="repo-display-wrapper" <%= "style=background-image:url('#{product.photos.first.image.url})')"  %> >
-              <%= link_to "", proficient_project_path(product.id), class: 'link' %>
-            </div>
-          <% else %>
-            <div class="repo-display-wrapper" <%= "style=background-image:url('#{asset_path('nourish4me_logo.png')}')"  %> >
-              <%= link_to "", proficient_project_path(product.id), class: 'link' %>
-            </div>
-          <% end %>
-          <div class="repo-info">
-            <div class="prices">
-              <%= number_to_currency number_with_precision(3, :precision => 2) %>
-            </div>
-            <div class="left">
-              <div class="title">
-                <%= link_to product.title, proficient_project_path(product.id) %>
-              </div>
-              <%#= render "product_row", product: product, order_item: @order_item %>
-            </div>
-
-          </div>
-
-        </div>
-      <% end %>
-    </section>
-
-
-
-
-
 
 
 
