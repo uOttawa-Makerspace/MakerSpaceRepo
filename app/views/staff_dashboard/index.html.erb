@@ -26,8 +26,8 @@
       </div>
     <% end %>
     <br>
-    <table class="staff-users-table">
-        <p>Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%></p>
+    <table class="staff-users-table text-center mb-5">
+        <p class="text-center">Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%></p>
         <% if @space.signed_in_users.present? %>
           <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary' %>
         <%end%>
@@ -102,12 +102,41 @@
         <% end %>
         <br></br>
       </table>
-      <br>
 
-    <br></br>
+    <table class="text-center table-striped staff-newly-signed-up-users-table mb-5">
+      <p class="text-center">Newly signed up users on Maker<strong>Repo</strong></p>
+      <tr>
+        <th class="name-header">Name <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+        <th class="email-header">Email <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+        <th class="action-header">Sign In To <%=@space.name.capitalize%></span></th>
+      </tr>
 
-    <table class="staff-recent-users-table">
-      <p>Users recently signed out of <%=@space.name%></p>
+      <% @users.each do |user| %>
+        <%if user.read_and_accepted_waiver_form%>
+          <tr class="add-rows">
+        <%else%>
+          <tr class="add-rows" id="no-waiver">
+        <%end%>
+        <td class="add-username-cell"><%=
+          link_to(content_tag(:add_username, user.name), user_url(user.username))
+        %></td>
+
+        <td class="email-cell"><%=
+          user.email
+        %></td>
+
+        <td class="action-cell" >
+          <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
+        </td>
+
+        </tr>
+      <% end %>
+      <br></br>
+    </table>
+
+    <br>
+    <table class="staff-recent-users-table text-center mb-5">
+      <p class="text-center">Users recently signed out of <%=@space.name%></p>
       <tr>
         <th class="name-header">Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
         <th class="email-header">Email <span onclick="sortTable('staff-recent-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
