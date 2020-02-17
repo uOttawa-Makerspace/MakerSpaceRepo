@@ -44,9 +44,9 @@ every :monday, :at => '7am' do
           ReportGenerator.mtc_training_report).deliver_now"
 end
 
-every :monday, :at => '8am' do
-  rake "emails:send_survey_ceed"
-end
+# every :monday, :at => '8am' do
+#   rake "emails:send_survey_ceed"
+# end
 
 
 # At 7:30am of First day of every week
