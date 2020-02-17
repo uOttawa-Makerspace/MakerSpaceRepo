@@ -1,24 +1,28 @@
 <section class="page-contents">
-  <div class="edit-column">
+  <div class="edit-column text-center">
 
     <h2>New <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> Training Session</h2>
 
     <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
       <div class="form-group">
-    <% label_tag 'training_id' %>
-    <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name ASC'), 'id', 'name'), prompt: 'select training', class: "trainer-training-course form-control" %><br>
+        <% label_tag 'training_id' %>
+        <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name ASC'), 'id', 'name'), prompt: 'Select training', class: "form-control" %><br>
       </div>
       <div class="form-group">
-    <% label_tag 'course' %>
-    <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'select course', class: "trainer-training-course form-control" %><br>
+        <% label_tag 'level' %>
+        <%= select_tag 'level', options_for_select(TrainingSession.new.levels), prompt: 'Select level', class: "form-control" %><br>
       </div>
-    <% if @user.admin? %>
-      <% label_tag 'user_id' %>
-      <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']).order('name ASC'), 'id', 'name'), prompt: 'select instructor', class: "trainer-training-course" %><br>
-    <% end %>
-    <br></br>
-      <table class="staff-table" id="staff-users-table">
+      <div class="form-group">
+        <% label_tag 'course' %>
+        <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'Select course', class: "form-control" %><br>
+      </div>
+      <% if @user.admin? %>
+        <% label_tag 'user_id' %>
+        <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']).order('name ASC'), 'id', 'name'), prompt: 'Select instructor', class: "form-control" %><br>
+      <% end %>
+    <br />
+      <table class="staff-table table text-center" id="staff-users-table">
         <h3>Users Inside <%=@space.name%></h3>
         <tr>
           <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <%=fa_icon('arrow-down')%></th>
@@ -59,9 +63,9 @@
                  class="cert-name"
                  style="display:inline" >
                  <div class="cert-holder" style="display:inline">
-                  <%= certification.training %>
+                  <%= certification.training.name %>
                   <div id="cert-details" style="display:inline">
-                    <%= certification.training %> <br>
+                    <%= certification.training.name %> <br>
                     <%= certification.trainer %> <br>
                     <%= certification.updated_at.strftime("%B %d, %Y")  %>
                   </div>
@@ -73,9 +77,9 @@
                class="cert-name-red"
                style="display:inline" >
                <div class="cert-holder" style="display:inline">
-                <%= certification.training %>
+                <%= certification.training.name %>
                 <div id="cert-details" style="display:inline">
-                  <%= certification.training %> <br>
+                  <%= certification.training.name %> <br>
                   <%= certification.trainer %> <br>
                   <%= certification.updated_at.strftime("%B %d, %Y")  %>
                 </div>

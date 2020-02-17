@@ -11,6 +11,10 @@ class MsrMailer < ApplicationMailer
 		mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
 	end
 
+	def send_survey_ceed(email)
+		mail(to: email, subject: 'Makerspace/Brunsfield Centre Survey - $25 Amazon gift card draw!')
+	end
+
 	def send_print_user_approval_to_makerspace(id)
 		mail(to: "makerspace@uottawa.ca", subject: 'Print Order has been accepted by user on Makerepo | Print ID : '+id.to_s)
 	end
@@ -164,5 +168,49 @@ class MsrMailer < ApplicationMailer
 	def send_new_project_proposals
 		email = 'makerlab@uottawa.ca'
 		mail(to: email, subject: "New Project Proposal")
+	end
+
+	def send_notification_to_staff_for_joining_task(volunteer_task_id, volunteer_id, staff_id)
+		if staff_id
+			staff = User.find(staff_id)
+		else
+			staff = nil
+		end
+		@volunteer_task = VolunteerTask.find(volunteer_task_id)
+		@volunteer = User.find(volunteer_id)
+		if staff
+			email_staff = staff.email
+		else
+			email_staff = 'volunteer@makerepo.com'
+		end
+		mail(to: email_staff, subject: "New join in task: #{@volunteer_task.title.capitalize}")
+	end
+
+	def send_notification_to_volunteer_for_joining_task(volunteer_task_id, volunteer_id, staff_id)
+		if staff_id
+			staff = User.find(staff_id)
+			@email_staff = staff.email
+		else
+			@email_staff = 'volunteer@makerepo.com'
+		end
+		@volunteer_task = VolunteerTask.find(volunteer_task_id)
+		volunteer = User.find(volunteer_id)
+		email_volunteer = volunteer.email
+		mail(to: email_volunteer, subject: "New join in task: #{@volunteer_task.title.capitalize}")
+	end
+
+	def send_notification_for_task_request(volunteer_task_id, volunteer_id)
+		@email_staff = 'volunteer@makerepo.com'
+		@volunteer_task = VolunteerTask.find(volunteer_task_id)
+		volunteer = User.find(volunteer_id)
+		email_volunteer = volunteer.email
+		mail(to: email_volunteer, subject: "New Request for task: #{@volunteer_task.title.capitalize}", bcc: @email_staff)
+	end
+
+	def send_notification_for_task_request_update(volunteer_task_request_id)
+		volunteer_task_request = VolunteerTaskRequest.find(volunteer_task_request_id)
+		@volunteer_task = volunteer_task_request.volunteer_task
+		email_volunteer = volunteer_task_request.user.email
+		mail(to: email_volunteer, subject: "Your request was updated: #{@volunteer_task.title.capitalize}")
 	end
 end

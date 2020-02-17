@@ -68,6 +68,8 @@ class UsersController < SessionsController
       @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
       @joined_projects = @user.project_joins
       @photos = photo_hash
+      @certifications = @repo_user.certifications
+      @remaining_trainings = @repo_user.remaining_trainings
   end
 
   def likes

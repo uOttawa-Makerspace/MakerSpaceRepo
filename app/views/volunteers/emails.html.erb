@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="edit-column">
 
-    <h2 class="text-center">List of Volunteer's Emails</h2>
+    <h2 class="text-center">List of users in the Volunteer Program</h2>
     <br>
     <div class="container">
       <div class="row">
@@ -36,7 +36,7 @@
         </div>
 
         <div class="col-lg-12">
-          <h5 class="text-center">Unactive Volunteer's Emails (<%= @unactive_emails.count %>)</h5>
+          <h5 class="text-center">Unactive Emails (<%= @unactive_emails.count %>)</h5>
           <div id="email-3" class="text-center">
             <% @unactive_emails.each do |email| %>
               <%= email %> <br />

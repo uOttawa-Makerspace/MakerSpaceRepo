@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20191122002745) do
+ActiveRecord::Schema.define(version: 20200128203210) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -55,6 +55,14 @@ ActiveRecord::Schema.define(version: 20191122002745) do
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "cc_moneys", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "volunteer_task_id"
+    t.integer  "cc"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
   end
 
   create_table "certifications", force: :cascade do |t|
@@ -355,6 +363,7 @@ ActiveRecord::Schema.define(version: 20191122002745) do
     t.datetime "updated_at",  null: false
     t.string   "course"
     t.integer  "space_id"
+    t.string   "level",       default: "Beginner"
   end
 
   add_index "training_sessions", ["training_id"], name: "index_training_sessions_on_training_id", using: :btree
@@ -449,6 +458,15 @@ ActiveRecord::Schema.define(version: 20191122002745) do
     t.string   "user_type",         default: "Volunteer"
     t.datetime "created_at",                              null: false
     t.datetime "updated_at",                              null: false
+    t.boolean  "active",            default: true
+  end
+
+  create_table "volunteer_task_requests", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "volunteer_task_id"
+    t.boolean  "approval"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
   end
 
   create_table "volunteer_tasks", force: :cascade do |t|
@@ -459,6 +477,10 @@ ActiveRecord::Schema.define(version: 20191122002745) do
     t.datetime "updated_at",                   null: false
     t.string   "status",      default: "open"
     t.integer  "space_id"
+    t.integer  "joins",                               default: 1
+    t.string   "category",                            default: "Other"
+    t.integer  "cc",                                  default: 0
+    t.decimal  "hours",       precision: 5, scale: 2, default: 0.0
   end
 
   add_foreign_key "categories", "category_options"
