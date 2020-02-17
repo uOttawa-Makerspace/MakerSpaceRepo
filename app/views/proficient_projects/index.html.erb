@@ -1,13 +1,37 @@
-<section class="page-contents">
-  <div class="edit-column text-center">
+<section>
+  <div class="apple_pagination">
+    <%= page_entries_info @proficient_projects, :model => 'proficient_project' %>
+    <%= will_paginate @proficient_projects, :container => false %>
+  </div>
+    <!--Grid row-->
+    <div class="row">
+
+      <!--Grid column-->
+      <% @proficient_projects.each do |pp| %>
+      <a class="col-md-4 mb-4" href="<%= proficient_project_path(pp.id) %>">
+        <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
+          <div>
+            <%#=link_to "Edit", edit_proficient_project_path(pp.id), class:"" if current_user.admin?%>
+            <h6><strong><%= pp.training.name %></strong></h6>
+            <h3 class="card-title py-3 font-weight-bold"><strong><%= pp.title %></strong></h3>
+            <p class="pb-3"><%= pp.title %></p>
+          </div>
+        </div>
+      </a>
+      <!--Grid column-->
+      <% end %>
+
+
+    </div>
+    <!--Grid row-->
+
+</section>
+
+
+
+
 
     <section id="projects-containers">
-      <div class="apple_pagination">
-        <div class="page_info">
-          <%#= page_entries_info @proficient_projects, :model => 'product' %>
-        </div>
-        <%= will_paginate @proficient_projects, :container => false %>
-      </div>
       <br />
       <% @proficient_projects.each do |product| %>
         <div class="projects-container">
@@ -104,5 +128,3 @@
         There are no proficient projects.
       </div>
     <% end %>
-  </div>
-</section>

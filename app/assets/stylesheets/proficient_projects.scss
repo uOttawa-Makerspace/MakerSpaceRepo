@@ -9,7 +9,7 @@
   text-align: center;
   padding: 1em;
   cursor: default; }
-.apple_pagination a, .apple_pagination span {
+.apple_pagination a, .apple_pagination span, .apple_pagination i {
   padding: 0.2em 0.3em; }
 .apple_pagination .disabled {
   color: #aaaaaa; }
@@ -30,4 +30,9 @@
   color: black; }
 .apple_pagination a:hover, .apple_pagination a:focus {
   text-decoration: underline;
+}
+
+.projects-image{
+  background-size: cover;
+  height: 270px;
 }
