@@ -29,30 +29,10 @@
     <%= render 'layouts/development_program_header' %>
 
     <section>
-      <div class="setting-grid">
-        <div class="setting-side-panel">
-          <div class="panel-title"><%= link_to 'Development Program', development_programs_path %></div>
-          <ul>
-            <li class="setting-menu-item">
-              <% if current_user.volunteer? %>
-                <%= link_to 'Getting Started', 'https://melsa036.github.io/', target: "_blank" %><br></br>
-                <%= link_to 'Repos', '#' %><br></br>
-                <%= link_to 'Proficient Projects', proficient_projects_path %> <br /> <br />
-                <%= link_to 'New Proficient Project', new_proficient_project_path %> <br /> <br />
-                <%= link_to 'Skills/Badges', '#' %> <br /> <br />
-              <% elsif current_user.staff? %>
-                <%= link_to 'Getting Started', 'https://melsa036.github.io/', target: "_blank"  %><br></br>
-                <%= link_to 'Repos', '#'  %><br></br>
-                <%= link_to 'Proficient Projects', proficient_projects_path %> <br /> <br />
-                <%= link_to 'New Proficient Project', new_proficient_project_path %> <br /> <br />
-                <%= link_to 'Skills/Badges', '#' %> <br /> <br />
-              <% end %>
-            </li>
-          </ul>
+      <div class="bg-white">
+        <div class="container">
+          <%= yield %>
         </div>
-
-        <%= yield %>
-
       </div>
     </section>
     <%= render 'layouts/footer' %>
