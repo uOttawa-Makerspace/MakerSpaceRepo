@@ -1,15 +1,63 @@
-<section class="page-contents">
-  <div class="edit-column">
+<section>
+  <div class="col-lg-7 mx-auto">
+      <br />
 
-    <h2 class="text-center">Welcome to the Development Program</h2>
+    <h2 class="text-center">Welcome to the Development Program Area</h2>
     <br>
-    <div id="staff-buttons">
-      <%= link_to 'Getting Started', 'https://melsa036.github.io/', class: "staff-button", target: "_blank" %> <br></br>
-      <%= link_to 'Repos', '#', class: "staff-button" %> <br></br>
-      <%= link_to 'Proficient Projects', proficient_projects_path, class: "staff-button" %> <br /> <br />
-      <%= link_to 'New Proficient Project', new_proficient_project_path, class: "staff-button" %> <br /> <br />
-      <%= link_to 'Skills/Badges', '#', class: "staff-button" %>  <br />
-    </div>
+
+    <h4 class="text-center text-muted">Overview</h4>
+
+    <p>
+      With the World Wide Web connecting experiences from across the globe, many of today’s
+      professional skills can be effectively self-taught outside the traditional and costly
+      classroom method. The problem is no matter how talented a person becomes, they will still
+      lack an official accreditation for their skill. The classic certificates can
+      expand employment opportunities, but they are difficult to plan and hard to verify by
+      employers. Our modular Development Program is designed to plan, track, and accredit your
+      skill development effortlessly. The Development Program will make use of industry
+      standardized certificates that are convenient to share, and electronically verifiable
+      for your future employers.
+
+      The Development program not only allows you to track your development on your own time,
+      but it also allows you to:
+
+      <%= image_tag("development_program/ceed_volunteering.png", class: "img-fluid") %>
+
+    </p>
+
+    <h4 class="mt-3 text-center text-muted"><%= link_to "Learning Area", '#' %></h4>
+
+    <p>
+      You can learn from all these projects for free. Some of them are a pre-requisite for other
+      proiects in the Proficient Projects Area.
+    </p>
+
+    <h4 class="mt-3 mt-3 text-center text-muted"><%= link_to "Proficient Projects", proficient_projects_path %></h4>
+
+    <p>
+      These projects are more advanced and not free. You can either purchase it with your credit \
+      card or use your CC points.
+    </p>
+
+    <h4 class="mt-3 mt-3 text-center text-muted"><%= link_to "Badges", proficient_projects_path %></h4>
+
+    <p>
+      The Centre for Entrepreneurship and Engineering Design (CEED) has always been committed to helping students and community members achieve success.
+
+      In addition to our free basic introductory workshops, you can now achieve higher level of
+      technical abilities in each skill offered by the development program. As you progress in
+      building your skill sets, you will unlock new tasks and challenges designed to push your
+      limits into a whole new level. Once you are confident in your abilities you can tackle our
+      proficiency projects. The hands-on proficiency projects are qualifying projects put together
+      by our expert team to test your abilities to complete a project at a specific level of
+      quality (intermediate, advanced, mastery) upon satisfactory completion of each proficiency
+      project you will be rewarded with the appropriate digital badges.
+    </p>
+    <br />
+    <br />
+
+
+
   </div>
 </section>
 
