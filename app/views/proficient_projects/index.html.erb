@@ -4,10 +4,11 @@
     <%= page_entries_info @proficient_projects, :model => 'proficient_project' %>
     <%= will_paginate @proficient_projects, :container => false %>
   </div>
+
   <div class="row text-center">
 
     <% @proficient_projects.each do |pp| %>
-      <div class="col-md-4 mb-5 mt-3 card" style="border-width:2px !important;">
+      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-border-pale-red w3-hover-text-light-green  w3-hover-opacity" style="border-width:2px !important;">
         <form class="form-inline">
           <div class="form-group">
             <%=link_to "-Edit-", edit_proficient_project_path(pp.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin?%>
