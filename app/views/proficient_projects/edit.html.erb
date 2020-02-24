@@ -17,6 +17,9 @@
               <%= f.label :training_id, "Category" %>
               <%= f.select(:training_id, @training_categories , {} , {:class => "form-control"}) %>
               <br />
+              <%= f.label :level, "Level" %>
+              <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
+              <br />
 
               <%= label_tag :file, "Project files" %>
               <label class="custom-instructable-upload">

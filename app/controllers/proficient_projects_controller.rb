@@ -40,6 +40,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def edit
+    @training_levels = TrainingSession.return_levels
   end
 
   def update
