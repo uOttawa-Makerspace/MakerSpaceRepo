@@ -6,7 +6,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :set_files_photos_videos, only: [:show, :edit]
 
   def index
-    @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 12)
+    @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
   end
 
   def new
