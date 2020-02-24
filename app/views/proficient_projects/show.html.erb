@@ -1,6 +1,7 @@
 <% provide(:title, "Proficient Project") %>
-<section class="page-contents">
-  <div class="edit-column">
+<section class="card w3-card-2 <%= return_border_color(@proficient_project.level) %>">
+  <div class="col-lg-7 mx-auto">
+    <br />
     <h2 class="text-center title"><%= @proficient_project.title.html_safe %></h2>
     <div class="container my-4">
       <div class="text-center">

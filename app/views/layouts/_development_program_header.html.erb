@@ -18,7 +18,7 @@
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
           <% if current_user.admin? %>
-            <%= link_to "New proficient Projects", new_proficient_project_path, class: "dropdown-item" %>
+            <%= link_to "New proficient Project", new_proficient_project_path, class: "dropdown-item" %>
             <div class="dropdown-divider"></div>
           <% end %>
           <%= link_to "All Proficient Projects", proficient_projects_path, class: "dropdown-item"%>
