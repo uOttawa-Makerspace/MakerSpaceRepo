@@ -28,19 +28,19 @@ class MsrMailer < ApplicationMailer
 	  @user = user
 	  @print_order = print_order
 		@comments = comments
-		mail(to: @user.email, subject: 'Print Request Approval : ' + @print_order.file_file_name)
+		mail(to: @user.email, reply_to: "makerspace@uottawa.ca", cc: "uottawa.makerepo@gmail.com", subject: 'Print Request Approval : ' + @print_order.file_file_name)
 	end
 
 	def send_print_disapproval(user, comments, filename)
 		@user = user
 		@comments = comments
-		mail(to: @user.email, subject: 'Print Request Disapproval : '+filename)
+		mail(to: @user.email, reply_to: "makerspace@uottawa.ca", cc: "uottawa.makerepo@gmail.com", subject: 'Print Request Disapproval : '+filename)
 	end
 
 	def send_print_finished(user, filename, pickup_id)
 		@user = user
     @pickup_id = pickup_id
-		mail(to: @user.email, subject: 'Your print : '+ filename +' is ready !')
+		mail(to: @user.email, reply_to: "makerspace@uottawa.ca", cc: "uottawa.makerepo@gmail.com", subject: 'Your print : '+ filename +' is ready !')
   end
 
   def send_invoice(name, quote, number, order_type)

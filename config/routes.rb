@@ -217,7 +217,6 @@ Rails.application.routes.draw do
 
   resources :project_requirements, only: [:create, :destroy]
 
-
   resources :volunteers, only: [:index] do
     collection do
       get :emails
