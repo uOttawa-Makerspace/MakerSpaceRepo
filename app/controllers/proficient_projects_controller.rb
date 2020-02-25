@@ -9,7 +9,10 @@ class ProficientProjectsController < DevelopmentProgramsController
     if !params[:search].blank?
       query = params[:search]
       # sort_level = params[:sort_level]
-      @proficient_projects = ProficientProject.where("LOWER(title) like LOWER(?)", "%#{query}%").paginate(:page => params[:page], :per_page => 30).page params[:page]
+      @proficient_projects = ProficientProject.
+          where("LOWER(title) like LOWER(?) OR
+                 LOWER(level) like LOWER(?) OR
+                 LOWER(description) like LOWER(?)", "%#{query}%", "%#{query}%", "%#{query}%").paginate(:page => params[:page], :per_page => 30).page params[:page]
     else
       @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
     end
