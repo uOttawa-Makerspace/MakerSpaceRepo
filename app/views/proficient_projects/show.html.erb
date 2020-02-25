@@ -75,7 +75,7 @@
             <p><h6 class="text-center py-3"><strong><%= project_required.training.name %></strong></h6></p>
           </div>
           <div class="form-group">
-            <%=link_to 'Unfollow', project_required, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Project Requirement, but not the Project itself. '} if current_user.admin?%>
+            <%=link_to 'Unfollow', project_requirement, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Project Requirement, but not the Project itself.'} if current_user.admin?%>
           </div>
         </form>
         <a href="<%= proficient_project_path(project_required.id) %>">
