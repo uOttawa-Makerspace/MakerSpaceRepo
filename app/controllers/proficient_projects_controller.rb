@@ -1,12 +1,12 @@
 class ProficientProjectsController < DevelopmentProgramsController
   before_action :grant_access_to_project, only: [:show]
-  before_action :only_staff_access, only: [:new, :create, :edit, :update, :destroy]
+  before_action :only_admin_access, only: [:new, :create, :edit, :update, :destroy]
   before_action :set_proficient_project, only: [:show, :destroy, :edit, :update]
   before_action :set_training_categories, only: [:new, :edit]
   before_action :set_files_photos_videos, only: [:show, :edit]
 
   def index
-    @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
+    @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
   end
 
   def new
@@ -15,6 +15,11 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def show
+    @project_requirements = @proficient_project.project_requirements
+    @inverse_required_projects = @proficient_project.inverse_required_projects
+    @proficient_projects_selected = ProficientProject.
+        where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id).
+        order(title: :asc)
   end
 
   def create
@@ -40,6 +45,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def edit
+    @training_levels = TrainingSession.return_levels
   end
 
   def update
@@ -64,10 +70,10 @@ class ProficientProjectsController < DevelopmentProgramsController
     end
   end
 
-  def only_staff_access
-    unless current_user.staff?
+  def only_admin_access
+    unless current_user.admin?
       redirect_to development_programs_path
-      flash[:alert] = "Only staff members can access this area."
+      flash[:alert] = "Only admin members can access this area."
     end
   end
 

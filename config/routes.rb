@@ -215,6 +215,7 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :project_requirements, only: [:create, :destroy]
 
   resources :volunteers, only: [:index] do
     collection do

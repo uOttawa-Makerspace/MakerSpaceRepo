@@ -1,61 +1,41 @@
-<section class="page-contents">
-  <div class="edit-column text-center">
+<section>
+  <br />
+  <div class="apple_pagination">
+    <%= page_entries_info @proficient_projects, :model => 'proficient_project' %>
+    <%= will_paginate @proficient_projects, :container => false %>
+  </div>
 
-    <h2>All Proficient Projects</h2>
+  <div class="row text-center">
 
-    <% if !@proficient_projects.blank? %>
-      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
-
-      <br />
-
-      <div class="table-responsive">
-        <table class="table sessions-table">
-
-          <tr>
-            <th class="action-header">Action</th>
-            <th>Category<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Level<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Title <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-          </tr>
-
-          <tbody>
-          <%= will_paginate @proficient_projects, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-          <% @proficient_projects.each do |pp| %>
-            <tr>
-              <td class="action-cell text-center">
-                <%=link_to "Show", proficient_project_path(pp.id), class:"btn-block show-button mt-0 mb-1" %>
-                <%=link_to "Edit", edit_proficient_project_path(pp.id), class:"btn-block edit-button ml-0 mr-0 mb-1" if current_user.admin?%>
-                <%=link_to 'Delete', pp, method: :delete, class: "btn-block destroy-button ml-0 mr-0 mb-0", data: {confirm: 'Are you sure?'} if current_user.admin?%>
-              </td>
-
-              <td>
-                <%= pp.training.name %>
-              </td>
-
-              <td>
-                <%= pp.level %>
-              </td>
-
-              <td>
-                <%= pp.title.html_safe %>
-              </td>
-
-              <td>
-                <%= pp.created_at.strftime("%m/%e/%Y") %>
-                <br>
-                <%= pp.created_at.strftime("%I:%M %p").downcase() %>
-              </td>
-
-            </tr>
-          <% end %>
-          </tbody>
-        </table>
+    <% @proficient_projects.each do |pp| %>
+      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %>" style="border-width:2px !important;">
+        <form class="form-inline">
+          <div class="form-group">
+            <%=link_to "-Edit-", edit_proficient_project_path(pp.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin?%>
+          </div>
+          <div class="form-group mx-auto">
+            <p><h6 class="text-center py-3"><strong><%= pp.training.name %></strong></h6></p>
+          </div>
+          <div class="form-group">
+            <%=link_to 'Delete', pp, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure?'} if current_user.admin?%>
+          </div>
+        </form>
+        <a href="<%= proficient_project_path(pp.id) %>">
+          <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
+          </div>
+        </a>
+        <div>
+          <a href="<%= proficient_project_path(pp.id) %>"><h6 class="pt-3 font-weight-bold text-center"><strong><%= pp.title %></strong></h6></a>
+          <p><%= pp.level %></p>
+        </div>
       </div>
-    <% else %>
-      <div class="m-5">
-        There are no proficient projects.
-      </div>
+
     <% end %>
   </div>
+
+  <div class="apple_pagination">
+    <%= will_paginate @proficient_projects, :container => false %>
+    <%= page_entries_info @proficient_projects, :model => 'proficient_project' %>
+  </div>
+  <br />
 </section>

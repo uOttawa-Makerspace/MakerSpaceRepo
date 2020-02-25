@@ -1,7 +1,8 @@
 <% provide(:title, "Edit Proficient Project") %>
-<section class="page-contents">
-  <div class="edit-column">
-    <h2 class="text-center">New Proficient Project</h2>
+<section class="card">
+  <div class="col-lg-7 mx-auto">
+    <br />
+    <h2 class="text-center">Edit Proficient Project</h2>
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
@@ -15,6 +16,9 @@
               <br />
               <%= f.label :training_id, "Category" %>
               <%= f.select(:training_id, @training_categories , {} , {:class => "form-control"}) %>
+              <br />
+              <%= f.label :level, "Level" %>
+              <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
               <br />
 
               <%= label_tag :file, "Project files" %>
