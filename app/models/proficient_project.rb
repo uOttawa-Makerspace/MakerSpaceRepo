@@ -8,4 +8,10 @@ class ProficientProject < ActiveRecord::Base
   has_many :required_projects, through: :project_requirements
   has_many :inverse_project_requirements, class_name: "ProjectRequirement", foreign_key: "required_project_id"
   has_many :inverse_required_projects, through: :inverse_project_requirements, source: :proficient_project
+  validates :title,  presence: { message: "A title is required."}, uniqueness: { message: "Title already exists"}
+  before_save :capitalize_title
+
+  def capitalize_title
+    self.title = self.title.capitalize
+  end
 end
