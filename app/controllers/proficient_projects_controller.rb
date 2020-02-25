@@ -6,7 +6,13 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :set_files_photos_videos, only: [:show, :edit]
 
   def index
-    @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
+    if !params[:search].blank?
+      query = params[:search]
+      # sort_level = params[:sort_level]
+      @proficient_projects = ProficientProject.where("LOWER(title) like LOWER(?)", "%#{query}%").paginate(:page => params[:page], :per_page => 30).page params[:page]
+    else
+      @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
+    end
   end
 
   def new
@@ -168,5 +174,14 @@ class ProficientProjectsController < DevelopmentProgramsController
       end
     end if params['videos'].present?
   end
+
+  # def sort_level
+  #   case params[:sort]
+  #   when 'Beginner' then [:created_at, :desc]
+  #   when 'Intermediate' then [:price, :asc]
+  #   when 'Advanced' then [:updated_at, :desc]
+  #   else [:created_at, :desc]
+  #   end
+  # end
 
 end
