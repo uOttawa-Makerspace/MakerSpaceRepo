@@ -16,6 +16,8 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def show
     @proficient_projects = ProficientProject.all.order(title: :asc)
+    @project_requirements = @proficient_project.project_requirements
+    @inverse_required_projects = @proficient_project.inverse_required_projects
   end
 
   def create
