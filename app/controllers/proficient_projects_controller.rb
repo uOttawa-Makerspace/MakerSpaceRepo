@@ -15,9 +15,11 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def show
-    @proficient_projects = ProficientProject.all.order(title: :asc)
     @project_requirements = @proficient_project.project_requirements
     @inverse_required_projects = @proficient_project.inverse_required_projects
+    @proficient_projects_selected = ProficientProject.
+        where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id).
+        order(title: :asc)
   end
 
   def create

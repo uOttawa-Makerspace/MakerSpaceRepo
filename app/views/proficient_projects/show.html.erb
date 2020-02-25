@@ -11,7 +11,7 @@
         <div class="form-inline">
           <%= hidden_field_tag(:id, @proficient_project.id) %>
           <% label_tag 'required_project_id' %>
-          <%= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects, 'id', 'title'), prompt: 'Select required project' %><br>
+          <%= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects_selected, 'id', 'title'), prompt: 'Select required project' %><br>
           <%= submit_tag 'Add Required Project', class: "btn btn-primary" %>
         </div>
       <% end %>
