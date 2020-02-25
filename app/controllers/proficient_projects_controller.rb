@@ -15,6 +15,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def show
+    @proficient_projects = ProficientProject.all.order(title: :asc)
   end
 
   def create

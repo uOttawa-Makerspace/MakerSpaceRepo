@@ -4,4 +4,6 @@ class ProficientProject < ActiveRecord::Base
   has_many :photos,       dependent: :destroy
   has_many :repo_files,   dependent: :destroy
   has_many :videos,       dependent: :destroy
+  has_many :project_requirements
+  has_many :required_projects, through: :project_requirements
 end

@@ -3,6 +3,17 @@
   <div class="col-lg-7 mx-auto">
     <br />
     <h2 class="text-center title"><%= @proficient_project.title.html_safe %></h2>
+    <% if current_user.admin? %>
+      <%= form_tag project_requirements_path, method: :post do %>
+        <div class="form-inline">
+          <%= hidden_field_tag(:id, @proficient_project.id) %>
+          <% label_tag 'required_project_id' %>
+          <%= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects, 'id', 'title'), prompt: 'Select required project' %><br>
+          <%= submit_tag 'Add Required Project', class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    <% end %>
+
     <div class="container my-4">
       <div class="text-center">
         <%= @proficient_project.training.name %>
@@ -43,6 +54,36 @@
     <br />
   </div>
 <% end %>
+
+<div class="row text-center">
+
+  <% @proficient_project.project_requirements.each do |project_requirement| %>
+    <% project_required = project_requirement.required_project %>
+    <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(project_required.level) %>" style="border-width:2px !important;">
+      <form class="form-inline">
+        <div class="form-group">
+          <%=link_to "-Edit-", edit_proficient_project_path(project_required.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin?%>
+        </div>
+        <div class="form-group mx-auto">
+          <p><h6 class="text-center py-3"><strong><%= project_required.training.name %></strong></h6></p>
+        </div>
+        <div class="form-group">
+          <%=link_to 'Delete', project_required, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure?'} if current_user.admin?%>
+        </div>
+      </form>
+      <a href="<%= proficient_project_path(project_required.id) %>">
+        <div class="card card-image projects-image" style="background-image: url(<%= project_required.photos.first.image.url %>);">
+        </div>
+      </a>
+      <div>
+        <a href="<%= proficient_project_path(project_required.id) %>"><h6 class="pt-3 font-weight-bold text-center"><strong><%= project_required.title %></strong></h6></a>
+        <p><%= project_required.level %></p>
+      </div>
+    </div>
+
+  <% end %>
+</div>
+
 
 <%= render 'layouts/photoswipe' %>
 
