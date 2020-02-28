@@ -1,4 +1,62 @@
 class ReportGenerator
+  require 'caxlsx'
+
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.visitors(start_date, end_date)
+    overview = self.get_visitors_overview(start_date, end_date)
+
+    spreadsheet = Axlsx::Package.new
+
+    spreadsheet.workbook.add_worksheet(name: "Report") do |worksheet|
+      worksheet.styles.fonts.first.name = 'Liberation Sans'
+
+      self.title(worksheet, "Overview")
+      self.table_header(worksheet, ["Space", "Distinct Users", "Total Visits"])
+
+      overview.each do |row|
+        worksheet.add_row(row.map { |column| column[1] })
+      end
+    end
+
+    return spreadsheet
+  end
+
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.get_visitors_overview(start_date, end_date)
+    g = Arel::Table.new('g')
+    s = Space.arel_table
+    ls = LabSession.arel_table
+    u = User.arel_table
+
+    ActiveRecord::Base.connection.exec_query(g.project(
+        [
+            g[:space_name].minimum.as('space_name'), Arel.star.count.as('unique_visitors'), g[:count].sum.as('total_visits')
+        ]
+    ).from(
+        LabSession.select(
+            [
+                ls[:space_id], s[:name].minimum.as('space_name'), ls[:user_id], Arel.star.count
+            ]
+        ).joins(ls.join(u).on(u[:id].eq(ls[:user_id])).join_sources
+        ).joins(ls.join(s).on(s[:id].eq(ls[:space_id])).join_sources
+        ).where(ls[:sign_in_time].between(start_date..end_date)
+        ).group(ls[:space_id], ls[:user_id]).as('g')
+    ).order(g[:space_name].minimum).group(g[:space_id]).to_sql)
+  end
+
+  # @param [Axlsx::Worksheet] worksheet
+  # @param [String] title
+  def self.title(worksheet, title)
+    worksheet.add_row [title], b: true, u: true
+  end
+
+  # @param [Axlsx::Worksheet] worksheet
+  # @param [Array<String>] headers
+  def self.table_header(worksheet, headers)
+    worksheet.add_row headers, b: true
+  end
 
   def self.new_user_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @users = User.between_dates_picked(start_date, end_date)

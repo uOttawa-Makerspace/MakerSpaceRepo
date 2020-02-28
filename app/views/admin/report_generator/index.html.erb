@@ -1,100 +1,27 @@
 <% provide(:title, "Reports") %>
 <section id="report">
-<div class="edit-column">
+  <div class="edit-column">
+    <h1>Report Generator</h1>
 
-<h1>Report Generator</h1>
-<p>Select the date range below and download your reports.</p><br><br>
+    <%= form_tag admin_report_generator_generate_path, method: :post do %>
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <%= label_tag(:semester, "Semester") %>
+          <%= select_tag(:semester, options_for_select([["Winter", :winter], ["Spring/Summer", :summer], ["Fall", :fall]]), { class: "form-control" }) %>
+        </div>
 
-<div class="date_selection">
-  <%= form_tag select_date_range_admin_report_generator_index_path, method: :put do %>
+        <div class="form-group col-md-6">
+          <%= label_tag(:year, "Year") %>
+          <%= number_field_tag(:year, DateTime.now.year, { class: "form-control" }) %>
+        </div>
+      </div>
 
-      <div style="display:inline-block;"><%= label_tag('Start Date:  ') %> </div>
-      <%= select_date @start_date, :prefix => 'start', end_year: Time.current.year %> <br><br>
+      <div class="form-group">
+        <%= label_tag(:type, "Report Type") %>
+        <%= select_tag(:type, options_for_select(@report_types), { class: "form-control" }) %>
+      </div>
 
-      <div style="display:inline-block;"><%= label_tag('End Date:  ') %> </div>
-      <%= select_date @end_date, :prefix => 'end', end_year: Time.current.year %>
-      <p style="display: inline-block;"><%= @start_date.strftime("%B %d, %Y") %>  -  <%= @end_date.strftime("%B %d, %Y") %></p>
-      <%= submit_tag("Update",  class:"update_button") %>
-  <% end %>
-</div>
-
-<br><br>
-<div id="report">
-  <p> <b> All Trainings </b> </p>
-  <%= link_to '<button type="button">Download</button>'.html_safe, training_admin_report_generator_index_path(format: "csv")%> <br><br>
-</div>
-
-<div id="report">
-<p> <b> Makerspace Trainings </b> </p>
-<%= link_to '<button type="button">Download</button>'.html_safe, makerspace_training_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<div id="report">
-<p> <b> MTC Trainings </b></p>
-<%= link_to '<button type="button">Download</button>'.html_safe, mtc_training_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-  <div id="report">
-    <p> Repositories </p>
-    <%= link_to '<button type="button">Download</button>'.html_safe, repository_admin_report_generator_index_path(format: "csv")%> <br><br>
+      <%= submit_tag("Generate", { class: "btn btn-primary" }) %>
+    <% end %>
   </div>
-  <div id="report">
-  <p> New users signed up to Makerepo </p>
-  <%= link_to '<button type="button">Download</button>'.html_safe, new_users_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-<div id="report">
-<p> Visitors of CEED facilities (Total visits) </p>
-<%= link_to '<button type="button">Download</button>'.html_safe, total_visits_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<div id="report">
-<p> Visitors of CEED facilities (Unique visitors) </p>
-<%= link_to '<button type="button">Download</button>'.html_safe, unique_visits_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<div id="report">
-<p> Diversity of users based on faculty </p>
-<%= link_to '<button type="button">Download</button>'.html_safe, faculty_frequency_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-<div id="report">
-<p> Diversity of users based on gender </p>
-<%= link_to '<button type="button">Download</button>'.html_safe, gender_frequency_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-<div id="report">
-<p> Peak Hrs</p>
-<%= link_to '<button type="button">Download</button>'.html_safe, peak_hrs_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<div id="report">
-<p> Unique Visit per Facility per Semester</p>
-<%= link_to '<button type="button">Download</button>'.html_safe, total_visits_per_term_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<div id="report">
-<p> Detail of Unique Visit per Facility per Semester</p>
-<%= link_to '<button type="button">Download</button>'.html_safe, unique_visits_detail_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<div id="report">
-  <p> Detail of Total Visit per Facility per Semester</p>
-  <%= link_to '<button type="button">Download</button>'.html_safe, total_visits_detail_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<div id="report">
-  <p> CEED Total Unique Visit per Semester</p>
-  <%= link_to '<button type="button">Download</button>'.html_safe, unique_visits_ceed_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<div id="report">
-  <p> Number of Certifications per Semester</p>
-  <%= link_to '<button type="button">Download</button>'.html_safe, seasonal_certification_report_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<div id="report">
-  <p> Number of Trainings per Semester</p>
-  <%= link_to '<button type="button">Download</button>'.html_safe, seasonal_training_report_admin_report_generator_index_path(format: "csv") %><br><br>
-</div>
-
-<br>
-</div>
 </section>
