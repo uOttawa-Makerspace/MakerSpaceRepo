@@ -14,17 +14,8 @@ class ReportGenerator
       self.title(sheet, "Overview")
       self.table_header(sheet, ["Space", "Distinct Users", "Total Visits"])
 
-      overview_start = sheet.rows.last.row_index + 2
-
       space_details[:spaces].each do |space_name, space|
         sheet.add_row [space_name, space[:unique], space[:total]]
-      end
-
-      overview_end = sheet.rows.last.row_index + 1
-
-      sheet.add_chart(Axlsx::BarChart, :title => "Overview", :bar_dir => :col, :bg_color => "FFFFFF", :start_at => "E#{overview_start - 1}", :end_at => "O#{overview_start + 9}") do |chart|
-        chart.add_series :labels => sheet["A#{overview_start}:A#{overview_end}"], :data => sheet["B#{overview_start}:B#{overview_end}"], :colors => Array.new(overview_end - overview_start + 1, colors[0]), :title => sheet["B2"]
-        chart.add_series :labels => sheet["A#{overview_start}:A#{overview_end}"], :data => sheet["C#{overview_start}:C#{overview_end}"], :colors => Array.new(overview_end - overview_start + 1, colors[1]), :title => sheet["C2"]
       end
 
       sheet.add_row # spacing
