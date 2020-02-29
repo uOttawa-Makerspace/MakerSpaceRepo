@@ -1,49 +1,178 @@
 class ReportGenerator
-  require 'caxlsx'
-
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.visitors(start_date, end_date)
-    overview = self.get_visitors_overview(start_date, end_date)
-
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: "Report") do |worksheet|
-      worksheet.styles.fonts.first.name = 'Liberation Sans'
+    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
+      colors = [ "003f5c", "2f4b7c", "665191", "a05195", "d45087", "f95d6a", "ff7c43", "ffa600" ]
+      merge_cell = sheet.styles.add_style :alignment => { :vertical => :center }
 
-      self.title(worksheet, "Overview")
-      self.table_header(worksheet, ["Space", "Distinct Users", "Total Visits"])
+      space_details = self.get_visitors_by_faculty(start_date, end_date)
 
-      overview.each do |row|
-        worksheet.add_row(row.map { |column| column[1] })
+      #region Overview
+      self.title(sheet, "Overview")
+      self.table_header(sheet, ["Space", "Distinct Users", "Total Visits"])
+
+      overview_start = sheet.rows.last.row_index + 2
+
+      space_details[:spaces].each do |space_name, space|
+        sheet.add_row [space_name, space[:unique], space[:total]]
       end
+
+      overview_end = sheet.rows.last.row_index + 1
+
+      sheet.add_chart(Axlsx::BarChart, :title => "Overview", :bar_dir => :col, :bg_color => "FFFFFF", :start_at => "E#{overview_start - 1}", :end_at => "O#{overview_start + 9}") do |chart|
+        chart.add_series :labels => sheet["A#{overview_start}:A#{overview_end}"], :data => sheet["B#{overview_start}:B#{overview_end}"], :colors => Array.new(overview_end - overview_start + 1, colors[0]), :title => sheet["B2"]
+        chart.add_series :labels => sheet["A#{overview_start}:A#{overview_end}"], :data => sheet["C#{overview_start}:C#{overview_end}"], :colors => Array.new(overview_end - overview_start + 1, colors[1]), :title => sheet["C2"]
+      end
+
+      sheet.add_row # spacing
+      #endregion
+
+      #region Per-space details
+      space_details[:spaces].each do |space_name, space_detail|
+        self.title(sheet, space_name)
+
+        self.table_header(sheet, ["Identity", "Distinct Users", "Total Visits"])
+        space_detail[:identities].each do |identity_name, identity|
+          sheet.add_row [ identity_name, identity[:unique], identity[:total] ]
+        end
+
+        sheet.add_row # spacing
+
+        self.table_header(sheet, ["Faculty", "Distinct Users", "Total Visits"])
+        space_detail[:faculties].each do |faculty_name, faculty|
+          sheet.add_row [ faculty_name, faculty[:unique], faculty[:total] ]
+        end
+
+        sheet.add_row # spacing
+
+        self.table_header(sheet, ["Identity", "Faculty", "Distinct Users", "Total Visits"])
+        space_detail[:identities].each do |identity_name, identity|
+          start_index = sheet.rows.last.row_index + 1
+
+          identity[:faculties].each do |faculty_name, faculty|
+            sheet.add_row [ identity_name, faculty_name, faculty[:unique], faculty[:total] ], :style => [merge_cell]
+          end
+
+          end_index = sheet.rows.last.row_index
+
+          sheet.merge_cells("A#{start_index + 1}:A#{end_index + 1}")
+        end
+
+        sheet.add_row # spacing
+
+        self.table_header(sheet, ["Gender", "Distinct Users", "Total Visits"])
+        space_detail[:genders].each do |gender_name, gender|
+          sheet.add_row [ gender_name, gender[:unique], gender[:total] ]
+        end
+
+        sheet.add_row # spacing
+      end
+      #endregion
     end
 
-    return spreadsheet
+    spreadsheet
   end
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
-  def self.get_visitors_overview(start_date, end_date)
-    g = Arel::Table.new('g')
-    s = Space.arel_table
+  def self.get_visitors_by_faculty(start_date, end_date)
+    g = Arel::Table.new("g")
     ls = LabSession.arel_table
     u = User.arel_table
+    s = Space.arel_table
 
-    ActiveRecord::Base.connection.exec_query(g.project(
-        [
-            g[:space_name].minimum.as('space_name'), Arel.star.count.as('unique_visitors'), g[:count].sum.as('total_visits')
-        ]
-    ).from(
-        LabSession.select(
-            [
-                ls[:space_id], s[:name].minimum.as('space_name'), ls[:user_id], Arel.star.count
-            ]
-        ).joins(ls.join(u).on(u[:id].eq(ls[:user_id])).join_sources
-        ).joins(ls.join(s).on(s[:id].eq(ls[:space_id])).join_sources
-        ).where(ls[:sign_in_time].between(start_date..end_date)
-        ).group(ls[:space_id], ls[:user_id]).as('g')
-    ).order(g[:space_name].minimum).group(g[:space_id]).to_sql)
+    result = ActiveRecord::Base.connection.exec_query(g.project([
+      g[:space_name].minimum.as("space_name"), g[:identity], g[:faculty], g[:gender], Arel.star.count.as("unique_visitors"), g[:count].sum.as("total_visits")
+    ])
+    .from(
+      LabSession.select([
+        ls[:space_id], s[:name].minimum.as("space_name"), u[:identity], u[:faculty], u[:gender], Arel.star.count
+      ])
+      .joins(ls.join(u).on(u[:id].eq(ls[:user_id])).join_sources)
+      .joins(ls.join(s).on(s[:id].eq(ls[:space_id])).join_sources)
+      .where(ls[:sign_in_time].between(start_date..end_date))
+      .group(ls[:space_id], ls[:user_id], u[:faculty], u[:identity], u[:gender])
+      .as(g.name))
+    .order(g[:space_name].minimum, g[:identity], g[:faculty], g[:gender])
+    .group(g[:space_id], g[:identity], g[:faculty], g[:gender]).to_sql)
+
+    # shove everything into a hash
+    organized = {
+        :unique => 0,
+        :total => 0,
+        :spaces => {}
+    }
+
+    result.each do |row|
+      space_name = row["space_name"]
+      faculty = row["faculty"].blank? ? "Unknown" : row["faculty"]
+      gender = row["gender"]
+
+      case row["identity"]
+      when "undergrad"
+        identity = "Undergraduate"
+      when "grad"
+        identity = "Graduate"
+      when "faculty_member"
+        identity = "Faculty Member"
+      when "community_member"
+        identity = "Community Member"
+      else
+        identity = "Unknown"
+      end
+
+      unless organized[:spaces][space_name]
+        organized[:spaces][space_name] = {
+            :unique => 0,
+            :total => 0,
+            :identities => {},
+            :faculties => {},
+            :genders => {}
+        }
+      end
+
+      unless organized[:spaces][space_name][:identities][identity]
+        organized[:spaces][space_name][:identities][identity] = { :unique => 0, :total => 0, :faculties => {} }
+      end
+
+      unless organized[:spaces][space_name][:identities][identity][:faculties][faculty]
+        organized[:spaces][space_name][:identities][identity][:faculties][faculty] = { :unique => 0, :total => 0 }
+      end
+
+      unless organized[:spaces][space_name][:faculties][faculty]
+        organized[:spaces][space_name][:faculties][faculty] = { :unique => 0, :total => 0 }
+      end
+
+      unless organized[:spaces][space_name][:genders][gender]
+        organized[:spaces][space_name][:genders][gender] = { :unique => 0, :total => 0 }
+      end
+
+      unique = row["unique_visitors"].to_i
+      total = row["total_visits"].to_i
+
+      organized[:unique] += unique
+      organized[:total] += total
+
+      organized[:spaces][space_name][:unique] += unique
+      organized[:spaces][space_name][:total] += total
+
+      organized[:spaces][space_name][:identities][identity][:unique] += unique
+      organized[:spaces][space_name][:identities][identity][:total] += total
+
+      organized[:spaces][space_name][:identities][identity][:faculties][faculty][:unique] += unique
+      organized[:spaces][space_name][:identities][identity][:faculties][faculty][:total] += total
+
+      organized[:spaces][space_name][:faculties][faculty][:unique] += unique
+      organized[:spaces][space_name][:faculties][faculty][:total] += total
+
+      organized[:spaces][space_name][:genders][gender][:unique] += unique
+      organized[:spaces][space_name][:genders][gender][:total] += total
+    end
+
+    organized
   end
 
   # @param [Axlsx::Worksheet] worksheet
@@ -57,6 +186,8 @@ class ReportGenerator
   def self.table_header(worksheet, headers)
     worksheet.add_row headers, b: true
   end
+
+  #region ALL THE OLD STUFF
 
   def self.new_user_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @users = User.between_dates_picked(start_date, end_date)
@@ -717,5 +848,7 @@ end
     return count
     # return TrainingSession.joins(:space).where("spaces.name = ?", space.name).where('training_sessions.created_at BETWEEN ? AND ? ', date_begin , date_end).count
   end
+
+  #endregion
 
 end

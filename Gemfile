@@ -39,7 +39,7 @@ gem 'bootbox-rails', '~>0.4'
 gem 'quick_random_records'
 gem 'wicked_pdf'
 gem 'wkhtmltopdf-binary'
-gem 'caxlsx'
+gem 'caxlsx', '~> 3.0.1'
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
