@@ -106,6 +106,57 @@ class ReportGenerator
     spreadsheet
   end
 
+  def self.new_user_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
+    @users = User.between_dates_picked(start_date, end_date)
+    column = []
+    column << ["New users signed up to makerepo"]
+    column << ["Start Date", start_date.strftime('%a, %d %b %Y %H:%M')]
+    column << ["End Date", end_date.strftime('%a, %d %b %Y %H:%M')]
+
+    column << [] << ["Name", "Username", "Email", "Gender", "Identity", "Faculty","Year of Study","Student ID","Created at"]
+    @users.each do |user|
+      row = []
+      row << user.name << user.username << user.email << user.gender << user.identity << user.faculty << user.year_of_study << user.student_id << user.created_at
+      column << row
+    end
+    column << [] << ["Total new users:", @users.length]
+    column << ["Number of Grads:", @users.where(identity: 'grad').length]
+    column << ["Number of Undergrads:", @users.where(identity: 'undergrad').length]
+    column << ["Number of Faculty members:", @users.where(identity: 'faculty_member').length]
+    column << ["Number of Community members:", @users.where(identity: 'community_member').length]
+    column << ["Other (unspecified)", @users.where.not(identity: ['grad', 'undergrad', 'faculty_member', 'community_member']).length + @users.where(identity: nil).length ]
+    @users.to_csv(column)
+  end
+
+  def self.makerspace_training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
+    @makerspace_trainings = Training.where('space_id' => (Space.where('name' => 'Makerspace').ids)) #find trainings in makerspace
+    column = []
+    column << ["Makerspace Trainings"]
+    column << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
+    column << ["STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE",]
+    @total_number_of_users = 0
+    @makerspace_trainings.each do |training| #For each training
+      @training_sessions = training.training_sessions.between_dates_picked(start_date, end_date) #find training sessions
+      @training_sessions.each do |training_session| #each training session has many students
+        if training_session.completed? #check if training_session is completed
+          @users = training_session.users
+          @total_number_of_users += @users.length
+          @users.each do |user| #for each student, grab info
+            row = []
+            row << user.student_id << user.name << user.email << training.name << training_session.created_at.strftime('%a, %d %b %Y %H:%M') << User.find(training_session.user_id).name << training_session.course
+            column << row
+          end
+        end
+      end
+    end
+    column << [] << ["Total Number of Trainees", @total_number_of_users]
+    CSV.generate do |csv|
+      column.each do |row|
+        csv << row
+      end
+    end
+  end
+
   private
 
   # @param [DateTime] start_date
