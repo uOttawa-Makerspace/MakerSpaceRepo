@@ -5,9 +5,7 @@ class Admin::ReportGeneratorController < AdminAreaController
   def index
     @report_types = [
         ['Trainings', :trainings],
-        ['Repositories', :repositories],
-        ['New Users', :new_users],
-        ['Visitors', :visitors],
+        ['Visitors', :visitors]
     ]
   end
 
@@ -40,7 +38,9 @@ class Admin::ReportGeneratorController < AdminAreaController
 
     case type
     when "visitors"
-      spreadsheet = ReportGenerator.visitors(start_date, end_date)
+      spreadsheet = ReportGenerator.generate_visitors_report(start_date, end_date)
+    when "trainings"
+      spreadsheet = ReportGenerator.generate_trainings_report(start_date, end_date)
     else
       render :text => "Unknown report type", status: 400
       return
