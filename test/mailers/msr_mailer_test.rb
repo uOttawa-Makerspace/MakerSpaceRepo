@@ -1,5 +1,7 @@
 require 'test_helper'
 
+# TODO this combines testing of MsrMailer and ReportGenerator - they should be separate.
+
 class MsrMailerTest < ActionMailer::TestCase
 	test "Welcome email" do
 		user = users(:bob)
