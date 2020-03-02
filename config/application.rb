@@ -50,19 +50,22 @@ module MakerSpaceRepo
 
       config.attributes = {
           "email_address": {
-              :getter => -> (p) { p.email }
+            :getter => -> (p) { p.email }
           },
           "username": {
-              :getter => -> (p) { p.username }
+            :getter => -> (p) { p.username }
           },
           "name": {
-              :getter => -> (p) { p.name }
+            :getter => -> (p) { p.name }
           },
           "is_staff": {
-              :getter => -> (p) { p.staff? }
+            :getter => -> (p) { p.staff? }
           },
           "is_admin": {
-              :getter => -> (p) { p.admin? }
+            :getter => -> (p) { p.admin? }
+          },
+          "is_volunteer": {
+            :getter => -> (p) { p.volunteer? }
           }
       }
 
