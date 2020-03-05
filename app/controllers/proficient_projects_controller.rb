@@ -6,7 +6,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :set_files_photos_videos, only: [:show, :edit]
 
   def index
-    @proficient_projects = ProficientProject.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
+    @proficient_projects = ProficientProject.filter_attributes(get_filter_params).order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
   end
 
   def new
@@ -167,6 +167,10 @@ class ProficientProjectsController < DevelopmentProgramsController
         Video.create(video: f, proficient_project_id: @proficient_project.id)
       end
     end if params['videos'].present?
+  end
+
+  def get_filter_params
+    params.permit(:search, :level, :category)
   end
 
 end
