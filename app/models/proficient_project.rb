@@ -22,7 +22,6 @@ class ProficientProject < ActiveRecord::Base
     if attribute == "level"
       self.filter_by_level(value)
     elsif attribute == "category"
-      # where(id: Kombucha.includes(:trainings).where(ingredients: {id: Ingredient.return_list_of_ingredients_with(attribute, value)}))
       joins(:training).where(trainings: {name: value})
     elsif attribute == "search"
       where("LOWER(title) like LOWER(?) OR

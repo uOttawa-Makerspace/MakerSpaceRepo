@@ -4,7 +4,6 @@ class DevelopmentProgramsController < ApplicationController
   before_action :grant_access, except: [:join_development_program]
 
   def index
-
   end
 
   def join_development_program
