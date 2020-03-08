@@ -1,7 +1,5 @@
 require 'test_helper'
 
-# TODO this combines testing of MsrMailer and ReportGenerator - they should be separate.
-
 class MsrMailerTest < ActionMailer::TestCase
 	test "Welcome email" do
 		user = users(:bob)
@@ -36,21 +34,14 @@ class MsrMailerTest < ActionMailer::TestCase
 		assert email.body.to_s.include? "Password2"
 	end
 
-
-	# test "Sending reports" do
-	# 	email = MsrMailer.send_report('makerspace@uottawa.ca', 'hanis@uottawa.ca', ReportGenerator.new_user_report, ReportGenerator.lab_session_report,
-	# 					ReportGenerator.faculty_frequency_report, ReportGenerator.gender_frequency_report, ReportGenerator.unique_visitors_report)
-	#
-	# 	assert_equal ['uottawa.makerepo@gmail.com'], email.from
-	# 	assert_equal ['makerspace@uottawa.ca'], email.to
-	# 	assert_equal ['hanis@uottawa.ca'], email.bcc
-	# 	assert_equal 'Weekly Report', email.subject
-	# 	assert_not_nil(email.attachments, "No attachments found")
-	# end
-
-
 	test "Sending training reports" do
-		email = MsrMailer.send_training_report('abc@gmail.com','def@gmail.com','ghi@gmail.com','jkl@gmail.com','mno@gmail.com', ReportGenerator.makerspace_training_report, ReportGenerator.mtc_training_report)
+		# arrange
+		to = ['abc@gmail.com','def@gmail.com','ghi@gmail.com']
+
+		# act
+		email = MsrMailer.send_training_report(to)
+
+		# assert
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['abc@gmail.com'], email.to
 		assert_equal ['def@gmail.com','ghi@gmail.com','jkl@gmail.com','mno@gmail.com'], email.bcc
@@ -58,14 +49,13 @@ class MsrMailerTest < ActionMailer::TestCase
 	end
 
 	test "Sending monthly reports" do
-		email = MsrMailer.send_monthly_report('abc@gmail.com', 'def@gmail.com','ghi@gmail.com', ReportGenerator.new_user_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
-		          ReportGenerator.unique_visitors_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
-		          ReportGenerator.lab_session_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
-		          ReportGenerator.faculty_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
-		          ReportGenerator.gender_frequency_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
-		          ReportGenerator.makerspace_training_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month),
-		          ReportGenerator.mtc_training_report(1.month.ago.beginning_of_month, 1.month.ago.end_of_month))
+		# arrange
+		to = ['abc@gmail.com','def@gmail.com','ghi@gmail.com']
 
+		# act
+		email = MsrMailer.send_monthly_report(to)
+
+		# assert
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
 		assert_equal ['abc@gmail.com'], email.to
 		assert_equal ['def@gmail.com','ghi@gmail.com'], email.bcc
@@ -74,20 +64,19 @@ class MsrMailerTest < ActionMailer::TestCase
 	end
 
 	test "Sending weekly reports" do
-		email = MsrMailer.send_weekly_report('abc@gmail.com','def@gmail.com','ghi@gmail.com', ReportGenerator.new_user_report,
-	          ReportGenerator.unique_visitors_report,
-	          ReportGenerator.lab_session_report,
-	          ReportGenerator.faculty_frequency_report,
-	          ReportGenerator.gender_frequency_report,
-	          ReportGenerator.makerspace_training_report,
-	          ReportGenerator.mtc_training_report)
+		# arrange
+		to = ['abc@gmail.com','def@gmail.com','ghi@gmail.com']
 
+		#act
+		email = MsrMailer.send_weekly_report(to)
+
+		# assert
 		assert_equal ['uottawa.makerepo@gmail.com'], email.from
-		assert_equal ['abc@gmail.com'], email.to
-		assert_equal ['def@gmail.com','ghi@gmail.com'], email.bcc
+		assert_equal ['makerspace@uottawa.ca'], email.to
+		assert_equal to, email.bcc
 
-		assert_not_nil(email.attachments, "No attachments found")
-
+		assert_not_nil email.attachments
+		assert_equal 6, email.attachments.length
 	end
 
   test "Send waiver reminder email" do
