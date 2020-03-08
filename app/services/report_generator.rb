@@ -90,9 +90,6 @@ class ReportGenerator
       self.table_header(sheet, [ "Training", "Level", "Course", "Instructor", "Date", "Facility", "Attendee Count" ])
 
       trainings.each do |row|
-        puts "#{row["date"]}"
-        puts "#{DateTime.now}"
-        puts "#{DateTime.now.strftime("%Y-%m-%d %H:%M:%S.%6N")}"
         sheet.add_row [
                         row[:training_name],
                         row[:training_level],
@@ -108,31 +105,53 @@ class ReportGenerator
     spreadsheet
   end
 
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.generate_new_users_report(start_date, end_date)
+    users = User.between_dates_picked(start_date, end_date)
+
+    spreadsheet = Axlsx::Package.new
+
+    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
+      self.title(sheet, "New Users")
+
+      sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
+      sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+      sheet.add_row # spacing
+
+      self.title(sheet, "Overview")
+
+      groups = users.group_by { |user| user.identity }
+
+      groups.each do |group_name, values|
+        sheet.add_row [ group_name, values.length ]
+      end
+
+      sheet.add_row # spacing
+
+      self.table_header(sheet, [ "Name", "Username", "Email", "Gender", "Identity", "Faculty", "Year of Study", "Student ID", "Joined on" ])
+
+      users.each do |user|
+        sheet.add_row [
+                        user.name,
+                        user.username,
+                        user.email,
+                        user.gender,
+                        user.identity,
+                        user.faculty,
+                        user.year_of_study,
+                        user.student_id,
+                        user.created_at.localtime.strftime("%Y-%m-%d %H:%M")
+                      ]
+      end
+    end
+
+    spreadsheet
+  end
+
   #endregion
 
-  #region Non-migrated reports
-
-  def self.new_user_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
-    @users = User.between_dates_picked(start_date, end_date)
-    column = []
-    column << ["New users signed up to makerepo"]
-    column << ["Start Date", start_date.strftime('%a, %d %b %Y %H:%M')]
-    column << ["End Date", end_date.strftime('%a, %d %b %Y %H:%M')]
-
-    column << [] << ["Name", "Username", "Email", "Gender", "Identity", "Faculty","Year of Study","Student ID","Created at"]
-    @users.each do |user|
-      row = []
-      row << user.name << user.username << user.email << user.gender << user.identity << user.faculty << user.year_of_study << user.student_id << user.created_at
-      column << row
-    end
-    column << [] << ["Total new users:", @users.length]
-    column << ["Number of Grads:", @users.where(identity: 'grad').length]
-    column << ["Number of Undergrads:", @users.where(identity: 'undergrad').length]
-    column << ["Number of Faculty members:", @users.where(identity: 'faculty_member').length]
-    column << ["Number of Community members:", @users.where(identity: 'community_member').length]
-    column << ["Other (unspecified)", @users.where.not(identity: ['grad', 'undergrad', 'faculty_member', 'community_member']).length + @users.where(identity: nil).length ]
-    @users.to_csv(column)
-  end
+  #region Non-migrated report
 
   def self.unique_visitors_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @labs = LabSession.between_dates_picked(start_date, end_date)
