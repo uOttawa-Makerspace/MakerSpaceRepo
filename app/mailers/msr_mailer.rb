@@ -82,11 +82,9 @@ class MsrMailer < ApplicationMailer
 		start_date = 1.month.ago.beginning_of_month
 		end_date = 1.month.ago.end_of_month
 
-		attachments['NewMakerRepoUsers.csv'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_new_users_report(start_date, end_date).to_stream }
+		attachments['NewMakerRepoUsers.xlsx'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_new_users_report(start_date, end_date).to_stream }
 		attachments['Visitors.xlsx'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_visitors_report(start_date, end_date).to_stream }
-		attachments['GenderFrequency.csv'] = { mime_type: 'text/csv', content: ReportGenerator.gender_frequency_report(start_date, end_date) }
-		attachments['MakerspaceTrainings.csv'] = { mime_type: 'text/csv', content: ReportGenerator.makerspace_training_report(start_date, end_date) }
-		attachments['MtcTrainings.csv'] = { mime_type: 'text/csv', content: ReportGenerator.mtc_training_report(start_date, end_date) }
+		attachments['TrainingAttendees.xlsx'] = { mime_type: 'text/xlsx', content: ReportGenerator.generate_training_attendees_report(start_date, end_date).to_stream }
 
 		mail(to: "makerspace@uottawa.ca", subject: 'Monthly Reports', bcc: to)
 	end
@@ -96,11 +94,9 @@ class MsrMailer < ApplicationMailer
 		start_date = 1.week.ago.beginning_of_week
 		end_date = 1.week.ago.end_of_week
 
-		attachments['NewMakerRepoUsers.csv'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_new_users_report(start_date, end_date).to_stream }
+		attachments['NewMakerRepoUsers.xlsx'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_new_users_report(start_date, end_date).to_stream }
 		attachments['Visitors.xlsx'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_visitors_report(start_date, end_date).to_stream }
-		attachments['GenderFrequency.csv'] = { mime_type: 'text/csv', content: ReportGenerator.gender_frequency_report }
-		attachments['MakerspaceTrainings.csv'] = { mime_type: 'text/csv', content: ReportGenerator.makerspace_training_report }
-		attachments['MtcTrainings.csv'] = { mime_type: 'text/csv', content: ReportGenerator.mtc_training_report }
+		attachments['TrainingAttendees.xlsx'] = { mime_type: 'text/xlsx', content: ReportGenerator.generate_training_attendees_report(start_date, end_date).to_stream }
 
 		mail(to: 'makerspace@uottawa.ca', subject: 'Weekly Reports', bcc: to)
 	end

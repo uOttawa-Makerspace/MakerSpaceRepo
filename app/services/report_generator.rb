@@ -161,102 +161,47 @@ class ReportGenerator
     spreadsheet
   end
 
+  def self.generate_training_attendees_report(start_date, end_date)
+    certifications = Certification.includes({ :training_session => [ :user, :training, :space ] }, :user).where('created_at' => start_date..end_date).order('spaces.name', 'training_sessions.created_at', 'users_certifications.name').group_by { |item| item.training_session.space.id }
+
+    spreadsheet = Axlsx::Package.new
+
+    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
+      self.title(sheet, "Training Attendees")
+
+      sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
+      sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+      sheet.add_row # spacing
+
+      certifications.each do |space, space_certifications|
+        self.title(sheet, space_certifications[0].training_session.space.name)
+        self.table_header(sheet, [ "Student ID", "Name", "Email Address", "Certification Type", "Certification Date", "Instructor", "Course", "Facility" ])
+
+        space_certifications.each do |certification|
+          sheet.add_row [
+                          certification.user.student_id,
+                          certification.user.name,
+                          certification.user.email,
+                          certification.training_session.training.name,
+                          certification.training_session.created_at.strftime('%Y-%m-%d %H:%M'),
+                          certification.training_session.user.name,
+                          certification.training_session.course,
+                          certification.training_session.space.name
+                        ]
+        end
+
+        sheet.add_row # spacing
+      end
+    end
+
+    spreadsheet
+  end
+
   #endregion
 
   #region Non-migrated report
 
-  def self.gender_frequency_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
-
-    @users = User.frequency_between_dates(start_date, end_date)
-    @gender_freq = @users.where.not('gender' => nil).where.not('gender' => 'unknown').group(:gender).count(:gender)
-    @null = @users.where('gender' => nil)
-    @unknown = @users.where('gender' => 'unknown')
-
-    CSV.generate do |csv|
-      csv << ["Frequency of users in the Makerspace per gender"]
-      csv << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
-
-      csv << @gender_freq.keys
-      csv << @gender_freq.values
-
-      csv << [] << ["Gender not provided (Old user):", @null.length + @unknown.length]
-    end
-  end
-
   #all Trainings
-  def self.training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
-    @certifications = Certification.between_dates_picked(start_date, end_date)
-    column = []
-    column << ["All Trainings"]
-    column << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
-    column << ["STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE", "WORKSHOP"]
-
-    @certifications.each do |certification|
-      row = []
-      row << certification.user.student_id << certification.user.name << certification.user.email << certification.training.name
-      row << certification.created_at.strftime('%a, %d %b %Y %H:%M') <<  User.find(certification.training_session.user_id).name << certification.training_session.course << certification.training_session.space.name
-      column << row
-    end
-    @certifications.to_csv(column)
-  end
-
-  def self.makerspace_training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
-    @makerspace_trainings = Training.where('space_id' => (Space.where('name' => 'Makerspace').ids)) #find trainings in makerspace
-    column = []
-    column << ["Makerspace Trainings"]
-    column << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
-    column << ["STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE",]
-    @total_number_of_users = 0
-    @makerspace_trainings.each do |training| #For each training
-      @training_sessions = training.training_sessions.between_dates_picked(start_date, end_date) #find training sessions
-      @training_sessions.each do |training_session| #each training session has many students
-        if training_session.completed? #check if training_session is completed
-          @users = training_session.users
-          @total_number_of_users += @users.length
-          @users.each do |user| #for each student, grab info
-            row = []
-            row << user.student_id << user.name << user.email << training.name << training_session.created_at.strftime('%a, %d %b %Y %H:%M') << User.find(training_session.user_id).name << training_session.course
-            column << row
-          end
-        end
-      end
-    end
-    column << [] << ["Total Number of Trainees", @total_number_of_users]
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-  end
-  def self.mtc_training_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
-    @makerspace_trainings = Training.where('space_id' => (Space.where('name' => 'MTC').ids)) #find trainings in makerspace
-    column = []
-    column << ["MTC Trainings"]
-    column << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
-    column << ["STUDENT ID", "NAME", "EMAIL", "CERTIFICATION TYPE", "CERTIFICATION DATE", "INSTRUCTOR", "COURSE",]
-    @total_number_of_users = 0
-    @makerspace_trainings.each do |training| #For each training
-      @training_sessions = training.training_sessions.between_dates_picked(start_date, end_date) #find training sessions
-      @training_sessions.each do |training_session| #each training session has many students
-        if training_session.completed? #check if training_session is completed
-          @users = training_session.users
-          @total_number_of_users += @users.length
-          @users.each do |user| #for each student, grab info
-            row = []
-            row << user.student_id << user.name << user.email << training.name << training_session.created_at.strftime('%a, %d %b %Y %H:%M') << User.find(training_session.user_id).name << training_session.course
-            column << row
-          end
-        end
-      end
-    end
-    column << [] << ["Total Number of Trainees", @total_number_of_users]
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-  end
-
   def self.project_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
     @repositories = Repository.between_dates_picked(start_date, end_date)
     column = []

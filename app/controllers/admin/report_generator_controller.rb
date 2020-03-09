@@ -6,7 +6,8 @@ class Admin::ReportGeneratorController < AdminAreaController
     @report_types = [
         ['Trainings', :trainings],
         ['Visitors', :visitors],
-        ['New Users', :new_users]
+        ['New Users', :new_users],
+        ['Training Attendees', :training_attendees]
     ]
   end
 
@@ -41,14 +42,14 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
     when "date_range"
       begin
-        start_date = Date.parse(params[:from_date])
+        start_date = Date.parse(params[:from_date]).to_datetime.beginning_of_day
       rescue ParseError
         render :text => "Failed to parse start date"
         return
       end
 
       begin
-        end_date = Date.parse(params[:to_date])
+        end_date = Date.parse(params[:to_date]).to_datetime.end_of_day
       rescue ParseError
         render :text => "Failed to parse end date"
         return
@@ -65,6 +66,8 @@ class Admin::ReportGeneratorController < AdminAreaController
       spreadsheet = ReportGenerator.generate_trainings_report(start_date, end_date)
     when "new_users"
       spreadsheet = ReportGenerator.generate_new_users_report(start_date, end_date)
+    when "training_attendees"
+      spreadsheet = ReportGenerator.generate_training_attendees_report(start_date, end_date)
     else
       render :text => "Unknown report type", status: 400
       return
