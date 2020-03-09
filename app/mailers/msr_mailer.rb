@@ -84,7 +84,6 @@ class MsrMailer < ApplicationMailer
 
 		attachments['NewMakerRepoUsers.csv'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_new_users_report(start_date, end_date).to_stream }
 		attachments['Visitors.xlsx'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_visitors_report(start_date, end_date).to_stream }
-		attachments['FacultyFrequency.csv'] = { mime_type: 'text/csv', content: ReportGenerator.faculty_frequency_report(start_date, end_date) }
 		attachments['GenderFrequency.csv'] = { mime_type: 'text/csv', content: ReportGenerator.gender_frequency_report(start_date, end_date) }
 		attachments['MakerspaceTrainings.csv'] = { mime_type: 'text/csv', content: ReportGenerator.makerspace_training_report(start_date, end_date) }
 		attachments['MtcTrainings.csv'] = { mime_type: 'text/csv', content: ReportGenerator.mtc_training_report(start_date, end_date) }
@@ -99,7 +98,6 @@ class MsrMailer < ApplicationMailer
 
 		attachments['NewMakerRepoUsers.csv'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_new_users_report(start_date, end_date).to_stream }
 		attachments['Visitors.xlsx'] = { mime_type: 'application/xlsx', content: ReportGenerator.generate_visitors_report(start_date, end_date).to_stream }
-		attachments['FacultyFrequency.csv'] = { mime_type: 'text/csv', content: ReportGenerator.faculty_frequency_report }
 		attachments['GenderFrequency.csv'] = { mime_type: 'text/csv', content: ReportGenerator.gender_frequency_report }
 		attachments['MakerspaceTrainings.csv'] = { mime_type: 'text/csv', content: ReportGenerator.makerspace_training_report }
 		attachments['MtcTrainings.csv'] = { mime_type: 'text/csv', content: ReportGenerator.mtc_training_report }

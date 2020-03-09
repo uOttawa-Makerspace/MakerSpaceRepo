@@ -87,9 +87,21 @@ class ReportGenerator
       sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
       sheet.add_row # spacing
 
+      self.table_header(sheet, [ "Training", "Session Count", "Total Attendees" ])
+
+      trainings[:training_types].each do |_, training_type|
+        sheet.add_row [
+                        training_type[:name],
+                        training_type[:count],
+                        training_type[:total_attendees]
+                      ]
+      end
+
+      sheet.add_row # spacing
+
       self.table_header(sheet, [ "Training", "Level", "Course", "Instructor", "Date", "Facility", "Attendee Count" ])
 
-      trainings.each do |row|
+      trainings[:training_sessions].each do |row|
         sheet.add_row [
                         row[:training_name],
                         row[:training_level],
@@ -152,65 +164,6 @@ class ReportGenerator
   #endregion
 
   #region Non-migrated report
-
-  def self.unique_visitors_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
-    @labs = LabSession.between_dates_picked(start_date, end_date)
-    @unique_visits = @labs.select('DISTINCT user_id')
-    column = []
-    column << ["Unique visitors of CEED facilities"]
-    column << ["Start Date", start_date.strftime('%a, %d %b %Y %H:%M')]
-    column << ["End Date", end_date.strftime('%a, %d %b %Y %H:%M')] <<[]
-    column << ["Name", "Email", "Gender","Identity", "Faculty"]
-    @unique_visits.each do |lab|
-      row = []
-      row << lab.user.name << lab.user.email << lab.user.gender << lab.user.identity << lab.user.faculty
-      column << row
-    end
-
-    column << [] << ["# of Unique Visitors this week:", @unique_visits.length]
-
-    array = []
-    @unique_visits.each do |visit|
-      array << User.find(visit.user_id).identity
-    end
-    column << [] << ["Classification based on identity"] << ["Identity", "Count"]
-    identities = Hash[array.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    identities.each do |identity|
-      column << [identity[0], identity[1]]
-    end
-
-    column << ["Note: 'unknown' identity means the visitor is an old user and has not updated his/her profile"]
-
-
-    @unique_visits.to_csv(column)
-  end
-
-  def self.faculty_frequency_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
-    @users = User.frequency_between_dates(start_date, end_date)
-    @art = @users.where('faculty' => 'Arts').length
-    @civil = @users.where('faculty' => 'Civil Law').length
-    @common = @users.where('faculty' => 'Common Law').length
-    @education = @users.where('faculty' => 'Education').length
-    @engineering = @users.where('faculty' => 'Engineering').length
-    @health = @users.where('faculty' => 'Health Sciences').length
-    @medicine = @users.where('faculty' => 'Medicine').length
-    @science = @users.where('faculty' => 'Science').length
-    @social = @users.where('faculty' => 'Social Sciences').length
-    @telfer = @users.where('faculty' => 'Telfer school of Management').length
-
-    total_faculty = @art + @civil + @common + @education + @engineering + @health + @medicine + @science + @social + @telfer
-    @no_faculty = @users.length - total_faculty
-
-    CSV.generate do |csv|
-      csv << ["Frequency of users in the Makerspace per faculty"]
-      csv << ["Start date:", start_date.strftime('%a, %d %b %Y %H:%M')] << ["End date:", end_date.strftime('%a, %d %b %Y %H:%M')] << [] << []
-      csv << ["Engineering", @engineering] << ["Science", @science] << ["Telfer school of Management", @telfer] << ["Arts", @art] << ["Health Sciences", @health]
-      csv << ["Medicine", @medicine] << ["Social Sciences", @social] << ["Education", @education] << ["Civil Law", @civil] << ["Common Law", @common]
-      csv << ["No faculty specified (faculty/community members):", @no_faculty]
-      csv << [] << ["Total users:", @users.length]
-    end
-  end
 
   def self.gender_frequency_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
 
@@ -821,6 +774,7 @@ class ReportGenerator
     s = Space.arel_table
 
     query = TrainingSession.select([
+                                     t[:id].minimum.as("training_id"),
                                      t[:name].minimum.as("training_name"),
                                      ts[:level].minimum.as("training_level"),
                                      ts[:course].minimum.as("course_name"),
@@ -838,10 +792,13 @@ class ReportGenerator
               .group(ts[:id])
               .order(ts[:created_at].minimum).to_sql
 
-    result = []
+    result = {
+      :training_sessions => [],
+      :training_types => {}
+    }
 
     ActiveRecord::Base.connection.exec_query(query).each do |row|
-      result << {
+      result[:training_sessions] << {
         :training_name => row["training_name"],
         :training_level => row["training_level"],
         :course_name => row["course_name"],
@@ -850,6 +807,17 @@ class ReportGenerator
         :facility => row["space_name"],
         :attendee_count => row["attendee_count"].to_i
       }
+
+      unless result[:training_types][row["training_id"]]
+        result[:training_types][row["training_id"]] = {
+          :name => row["training_name"],
+          :count => 0,
+          :total_attendees => 0
+        }
+      end
+
+      result[:training_types][row["training_id"]][:count] += 1
+      result[:training_types][row["training_id"]][:total_attendees] += row["attendee_count"].to_i
     end
 
     result
