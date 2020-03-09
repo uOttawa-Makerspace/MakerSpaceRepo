@@ -60,7 +60,8 @@ class MsrMailerTest < ActionMailer::TestCase
 		assert_equal ['makerspace@uottawa.ca'], email.to
 		assert_equal to, email.bcc
 
-		assert_not_nil(email.attachments, "No attachments found")
+		assert_not_nil email.attachments
+		assert_equal 3, email.attachments.length
 	end
 
 	test "Sending weekly reports" do
@@ -76,7 +77,7 @@ class MsrMailerTest < ActionMailer::TestCase
 		assert_equal to, email.bcc
 
 		assert_not_nil email.attachments
-		assert_equal 6, email.attachments.length
+		assert_equal 3, email.attachments.length
 	end
 
   test "Send waiver reminder email" do
