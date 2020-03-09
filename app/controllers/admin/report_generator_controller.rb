@@ -11,29 +11,50 @@ class Admin::ReportGeneratorController < AdminAreaController
   end
 
   def generate
+    range_type = params[:range_type]
     semester = params[:semester]
     year = params[:year]
     type = params[:type]
 
-    unless year and year.to_i > 0
-      render :text => "Invalid year", status: 400
-      return
-    end
+    case range_type
+    when "semester"
+      unless year and year.to_i > 0
+        render :text => "Invalid year", status: 400
+        return
+      end
 
-    year = year.to_i
+      year = year.to_i
 
-    case semester
-    when "winter"
-      start_date = DateTime.new(year, 1, 1).beginning_of_day
-      end_date = DateTime.new(year, 4, 30).end_of_day
-    when "summer"
-      start_date = DateTime.new(year, 5, 1).beginning_of_day
-      end_date = DateTime.new(year, 8, 31).end_of_day
-    when "fall"
-      start_date = DateTime.new(year, 9, 1).beginning_of_day
-      end_date = DateTime.new(year, 12, 31).end_of_day
+      case semester
+      when "winter"
+        start_date = DateTime.new(year, 1, 1).beginning_of_day
+        end_date = DateTime.new(year, 4, 30).end_of_day
+      when "summer"
+        start_date = DateTime.new(year, 5, 1).beginning_of_day
+        end_date = DateTime.new(year, 8, 31).end_of_day
+      when "fall"
+        start_date = DateTime.new(year, 9, 1).beginning_of_day
+        end_date = DateTime.new(year, 12, 31).end_of_day
+      else
+        render :text => "Invalid semester", status: 400
+        return
+      end
+    when "date_range"
+      begin
+        start_date = Date.parse(params[:from_date])
+      rescue ParseError
+        render :text => "Failed to parse start date"
+        return
+      end
+
+      begin
+        end_date = Date.parse(params[:to_date])
+      rescue ParseError
+        render :text => "Failed to parse end date"
+        return
+      end
     else
-      render :text => "Invalid semester", status: 400
+      render :text => "Invalid range type", status: 400
       return
     end
 
@@ -49,6 +70,9 @@ class Admin::ReportGeneratorController < AdminAreaController
       return
     end
 
-    send_data spreadsheet.to_stream.read, :type => "application/xlsx", :filename => params[:semester] + " " + params[:year] + " " + params[:type] + ".xlsx"
+    start_date_str = start_date.strftime("%Y-%m-%d")
+    end_date_str = end_date.strftime("%Y-%m-%d")
+
+    send_data spreadsheet.to_stream.read, :type => "application/xlsx", :filename => type + "_" + start_date_str + "_" + end_date_str + ".xlsx"
   end
 end
