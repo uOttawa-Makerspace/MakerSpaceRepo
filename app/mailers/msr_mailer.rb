@@ -71,8 +71,10 @@ class MsrMailer < ApplicationMailer
 	end
 
 	def send_training_report(to)
-		attachments['MakerspaceTraining.csv'] = { mime_type: 'text/csv', content: ReportGenerator.makerspace_training_report }
-		attachments['MtcTraining.csv'] = { mime_type: 'text/csv', content: ReportGenerator.mtc_training_report }
+		start_date = 1.week.ago.beginning_of_week
+		end_date = 1.week.ago.end_of_week
+
+		attachments['TrainingAttendees.xlsx'] = { mime_type: 'text/xlsx', content: ReportGenerator.generate_training_attendees_report(start_date, end_date).to_stream }
 
 		mail(to: "makerspace@uottawa.ca", subject: 'Training Reports', bcc: to)
 	end
