@@ -34,7 +34,7 @@
         <tbody>
         <tr>
           <th class="username" style="text-align: center;" scope="row">
-            <%= link_to prints.user.name.capitalize, user_path(prints.user.username) %>
+            <%= link_to prints.user.name, user_path(prints.user.username) %>
           </th>
           <% if (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") %>
             <td>Internal</td>
@@ -43,7 +43,7 @@
           <% end %>
           <% if prints.order_type == 0 %>
             <% if prints.grams %>
-              <td>3D Printing (<%= prints.grams %>g)</td>
+              <td>3D Printing (<%= prints.grams %> g)</td>
             <% else %>
               <td>3D Printing</td>
             <% end %>
@@ -56,7 +56,7 @@
           <td><%= prints.comments %></td>
           <td>
             <% if prints.file_file_name %>
-              <a href="<%= prints.file.url %>">
+              <a href="<%= prints.file.url %>" download>
                 <button class="btn btn-primary">Download</button>
               </a>
             <% end %>
@@ -64,7 +64,7 @@
           <% if @user.admin? || @user.staff? %>
             <td>
               <% if prints.final_file_file_name %>
-                <a href="<%= prints.final_file.url %>">
+                <a href="<%= prints.final_file.url %>" download>
                   <button class="btn btn-primary">Download</button>
                 </a>
               <% else %>
@@ -228,7 +228,7 @@
             <% if prints.user_approval %>
               <% if prints.timestamp_approved %>
                 <td>Approved on <%= prints.timestamp_approved.to_formatted_s(:short) %></td>
-              <% else %>
+              <% else %>index.html.erb
                 <td>Approved</td>
               <% end %>
             <% elsif prints.user_approval == false %>
