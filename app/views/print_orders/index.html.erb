@@ -56,7 +56,7 @@
           <td><%= prints.comments %></td>
           <td>
             <% if prints.file_file_name %>
-              <a href="<%= prints.file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>" download>
+              <a href="<%= prints.file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>">
                 <button class="btn btn-primary">Download</button>
               </a>
             <% end %>
@@ -64,7 +64,7 @@
           <% if @user.admin? || @user.staff? %>
             <td>
               <% if prints.final_file_file_name %>
-                <a href="<%= prints.final_file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>" download>
+                <a href="<%= prints.final_file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>">
                   <button class="btn btn-primary">Download</button>
                 </a>
               <% else %>
@@ -228,7 +228,7 @@
             <% if prints.user_approval %>
               <% if prints.timestamp_approved %>
                 <td>Approved on <%= prints.timestamp_approved.to_formatted_s(:short) %></td>
-              <% else %>index.html.erb
+              <% else %>
                 <td>Approved</td>
               <% end %>
             <% elsif prints.user_approval == false %>
