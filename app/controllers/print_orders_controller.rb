@@ -106,6 +106,14 @@ class PrintOrdersController < ApplicationController
     end
   end
 
+  def get_download_url(file)
+    if file.s3_object
+      file.s3_object.url_for(:get, :response_content_disposition => "attachment")
+    else
+      file.url
+    end
+  end
+
   private
 
   def print_order_params
