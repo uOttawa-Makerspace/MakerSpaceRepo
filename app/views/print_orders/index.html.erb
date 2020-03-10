@@ -56,7 +56,7 @@
           <td><%= prints.comments %></td>
           <td>
             <% if prints.file_file_name %>
-              <a href="<%= prints.file.url %>" download>
+              <a href="<%= get_download_url(prints.file) %>" download>
                 <button class="btn btn-primary">Download</button>
               </a>
             <% end %>
@@ -64,7 +64,7 @@
           <% if @user.admin? || @user.staff? %>
             <td>
               <% if prints.final_file_file_name %>
-                <a href="<%= prints.final_file.url %>" download>
+                <a href="<%= get_download_url(prints.final_file) %>" download>
                   <button class="btn btn-primary">Download</button>
                 </a>
               <% else %>
