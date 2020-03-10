@@ -56,7 +56,7 @@
           <td><%= prints.comments %></td>
           <td>
             <% if prints.file_file_name %>
-              <a href="<%= prints.file.s3_object.url_for(:get, :response_content_disposition => "attachment") %>" download>
+              <a href="<%= prints.file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>" download>
                 <button class="btn btn-primary">Download</button>
               </a>
             <% end %>
@@ -64,7 +64,7 @@
           <% if @user.admin? || @user.staff? %>
             <td>
               <% if prints.final_file_file_name %>
-                <a href="<%= prints.final_file.s3_object.url_for(:get, :response_content_disposition => "attachment") %>" download>
+                <a href="<%= prints.final_file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>" download>
                   <button class="btn btn-primary">Download</button>
                 </a>
               <% else %>
