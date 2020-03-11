@@ -359,8 +359,8 @@ ActiveRecord::Schema.define(version: 20200128203210) do
   create_table "training_sessions", force: :cascade do |t|
     t.integer  "training_id"
     t.integer  "user_id"
-    t.datetime "created_at",  null: false
-    t.datetime "updated_at",  null: false
+    t.datetime "created_at",                       null: false
+    t.datetime "updated_at",                       null: false
     t.string   "course"
     t.integer  "space_id"
     t.string   "level",       default: "Beginner"
@@ -470,12 +470,12 @@ ActiveRecord::Schema.define(version: 20200128203210) do
   end
 
   create_table "volunteer_tasks", force: :cascade do |t|
-    t.string   "title",       default: ""
-    t.text     "description", default: ""
+    t.string   "title",                               default: ""
+    t.text     "description",                         default: ""
     t.integer  "user_id"
-    t.datetime "created_at",                   null: false
-    t.datetime "updated_at",                   null: false
-    t.string   "status",      default: "open"
+    t.datetime "created_at",                                            null: false
+    t.datetime "updated_at",                                            null: false
+    t.string   "status",                              default: "open"
     t.integer  "space_id"
     t.integer  "joins",                               default: 1
     t.string   "category",                            default: "Other"
