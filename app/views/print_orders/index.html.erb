@@ -246,12 +246,12 @@
                 <%= link_to staff.name.capitalize, user_path(staff.username) %>
               </td>
             <% elsif prints.user_approval and prints.approved %>
-              <%= form_for prints, url: print_order_path(prints) do |f| %>
-                <%= f.hidden_field :staff_id, :value => @user.id %>
-                <td>
+              <td>
+                <%= form_for prints, url: print_order_path(prints) do |f| %>
+                  <%= f.hidden_field :staff_id, :value => @user.id %>
                   <button class="btn btn-primary" type="submit">I will print it</button>
-                </td>
-              <% end %>
+                <% end %>
+              </td>
             <% else %>
               <td>Not Yet</td>
             <% end %>
@@ -266,12 +266,12 @@
             <% elsif prints.printed == false %>
               <td>Not Printed</td>
             <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>
-              <%= form_for prints, url: print_order_path(prints) do |f| %>
-                <%= f.hidden_field :printed, :value => true %>
-                <td>
+              <td>
+                <%= form_for prints, url: print_order_path(prints) do |f| %>
+                  <%= f.hidden_field :printed, :value => true %>
                   <button class="btn btn-primary" type="submit">I Printed it</button>
-                </td>
-              <% end %>
+                <% end %>
+              </td>
             <% else %>
               <td>Not Yet</td>
             <% end %>

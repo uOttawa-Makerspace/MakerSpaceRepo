@@ -1,11 +1,17 @@
-<p style="  font: 400 1.3em 'Raleway', sans-serif;color: #555;">
-<h1>Hello, your part is ready for pickup at UOttawa Makerspace !</h1>
-</p>
-<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #555;">
-  Your part is ready for pickup at UOttawa Makerspace ! Your pickup ID is <%= @pickup_id %>. You will be able to pay by Cash or Credit/Debit Card in the Makerspace. Our hours are : <a href="https://makerepo.com/hours">https://makerepo.com/hours</a> !
-</p>
-<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #555;">
-  Have a nice day,<br>
-  The Makerspace Team
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+  Hi <%= @user.name %>,
 </p>
 
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+  Your print has completed and is now available for pickup!
+  Your order ID is <%= @pickup_id %> and it can be picked up at the uOttawa Makerspace during our <a href="https://makerepo.com/hours">regular operating hours</a>.
+</p>
+
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+  Payment will need to be made on-site via cash, credit, or debit.
+</p>
+
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+  Best regards,<br>
+  The Makerspace Team
+</p>
