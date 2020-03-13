@@ -188,8 +188,6 @@ class ReportGenerator
           if last_training_session_id != certification.training_session.id and not last_training_session_id.nil?
             end_index = sheet.rows.last.row_index + 1
 
-            puts "A#{start_index}:A#{end_index} #{certification.id}"
-
             if start_index < end_index
               sheet.merge_cells("A#{start_index}:A#{end_index}")
               sheet.merge_cells("B#{start_index}:B#{end_index}")
