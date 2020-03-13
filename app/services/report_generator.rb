@@ -227,7 +227,7 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet do |sheet|
+    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
       self.title(sheet, "New Projects")
 
       sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
@@ -249,30 +249,60 @@ class ReportGenerator
     spreadsheet
   end
 
+  # @param [Integer] id
+  def self.generate_training_session_report(id)
+    session = TrainingSession.includes(:user, :users, :space, :training).find(id)
+
+    spreadsheet = Axlsx::Package.new
+
+    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
+      self.title(sheet, "Training Session")
+
+      sheet.add_row ["Training Type", session.training.name]
+      sheet.add_row ["Location", session.space.name]
+      sheet.add_row ["Date", session.created_at.strftime("%Y-%m-%d %H:%M")]
+      sheet.add_row ["Instructor", session.user.name]
+      sheet.add_row ["Course", session.course]
+      sheet.add_row ["Number of Trainees", session.users.length]
+
+      sheet.add_row # spacing
+
+      self.table_header(sheet, [ "Name", "Email", "Student Number" ])
+
+      session.users.each do |student|
+        sheet.add_row [ student.name, student.email, student.student_id ]
+      end
+    end
+
+    spreadsheet
+  end
+
+  # @param [Integer] id
+  def self.generate_space_present_users_report(id)
+    lab_sessions = LabSession.includes(:user).joins(:user).where('space_id' => id).where('sign_in_time < ?', DateTime.now).where('sign_out_time > ?', DateTime.now)
+
+    spreadsheet = Axlsx::Package.new
+
+    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
+      self.title(sheet, "Present Users")
+
+      sheet.add_row ["Date", DateTime.now.strftime("%Y-%m-%d %H:%M:%S")]
+
+      sheet.add_row # spacing
+
+      self.table_header(sheet, [ "Name", "Email", "Student Number" ])
+
+      lab_sessions.each do |lab_session|
+        sheet.add_row [ lab_session.user.name, lab_session.user.email, lab_session.user.student_id ]
+      end
+    end
+
+    spreadsheet
+  end
+
   #endregion
 
   #region Non-migrated reports
-  def self.training_session_report(id)
-    @session = TrainingSession.find(id)
-    @students = @session.users
-
-    column = []
-    column << ["Training Type:", @session.training.name] << ["Location: ", @session.space.name]
-    column << ["Date:", @session.created_at.strftime('%a, %d %b %Y %H:%M')] << ["Trainer:", @session.user.name] << ["Course:", @session.course]
-    column << ["Total Number of Trainees:" , @students.length]
-    column << [] << ["Trainees"]<< ["Name", "Email"]
-    @students.each do |student|
-      row = []
-      row << student.name << student.email
-      column << row
-    end
-
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-  end
 
   def self.present_users_report(id, user_id)
     @space = Space.find(id)
