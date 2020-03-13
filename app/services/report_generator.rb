@@ -169,6 +169,8 @@ class ReportGenerator
     spreadsheet = Axlsx::Package.new
 
     spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
+      merge_cell = sheet.styles.add_style :alignment => { :vertical => :center }
+
       self.title(sheet, "Training Attendees")
 
       sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
@@ -177,19 +179,40 @@ class ReportGenerator
 
       certifications.each do |space, space_certifications|
         self.title(sheet, space_certifications[0].training_session.space.name)
-        self.table_header(sheet, [ "Student ID", "Name", "Email Address", "Certification Type", "Certification Date", "Instructor", "Course", "Facility" ])
+        self.table_header(sheet, [ "Certification Type", "Certification Date", "Instructor", "Course", "Facility", "Student ID", "Name", "Email Address" ])
+
+        start_index = sheet.rows.last.row_index + 2
+        last_training_session_id = nil
 
         space_certifications.each do |certification|
+          if last_training_session_id != certification.training_session.id and not last_training_session_id.nil?
+            end_index = sheet.rows.last.row_index + 1
+
+            puts "A#{start_index}:A#{end_index} #{certification.id}"
+
+            if start_index < end_index
+              sheet.merge_cells("A#{start_index}:A#{end_index}")
+              sheet.merge_cells("B#{start_index}:B#{end_index}")
+              sheet.merge_cells("C#{start_index}:C#{end_index}")
+              sheet.merge_cells("D#{start_index}:D#{end_index}")
+              sheet.merge_cells("E#{start_index}:E#{end_index}")
+            end
+
+            start_index = sheet.rows.last.row_index + 2
+          end
+
           sheet.add_row [
-                          certification.user.student_id,
-                          certification.user.name,
-                          certification.user.email,
                           certification.training_session.training.name,
                           certification.training_session.created_at.strftime('%Y-%m-%d %H:%M'),
                           certification.training_session.user.name,
                           certification.training_session.course,
-                          certification.training_session.space.name
-                        ]
+                          certification.training_session.space.name,
+                          certification.user.student_id,
+                          certification.user.name,
+                          certification.user.email
+                        ], style: [merge_cell, merge_cell, merge_cell, merge_cell, merge_cell]
+
+          last_training_session_id = certification.training_session.id
         end
 
         sheet.add_row # spacing
