@@ -161,6 +161,8 @@ class ReportGenerator
     spreadsheet
   end
 
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
   def self.generate_training_attendees_report(start_date, end_date)
     certifications = Certification.includes({ :training_session => [ :user, :training, :space ] }, :user).where('created_at' => start_date..end_date).order('spaces.name', 'training_sessions.created_at', 'users_certifications.name').group_by { |item| item.training_session.space.id }
 
@@ -197,32 +199,38 @@ class ReportGenerator
     spreadsheet
   end
 
-  #endregion
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.generate_new_projects_report(start_date, end_date)
+    repositories = Repository.where('created_at' => start_date..end_date).includes(:users, :categories)
 
-  #region Non-migrated report
+    spreadsheet = Axlsx::Package.new
 
-  #all Trainings
-  def self.project_report(start_date = 1.week.ago.beginning_of_week, end_date = 1.week.ago.end_of_week)
-    @repositories = Repository.between_dates_picked(start_date, end_date)
-    column = []
-    column << ["title", "owner", "url", "categories"]
+    spreadsheet.workbook.add_worksheet do |sheet|
+      self.title(sheet, "New Projects")
 
-    @repositories.each do |repository|
-      row = []
-      row << repository.title << repository.user.name
-      row << Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username)
+      sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
+      sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+      sheet.add_row # spacing
 
-      @categories = repository.categories
-      @categories.each do |category|
-        row << category.name
+      self.table_header(sheet, [ "Title", "Users", "URL", "Categories" ])
+
+      repositories.each do |repository|
+        sheet.add_row [
+                        repository.title,
+                        (repository.users.map { |user| user.name }).join(', '),
+                        Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username),
+                        (repository.categories.map { |category| category.name }).join(', ')
+                      ]
       end
-
-      column << row
     end
-    @repositories.to_csv(column)
+
+    spreadsheet
   end
 
+  #endregion
 
+  #region Non-migrated reports
   def self.training_session_report(id)
     @session = TrainingSession.find(id)
     @students = @session.users
