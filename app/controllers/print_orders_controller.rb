@@ -61,7 +61,7 @@ class PrintOrdersController < ApplicationController
       params[:print_order][:price_per_gram] = params[:print_order][:price_per_gram].gsub(',', '.')
     end
 
-    if @print_order.expedited == true
+    if params[:print_order][:quote] and @print_order.expedited == true
       params[:print_order][:quote] += expedited_price
     end
 
