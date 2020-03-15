@@ -7,5 +7,6 @@ Paperclip.options[:content_type_mappings] = {
   :ino => "text/plain",
   :slpt => "text/plain",
   :aix => "application/zip",
-  :sldprt => "application/vnd.ms-office"
+  :sldprt => "application/vnd.ms-office",
+  :x3g => ["application/x3g", "application/octet-stream"]
 }
