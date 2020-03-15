@@ -8,5 +8,5 @@ Paperclip.options[:content_type_mappings] = {
   :slpt => "text/plain",
   :aix => "application/zip",
   :sldprt => "application/vnd.ms-office",
-  :x3g => ["application/x3g", "application/octet-stream", "application/pgp-keys"] # x3g binary data is identified as application/pgp-keys by paperclip
+  :x3g => ["application/x3g", "application/octet-stream", "application/x-pgp-keyring"] # x3g binary data is identified as application/x-pgp-keyring by paperclip
 }
