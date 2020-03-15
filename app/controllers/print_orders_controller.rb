@@ -58,7 +58,7 @@ class PrintOrdersController < ApplicationController
       params[:print_order][:quote] = params[:print_order][:service_charge].gsub(',', '.').to_f + (params[:print_order][:price_per_hour].gsub(',', '.').to_f * params[:print_order][:hours].gsub(',', '.').to_f)
     elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
       params[:print_order][:quote] = params[:print_order][:service_charge].gsub(',', '.').to_f + (params[:print_order][:grams].gsub(',', '.').to_f * params[:print_order][:price_per_gram].gsub(',', '.').to_f)
-      params[:print_order][:price_per_gram] = params[:print_order][:price_per_gram].gsub(',', '.')
+      params[:print_order][:price_per_gram] = params[:print_order][:price_per_gram].gsub(',', '.').to_f
     end
 
     if params[:print_order][:quote] and @print_order.expedited == true
