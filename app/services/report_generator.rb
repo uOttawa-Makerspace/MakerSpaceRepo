@@ -382,16 +382,21 @@ class ReportGenerator
     spreadsheet = Axlsx::Package.new
 
     spreadsheet.workbook.add_worksheet do |sheet|
+      self.title(sheet, 'Visitors by Hour')
+      sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
+      sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
+      sheet.add_row # spacing
+      
       header = ['Date']
 
       (min_hour..max_hour).each do |hour|
-        header << "%02i:00" % hour
+        header << '%02i:00' % hour
       end
 
       self.table_header(sheet, header)
 
       (start_date..end_date).each do |date|
-        row = [date.strftime("%Y-%m-%d")]
+        row = [date.strftime('%Y-%m-%d')]
 
         (min_hour..max_hour).each do |hour|
           if visits_by_hour[date.year] and visits_by_hour[date.year][date.month] and visits_by_hour[date.year][date.month][date.day] and visits_by_hour[date.year][date.month][date.day][hour]
