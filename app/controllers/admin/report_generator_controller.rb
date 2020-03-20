@@ -5,6 +5,7 @@ class Admin::ReportGeneratorController < AdminAreaController
   def index
     @report_types = [
         ['Trainings', :trainings],
+        ['Certifications', :certifications],
         ['Visitors', :visitors],
         ['New Users', :new_users],
         ['Training Attendees', :training_attendees],
@@ -66,6 +67,8 @@ class Admin::ReportGeneratorController < AdminAreaController
       spreadsheet = ReportGenerator.generate_visitors_report(start_date, end_date)
     when "trainings"
       spreadsheet = ReportGenerator.generate_trainings_report(start_date, end_date)
+    when "certifications"
+      spreadsheet = ReportGenerator.generate_certifications_report(start_date, end_date)
     when "new_users"
       spreadsheet = ReportGenerator.generate_new_users_report(start_date, end_date)
     when "training_attendees"

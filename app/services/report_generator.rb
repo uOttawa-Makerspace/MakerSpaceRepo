@@ -9,10 +9,7 @@ class ReportGenerator
     spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
       merge_cell = sheet.styles.add_style :alignment => { :vertical => :center }
 
-      self.title(sheet, "Visitors")
-      sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
-      sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
-      sheet.add_row # spacing
+      self.header(sheet, 'Visitors', start_date, end_date)
 
       space_details = self.get_visitors(start_date, end_date)
 
@@ -141,6 +138,31 @@ class ReportGenerator
                         row[:date].localtime.strftime("%Y-%m-%d %H:%M"),
                         row[:facility],
                         row[:attendee_count]
+                      ]
+      end
+    end
+
+    spreadsheet
+  end
+
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.generate_certifications_report(start_date, end_date)
+    certifications = self.get_certifications(start_date, end_date)
+
+    spreadsheet = Axlsx::Package.new
+
+    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
+      self.header(sheet, 'Certifications', start_date, end_date)
+
+      self.table_header(sheet, [ 'Certification', 'Level', 'Facility', 'Certified Users' ])
+
+      certifications.each do |row|
+        sheet.add_row [
+                        row['name'],
+                        row['level'],
+                        row['space_name'],
+                        row['total_certifications']
                       ]
       end
     end
@@ -415,298 +437,6 @@ class ReportGenerator
 
   #endregion
 
-  #region Non-migrated reports
-
-  def self.total_visits_per_term_report
-    column = []
-    column << ["Number of students visiting CEED facilities per semester (Unique users)"] <<[]
-    column << ["Facility", "Fall 2017 Term", "Winter 2018 Term"]
-    Space.all.each do |space|
-      row = []
-      name = space.name
-      row << name
-      #Fall
-      uniqueVisitFall2017 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2017, 9, 1, 00, 00, 0) , DateTime.new(2017, 12, 31, 23, 59, 0)).select('DISTINCT user_id').count
-      row << uniqueVisitFall2017
-
-      #winter
-      uniqueVisitWinter2018 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2018, 1, 1, 00, 00, 0) , DateTime.new(2018, 4, 30, 23, 59, 0)).select('DISTINCT user_id').count
-      row << uniqueVisitWinter2018
-
-      column << row
-    end
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-  end
-
-  def self.unique_visits_detail_report
-
-    fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
-    fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
-
-    header = ["Facility", "Fall 2017", "Winter 2018", "Summer 2018", "Fall 2019", "Winter 2019"]
-
-    column = []
-    column << ["Detailed informaton of unique users viasiting CEED facilities "]
-    column << header
-
-    Space.all.each do |space|
-      column << []<< [space.name]
-
-      column << ["Fall 2017 Term"]
-      ReportGenerator.create_seasonal_report(fall_2017_begin, fall_2017_end, space, column)
-
-      column << ["Winter 2018 Term"]
-      ReportGenerator.create_seasonal_report(winter_2018_begin, winter_2018_end, space, column)
-
-      column << ["Summer 2018 Term"]
-      ReportGenerator.create_seasonal_report(summer_2018_begin, summer_2018_end, space, column)
-
-      column << ["Fall 2018 Term"]
-      ReportGenerator.create_seasonal_report(fall_2018_begin, fall_2018_end, space, column)
-
-      column << ["Winter 2019 Term"]
-      ReportGenerator.create_seasonal_report(winter_2019_begin, winter_2019_end, space, column)
-    end
-
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-
-  end
-
-  def self.total_visits_detail_report
-
-    fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
-    fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
-
-    header = ["Facility", "Fall 2017", "Winter 2018", "Summer 2018", "Fall 2019", "Winter 2019"]
-
-    column = []
-    column << ["Detailed informaton of unique users viasiting CEED facilities "]
-    column << header
-
-    Space.all.each do |space|
-      column << []<< [space.name]
-
-      column << ["Fall 2017 Term"]
-      ReportGenerator.create_seasonal_report_total_visits(fall_2017_begin, fall_2017_end, space, column)
-
-      column << ["Winter 2018 Term"]
-      ReportGenerator.create_seasonal_report_total_visits(winter_2018_begin, winter_2018_end, space, column)
-
-      column << ["Summer 2018 Term"]
-      ReportGenerator.create_seasonal_report_total_visits(summer_2018_begin, summer_2018_end, space, column)
-
-      column << ["Fall 2018 Term"]
-      ReportGenerator.create_seasonal_report_total_visits(fall_2018_begin, fall_2018_end, space, column)
-
-      column << ["Winter 2019 Term"]
-      ReportGenerator.create_seasonal_report_total_visits(winter_2019_begin, winter_2019_end, space, column)
-    end
-
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-
-  end
-
-  # old helper methods
-
-  def self.date_season_range(year)
-    begin_fall = DateTime.new(year, 9, 1).beginning_of_day
-    end_fall = DateTime.new(year,12, 31).end_of_day
-    begin_winter = DateTime.new(year+1, 1, 1).beginning_of_day
-    end_winter = DateTime.new(year+1,4, 30).end_of_day
-    begin_summer = DateTime.new(year+1, 5, 1).beginning_of_day
-    end_summer = DateTime.new(year+1,8, 31).end_of_day
-    return begin_fall, end_fall, begin_winter, end_winter, begin_summer, end_summer
-  end
-
-  def self.create_seasonal_report(season_begin, season_end, space, column)
-    uniqueVisitSeasonYear = space.lab_sessions.where('created_at BETWEEN ? AND ? ', season_begin , season_end).select('DISTINCT user_id')
-    total = uniqueVisitSeasonYear.count
-    program = []
-    faculty = []
-    gender = []
-    identity = []
-    column << ["TOTAL", total]
-    uniqueVisitSeasonYear.each do |lab|
-      user = User.find_by_id(lab.user_id)
-      program << user.program
-      faculty << user.faculty
-      gender << user.gender
-      identity << user.identity
-    end
-
-    column << [] << ["Gender"]
-    gendersAll = Hash[gender.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    gendersAll.each do |gender|
-      column << [gender[0], gender[1]]
-    end
-    column << [] << ["Faculty"]
-    facultyAll = Hash[faculty.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    facultyAll.each do |faculty|
-      column << [faculty[0], faculty[1]]
-    end
-
-    column << [] << ["Program"]
-    programsAll = Hash[program.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    programsAll.each do |program|
-      column << [program[0], program[1]]
-    end
-
-    column << [] << ["Identity"]
-    identityAll = Hash[identity.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    identityAll.each do |identity|
-      column << [identity[0], identity[1]]
-    end
-  end
-
-  def self.create_seasonal_report_total_visits(season_begin, season_end, space, column)
-    uniqueVisitSeasonYear = space.lab_sessions.where('created_at BETWEEN ? AND ? ', season_begin , season_end)
-    total = uniqueVisitSeasonYear.count
-    program = []
-    faculty = []
-    gender = []
-    identity = []
-    column << ["TOTAL", total]
-    uniqueVisitSeasonYear.each do |lab|
-      user = User.find_by_id(lab.user_id)
-      program << user.program
-      faculty << user.faculty
-      gender << user.gender
-      identity << user.identity
-    end
-
-    column << [] << ["Gender"]
-    gendersAll = Hash[gender.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    gendersAll.each do |gender|
-      column << [gender[0], gender[1]]
-    end
-    column << [] << ["Faculty"]
-    facultyAll = Hash[faculty.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    facultyAll.each do |faculty|
-      column << [faculty[0], faculty[1]]
-    end
-
-    column << [] << ["Program"]
-    programsAll = Hash[program.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    programsAll.each do |program|
-      column << [program[0], program[1]]
-    end
-
-    column << [] << ["Identity"]
-    identityAll = Hash[identity.group_by {|x| x}.map {|k,v| [k,v.count]}]
-
-    identityAll.each do |identity|
-      column << [identity[0], identity[1]]
-    end
-  end
-
-  def self.unique_visits_ceed
-    fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
-    fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
-    column = []
-    column << ["Unique visitors in all CEED facilities "]
-
-    column << ["Fall 2017 Term", ReportGenerator.number_ceed_visits(fall_2017_begin, fall_2017_end)]
-    column << ["Winter 2018 Term", ReportGenerator.number_ceed_visits(winter_2018_begin, winter_2018_end)]
-    column << ["Summer 2018 Term", ReportGenerator.number_ceed_visits(summer_2018_begin, summer_2018_end)]
-    column << ["Fall 2018 Term", ReportGenerator.number_ceed_visits(fall_2018_begin, fall_2018_end)]
-    column << ["Winter 2019 Term", ReportGenerator.number_ceed_visits(winter_2019_begin, winter_2019_end)]
-
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-
-  end
-
-  def self.number_ceed_visits(season_begin, season_end)
-    return LabSession.where('created_at BETWEEN ? AND ? ', season_begin , season_end).select('DISTINCT user_id').count
-  end
-
-  def self.seasonal_certification_report
-    fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
-    fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
-
-    column = []
-    column << ["Number of TOTAL/Unique Certifications per Term per Space"]
-
-    Space.find_each do |space|
-      column << [] << [space.name]
-      column << [] << ["Total certifications", "Unique Certifications"]
-      column << ["Fall 2017 Term", ReportGenerator.number_of_certification(fall_2017_begin, fall_2017_end, space)]
-      column << ["Winter 2018 Term", ReportGenerator.number_of_certification(winter_2018_begin, winter_2018_end, space)]
-      column << ["Summer 2018 Term", ReportGenerator.number_of_certification(summer_2018_begin, summer_2018_end, space)]
-      column << ["Fall 2018 Term", ReportGenerator.number_of_certification(fall_2018_begin, fall_2018_end, space)]
-      column << ["Winter 2019 Term", ReportGenerator.number_of_certification(winter_2019_begin, winter_2019_end, space)]
-    end
-
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-  end
-
-  def self.number_of_certification(date_begin, date_end, space)
-    certifications = Certification.joins(:space).where("spaces.name = ?", space.name).where('certifications.created_at BETWEEN ? AND ? ', date_begin , date_end)
-    return certifications.count, certifications.select('DISTINCT certifications.user_id').count
-  end
-
-  def self.seasonal_training_report
-    fall_2017_begin, fall_2017_end, winter_2018_begin, winter_2018_end, summer_2018_begin, summer_2018_end = ReportGenerator.date_season_range(2017)
-    fall_2018_begin, fall_2018_end, winter_2019_begin, winter_2019_end, summer_2019_begin, summer_2019_end = ReportGenerator.date_season_range(2018)
-
-    column = []
-    column << ["Number of Trainings per Term per Space"]
-
-    Space.find_each do |space|
-      column << [] << [space.name]
-      column << ["Fall 2017 Term", ReportGenerator.number_of_trainings(fall_2017_begin, fall_2017_end, space)]
-      column << ["Winter 2018 Term", ReportGenerator.number_of_trainings(winter_2018_begin, winter_2018_end, space)]
-      column << ["Summer 2018 Term", ReportGenerator.number_of_trainings(summer_2018_begin, summer_2018_end, space)]
-      column << ["Fall 2018 Term", ReportGenerator.number_of_trainings(fall_2018_begin, fall_2018_end, space)]
-      column << ["Winter 2019 Term", ReportGenerator.number_of_trainings(winter_2019_begin, winter_2019_end, space)]
-    end
-
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-  end
-
-  def self.number_of_trainings(date_begin, date_end, space)
-    count = 0
-    TrainingSession.joins(:space).where("spaces.name = ?", space.name).where('training_sessions.created_at BETWEEN ? AND ? ', date_begin , date_end).find_each do |ts|
-      if ts.completed?
-        count += 1
-      end
-    end
-    return count
-    # return TrainingSession.joins(:space).where("spaces.name = ?", space.name).where('training_sessions.created_at BETWEEN ? AND ? ', date_begin , date_end).count
-  end
-
-  #endregion
-
   private
 
   #region Database helpers
@@ -901,6 +631,29 @@ class ReportGenerator
     result
   end
 
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.get_certifications(start_date, end_date)
+    c = Certification.arel_table
+    ts = TrainingSession.arel_table
+    t = Training.arel_table
+    s = Space.arel_table
+
+    ActiveRecord::Base.connection.exec_query(Certification.select([
+                                                                    t['name'].minimum.as('name'),
+                                                                    s['name'].minimum.as('space_name'),
+                                                                    ts['level'],
+                                                                    Arel.star.count.as('total_certifications')
+                                                                  ])
+                                               .joins(c.join(ts).on(c['training_session_id'].eq(ts['id'])).join_sources)
+                                               .joins(ts.join(t).on(ts['training_id'].eq(t['id'])).join_sources)
+                                               .joins(ts.join(s).on(ts['space_id'].eq(s['id'])).join_sources)
+                                               .where(ts['created_at'].between(start_date..end_date))
+                                               .group(t['id'], s['id'], ts['level'])
+                                               .order('name', 'level', 'space_name')
+                                               .to_sql)
+  end
+
   #endregion
 
   #region Axlsx helpers
@@ -915,6 +668,17 @@ class ReportGenerator
   # @param [Array<String>] headers
   def self.table_header(worksheet, headers)
     worksheet.add_row headers, b: true
+  end
+
+  # @param [Axlsx::Worksheet] worksheet
+  # @param [String] title
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.header(worksheet, title, start_date, end_date)
+    self.title(worksheet, title)
+    worksheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
+    worksheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+    worksheet.add_row # spacing
   end
 
   #endregion
