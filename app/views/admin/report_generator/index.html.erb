@@ -1,7 +1,7 @@
 <% provide(:title, "Reports") %>
 <section id="report">
   <div class="edit-column">
-    <h1>Report Generator</h1>
+    <h1>Reports</h1>
 
     <%= form_tag admin_report_generator_generate_path, method: :post do %>
       <div class="form-row align-items-center">
@@ -13,8 +13,8 @@
         </div>
 
         <div class="form-group col-md-4">
-          <%= label_tag(:semester, "Semester") %>
-          <%= select_tag(:semester, options_for_select([["Winter", :winter], ["Spring/Summer", :summer], ["Fall", :fall]]), { class: "form-control" }) %>
+          <%= label_tag(:term, "Term") %>
+          <%= select_tag(:term, options_for_select([["Winter", :winter], ["Spring/Summer", :summer], ["Fall", :fall]]), { class: "form-control" }) %>
         </div>
 
         <div class="form-group col-md-4">

@@ -6,7 +6,7 @@ class ReportGenerator
   def self.generate_visitors_report(start_date, end_date)
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
+    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
       merge_cell = sheet.styles.add_style :alignment => { :vertical => :center }
 
       self.header(sheet, 'Visitors', start_date, end_date)
@@ -14,8 +14,8 @@ class ReportGenerator
       space_details = self.get_visitors(start_date, end_date)
 
       #region Overview
-      self.title(sheet, "Overview")
-      self.table_header(sheet, ["Space", "Distinct Users", "Total Visits"])
+      self.title(sheet, 'Overview')
+      self.table_header(sheet, ['Space', 'Distinct Users', 'Total Visits'])
 
       space_details[:spaces].each do |space_name, space|
         sheet.add_row [space_name, space[:unique], space[:total]]
@@ -23,7 +23,7 @@ class ReportGenerator
 
       sheet.add_row # spacing
 
-      self.table_header(sheet, ["Identity", "Distinct Users", "Total Visits"])
+      self.table_header(sheet, ['Identity', 'Distinct Users', 'Total Visits'])
 
       space_details[:identities].each do |identity_name, space|
         sheet.add_row [identity_name, space[:unique], space[:total]]
@@ -31,7 +31,7 @@ class ReportGenerator
 
       sheet.add_row # spacing
 
-      self.table_header(sheet, ["Faculty", "Distinct Users", "Total Visits"])
+      self.table_header(sheet, ['Faculty', 'Distinct Users', 'Total Visits'])
 
       space_details[:faculties].each do |faculty_name, space|
         sheet.add_row [faculty_name, space[:unique], space[:total]]
@@ -39,7 +39,7 @@ class ReportGenerator
 
       sheet.add_row # spacing
 
-      self.table_header(sheet, ["Identity", "Faculty", "Distinct Users", "Total Visits"])
+      self.table_header(sheet, ['Identity', 'Faculty', 'Distinct Users', 'Total Visits'])
       space_details[:identities].each do |identity_name, identity|
         start_index = sheet.rows.last.row_index + 1
 
@@ -59,21 +59,21 @@ class ReportGenerator
       space_details[:spaces].each do |space_name, space_detail|
         self.title(sheet, space_name)
 
-        self.table_header(sheet, ["Identity", "Distinct Users", "Total Visits"])
+        self.table_header(sheet, ['Identity', 'Distinct Users', 'Total Visits'])
         space_detail[:identities].each do |identity_name, identity|
           sheet.add_row [ identity_name, identity[:unique], identity[:total] ]
         end
 
         sheet.add_row # spacing
 
-        self.table_header(sheet, ["Faculty", "Distinct Users", "Total Visits"])
+        self.table_header(sheet, ['Faculty', 'Distinct Users', 'Total Visits'])
         space_detail[:faculties].each do |faculty_name, faculty|
           sheet.add_row [ faculty_name, faculty[:unique], faculty[:total] ]
         end
 
         sheet.add_row # spacing
 
-        self.table_header(sheet, ["Identity", "Faculty", "Distinct Users", "Total Visits"])
+        self.table_header(sheet, ['Identity', 'Faculty', 'Distinct Users', 'Total Visits'])
         space_detail[:identities].each do |identity_name, identity|
           start_index = sheet.rows.last.row_index + 1
 
@@ -88,7 +88,7 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        self.table_header(sheet, ["Gender", "Distinct Users", "Total Visits"])
+        self.table_header(sheet, ['Gender', 'Distinct Users', 'Total Visits'])
         space_detail[:genders].each do |gender_name, gender|
           sheet.add_row [ gender_name, gender[:unique], gender[:total] ]
         end
@@ -108,14 +108,14 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
-      self.title(sheet, "Trainings")
+    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
+      self.title(sheet, 'Trainings')
 
-      sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
-      sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+      sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
+      sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
       sheet.add_row # spacing
 
-      self.table_header(sheet, [ "Training", "Session Count", "Total Attendees" ])
+      self.table_header(sheet, [ 'Training', 'Session Count', 'Total Attendees' ])
 
       trainings[:training_types].each do |_, training_type|
         sheet.add_row [
@@ -127,7 +127,7 @@ class ReportGenerator
 
       sheet.add_row # spacing
 
-      self.table_header(sheet, [ "Training", "Level", "Course", "Instructor", "Date", "Facility", "Attendee Count" ])
+      self.table_header(sheet, [ 'Training', 'Level', 'Course', 'Instructor', 'Date', 'Facility', 'Attendee Count' ])
 
       trainings[:training_sessions].each do |row|
         sheet.add_row [
@@ -135,7 +135,7 @@ class ReportGenerator
                         row[:training_level],
                         row[:course_name],
                         row[:instructor_name],
-                        row[:date].localtime.strftime("%Y-%m-%d %H:%M"),
+                        row[:date].localtime.strftime('%Y-%m-%d %H:%M'),
                         row[:facility],
                         row[:attendee_count]
                       ]
@@ -177,14 +177,14 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
-      self.title(sheet, "New Users")
+    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
+      self.title(sheet, 'New Users')
 
-      sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
-      sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+      sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
+      sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
       sheet.add_row # spacing
 
-      self.title(sheet, "Overview")
+      self.title(sheet, 'Overview')
 
       groups = users.group_by { |user| user.identity }
 
@@ -194,7 +194,7 @@ class ReportGenerator
 
       sheet.add_row # spacing
 
-      self.table_header(sheet, [ "Name", "Username", "Email", "Gender", "Identity", "Faculty", "Year of Study", "Student ID", "Joined on" ])
+      self.table_header(sheet, [ 'Name', 'Username', 'Email', 'Gender', 'Identity', 'Faculty', 'Year of Study', 'Student ID', 'Joined on' ])
 
       users.each do |user|
         sheet.add_row [
@@ -206,7 +206,7 @@ class ReportGenerator
                         user.faculty,
                         user.year_of_study,
                         user.student_id,
-                        user.created_at.localtime.strftime("%Y-%m-%d %H:%M")
+                        user.created_at.localtime.strftime('%Y-%m-%d %H:%M')
                       ]
       end
     end
@@ -221,18 +221,18 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
+    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
       merge_cell = sheet.styles.add_style :alignment => { :vertical => :center }
 
-      self.title(sheet, "Training Attendees")
+      self.title(sheet, 'Training Attendees')
 
-      sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
-      sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+      sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
+      sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
       sheet.add_row # spacing
 
       certifications.each do |space, space_certifications|
         self.title(sheet, space_certifications[0].training_session.space.name)
-        self.table_header(sheet, [ "Certification Type", "Certification Date", "Instructor", "Course", "Facility", "Student ID", "Name", "Email Address" ])
+        self.table_header(sheet, [ 'Certification Type', 'Certification Date', 'Instructor', 'Course', 'Facility', 'Student ID', 'Name', 'Email Address' ])
 
         start_index = sheet.rows.last.row_index + 2
         last_training_session_id = nil
@@ -280,14 +280,14 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
-      self.title(sheet, "New Projects")
+    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
+      self.title(sheet, 'New Projects')
 
-      sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
-      sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+      sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
+      sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
       sheet.add_row # spacing
 
-      self.table_header(sheet, [ "Title", "Users", "URL", "Categories" ])
+      self.table_header(sheet, [ 'Title', 'Users', 'URL', 'Categories' ])
 
       repositories.each do |repository|
         sheet.add_row [
@@ -308,19 +308,19 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
-      self.title(sheet, "Training Session")
+    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
+      self.title(sheet, 'Training Session')
 
-      sheet.add_row ["Training Type", session.training.name]
-      sheet.add_row ["Location", session.space.name]
-      sheet.add_row ["Date", session.created_at.strftime("%Y-%m-%d %H:%M")]
-      sheet.add_row ["Instructor", session.user.name]
-      sheet.add_row ["Course", session.course]
-      sheet.add_row ["Number of Trainees", session.users.length]
+      sheet.add_row ['Training Type', session.training.name]
+      sheet.add_row ['Location', session.space.name]
+      sheet.add_row ['Date', session.created_at.strftime('%Y-%m-%d %H:%M')]
+      sheet.add_row ['Instructor', session.user.name]
+      sheet.add_row ['Course', session.course]
+      sheet.add_row ['Number of Trainees', session.users.length]
 
       sheet.add_row # spacing
 
-      self.table_header(sheet, [ "Name", "Email", "Student Number" ])
+      self.table_header(sheet, [ 'Name', 'Email', 'Student Number' ])
 
       session.users.each do |student|
         sheet.add_row [ student.name, student.email, student.student_id ]
@@ -336,14 +336,14 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: "Report") do |sheet|
-      self.title(sheet, "Present Users")
+    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
+      self.title(sheet, 'Present Users')
 
-      sheet.add_row ["Date", DateTime.now.strftime("%Y-%m-%d %H:%M:%S")]
+      sheet.add_row ['Date', DateTime.now.strftime('%Y-%m-%d %H:%M:%S')]
 
       sheet.add_row # spacing
 
-      self.table_header(sheet, [ "Name", "Email", "Student Number" ])
+      self.table_header(sheet, [ 'Name', 'Email', 'Student Number' ])
 
       lab_sessions.each do |lab_session|
         sheet.add_row [ lab_session.user.name, lab_session.user.email, lab_session.user.student_id ]
@@ -352,10 +352,6 @@ class ReportGenerator
 
     spreadsheet
   end
-
-  #endregion
-
-  #region Aggregation over multiple periods
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
@@ -444,17 +440,17 @@ class ReportGenerator
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.get_visitors(start_date, end_date)
-    g = Arel::Table.new("g")
+    g = Arel::Table.new('g')
     ls = LabSession.arel_table
     u = User.arel_table
     s = Space.arel_table
 
     result = ActiveRecord::Base.connection.exec_query(g.project([
-      g[:space_name].minimum.as("space_name"), g[:identity], g[:faculty], g[:gender], Arel.star.count.as("unique_visitors"), g[:count].sum.as("total_visits")
+      g[:space_name].minimum.as('space_name'), g[:identity], g[:faculty], g[:gender], Arel.star.count.as('unique_visitors'), g[:count].sum.as('total_visits')
     ])
     .from(
       LabSession.select([
-        ls[:space_id], s[:name].minimum.as("space_name"), u[:identity], u[:faculty], u[:gender], Arel.star.count
+        ls[:space_id], s[:name].minimum.as('space_name'), u[:identity], u[:faculty], u[:gender], Arel.star.count
       ])
       .joins(ls.join(u).on(u[:id].eq(ls[:user_id])).join_sources)
       .joins(ls.join(s).on(s[:id].eq(ls[:space_id])).join_sources)
@@ -475,21 +471,21 @@ class ReportGenerator
     }
 
     result.each do |row|
-      space_name = row["space_name"]
-      faculty = row["faculty"].blank? ? "Unknown" : row["faculty"]
-      gender = row["gender"]
+      space_name = row['space_name']
+      faculty = row['faculty'].blank? ? 'Unknown' : row['faculty']
+      gender = row['gender']
 
-      case row["identity"]
-      when "undergrad"
-        identity = "Undergraduate"
-      when "grad"
-        identity = "Graduate"
-      when "faculty_member"
-        identity = "Faculty Member"
-      when "community_member"
-        identity = "Community Member"
+      case row['identity']
+      when 'undergrad'
+        identity = 'Undergraduate'
+      when 'grad'
+        identity = 'Graduate'
+      when 'faculty_member'
+        identity = 'Faculty Member'
+      when 'community_member'
+        identity = 'Community Member'
       else
-        identity = "Unknown"
+        identity = 'Unknown'
       end
 
       unless organized[:spaces][space_name]
@@ -534,8 +530,8 @@ class ReportGenerator
         organized[:genders][gender] = { :unique => 0, :total => 0 }
       end
 
-      unique = row["unique_visitors"].to_i
-      total = row["total_visits"].to_i
+      unique = row['unique_visitors'].to_i
+      total = row['total_visits'].to_i
 
       organized[:unique] += unique
       organized[:total] += total
@@ -578,18 +574,18 @@ class ReportGenerator
     ts = TrainingSession.arel_table
     tsu = Arel::Table.new(:training_sessions_users)
     u = User.arel_table
-    uu = User.arel_table.alias("trainers")
+    uu = User.arel_table.alias('trainers')
     s = Space.arel_table
 
     query = TrainingSession.select([
-                                     t[:id].minimum.as("training_id"),
-                                     t[:name].minimum.as("training_name"),
-                                     ts[:level].minimum.as("training_level"),
-                                     ts[:course].minimum.as("course_name"),
-                                     uu[:name].minimum.as("instructor_name"),
-                                     ts[:created_at].minimum.as("date"),
-                                     s[:name].minimum.as("space_name"),
-                                     Arel.star.count.as("attendee_count")
+                                     t[:id].minimum.as('training_id'),
+                                     t[:name].minimum.as('training_name'),
+                                     ts[:level].minimum.as('training_level'),
+                                     ts[:course].minimum.as('course_name'),
+                                     uu[:name].minimum.as('instructor_name'),
+                                     ts[:created_at].minimum.as('date'),
+                                     s[:name].minimum.as('space_name'),
+                                     Arel.star.count.as('attendee_count')
                                    ])
               .where(ts[:created_at].between(start_date..end_date))
               .joins(ts.join(t).on(t[:id].eq(ts[:training_id])).join_sources)
@@ -607,25 +603,25 @@ class ReportGenerator
 
     ActiveRecord::Base.connection.exec_query(query).each do |row|
       result[:training_sessions] << {
-        :training_name => row["training_name"],
-        :training_level => row["training_level"],
-        :course_name => row["course_name"],
-        :instructor_name => row["instructor_name"],
-        :date => DateTime.strptime(row["date"], "%Y-%m-%d %H:%M:%S"),
-        :facility => row["space_name"],
-        :attendee_count => row["attendee_count"].to_i
+        :training_name => row['training_name'],
+        :training_level => row['training_level'],
+        :course_name => row['course_name'],
+        :instructor_name => row['instructor_name'],
+        :date => DateTime.strptime(row['date'], '%Y-%m-%d %H:%M:%S'),
+        :facility => row['space_name'],
+        :attendee_count => row['attendee_count'].to_i
       }
 
-      unless result[:training_types][row["training_id"]]
-        result[:training_types][row["training_id"]] = {
-          :name => row["training_name"],
+      unless result[:training_types][row['training_id']]
+        result[:training_types][row['training_id']] = {
+          :name => row['training_name'],
           :count => 0,
           :total_attendees => 0
         }
       end
 
-      result[:training_types][row["training_id"]][:count] += 1
-      result[:training_types][row["training_id"]][:total_attendees] += row["attendee_count"].to_i
+      result[:training_types][row['training_id']][:count] += 1
+      result[:training_types][row['training_id']][:total_attendees] += row['attendee_count'].to_i
     end
 
     result
@@ -676,8 +672,8 @@ class ReportGenerator
   # @param [DateTime] end_date
   def self.header(worksheet, title, start_date, end_date)
     self.title(worksheet, title)
-    worksheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
-    worksheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+    worksheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
+    worksheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
     worksheet.add_row # spacing
   end
 
