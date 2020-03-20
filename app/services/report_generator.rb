@@ -25,6 +25,37 @@ class ReportGenerator
       end
 
       sheet.add_row # spacing
+
+      self.table_header(sheet, ["Identity", "Distinct Users", "Total Visits"])
+
+      space_details[:identities].each do |identity_name, space|
+        sheet.add_row [identity_name, space[:unique], space[:total]]
+      end
+
+      sheet.add_row # spacing
+
+      self.table_header(sheet, ["Faculty", "Distinct Users", "Total Visits"])
+
+      space_details[:faculties].each do |faculty_name, space|
+        sheet.add_row [faculty_name, space[:unique], space[:total]]
+      end
+
+      sheet.add_row # spacing
+
+      self.table_header(sheet, ["Identity", "Faculty", "Distinct Users", "Total Visits"])
+      space_details[:identities].each do |identity_name, identity|
+        start_index = sheet.rows.last.row_index + 1
+
+        identity[:faculties].each do |faculty_name, faculty|
+          sheet.add_row [ identity_name, faculty_name, faculty[:unique], faculty[:total] ], :style => [merge_cell]
+        end
+
+        end_index = sheet.rows.last.row_index
+
+        sheet.merge_cells("A#{start_index + 1}:A#{end_index + 1}")
+      end
+
+      sheet.add_row # spacing
       #endregion
 
       #region Per-space details
@@ -702,7 +733,10 @@ class ReportGenerator
     organized = {
       :unique => 0,
       :total => 0,
-      :spaces => {}
+      :spaces => {},
+      :identities => {},
+      :faculties => {},
+      :genders => {}
     }
 
     result.each do |row|
@@ -749,11 +783,39 @@ class ReportGenerator
         organized[:spaces][space_name][:genders][gender] = { :unique => 0, :total => 0 }
       end
 
+      unless organized[:identities][identity]
+        organized[:identities][identity] = { :unique => 0, :total => 0, :faculties => {} }
+      end
+
+      unless organized[:identities][identity][:faculties][faculty]
+        organized[:identities][identity][:faculties][faculty] = { :unique => 0, :total => 0 }
+      end
+
+      unless organized[:faculties][faculty]
+        organized[:faculties][faculty] = { :unique => 0, :total => 0 }
+      end
+
+      unless organized[:genders][gender]
+        organized[:genders][gender] = { :unique => 0, :total => 0 }
+      end
+
       unique = row["unique_visitors"].to_i
       total = row["total_visits"].to_i
 
       organized[:unique] += unique
       organized[:total] += total
+
+      organized[:identities][identity][:unique] += unique
+      organized[:identities][identity][:total] += total
+
+      organized[:identities][identity][:faculties][faculty][:unique] += unique
+      organized[:identities][identity][:faculties][faculty][:total] += total
+
+      organized[:faculties][faculty][:unique] += unique
+      organized[:faculties][faculty][:total] += total
+
+      organized[:genders][gender][:unique] += unique
+      organized[:genders][gender][:total] += total
 
       organized[:spaces][space_name][:unique] += unique
       organized[:spaces][space_name][:total] += total
