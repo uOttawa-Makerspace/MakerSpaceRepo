@@ -8,7 +8,8 @@ class Admin::ReportGeneratorController < AdminAreaController
         ['Visitors', :visitors],
         ['New Users', :new_users],
         ['Training Attendees', :training_attendees],
-        ['New Projects', :new_projects]
+        ['New Projects', :new_projects],
+        ['Visits by Hour', :visits_by_hour]
     ]
   end
 
@@ -71,6 +72,8 @@ class Admin::ReportGeneratorController < AdminAreaController
       spreadsheet = ReportGenerator.generate_training_attendees_report(start_date, end_date)
     when "new_projects"
       spreadsheet = ReportGenerator.generate_new_projects_report(start_date, end_date)
+    when "visits_by_hour"
+      spreadsheet = ReportGenerator.generate_peak_hours_report(start_date, end_date)
     else
       render :text => "Unknown report type", status: 400
       return

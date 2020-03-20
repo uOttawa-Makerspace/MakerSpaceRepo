@@ -1,5 +1,5 @@
 class ReportGenerator
-  #region Reports
+  #region Date Range Reports
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
@@ -302,79 +302,85 @@ class ReportGenerator
 
   #endregion
 
+  #region Aggregation over multiple periods
+
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.generate_peak_hours_report(start_date, end_date)
+    ls = LabSession.arel_table
+
+    result = ActiveRecord::Base.connection.exec_query(ls.project(
+      ls['sign_in_time'].extract('YEAR').as('year'),
+      ls['sign_in_time'].extract('MONTH').as('month'),
+      ls['sign_in_time'].extract('DAY').as('day'),
+      ls['sign_in_time'].extract('HOUR').as('hour'),
+      Arel.star.count.as('total_visits')
+    ).from(ls).where(ls['sign_in_time'].between(start_date..end_date)).group('year', 'month', 'day', 'hour').to_sql)
+
+    visits_by_hour = {}
+    min_hour = 23
+    max_hour = 0
+
+    result.each do |row|
+      year = row['year'].to_i
+      month = row['month'].to_i
+      day = row['day'].to_i
+      hour = row['hour'].to_i
+      total_visits = row['total_visits'].to_i
+
+      date = DateTime.new(year, month, day, hour).localtime
+
+      min_hour = [min_hour, date.hour].min
+      max_hour = [max_hour, date.hour].max
+      
+      unless visits_by_hour[date.year]
+        visits_by_hour[date.year] = {}
+      end
+
+      unless visits_by_hour[date.year][date.month]
+        visits_by_hour[date.year][date.month] = {}
+      end
+
+      unless visits_by_hour[date.year][date.month][date.day]
+        visits_by_hour[date.year][date.month][date.day] = {}
+      end
+
+      visits_by_hour[date.year][date.month][date.day][date.hour] = total_visits
+    end
+
+    spreadsheet = Axlsx::Package.new
+
+    spreadsheet.workbook.add_worksheet do |sheet|
+      header = ['Date']
+
+      (min_hour..max_hour).each do |hour|
+        header << "%02i:00" % hour
+      end
+
+      self.table_header(sheet, header)
+
+      (start_date..end_date).each do |date|
+        row = [date.strftime("%Y-%m-%d")]
+
+        (min_hour..max_hour).each do |hour|
+          if visits_by_hour[date.year] and visits_by_hour[date.year][date.month] and visits_by_hour[date.year][date.month][date.day] and visits_by_hour[date.year][date.month][date.day][hour]
+            row << visits_by_hour[date.year][date.month][date.day][hour]
+          else
+            row << 0
+          end
+        end
+
+        sheet.add_row row
+      end
+    end
+
+    spreadsheet
+  end
+
+  #endregion
+
   #region Non-migrated reports
 
-  def self.present_users_report(id, user_id)
-    @space = Space.find(id)
-    @staff = User.find(user_id)
-    @users = @space.signed_in_users
-
-    column = []
-    column << ["Space: ", @space.name]
-    column << ["Staff: ", @staff.name]
-    column << ["Date:", Time.zone.now.strftime('%a, %d %b %Y at %H:%M')]
-    column << [] << ["Users"]<< ["Name", "Email", "Student number"]
-    @users.each do |user|
-      row = []
-      row << user.name << user.email
-      row << (user.student_id || '')
-      column << row
-    end
-
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-  end
-
-  def self.frequency_hours_report(start_date = 1.month.ago.beginning_of_month, end_date = 1.month.ago.end_of_month)
-    @lab_sessions = LabSession.between_dates_picked(start_date, end_date)
-    @mspaceLabSessions = @lab_sessions.where('space_id' => Space.find_by_name("Makerspace").id)
-    column = []
-    column << ["Month","Day","Sign in Time"]
-    @mspaceLabSessions.each do |lab_session|
-      row = []
-      row << lab_session.sign_in_time.strftime('%m') << lab_session.sign_in_time.strftime('%d')<< lab_session.sign_in_time.strftime('%H:%M')
-
-      column << row
-    end
-
-    CSV.generate do |csv|
-      column.each do |row|
-        csv << row
-      end
-    end
-  end
-
-  #Total visits, not unque
-  # def self.total_visits_per_term_report
-  #   column = []
-  #   column << ["Number of students visiting CEED facilities per semester "] <<[]
-  #   column << ["Facility", "Fall 2017 Term", "Winter 2018 Term"]
-  #   Space.all.each do |space|
-  #     row = []
-  #     name = space.name
-  #     row << name
-  #     #Fall
-  #     totalVisitFall2017 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2017, 9, 1, 00, 00, 0) , DateTime.new(2017, 12, 31, 23, 59, 0)).count
-  #     row << totalVisitFall2017
-  #
-  #     #winter
-  #     totalVisitWinter2018 = space.lab_sessions.where('created_at BETWEEN ? AND ? ', DateTime.new(2018, 1, 1, 00, 00, 0) , DateTime.new(2018, 4, 30, 23, 59, 0)).count
-  #     row << totalVisitWinter2018
-  #
-  #     column << row
-  #   end
-  #
-  #   CSV.generate do |csv|
-  #     column.each do |row|
-  #       csv << row
-  #     end
-  #   end
-  # end
-
-  #unique visits
   def self.total_visits_per_term_report
     column = []
     column << ["Number of students visiting CEED facilities per semester (Unique users)"] <<[]
@@ -399,7 +405,6 @@ class ReportGenerator
       end
     end
   end
-
 
   def self.unique_visits_detail_report
 
@@ -476,6 +481,8 @@ class ReportGenerator
     end
 
   end
+
+  # old helper methods
 
   def self.date_season_range(year)
     begin_fall = DateTime.new(year, 9, 1).beginning_of_day
