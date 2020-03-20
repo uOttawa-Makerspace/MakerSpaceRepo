@@ -39,6 +39,7 @@ gem 'bootbox-rails', '~>0.4'
 gem 'quick_random_records'
 gem 'wicked_pdf'
 gem 'wkhtmltopdf-binary'
+gem 'paperclip-av-transcoder'
 gem 'caxlsx', '~> 3.0.1'
 
 group :development, :test do
