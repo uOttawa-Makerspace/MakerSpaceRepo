@@ -1,5 +1,5 @@
 class AnnouncementsController < ApplicationController
-  layout 'volunteer'
+  layout "staff_area"
   before_action :grant_access
   def index
     @announcements = Announcement.all.order(created_at: :asc)
@@ -59,4 +59,5 @@ class AnnouncementsController < ApplicationController
       flash[:alert] = "You cannot access this area."
     end
   end
+
 end

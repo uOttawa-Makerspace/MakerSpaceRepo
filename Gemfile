@@ -74,5 +74,3 @@ group :test do
   gem 'selenium-webdriver', '~> 2.39.0'
 
 end
-
-gem 'rails_12factor', group: :production

@@ -1,38 +1,43 @@
-<p style="  font: 400 1.3em 'Raleway', sans-serif;color: #555;">
-<h1>Hello, your print request has been approved by a staff member !</h1>
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+  Hi <%= @user.name %>,
 </p>
-<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #555;">
-  Pricing : <br>
-  Service Charges : $<%= @print_order.service_charge %> <br>
-  <% if @print_order.order_type == 1 %>
-  Material Cost : $<%= @print_order.material_cost %>
-  <br>
-  Price for hours worked : $<%= @print_order.price_per_hour %>
-  <% elsif @print_order.order_type == 0 and (@print_order.sst == true) %>
-  Number of Hours : <%= @print_order.hours %>
-  <br>
-  Price Per Gram : $<%= @print_order.price_per_hour %>/h
-    <br>
 
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+  Your print "<%= @print_order.file_file_name %>" has been approved!
+</p>
+
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+  Pricing: <br>
+  Service charges: <%= number_to_currency(@print_order.service_charge) %> <br>
+  <% if @print_order.order_type == 1 %>
+    Material cost: $<%= @print_order.material_cost %> <br>
+    Price: <%= @print_order.price_per_hour.number_to_currency %>
+  <% elsif @print_order.order_type == 0 and (@print_order.sst == true) %>
+    Time: <%= @print_order.hours %> hours<br>
+    Price: <%= number_to_currency(@print_order.price_per_hour) %>/h
   <% else %>
-    Number of Grams : <%= @print_order.grams %>
-    <br>
-    Price Per Gram : $<%= @print_order.price_per_gram %>/g
-  <% end %>
-  <% if @print_order.expedited == true %>
-    <br>
-  Expedited Service : $<%= @expedited_price %>
+    Weight: <%= @print_order.grams %> grams<br>
+    Price: <%= number_to_currency(@print_order.price_per_gram) %>/g
   <% end %>
   <br>
-  The total price for your piece is $<%= @print_order.quote %>. <br>
-  You can accept or decline the quote by loging in your <a href="https://makerepo.com/print_orders">Makerepo account</a>.
-  <br />
-  <% if @comments.present? %>
-    Comments from staff: <br />
-    <b><%= @comments %></b>
+  <% if @print_order.expedited == true %>
+    Expedited service charge: <%= number_to_currency(@expedited_price) %><br>
   <% end %>
+  <strong>Grand Total:</strong> <%= number_to_currency(@print_order.quote) %>
 </p>
-<p style="  font: 400 1.1em 'Raleway', sans-serif;color: #555;">
+
+<% if @comments.present? %>
+  <p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+    Comments from staff:<br/>
+    <span style="font-style: italic"><%= @comments %></span>
+  </p>
+<% end %>
+
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+  You can accept or decline the quote by visiting the <a href="https://makerepo.com/print_orders">print orders page</a>.
+</p>
+
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
   Best regards,<br>
   The Makerspace Team
 </p>

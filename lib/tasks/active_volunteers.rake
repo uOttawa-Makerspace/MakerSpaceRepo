@@ -12,4 +12,21 @@ namespace :active_volunteers do
       end
     end
   end
+
+  desc "Check if volunteers had at least one task completed"
+  task check_volunteers_tasks_performance: :environment do
+    User.where(role: "volunteer").joins(:skill).find_each do |user|
+      status = []
+      skill = user.skill
+      user.volunteer_task_joins.each do |vtj|
+        status << vtj.volunteer_task.status
+      end
+
+      if status.include?("completed")
+        skill.update_attributes(active: true) if skill.active != true
+      else
+        skill.update_attributes(active: false) if skill.active != false
+      end
+    end
+  end
 end

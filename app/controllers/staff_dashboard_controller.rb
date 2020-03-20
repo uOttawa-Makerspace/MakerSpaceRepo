@@ -1,6 +1,7 @@
 class StaffDashboardController < StaffAreaController
 
   def index
+    @users = User.order(id: :desc).limit(10)
   end
 
   def sign_out_users

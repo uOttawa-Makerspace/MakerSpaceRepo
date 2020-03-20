@@ -122,10 +122,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
     def default_params
       if params[:user_id].present?
         if @user.admin?
-          return {user_id: params[:user_id], training_id: params[:training_id], course: params[:course], space_id: params[:training_session][:space_id]}
+          return {user_id: params[:user_id], training_id: params[:training_id], course: params[:course], space_id: params[:training_session][:space_id], level: params[:level]}
         end
       else
-        return {user_id: current_user.id, training_id: params[:training_id], course: params[:course], space_id: params[:training_session][:space_id]}
+        return {user_id: current_user.id, training_id: params[:training_id], course: params[:course], space_id: params[:training_session][:space_id], level: params[:level]}
       end
     end
 
@@ -139,7 +139,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
     end
 
     def changed_params
-      params.require(:changed_params).permit(:training_id, :course, :user_id).reject { |_, v| v.blank? }
+      params.require(:changed_params).permit(:training_id, :course, :user_id, :level).reject { |_, v| v.blank? }
     end
 
     def verify_ownership
