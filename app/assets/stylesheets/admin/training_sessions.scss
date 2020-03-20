@@ -94,6 +94,25 @@ table{
         }
       }
 
+    .edit-button{
+      float: right;
+      font: 300 10px 'Raleway', sans-serif;
+      padding: 0.5rem 0.81rem;
+      border: none;
+      text-transform: uppercase;
+      color: #777;
+      letter-spacing: 0.15em;
+      border-radius: 2px;
+      background-color: #367e78 ;
+      color: #fff;
+      margin-bottom: 7px;
+      margin-top: 0;
+      margin-right: 5px;
+      &:hover{
+        cursor: pointer;
+      }
+    }
+
       .download-button{
         float: right;
         font: 300 10px 'Raleway', sans-serif;

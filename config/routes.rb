@@ -1,5 +1,4 @@
 Rails.application.routes.draw do
-
   get '/saml/auth' => 'saml_idp#login'
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
@@ -187,6 +186,19 @@ Rails.application.routes.draw do
     get 'sign_out_all_users'
   end
 
+  resources :development_programs, only: [:index] do
+    collection do
+      get :join_development_program
+    end
+  end
+
+  resources :proficient_projects do
+    collection do
+      get :join_development_program
+    end
+  end
+
+  resources :project_requirements, only: [:create, :destroy]
 
   resources :volunteers, only: [:index] do
     collection do
