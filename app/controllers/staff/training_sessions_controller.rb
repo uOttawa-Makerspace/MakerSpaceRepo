@@ -113,7 +113,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
   def training_report
     respond_to do |format|
       format.html
-      format.csv {send_data ReportGenerator.training_session_report(params[:id]) }
+      format.xlsx {send_data ReportGenerator.generate_training_session_report(params[:id]).to_stream.read }
     end
   end
   

@@ -40,6 +40,7 @@ gem 'quick_random_records'
 gem 'wicked_pdf'
 gem 'wkhtmltopdf-binary'
 gem 'paperclip-av-transcoder'
+gem 'caxlsx', '~> 3.0.1'
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
@@ -49,9 +50,8 @@ group :development, :test do
 end
 
 group :development do
-  gem "letter_opener"
   gem 'web-console', '~> 2.0'
-  gem "letter_opener" # Open emails in development
+  gem 'letter_opener' # Open emails in development
 
   # Capistrano deployment stuff
   gem 'capistrano', '~> 3.9'
@@ -63,6 +63,8 @@ group :development do
   # ssh deployment
   gem 'ed25519', '~> 1.2'
   gem 'bcrypt_pbkdf', '~> 1.0'
+
+  gem 'dotenv-rails'
 end
 
 group :test do

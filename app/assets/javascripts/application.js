@@ -18,6 +18,21 @@ Turbolinks.enableProgressBar();
 
 // needed since by default bootstrap-select doesn't register page:load events
 $(document).on('ready page:load', function () {
+    $('[data-radio-enable]').on('change', function () {
+        var $inputs = $('input[type="radio"][name="' + $(this).attr('name') + '"]');
+
+        $inputs.each(function () {
+            var $input = $(this);
+            var $target = $($input.data('radio-enable'));
+
+            if ($input.prop('checked')){
+                $target.prop('disabled', false);
+            } else {
+                $target.prop('disabled', true);
+            }
+        });
+    }).trigger('change');
+
     $('.bootstrap-select').selectpicker({
         windowPadding: [80, 0, 0, 0]
     });

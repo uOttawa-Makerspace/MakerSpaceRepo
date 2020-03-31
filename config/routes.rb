@@ -106,26 +106,9 @@ Rails.application.routes.draw do
   namespace :admin do
     get 'index', path: '/'
 
-    resources :report_generator, only: [:index] do
-      collection do
-        get 'new_users'
-        get 'total_visits'
-        get 'unique_visits'
-        get 'faculty_frequency'
-        get 'gender_frequency'
-        get 'training'
-        put 'select_date_range'
-        get 'repository'
-        get 'makerspace_training'
-        get 'mtc_training'
-        get 'peak_hrs'
-        get 'total_visits_per_term'
-        get 'unique_visits_detail'
-        get 'total_visits_detail'
-        get 'unique_visits_ceed'
-        get 'seasonal_certification_report'
-        get 'seasonal_training_report'
-      end
+    namespace :report_generator do
+      get 'index', path: '/'
+      post 'generate', path: '/generate', format: :xlsx
     end
 
     resources :users, only: [:index, :edit, :update, :show] do
