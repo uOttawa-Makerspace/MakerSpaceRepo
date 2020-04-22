@@ -34,7 +34,7 @@
         <tbody>
         <tr>
           <th class="username" style="text-align: center;" scope="row">
-            <%= link_to prints.user.name.capitalize, user_path(prints.user.username) %>
+            <%= link_to prints.user.name, user_path(prints.user.username) %>
           </th>
           <% if (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") %>
             <td>Internal</td>
@@ -43,7 +43,7 @@
           <% end %>
           <% if prints.order_type == 0 %>
             <% if prints.grams %>
-              <td>3D Printing (<%= prints.grams %>g)</td>
+              <td>3D Printing (<%= prints.grams %> g)</td>
             <% else %>
               <td>3D Printing</td>
             <% end %>
@@ -56,7 +56,7 @@
           <td><%= prints.comments %></td>
           <td>
             <% if prints.file_file_name %>
-              <a href="<%= prints.file.url %>">
+              <a href="<%= prints.file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>">
                 <button class="btn btn-primary">Download</button>
               </a>
             <% end %>
@@ -64,7 +64,7 @@
           <% if @user.admin? || @user.staff? %>
             <td>
               <% if prints.final_file_file_name %>
-                <a href="<%= prints.final_file.url %>">
+                <a href="<%= prints.final_file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>">
                   <button class="btn btn-primary">Download</button>
                 </a>
               <% else %>
@@ -246,12 +246,12 @@
                 <%= link_to staff.name.capitalize, user_path(staff.username) %>
               </td>
             <% elsif prints.user_approval and prints.approved %>
-              <%= form_for prints, url: print_order_path(prints) do |f| %>
-                <%= f.hidden_field :staff_id, :value => @user.id %>
-                <td>
+              <td>
+                <%= form_for prints, url: print_order_path(prints) do |f| %>
+                  <%= f.hidden_field :staff_id, :value => @user.id %>
                   <button class="btn btn-primary" type="submit">I will print it</button>
-                </td>
-              <% end %>
+                <% end %>
+              </td>
             <% else %>
               <td>Not Yet</td>
             <% end %>
@@ -266,12 +266,12 @@
             <% elsif prints.printed == false %>
               <td>Not Printed</td>
             <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>
-              <%= form_for prints, url: print_order_path(prints) do |f| %>
-                <%= f.hidden_field :printed, :value => true %>
-                <td>
+              <td>
+                <%= form_for prints, url: print_order_path(prints) do |f| %>
+                  <%= f.hidden_field :printed, :value => true %>
                   <button class="btn btn-primary" type="submit">I Printed it</button>
-                </td>
-              <% end %>
+                <% end %>
+              </td>
             <% else %>
               <td>Not Yet</td>
             <% end %>
