@@ -33,6 +33,10 @@ class MsrMailer < ApplicationMailer
 		mail(to: @user.email, subject: "Your print \"#{@print_order.file_file_name}\" has been approved!")
 	end
 
+	def send_print_reminder(email, id)
+		mail(to: email, subject: "Reminder for your print order ##{id}")
+	end
+
 	def send_print_disapproval(user, comments, filename)
 		@user = user
 		@comments = comments

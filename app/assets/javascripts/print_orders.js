@@ -1,9 +1,11 @@
 function changeRadioOther() {
     var other = document.getElementById("other");
+    other.checked = true;
     other.value = document.getElementById("inputother").value;
 }
 function changeRadioOther2() {
     var other2 = document.getElementById("other2");
+    other2.checked = true;
     other2.value = document.getElementById("inputother2").value;
 }
 function change_price(radio) {

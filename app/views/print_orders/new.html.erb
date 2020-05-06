@@ -10,11 +10,14 @@
     <p>*** All payments will go through secured payment wall (<a href="https://makerstore.ca/">Makerstore.ca</a>) With
       methods
       available : Cash / Debit Card (Visa Debit or Mastercard Debit Only) / Credit Card (Visa / Mastercard) ***</p>
+
     <%= form_for(@print_order, multipart: true, url: print_orders_path) do |f| %>
+
       <div class="form-group">
         <label>STL File</label>
         <%= f.file_field :file, style: "display: block!important;", :required => true %>
       </div>
+
       <fieldset class="form-group">
         <div class="row">
           <legend class="col-form-label col-sm-2 pt-0">Material</legend>
@@ -39,6 +42,7 @@
           </div>
         </div>
       </fieldset>
+
       <fieldset class="form-group">
         <div class="row">
           <legend class="col-form-label col-sm-2 pt-0">Quality</legend>
@@ -70,6 +74,7 @@
           </div>
         </div>
       </fieldset>
+
       <fieldset class="form-group">
         <div class="row">
           <legend class="col-form-label col-sm-2 pt-0">Dimension SST Printer (At extra charge)</legend>
@@ -89,6 +94,7 @@
           </div>
         </div>
       </fieldset>
+
       <fieldset class="form-group">
         <div class="row">
           <legend class="col-form-label col-sm-2 pt-0">Expedited Printing (Express at extra charge)</legend>
@@ -109,6 +115,14 @@
         </div>
       </fieldset>
 
+      <fieldset class="form-group">
+        <div class="row">
+          <legend class="col-form-label col-sm-2 pt-0">Comments</legend>
+          <div class="col-sm-10">
+            <textarea class="form-control" name="print_order[comments_box]" rows="3"></textarea>
+          </div>
+        </div>
+      </fieldset>
 
       <%= f.hidden_field :user_id, :value => current_user.id %>
       <%= f.hidden_field :order_type, :value => 0 %>
@@ -156,6 +170,7 @@
           </div>
         </div>
       </fieldset>
+
       <fieldset class="form-group" style="display: none;" id="color_form">
         <div class="row">
           <legend class="col-form-label col-sm-2 pt-0">Color</legend>
@@ -173,9 +188,10 @@
           </div>
         </div>
       </fieldset>
+
       <fieldset class="form-group">
         <div class="row">
-          <legend class="col-form-label col-sm-2 pt-0">Expedited (Express at extra charge)</legend>
+          <legend class="col-form-label col-sm-2 pt-0">Expedited, extra charge (25$ CAD)</legend>
           <div class="col-sm-10">
             <div class="form-check">
               <input type="radio" checked class="form-check-input" name="print_order[expedited]" value="false">
@@ -193,6 +209,14 @@
         </div>
       </fieldset>
 
+      <fieldset class="form-group">
+        <div class="row">
+          <legend class="col-form-label col-sm-2 pt-0">Comments</legend>
+          <div class="col-sm-10">
+            <textarea class="form-control" name="print_order[comments_box]" rows="3"></textarea>
+          </div>
+        </div>
+      </fieldset>
 
       <%= f.hidden_field :user_id, :value => current_user.id %>
       <%= f.hidden_field :order_type, :value => 1 %>

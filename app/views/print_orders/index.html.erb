@@ -1,10 +1,6 @@
 <h1>List of prints / Laser
   Cuts    <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %></h1>
 
-<% if flash[:alert] %>
-  <div id="alert"><%= flash[:alert] %></div>
-<% end %>
-
 <% @order.each do |order, order_string| %>
   <% if @print_order.where(order).present? %>
     <h2><%= order_string %></h2>
@@ -15,6 +11,7 @@
         <th style="text-align: center;" scope="col">Identity</th>
         <th style="text-align: center;" scope="col">Type</th>
         <th style="text-align: center;" scope="col">ID</th>
+        <th style="text-align: center;" scope="col">Submitted on</th>
         <th style="text-align: center;" scope="col">Comments</th>
         <th style="text-align: center;" scope="col">STL/SVG</th>
         <% if @user.admin? || @user.staff? %>
@@ -34,7 +31,7 @@
         <tbody>
         <tr>
           <th class="username" style="text-align: center;" scope="row">
-            <%= link_to prints.user.name, user_path(prints.user.username) %>
+            <%= link_to prints.user.name, user_path(prints.user.username) %> <br> <a href="<%= prints.user.email %>"><%= prints.user.email %></a>
           </th>
           <% if (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") %>
             <td>Internal</td>
@@ -53,6 +50,13 @@
             <td>Unknown</td>
           <% end %>
           <td style="text-align: center;"><%= prints.id %></td>
+          <td style="text-align: center;">
+            <% if prints.created_at %>
+              Submitted on <%= prints.created_at.to_formatted_s(:short) %>
+            <% else %>
+              Approved
+            <% end %>
+          </td>
           <td><%= prints.comments %></td>
           <td>
             <% if prints.file_file_name %>
@@ -103,7 +107,7 @@
                           <% if prints.order_type == 0 and (prints.sst != true) %>
                             <%= f.label :quote, "Service Charges (In CAD) " %>
                             <div class="form-group">
-                              <%= f.number_field :service_charge, step: "0.01",placeholder: "20", class: "form-control", :required => true %>
+                              <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
                             </div>
                             <%= f.label :quote, "Number of Grams" %>
                             <div class="form-group">
@@ -262,7 +266,8 @@
             <% elsif prints.user_approval == false %>
               <td>Won't be printed</td>
             <% elsif prints.printed %>
-              <td>Printed<br><%= link_to 'Invoice', print_order_invoice_url(prints), method: :get,class: "btn btn-primary", target: :_blank %></td>
+              <td>Printed<br><%= link_to 'Invoice', print_order_invoice_url(prints), method: :get, class: "btn btn-primary", target: :_blank %>
+              </td>
             <% elsif prints.printed == false %>
               <td>Not Printed</td>
             <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>

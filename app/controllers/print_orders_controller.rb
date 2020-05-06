@@ -8,8 +8,10 @@ class PrintOrdersController < ApplicationController
         "approved is NULL" => "Waiting for Staff Approval",
         "user_approval is NULL and approved is TRUE" => "Waiting for user Approval",
         "user_approval is TRUE and approved is TRUE and printed is NULL" => "Waiting to be printed",
-        "user_approval is FALSE or approved is FALSE or printed is FALSE or printed is TRUE" => "Printed/Disapproved"
+        "user_approval is TRUE and approved is TRUE and printed is TRUE" => "Printed",
+        "user_approval is FALSE or approved is FALSE" => "Disapproved"
     }
+
     if (@user.staff? || @user.admin?)
       @print_order = PrintOrder.all.order(expedited: :desc, created_at: :asc)
     else
@@ -32,12 +34,14 @@ class PrintOrdersController < ApplicationController
       end
     end
 
+    params[:print_order][:comments] = params[:print_order][:comments] + ", " + params[:print_order][:comments_box]
+
     @print_order = PrintOrder.create(print_order_params)
     if @print_order.id.nil? || @print_order.id == 0
       redirect_to print_orders_path, :alert => "The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !"
     else
       MsrMailer.send_print_to_makerspace(@print_order.id).deliver_now
-      redirect_to print_orders_path
+      redirect_to print_orders_path, :notice => "The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision."
 
     end
   end
