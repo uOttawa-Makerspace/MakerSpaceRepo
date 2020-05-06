@@ -42,7 +42,6 @@ class PrintOrdersController < ApplicationController
     else
       MsrMailer.send_print_to_makerspace(@print_order.id).deliver_now
       redirect_to print_orders_path, :notice => "The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision."
-
     end
   end
 
@@ -69,18 +68,17 @@ class PrintOrdersController < ApplicationController
       params[:print_order][:quote] += expedited_price
     end
 
-    @user = @print_order.user
     @print_order.update(print_order_params)
 
     if params[:print_order][:approved] == "true"
-      MsrMailer.send_print_quote(expedited_price, @user, @print_order, params[:print_order][:staff_comments]).deliver_now
+      MsrMailer.send_print_quote(expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments]).deliver_now
     elsif params[:print_order][:approved] == "false"
-      MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
+      MsrMailer.send_print_disapproval(@print_order.user, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
     elsif params[:print_order][:user_approval] == "true"
       MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
     elsif params[:print_order][:printed] == "true"
-      MsrMailer.send_print_finished(@user, @print_order.file_file_name, @print_order.id).deliver_now
-      MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
+      MsrMailer.send_print_finished(@print_order.user, @print_order.file_file_name, @print_order.id).deliver_now
+      MsrMailer.send_invoice(@print_order.user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
     end
 
     redirect_to print_orders_path
