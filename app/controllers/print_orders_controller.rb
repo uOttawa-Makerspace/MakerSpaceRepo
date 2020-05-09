@@ -23,28 +23,31 @@ class PrintOrdersController < ApplicationController
   def new
     @print_order = PrintOrder.new
     if (@user.identity == "undergrad") or (@user.identity == "grad") or (@user.identity == "faculty_member")
-      prices = [0.15, 0.2, 0.25, 15, 0.28, 0.38, 0.47, 0.53, 5.82, 2.99, 3, 4, 15, 18, "-", "-"]
+      prices = [0.15, 0.2, 0.25, 0.28, 0.38, 0.47, 15, 0.53, 5.82, 2.99, 3, 4, 15, 18]
     else
-      prices = [0.3, 0.4, 0.5, 30, 0.56, 0.76, 0.94, 0.53, 5.82, 2.99, 3, 4, 15, 18, "-", "-"]
+      prices = [0.3, 0.4, 0.5, 0.56, 0.76, 0.94, 30, 0.53, 5.82, 2.99, 3, 4, 15, 18]
     end
-    @table = [
-        ["3D Low (PLA/ABS), (per g)", prices[0], 15],
-        ["3D Medium (PLA/ABS), (per g)", prices[1], 15],
-        ["3D High (PLA/ABS), (per g)", prices[2], 15],
-        ["3D Low (Other Materials), (per g)", prices[3], 15],
-        ["3D Medium (Other Materials), (per g)", prices[4], 15],
-        ["3D High (Other Materials), (per g)", prices[5], 15],
-        ["SST Printer (Per Hour)", prices[6], 15],
-        ["M2 Onyx (per cm3)", prices[7], 15],
-        ["M2 Carbon Fiber (per cm3)", prices[8], 15],
-        ["M2 Fiberglass (per cm3)	", prices[9], 15],
-        ["Laser - mdf 1/8\" (Per Sheet)", prices[10], 20],
-        ["Laser - mdf 1/4\" (Per Sheet)	", prices[11], 20],
-        ["Laser - acrylic 1/8\" (Per Sheet)", prices[12], 20],
-        ["Laser - acrylic 1/4\" (Per Sheet)", prices[13], 20],
-        ["Design Work", prices[14], 25],
-        ["Design Consultation", prices[15], 0]
-    ]
+    if params[:type] == "laser"
+      @table = [
+          ["Laser - mdf 1/8\" (Per Sheet)", prices[10], 20],
+          ["Laser - mdf 1/4\" (Per Sheet)	", prices[11], 20],
+          ["Laser - acrylic 1/8\" (Per Sheet)", prices[12], 20],
+          ["Laser - acrylic 1/4\" (Per Sheet)", prices[13], 20]
+      ]
+    else
+      @table = [
+          ["3D Low (PLA/ABS), (per g)", prices[0], 15],
+          ["3D Medium (PLA/ABS), (per g)", prices[1], 15],
+          ["3D High (PLA/ABS), (per g)", prices[2], 15],
+          ["3D Low (Other Materials), (per g)", prices[3], 15],
+          ["3D Medium (Other Materials), (per g)", prices[4], 15],
+          ["3D High (Other Materials), (per g)", prices[5], 15],
+          ["SST Printer (Per Hour)", prices[6], 15],
+          ["M2 Onyx (per cm3)", prices[7], 15],
+          ["M2 Carbon Fiber (per cm3)", prices[8], 15],
+          ["M2 Fiberglass (per cm3)	", prices[9], 15]
+      ]
+    end
   end
 
   def create
@@ -52,13 +55,13 @@ class PrintOrdersController < ApplicationController
       params[:print_order][:comments] = params[:print_order][:material] + ", " + params[:print_order][:comments]
     end
 
-    if params[:print_order][:comments] and params[:print_order][:sst]
-      if params[:print_order][:sst] == "true"
-        params[:print_order][:comments] = "SST, " + params[:print_order][:comments]
-      end
+    if params[:print_order][:material] == "SST"
+      params[:print_order][:sst] = "true"
     end
 
-    params[:print_order][:comments] = params[:print_order][:comments] + ", " + params[:print_order][:comments_box]
+    if params[:print_order][:comments] and (params[:print_order][:comments_box] != "")
+      params[:print_order][:comments] = params[:print_order][:comments] + ", " + params[:print_order][:comments_box]
+    end
 
     @print_order = PrintOrder.create(print_order_params)
     if @print_order.id.nil? || @print_order.id == 0
