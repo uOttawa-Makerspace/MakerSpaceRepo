@@ -2,7 +2,7 @@ upstream makerspacerepo {
 	server unix:/var/run/makerspacerepo/unicorn.sock fail_timeout=0;
 }
 server {
-	client_max_body_size 20M;
+	client_max_body_size 5000M;
 	listen       80 default_server;
 	server_name  makerepo.com www.makerepo.com;
 	root         /home/deploy/apps/Makerepo/current/public/;

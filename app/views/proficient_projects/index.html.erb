@@ -1,0 +1,63 @@
+<section>
+  <br />
+  <div class="by-5">
+    <%= form_tag(proficient_projects_path, method: :get) do %>
+      <div class="form-inline">
+        <%= text_field_tag(:search, "", placeholder: "Title, description, level or category", class: 'form-control col-md-4') %>
+        <%= submit_tag("Search", class:'btn btn-secondary form-inline') %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="mt-2">
+    <%= form_tag(proficient_projects_path, method: :get) do %>
+      <div class="form-inline">
+        <%= select_tag :category, options_for_select(Training.all.order('name ASC').pluck(:name), :selected=>params[:category]), prompt: 'Select category', class: "form-control" %><br>
+        <%= select_tag :level, options_for_select(["Beginner", "Intermediate", "Advanced"], :selected=>params[:level]), prompt: 'Select level', class: "form-control" %><br>
+        <%= submit_tag("Filter", class:'btn btn-secondary form-control') %>
+      </div>
+    <% end %>
+  </div>
+
+
+
+  <br />
+  <div class="apple_pagination">
+    <%= page_entries_info @proficient_projects, :model => 'proficient_project' %>
+    <%= will_paginate @proficient_projects, :container => false %>
+  </div>
+
+  <div class="row text-center">
+
+    <% @proficient_projects.each do |pp| %>
+      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %>" style="border-width:2px !important;">
+        <form class="form-inline">
+          <div class="form-group">
+            <%=link_to "-Edit-", edit_proficient_project_path(pp.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin?%>
+          </div>
+          <div class="form-group mx-auto">
+            <p><h6 class="text-center py-3"><strong><%= pp.training.name %></strong></h6></p>
+          </div>
+          <div class="form-group">
+            <%=link_to 'Delete', pp, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure?'} if current_user.admin?%>
+          </div>
+        </form>
+        <a href="<%= proficient_project_path(pp.id) %>">
+          <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
+          </div>
+        </a>
+        <div>
+          <a href="<%= proficient_project_path(pp.id) %>"><h6 class="pt-3 font-weight-bold text-center"><strong><%= pp.title %></strong></h6></a>
+          <p><%= pp.level %></p>
+        </div>
+      </div>
+
+    <% end %>
+  </div>
+
+  <div class="apple_pagination">
+    <%= will_paginate @proficient_projects, :container => false %>
+    <%= page_entries_info @proficient_projects, :model => 'proficient_project' %>
+  </div>
+  <br />
+</section>

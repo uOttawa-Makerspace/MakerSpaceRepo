@@ -29,6 +29,10 @@ class TrainingSession < ActiveRecord::Base
     ['Beginner', 'Intermediate', 'Advanced']
   end
 
+  def self.return_levels
+    ['Beginner', 'Intermediate', 'Advanced']
+  end
+
   private
 
   def check_course

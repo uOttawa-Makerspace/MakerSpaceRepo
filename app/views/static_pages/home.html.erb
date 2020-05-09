@@ -4,89 +4,23 @@
       <div class="col-12">
         <div class="jumbotron text-center">
           <h1 class="title"><%= t('home.welcome_html') %></h1>
-          <% if current_user.admin? %>
-            <% Announcement.active.admins.find_each do |a| %>
-              <div class="alert alert-secondary text-center" role="alert">
-                <b>To Admins:</b> <%= a.description %>
-              </div>
-            <% end %>
-          <% end %>
 
-          <% if current_user.staff? %>
-            <% Announcement.active.staff.find_each do |a| %>
-              <div class="alert alert-info text-center" role="alert">
-                <b>To Staff:</b> <%= a.description %>
-              </div>
-            <% end %>
-          <% end %>
+          <%= render :partial => 'partials/announcements' %>
 
-          <% if !Announcement.active.all_users.blank? && signed_in? %>
-            <% Announcement.active.all_users.find_each do |a| %>
-              <div class="alert alert-primary text-center" role="alert">
-                <b>To All Users: </b><%= a.description %>
-              </div>
-            <% end %>
-          <% end %>
-
-          <% if current_user.volunteer? || current_user.staff? %>
-            <% Announcement.active.volunteers.find_each do |a| %>
-              <div class="alert alert-warning text-center" role="alert">
-                <b>To Volunteers:</b> <%= a.description %>
-              </div>
-            <% end %>
-          <% end %>
           <p class="lead mb-4"><%= t('home.welcome_desc_html') %></p>
           <% if signed_in? %>
             <p><%= link_to t('home.my_profile'), user_path(current_user.username), class: "btn btn-primary btn-lg" %></p>
-
             <hr class="my-5"/>
-
-            <% if @certifications.include?("3D Printing") && @certifications.include?("Basic Training") && !current_user.volunteer? %>
-
-              <h1>Contratulations! You can now join our volunteer program!</h1>
-              <p>Find out more about the volunteer program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
-
-              <p>
-                <strong>
-                  Join the program by clicking the buttom bellow:
-                </strong>
-              </p>
-
-              <p><%= link_to "Join Volunteer Program", join_volunteer_program_volunteers_path, class: "btn btn-primary btn-lg" %></p>
-
-
-            <% elsif current_user.volunteer? %>
-
-              <h1>You are currently enrolled in our Volunteer Program.</h1>
-              Check your status: <b><%= link_to "Volunteer Area", volunteers_path %></b>
-
-            <% else %>
-
-              <h1>Interested joining our Volunteer Program?</h1>
-
-              <p>You need to complete our Basic and 3D printing training. Check our next trainings schedule:
-                <b><%= link_to "Makerspace Trainings", "https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537", target: '_blank' %> </b>
-              and
-                <b><%= link_to "MTC Trainings", "https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765", target: '_blank' %></b></p>
-
-              <p>Find out more about the Volunteer Program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
-
-            <% end %>
+            <%= render :partial => 'programs', locals: {status: current_user.return_program_status} %>
 
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
-
             <hr class="my-5"/>
+            <%= render :partial => 'interested_volunteer' %>
+            <hr />
+            <%= render :partial => 'interested_dev_program' %>
 
-            <h1>Interested joining our Volunteer Program?</h1>
-
-            <p>You need to complete our Basic and 3D printing training. Check our next trainings schedule:
-              <b><%= link_to "Makerspace Trainings", "https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537", target: '_blank' %> </b>
-              and
-              <b><%= link_to "MTC Trainings", "https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765", target: '_blank' %></b></p>
-
-            <p>Find out more about the Volunteer Program <b><%= link_to "here", "#", target: '_blank' %></b></p></p>
-          <% end %>
+        <% end %>
 
         </div>
       </div>

@@ -1,5 +1,6 @@
 class Photo < ActiveRecord::Base
   belongs_to :repository
+  belongs_to :proficient_project
 
   has_attached_file :image,
                     default_url: "biomedical.jpg",

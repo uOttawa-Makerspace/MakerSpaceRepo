@@ -26,6 +26,8 @@ class User < ActiveRecord::Base
   has_many :print_orders
   has_many :volunteer_task_requests
   has_many :cc_moneys
+  has_many :programs
+  has_and_belongs_to_many :proficient_projects
 
   validates :name,
     presence: true,
@@ -117,6 +119,14 @@ class User < ActiveRecord::Base
     self.role.eql?("volunteer")
   end
 
+  def volunteer_program?
+    self.programs.pluck(:program_type).include?(Program::VOLUNTEER)
+  end
+
+  def dev_program?
+    self.programs.pluck(:program_type).include?(Program::DEV_PROGRAM)
+  end
+
 
   def self.to_csv(attributes)
     CSV.generate do |csv|
@@ -177,6 +187,22 @@ class User < ActiveRecord::Base
       trainings << cert.training.id
     end
     return Training.all.where.not(id: trainings)
+  end
+
+  def return_program_status
+    certifications = self.get_certifications_names
+    if !(certifications.include?("3D Printing") && certifications.include?("Basic Training"))
+      status = 0
+    elsif !(self.volunteer? || self.volunteer_program?) && !self.dev_program?
+      status = 1
+    elsif (self.volunteer? || self.volunteer_program?) && !self.dev_program?
+      status = 2
+    elsif !(self.volunteer? || self.volunteer_program?) && self.dev_program?
+      status = 3
+    elsif (self.volunteer? || self.volunteer_program?) && self.dev_program?
+      status = 4
+    end
+    return status
   end
 
 end

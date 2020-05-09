@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Development Program | <%= page_title(yield(:title)) %></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <%= favicon_link_tag 'site-icon.jpg' %>
+      <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
+      <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+      <%= javascript_include_tag "vendor",      :debug => false %>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.2/js/bootstrap-select.min.js"></script>
+      <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+    <%= csrf_meta_tags %>
+    <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.2/css/bootstrap-select.min.css">
+  </head>
+  <body data-no-turbolink="true">
+    <%= render 'layouts/header' %>
+
+    <% if flash[:notice] %>
+      <div id="notice"><%= flash[:notice] %></div>
+    <% end %>
+
+    <% if flash[:alert] %>
+      <div id="alert"><%= flash[:alert] %></div>
+    <% end %>
+
+    <%= render :partial => 'partials/announcements' %>
+
+    <%= render 'layouts/development_program_header' %>
+
+    <section>
+      <div class="bg-white">
+        <div class="container">
+          <%= yield %>
+        </div>
+      </div>
+    </section>
+    <%= render 'layouts/footer' %>
+  </body>
+</html>
