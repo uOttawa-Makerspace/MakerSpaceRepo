@@ -1,0 +1,103 @@
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#quote_modal_<%= prints.id %>">
+  Approve
+</button>
+<div class="modal fade" id="quote_modal_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="quote_modal_<%= prints.id %>" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Quote</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <%= form_for prints, url: print_order_path(prints) do |f| %>
+        <div class="modal-body">
+          <%= f.hidden_field :approved, :value => true %>
+          <% if prints.order_type == 0 and (prints.sst != true) %>
+            <%= f.label :quote, "Service Charges (In CAD) " %>
+            <div class="form-group">
+              <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
+            </div>
+            <%= f.label :quote, "Number of Grams" %>
+            <div class="form-group">
+              <%= f.number_field :grams, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
+            </div>
+            <%= f.label :quote, "Price Per Gram (In CAD) " %>
+            <div class="form-group">
+              <%= f.number_field :price_per_gram, step: "0.01", placeholder: "0.08", class: "form-control", :required => true %>
+            </div>
+          <% elsif prints.sst == true %>
+            <%= f.label :quote, "Service Charges (In CAD) " %>
+            <div class="form-group">
+              <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
+            </div>
+            <%= f.label :quote, "Hours (In CAD) " %>
+            <div class="form-group">
+              <%= f.number_field :hours, step: "0.01", placeholder: "10", class: "form-control", :required => true %>
+            </div>
+            <%= f.label :quote, "Price Per Hour (In CAD) " %>
+            <div class="form-group">
+              <%= f.number_field :price_per_hour, step: "0.01", placeholder: "30.00", class: "form-control", :required => true %>
+            </div>
+
+          <% else %>
+            <%= f.label :quote, "Service Charges (In CAD) " %>
+            <div class="form-group">
+              <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
+            </div>
+            <%= f.label :quote, "Material Cost (In CAD) " %>
+            <div class="form-group">
+              <%= f.number_field :material_cost, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
+            </div>
+            <%= f.label :quote, "Price For Hours Worked (In CAD) " %>
+            <div class="form-group">
+              <%= f.number_field :price_per_hour, step: "0.01", placeholder: "15.00", class: "form-control", :required => true %>
+            </div>
+          <% end %>
+          <div class="form-group">
+            <%= f.label :final_file, "PDF/GCode" %>
+            <%= f.file_field :final_file, style: "display: block!important;" %>
+          </div>
+
+          <div class="form-group">
+            <%= f.text_field :staff_comments, placeholder: "I will need to add supports", class: "form-control" %>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button class="btn btn-primary" onClick="checkFile(this.form)" type="button">Approve</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+<br><br>
+
+<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#disapprove_<%= prints.id %>">
+  Disapprove
+</button>
+<div class="modal fade" id="disapprove_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="disapprove_<%= prints.id %>" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Quote</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <%= form_for prints, url: print_order_path(prints) do |f| %>
+        <div class="modal-body">
+          <%= f.hidden_field :approved, :value => false %>
+          <%= f.label :staff_comments, "Comments (Why is it not approved ?)" %>
+          <div class="form-group">
+            <%= f.text_field :staff_comments, placeholder: "The size won't fit", class: "form-control" %>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button class="btn btn-danger" type="submit">Disapprove</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
