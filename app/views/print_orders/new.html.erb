@@ -47,6 +47,34 @@
                   </label>
                 </div>
                 <div class="form-check">
+                  <input type="radio" class="form-check-input" id="SST" name="print_order[material]" value="SST">
+                  Dimension SST<br>
+                  <label class="form-check-label label-size">
+                    (Printer that uses ABS and soluble supports)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" id="M2Onyx" name="print_order[material]" value="M2 Onyx">
+                  MarkForged Mark 2 Onyx<br>
+                  <label class="form-check-label label-size">
+                    (Filament with Nylon and chopped parts of carbon fiber)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" id="M2Onyx" name="print_order[material]" value="M2 Carbon Fiber">
+                  MarkForged Mark 2 Carbon Fiber<br>
+                  <label class="form-check-label label-size">
+                    (Filament with Carbon Fiber)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" id="M2Onyx" name="print_order[material]" value="M2 Fiber Glass">
+                  MarkForged Mark 2 Fiber Glass<br>
+                  <label class="form-check-label label-size">
+                    (Filament with Fiber Glass)
+                  </label>
+                </div>
+                <div class="form-check">
                   <input type="radio" class="form-check-input" id="other_filament" name="print_order[material]" value="">Other
                   <input id="input_other_filament" class="form-control" type="text" placeholder="Ninjaflex" onchange="changeOtherFilament()"/>
                 </div>
@@ -82,26 +110,6 @@
                 <div class="form-check">
                   <input type="radio" class="form-check-input" id="other_quality" name="print_order[comments]" value="">Other
                   <input id="input_other_quality" class="form-control" type="text" placeholder="0.2mm Layer Height, 20% Infill" onchange="changeOtherQuality()"/>
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="form-group">
-            <div class="row">
-              <legend class="col-form-label col-sm-2 pt-0">Dimension SST Printer (At extra charge)</legend>
-              <div class="col-sm-10">
-                <div class="form-check">
-                  <input type="radio" checked class="form-check-input" name="print_order[sst]" value="false">
-                  <label class="form-check-label" for="gridRadios3">
-                    No
-                  </label>
-                </div>
-                <div class="form-check">
-                  <input type="radio" class="form-check-input" name="print_order[sst]" value="true">
-                  <label class="form-check-label" for="gridRadios3">
-                    Yes
-                  </label>
                 </div>
               </div>
             </div>
