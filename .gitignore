@@ -33,3 +33,9 @@ sunspot-solr.pid
 
 # don't want these going out to the world!
 certs/*
+
+# don't commit that for now
+config/initializers/backport_pg_12_support_to_rails_4.rb
+
+# This is for redis
+dump.rdb

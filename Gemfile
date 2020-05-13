@@ -40,6 +40,8 @@ gem 'quick_random_records'
 gem 'wicked_pdf'
 gem 'wkhtmltopdf-binary'
 gem 'paperclip-av-transcoder'
+gem 'sidekiq'
+# gem 's3_direct_upload'
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
