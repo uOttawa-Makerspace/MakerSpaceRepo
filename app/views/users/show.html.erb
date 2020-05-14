@@ -117,7 +117,8 @@
     <br></br>
 
     <% begin %>
-      <div style="width: 100%" class="row">
+      <h2 style="text-align: center">Badges</h2>
+      <div style="width: 100%;" class="row">
         <% @acclaim_data['data'].each do |badges| %>
           <div class="col-md-3">
               <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges['id'] %>">
