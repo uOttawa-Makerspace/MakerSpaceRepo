@@ -12,3 +12,4 @@
 //= require turbolinks
 //= require clipboard
 //= require bootbox
+//= require s3_direct_upload
