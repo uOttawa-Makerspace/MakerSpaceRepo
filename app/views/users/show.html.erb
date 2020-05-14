@@ -109,19 +109,23 @@
           </div>
         <% end %>
       </div>
-      <br></br>
     <% else %>
-      -
+      <div class="user-info">
+        -
+      </div>
     <% end %>
+    <br></br>
 
     <% begin %>
-    <div class="row">
-      <% @acclaim_data['data'].each do |badges| %>
-        <div class="col-md-3">
-          <%= image_tag(badges['image_url'], :alt => badges['badge_template']['name'], :style => "width: inherit") %>
-        </div>
-      <% end %>
-    </div>
+      <div style="width: 100%" class="row">
+        <% @acclaim_data['data'].each do |badges| %>
+          <div class="col-md-3">
+              <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges['id'] %>">
+                <%= image_tag(badges['image_url'], :alt => badges['badge_template']['name'], :style => "width: inherit") %>
+              </a>
+          </div>
+        <% end %>
+      </div>
     <% rescue %>
     <% end %>
 
