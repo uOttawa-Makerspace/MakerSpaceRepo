@@ -78,7 +78,7 @@ class Video < ActiveRecord::Base
   def set_video_attributes
     tries ||= 5
     direct_upload_url_data = DIRECT_UPLOAD_URL_FORMAT.match(direct_upload_url)
-    s3 = Aws::S3::Client.new(region:'us-west-2', credentials: Aws::Credentials.new('AKIA34PB766HVB2UJ4YZ', '5Qg/ZF0S+2JjHQ8bjce6eagll8ZosF5xulqikiPJ'))
+    s3 = Aws::S3::Client.new(region:'us-west-2', credentials: Aws::Credentials.new(ENV.fetch('AWS_ACCESS_KEY_ID'), ENV.fetch('AWS_SECRET_ACCESS_KEY')))
     direct_upload_head = s3.get_object(bucket: BUCKET_NAME, key: direct_upload_url_data[:path])
     self.video_file_name     = direct_upload_url_data[:filename]
     self.video_file_size     = direct_upload_head.content_length
