@@ -41,6 +41,7 @@ gem 'wicked_pdf'
 gem 'wkhtmltopdf-binary'
 gem 'paperclip-av-transcoder'
 gem 'sidekiq'
+gem 'excon'
 # gem 's3_direct_upload'
 
 group :development, :test do

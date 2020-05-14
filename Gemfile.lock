@@ -116,6 +116,7 @@ GEM
     ed25519 (1.2.4)
     erubis (2.7.0)
     eventmachine (1.2.7)
+    excon (0.73.0)
     execjs (2.7.0)
     factory_girl (4.2.0)
       activesupport (>= 3.0.0)
@@ -370,6 +371,7 @@ DEPENDENCIES
   coffee-rails (~> 4.1.0)
   database_cleaner (~> 1.0.1)
   ed25519 (~> 1.2)
+  excon
   factory_girl_rails (~> 4.2.1)
   faker (~> 1.1.2)
   fastimage (~> 1.7.0)
