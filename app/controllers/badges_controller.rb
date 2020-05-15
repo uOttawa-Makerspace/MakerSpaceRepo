@@ -4,7 +4,7 @@ class BadgesController < ApplicationController
   def index
     begin
       if (@user.admin? || @user.staff?)
-        @acclaim_data = Badge.all
+        @acclaim_data = Badge.order(user_id: :asc).all
       else
         @acclaim_data = @user.badges
       end
