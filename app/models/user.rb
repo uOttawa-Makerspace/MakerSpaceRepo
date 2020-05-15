@@ -26,6 +26,7 @@ class User < ActiveRecord::Base
   has_many :print_orders
   has_many :volunteer_task_requests
   has_many :cc_moneys
+  has_many :badges
   has_many :programs
   has_and_belongs_to_many :proficient_projects
 

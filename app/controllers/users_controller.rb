@@ -67,17 +67,9 @@ class UsersController < SessionsController
         @repositories = @repo_user.repositories.public_repos.where(make_id: nil).page params[:page]
         @acclaim_badge_url = "https://www.youracclaim.com/badges/"
       end
-      begin
-        response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges',
-                             :user => Rails.application.secrets.acclaim_api,
-                             :password => '',
-                             :headers => {"Content-type" => "application/json" },
-                             :query => {:filter => 'recipient_email_all::'+@repo_user.email}
-        )
-        @acclaim_data = JSON.parse(response.body)
-      rescue
-        logger.error "Error with Acclaim API"
-      end
+
+      @acclaim_data = @repo_user.badges
+
 
       @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
       @joined_projects = @user.project_joins

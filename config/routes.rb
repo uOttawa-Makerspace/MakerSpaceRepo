@@ -211,6 +211,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :badges, only: [:index]
+
   resources :proficient_projects do
     collection do
       get :join_development_program

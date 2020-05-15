@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200224233026) do
+ActiveRecord::Schema.define(version: 20200514224851) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -37,6 +37,18 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "badges", force: :cascade do |t|
+    t.string   "username"
+    t.string   "image_url"
+    t.string   "issued_to"
+    t.string   "description"
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+    t.string   "badge_id"
+    t.integer  "user_id"
+    t.string   "badge_url"
   end
 
   create_table "categories", force: :cascade do |t|
@@ -193,6 +205,8 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
+    t.text     "email"
+    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -225,6 +239,7 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
+    t.string   "rfid"
   end
 
   create_table "proficient_projects", force: :cascade do |t|

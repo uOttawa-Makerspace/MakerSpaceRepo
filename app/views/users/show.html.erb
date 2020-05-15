@@ -117,17 +117,20 @@
     <br></br>
 
     <% begin %>
-      <h2 style="text-align: center">Badges</h2>
-      <div style="width: 100%;" class="row">
-        <% @acclaim_data['data'].each do |badges| %>
-          <div class="col-md-3">
-              <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges['id'] %>">
-                <%= image_tag(badges['image_url'], :alt => badges['badge_template']['name'], :style => "width: inherit") %>
-              </a>
+     <% if @acclaim_data.present? %>
+        <div style="width: 100%;" class="row">
+          <div class="col-md-12">
+            <h2 style="text-align: center">Badges</h2>
           </div>
+          <% @acclaim_data.each do |badges| %>
+            <div class="col-md-3">
+              <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges.badge_id %>">
+                <%= image_tag(badges.image_url, :style => "width: inherit") %>
+              </a>
+            </div>
+          <% end %>
+        </div>
         <% end %>
-      </div>
-    <% rescue %>
     <% end %>
 
     <div class="user-certifications" style="padding-top: 50px">

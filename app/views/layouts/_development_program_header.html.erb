@@ -24,8 +24,17 @@
           <%= link_to "All Proficient Projects", proficient_projects_path, class: "dropdown-item"%>
         </div>
       </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Skills/Badge
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+          <%= link_to "Skills", badges_url, class: "dropdown-item"%>
+            <div class="dropdown-divider"></div>
+          <%= link_to "Badges", badges_url, class: "dropdown-item"%>
+        </div>
+      </li>
       <li class="nav-item">
-        <a class="nav-link" href="#">Skills/Badge</a>
       </li>
     </ul>
   </div>
