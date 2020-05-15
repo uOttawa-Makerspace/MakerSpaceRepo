@@ -54,6 +54,7 @@ paperclip:refresh:thumbnails
 rails:template
 rails:update
 routes
+s3_direct_upload:clean_remote_uploads
 secret
 stats
 test

@@ -1,3 +1,9 @@
+<script>
+    $(document).ready(function(){
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+
 <% begin %>
   <br>
   <h2 style="text-align: center">Badges</h2>
@@ -12,12 +18,18 @@
           <% end %>
         </p>
 
-        <a style="width: inherit" target="_blank" href="<%= badges.badge_url %>">
-          <%= image_tag(badges.image_url, :style => "width: inherit") %>
-        </a>
+        <% if badges.badge_url.present? %>
+          <a style="width: inherit" target="_blank" href="<%= badges.badge_url %>">
+            <%= image_tag(badges.image_url, :style => "width: inherit") %>
+          </a>
+        <% else %>
+            <%= image_tag(badges.image_url, :style => "width: inherit", "data-toggle" => "tooltip", :title => "User didn't accept the badge yet") %>
+        <% end %>
+
       </div>
     <% end %>
   </div>
+
 <% rescue %>
   <div class="alert alert-danger" style="width: 100%; text-align: center">
     An error has occurred while getting the badges, try again later or contact technical support. Sorry for the

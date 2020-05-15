@@ -117,20 +117,46 @@
     <br></br>
 
     <% begin %>
-     <% if @acclaim_data.present? %>
+      <% if @acclaim_data.present? %>
+
+        <div class="modal fade" id="pending_modal" role="dialog">
+          <div class="modal-dialog modal-md">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title">Badge pending</h4>
+              </div>
+              <div class="modal-body">
+                <p>To accept your badge, please look into your emails (it could be in the spam folder), you should have received an email from Acclaim or CEED with a link to accept the badge !</p>
+                <p>Congratulations for your badge !</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div style="width: 100%;" class="row">
+
           <div class="col-md-12">
             <h2 style="text-align: center">Badges</h2>
           </div>
+
           <% @acclaim_data.each do |badges| %>
-            <div class="col-md-3">
-              <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges.badge_id %>">
-                <%= image_tag(badges.image_url, :style => "width: inherit") %>
-              </a>
-            </div>
+            <% begin %>
+              <div class="col-md-3">
+                <% if badges.badge_url.present? %>
+                  <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges.badge_id %>">
+                    <%= image_tag(badges.image_url, :style => "width: inherit") %>
+                  </a>
+                <% else %>
+                  <%= image_tag(badges.image_url, :style => "width: inherit", 'data-toggle' => "modal", 'data-target' => "#pending_modal") %>
+                <% end %>
+              </div>
+            <% end %>
           <% end %>
         </div>
-        <% end %>
+      <% end %>
     <% end %>
 
     <div class="user-certifications" style="padding-top: 50px">
