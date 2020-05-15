@@ -1,8 +1,17 @@
 class VideosController < ApplicationController
   before_action :set_video, only: [:download]
 
+  def index
+    @videos = Video.all
+  end
+
   def create
-    @video = Video.create(video_params)
+    @video = Video.new(video_params)
+    @video.video_file_name = params["filename"]
+    @video.video_file_size = params["filesize"]
+    @video.video_content_type = params["filetype"]
+    @video.video_updated_at = params["lastModifiedDate"]
+    @video.save
   end
 
   def download

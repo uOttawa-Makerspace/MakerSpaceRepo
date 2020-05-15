@@ -2,7 +2,7 @@ Rails.application.routes.draw do
   resources :documents, only: [:new, :create]
   get 'documents/:id/download/:filename', to: 'documents#download', constraints: { filename: /.+/ }, as: 'download_document'
 
-  resources :videos, only: [:new, :create]
+  resources :videos, only: [:index, :new, :create]
   get 'videos/:id/download/:filename', to: 'videos#download', constraints: { filename: /.+/ }, as: 'download_video'
 
   require 'sidekiq/web'
