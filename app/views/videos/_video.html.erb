@@ -1,0 +1,5 @@
+<div>
+  <%= video.video_file_name %><br />
+  <%= number_to_human_size(video.video_file_size) %><br />
+  <%= link_to "Download", download_video_path(id: video.id, filename: video.video_file_name) %>
+</div>

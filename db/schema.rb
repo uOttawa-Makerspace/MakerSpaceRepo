@@ -205,8 +205,6 @@ ActiveRecord::Schema.define(version: 20200514224851) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
-    t.text     "email"
-    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -239,7 +237,6 @@ ActiveRecord::Schema.define(version: 20200514224851) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
   end
 
   create_table "proficient_projects", force: :cascade do |t|
@@ -471,12 +468,14 @@ ActiveRecord::Schema.define(version: 20200514224851) do
 
   create_table "videos", force: :cascade do |t|
     t.integer  "proficient_project_id"
-    t.datetime "created_at",            null: false
-    t.datetime "updated_at",            null: false
+    t.datetime "created_at",                            null: false
+    t.datetime "updated_at",                            null: false
     t.string   "video_file_name"
     t.string   "video_content_type"
     t.integer  "video_file_size"
     t.datetime "video_updated_at"
+    t.string   "direct_upload_url",                     null: false
+    t.boolean  "processed",             default: false, null: false
   end
 
   add_index "videos", ["proficient_project_id"], name: "index_videos_on_proficient_project_id", using: :btree
