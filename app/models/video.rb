@@ -1,6 +1,7 @@
 class Video < ActiveRecord::Base
   include Sidekiq::Worker
   belongs_to :proficient_project
+  scope :processed, -> {where(processed: true)}
 
   has_attached_file :video, :styles => {
       :medium => { :geometry => "640x480", :format => 'flv' },

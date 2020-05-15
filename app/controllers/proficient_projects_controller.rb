@@ -113,7 +113,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   def set_files_photos_videos
     @photos = @proficient_project.photos || []
     @files = @proficient_project.repo_files.order(created_at: :asc)
-    @videos = @proficient_project.videos.order(created_at: :asc)
+    @videos = @proficient_project.videos.processed.order(created_at: :asc)
   end
 
   def update_photos
