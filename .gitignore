@@ -39,3 +39,6 @@ config/initializers/backport_pg_12_support_to_rails_4.rb
 
 # This is for redis
 dump.rdb
+
+.env
+

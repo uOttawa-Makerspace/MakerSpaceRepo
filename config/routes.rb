@@ -1,12 +1,10 @@
 Rails.application.routes.draw do
-  resources :documents, only: [:new, :create]
-  get 'documents/:id/download/:filename', to: 'documents#download', constraints: { filename: /.+/ }, as: 'download_document'
-
   resources :videos, only: [:index, :new, :create]
   get 'videos/:id/download/:filename', to: 'videos#download', constraints: { filename: /.+/ }, as: 'download_video'
 
   require 'sidekiq/web'
   mount Sidekiq::Web => '/sidekiq'
+
   get '/saml/auth' => 'saml_idp#login'
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
@@ -114,26 +112,9 @@ Rails.application.routes.draw do
   namespace :admin do
     get 'index', path: '/'
 
-    resources :report_generator, only: [:index] do
-      collection do
-        get 'new_users'
-        get 'total_visits'
-        get 'unique_visits'
-        get 'faculty_frequency'
-        get 'gender_frequency'
-        get 'training'
-        put 'select_date_range'
-        get 'repository'
-        get 'makerspace_training'
-        get 'mtc_training'
-        get 'peak_hrs'
-        get 'total_visits_per_term'
-        get 'unique_visits_detail'
-        get 'total_visits_detail'
-        get 'unique_visits_ceed'
-        get 'seasonal_certification_report'
-        get 'seasonal_training_report'
-      end
+    namespace :report_generator do
+      get 'index', path: '/'
+      post 'generate', path: '/generate', format: :xlsx
     end
 
     resources :users, only: [:index, :edit, :update, :show] do
@@ -218,7 +199,6 @@ Rails.application.routes.draw do
   end
 
   resources :badges, only: [:index]
-
   resources :proficient_projects do
     collection do
       get :join_development_program

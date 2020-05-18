@@ -28,8 +28,7 @@
     <div class="form-group">
     <%= f.label :faculty , "Faculty" , class: "profile-label" %>
     <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
-    <%= f.select( :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
-      " Social Sciences","Telfer school of Management"] , {prompt: "Choose..."}, {:class => "form-control"})%>
+    <%= f.select( :faculty, ["Arts", "Civil Law", "Common Law", "Education", "Engineering", "Health Sciences", "Medicine", "Science", "Social Sciences", "Telfer School of Management"] , {prompt: "Choose..."}, {:class => "form-control"})%>
     </div>
     <div class="form-group">
     <%= f.label :program, "Program" , class: "profile-label" %>
@@ -272,8 +271,7 @@ l’Événement.
 
         <%= f.label :faculty , "Faculty" , class: "profile-label" %>
         <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
-        <%= f.select :faculty, ["Arts","Civil Law", "Common Law", "Education","Engineering", "Health Sciences","Medicine","Science",
-          " Social Sciences","Telfer school of Management"] , prompt: "Choose..." %><br><br>
+        <%= f.select :faculty, ["Arts", "Civil Law", "Common Law", "Education", "Engineering", "Health Sciences", "Medicine", "Science", "Social Sciences", "Telfer School of Management"] , prompt: "Choose..." %><br><br>
 
         <%= f.label :program, "Program" , class: "profile-label" %>
         <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>

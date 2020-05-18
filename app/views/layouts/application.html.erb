@@ -18,11 +18,17 @@
 		<%= render 'layouts/header' %>
     <main class="main">
       <% if flash[:notice] %>
-        <div id="notice"><%= flash[:notice] %></div>
+        <div class="alert alert-warning alert-dismissible" role="alert">
+          <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+          <%= flash[:notice] %>
+        </div>
       <% end %>
 
       <% if flash[:alert] %>
-        <div id="alert"><%= flash[:alert] %></div>
+        <div class="alert alert-danger alert-dismissible" role="alert">
+          <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+          <%= flash[:alert] %>
+        </div>
       <% end %>
       <%= yield %>
     </main>
