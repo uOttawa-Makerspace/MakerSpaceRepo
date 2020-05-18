@@ -73,42 +73,50 @@ class PrintOrdersController < ApplicationController
   end
 
   def update
-    # Surcharge for expedited services
-    expedited_price = 20
+      # Surcharge for expedited services
+      expedited_price = 20
 
-    @print_order = PrintOrder.find(params[:id])
+      @print_order = PrintOrder.find(params[:id])
 
-    if params[:print_order][:timestamp_approved]
-      params[:print_order][:timestamp_approved] = DateTime.now
-    end
+      if params[:print_order][:timestamp_approved]
+        params[:print_order][:timestamp_approved] = DateTime.now
+      end
 
-    if params[:print_order][:price_per_hour] and params[:print_order][:material_cost] and params[:print_order][:service_charge]
-      params[:print_order][:quote] = params[:print_order][:service_charge].gsub(',', '.').to_f + params[:print_order][:price_per_hour].gsub(',', '.').to_f + params[:print_order][:material_cost].gsub(',', '.').to_f
-    elsif params[:print_order][:price_per_hour] and params[:print_order][:hours] and params[:print_order][:service_charge]
-      params[:print_order][:quote] = params[:print_order][:service_charge].gsub(',', '.').to_f + (params[:print_order][:price_per_hour].gsub(',', '.').to_f * params[:print_order][:hours].gsub(',', '.').to_f)
-    elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
-      params[:print_order][:quote] = params[:print_order][:service_charge].gsub(',', '.').to_f + (params[:print_order][:grams].gsub(',', '.').to_f * params[:print_order][:price_per_gram].gsub(',', '.').to_f)
-      params[:print_order][:price_per_gram] = params[:print_order][:price_per_gram].gsub(',', '.').to_f
-    end
+      if params[:print_order][:price_per_hour] and params[:print_order][:material_cost] and params[:print_order][:service_charge]
+        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + params[:print_order][:price_per_hour].to_f + params[:print_order][:material_cost].to_f
+        if @print_order.expedited == true
+          params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+        end
+        elsif params[:print_order][:price_per_hour] and params[:print_order][:hours] and params[:print_order][:service_charge]
+          params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:price_per_hour].to_f * params[:print_order][:hours].to_f)
+          if @print_order.expedited == true
+            params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+          end
 
-    if params[:print_order][:quote] and @print_order.expedited == true
-      params[:print_order][:quote] += expedited_price
-    end
+        elsif params[:print_order][:price_per_gram] and params[:print_order][:grams] and params[:print_order][:service_charge]
+        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
+        if @print_order.expedited == true
+          params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
+        end
+      end
 
-    @print_order.update(print_order_params)
 
-    if params[:print_order][:approved] == "true"
-      MsrMailer.send_print_quote(expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments]).deliver_now
-    elsif params[:print_order][:approved] == "false"
-      MsrMailer.send_print_disapproval(@print_order.user, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
-    elsif params[:print_order][:user_approval] == "true"
-      MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
-    elsif params[:print_order][:printed] == "true"
-      MsrMailer.send_print_finished(@print_order.user, @print_order.file_file_name, @print_order.id).deliver_now
-      MsrMailer.send_invoice(@print_order.user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
-    end
 
-    redirect_to print_orders_path
+      @user = @print_order.user
+      @print_order.update(print_order_params)
+
+      if params[:print_order][:approved] == "true"
+        MsrMailer.send_print_quote(expedited_price, @user, @print_order, params[:print_order][:staff_comments]).deliver_now
+      elsif params[:print_order][:approved] == "false"
+        MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
+      elsif params[:print_order][:user_approval] == "true"
+        MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
+      elsif params[:print_order][:printed] == "true"
+        MsrMailer.send_print_finished(@user, @print_order.file_file_name, @print_order.id, @print_order.quote).deliver_now
+        MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
+      end
+
+      redirect_to print_orders_path
   end
 
   def destroy

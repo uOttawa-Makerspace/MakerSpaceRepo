@@ -43,7 +43,8 @@ class MsrMailer < ApplicationMailer
 		mail(to: @user.email, reply_to: "makerspace@uottawa.ca", cc: "uottawa.makerepo@gmail.com", subject: "Your print \"#{filename}\" has been denied")
 	end
 
-	def send_print_finished(user, filename, pickup_id)
+	def send_print_finished(user, filename, pickup_id, quote)
+		@quote = quote
 		@user = user
     @pickup_id = pickup_id
 		mail(to: @user.email, reply_to: "makerspace@uottawa.ca", cc: "uottawa.makerepo@gmail.com", subject: "Your print is available for pickup")
