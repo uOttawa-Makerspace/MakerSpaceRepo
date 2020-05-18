@@ -1,10 +1,11 @@
 Rails.application.routes.draw do
-
   get '/saml/auth' => 'saml_idp#login'
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
 
-  resources :print_orders, only: [:index, :create, :update, :new, :destroy]
+  resources :print_orders, only: [:index, :create, :update, :new, :destroy] do
+    get :invoice
+  end
 
   resources :project_proposals do
     collection do
@@ -105,26 +106,9 @@ Rails.application.routes.draw do
   namespace :admin do
     get 'index', path: '/'
 
-    resources :report_generator, only: [:index] do
-      collection do
-        get 'new_users'
-        get 'total_visits'
-        get 'unique_visits'
-        get 'faculty_frequency'
-        get 'gender_frequency'
-        get 'training'
-        put 'select_date_range'
-        get 'repository'
-        get 'makerspace_training'
-        get 'mtc_training'
-        get 'peak_hrs'
-        get 'total_visits_per_term'
-        get 'unique_visits_detail'
-        get 'total_visits_detail'
-        get 'unique_visits_ceed'
-        get 'seasonal_certification_report'
-        get 'seasonal_training_report'
-      end
+    namespace :report_generator do
+      get 'index', path: '/'
+      post 'generate', path: '/generate', format: :xlsx
     end
 
     resources :users, only: [:index, :edit, :update, :show] do
@@ -202,12 +186,27 @@ Rails.application.routes.draw do
     get 'sign_out_all_users'
   end
 
+  resources :development_programs, only: [:index] do
+    collection do
+      get :join_development_program
+    end
+  end
+
+  resources :proficient_projects do
+    collection do
+      get :join_development_program
+    end
+  end
+
+  resources :project_requirements, only: [:create, :destroy]
 
   resources :volunteers, only: [:index] do
     collection do
       get :emails
       get :volunteer_list
       get :getting_started
+      get :join_volunteer_program
+      get :my_stats
     end
   end
 
@@ -223,7 +222,19 @@ Rails.application.routes.draw do
 
   resources :exam_responses, only: [:create]
 
-  resources :volunteer_tasks
+  resources :volunteer_tasks do
+    collection do
+      get :my_tasks
+      get :complete_task
+    end
+  end
+
+  resources :volunteer_task_requests, only: [:index] do
+    collection do
+      get :create_request
+      put :update_approval
+    end
+  end
 
   resources :announcements
 

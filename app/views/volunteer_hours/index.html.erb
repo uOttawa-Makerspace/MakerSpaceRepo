@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
-    <%= render :partial => 'new' %>
+    <%#= render :partial => 'new' %>
 
     <h2><%=@user.name.capitalize + "'s"%> Volunteer Hours</h2>
     <h5>Total volunteer hours until now: <b><%= @total_hours %> hours</b></h5>
@@ -25,7 +25,7 @@
           </tr>
 
           <tbody>
-          <%= will_paginate @user_volunteer_hours %>
+          <%= will_paginate @user_volunteer_hours, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @user_volunteer_hours.each do |vh| %>
             <tr>
               <td>

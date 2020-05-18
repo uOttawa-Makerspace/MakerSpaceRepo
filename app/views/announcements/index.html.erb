@@ -3,6 +3,8 @@
 
     <h2>Announcements</h2>
 
+    <%= link_to "New Announcement", new_announcement_path, :class=>"btn btn-primary m-5" %>
+
     <% if !@announcements.blank? %>
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
 

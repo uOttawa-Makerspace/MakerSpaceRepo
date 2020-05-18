@@ -1,206 +1,221 @@
-<div class="padding">
-  <% if params['type'] != "laser" %>
-    <h2>New Print Order</h2>
-    <p>*** All prints must be picked up at UOttawa Makerspace in Ottawa, ON, you will be contacted by email at each
-      steps up
-      to pickup. The quote is available as soon as a staff member puts it on the system and it will be sent to you by
-      email, waiting for your approval before being printed. Please note that we reserve the right of refusing to print
-      certain items like weapons. An extra service charge will apply. Prices might change without notice. Expedited option will take about 24h on top of the print time from the moment that you
-      accepted the quote ***</p>
-    <p>*** All payments will go through secured payment wall (<a href="https://makerstore.ca/">Makerstore.ca</a>) With
-      methods
-      available : Cash / Debit Card (Visa Debit or Mastercard Debit Only) / Credit Card (Visa / Mastercard) ***</p>
-    <%= form_for(@print_order, multipart: true, url: print_orders_path) do |f| %>
-      <div class="form-group">
-        <label>STL File</label>
-        <%= f.file_field :file, style: "display: block!important;", :required => true %>
+<div class="padding-10">
+  <div class="row">
+    <div class="col-md-8">
+
+      <% if params['type'] != "laser" %>
+        <h2>New Print Order</h2>
+      <% else %>
+        <h2>New Laser Engraving/Cut Order</h2>
+      <% end %>
+
+      <p>*** All prints/laser cuts must be picked up at UOttawa Makerspace in Ottawa, ON, you will be contacted by email
+        at each
+        steps up
+        to pickup. The quote is available as soon as a staff member puts it on the system and it will be sent to you by
+        email, waiting for your approval before being printed. Please note that we reserve the right of refusing to
+        print
+        certain items like weapons. An extra service charge will apply to all orders. You will be charged an extra 5$ for every extra piece you want us to print. For the laser cuts the rates on top of material are 10$/h for vector and 24$/h for vector and raster. Prices might change without
+        notice. Expedited option will take about 24h on top of the print time from the moment that you
+        accepted the quote and that all the older expedited prints are done ***</p>
+      <p>*** All payments will go through secured payment wall (<a href="https://makerstore.ca/">Makerstore.ca</a>) With
+        methods
+        available : Cash / Debit Card (Visa Debit or Mastercard Debit Only) / Credit Card (Visa / Mastercard) ***</p>
+
+      <%= form_for(@print_order, multipart: true, url: print_orders_path) do |f| %>
+        <% if params['type'] != "laser" %>
+          <div class="form-group">
+            <label>STL File</label>
+            <%= f.file_field :file, style: "display: block!important;", :required => true %>
+          </div>
+
+          <fieldset class="form-group">
+            <div class="row">
+              <legend class="col-form-label col-sm-2 pt-0">Material</legend>
+              <div class="col-sm-10">
+                <div class="form-check">
+                  <input type="radio" checked class="form-check-input" id="PLA" name="print_order[material]" value="PLA">
+                  PLA<br>
+                  <label class="form-check-label label-size">
+                    (Most used material in 3D Printers)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" id="ABS" name="print_order[material]" value="ABS">
+                  ABS<br>
+                  <label class="form-check-label label-size">
+                    (Stronger than PLA)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" id="SST" name="print_order[material]" value="SST">
+                  Dimension SST ABS<br>
+                  <label class="form-check-label label-size">
+                    (Printer that uses ABS and soluble supports)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" id="M2Onyx" name="print_order[material]" value="M2 Onyx">
+                  MarkForged Mark II Onyx (please specify continuous filaments in comments)<br>
+                  <label class="form-check-label label-size">
+                    (Filament with Nylon and chopped parts of carbon fiber)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" id="other_filament" name="print_order[material]" value="">Other
+                  <input id="input_other_filament" class="form-control" type="text" placeholder="Ninjaflex" onchange="changeOtherFilament()"/>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-group">
+            <div class="row">
+              <legend class="col-form-label col-sm-2 pt-0">Quality</legend>
+              <div class="col-sm-10">
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" name="print_order[comments]" value="Low Quality"> Low
+                  Quality<br>
+                  <label class="form-check-label label-size">
+                    (Short time and small price, 0.3mm Layer Height, 15% infill, supports if needed)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" checked class="form-check-input" name="print_order[comments]" value="Medium Quality">
+                  Medium Quality<br>
+                  <label class="form-check-label label-size">
+                    (Medium time and medium price, 0.2mm Layer Height, 15% infill, supports if needed)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" name="print_order[comments]" value="High Quality"> High
+                  Quality<br>
+                  <label class="form-check-label label-size">
+                    (Long time, more expensive, 0.1mm Layer Height, 20% infill, supports if needed)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" id="other_quality" name="print_order[comments]" value="">Other
+                  <input id="input_other_quality" class="form-control" type="text" placeholder="0.2mm Layer Height, 20% Infill" onchange="changeOtherQuality()"/>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <%= f.hidden_field :order_type, :value => 0 %>
+
+        <% else %>
+
+          <div class="form-group">
+            <label>SVG File</label>
+            <label class="label-size">(Please put cut lines as 0.001 Inch and everything at 100% Opacity)</label>
+            <%= f.file_field :file, style: "display: block!important;", :required => true %>
+
+          </div>
+          <fieldset class="form-group">
+            <div class="row">
+              <legend class="col-form-label col-sm-2 pt-0">Material</legend>
+              <div class="col-sm-10">
+                <div class="form-check">
+                  <input type="radio" id="MDF" checked class="form-check-input" name="print_order[comments]" value='1/8" MDF' onclick="change_color(this)">
+                  1/8" MDF<br>
+                </div>
+                <div class="form-check">
+                  <input type="radio" id="MDF" class="form-check-input" name="print_order[comments]" value='1/4" MDF' onclick="change_color(this)">
+                  1/4" MDF<br>
+                </div>
+                <div class="form-check">
+                  <input type="radio" id="Acrylic" class="form-check-input" name="print_order[comments]" value='1/8" Acrylic' onclick="change_color(this)">
+                  1/8" Acrylic <br>
+                </div>
+                <div class="form-check">
+                  <input type="radio" id="Acrylic" class="form-check-input" name="print_order[comments]" value='1/4" Acrylic' onclick="change_color(this)">
+                  1/4" Acrylic<br>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-group" style="display: none;" id="color_form">
+            <div class="row">
+              <legend class="col-form-label col-sm-2 pt-0">Color</legend>
+              <div class="col-sm-10">
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" name="print_order[material]" value='White'> White<br>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" name="print_order[material]" value='Black'>
+                  Black<br>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" name="print_order[material]" value="Clear"> Clear<br>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <%= f.hidden_field :order_type, :value => 1 %>
+
+        <% end %>
+
+        <fieldset class="form-group">
+          <div class="row">
+            <legend class="col-form-label col-sm-2 pt-0">Expedited, extra charge ($20 CAD)</legend>
+            <div class="col-sm-10">
+              <div class="form-check">
+                <input type="radio" checked class="form-check-input" name="print_order[expedited]" value="false">
+                <label class="form-check-label" for="gridRadios3">
+                  No
+                </label>
+              </div>
+              <div class="form-check">
+                <input type="radio" class="form-check-input" name="print_order[expedited]" value="true">
+                <label class="form-check-label" for="gridRadios3">
+                  Yes
+                </label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-group">
+          <div class="row">
+            <legend class="col-form-label col-sm-2 pt-0">Comments</legend>
+            <div class="col-sm-10">
+              <textarea class="form-control" name="print_order[comments_box]" rows="3"></textarea>
+            </div>
+          </div>
+        </fieldset>
+
+        <%= f.hidden_field :user_id, :value => current_user.id %>
+
+        <div class="form-group">
+          <button class="btn btn-primary" type="submit">Submit Request</button>
+        </div>
+      <% end %>
+    </div>
+    <div class="col-md-4">
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+          <tr>
+            <th scope="col">Service</th>
+            <th scope="col">Material Cost ($)</th>
+            <th scope="col">Service Cost ($)</th>
+          </tr>
+          </thead>
+          <tbody>
+          <% @table.each do |table| %>
+            <tr>
+              <% table.each do |values| %>
+                <td>
+                  <%= values %>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
       </div>
-      <fieldset class="form-group">
-        <div class="row">
-          <legend class="col-form-label col-sm-2 pt-0">Material</legend>
-          <div class="col-sm-10">
-            <div class="form-check">
-              <input type="radio" checked class="form-check-input" id="PLA" name="print_order[material]" value="PLA" onclick="change_price(this)"> PLA<br>
-              <label class="form-check-label label-size">
-                (Most used material in 3D Printers)
-              </label>
-            </div>
-            <div class="form-check">
-              <input type="radio" class="form-check-input" id="ABS" name="print_order[material]" value="ABS" onclick="change_price(this)">
-              ABS<br>
-              <label class="form-check-label label-size">
-                (Stronger than PLA)
-              </label>
-            </div>
-            <div class="form-check">
-              <input type="radio" class="form-check-input" id="other2" name="print_order[material]" value="" onclick="change_price(this)" >Other
-              <input id="inputother2" class="form-control" type="text" placeholder="Ninjaflex" onchange="changeRadioOther2()"/>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-      <fieldset class="form-group">
-        <div class="row">
-          <legend class="col-form-label col-sm-2 pt-0">Quality</legend>
-          <div class="col-sm-10">
-            <div class="form-check">
-              <input type="radio" class="form-check-input" name="print_order[comments]" value="Low Quality"> Low Quality <span id="price1">$0.30/g</span><br>
-              <label class="form-check-label label-size">
-                (Short time and small price, 0.3mm Layer Height, 15% infill, supports if needed)
-              </label>
-            </div>
-            <div class="form-check">
-              <input type="radio" checked class="form-check-input" name="print_order[comments]" value="Medium Quality">
-              Medium Quality <span id="price2">$0.40/g</span><br>
-              <label class="form-check-label label-size">
-                (Medium time and medium price, 0.2mm Layer Height, 15% infill, supports if needed)
-              </label>
-            </div>
-            <div class="form-check">
-              <input type="radio" class="form-check-input" name="print_order[comments]" value="High Quality"> High
-              Quality <span id="price3">$0.50/g</span><br>
-              <label class="form-check-label label-size">
-                (Long time, more expensive, 0.1mm Layer Height, 20% infill, supports if needed)
-              </label>
-            </div>
-            <div class="form-check">
-              <input type="radio" class="form-check-input" id="other" name="print_order[comments]" value="">Other
-              <input id="inputother" class="form-control" type="text" placeholder="0.2mm Layer Height, 20% Infill" onchange="changeRadioOther()"/>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-      <fieldset class="form-group">
-        <div class="row">
-          <legend class="col-form-label col-sm-2 pt-0">Dimension SST Printer (At extra charge)</legend>
-          <div class="col-sm-10">
-            <div class="form-check">
-              <input type="radio" checked class="form-check-input" name="print_order[sst]" value="false">
-              <label class="form-check-label" for="gridRadios3">
-                No
-              </label>
-            </div>
-            <div class="form-check">
-              <input type="radio" class="form-check-input" name="print_order[sst]" value="true">
-              <label class="form-check-label" for="gridRadios3">
-                Yes
-              </label>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-      <fieldset class="form-group">
-        <div class="row">
-          <legend class="col-form-label col-sm-2 pt-0">Expedited Printing (Express at extra charge)</legend>
-          <div class="col-sm-10">
-            <div class="form-check">
-              <input type="radio" checked class="form-check-input" name="print_order[expedited]" value="false">
-              <label class="form-check-label" for="gridRadios3">
-                No
-              </label>
-            </div>
-            <div class="form-check">
-              <input type="radio" class="form-check-input" name="print_order[expedited]" value="true">
-              <label class="form-check-label" for="gridRadios3">
-                Yes
-              </label>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-
-
-      <%= f.hidden_field :user_id, :value => current_user.id %>
-      <%= f.hidden_field :order_type, :value => 0 %>
-
-
-      <div class="form-group">
-        <button class="btn btn-primary" type="submit">Submit Request</button>
-      </div>
-    <% end %>
-  <% else %>
-    <h2>New Laser Engraving/Cut Order</h2>
-    <p>*** All parts must be picked up at UOttawa Makerspace in Ottawa, ON, you will be contacted by email at each
-      steps up
-      to pickup. The quote is available as soon as a staff member puts it on the system and it will be sent to you by
-      email, waiting for your approval before being cutted/engraved. Please note that we reserve the right of refusing to print
-      certain items like weapons. An extra service charge will apply. Prices might change without notice. Expedited option will take about 24-48h from the moment that you accepted the quote ***</p>
-    <p>*** All payments will go through secured payment wall (<a href="https://makerstore.ca/">Makerstore.ca</a>) With
-      methods
-      available : Cash / Debit Card (Visa Debit or Mastercard Debit Only) / Credit Card (Visa / Mastercard) ***</p>
-    <%= form_for(@print_order, multipart: true, url: print_orders_path) do |f| %>
-      <div class="form-group">
-        <label>SVG File</label>
-        <label class="label-size">(Please put cut lines as 0.001 Inch and everything at 100% Opacity)</label>
-        <%= f.file_field :file, style: "display: block!important;", :required => true %>
-
-      </div>
-      <fieldset class="form-group">
-        <div class="row">
-          <legend class="col-form-label col-sm-2 pt-0">Material</legend>
-          <div class="col-sm-10">
-            <div class="form-check">
-              <input type="radio" id="MDF" checked class="form-check-input" name="print_order[comments]" value='1/8" MDF' onclick="change_color(this)"> 1/8" MDF<br>
-            </div>
-            <div class="form-check">
-              <input type="radio" id="MDF"  class="form-check-input" name="print_order[comments]" value='1/4" MDF' onclick="change_color(this)">
-              1/4" MDF<br>
-            </div>
-            <div class="form-check">
-              <input type="radio" id="Acrylic" class="form-check-input" name="print_order[comments]" value='1/8" Acrylic' onclick="change_color(this)"> 1/8" Acrylic              <br>
-            </div>
-            <div class="form-check">
-              <input type="radio" id="Acrylic" class="form-check-input" name="print_order[comments]" value='1/4" Acrylic' onclick="change_color(this)">
-              1/4" Acrylic<br>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-      <fieldset class="form-group" style="display: none;" id="color_form">
-        <div class="row">
-          <legend class="col-form-label col-sm-2 pt-0">Color</legend>
-          <div class="col-sm-10">
-            <div class="form-check">
-              <input type="radio" class="form-check-input" name="print_order[material]" value='White'> White<br>
-            </div>
-            <div class="form-check">
-              <input type="radio" class="form-check-input" name="print_order[material]" value='Black'>
-              Black<br>
-            </div>
-            <div class="form-check">
-              <input type="radio" class="form-check-input" name="print_order[material]" value="Clear"> Clear<br>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-      <fieldset class="form-group">
-        <div class="row">
-          <legend class="col-form-label col-sm-2 pt-0">Expedited (Express at extra charge)</legend>
-          <div class="col-sm-10">
-            <div class="form-check">
-              <input type="radio" checked class="form-check-input" name="print_order[expedited]" value="false">
-              <label class="form-check-label" for="gridRadios3">
-                No
-              </label>
-            </div>
-            <div class="form-check">
-              <input type="radio" class="form-check-input" name="print_order[expedited]" value="true">
-              <label class="form-check-label" for="gridRadios3">
-                Yes
-              </label>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-
-
-      <%= f.hidden_field :user_id, :value => current_user.id %>
-      <%= f.hidden_field :order_type, :value => 1 %>
-
-
-      <div class="form-group">
-        <button class="btn btn-primary" type="submit">Submit Request</button>
-      </div>
-    <% end %>
-  <% end %>
+    </div>
+  </div>
 </div>

@@ -13,39 +13,28 @@
       <h5>Active Volunteers</h5>
 
       <div class="table-responsive">
-        <table class="table sessions-table">
+        <table class="table sessions-table table-striped">
 
           <tr>
             <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Space<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Tasks<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Year<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Program<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th>3D printing<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Laser Cutting<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Virtual Reality<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Arduino<span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Embroidery<span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Soldering<span onclick="sortTable('sessions-table', 11)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Certifications<span onclick="sortTable('sessions-table', 12)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Tasks<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Year<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Program<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           </tr>
 
           <tbody>
           <% @active_volunteers.each do |v| %>
             <tr>
-              <% skills = v.skill %>
               <td class = "username">
                 <%= link_to v.name.capitalize, user_path(v.username) %>
               </td>
               <td>
                 <%= v.email %>
               </td>
-              <td>
-                <%= v.volunteer_request.space.name.capitalize %>
-              </td>
               <td class="volunteer_task">
-                <% v.volunteer_task_joins.each do |vtj| %>
+                <% v.volunteer_task_joins.active.each do |vtj| %>
                   <%= link_to vtj.volunteer_task.title, volunteer_task_path(vtj.volunteer_task.id) %>
                   <br />
                 <% end %>
@@ -57,26 +46,9 @@
                 <%= v.program %>
               </td>
               <td>
-                <%= skills.printing %>
-              </td>
-              <td>
-                <%= skills.laser_cutting %>
-              </td>
-              <td>
-                <%= skills.virtual_reality %>
-              </td>
-              <td>
-                <%= skills.arduino %>
-              </td>
-              <td>
-                <%= skills.embroidery %>
-              </td>
-              <td>
-                <%= skills.soldering %>
-              </td>
-              <td>
                 <% v.certifications.each do |cert| %>
-                  <%= cert.training.capitalize %>
+                  <b><%= cert.training.name %></b>
+                  (<%= cert.training_session.level %>)
                   <br />
                 <% end %>
               </td>
@@ -100,36 +72,25 @@
       <h5>Unactive Volunteers</h5>
 
       <div class="table-responsive">
-        <table class="table sessions-table-2">
+        <table class="table sessions-table-2 table-striped">
 
           <tr>
             <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Space<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Tasks<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Year<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Program<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th>3D printing<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Laser Cutting<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Virtual Reality<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Arduino<span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Embroidery<span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Soldering<span onclick="sortTable('sessions-table', 11)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Certifications<span onclick="sortTable('sessions-table', 12)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Tasks<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Year<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Program<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           </tr>
 
           <tbody>
           <% @unactive_volunteers.each do |v| %>
             <tr>
-              <% skills = v.skill %>
               <td class = "username">
                 <%= link_to v.name.capitalize, user_path(v.username) %>
               </td>
               <td>
                 <%= v.email %>
-              </td>
-              <td>
-                <%= v.volunteer_request.space.name.capitalize %>
               </td>
               <td class="volunteer_task">
                 <% v.volunteer_task_joins.each do |vtj| %>
@@ -144,26 +105,9 @@
                 <%= v.program %>
               </td>
               <td>
-                <%= skills.printing %>
-              </td>
-              <td>
-                <%= skills.laser_cutting %>
-              </td>
-              <td>
-                <%= skills.virtual_reality %>
-              </td>
-              <td>
-                <%= skills.arduino %>
-              </td>
-              <td>
-                <%= skills.embroidery %>
-              </td>
-              <td>
-                <%= skills.soldering %>
-              </td>
-              <td>
                 <% v.certifications.each do |cert| %>
-                  <%= cert.training.capitalize %>
+                  <b><%= cert.training.name %></b>
+                  (<%= cert.training_session.level %>)
                   <br />
                 <% end %>
               </td>

@@ -26,7 +26,7 @@
 
           <tbody>
           <% i = 0 %>
-          <%= will_paginate @users_with_volunteer_hours %>
+          <%= will_paginate @users_with_volunteer_hours, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @users_with_volunteer_hours.each do |user| %>
             <tr data-toggle="collapse" id="row<%= i %>" data-target=".row<%= i %>">
               <td class = "username">

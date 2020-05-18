@@ -6,12 +6,9 @@ class Certification < ActiveRecord::Base
   validates :user, presence: { message: "A user is required." }
   validates :training_session, presence: { message: "A training session is required." }
   validate :unique_cert
+  has_one :training, through: :training_session
 
   scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
-
-  def training
-    return self.training_session.training.name
-  end
 
   def trainer
     return self.training_session.user.name
@@ -34,7 +31,7 @@ class Certification < ActiveRecord::Base
     @user_certs = self.user.certifications
     if @user_certs
       @user_certs.each do |cert|
-        if cert.training == self.training
+        if (cert.training.id == self.training.id) && (cert.training_session.level == self.training_session.level)
           errors.add(:string, "Certification already exists.")
           return false
         end
@@ -48,6 +45,18 @@ class Certification < ActiveRecord::Base
 
   def self.certify_user(training_session_id, user_id)
     self.create(user_id: user_id, training_session_id: training_session_id)
+  end
+
+  def get_badge_path
+    case self.training_session.level
+    when "Beginner"
+      path = "badges/bronze.png"
+    when "Intermediate"
+      path = "badges/silver.png"
+    when "Advanced"
+      path = "badges/golden.png"
+    end
+    return path
   end
 
 end

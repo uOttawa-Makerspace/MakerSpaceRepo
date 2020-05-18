@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
-    <h2>Volunteer Tasks</h2>
+    <h2>All Volunteer Tasks</h2>
 
     <% if !@volunteer_tasks.blank? %>
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
@@ -13,20 +13,22 @@
 
           <tr>
             <th class="action-header">Action</th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Title <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Staff<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Volunteers<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Certifications<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Space<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <th>CC/Hours<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Category<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Title <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications Needed<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Space<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Responsable Staff<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Users<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
             <% if current_user.staff? %>
-              <th>Created by <span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Created by <span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
             <% end %>
           </tr>
 
           <tbody>
-          <%= will_paginate @volunteer_tasks %>
+          <%= will_paginate @volunteer_tasks, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @volunteer_tasks.each do |vt| %>
             <tr>
               <td class="action-cell">
@@ -38,9 +40,14 @@
               </td>
 
               <td>
-                <%= vt.created_at.strftime("%m/%e/%Y (%b)") %>
-                <br>
-                <%= vt.created_at.strftime("%I:%M %p").downcase() %>
+                <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
+                <%= vt.cc %>
+                <br />
+                <%= vt.hours%> hours
+              </td>
+
+              <td>
+                <%= vt.category.capitalize %>
               </td>
 
               <td>
@@ -51,8 +58,23 @@
                 <%= vt.status.capitalize %>
               </td>
 
+              <td>
+                <% if !vt.require_trainings.blank? %>
+                  <% vt.require_trainings.find_each do |rt| %>
+                    <%= rt.training.name.capitalize %>
+                    <br />
+                  <% end %>
+                <% else %>
+                  None
+                <% end  %>
+              </td>
+
+              <td>
+                <%= vt.space.name.capitalize %>
+              </td>
+
               <td class = "username">
-                <% vt.volunteer_task_joins.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
+                <% vt.volunteer_task_joins.active.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
                                                  "Staff", "Admin").find_each do |staff_joins| %>
                   <%= link_to staff_joins.user.name.capitalize, user_path(staff_joins.user.username) %>
                   <br />
@@ -60,21 +82,20 @@
               </td>
 
               <td class = "username">
-                <% vt.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_joins| %>
-                  <%= link_to volunteer_joins.user.name.capitalize, user_path(volunteer_joins.user.username) %>
-                  <br />
+                <% if !vt.volunteer_task_joins.blank? %>
+                  <% vt.volunteer_task_joins.active.where(user_type: "Volunteer").find_each do |volunteer_joins| %>
+                    <%= link_to volunteer_joins.user.name.capitalize, user_path(volunteer_joins.user.username) %>
+                    <br />
+                  <% end %>
+                <% else %>
+                  -
                 <% end %>
               </td>
 
               <td>
-                <% vt.require_trainings.find_each do |rt| %>
-                  <%= rt.training.name.capitalize %>
-                  <br />
-                <% end  %>
-              </td>
-
-              <td>
-                <%= vt.space.name.capitalize %>
+                <%= vt.created_at.strftime("%m/%e/%Y (%b)") %>
+                <br>
+                <%= vt.created_at.strftime("%I:%M %p").downcase() %>
               </td>
 
               <% if current_user.staff? %>

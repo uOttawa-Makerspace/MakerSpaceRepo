@@ -1,0 +1,101 @@
+<% provide(:title, "Edit Proficient Project") %>
+<section class="card">
+  <div class="col-lg-7 mx-auto">
+    <br />
+    <h2 class="text-center">Edit Proficient Project</h2>
+    <div class="container my-5">
+      <div class="row">
+        <div class="col-lg-12">
+          <%= form_for @proficient_project, url: {controller: "proficient_projects", action: "update"}, html: { multipart: true } do |f| %>
+            <div class="form-group">
+              <%= f.label :title, "Title" %>
+              <%= f.text_field :title, id:"repository_title", placeholder: "Title of the proficient project...", class: 'form-control', required: true %>
+              <br />
+              <%= f.label :description, "Description" %>
+              <%= f.text_area :description, placeholder: "Description of the proficient project...", class: 'form-control', required: true, id: 'redactor' %>
+              <br />
+              <%= f.label :training_id, "Category" %>
+              <%= f.select(:training_id, @training_categories , {} , {:class => "form-control"}) %>
+              <br />
+              <%= f.label :level, "Level" %>
+              <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
+              <br />
+
+              <%= label_tag :file, "Project files" %>
+              <label class="custom-instructable-upload">
+                <%= file_field_tag 'files[]', type: :files, multiple: true %>
+                Choose files...
+              </label>
+              <div id="file-container">
+
+                <% @files.each do |f| %>
+                  <table>
+                    <tr class="file-item">
+                      <td><%= fa_icon "file-text-o" %> <%= f.file_file_name %></td>
+                      <td><span><%= f.file.size/1000 %> KB</span></td>
+                      <td><span id="<%= f.file_file_name %>" class="file-remove">remove</span></td>
+                    </tr>
+                  </table>
+                <% end %>
+                <%= hidden_field_tag 'deletefiles' %>
+              </div>
+              <br />
+
+              <%= label_tag :video, "Videos" %>
+              <label class="custom-instructable-upload">
+                <%= file_field_tag 'videos[]', type: :videos, multiple: true %>
+                Choose videos...
+              </label>
+              <div id="video-container">
+
+                <% @videos.each do |f| %>
+                  <table>
+                    <tr class="file-item">
+                      <td><%= fa_icon "file-text-o" %> <%= f.video_file_name %></td>
+                      <td><span><%= f.video.size/1000 %> KB</span></td>
+                      <td><span id="<%= f.video_file_name %>" class="video-remove">remove</span></td>
+                    </tr>
+                  </table>
+                <% end %>
+                <%= hidden_field_tag 'deletevideos' %>
+              </div>
+
+              <br />
+              <%= label_tag :photo, "Gallery*" %>
+              <div class="repo-image mx-auto">
+                <div id="dragndrop">
+                  <%= fa_icon 'cloud-upload' %>
+                  <p>Drag &amp; Drop</p>
+                </div>
+                <label class="custom-image-upload">
+                  <%= file_field_tag 'images[]', type: :files, multiple: true %>
+                  or choose an image...
+                </label>
+              </div>
+
+              <div id="image-container" class="mx-auto">
+                <% @photos.each do |img| %>
+                  <div class="image-item">
+                    <span id="<%= img.image_file_name %>" class="image-remove"></span>
+                    <img src="<%= img.image.url %>">
+                  </div>
+                <% end %>
+                <%= hidden_field_tag 'deleteimages' %>
+              </div>
+
+              <div class="text-center">
+                <%= f.submit "Update Proficient Project", class: "btn btn-primary", id: "waiting-save-button" %>
+                <br />
+                <br />
+                This could take several minutes. Do not refresh this page.
+                <br />
+                <span id="status-save"> </span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+

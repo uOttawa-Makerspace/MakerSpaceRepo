@@ -30,11 +30,11 @@ function validation(){
 
 	span = $('<span>').addClass('form-error repo-form');
   
-	if( categoryArray.length === 0 ){
-		span.text("At least one category is required.");
-		$('select#repository_categories').before(span);
-		ret = false;
-	}
+	// if( categoryArray.length === 0 ){
+	// 	span.text("At least one category is required.");
+	// 	$('select#repository_categories').before(span);
+	// 	ret = false;
+	// }
 
 	return ret;
 }

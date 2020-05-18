@@ -1,6 +1,7 @@
 class StaffDashboardController < StaffAreaController
 
   def index
+    @users = User.order(id: :desc).limit(10)
   end
 
   def sign_out_users
@@ -100,7 +101,7 @@ class StaffDashboardController < StaffAreaController
   def present_users_report
     respond_to do |format|
       format.html
-      format.csv {send_data ReportGenerator.present_users_report(@space.id, @user.id)}
+      format.xlsx {send_data ReportGenerator.generate_space_present_users_report(@space.id).to_stream.read }
     end
   end
 

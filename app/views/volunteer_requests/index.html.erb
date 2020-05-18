@@ -1,15 +1,15 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
-    <h2>Volunteer Requests</h2>
+    <h2>Requests</h2>
 
-    <h5>Total number of Volunteers: <b><%= @total_volunteers %></b></h5>
-    <h5>Total Number of Volunteers requests: <b><%= @all_volunteer_requests %></b></h5>
-    <h5>Pending Volunteers requests: <b><%= @pending_volunteer_requests.count%></b></h5>
+    <h5>Total number of Users enrolled: <b><%= @total_volunteers %></b></h5>
+    <h5>Total Number of requests: <b><%= @all_volunteer_requests %></b></h5>
+    <h5>Pending requests: <b><%= @pending_volunteer_requests.count%></b></h5>
     <br />
     <% if !@pending_volunteer_requests.blank? %>
 
-      <h5>Pending Volunteer Requests</h5>
+      <h5>Pending Requests</h5>
 
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
 
@@ -28,7 +28,7 @@
           </tr>
 
           <tbody>
-          <%= will_paginate @pending_volunteer_requests %>
+          <%= will_paginate @pending_volunteer_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @pending_volunteer_requests.each do |vr| %>
             <tr>
               <td>
@@ -66,13 +66,13 @@
       </div>
       <% else %>
       <div class="m-5">
-        🎉 No pending Volunteer Requests! 🎉
+        🎉 No pending Requests! 🎉
       </div>
       <% end %>
 
      <% if !@processed_volunteer_requests.blank? %>
 
-      <h5>Processed Volunteer Requests</h5>
+      <h5>Processed Requests</h5>
 
       <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
 
@@ -89,7 +89,7 @@
           </tr>
 
           <tbody>
-          <%= will_paginate @processed_volunteer_requests %>
+          <%= will_paginate @processed_volunteer_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @processed_volunteer_requests.each do |vr| %>
             <tr>
               <td>
@@ -128,7 +128,7 @@
       </div>
     <% else %>
       <div class="m-5">
-        No Volunteer Requests
+        No Requests
       </div>
     <% end %>
   </div>

@@ -24,6 +24,10 @@ class User < ActiveRecord::Base
   has_many :exams
   has_many :exam_responses
   has_many :print_orders
+  has_many :volunteer_task_requests
+  has_many :cc_moneys
+  has_many :programs
+  has_and_belongs_to_many :proficient_projects
 
   validates :name,
     presence: true,
@@ -73,6 +77,12 @@ class User < ActiveRecord::Base
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
 
+  scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
+  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
+  scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace")}
+  scope :active, -> {where(:active => true)}
+  scope :unknown_identity, -> { where(identity:"unknown") }
+
   def self.authenticate(username_email, password)
     user = User.username_or_email(username_email)
     user if user && user.pword == password
@@ -97,9 +107,6 @@ class User < ActiveRecord::Base
     self.identity == "grad" || self.identity == "undergrad"
   end
 
-  scope :unknown_identity, -> { where(identity:"unknown") }
-
-
   def admin?
     self.role.eql?("admin")
   end
@@ -110,6 +117,14 @@ class User < ActiveRecord::Base
 
   def volunteer?
     self.role.eql?("volunteer")
+  end
+
+  def volunteer_program?
+    self.programs.pluck(:program_type).include?(Program::VOLUNTEER)
+  end
+
+  def dev_program?
+    self.programs.pluck(:program_type).include?(Program::DEV_PROGRAM)
   end
 
 
@@ -128,12 +143,66 @@ class User < ActiveRecord::Base
     return self.lab_sessions.last.space.name
   end
 
-  scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
+  def get_certifications_names
+    cert = []
+    self.certifications.each do |c|
+      cert << c.training.name
+    end
+    return cert
+  end
 
-  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
+  def get_volunteer_tasks_from_volunteer_joins
+    volunteer_tasks = []
+    vtjs = self.volunteer_task_joins.active
+    vtjs.each do |vtj|
+      volunteer_tasks << vtj.volunteer_task
+    end
+    return volunteer_tasks
+  end
 
-  scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace")}
+  def get_total_cc
+    self.cc_moneys.sum(:cc)
+  end
 
-  scope :active, -> {where(:active => true)}
+  def get_total_hours
+    self.volunteer_hours.approved.sum(:total_time)
+  end
+
+  def get_badges(training_id)
+    training_ids = []
+    self.certifications.each do |cert|
+      training_ids << cert.training_session.training.id
+    end
+    if training_ids.include?(training_id)
+      path = "badges/bronze.png"
+    else
+      path = "badges/none.png"
+    end
+    return path
+  end
+
+  def remaining_trainings
+    trainings = []
+    self.certifications.each do |cert|
+      trainings << cert.training.id
+    end
+    return Training.all.where.not(id: trainings)
+  end
+
+  def return_program_status
+    certifications = self.get_certifications_names
+    if !(certifications.include?("3D Printing") && certifications.include?("Basic Training"))
+      status = 0
+    elsif !(self.volunteer? || self.volunteer_program?) && !self.dev_program?
+      status = 1
+    elsif (self.volunteer? || self.volunteer_program?) && !self.dev_program?
+      status = 2
+    elsif !(self.volunteer? || self.volunteer_program?) && self.dev_program?
+      status = 3
+    elsif (self.volunteer? || self.volunteer_program?) && self.dev_program?
+      status = 4
+    end
+    return status
+  end
 
 end

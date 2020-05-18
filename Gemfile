@@ -24,8 +24,9 @@ gem 'progress_bar', '~> 1.0.3'
 gem 'redactor-rails', '~> 0.5.0'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'aws-sdk', '~> 2.0'
-gem 'rubyzip', '~> 1.1', require: 'zip'
-gem 'will_paginate'
+gem 'rubyzip', '~> 1.3', require: 'zip'
+gem 'will_paginate', '~> 3.1.1'
+gem 'will_paginate-bootstrap4'
 gem 'mocha'
 gem 'bootstrap', '~> 4.3.1'
 gem "select2-rails"
@@ -36,7 +37,10 @@ gem 'saml_idp', '~> 0.8.0'
 gem 'clipboard-rails'
 gem 'bootbox-rails', '~>0.4'
 gem 'quick_random_records'
-
+gem 'wicked_pdf'
+gem 'wkhtmltopdf-binary'
+gem 'paperclip-av-transcoder'
+gem 'caxlsx', '~> 3.0.1'
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
@@ -46,9 +50,8 @@ group :development, :test do
 end
 
 group :development do
-  gem "letter_opener"
   gem 'web-console', '~> 2.0'
-  gem "letter_opener" # Open emails in development
+  gem 'letter_opener' # Open emails in development
 
   # Capistrano deployment stuff
   gem 'capistrano', '~> 3.9'
@@ -60,6 +63,8 @@ group :development do
   # ssh deployment
   gem 'ed25519', '~> 1.2'
   gem 'bcrypt_pbkdf', '~> 1.0'
+
+  gem 'dotenv-rails'
 end
 
 group :test do
@@ -70,5 +75,3 @@ group :test do
   gem 'selenium-webdriver', '~> 2.39.0'
 
 end
-
-gem 'rails_12factor', group: :production

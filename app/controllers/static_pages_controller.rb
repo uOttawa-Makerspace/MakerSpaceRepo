@@ -3,7 +3,6 @@ class StaticPagesController < SessionsController
   before_action :current_user, except: [:reset_password]
 
   def home
-    @request = VolunteerRequest.new
   end
 
   def about

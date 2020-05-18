@@ -1,0 +1,116 @@
+<% provide(:title, "Proficient Project") %>
+<section class="card w3-card-2 <%= return_border_color(@proficient_project.level) %>">
+  <div class="float-right">
+    <%=link_to "Edit", edit_proficient_project_path(@proficient_project.id), class:"btn btn-primary float-right mr-5 mt-5" if current_user.admin?%>
+  </div>
+  <div class="col-lg-7 mx-auto">
+    <br />
+    <h2 class="text-center title"><%= @proficient_project.title.html_safe %></h2>
+    <% if current_user.admin? %>
+      <%= form_tag project_requirements_path, method: :post do %>
+        <div class="form-inline">
+          <%= hidden_field_tag(:id, @proficient_project.id) %>
+          <% label_tag 'required_project_id' %>
+          <%= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects_selected, 'id', 'title'), prompt: 'Select required project' %><br>
+          <%= submit_tag 'Add Required Project', class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    <% end %>
+    <div class="container my-4">
+      <div class="text-center">
+        <%= @proficient_project.training.name %>
+        -
+        <%= @proficient_project.level %>
+      </div>
+      <br />
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="jumbotron text-center word-break">
+            <%= @proficient_project.description.html_safe %>
+          </div>
+          <div id="show-photo">
+            <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+          </div>
+          <div id="photo-slide">
+            <% @photos.each do |p| %>
+              <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
+            <% end %>
+          </div>
+          <br />
+          <br />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<% @videos.each do |f| %>
+  <video autobuffer="autobuffer" preload="auto" style="width:100%;height:100%;" controls="controls" width="100%" height="100%" >
+    <source  src="<%= f.video.url%>"  />
+  </video>
+<% end %>
+
+<% @files.each do |f| %>
+  <div class="embed-responsive embed-responsive-16by9">
+    <iframe class="embed-responsive-item" src="<%= f.file %>" allowfullscreen></iframe>
+    <br />
+  </div>
+<% end %>
+
+<% if !@project_requirements.blank? %>
+  <br />
+  <br />
+  <h2 class="text-center title my-3"> Some projects that are pre-requisite for this project:</h2>
+  <div class="row text-center">
+    <% @project_requirements.each do |project_requirement| %>
+      <% project_required = project_requirement.required_project %>
+      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(project_required.level) %>" style="border-width:2px !important;">
+        <form class="form-inline">
+          <div class="form-group">
+            <%=link_to "-Edit-", edit_proficient_project_path(project_required.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin?%>
+          </div>
+          <div class="form-group mx-auto">
+            <p><h6 class="text-center py-3"><strong><%= project_required.training.name %></strong></h6></p>
+          </div>
+          <div class="form-group">
+            <%=link_to 'Unfollow', project_requirement, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Project Requirement, but not the Project itself.'} if current_user.admin?%>
+          </div>
+        </form>
+        <a href="<%= proficient_project_path(project_required.id) %>">
+          <div class="card card-image projects-image" style="background-image: url(<%= project_required.photos.first.image.url %>);">
+          </div>
+        </a>
+        <div>
+          <a href="<%= proficient_project_path(project_required.id) %>"><h6 class="pt-3 font-weight-bold text-center"><strong><%= project_required.title %></strong></h6></a>
+          <p><%= project_required.level %></p>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<% if !@inverse_required_projects.blank? %>
+
+  <h2 class="text-center title"> Some projects that could be done after this project:</h2>
+  <div class="row text-center">
+    <% @inverse_required_projects.each do |inverse_required_project| %>
+      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(inverse_required_project.level) %>" style="border-width:2px !important;">
+        <form class="form-inline">
+          <div class="form-group mx-auto">
+            <p><h6 class="text-center py-3"><strong><%= inverse_required_project.training.name %></strong></h6></p>
+          </div>
+        </form>
+        <a href="<%= proficient_project_path(inverse_required_project.id) %>">
+          <div class="card card-image projects-image" style="background-image: url(<%= inverse_required_project.photos.first.image.url %>);">
+          </div>
+        </a>
+        <div>
+          <a href="<%= proficient_project_path(inverse_required_project.id) %>"><h6 class="pt-3 font-weight-bold text-center"><strong><%= inverse_required_project.title %></strong></h6></a>
+          <p><%= inverse_required_project.level %></p>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+<%= render 'layouts/photoswipe' %>
+

@@ -1,10 +1,10 @@
 default: &default
   adapter: postgresql
-  database: makerspacerepo
-  username: postgres
-  password: postgres
-  host: localhost
-  port: 5432
+  database: <%= ENV["DB_NAME"] || "makerspacerepo" %>
+  username: <%= ENV["DB_USERNAME"] || "postgres" %>
+  password: <%= ENV["DB_PASSWORD"] || "postgres" %>
+  host: <%= ENV["DB_HOST"] || "localhost" %>
+  port: <%= ENV["DB_PORT"] || 5432 %>
 
 development:
   <<: *default

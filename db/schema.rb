@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190913002741) do
+ActiveRecord::Schema.define(version: 20200224233026) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -55,6 +55,14 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "cc_moneys", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "volunteer_task_id"
+    t.integer  "cc"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
   end
 
   create_table "certifications", force: :cascade do |t|
@@ -145,14 +153,15 @@ ActiveRecord::Schema.define(version: 20190913002741) do
 
   create_table "photos", force: :cascade do |t|
     t.integer  "repository_id"
-    t.datetime "created_at",         null: false
-    t.datetime "updated_at",         null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
     t.string   "image_file_name"
     t.string   "image_content_type"
     t.integer  "image_file_size"
     t.datetime "image_updated_at"
     t.integer  "height"
     t.integer  "width"
+    t.integer  "proficient_project_id"
   end
 
   add_index "photos", ["repository_id"], name: "index_photos_on_repository_id", using: :btree
@@ -184,8 +193,6 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
-    t.text     "email"
-    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -218,7 +225,27 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
+  end
+
+  create_table "proficient_projects", force: :cascade do |t|
+    t.integer  "training_id"
+    t.string   "title"
+    t.text     "description"
+    t.datetime "created_at",                       null: false
+    t.datetime "updated_at",                       null: false
+    t.string   "level",       default: "Beginner"
+  end
+
+  create_table "proficient_projects_users", id: false, force: :cascade do |t|
+    t.integer "user_id",               null: false
+    t.integer "proficient_project_id", null: false
+  end
+
+  create_table "programs", force: :cascade do |t|
+    t.integer  "user_id"
+    t.string   "program_type"
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
   end
 
   create_table "project_joins", force: :cascade do |t|
@@ -235,16 +262,24 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.string   "title"
     t.text     "description"
     t.string   "youtube_link"
-    t.datetime "created_at",                         null: false
-    t.datetime "updated_at",                         null: false
+    t.datetime "created_at",                                      null: false
+    t.datetime "updated_at",                                      null: false
     t.string   "username"
     t.string   "email"
     t.string   "client"
-    t.string   "area",                  default: [],              array: true
+    t.string   "area",                  default: [],                           array: true
     t.string   "client_type"
     t.string   "client_interest"
     t.string   "client_background"
     t.string   "supervisor_background"
+    t.text     "equipments",            default: "Not informed."
+  end
+
+  create_table "project_requirements", force: :cascade do |t|
+    t.integer  "proficient_project_id"
+    t.integer  "required_project_id"
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
   end
 
   create_table "questions", force: :cascade do |t|
@@ -261,12 +296,13 @@ ActiveRecord::Schema.define(version: 20190913002741) do
 
   create_table "repo_files", force: :cascade do |t|
     t.integer  "repository_id"
-    t.datetime "created_at",        null: false
-    t.datetime "updated_at",        null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
     t.string   "file_file_name"
     t.string   "file_content_type"
     t.integer  "file_file_size"
     t.datetime "file_updated_at"
+    t.integer  "proficient_project_id"
   end
 
   add_index "repo_files", ["repository_id"], name: "index_repo_files_on_repository_id", using: :btree
@@ -350,10 +386,11 @@ ActiveRecord::Schema.define(version: 20190913002741) do
   create_table "training_sessions", force: :cascade do |t|
     t.integer  "training_id"
     t.integer  "user_id"
-    t.datetime "created_at",  null: false
-    t.datetime "updated_at",  null: false
+    t.datetime "created_at",                       null: false
+    t.datetime "updated_at",                       null: false
     t.string   "course"
     t.integer  "space_id"
+    t.string   "level",       default: "Beginner"
   end
 
   add_index "training_sessions", ["training_id"], name: "index_training_sessions_on_training_id", using: :btree
@@ -417,6 +454,18 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.datetime "last_seen_at"
   end
 
+  create_table "videos", force: :cascade do |t|
+    t.integer  "proficient_project_id"
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+    t.string   "video_file_name"
+    t.string   "video_content_type"
+    t.integer  "video_file_size"
+    t.datetime "video_updated_at"
+  end
+
+  add_index "videos", ["proficient_project_id"], name: "index_videos_on_proficient_project_id", using: :btree
+
   create_table "volunteer_hours", force: :cascade do |t|
     t.integer  "volunteer_task_id",                                       null: false
     t.integer  "user_id",                                                 null: false
@@ -448,16 +497,29 @@ ActiveRecord::Schema.define(version: 20190913002741) do
     t.string   "user_type",         default: "Volunteer"
     t.datetime "created_at",                              null: false
     t.datetime "updated_at",                              null: false
+    t.boolean  "active",            default: true
+  end
+
+  create_table "volunteer_task_requests", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "volunteer_task_id"
+    t.boolean  "approval"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
   end
 
   create_table "volunteer_tasks", force: :cascade do |t|
-    t.string   "title",       default: ""
-    t.text     "description", default: ""
+    t.string   "title",                               default: ""
+    t.text     "description",                         default: ""
     t.integer  "user_id"
-    t.datetime "created_at",                   null: false
-    t.datetime "updated_at",                   null: false
-    t.string   "status",      default: "open"
+    t.datetime "created_at",                                            null: false
+    t.datetime "updated_at",                                            null: false
+    t.string   "status",                              default: "open"
     t.integer  "space_id"
+    t.integer  "joins",                               default: 1
+    t.string   "category",                            default: "Other"
+    t.integer  "cc",                                  default: 0
+    t.decimal  "hours",       precision: 5, scale: 2, default: 0.0
   end
 
   add_foreign_key "categories", "category_options"
@@ -479,4 +541,5 @@ ActiveRecord::Schema.define(version: 20190913002741) do
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
+  add_foreign_key "videos", "proficient_projects"
 end
