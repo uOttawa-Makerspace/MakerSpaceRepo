@@ -1,5 +1,5 @@
 <script>
-    $(document).ready(function(){
+    $(document).ready(function () {
         $('[data-toggle="tooltip"]').tooltip();
     });
 </script>
@@ -8,7 +8,9 @@
   <br>
   <h2 style="text-align: center">Badges</h2>
   <div style="width: 100%;" class="row">
+
     <% @acclaim_data.each do |badges| %>
+
       <div class="col-md-3">
         <p style="text-align: center">
           <% if badges.user_id.present? %>
@@ -23,10 +25,10 @@
             <%= image_tag(badges.image_url, :style => "width: inherit") %>
           </a>
         <% else %>
-            <%= image_tag(badges.image_url, :style => "width: inherit", "data-toggle" => "tooltip", :title => "User didn't accept the badge yet") %>
+          <%= image_tag(badges.image_url, :style => "width: inherit", "data-toggle" => "tooltip", :title => badges.issued_to + " didn't accept the badge yet") %>
         <% end %>
-
       </div>
+
     <% end %>
   </div>
 

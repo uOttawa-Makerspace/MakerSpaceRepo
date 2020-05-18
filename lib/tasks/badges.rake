@@ -17,6 +17,8 @@ namespace :badges do
           if user.badges.where(badge_id: badges['id']).present? == false
             values = {user_id: user.id, username: user.username, image_url: badges['badge_template']['image']['url'], description: badges['badge_template']['description'], issued_to: badges['issued_to'], badge_id: badges['id'], badge_url: badges['badge_url']}
             Badge.create(values)
+          elsif user.badges.where(badge_id: badges['id']).present? and user.badges.where(badge_url: badges['badge_url']).present? == false and badges['badge_url'] != ""
+            Badge.update(user.badges.where(badge_id: badges['id']), :badge_url => badges['badge_url'])
           end
         end
 
