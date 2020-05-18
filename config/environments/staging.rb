@@ -111,4 +111,19 @@ Rails.application.configure do
     }
   }
 
+  require 'aws-sdk'
+
+  Aws.config.update({
+      region: 'us-west-2',
+      credentials: Aws::Credentials.new(Rails.application.secrets.access_key_id, Rails.application.secrets.secret_access_key)
+  })
+
+  S3DirectUpload.config do |c|
+    c.access_key_id = Rails.application.secrets.access_key_id
+    c.secret_access_key = Rails.application.secrets.secret_access_key
+    c.bucket = Rails.application.secrets.s3_bucket_name
+    c.region = "us-west-2"
+    c.url = "https://#{c.bucket}.s3.amazonaws.com/"
+  end
+
 end
