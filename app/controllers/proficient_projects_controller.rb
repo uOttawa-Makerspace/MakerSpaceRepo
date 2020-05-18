@@ -7,6 +7,8 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def index
     @proficient_projects = ProficientProject.filter_attributes(get_filter_params).order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
+    @training_levels = TrainingSession.return_levels
+    @training_categories_names = Training.all.order('name ASC').pluck(:name)
   end
 
   def new
@@ -111,7 +113,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   def set_files_photos_videos
     @photos = @proficient_project.photos || []
     @files = @proficient_project.repo_files.order(created_at: :asc)
-    @videos = @proficient_project.videos.order(created_at: :asc)
+    @videos = @proficient_project.videos.processed.order(created_at: :asc)
   end
 
   def update_photos

@@ -40,6 +40,9 @@ gem 'quick_random_records'
 gem 'wicked_pdf'
 gem 'wkhtmltopdf-binary'
 gem 'paperclip-av-transcoder'
+gem 'sidekiq'
+gem 'excon'
+gem 's3_direct_upload'
 gem 'caxlsx', '~> 3.0.1'
 
 group :development, :test do

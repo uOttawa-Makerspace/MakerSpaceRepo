@@ -6,7 +6,7 @@
   </button>
   <div class="collapse navbar-collapse" id="navbarSupportedContent2">
     <ul class="navbar-nav mx-auto">
-      <li class="nav-item active">
+      <li class="nav-item">
         <a class="nav-link" href="https://melsa036.github.io/" target="_blank">Getting Started <span class="sr-only">(current)</span></a>
       </li>
       <li class="nav-item">
@@ -24,9 +24,27 @@
           <%= link_to "All Proficient Projects", proficient_projects_path, class: "dropdown-item"%>
         </div>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Skills/Badge</a>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Skills/Badge
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+          <%= link_to "Skills", badges_url, class: "dropdown-item"%>
+            <div class="dropdown-divider"></div>
+          <%= link_to "Badges", badges_url, class: "dropdown-item"%>
+        </div>
       </li>
+      <% if current_user.admin? %>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Videos
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+            <%= link_to "New video", new_video_path, class: "dropdown-item" %>
+            <%= link_to "All videos", videos_path, class: "dropdown-item" %>
+          </div>
+        </li>
+      <% end %>
     </ul>
   </div>
 

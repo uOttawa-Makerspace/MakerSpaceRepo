@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  resources :videos, only: [:index, :new, :create]
+  get 'videos/:id/download/:filename', to: 'videos#download', constraints: { filename: /.+/ }, as: 'download_video'
+
+  require 'sidekiq/web'
+  mount Sidekiq::Web => '/sidekiq'
+
   get '/saml/auth' => 'saml_idp#login'
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
@@ -192,6 +198,7 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :badges, only: [:index]
   resources :proficient_projects do
     collection do
       get :join_development_program

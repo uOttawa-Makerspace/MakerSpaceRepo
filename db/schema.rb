@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200224233026) do
+ActiveRecord::Schema.define(version: 20200514224851) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -37,6 +37,18 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "badges", force: :cascade do |t|
+    t.string   "username"
+    t.string   "image_url"
+    t.string   "issued_to"
+    t.string   "description"
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+    t.string   "badge_id"
+    t.integer  "user_id"
+    t.string   "badge_url"
   end
 
   create_table "categories", force: :cascade do |t|
@@ -225,6 +237,27 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
+  end
+
+  create_table "proficient_projects", force: :cascade do |t|
+    t.integer  "training_id"
+    t.string   "title"
+    t.text     "description"
+    t.datetime "created_at",                       null: false
+    t.datetime "updated_at",                       null: false
+    t.string   "level",       default: "Beginner"
+  end
+
+  create_table "proficient_projects_users", id: false, force: :cascade do |t|
+    t.integer "user_id",               null: false
+    t.integer "proficient_project_id", null: false
+  end
+
+  create_table "programs", force: :cascade do |t|
+    t.integer  "user_id"
+    t.string   "program_type"
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
   end
 
   create_table "proficient_projects", force: :cascade do |t|
@@ -456,12 +489,14 @@ ActiveRecord::Schema.define(version: 20200224233026) do
 
   create_table "videos", force: :cascade do |t|
     t.integer  "proficient_project_id"
-    t.datetime "created_at",            null: false
-    t.datetime "updated_at",            null: false
+    t.datetime "created_at",                            null: false
+    t.datetime "updated_at",                            null: false
     t.string   "video_file_name"
     t.string   "video_content_type"
     t.integer  "video_file_size"
     t.datetime "video_updated_at"
+    t.string   "direct_upload_url",                     null: false
+    t.boolean  "processed",             default: false, null: false
   end
 
   add_index "videos", ["proficient_project_id"], name: "index_videos_on_proficient_project_id", using: :btree

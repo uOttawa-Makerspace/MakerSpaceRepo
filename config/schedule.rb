@@ -49,10 +49,13 @@ every :day, :at => '11:59pm' do
   rake "exams:check_expired_exams"
 end
 
+every :day, :at => '3am' do
+  rake "badge:get_data"
+end
+
 every :day, :at => '9am' do
   rake "print_order_notifications:two_weeks_reminder"
 end
-
 # Checklist Reminder
 
 # emails list:
