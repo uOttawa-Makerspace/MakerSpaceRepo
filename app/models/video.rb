@@ -4,7 +4,6 @@ class Video < ActiveRecord::Base
   scope :processed, -> {where(processed: true)}
 
   has_attached_file :video
-
   # Large files are not pratical to transcode
   # , :styles => {
   #     :medium => { :geometry => "640x480", :format => 'flv' },
