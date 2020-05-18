@@ -44,6 +44,12 @@ gem 'sidekiq'
 gem 'excon'
 gem 's3_direct_upload'
 gem 'caxlsx', '~> 3.0.1'
+# Capistrano deployment stuff
+gem 'capistrano', '~> 3.9'
+gem 'capistrano-rails'
+gem 'capistrano-bundler'
+gem 'capistrano-passenger', '>= 0.1.1'
+gem 'capistrano-rbenv', '~> 2.1'
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
@@ -55,13 +61,6 @@ end
 group :development do
   gem 'web-console', '~> 2.0'
   gem 'letter_opener' # Open emails in development
-
-  # Capistrano deployment stuff
-  gem 'capistrano', '~> 3.9'
-  gem 'capistrano-rails'
-  gem 'capistrano-bundler'
-  gem 'capistrano-passenger', '>= 0.1.1'
-  gem 'capistrano-rbenv', '~> 2.1'
 
   # ssh deployment
   gem 'ed25519', '~> 1.2'
