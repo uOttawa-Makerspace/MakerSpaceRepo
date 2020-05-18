@@ -3,10 +3,13 @@ class Video < ActiveRecord::Base
   belongs_to :proficient_project
   scope :processed, -> {where(processed: true)}
 
-  has_attached_file :video, :styles => {
-      :medium => { :geometry => "640x480", :format => 'flv' },
-      :thumb => { :geometry => "100x100#", :format => 'jpg', :time => 10 }
-  }, :processors => [:transcoder]
+  has_attached_file :video
+
+  # Large files are not pratical to transcode
+  # , :styles => {
+  #     :medium => { :geometry => "640x480", :format => 'flv' },
+  #     :thumb => { :geometry => "100x100#", :format => 'jpg', :time => 10 }
+  # }, :processors => [:transcoder]
 
   BUCKET_NAME = ENV.fetch('S3_BUCKET_NAME', "makerspace-testing-for-real")
   DIRECT_UPLOAD_URL_FORMAT = %r{\Ahttps:\/\/#{BUCKET_NAME}\.s3\.amazonaws\.com\/(?<path>.+\/(?<filename>.+))\z}.freeze
