@@ -33,7 +33,8 @@ class MsrMailer < ApplicationMailer
 		mail(to: @user.email, subject: 'Print Request Disapproval : '+filename)
 	end
 
-	def send_print_finished(user, filename, pickup_id)
+	def send_print_finished(user, filename, pickup_id, quote)
+		@quote = quote
 		@user = user
     @pickup_id = pickup_id
 		mail(to: @user.email, subject: 'Your print : '+ filename +' is ready !')
