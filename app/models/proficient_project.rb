@@ -1,5 +1,7 @@
 class ProficientProject < ActiveRecord::Base
   include Filterable
+  validates :title,  presence: { message: "A title is required."}, uniqueness: { message: "Title already exists"}
+  before_save :capitalize_title
   has_and_belongs_to_many :users
   belongs_to :training
   has_many :photos,       dependent: :destroy
@@ -10,8 +12,7 @@ class ProficientProject < ActiveRecord::Base
   has_many :inverse_project_requirements, class_name: "ProjectRequirement", foreign_key: "required_project_id"
   has_many :inverse_required_projects, through: :inverse_project_requirements, source: :proficient_project
   has_many :cc_moneys
-  validates :title,  presence: { message: "A title is required."}, uniqueness: { message: "Title already exists"}
-  before_save :capitalize_title
+  has_many :order_items
 
   scope :filter_by_level, -> (level) { where(level: level) }
   scope :filter_by_proficiency, -> (proficient) { where(proficient: proficient) }

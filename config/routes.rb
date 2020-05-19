@@ -11,6 +11,7 @@ Rails.application.routes.draw do
   mount Sidekiq::Web => '/sidekiq'
 
   resources :carts, only: [:index]
+  resources :order_items, only: [:create, :update, :destroy]
 
   get '/saml/auth' => 'saml_idp#login'
   get '/saml/metadata' => 'saml_idp#metadata'

@@ -29,6 +29,7 @@ class User < ActiveRecord::Base
   has_many :badges
   has_many :programs
   has_and_belongs_to_many :proficient_projects
+  has_many :orders
 
   validates :name,
     presence: true,

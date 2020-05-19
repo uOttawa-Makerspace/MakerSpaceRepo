@@ -1,0 +1,16 @@
+<div class="well">
+
+    <div class="col-xs-4">
+
+      <%= form_for order_item, remote: true do |f| %>
+          <div class="input-group">
+            <%= f.number_field :quantity, value: 1, class: "form-control", min: 1 %>
+            <div class="input-group-btn">
+              <%= f.hidden_field :proficient_project_id, value: proficient_project.id %>
+              <%= f.submit "Add to Cart", class: "btn btn-primary" %>
+            </div>
+          </div>
+      <% end %>
+    </div>
+
+</div>

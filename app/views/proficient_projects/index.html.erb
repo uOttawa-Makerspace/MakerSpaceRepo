@@ -51,6 +51,7 @@
           <p><%= pp.level %></p>
           <b class="float-right mb-2 text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + " Ccs" %></b>
         </div>
+        <%= render "proficient_project_row", proficient_project: pp, order_item: @order_item %>
       </div>
 
     <% end %>

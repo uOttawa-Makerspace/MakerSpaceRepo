@@ -14,11 +14,11 @@
     </p>
 <% else %>
     <% @order_items.each do |order_item| %>
-        <%= render 'carts/cart_row', product: order_item.product, order_item: order_item, show_total: true %>
+        <%= render 'carts/cart_row', proficient_project: order_item.proficient_project, order_item: order_item, show_total: true %>
     <% end %>
-    <h6 class="text-center">Order Total: <span style="color: green"><%= number_to_currency current_order.subtotal %></span></h6>
+    <h6 class="text-center">Order Total: <span style="color: green"><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></span></h6>
     <br />
     <div class="text-center">
-      <a class="btn btn-primary btn-xl text-uppercase" href="<%= shipping_cart_path%>">Go to Checkout</a>
+      <a class="btn btn-primary btn-xl text-uppercase" href="#">Go to Checkout</a>
     </div>
 <% end %>
