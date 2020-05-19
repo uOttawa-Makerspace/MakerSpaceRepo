@@ -469,7 +469,7 @@ ActiveRecord::Schema.define(version: 20200519134613) do
     t.boolean  "read_and_accepted_waiver_form", default: false
     t.boolean  "active",                        default: true
     t.datetime "last_seen_at"
-    t.integer  "wallet"
+    t.integer  "wallet",                        default: 0
   end
 
   create_table "videos", force: :cascade do |t|
