@@ -45,11 +45,16 @@ gem 'excon'
 gem 's3_direct_upload'
 gem 'caxlsx', '~> 3.0.1'
 # Capistrano deployment stuff
+gem 'net-ssh'
+gem 'net-scp'
+gem 'sshkit'
+gem 'airbrussh'
 gem 'capistrano', '~> 3.9'
 gem 'capistrano-rails'
 gem 'capistrano-bundler'
 gem 'capistrano-passenger', '>= 0.1.1'
 gem 'capistrano-rbenv', '~> 2.1'
+gem 'net-ssh'
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
