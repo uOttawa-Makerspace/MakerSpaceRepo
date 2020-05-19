@@ -404,6 +404,7 @@ DEPENDENCIES
   launchy (~> 2.3.0)
   letter_opener
   mocha
+  net-ssh
   octokit (~> 3.0)
   paperclip (~> 5.2.0)
   paperclip-av-transcoder

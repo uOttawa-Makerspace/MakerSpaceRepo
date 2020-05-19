@@ -50,6 +50,7 @@ gem 'capistrano-rails'
 gem 'capistrano-bundler'
 gem 'capistrano-passenger', '>= 0.1.1'
 gem 'capistrano-rbenv', '~> 2.1'
+gem 'net-ssh'
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
