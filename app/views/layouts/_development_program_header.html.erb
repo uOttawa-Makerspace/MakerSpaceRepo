@@ -48,7 +48,8 @@
     </ul>
     <ul class="navbar-nav ml-auto mr-1">
       <li class="nav-link">
-        <%= link_to ("<i class='fa fa-shopping-cart fa-lg'> 2</i>".html_safe), '#' %>
+        <%#= link_to ("<i class='fa fa-shopping-cart fa-lg'> #{current_order.order_items.size}</i>".html_safe), carts_path %>
+        <%= link_to ("<i class='fa fa-shopping-cart fa-lg'> 2</i>".html_safe), carts_path %>
       </li>
     </ul>
   </div>

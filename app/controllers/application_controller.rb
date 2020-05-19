@@ -13,6 +13,14 @@ class ApplicationController < ActionController::Base
     session[:locale] = I18n.locale
   end
 
+  def current_order
+    if !session[:order_id].nil?
+      Order.find(session[:order_id])
+    else
+      Order.new
+    end
+  end
+
   private
   def set_last_seen_at
     current_user.update_attribute(:last_seen_at, Time.current)
