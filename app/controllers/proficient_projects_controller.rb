@@ -80,7 +80,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def proficient_project_params
-    params.require(:proficient_project).permit(:title, :description, :training_id, :level)
+    params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient)
   end
 
   def create_photos
