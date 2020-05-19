@@ -13,6 +13,7 @@ class ProficientProject < ActiveRecord::Base
   before_save :capitalize_title
 
   scope :filter_by_level, -> (level) { where(level: level) }
+  scope :filter_by_proficiency, -> (proficient) { where(proficient: proficient) }
 
   def capitalize_title
     self.title = self.title.capitalize
@@ -27,6 +28,8 @@ class ProficientProject < ActiveRecord::Base
       where("LOWER(title) like LOWER(?) OR
                  LOWER(level) like LOWER(?) OR
                  LOWER(description) like LOWER(?)", "%#{value}%", "%#{value}%", "%#{value}%")
+    elsif attribute == 'proficiency'
+      self.filter_by_proficiency(value)
     end
   end
 end
