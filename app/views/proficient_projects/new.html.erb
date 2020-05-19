@@ -19,6 +19,9 @@
               <%= f.label :level, "Level*" %>
               <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
               <br />
+              <%= f.label :cc, "Cc Points" %>
+              <%= f.number_field(:cc, :class => "form-control") %>
+              <br />
               <%= f.label :proficient, "Proficient" %>
               <br />
               <%= f.label :proficient, "Yes" %>

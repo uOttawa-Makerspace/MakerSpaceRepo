@@ -1,7 +1,8 @@
 <% provide(:title, "Proficient Project") %>
 <section class="card w3-card-2 <%= return_border_color(@proficient_project.level) %>">
-  <div class="float-right">
+  <div>
     <%=link_to "Edit", edit_proficient_project_path(@proficient_project.id), class:"btn btn-primary float-right mr-5 mt-5" if current_user.admin?%>
+    <b class="float-left ml-5 mt-5 text-info"><%= @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : @proficient_project.cc.to_s + " Ccs" %></b>
   </div>
   <div class="col-lg-7 mx-auto">
     <br />
