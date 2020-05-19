@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200514224851) do
+ActiveRecord::Schema.define(version: 20200519134613) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -73,9 +73,12 @@ ActiveRecord::Schema.define(version: 20200514224851) do
     t.integer  "user_id"
     t.integer  "volunteer_task_id"
     t.integer  "cc"
-    t.datetime "created_at",        null: false
-    t.datetime "updated_at",        null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+    t.integer  "proficient_project_id"
   end
+
+  add_index "cc_moneys", ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id", using: :btree
 
   create_table "certifications", force: :cascade do |t|
     t.integer  "user_id"
@@ -246,27 +249,8 @@ ActiveRecord::Schema.define(version: 20200514224851) do
     t.datetime "created_at",                       null: false
     t.datetime "updated_at",                       null: false
     t.string   "level",       default: "Beginner"
-  end
-
-  create_table "proficient_projects_users", id: false, force: :cascade do |t|
-    t.integer "user_id",               null: false
-    t.integer "proficient_project_id", null: false
-  end
-
-  create_table "programs", force: :cascade do |t|
-    t.integer  "user_id"
-    t.string   "program_type"
-    t.datetime "created_at",   null: false
-    t.datetime "updated_at",   null: false
-  end
-
-  create_table "proficient_projects", force: :cascade do |t|
-    t.integer  "training_id"
-    t.string   "title"
-    t.text     "description"
-    t.datetime "created_at",                       null: false
-    t.datetime "updated_at",                       null: false
-    t.string   "level",       default: "Beginner"
+    t.integer  "cc"
+    t.boolean  "proficient",  default: true
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
@@ -485,6 +469,7 @@ ActiveRecord::Schema.define(version: 20200514224851) do
     t.boolean  "read_and_accepted_waiver_form", default: false
     t.boolean  "active",                        default: true
     t.datetime "last_seen_at"
+    t.integer  "wallet"
   end
 
   create_table "videos", force: :cascade do |t|
@@ -559,6 +544,7 @@ ActiveRecord::Schema.define(version: 20200514224851) do
 
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
+  add_foreign_key "cc_moneys", "proficient_projects"
   add_foreign_key "certifications", "users"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
