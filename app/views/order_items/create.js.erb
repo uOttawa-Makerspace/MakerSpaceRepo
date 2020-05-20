@@ -4,5 +4,5 @@
 <% else %>
   $(".cart-text").html("<%= escape_javascript(render 'layouts/cart_text') %>");
   // Display a success toast, with a title
-  toastr.success('Item added to Cart');
+  toastr.success('Item added to Cart. Go to <%= link_to 'Checkout', carts_path %>');
 <% end %>
