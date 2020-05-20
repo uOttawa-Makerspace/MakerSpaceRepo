@@ -19,6 +19,6 @@
     <h6 class="text-center">Order Total: <span style="color: green"><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></span></h6>
     <br />
     <div class="text-center">
-      <a class="btn btn-primary btn-xl text-uppercase" href="#">Go to Checkout</a>
+      <%= link_to "Confirm order", orders_path, :action => :create, :method => :post, class: "btn btn-secondary" %>
     </div>
 <% end %>

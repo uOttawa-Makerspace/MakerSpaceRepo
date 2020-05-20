@@ -1,0 +1,30 @@
+<% provide(:title, "Orders") %>
+
+<section class="p-5">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12 text-center">
+        <h2>Your Orders</h2>
+      </div>
+    </div>
+    <div class="text-center">
+      <% if !@orders.present? %>
+        <p class="text-center">
+          You have no orders. Please check our <%= link_to "projects", proficient_projects_path(proficiency: true), class: "text-info" %> and add some items to your cart.
+        </p>
+      <% else %>
+        <% @orders.each do |order| %>
+          <% order.order_items.each do |order_item| %>
+            <h6 class="text-center">Product: <span style="color: green"> <%= order_item.proficient_project.title %></span> Quantity: <span style="color: green"> <%= order_item.quantity %></span></h6>
+          <% end %>
+          <h6 class="text-center">Order Subtotal: <span style="color: green"><%= order.subtotal %></span></h6>
+          <h6 class="text-center">Order Total: <span style="color: green"><%= order.total %></span></h6>
+          <h6 class="text-center">Order Status: <span style="color: green"><%= order.order_status.name %></span></h6>
+          <br />
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</section>
+
+
