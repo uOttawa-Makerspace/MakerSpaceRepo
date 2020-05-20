@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200520160018) do
+ActiveRecord::Schema.define(version: 20200520174515) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -279,6 +279,7 @@ ActiveRecord::Schema.define(version: 20200520160018) do
     t.string   "level",       default: "Beginner"
     t.integer  "cc"
     t.boolean  "proficient",  default: true
+    t.string   "badge_id"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|

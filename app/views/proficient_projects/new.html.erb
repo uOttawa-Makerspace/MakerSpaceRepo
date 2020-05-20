@@ -30,6 +30,10 @@
               <%= f.radio_button(:proficient, false , :style => 'display:inline') %>
               <br />
               <br />
+              <%= f.label :badge_id, "Related Badge" %>
+              <%= f.select(:badge_id, options_for_select(@badge_list.collect {|badge| [ badge['name'], badge['id'] ] }), {}, {:class => "form-control"}) %>
+              <br>
+              <br>
               <%= label_tag :file, "Project files"%>
               <label class="custom-instructable-upload">
                 <%= file_field_tag 'files[]', type: :files, multiple: true %>
