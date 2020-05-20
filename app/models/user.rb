@@ -207,4 +207,8 @@ class User < ActiveRecord::Base
     return status
   end
 
+  def update_wallet
+    self.update_attributes(wallet: self.get_total_cc)
+  end
+
 end
