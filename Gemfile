@@ -44,6 +44,8 @@ gem 'sidekiq'
 gem 'excon'
 gem 's3_direct_upload'
 gem 'caxlsx', '~> 3.0.1'
+# Flash messages in JS
+gem 'toastr-rails'
 # Capistrano deployment stuff
 gem 'capistrano', '~> 3.9'
 gem 'capistrano-rails'
