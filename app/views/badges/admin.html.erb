@@ -15,7 +15,7 @@
             <th>Revoke</th>
           </tr>
           <tbody>
-            <% @order_items.each do |order_item| %>
+            <% @order_items.where(status: "In progress").each do |order_item| %>
               <tr>
                 <td><%= link_to order_item.order.user.username, user_path(order_item.order.user.username) %></td>
                 <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>

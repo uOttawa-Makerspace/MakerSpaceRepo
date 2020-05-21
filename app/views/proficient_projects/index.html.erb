@@ -19,8 +19,6 @@
     <% end %>
   </div>
 
-
-
   <br />
   <div class="apple_pagination">
     <%= page_entries_info @proficient_projects, :model => 'proficient_project' %>
@@ -52,7 +50,7 @@
           <a href="<%= proficient_project_path(pp.id) %>"><h6 class="font-weight-bold text-center"><strong><%= pp.title %></strong></h6></a>
           <p><%= pp.level %></p>
         </div>
-        <% unless pp.cc.nil? || pp.cc.eql?(0) %>
+        <% unless pp.cc.nil? || pp.cc.eql?(0) || @user.orders.joins(:order_items).where(order_items: { proficient_project: pp, status:  ["Awarded", "In progress"]}).present? %>
           <%= render "proficient_project_row", proficient_project: pp, order_item: @order_item %>
         <% end %>
       </div>
