@@ -4,7 +4,6 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :set_proficient_project, only: [:show, :destroy, :edit, :update]
   before_action :set_training_categories, only: [:new, :edit]
   before_action :set_files_photos_videos, only: [:show, :edit]
-  before_action :set_badges_list, only: [:new, :edit]
 
   def index
     @proficient_projects = ProficientProject.filter_attributes(get_filter_params).order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
@@ -175,10 +174,6 @@ class ProficientProjectsController < DevelopmentProgramsController
 
     def get_filter_params
       params.permit(:search, :level, :category, :proficiency)
-    end
-
-    def set_badges_list
-      @badge_list ||= Badge.get_badges_list
     end
 
 end

@@ -11,17 +11,19 @@
             <th>Name</th>
             <th>Badge</th>
             <th>Certify</th>
+            <th>Revoke</th>
           </tr>
           <tbody>
 
           <% @users.each do |user| %>
             <% user.orders.each do |order| %>
               <% order.order_items.each do |item| %>
-                <% if ProficientProject.find(item.proficient_project_id).badge_id.present? and order.order_status == OrderStatus.find_by(name: "Completed") %>
+                <% if ProficientProject.find(item.proficient_project_id).badge_id.present? and order.order_status == OrderStatus.find_by(name: "Completed") and item.status == "In progress"%>
                   <tr>
-                    <td><%= user.name %></td>
+                    <td><%= link_to user.name, user_path(user.username) %></td>
                     <td><%= Badge.get_badge_name(ProficientProject.find(item.proficient_project_id).badge_id) %></td>
-                    <td><%= link_to "Certify", new_badge_badges_path(user.id, order.id, ProficientProject.find(item.proficient_project_id).badge_id), class: "btn btn-primary" %></td>
+                    <td><%= link_to "Certify", new_badge_badges_path(user.id, order.id, ProficientProject.find(item.proficient_project_id).badge_id), class: "btn btn-primary", data: {confirm: 'Are you sure?'} %></td>
+                    <td><%= link_to "Revoke", order_item_cancel_path(item.id), class: "btn btn-danger", data: {confirm: 'Are you sure?'} %></td>
                   </tr>
                 <% end %>
               <% end %>

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200520174515) do
+ActiveRecord::Schema.define(version: 20200521151549) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -37,6 +37,14 @@ ActiveRecord::Schema.define(version: 20200520174515) do
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "badge_templates", force: :cascade do |t|
+    t.text     "badge_id"
+    t.text     "badge_description"
+    t.text     "badge_name"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
   end
 
   create_table "badges", force: :cascade do |t|
@@ -172,8 +180,9 @@ ActiveRecord::Schema.define(version: 20200520174515) do
     t.decimal  "unit_price",            precision: 12, scale: 3
     t.decimal  "total_price",           precision: 12, scale: 3
     t.integer  "quantity"
-    t.datetime "created_at",                                     null: false
-    t.datetime "updated_at",                                     null: false
+    t.datetime "created_at",                                                             null: false
+    t.datetime "updated_at",                                                             null: false
+    t.string   "status",                                         default: "In progress"
   end
 
   create_table "order_statuses", force: :cascade do |t|

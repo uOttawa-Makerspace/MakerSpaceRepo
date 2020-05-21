@@ -6,6 +6,7 @@ assets:clobber
 assets:environment
 assets:precompile
 autoprefixer:info
+badges:get_badge_templates
 badges:get_data
 cache_digests:dependencies
 cache_digests:nested_dependencies
@@ -51,6 +52,7 @@ paperclip:refresh:fingerprints
 paperclip:refresh:metadata
 paperclip:refresh:missing_styles
 paperclip:refresh:thumbnails
+print_order_notifications:two_weeks_reminder
 rails:template
 rails:update
 routes
