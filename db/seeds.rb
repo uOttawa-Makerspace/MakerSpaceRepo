@@ -7,5 +7,3 @@
 #   Mayor.create(name: 'Emanuel', city: cities.first)
 OrderStatus.create(id: 1, name: "In progress")
 OrderStatus.create(id: 2, name: "Completed")
-OrderStatus.create(id: 3, name: "Rewarded")
-OrderStatus.create(id: 3, name: "Cancelled")

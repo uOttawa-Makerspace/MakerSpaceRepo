@@ -17,9 +17,6 @@ class BadgesController < ApplicationController
   end
 
   def new_badge
-    # TODO : Try to find a better way to loop through all the orders in the admin.html.erb
-    # TODO : Fix the order status (maybe put the statuses in order_items instead ?
-    # TODO : Add cancel when the statuses for the order_items is in place
 
   begin
       user = User.find(params['user_id'])
@@ -38,7 +35,7 @@ class BadgesController < ApplicationController
       elsif response.status == 201
         badge_data =  JSON.parse(response.body)['data']
         Badge.create(:username => user.username, :user_id => user.id, :image_url => badge_data['image_url'], :issued_to => badge_data['issued_to'], :description => badge_data['badge_template']['description'], :badge_id => badge_data['id'])
-        Order.update(params['order_id'], :order_status => OrderStatus.find_by(name: "Rewarded"))
+        OrderItem.update(params['order_item_id'], :status => "Awarded")
         redirect_to admin_badges_path
         flash[:notice] = "The badge has been sent to the user !"
 

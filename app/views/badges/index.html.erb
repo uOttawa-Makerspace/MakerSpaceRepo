@@ -38,3 +38,19 @@
     inconvenience.
   </div>
 <% end %>
+
+<% if @user.orders.present? %>
+  <h2 style="text-align: center">My Pending Badges</h2>
+  <p class="text-center">Before receiving this badge, you need to complete the project related to the badge and show it to Development Program Admin</p>
+  <div class="row">
+    <% @user.orders.each do |order| %>
+      <% order.order_items.each do |item| %>
+        <% if ProficientProject.find(item.proficient_project_id).badge_id.present? and order.order_status == OrderStatus.find_by(name: "Completed") and item.status == "In progress" %>
+          <div class="col-md-3">
+            <%= image_tag(Badge.get_badge_image(ProficientProject.find(item.proficient_project_id).badge_id), :style => "width: inherit") %>
+          </div>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

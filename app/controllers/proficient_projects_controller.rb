@@ -50,16 +50,7 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def edit
     @training_levels = TrainingSession.return_levels
-    begin
-      response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badge_templates',
-                           :user => Rails.application.secrets.acclaim_api,
-                           :password => '',
-                           :headers => {"Content-type" => "application/json"}
-      )
-      @badge_list = JSON.parse(response.body)['data']
-    rescue
-      @badge_list = []
-    end
+    @badge_list ||= Badge.get_badges_list
   end
 
   def update

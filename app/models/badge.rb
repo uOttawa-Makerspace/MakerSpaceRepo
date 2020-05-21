@@ -9,17 +9,16 @@ class Badge < ActiveRecord::Base
     end
   end
 
-  def self.get_badges_list
+  def self.get_badge_image(badge_id)
     begin
-      response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badge_templates',
+      response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badge_templates/'+badge_id,
                            :user => Rails.application.secrets.acclaim_api || ENV.fetch("acclaim_api"),
                            :password => '',
                            :headers => {"Content-type" => "application/json"}
       )
-      badge_list = JSON.parse(response.body)['data']
+      return JSON.parse(response.body)['data']['image_url']
     rescue
-      badge_list = []
+      return nil
     end
-    badge_list
   end
 end

@@ -213,7 +213,7 @@ Rails.application.routes.draw do
   resources :badges, only: [:index] do
     collection do
       get :admin
-      get "new_badge", path: 'new/:user_id/:order_id/:badge_id'
+      get "new_badge", path: 'new/:user_id/:order_item_id/:badge_id'
     end
   end
 

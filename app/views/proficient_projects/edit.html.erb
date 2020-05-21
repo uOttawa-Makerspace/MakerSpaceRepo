@@ -35,7 +35,7 @@
               <br />
               <br />
               <%= f.label :badge_id, "Related Badge" %>
-              <%= f.select(:badge_id, options_for_select(@badge_list.collect {|badge| [ badge['name'], badge['id'] ] }, :selected => f.object.badge_id), {}, {:class => "form-control"}) %>
+              <%= f.select(:badge_id, options_for_select(BadgeTemplate.all.collect {|badge| [ badge['badge_name'], badge['badge_id'] ] }, :selected => f.object.badge_id), {}, {:class => "form-control"}) %>
               <br>
               <br>
               <%= label_tag :file, "Project files" %>

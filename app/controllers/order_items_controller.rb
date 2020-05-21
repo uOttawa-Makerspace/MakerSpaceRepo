@@ -27,7 +27,7 @@ class OrderItemsController < ApplicationController
   end
 
   def cancel
-    OrderItem.find(params[:order_item_id]).update(order_status: OrderStatus.find_by(name: "Cancelled"))
+    OrderItem.find(params[:order_item_id]).update(status: "Revoked")
     redirect_to admin_badges_path
   end
 
