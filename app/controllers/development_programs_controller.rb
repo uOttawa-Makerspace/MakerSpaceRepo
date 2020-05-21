@@ -6,6 +6,11 @@ class DevelopmentProgramsController < ApplicationController
   def index
   end
 
+  def skills
+    @certifications = current_user.certifications
+    @remaining_trainings = current_user.remaining_trainings
+  end
+
   def join_development_program
     program = Program.new(user_id: current_user.id, program_type: Program::DEV_PROGRAM)
     if program.save!
