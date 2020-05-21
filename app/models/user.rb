@@ -29,6 +29,7 @@ class User < ActiveRecord::Base
   has_many :badges
   has_many :programs
   has_and_belongs_to_many :proficient_projects
+  has_many :orders
 
   validates :name,
     presence: true,
@@ -204,6 +205,10 @@ class User < ActiveRecord::Base
       status = 4
     end
     return status
+  end
+
+  def update_wallet
+    self.update_attributes(wallet: self.get_total_cc)
   end
 
 end

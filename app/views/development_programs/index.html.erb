@@ -1,12 +1,11 @@
 <section>
-  <div class="col-lg-7 mx-auto">
-      <br />
+  <div class="col-lg-8 mx-auto">
+    <br/>
 
     <h2 class="text-center">Welcome to the Development Program Area</h2>
     <br>
 
-    <h4 class="text-center text-muted">Overview</h4>
-
+    <h3 class="text-center text-muted">Overview</h3>
     <p>
       With the World Wide Web connecting experiences from across the globe, many of today’s
       professional skills can be effectively self-taught outside the traditional and costly
@@ -32,17 +31,18 @@
       proiects in the Proficient Projects Area.
     </p>
 
-    <h4 class="mt-3 mt-3 text-center text-muted"><%= link_to "Proficient Projects", proficient_projects_path %></h4>
+    <h4 class="mt-3 mt-3 text-center text-muted"><%= link_to "Proficient Projects", proficient_projects_path(proficiency: true) %></h4>
 
     <p>
       These projects are more advanced and not free. You can either purchase it with your credit \
       card or use your CC points.
     </p>
 
-    <h4 class="mt-3 mt-3 text-center text-muted"><%= link_to "Badges", proficient_projects_path %></h4>
+    <h4 class="mt-3 mt-3 text-center text-muted"><%= link_to "Skills & Badges", proficient_projects_path %></h4>
 
     <p>
-      The Centre for Entrepreneurship and Engineering Design (CEED) has always been committed to helping students and community members achieve success.
+      The Centre for Entrepreneurship and Engineering Design (CEED) has always been committed to helping students and
+      community members achieve success.
 
       In addition to our free basic introductory workshops, you can now achieve higher level of
       technical abilities in each skill offered by the development program. As you progress in
@@ -53,8 +53,119 @@
       quality (intermediate, advanced, mastery) upon satisfactory completion of each proficiency
       project you will be rewarded with the appropriate digital badges.
     </p>
-    <br />
-    <br />
+    <p><b>To help you understand the structure better, we made a flow diagram of skill
+      progression <%= link_to("HERE", image_path("development_program/Skill.png"), target: "_blank") %>.</b></p>
+
+    <h3 class="mt-3 mt-3 text-center text-muted">Digital Badges</h3>
+    <p class="text-center"><b>
+      <%= link_to("Example of what employers see on each badge
+        profile", image_path("development_program/BADGE.png"), target: "_blank") %>
+    </b></p>
+    <%= image_tag("development_program/1.png", class: "img-fluid") %>
+    <br/>
+    <br>
+    <div class="row">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            Digital Technologies
+          </div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">3D-Printing</li>
+            <li class="list-group-item">Laser Cutting</li>
+            <li class="list-group-item">Arduino</li>
+            <li class="list-group-item">Soldering</li>
+            <li class="list-group-item">Virtual reality</li>
+            <li class="list-group-item">Embroidery</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            Professional development
+          </div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">Design Thinking</li>
+            <li class="list-group-item">Entrepreneurship Basics</li>
+            <li class="list-group-item">Project Management</li>
+            <li class="list-group-item">Effective Communication (written and oral)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            Manufacturing Technologies
+          </div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">Shop Fundamentals</li>
+            <li class="list-group-item">Lathe</li>
+            <li class="list-group-item">Mill</li>
+            <li class="list-group-item">CNC</li>
+            <li class="list-group-item">Welding</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="mt-3 mt-3 text-center text-muted">Volunteer</h3>
+    <p>Gaining experiences through volunteering is an excellent way to broaden your horizons and acquire valuable skills
+      required in the working world! Numerous studies show that those who volunteer to help others also feel better
+      about themselves. With your desire to enrich your community and your own life, and by giving your time and
+      expertise, you will realize that you truly can make a difference.</p>
+    <p>The development program will improve our current volunteer program. In particular the development program will
+      focus on guiding our volunteers to complete increasingly challenging tasks to develop their skills and reward them
+      in the process. To understand how the volunteer portion of the development program work click here.</p>
+    <p><b>Volunteers can now:</b></p>
+    <ul style="list-style-type: disc!important;">
+      <li>Unlock different tasks based on their skill level.</li>
+      <li>Track their skill progress through their MakerRepo account.</li>
+      <li>Each task will reward CEED Credit (CC) to be used in our MakerStore.</li>
+      <li>Each task will have predetermined hours to be rewarded upon completion.</li>
+    </ul>
+    <p>We have compiled an updated info
+      sheet  <%= link_to("HERE", image_path("development_program/Volunteerinfo.pdf"), target: "_blank") %>, and a
+      presentation
+      <%= link_to("HERE", image_path("development_program/Volunteerpresentation.pdf"), target: "_blank") %> to guild you
+      on the registration process and how the program work.
+    </p>
+
+    <h3 class="mt-3 mt-3 text-center text-muted">Courses</h3>
+    <p>What's better than a course that's only hand-on? the fact that you will have no final!!.</p>
+    <p>Starting summer 2020 Graduate and Undergrad students will be able to register for an official course as part of
+      the development program and earn credits.</p>
+    <br>
+    <p><b>Requirements before being accepted to the course:</b></p>
+    <ul style="list-style-type: disc!important;">
+      <li>Completed 1.5 hours 3D printing</li>
+      <li>Completed 3 hours: Basic training</li>
+      <li>Completed Shadowing: 6 hours at Makerspace and 6 hours at Brunsfield.</li>
+      <li>Two intermediate level badges from the list of skills above</li>
+    </ul>
+    <br>
+    <p><b>On completion of the course you will have:</b></p>
+    <ul style="list-style-type: disc!important;">
+      <li>Committed 10hr/week of doing tasks in a facility of your choosing.</li>
+      <li>Advanced level badges in all of the skills related to the facility of your choosing</li>
+    </ul>
+    <p>For more information about the graduate level course
+      click<a href="https://www.site.uottawa.ca/~lpeyton/PDWsyllabus.html"> HERE</a> <br> For more information about the
+      undergrad level course stay tuned</p>
+
+    <h3 class="mt-3 mt-3 text-center text-muted">Employment</h3>
+    <p>Not only will the development program build your personal skills, but it will make you more attractive to
+      employers. The different proficiency level badges and the trainings will offer you an opportunity to find
+      employment opportunities with the Centre for Entrepreneurship and Engineering Design (CEED) and other
+      organizations. CEED hires over 50 students every term in addition to 15 TAs for the courses.</p>
+    <p>We are also currently working with industry partners and government branshes to add their desired skills to our
+      program</p>
+
+    <h3 class="mt-3 mt-3 text-center text-muted">Contact</h3>
+    <p>Do you want know more? Email us and we will answer all your questions</p>
+    <p>Mohamed Elsageyer <br>Team lead <br> melsa036@uottawa.ca</p>
+    <p>Stephanie Chiarotto <br> Volunteer Coordinator <br> volunteer@makerrepo.com</p>
+    <br>
   </div>
 </section>
 

@@ -47,9 +47,14 @@
           </div>
         </a>
         <div>
-          <a href="<%= proficient_project_path(pp.id) %>"><h6 class="pt-3 font-weight-bold text-center"><strong><%= pp.title %></strong></h6></a>
+          <b class="float-right pt-2 text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + " Ccs" %></b>
+          <br />
+          <a href="<%= proficient_project_path(pp.id) %>"><h6 class="font-weight-bold text-center"><strong><%= pp.title %></strong></h6></a>
           <p><%= pp.level %></p>
         </div>
+        <% unless pp.cc.nil? || pp.cc.eql?(0) %>
+          <%= render "proficient_project_row", proficient_project: pp, order_item: @order_item %>
+        <% end %>
       </div>
 
     <% end %>

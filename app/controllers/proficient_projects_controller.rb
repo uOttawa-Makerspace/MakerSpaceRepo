@@ -9,11 +9,13 @@ class ProficientProjectsController < DevelopmentProgramsController
     @proficient_projects = ProficientProject.filter_attributes(get_filter_params).order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
     @training_levels = TrainingSession.return_levels
     @training_categories_names = Training.all.order('name ASC').pluck(:name)
+    @order_item = current_order.order_items.new
   end
 
   def new
     @proficient_project = ProficientProject.new
-    @training_levels = TrainingSession.return_levels
+    @training_levels ||= TrainingSession.return_levels
+    @badge_list ||= Badge.get_badges_list
   end
 
   def show
@@ -29,7 +31,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     if @proficient_project.save
       create_photos
       create_files
-      create_videos
+      # create_videos
       flash[:notice] = "Proficient Project successfully created."
       render json: { redirect_uri: "#{proficient_project_path(@proficient_project.id)}" }
     else
@@ -48,6 +50,16 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def edit
     @training_levels = TrainingSession.return_levels
+    begin
+      response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badge_templates',
+                           :user => Rails.application.secrets.acclaim_api,
+                           :password => '',
+                           :headers => {"Content-type" => "application/json"}
+      )
+      @badge_list = JSON.parse(response.body)['data']
+    rescue
+      @badge_list = []
+    end
   end
 
   def update
@@ -80,7 +92,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def proficient_project_params
-    params.require(:proficient_project).permit(:title, :description, :training_id, :level)
+    params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_id)
   end
 
   def create_photos
@@ -96,11 +108,11 @@ class ProficientProjectsController < DevelopmentProgramsController
     end if params['files'].present?
   end
 
-  def create_videos
-    params['videos'].each do |f|
-      Video.create(video: f, proficient_project_id: @proficient_project.id)
-    end if params['videos'].present?
-  end
+  # def create_videos
+  #   params['videos'].each do |f|
+  #     Video.create(video: f, proficient_project_id: @proficient_project.id)
+  #   end if params['videos'].present?
+  # end
 
   def set_proficient_project
     @proficient_project= ProficientProject.find(params[:id])
@@ -160,19 +172,19 @@ class ProficientProjectsController < DevelopmentProgramsController
       end
     end if params['deletevideos'].present?
 
-    params['videos'].each do |f|
-      filename = f.original_filename.gsub(" ", "_")
-      if @proficient_project.videos.where(video_file_name: filename).blank? #checks if video exists
-        Video.create(video: f, proficient_project_id: @proficient_project.id)
-      else #updates existant videos
-        Video.destroy_all(video_file_name: filename, proficient_project_id: @proficient_project.id)
-        Video.create(video: f, proficient_project_id: @proficient_project.id)
-      end
-    end if params['videos'].present?
+    # params['videos'].each do |f|
+    #   filename = f.original_filename.gsub(" ", "_")
+    #   if @proficient_project.videos.where(video_file_name: filename).blank? #checks if video exists
+    #     Video.create(video: f, proficient_project_id: @proficient_project.id)
+    #   else #updates existant videos
+    #     Video.destroy_all(video_file_name: filename, proficient_project_id: @proficient_project.id)
+    #     Video.create(video: f, proficient_project_id: @proficient_project.id)
+    #   end
+    # end if params['videos'].present?
   end
 
   def get_filter_params
-    params.permit(:search, :level, :category)
+    params.permit(:search, :level, :category, :proficiency)
   end
 
 end

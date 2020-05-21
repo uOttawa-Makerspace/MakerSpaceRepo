@@ -5,3 +5,5 @@
 #
 #   cities = City.create([{ name: 'Chicago' }, { name: 'Copenhagen' }])
 #   Mayor.create(name: 'Emanuel', city: cities.first)
+OrderStatus.create(id: 1, name: "In progress")
+OrderStatus.create(id: 2, name: "Completed")

@@ -30,7 +30,10 @@ class VolunteerTaskRequestsController < ApplicationController
       if volunteer_task_request.approval
         volunteer_task = volunteer_task_request.volunteer_task
         volunteer_id = volunteer_task_request.user_id
+        volunteer = volunteer_task_request.user
+        volunteer.update_wallet
         CcMoney.create_cc_money_from_approval(volunteer_task.id, volunteer_id, volunteer_task.cc)
+        volunteer.update_wallet
         VolunteerHour.create_volunteer_hour_from_approval(volunteer_task.id, volunteer_id, volunteer_task.hours)
       end
       MsrMailer.send_notification_for_task_request_update(volunteer_task_request.id).deliver

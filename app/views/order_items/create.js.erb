@@ -1,0 +1,8 @@
+<% if @order.errors.any? || @order_item.errors.any? %>
+  alert("not valid.");
+  alert("<%= @order.errors.messages %>");
+<% else %>
+  $(".cart-text").html("<%= escape_javascript(render 'layouts/cart_text') %>");
+  // Display a success toast, with a title
+  toastr.success('Item added to Cart. Go to <%= link_to 'Checkout', carts_path %>');
+<% end %>

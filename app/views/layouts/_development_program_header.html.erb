@@ -10,7 +10,7 @@
         <a class="nav-link" href="https://melsa036.github.io/" target="_blank">Getting Started <span class="sr-only">(current)</span></a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="#">Learning Area</a>
+        <%= link_to "Learning Area", proficient_projects_path(proficiency: false), class: "nav-link"%>
       </li>
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -21,7 +21,7 @@
             <%= link_to "New proficient Project", new_proficient_project_path, class: "dropdown-item" %>
             <div class="dropdown-divider"></div>
           <% end %>
-          <%= link_to "All Proficient Projects", proficient_projects_path, class: "dropdown-item"%>
+          <%= link_to "All Proficient Projects", proficient_projects_path(proficiency: true), class: "dropdown-item"%>
         </div>
       </li>
       <li class="nav-item dropdown">
@@ -32,7 +32,14 @@
           <%= link_to "Skills", badges_url, class: "dropdown-item"%>
             <div class="dropdown-divider"></div>
           <%= link_to "Badges", badges_url, class: "dropdown-item"%>
+            <div class="dropdown-divider"></div>
+          <% if current_user.admin? %>
+            <%= link_to "Proficient Project Requests", admin_badges_path, class: "dropdown-item"%>
+          <% end %>
         </div>
+      </li>
+      <li class="nav-item">
+        <%= link_to "Orders", orders_path, class: "nav-link"%>
       </li>
       <% if current_user.admin? %>
         <li class="nav-item dropdown">
@@ -45,6 +52,11 @@
           </div>
         </li>
       <% end %>
+    </ul>
+    <ul class="navbar-nav ml-auto mr-1">
+      <li class="nav-link">
+        <%= render 'layouts/cart_text' %>
+      </li>
     </ul>
   </div>
 

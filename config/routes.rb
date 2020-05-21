@@ -10,6 +10,10 @@ Rails.application.routes.draw do
   end
   mount Sidekiq::Web => '/sidekiq'
 
+  resources :carts, only: [:index]
+  resources :order_items, only: [:create, :update, :destroy]
+  resources :orders, only: [:index, :create]
+
   get '/saml/auth' => 'saml_idp#login'
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
@@ -203,7 +207,13 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :badges, only: [:index]
+  resources :badges, only: [:index] do
+    collection do
+      get :admin
+      get "new_badge", path: 'new/:user_id/:order_id/:badge_id'
+    end
+  end
+
   resources :proficient_projects do
     collection do
       get :join_development_program
