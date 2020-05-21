@@ -10,26 +10,20 @@
           <tr>
             <th>Name</th>
             <th>Badge</th>
+            <th>Project</th>
             <th>Certify</th>
             <th>Revoke</th>
           </tr>
           <tbody>
-
-          <% @users.each do |user| %>
-            <% user.orders.each do |order| %>
-              <% order.order_items.each do |item| %>
-                <% if ProficientProject.find(item.proficient_project_id).badge_id.present? and order.order_status == OrderStatus.find_by(name: "Completed") and item.status == "In progress"%>
-                  <tr>
-                    <td><%= link_to user.name, user_path(user.username) %></td>
-                    <td><%= Badge.get_badge_name(ProficientProject.find(item.proficient_project_id).badge_id) %></td>
-                    <td><%= link_to "Certify", new_badge_badges_path(user.id, order.id, ProficientProject.find(item.proficient_project_id).badge_id), class: "btn btn-primary", data: {confirm: 'Are you sure?'} %></td>
-                    <td><%= link_to "Revoke", order_item_cancel_path(item.id), class: "btn btn-danger", data: {confirm: 'Are you sure?'} %></td>
-                  </tr>
-                <% end %>
-              <% end %>
+            <% @order_items.each do |order_item| %>
+              <tr>
+                <td><%= link_to order_item.order.user.username, user_path(order_item.order.user.username) %></td>
+                <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
+                <td><%= order_item.proficient_project.title %></td>
+                <td><%= link_to "Certify", new_badge_badges_path(order_item.order.user.id, order_item.order.id, order_item.proficient_project.badge_id), class: "btn btn-primary", data: {confirm: 'Are you sure?'} %></td>
+                <td><%= link_to "Revoke", order_item_cancel_path(order_item.id), class: "btn btn-danger", data: {confirm: 'Are you sure?'} %></td>
+              </tr>
             <% end %>
-          <% end %>
-
           </tbody>
         </table>
     </div>

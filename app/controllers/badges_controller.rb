@@ -13,11 +13,10 @@ class BadgesController < ApplicationController
   end
 
   def admin
-    @users = User.all
+    @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user)
   end
 
   def new_badge
-
   begin
       user = User.find(params['user_id'])
       badge_id = params['badge_id']

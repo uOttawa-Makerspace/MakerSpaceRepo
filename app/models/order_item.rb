@@ -5,6 +5,8 @@ class OrderItem < ActiveRecord::Base
   before_save :finalize
   belongs_to :proficient_project
   belongs_to :order
+  scope :completed_order, -> {joins(:order => :order_status).where(order_statuses: {name: "Completed"})
+  }
 
   def unit_price
     if persisted?
