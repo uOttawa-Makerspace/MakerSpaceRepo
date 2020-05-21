@@ -11,7 +11,7 @@
             <th>Name</th>
             <th>Badge</th>
             <th>Certify</th>
-            <th>Delete</th>
+            <th>Revoke</th>
           </tr>
           <tbody>
 
@@ -23,7 +23,7 @@
                     <td><%= link_to user.name, user_path(user.username) %></td>
                     <td><%= Badge.get_badge_name(ProficientProject.find(item.proficient_project_id).badge_id) %></td>
                     <td><%= link_to "Certify", new_badge_badges_path(user.id, order.id, ProficientProject.find(item.proficient_project_id).badge_id), class: "btn btn-primary", data: {confirm: 'Are you sure?'} %></td>
-                    <td><%= link_to "Cancel", order_item_cancel_path(item.id), class: "btn btn-danger", data: {confirm: 'Are you sure?'} %></td>
+                    <td><%= link_to "Revoke", order_item_cancel_path(item.id), class: "btn btn-danger", data: {confirm: 'Are you sure?'} %></td>
                   </tr>
                 <% end %>
               <% end %>
