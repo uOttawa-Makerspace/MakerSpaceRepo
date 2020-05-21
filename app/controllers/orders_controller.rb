@@ -2,7 +2,7 @@ class OrdersController < DevelopmentProgramsController
   before_action :check_wallet, only: :create
 
   def index
-    @orders = current_user.orders.order("created_at DESC")
+    @orders = current_user.orders.where(order_status: OrderStatus.find_by(name: "Completed")).order("created_at DESC")
   end
 
   def create
