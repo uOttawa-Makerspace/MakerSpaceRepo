@@ -4,6 +4,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :set_proficient_project, only: [:show, :destroy, :edit, :update]
   before_action :set_training_categories, only: [:new, :edit]
   before_action :set_files_photos_videos, only: [:show, :edit]
+  before_action :set_badges_list, only: [:new, :edit]
 
   def index
     @proficient_projects = ProficientProject.filter_attributes(get_filter_params).order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
@@ -15,7 +16,6 @@ class ProficientProjectsController < DevelopmentProgramsController
   def new
     @proficient_project = ProficientProject.new
     @training_levels ||= TrainingSession.return_levels
-    @badge_list ||= Badge.get_badges_list
   end
 
   def show
@@ -50,16 +50,6 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def edit
     @training_levels = TrainingSession.return_levels
-    begin
-      response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badge_templates',
-                           :user => Rails.application.secrets.acclaim_api,
-                           :password => '',
-                           :headers => {"Content-type" => "application/json"}
-      )
-      @badge_list = JSON.parse(response.body)['data']
-    rescue
-      @badge_list = []
-    end
   end
 
   def update
@@ -77,114 +67,118 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   private
 
-  def grant_access_to_project
-    unless current_user.dev_program? || current_user.admin? || current_user.staff?
-      redirect_to root_path
-      flash[:alert] = "You cannot access this area."
-    end
-  end
-
-  def only_admin_access
-    unless current_user.admin?
-      redirect_to development_programs_path
-      flash[:alert] = "Only admin members can access this area."
-    end
-  end
-
-  def proficient_project_params
-    params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_id)
-  end
-
-  def create_photos
-    params['images'].each do |img|
-      dimension = FastImage.size(img.tempfile)
-      Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
-    end if params['images'].present?
-  end
-
-  def create_files
-    params['files'].each do |f|
-      RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
-    end if params['files'].present?
-  end
-
-  # def create_videos
-  #   params['videos'].each do |f|
-  #     Video.create(video: f, proficient_project_id: @proficient_project.id)
-  #   end if params['videos'].present?
-  # end
-
-  def set_proficient_project
-    @proficient_project= ProficientProject.find(params[:id])
-  end
-
-  def set_training_categories
-    @training_categories = Training.all.order(:name).pluck(:name, :id)
-  end
-
-  def set_files_photos_videos
-    @photos = @proficient_project.photos || []
-    @files = @proficient_project.repo_files.order(created_at: :asc)
-    @videos = @proficient_project.videos.processed.order(created_at: :asc)
-  end
-
-  def update_photos
-    @proficient_project.photos.each do |img|
-      if params['deleteimages'].include?(img.image_file_name) #checks if the file should be deleted
-        Photo.destroy_all(image_file_name: img.image_file_name, proficient_project_id: @proficient_project.id)
+    def grant_access_to_project
+      unless current_user.dev_program? || current_user.admin? || current_user.staff?
+        redirect_to root_path
+        flash[:alert] = "You cannot access this area."
       end
-    end if params['deleteimages'].present?
-    params['images'].each do |img|
-      filename = img.original_filename.gsub(" ", "_");
-      if @proficient_project.photos.where(image_file_name: filename).blank? #checks if file exists
+    end
+
+    def only_admin_access
+      unless current_user.admin?
+        redirect_to development_programs_path
+        flash[:alert] = "Only admin members can access this area."
+      end
+    end
+
+    def proficient_project_params
+      params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_id)
+    end
+
+    def create_photos
+      params['images'].each do |img|
         dimension = FastImage.size(img.tempfile)
         Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
-      else #updates existant files
-        Photo.destroy_all(image_file_name: filename, proficient_project_id: @proficient_project.id)
-        dimension = FastImage.size(img.tempfile)
-        Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
-      end
-    end if params['images'].present?
-  end
+      end if params['images'].present?
+    end
 
-  def update_files
-    @proficient_project.repo_files.each do |f|
-      if params['deletefiles'].include?(f.file_file_name) #checks if the file should be deleted
-        RepoFile.destroy_all(file_file_name: f.file_file_name, proficient_project_id: @proficient_project.id)
-      end
-    end if params['deletefiles'].present?
-
-    params['files'].each do |f|
-      filename = f.original_filename.gsub(" ", "_")
-      if @proficient_project.repo_files.where(file_file_name: filename).blank? #checks if file exists
+    def create_files
+      params['files'].each do |f|
         RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
-      else #updates existant files
-        RepoFile.destroy_all(file_file_name: filename, proficient_project_id: @proficient_project.id)
-        RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
-      end
-    end if params['files'].present?
-  end
+      end if params['files'].present?
+    end
 
-  def update_videos
-    @proficient_project.videos.each do |f|
-      if params['deletevideos'].include?(f.video_file_name) #checks if the file should be deleted
-        Video.destroy_all(video_file_name: f.video_file_name, proficient_project_id: @proficient_project.id)
-      end
-    end if params['deletevideos'].present?
-
-    # params['videos'].each do |f|
-    #   filename = f.original_filename.gsub(" ", "_")
-    #   if @proficient_project.videos.where(video_file_name: filename).blank? #checks if video exists
+    # def create_videos
+    #   params['videos'].each do |f|
     #     Video.create(video: f, proficient_project_id: @proficient_project.id)
-    #   else #updates existant videos
-    #     Video.destroy_all(video_file_name: filename, proficient_project_id: @proficient_project.id)
-    #     Video.create(video: f, proficient_project_id: @proficient_project.id)
-    #   end
-    # end if params['videos'].present?
-  end
+    #   end if params['videos'].present?
+    # end
 
-  def get_filter_params
-    params.permit(:search, :level, :category, :proficiency)
-  end
+    def set_proficient_project
+      @proficient_project= ProficientProject.find(params[:id])
+    end
+
+    def set_training_categories
+      @training_categories = Training.all.order(:name).pluck(:name, :id)
+    end
+
+    def set_files_photos_videos
+      @photos = @proficient_project.photos || []
+      @files = @proficient_project.repo_files.order(created_at: :asc)
+      @videos = @proficient_project.videos.processed.order(created_at: :asc)
+    end
+
+    def update_photos
+      @proficient_project.photos.each do |img|
+        if params['deleteimages'].include?(img.image_file_name) #checks if the file should be deleted
+          Photo.destroy_all(image_file_name: img.image_file_name, proficient_project_id: @proficient_project.id)
+        end
+      end if params['deleteimages'].present?
+      params['images'].each do |img|
+        filename = img.original_filename.gsub(" ", "_");
+        if @proficient_project.photos.where(image_file_name: filename).blank? #checks if file exists
+          dimension = FastImage.size(img.tempfile)
+          Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
+        else #updates existant files
+          Photo.destroy_all(image_file_name: filename, proficient_project_id: @proficient_project.id)
+          dimension = FastImage.size(img.tempfile)
+          Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
+        end
+      end if params['images'].present?
+    end
+
+    def update_files
+      @proficient_project.repo_files.each do |f|
+        if params['deletefiles'].include?(f.file_file_name) #checks if the file should be deleted
+          RepoFile.destroy_all(file_file_name: f.file_file_name, proficient_project_id: @proficient_project.id)
+        end
+      end if params['deletefiles'].present?
+
+      params['files'].each do |f|
+        filename = f.original_filename.gsub(" ", "_")
+        if @proficient_project.repo_files.where(file_file_name: filename).blank? #checks if file exists
+          RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
+        else #updates existant files
+          RepoFile.destroy_all(file_file_name: filename, proficient_project_id: @proficient_project.id)
+          RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
+        end
+      end if params['files'].present?
+    end
+
+    def update_videos
+      @proficient_project.videos.each do |f|
+        if params['deletevideos'].include?(f.video_file_name) #checks if the file should be deleted
+          Video.destroy_all(video_file_name: f.video_file_name, proficient_project_id: @proficient_project.id)
+        end
+      end if params['deletevideos'].present?
+
+      # params['videos'].each do |f|
+      #   filename = f.original_filename.gsub(" ", "_")
+      #   if @proficient_project.videos.where(video_file_name: filename).blank? #checks if video exists
+      #     Video.create(video: f, proficient_project_id: @proficient_project.id)
+      #   else #updates existant videos
+      #     Video.destroy_all(video_file_name: filename, proficient_project_id: @proficient_project.id)
+      #     Video.create(video: f, proficient_project_id: @proficient_project.id)
+      #   end
+      # end if params['videos'].present?
+    end
+
+    def get_filter_params
+      params.permit(:search, :level, :category, :proficiency)
+    end
+
+    def set_badges_list
+      @badge_list ||= Badge.get_badges_list
+    end
 
 end
