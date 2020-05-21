@@ -176,8 +176,4 @@ class ProficientProjectsController < DevelopmentProgramsController
       params.permit(:search, :level, :category, :proficiency)
     end
 
-    def set_badges_list
-      @badge_list ||= Badge.get_badges_list
-    end
-
 end
