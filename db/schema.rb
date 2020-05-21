@@ -241,8 +241,6 @@ ActiveRecord::Schema.define(version: 20200521013110) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
-    t.text     "email"
-    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -275,7 +273,6 @@ ActiveRecord::Schema.define(version: 20200521013110) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
   end
 
   create_table "proficient_projects", force: :cascade do |t|
