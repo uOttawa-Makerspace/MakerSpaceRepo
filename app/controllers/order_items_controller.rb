@@ -26,6 +26,11 @@ class OrderItemsController < ApplicationController
     @order_items = @order.order_items
   end
 
+  def cancel
+    OrderItem.find(params[:order_item_id]).update(order_status: OrderStatus.find_by(name: "Cancelled"))
+    redirect_to admin_badges_path
+  end
+
   private
 
     def order_item_params

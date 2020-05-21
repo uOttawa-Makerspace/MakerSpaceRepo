@@ -11,7 +11,10 @@ Rails.application.routes.draw do
   mount Sidekiq::Web => '/sidekiq'
 
   resources :carts, only: [:index]
-  resources :order_items, only: [:create, :update, :destroy]
+  resources :order_items, only: [:create, :update, :destroy] do
+    get :cancel, path: 'cancel'
+  end
+
   resources :orders, only: [:index, :create]
 
   get '/saml/auth' => 'saml_idp#login'

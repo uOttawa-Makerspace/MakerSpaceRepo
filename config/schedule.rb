@@ -51,6 +51,7 @@ end
 
 every :day, :at => '3am' do
   rake "badge:get_data"
+  rake "badge:get_badge_templates"
 end
 
 every :day, :at => '9am' do
