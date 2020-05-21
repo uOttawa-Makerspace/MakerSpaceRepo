@@ -207,6 +207,7 @@ Rails.application.routes.draw do
   resources :development_programs, only: [:index] do
     collection do
       get :join_development_program
+      get :skills
     end
   end
 
