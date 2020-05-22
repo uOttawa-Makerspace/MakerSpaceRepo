@@ -15,7 +15,7 @@
                                expiration: 24.hours.from_now.utc.iso8601,
                                max_file_size: 8000.megabytes do %>
             <br />
-            <label class="custom-instructable-upload-video">
+            <label class="custom-instructable-upload-video d-none" id="choose_video">
               <%= file_field_tag :file, multiple: true %>
               Choose videos...
             </label>

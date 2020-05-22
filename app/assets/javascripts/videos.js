@@ -1,6 +1,7 @@
 function setProficientProject(){
     var proficient_project_id = document.getElementById("select_proficient_id").value;
     document.getElementById("proficient_project").innerHTML=("Proficient Project id chosen: " + proficient_project_id);
+    document.getElementById("choose_video").classList.remove('d-none');
     s3_uploader(proficient_project_id)
 }
 
