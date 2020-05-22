@@ -7,6 +7,12 @@ class OrderItemsController < DevelopmentProgramsController
     unless existing_order.count >= 1
       @order.save
     end
+    # TODO update when implementing coupons
+    #if existing_order.count >= 1
+    #  existing_order.last.update_column(:quantity, existing_order.last.quantity + params[:order_item][:quantity].to_i)
+    #else
+    #  @order.save
+    #end
     session[:order_id] = @order.id
   end
 
