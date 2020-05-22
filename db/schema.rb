@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200521151549) do
+ActiveRecord::Schema.define(version: 20200522185252) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -84,8 +84,10 @@ ActiveRecord::Schema.define(version: 20200521151549) do
     t.datetime "created_at",            null: false
     t.datetime "updated_at",            null: false
     t.integer  "proficient_project_id"
+    t.integer  "order_id"
   end
 
+  add_index "cc_moneys", ["order_id"], name: "index_cc_moneys_on_order_id", using: :btree
   add_index "cc_moneys", ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id", using: :btree
 
   create_table "certifications", force: :cascade do |t|
@@ -579,6 +581,7 @@ ActiveRecord::Schema.define(version: 20200521151549) do
 
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
+  add_foreign_key "cc_moneys", "orders"
   add_foreign_key "cc_moneys", "proficient_projects"
   add_foreign_key "certifications", "users"
   add_foreign_key "comments", "repositories"

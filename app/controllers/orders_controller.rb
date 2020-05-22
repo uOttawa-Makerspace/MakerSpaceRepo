@@ -11,8 +11,11 @@ class OrdersController < DevelopmentProgramsController
     @order.total = @order.subtotal
     @order.order_status = OrderStatus.find_by(name: "Completed")
     if @order.save
+      user = @order.user
       @order.order_items.each do |order_item|
-        CcMoney.create_cc_money_from_order(order_item.proficient_project.id, @order.user.id, order_item.total_price.to_i)
+        cc = order_item.total_price.to_i
+        cc *= -1 if cc >= 0
+        @order.cc_moneys.create(proficient_project: order_item.proficient_project, user: user, cc: cc)
       end
       current_user.update_wallet
       session[:order_id] = nil

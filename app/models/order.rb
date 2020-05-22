@@ -5,6 +5,7 @@ class Order < ActiveRecord::Base
   belongs_to :order_status
   has_many :order_items, dependent: :destroy
   has_many :proficient_projects, through: :order_items
+  has_many :cc_moneys, dependent: :destroy
   scope :completed, -> {joins(:order_status).where(order_statuses: {name: "Completed"})}
 
   def subtotal

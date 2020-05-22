@@ -50,13 +50,7 @@
           <a href="<%= proficient_project_path(pp.id) %>"><h6 class="font-weight-bold text-center"><strong><%= pp.title %></strong></h6></a>
           <p><%= pp.level %></p>
         </div>
-        <% if pp.cc.nil? || pp.cc.eql?(0) || @user.order_items.completed_order.where(proficient_project: pp).present? %>
-          <a href="<%= proficient_project_path(pp.id) %>"><button class="btn btn-secondary mb-2">Show Project</button></a>
-        <% elsif @user.order_items.where(proficient_project: pp).present? %>
-          <a href="#"><button class="btn btn-secondary" disabled>Add to cart</button></a>
-        <% else %>
-          <%= render "proficient_project_row", proficient_project: pp, order_item: @order_item %>
-        <% end %>
+        <%= render "proficient_project_row", proficient_project: pp, order_item: @order_item %>
       </div>
 
     <% end %>
