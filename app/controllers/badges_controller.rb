@@ -13,7 +13,7 @@ class BadgesController < ApplicationController
   end
 
   def admin
-    @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user)
+    @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project)
   end
 
   def new_badge
