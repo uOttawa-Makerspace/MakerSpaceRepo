@@ -6,26 +6,30 @@
       </div>
     </div>
     <div class="text-center">
-        <table class="table table-striped">
+      <table class="table table-striped">
+        <tr>
+          <th>Name</th>
+          <th>Badge</th>
+          <th>Project</th>
+          <th>Certify</th>
+          <th>Revoke</th>
+        </tr>
+        <tbody>
+        <% @order_items.where(status: "In progress").each do |order_item| %>
           <tr>
-            <th>Name</th>
-            <th>Badge</th>
-            <th>Project</th>
-            <th>Certify</th>
-            <th>Revoke</th>
-          </tr>
-          <tbody>
-            <% @order_items.each do |order_item| %>
-              <tr>
-                <td><%= link_to order_item.order.user.username, user_path(order_item.order.user.username) %></td>
-                <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
-                <td><%= order_item.proficient_project.title %></td>
-                <td><%= link_to "Certify", new_badge_badges_path(order_item.order.user.id, order_item.order.id, order_item.proficient_project.badge_id), class: "btn btn-primary", data: {confirm: 'Are you sure?'} %></td>
-                <td><%= link_to "Revoke", order_item_cancel_path(order_item.id), class: "btn btn-danger", data: {confirm: 'Are you sure?'} %></td>
-              </tr>
+            <td><%= link_to order_item.order.user.username, user_path(order_item.order.user.username) %></td>
+            <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
+            <td><%= order_item.proficient_project.title %></td>
+            <% if order_item.proficient_project.badge_id.present? %>
+              <td><%= link_to "Certify", new_badge_badges_path(order_item.order.user.id, order_item.order.id, order_item.proficient_project.badge_id), class: "btn btn-primary", data: {confirm: 'Are you sure?'} %></td>
+            <% else %>
+              <td>Not related to a badge</td>
             <% end %>
-          </tbody>
-        </table>
+            <td><%= link_to "Revoke", order_item_cancel_path(order_item.id), class: "btn btn-danger", data: {confirm: 'Are you sure?'} %></td>
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
     </div>
   </div>
 </section>

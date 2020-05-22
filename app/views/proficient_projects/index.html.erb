@@ -19,8 +19,6 @@
     <% end %>
   </div>
 
-
-
   <br />
   <div class="apple_pagination">
     <%= page_entries_info @proficient_projects, :model => 'proficient_project' %>
@@ -39,7 +37,7 @@
             <p><h6 class="text-center py-3"><strong><%= pp.training.name %></strong></h6></p>
           </div>
           <div class="form-group">
-            <%=link_to 'Delete', pp, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure?'} if current_user.admin?%>
+            <%=link_to 'Delete', pp, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
           </div>
         </form>
         <a href="<%= proficient_project_path(pp.id) %>">
@@ -52,9 +50,7 @@
           <a href="<%= proficient_project_path(pp.id) %>"><h6 class="font-weight-bold text-center"><strong><%= pp.title %></strong></h6></a>
           <p><%= pp.level %></p>
         </div>
-        <% unless pp.cc.nil? || pp.cc.eql?(0) %>
-          <%= render "proficient_project_row", proficient_project: pp, order_item: @order_item %>
-        <% end %>
+        <%= render "proficient_project_row", proficient_project: pp, order_item: @order_item %>
       </div>
 
     <% end %>

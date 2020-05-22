@@ -13,9 +13,9 @@
                                callback_url: videos_url,
                                callback_param: ["video[direct_upload_url]"],
                                expiration: 24.hours.from_now.utc.iso8601,
-                               max_file_size: 2000.megabytes do %>
+                               max_file_size: 8000.megabytes do %>
             <br />
-            <label class="custom-instructable-upload-video">
+            <label class="custom-instructable-upload-video d-none" id="choose_video">
               <%= file_field_tag :file, multiple: true %>
               Choose videos...
             </label>

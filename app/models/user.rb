@@ -25,11 +25,12 @@ class User < ActiveRecord::Base
   has_many :exam_responses
   has_many :print_orders
   has_many :volunteer_task_requests
-  has_many :cc_moneys
-  has_many :badges
-  has_many :programs
+  has_many :cc_moneys, dependent: :destroy
+  has_many :badges, dependent: :destroy
+  has_many :programs, dependent: :destroy
   has_and_belongs_to_many :proficient_projects
-  has_many :orders
+  has_many :orders, dependent: :destroy
+  has_many :order_items, through: :orders
 
   validates :name,
     presence: true,
