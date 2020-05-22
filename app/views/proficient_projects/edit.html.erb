@@ -1,6 +1,7 @@
 <% provide(:title, "Edit Proficient Project") %>
 <section class="card">
   <div class="float-right">
+    <%=link_to 'Delete', @proficient_project, method: :delete, class: "btn btn-danger float-left ml-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
     <%=link_to "Show", proficient_project_path(@proficient_project.id), class:"btn btn-primary float-right mr-5 mt-5" %>
   </div>
   <div class="col-lg-7 mx-auto">
