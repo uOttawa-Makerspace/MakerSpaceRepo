@@ -3,7 +3,6 @@
   alert("<%= @order.errors.messages %>");
 <% else %>
   $(".cart-text").html("<%= escape_javascript(render 'layouts/cart_text') %>");
-  $(document.getElementById("cart-button").classList.add("disabled"));
   // Display a success toast, with a title
   toastr.success('Item added to Cart. Go to <%= link_to 'Checkout', carts_path %>');
 <% end %>
