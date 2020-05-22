@@ -32,6 +32,8 @@ class ProficientProject < ActiveRecord::Base
                  LOWER(description) like LOWER(?)", "%#{value}%", "%#{value}%", "%#{value}%")
     elsif attribute == 'proficiency'
       self.filter_by_proficiency(value)
+    else
+      self
     end
   end
 end

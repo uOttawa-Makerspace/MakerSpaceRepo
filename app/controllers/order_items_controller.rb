@@ -1,4 +1,4 @@
-class OrderItemsController < ApplicationController
+class OrderItemsController < DevelopmentProgramsController
   def create
     @order = current_order
     @order.user = current_user

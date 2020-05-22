@@ -30,6 +30,7 @@ class User < ActiveRecord::Base
   has_many :programs
   has_and_belongs_to_many :proficient_projects
   has_many :orders
+  has_many :order_items, through: :orders
 
   validates :name,
     presence: true,

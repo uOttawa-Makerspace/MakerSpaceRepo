@@ -7,6 +7,12 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def index
     @proficient_projects = ProficientProject.filter_attributes(get_filter_params).order(created_at: :desc).paginate(:page => params[:page], :per_page => 30)
+    # TODO: Fix this mess
+    if params['my_projects']
+      @proficient_projects = @proficient_projects.where(id: current_user.order_items.completed_order.pluck(:proficient_project_id))
+    else
+      @proficient_projects = @proficient_projects.where.not(id: current_user.order_items.completed_order.pluck(:proficient_project_id))
+    end
     @training_levels = TrainingSession.return_levels
     @training_categories_names = Training.all.order('name ASC').pluck(:name)
     @order_item = current_order.order_items.new
@@ -42,7 +48,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   def destroy
     @proficient_project.destroy
     respond_to do |format|
-      format.html { redirect_to proficient_projects_path, notice: 'Proficient Project has been successfully deleted.' }
+      format.html { redirect_to proficient_projects_path(proficiency: true), notice: 'Proficient Project has been successfully deleted.' }
       format.json { head :no_content }
     end
   end
@@ -173,7 +179,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     end
 
     def get_filter_params
-      params.permit(:search, :level, :category, :proficiency)
+      params.permit(:search, :level, :category, :proficiency, :my_projects)
     end
 
 end

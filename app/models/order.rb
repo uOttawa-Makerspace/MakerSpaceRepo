@@ -4,6 +4,8 @@ class Order < ActiveRecord::Base
   belongs_to :user
   belongs_to :order_status
   has_many :order_items, dependent: :destroy
+  has_many :proficient_projects, through: :order_items
+  scope :completed, -> {joins(:order_status).where(order_statuses: {name: "Completed"})}
 
   def subtotal
     order_items.collect { |oi| oi.valid? ? (oi.quantity * oi.unit_price) : 0 }.sum
