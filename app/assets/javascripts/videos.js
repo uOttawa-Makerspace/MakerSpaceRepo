@@ -11,8 +11,8 @@ function s3_uploader(proficient_project_id) {
             remove_completed_progress_bar: false,
             progress_bar_target: $('#uploads_container'),
             before_add: function(file) {
-                if (file.size > 2000485760) {
-                    alert('Maximum file size is 2 GB');
+                if (file.size > 8000485760) {
+                    alert('Maximum file size is 8 GB');
                     return false;
                 } else {
                     return true;
