@@ -30,9 +30,9 @@ class OrderItemsController < DevelopmentProgramsController
     @order_items = @order.order_items
   end
 
-  def cancel
+  def revoke
     OrderItem.find(params[:order_item_id]).update(status: "Revoked")
-    redirect_to admin_badges_path
+    @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project)
   end
 
   private

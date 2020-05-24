@@ -12,7 +12,7 @@ Rails.application.routes.draw do
 
   resources :carts, only: [:index]
   resources :order_items, only: [:create, :update, :destroy] do
-    get :cancel, path: 'cancel'
+    get :revoke, path: 'revoke'
   end
 
   resources :orders, only: [:index, :create]
@@ -214,7 +214,7 @@ Rails.application.routes.draw do
   resources :badges, only: [:index] do
     collection do
       get :admin
-      get "new_badge", path: 'new/:user_id/:order_item_id/:badge_id'
+      get "certify", path: 'new/:user_id/:order_item_id/:badge_id'
     end
   end
 

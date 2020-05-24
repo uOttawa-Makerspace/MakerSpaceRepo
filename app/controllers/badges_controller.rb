@@ -1,6 +1,6 @@
 class BadgesController < ApplicationController
   layout 'development_program'
-  before_action :only_admin_access, only: [:admin, :new_badge]
+  before_action :only_admin_access, only: [:admin, :certify]
 
   def index
     begin
@@ -16,8 +16,9 @@ class BadgesController < ApplicationController
     @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project)
   end
 
-  def new_badge
-  begin
+  def certify
+    # TODO Repair the flash messages when reloading with rails
+    begin
       user = User.find(params['user_id'])
       badge_id = params['badge_id']
       response = Excon.post('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges',
@@ -28,24 +29,22 @@ class BadgesController < ApplicationController
       )
 
       if response.status == 422
-        redirect_to badges_path
-        flash[:alert] = "An error has occurred when creating the badge, this message might help : "+JSON.parse(response.body)['data']['message']
+        flash[:alert] = "An error has occurred when creating the badge, this message might help : " + JSON.parse(response.body)['data']['message']
 
       elsif response.status == 201
-        badge_data =  JSON.parse(response.body)['data']
+        badge_data = JSON.parse(response.body)['data']
         Badge.create(:username => user.username, :user_id => user.id, :image_url => badge_data['image_url'], :issued_to => badge_data['issued_to'], :description => badge_data['badge_template']['description'], :badge_id => badge_data['id'])
         OrderItem.update(params['order_item_id'], :status => "Awarded")
-        redirect_to admin_badges_path
         flash[:notice] = "The badge has been sent to the user !"
 
       else
-        redirect_to badges_path
         flash[:alert] = "An error has occurred when creating the badge"
       end
 
     rescue
-      redirect_to admin_badges_path
       flash[:alert] = "An error has occurred when creating the badge"
+    ensure
+      @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project)
     end
 
   end
