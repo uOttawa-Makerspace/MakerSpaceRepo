@@ -24,19 +24,20 @@
               <%= f.label :level, "Level" %>
               <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
               <br />
-              <%= f.label :cc, "Cc Points" %>
+              <%= f.label :cc, "Cc Points (leave it blank or 0 if the project is for the learning area)" %>
               <%= f.number_field(:cc, :class => "form-control") %>
               <br />
-              <%= f.label :proficient, "Proficient" %>
+              <%= f.label :proficient, "Project Type:" %>
               <br />
-              <%= f.label :proficient, "Yes" %>
               <%= f.radio_button(:proficient, true , :style => 'display:inline') %>
-              <%= f.label :proficient, "No" %>
+              <%= f.label :proficient, "Proficient Project (project will be paid)" %>
+              <br />
               <%= f.radio_button(:proficient, false , :style => 'display:inline') %>
+              <%= f.label :proficient, "Learning Area (project will be free and in the learning area)" %>
               <br />
               <br />
               <%= f.label :badge_id, "Related Badge" %>
-              <%= f.select(:badge_id, options_for_select(BadgeTemplate.all.collect {|badge| [ badge['badge_name'], badge['badge_id'] ] }, :selected => f.object.badge_id), {:include_blank => true}, {:class => "form-control"}) %>
+              <%= f.select(:badge_id, options_for_select(BadgeTemplate.all.collect {|badge| [ badge['badge_name'], badge['badge_id'] ] }, :selected => f.object.badge_id), {:include_blank => "No badge"}, {:class => "form-control"}) %>
               <br>
               <br>
               <%= label_tag :file, "Project files" %>
