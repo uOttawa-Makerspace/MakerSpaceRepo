@@ -29,6 +29,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     @proficient_projects_selected = ProficientProject.
         where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id).
         order(title: :asc)
+    @show_cart_flag = @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) || @user.orders.joins(:order_items).where(order_items: { proficient_project: @proficient_project, status:  ["Awarded", "In progress"]}).present?
   end
 
   def create
