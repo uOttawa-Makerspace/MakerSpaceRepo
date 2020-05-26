@@ -5,15 +5,15 @@ class BadgesController < ApplicationController
   def index
     begin
       if (@user.admin? || @user.staff?)
-        @acclaim_data = Badge.order(user_id: :asc).all
+        @acclaim_data = Badge.filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 5).all
       else
-        @acclaim_data = @user.badges
+        @acclaim_data = @user.badges.paginate(:page => params[:page], :per_page => 20)
       end
     end
   end
 
   def admin
-    @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project)
+    @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).paginate(:page => params[:page], :per_page => 20)
   end
 
   def certify

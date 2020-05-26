@@ -2,6 +2,10 @@
   <div class="row">
     <div class="col-lg-12 text-center mb-4">
       <h2>Badge Requests</h2>
+      <div class="apple_pagination">
+        <%= page_entries_info @order_items, :model => 'badge' %>
+        <%= will_paginate @order_items, :container => false %>
+      </div>
     </div>
   </div>
   <div class="text-center">
@@ -16,7 +20,7 @@
       <tbody>
       <% @order_items.where(status: "In progress").each do |order_item| %>
         <tr>
-          <td><%= link_to order_item.order.user.username, user_path(order_item.order.user.username) %></td>
+          <td><%= link_to User.find_by_username(order_item.order.user.username).name, user_path(order_item.order.user.username) %></td>
           <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
           <td><%= order_item.proficient_project.title %></td>
           <% if order_item.proficient_project.badge_id.present? %>
