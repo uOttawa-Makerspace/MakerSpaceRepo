@@ -1,5 +1,6 @@
 class Badge < ActiveRecord::Base
   belongs_to :user
+  belongs_to :badge_template
 
   def self.get_badge_image(badge_id)
     begin

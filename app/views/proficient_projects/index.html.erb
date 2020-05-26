@@ -4,7 +4,7 @@
     <%= form_tag(proficient_projects_path, method: :get) do %>
       <div class="form-inline">
         <%= text_field_tag(:search, "", placeholder: "Title, description, level or category", class: 'form-control col-md-4') %>
-        <%= submit_tag("Search", class:'btn btn-secondary form-inline') %>
+        <%= submit_tag("Search", class: 'btn btn-secondary form-inline') %>
       </div>
     <% end %>
   </div>
@@ -12,8 +12,8 @@
   <div class="mt-2">
     <%= form_tag(proficient_projects_path, method: :get) do %>
       <div class="form-inline">
-        <%= select_tag :category, options_for_select(@training_categories_names, :selected=>params[:category]), prompt: 'Select category', class: "form-control" %><br>
-        <%= select_tag :level, options_for_select(@training_levels, :selected=>params[:level]), prompt: 'Select level', class: "form-control" %><br>
+        <%= select_tag :category, options_for_select(@training_categories_names, :selected=>params[:category]), prompt: 'Select category', class: "form-control" %><br />
+        <%= select_tag :level, options_for_select(@training_levels, :selected=>params[:level]), prompt: 'Select level', class: "form-control" %><br />
         <%= submit_tag("Filter", class:'btn btn-secondary form-control') %>
       </div>
     <% end %>
@@ -31,13 +31,13 @@
       <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %>" style="border-width:2px !important;">
         <form class="form-inline">
           <div class="form-group">
-            <%=link_to "-Edit-", edit_proficient_project_path(pp.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin?%>
+            <%=link_to "-Edit-", edit_proficient_project_path(pp.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
           </div>
           <div class="form-group mx-auto">
             <p><h6 class="text-center py-3"><strong><%= pp.training.name %></strong></h6></p>
           </div>
           <div class="form-group">
-            <%=link_to 'Delete', pp, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
+            <%=link_to 'Delete', pp, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin? %>
           </div>
         </form>
         <% if @user_order_items.where(proficient_project: pp, status:  ["Awarded", "In progress"]).present? %>
