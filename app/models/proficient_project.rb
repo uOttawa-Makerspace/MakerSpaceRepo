@@ -25,9 +25,8 @@ class ProficientProject < ActiveRecord::Base
   def self.have_required_badges(user_badges, required_badges)
     has_badges = true
     required_badges.each do |required_badge|
-      puts(required_badge)
       if required_badge.badge_template.present?
-        unless user_badges.where(badge_id: BadgeTemplate.find(required_badge.badge_template_id).badge_id).present?
+        unless user_badges.where(description: BadgeTemplate.find(required_badge.badge_template_id).badge_description).present?
           has_badges = false
         end
       end
