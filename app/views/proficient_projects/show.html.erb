@@ -38,9 +38,6 @@
               <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
             <% end %>
           </div>
-          <% unless @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) || @user.orders.joins(:order_items).where(order_items: { proficient_project: @proficient_project, status:  ["Awarded", "In progress"]}).present? %>
-            <%= render "proficient_project_row", proficient_project: @proficient_project, order_item: current_order.order_items.new %>
-          <% end %>
           <br />
           <br />
         </div>
