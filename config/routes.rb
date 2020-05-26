@@ -221,6 +221,7 @@ Rails.application.routes.draw do
   resources :proficient_projects do
     collection do
       get :join_development_program
+      get :open_modal
     end
   end
 

@@ -16,6 +16,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     @training_levels = TrainingSession.return_levels
     @training_categories_names = Training.all.order('name ASC').pluck(:name)
     @order_item = current_order.order_items.new
+    @user_order_items = current_user.order_items.where(status:  ["Awarded", "In progress"])
   end
 
   def new
@@ -68,6 +69,14 @@ class ProficientProjectsController < DevelopmentProgramsController
     else
       flash[:alert] = "Unable to apply the changes."
       render json: @proficient_project.errors["title"].first, status: :unprocessable_entity
+    end
+  end
+
+  def open_modal
+    @proficient_project_modal = ProficientProject.find(params[:id])
+    @order_item = current_order.order_items.new
+    respond_to do |format|
+      format.js
     end
   end
 
