@@ -35,6 +35,7 @@
           <%= link_to "Badges", badges_url, class: "dropdown-item"%>
           <% if current_user.admin? %>
             <%= link_to "Badges Requests", admin_badges_path, class: "dropdown-item"%>
+            <%= link_to "Grant badge to user", new_badge_badges_path, class: "dropdown-item"%>
           <% end %>
         </div>
       </li>

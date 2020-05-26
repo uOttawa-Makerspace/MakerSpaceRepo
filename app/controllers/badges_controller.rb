@@ -5,15 +5,40 @@ class BadgesController < ApplicationController
   def index
     begin
       if (@user.admin? || @user.staff?)
-        @acclaim_data = Badge.filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 5).all
+        @acclaim_data = Badge.filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 20).all
       else
         @acclaim_data = @user.badges.paginate(:page => params[:page], :per_page => 20)
       end
     end
   end
 
+  def new_badge
+    @badges = Badge.new
+  end
+
+  def grant_badge
+
+    begin
+      @order = Order.create(subtotal: 0, total: 0, user_id: params["badge"]['user_id'], order_status_id: OrderStatus.find_by(name: "Completed"))
+      @order.update(order_status: OrderStatus.find_by(name: "Completed"))
+      @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order_id: @order.id, proficient_project_id: ProficientProject.find_by_badge_id(params[:badge][:badge_id]).id)
+
+      redirect_to certify_badges_path(user_id: params["badge"][:user_id], order_item_id: @order_item.id, badge_id: params["badge"][:badge_id], coming_from: "grant")
+
+    rescue
+      flash[:alert] = "An error has occurred when creating the badge"
+      redirect_to new_badge_badges_path
+    end
+
+  end
+
   def admin
     @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).paginate(:page => params[:page], :per_page => 20)
+  end
+
+
+  def revoke_badge
+
   end
 
   def certify
@@ -44,7 +69,10 @@ class BadgesController < ApplicationController
     rescue
       flash[:alert] = "An error has occurred when creating the badge"
     ensure
-      @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project)
+      @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).paginate(:page => params[:page], :per_page => 20)
+      if params[:coming_from] == "grant"
+        redirect_to admin_badges_path
+      end
     end
 
   end
