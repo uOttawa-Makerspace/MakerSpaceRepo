@@ -40,7 +40,7 @@
             <%=link_to 'Delete', pp, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
           </div>
         </form>
-        <% if @user_order_items.where(proficient_project: pp).present? %>
+        <% if @user_order_items.where(proficient_project: pp, status:  ["Awarded", "In progress"]).present? %>
           <a href="<%= proficient_project_path(pp.id) %>">
             <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
             </div>
@@ -54,10 +54,10 @@
         <div>
           <b class="float-right pt-2 text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + " Ccs" %></b>
           <br />
-          <a href="<%= proficient_project_path(pp.id) %>"><h6 class="font-weight-bold text-center"><strong><%= pp.title %></strong></h6></a>
+          <h6 class="font-weight-bold text-center"><strong><%= pp.title %></strong></h6>
           <p><%= pp.level %></p>
         </div>
-        <%= render "proficient_project_row", proficient_project: pp, order_item: @order_item %>
+        <%= render "proficient_project_row", proficient_project: pp, order_item: @order_item, user_order_items: @user_order_items %>
       </div>
 
     <% end %>

@@ -1,6 +1,6 @@
 <div class="well">
     <div class="col-xs-4">
-      <% order_items = current_user.order_items.completed_order.where(proficient_project: proficient_project) %>
+      <% order_items = user_order_items.where(proficient_project: proficient_project) %>
       <% order_items.each do |order_item| %>
         <button type="button" class="btn btn-outline-danger disabled mb-2"><%= order_item.status %></button>
       <% end %>
