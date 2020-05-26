@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200522185252) do
+ActiveRecord::Schema.define(version: 20200525184824) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -38,6 +38,16 @@ ActiveRecord::Schema.define(version: 20200522185252) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
+
+  create_table "badge_requirements", force: :cascade do |t|
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+    t.integer  "badge_template_id"
+    t.integer  "proficient_project_id"
+  end
+
+  add_index "badge_requirements", ["badge_template_id"], name: "index_badge_requirements_on_badge_template_id", using: :btree
+  add_index "badge_requirements", ["proficient_project_id"], name: "index_badge_requirements_on_proficient_project_id", using: :btree
 
   create_table "badge_templates", force: :cascade do |t|
     t.text     "badge_id"
@@ -582,6 +592,8 @@ ActiveRecord::Schema.define(version: 20200522185252) do
     t.decimal  "hours",       precision: 5, scale: 2, default: 0.0
   end
 
+  add_foreign_key "badge_requirements", "badge_templates"
+  add_foreign_key "badge_requirements", "proficient_projects"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "orders"

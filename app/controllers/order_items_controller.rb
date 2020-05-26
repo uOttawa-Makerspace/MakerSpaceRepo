@@ -2,10 +2,14 @@ class OrderItemsController < DevelopmentProgramsController
   def create
     @order = current_order
     @order.user = current_user
-    @order_item = @order.order_items.new(order_item_params)
-    existing_order = @order.order_items.where(proficient_project_id: params[:order_item][:proficient_project_id])
-    unless existing_order.count >= 1
-      @order.save
+    begin
+      if ProficientProject.have_required_badges(current_user.badges, ProficientProject.find(params[:order_item][:proficient_project_id]).badge_requirements)
+        @order_item = @order.order_items.new(order_item_params)
+        existing_order = @order.order_items.where(proficient_project_id: params[:order_item][:proficient_project_id])
+        unless existing_order.count >= 1
+          @order.save
+        end
+      end
     end
     # TODO update when implementing coupons
     #if existing_order.count >= 1
