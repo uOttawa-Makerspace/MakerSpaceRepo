@@ -33,7 +33,7 @@ class BadgesController < ApplicationController
 
       elsif response.status == 201
         badge_data = JSON.parse(response.body)['data']
-        Badge.create(:username => user.username, :user_id => user.id, :image_url => badge_data['image_url'], :issued_to => badge_data['issued_to'], :description => badge_data['badge_template']['description'], :badge_id => badge_data['id'])
+        Badge.create(:username => user.username, :user_id => user.id, :image_url => badge_data['image_url'], :issued_to => badge_data['issued_to'], :description => badge_data['badge_template']['description'], :badge_id => badge_data['id'], :badge_template_id => BadgeTemplate.find_by_badge_id(badge_data['badge_template']['id']).id)
         OrderItem.update(params['order_item_id'], :status => "Awarded")
         flash[:notice] = "The badge has been sent to the user !"
 

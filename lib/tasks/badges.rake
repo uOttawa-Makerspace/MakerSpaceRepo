@@ -15,10 +15,12 @@ namespace :badges do
         if User.where(email: badges['recipient_email']).present?
           user = User.where(email: badges['recipient_email']).first
           if user.badges.where(badge_id: badges['id']).present? == false
-            values = {user_id: user.id, username: user.username, image_url: badges['badge_template']['image']['url'], description: badges['badge_template']['description'], issued_to: badges['issued_to'], badge_id: badges['id'], badge_url: badges['badge_url']}
+            values = {user_id: user.id, username: user.username, image_url: badges['badge_template']['image']['url'], description: badges['badge_template']['description'], issued_to: badges['issued_to'], badge_id: badges['id'], badge_url: badges['badge_url'], :badge_template_id => BadgeTemplate.find_by_badge_id(badges['badge_template']['id'])}
             Badge.create(values)
           elsif user.badges.where(badge_id: badges['id']).present? and user.badges.where(badge_url: badges['badge_url']).present? == false and badges['badge_url'] != ""
             Badge.update(user.badges.where(badge_id: badges['id']), :badge_url => badges['badge_url'])
+          elsif user.badges.where(badge_id: badges['id']).present? and user.badges.where(badge_url: badges['badge_url']).present? and user.badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(badges['badge_template']['id'])).present? == false
+            Badge.update(user.badges.where(badge_id: badges['id']), :badge_template_id => BadgeTemplate.find_by_badge_id(badges['badge_template']['id']).id)
           end
         end
 

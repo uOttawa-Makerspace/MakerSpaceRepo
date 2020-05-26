@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200525184824) do
+ActiveRecord::Schema.define(version: 20200526151419) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -62,12 +62,15 @@ ActiveRecord::Schema.define(version: 20200525184824) do
     t.string   "image_url"
     t.string   "issued_to"
     t.string   "description"
-    t.datetime "created_at",  null: false
-    t.datetime "updated_at",  null: false
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
     t.string   "badge_id"
     t.integer  "user_id"
     t.string   "badge_url"
+    t.integer  "badge_template_id"
   end
+
+  add_index "badges", ["badge_template_id"], name: "index_badges_on_badge_template_id", using: :btree
 
   create_table "categories", force: :cascade do |t|
     t.integer  "repository_id"
@@ -594,6 +597,7 @@ ActiveRecord::Schema.define(version: 20200525184824) do
 
   add_foreign_key "badge_requirements", "badge_templates"
   add_foreign_key "badge_requirements", "proficient_projects"
+  add_foreign_key "badges", "badge_templates"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "orders"
