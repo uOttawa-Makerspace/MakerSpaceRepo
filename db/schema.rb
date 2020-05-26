@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200526151419) do
+ActiveRecord::Schema.define(version: 20200526184530) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -298,7 +298,7 @@ ActiveRecord::Schema.define(version: 20200526151419) do
     t.datetime "created_at",                       null: false
     t.datetime "updated_at",                       null: false
     t.string   "level",       default: "Beginner"
-    t.integer  "cc"
+    t.integer  "cc",          default: 0
     t.boolean  "proficient",  default: true
     t.string   "badge_id"
   end

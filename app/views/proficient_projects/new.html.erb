@@ -19,7 +19,7 @@
               <%= f.label :level, "Level*" %>
               <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
               <br />
-              <%= f.label :cc, "Cc Points (leave it blank or 0 if the project is for the learning area)" %>
+              <%= f.label :cc, "Cc Points (leave it 0 if the project is for the learning area)" %>
               <%= f.number_field(:cc, :class => "form-control") %>
               <br />
               <%= f.label :proficient, "Project Type:" %>
