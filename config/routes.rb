@@ -15,7 +15,7 @@ Rails.application.routes.draw do
     get :revoke, path: 'revoke'
   end
 
-  resources :orders, only: [:index, :create]
+  resources :orders, only: [:index, :create, :destroy]
 
   get '/saml/auth' => 'saml_idp#login'
   get '/saml/metadata' => 'saml_idp#metadata'

@@ -95,7 +95,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     def grant_access_to_project
       unless current_user.order_items.completed_order.where(proficient_project: @proficient_project ,status:  ["Awarded", "In progress"]).present?
         unless current_user.admin? || current_user.staff?
-          redirect_to root_path
+          redirect_to development_programs_path
           flash[:alert] = "You cannot access this area."
         end
       end
