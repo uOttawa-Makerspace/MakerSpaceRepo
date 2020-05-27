@@ -34,9 +34,8 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
-
     if @proficient_project.save
-      @badge_requirement = @proficient_project.badge_requirements.create(badge_template_id: params[:badge_requirements])
+      @proficient_project.badge_requirements.create(badge_template_id: params[:badge_requirements]) if params[:badge_requirements].present?
       create_photos
       create_files
       # create_videos
@@ -61,12 +60,16 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update
+    if @proficient_project.badge_requirements.present?
+      badge_requirement = @proficient_project.badge_requirements.last
+    else
+      badge_requirement = @proficient_project.badge_requirements.create(badge_template_id: params[:badge_requirements])
+    end
+
     if params[:badge_requirements].present?
-      if BadgeRequirement.find_by_proficient_project_id(params[:id]).present? == true
-        BadgeRequirement.update(BadgeRequirement.find_by_proficient_project_id(@proficient_project.id), badge_template_id: params[:badge_requirements])
-      else
-        BadgeRequirement.create(proficient_project_id: @proficient_project.id, badge_template_id: params[:badge_requirements])
-      end
+      badge_requirement.update_attributes(badge_template_id: params[:badge_requirements])
+    else
+      badge_requirement.destroy
     end
 
     if @proficient_project.update(proficient_project_params)
