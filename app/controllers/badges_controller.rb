@@ -95,7 +95,7 @@ class BadgesController < ApplicationController
       user = User.find(params['user_id'])
       badge_id = params['badge_id']
       response = Excon.post('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges',
-                            :user => Rails.application.secrets.acclaim_api,
+                            :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
                             :password => '',
                             :headers => {"Content-type" => "application/json"},
                             :query => {:recipient_email => user.email, :badge_template_id => badge_id, :issued_to_first_name => user.name.split(" ", 2)[0], :issued_to_last_name => user.name.split(" ", 2)[1], :issued_at => Time.now}
