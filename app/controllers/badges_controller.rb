@@ -36,23 +36,26 @@ class BadgesController < ApplicationController
   end
 
   def admin
-    order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).where.not(:proficient_projects => {badge_id: ""})
-    @order_items = order_items.where(status: "In progress").paginate(:page => params[:page], :per_page => 20)
-    @order_items_done = order_items.where.not(status: "In progress").paginate(:page => params[:page], :per_page => 20)
+    admin_variable_setup
   end
 
 
   def revoke_badge
     begin
-      user = User.find(params[:badge][:user_id])
-      badge_template_id = user.badges.where(badge_id: params[:badge][:badge_id]).includes(:badge_template).first.badge_template.badge_id
-      puts(badge_template_id)
+      if params[:badge].present?
+        user = User.find(params[:badge][:user_id])
+        badge_id = params[:badge][:badge_id]
+      else
+        user = User.find(params[:user_id])
+        badge_id = params[:badge_id]
+      end
+      badge_template_id = user.badges.where(badge_id: badge_id).includes(:badge_template).first.badge_template.badge_id
       puts(ProficientProject.where(badge_id: badge_template_id).ids)
-      response = Excon.put('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/'+params[:badge][:badge_id]+"/revoke",
+      response = Excon.put('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/'+badge_id+"/revoke",
                             :user => Rails.application.secrets.acclaim_api,
                             :password => '',
                             :headers => {"Content-type" => "application/json"},
-                            :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => true}
+                            :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => false}
 
       )
       if response.status == 200
@@ -61,16 +64,20 @@ class BadgesController < ApplicationController
             OrderItem.update(order_item.id, status: "Revoked")
           end
         end
-        user.badges.find_by_badge_id(params[:badge][:badge_id]).destroy
+        user.badges.find_by_badge_id(badge_id).destroy
         flash[:notice] = "The badge has been revoked to the user"
-        redirect_to new_badge_badges_path
+        if params[:coming_from] == "admin"
+          redirect_to admin_badges_path
+        else
+          redirect_to new_badge_badges_path
+        end
       else
         flash[:alert] = "An error has occurred when removing the badge"
         redirect_to new_badge_badges_path
       end
     rescue
-       flash[:alert] = "An error has occurred when removing the badge"
-       redirect_to new_badge_badges_path
+      flash[:alert] = "An error has occurred when removing the badge"
+      redirect_to new_badge_badges_path
     end
   end
 
@@ -110,10 +117,12 @@ class BadgesController < ApplicationController
     rescue
       flash[:alert] = "An error has occurred when creating the badge"
     ensure
-      @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).paginate(:page => params[:page], :per_page => 20)
-      if params[:coming_from] == "grant"
+      admin_variable_setup
+
+      if params[:coming_from] == "grant" or params[:coming_from] == "admin"
         redirect_to admin_badges_path
       end
+
     end
 
   end
@@ -125,4 +134,9 @@ class BadgesController < ApplicationController
     end
   end
 
+  def admin_variable_setup
+    order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).where.not(:proficient_projects => {badge_id: ""})
+    @order_items = order_items.where(status: "In progress").paginate(:page => params[:page], :per_page => 20)
+    @order_items_done = order_items.where.not(status: "In progress").paginate(:page => params[:page], :per_page => 20)
+  end
 end

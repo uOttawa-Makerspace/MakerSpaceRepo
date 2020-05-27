@@ -6,7 +6,7 @@ assets:clobber
 assets:environment
 assets:precompile
 autoprefixer:info
-badges:get_badge_templates
+badges:get_and_update_badge_templates
 badges:get_data
 cache_digests:dependencies
 cache_digests:nested_dependencies
