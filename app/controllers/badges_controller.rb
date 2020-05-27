@@ -1,6 +1,6 @@
 class BadgesController < ApplicationController
   layout 'development_program'
-  before_action :only_admin_access, only: [:admin, :certify]
+  before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge]
 
   def index
     begin
@@ -43,14 +43,26 @@ class BadgesController < ApplicationController
       badge_template_id = user.badges.where(badge_id: params[:badge][:badge_id]).includes(:badge_template).first.badge_template.badge_id
       puts(badge_template_id)
       puts(ProficientProject.where(badge_id: badge_template_id).ids)
-      user.order_items.each do |order_item|
-        if ProficientProject.where(badge_id: badge_template_id).ids.include? order_item.proficient_project_id
-          OrderItem.update(order_item.id, status: "Revoked")
+      response = Excon.put('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/'+params[:badge][:badge_id]+"/revoke",
+                            :user => Rails.application.secrets.acclaim_api,
+                            :password => '',
+                            :headers => {"Content-type" => "application/json"},
+                            :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => true}
+
+      )
+      if response.status == 200
+        user.order_items.each do |order_item|
+          if ProficientProject.where(badge_id: badge_template_id).ids.include? order_item.proficient_project_id
+            OrderItem.update(order_item.id, status: "Revoked")
+          end
         end
+        user.badges.find_by_badge_id(params[:badge][:badge_id]).destroy
+        flash[:notice] = "The badge has been revoked to the user"
+        redirect_to new_badge_badges_path
+      else
+        flash[:alert] = "An error has occurred when removing the badge"
+        redirect_to new_badge_badges_path
       end
-      user.badges.find_by_badge_id(params[:badge][:badge_id]).destroy
-      flash[:notice] = "The badge has been revoked to the user"
-      redirect_to new_badge_badges_path
     rescue
        flash[:alert] = "An error has occurred when removing the badge"
        redirect_to new_badge_badges_path
