@@ -216,6 +216,7 @@ Rails.application.routes.draw do
       get :admin
       get :new_badge
       get :revoke_badge
+      get :populate_badge_list
       get "certify", path: 'new/:user_id/:order_item_id/:badge_id'
       get "grant_badge", path: "grant"
     end

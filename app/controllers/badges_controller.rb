@@ -38,7 +38,31 @@ class BadgesController < ApplicationController
 
 
   def revoke_badge
+    begin
+      user = User.find(params[:badge][:user_id])
+      badge_template_id = user.badges.where(badge_id: params[:badge][:badge_id]).includes(:badge_template).first.badge_template.badge_id
+      puts(badge_template_id)
+      puts(ProficientProject.where(badge_id: badge_template_id).ids)
+      user.order_items.each do |order_item|
+        if ProficientProject.where(badge_id: badge_template_id).ids.include? order_item.proficient_project_id
+          OrderItem.update(order_item.id, status: "Revoked")
+        end
+      end
+      user.badges.find_by_badge_id(params[:badge][:badge_id]).destroy
+      flash[:notice] = "The badge has been revoked to the user"
+      redirect_to new_badge_badges_path
+    rescue
+       flash[:alert] = "An error has occurred when removing the badge"
+       redirect_to new_badge_badges_path
+    end
+  end
 
+  def populate_badge_list
+    json_data = User.find(params[:user_id]).badges.map do |badges|
+      badges.as_json(include: :badge_template)
+    end
+
+    render json: { badges: json_data }
   end
 
   def certify
