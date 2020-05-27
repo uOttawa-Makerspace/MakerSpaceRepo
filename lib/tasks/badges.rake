@@ -31,26 +31,15 @@ namespace :badges do
   end
 
   desc "Get badge templates from Acclaim API"
-  task get_badge_templates: :environment do
-
-    begin
-      response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badge_templates',
-                           :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
-                           :password => '',
-                           :headers => {"Content-type" => "application/json"}
-      )
-
-      data = JSON.parse(response.body)
-
-      data['data'].each do |badges|
-
-        if BadgeTemplate.where(badge_id: badges['id']).present? == false
-          BadgeTemplate.create(badge_id: badges['id'], badge_description: badges['description'], badge_name: badges['name'])
-        end
-
-      end
-
+  task get_and_update_badge_templates: :environment do
+    response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badge_templates',
+                         :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
+                         :password => '',
+                         :headers => {"Content-type" => "application/json"})
+    data = JSON.parse(response.body)
+    data['data'].each do |badge_template|
+      bt = BadgeTemplate.find_or_create_by(badge_id: badge_template['id'])
+      bt.update_attributes(badge_description: badge_template['description'], badge_name: badge_template['name'], image_url: badge_template['image_url'])
     end
-
   end
 end

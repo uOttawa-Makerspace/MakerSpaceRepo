@@ -1,41 +1,75 @@
 <div class="container">
   <div class="row">
     <div class="col-lg-12 text-center mb-4">
-      <h2>Badge Requests</h2>
+      <h2>Badges' Requests</h2>
       <div class="apple_pagination">
         <%= page_entries_info @order_items, :model => 'badge' %>
         <%= will_paginate @order_items, :container => false %>
       </div>
     </div>
   </div>
-  <div class="text-center">
-    <table class="table table-striped">
-      <tr>
-        <th>Name</th>
-        <th>Badge</th>
-        <th>Project</th>
-        <th>Certify</th>
-        <th>Revoke</th>
-      </tr>
-      <tbody>
-      <% @order_items.each do |order_item| %>
+  <% if @order_items.present? %>
+    <div class="text-center">
+      <table class="table table-striped">
         <tr>
-          <td><%= link_to User.find_by_username(order_item.order.user.username).name, user_path(order_item.order.user.username) %></td>
-          <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
-          <td><%= order_item.proficient_project.title %></td>
-          <% if order_item.proficient_project.badge_id.present? %>
-            <td>
-              <%= link_to "Certify", certify_badges_path(order_item.order.user.id, order_item.id, order_item.proficient_project.badge_id), {data: {confirm: 'Are you sure?'}, remote: true, class: "btn btn-primary"} %>
-            </td>
-          <% else %>
-            <td>Not related to a badge</td>
-          <% end %>
-          <td>
-            <%= link_to "Revoke", order_item_revoke_path(order_item.id), {data: {confirm: 'Are you sure?'}, remote: true, class: "btn btn-danger"} %>
-          </td>
+          <th>Name</th>
+          <th>Badge</th>
+          <th>Project</th>
+          <th>Certify</th>
+          <th>Revoke</th>
         </tr>
-      <% end %>
-      </tbody>
-    </table>
+        <tbody>
+        <% @order_items.each do |order_item| %>
+          <tr>
+            <td><%= link_to order_item.order.user.name, order_item.order.user.username %></td>
+            <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
+            <td><%= order_item.proficient_project.title %></td>
+            <% if order_item.proficient_project.badge_id.present? %>
+              <td>
+                <%= link_to "Certify", certify_badges_path(order_item.order.user.id, order_item.id, order_item.proficient_project.badge_id), {data: {confirm: 'Are you sure?'}, remote: true, class: "btn btn-primary"} %>
+              </td>
+            <% else %>
+              <td>Not related to a badge</td>
+            <% end %>
+            <td>
+              <%= link_to "Revoke", order_item_revoke_path(order_item.id), {data: {confirm: 'Are you sure?'}, remote: true, class: "btn btn-danger"} %>
+            </td>
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-center">No Requests made.</p>
+  <% end %>
+  <br />
+  <h2 class="text-center">Awarded and Revoked Badges</h2>
+  <div class="apple_pagination">
+    <%= page_entries_info @order_items_done, :model => 'badge' %>
+    <%= will_paginate @order_items_done, :container => false %>
   </div>
+  <% if @order_items_done.present? %>
+    <div class="text-center">
+      <table class="table table-striped">
+        <tr>
+          <th>Name</th>
+          <th>Badge</th>
+          <th>Project</th>
+          <th>Status</th>
+        </tr>
+        <tbody>
+        <% @order_items_done.each do |order_item| %>
+          <tr>
+            <td><%= link_to order_item.order.user.name, order_item.order.user.username %></td>
+            <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
+            <td><%= order_item.proficient_project.title %></td>
+            <td><%= order_item.status %></td>
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-center">No badges awarded/revoked.</p>
+  <% end %>
 </div>
