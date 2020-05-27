@@ -67,6 +67,7 @@
           <table class="table table-striped">
 
             <tr>
+              <th>User</th>
               <th>Product/Quantity</th>
               <th>Date</th>
               <th>Subtotal</th>
@@ -76,7 +77,7 @@
             </tr>
 
             <tbody>
-            <% @orders.each do |order| %>
+            <% @all_orders.each do |order| %>
               <tr>
                 <td>
                   <% order.order_items.each do |order_item| %>
@@ -84,6 +85,9 @@
                       <b><%= link_to order_item.proficient_project.title, proficient_project_path(order_item.proficient_project.id) %></b> / <%= order_item.quantity %>
                     </p>
                   <% end %>
+                </td>
+                <td class="username">
+                  <%= link_to order.user.username, order.user.username %>
                 </td>
                 <td>
                   <%= order.created_at.strftime("%Y/%m/%d") %>
