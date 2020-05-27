@@ -16,7 +16,16 @@ class Badge < ActiveRecord::Base
   end
 
   def self.filter_by_attribute(value)
-      where("LOWER(description) like LOWER(?) OR
+    if value
+      if value == "search="
+        default_scoped
+      else
+        value = value.split("=").last
+        where("LOWER(description) like LOWER(?) OR
                  LOWER(issued_to) like LOWER(?)", "%#{value}%", "%#{value}%")
+      end
+    else
+      default_scoped
+    end
   end
 end

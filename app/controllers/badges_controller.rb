@@ -3,13 +3,16 @@ class BadgesController < ApplicationController
   before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge]
 
   def index
-    begin
-      if (@user.admin? || @user.staff?)
-        @acclaim_data = Badge.filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 20).all
-      else
-        @acclaim_data = @user.badges.paginate(:page => params[:page], :per_page => 20)
-      end
+    if (@user.admin? || @user.staff?)
+      @acclaim_data = Badge.filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 20).all
+    else
+      @acclaim_data = @user.badges.filter_by_attribute(params[:search]).paginate(:page => params[:page], :per_page => 20)
     end
+    respond_to do |format|
+      format.js
+      format.html
+    end
+
   end
 
   def new_badge
@@ -33,7 +36,7 @@ class BadgesController < ApplicationController
   end
 
   def admin
-    @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).paginate(:page => params[:page], :per_page => 20)
+    @order_items = OrderItem.completed_order.order(status: :asc).where(status: "In progress").includes(:order => :user).joins(:proficient_project).paginate(:page => params[:page], :per_page => 20)
   end
 
 
