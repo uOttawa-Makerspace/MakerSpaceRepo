@@ -2,10 +2,11 @@ class OrderItemsController < DevelopmentProgramsController
   def create
     @order = current_order
     @order.user = current_user
-    begin
-      if ProficientProject.have_required_badges(current_user.badges, ProficientProject.find(params[:order_item][:proficient_project_id]).badge_requirements)
+    proficient_project = ProficientProject.find(params[:order_item][:proficient_project_id])
+    if @order.user.has_required_badges?(proficient_project.badge_requirements)
+      begin
         @order_item = @order.order_items.new(order_item_params)
-        existing_order = @order.order_items.where(proficient_project_id: params[:order_item][:proficient_project_id])
+        existing_order = @order.order_items.where(proficient_project: proficient_project)
         unless existing_order.count >= 1
           @order.save
         end

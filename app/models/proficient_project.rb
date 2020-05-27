@@ -22,19 +22,6 @@ class ProficientProject < ActiveRecord::Base
     self.title = self.title.capitalize
   end
 
-  def self.have_required_badges(user_badges, required_badges)
-    has_badges = true
-    required_badges.each do |required_badge|
-      if required_badge.badge_template.present?
-        unless user_badges.where(badge_template_id: BadgeTemplate.find(required_badge.badge_template_id).id).present?
-          has_badges = false
-        end
-      end
-    end
-
-    return has_badges
-  end
-
   def self.filter_by_attribute(attribute, value)
     if attribute == "level"
       self.filter_by_level(value)
