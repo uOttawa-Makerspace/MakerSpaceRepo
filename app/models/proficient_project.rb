@@ -13,6 +13,7 @@ class ProficientProject < ActiveRecord::Base
   has_many :inverse_required_projects, through: :inverse_project_requirements, source: :proficient_project
   has_many :cc_moneys,                  dependent: :destroy
   has_many :order_items,                dependent: :destroy
+  has_many :badge_requirements,         dependent: :destroy
 
   scope :filter_by_level, -> (level) { where(level: level) }
   scope :filter_by_proficiency, -> (proficient) { where(proficient: proficient) }

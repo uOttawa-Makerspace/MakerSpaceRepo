@@ -1,0 +1,2 @@
+$("#modal-window").find(".modal-content").html("<%= j (render :partial => 'preview', :locals => {:proficient_project => @proficient_project_modal, order_item: @order_item, user_order_items: @user_order_items}) %>");
+$("#modal-window").modal();

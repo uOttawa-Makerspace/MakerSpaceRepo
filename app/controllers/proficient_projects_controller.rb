@@ -1,7 +1,7 @@
 class ProficientProjectsController < DevelopmentProgramsController
-  before_action :grant_access_to_project, only: [:show]
   before_action :only_admin_access, only: [:new, :create, :edit, :update, :destroy]
   before_action :set_proficient_project, only: [:show, :destroy, :edit, :update]
+  before_action :grant_access_to_project, only: [:show]
   before_action :set_training_categories, only: [:new, :edit]
   before_action :set_files_photos_videos, only: [:show, :edit]
 
@@ -16,6 +16,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     @training_levels = TrainingSession.return_levels
     @training_categories_names = Training.all.order('name ASC').pluck(:name)
     @order_item = current_order.order_items.new
+    @user_order_items = current_user.order_items.completed_order
   end
 
   def new
@@ -33,7 +34,9 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
+
     if @proficient_project.save
+      @badge_requirement = @proficient_project.badge_requirements.create(badge_template_id: params[:badge_requirements])
       create_photos
       create_files
       # create_videos
@@ -58,6 +61,14 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update
+    if params[:badge_requirements].present?
+      if BadgeRequirement.find_by_proficient_project_id(params[:id]).present? == true
+        BadgeRequirement.update(BadgeRequirement.find_by_proficient_project_id(@proficient_project.id), badge_template_id: params[:badge_requirements])
+      else
+        BadgeRequirement.create(proficient_project_id: @proficient_project.id, badge_template_id: params[:badge_requirements])
+      end
+    end
+
     if @proficient_project.update(proficient_project_params)
       update_photos
       update_files
@@ -70,12 +81,23 @@ class ProficientProjectsController < DevelopmentProgramsController
     end
   end
 
+  def open_modal
+    @proficient_project_modal = ProficientProject.find(params[:id])
+    @order_item = current_order.order_items.new
+    @user_order_items = current_user.order_items.completed_order
+    respond_to do |format|
+      format.js
+    end
+  end
+
   private
 
     def grant_access_to_project
-      unless current_user.dev_program? || current_user.admin? || current_user.staff?
-        redirect_to root_path
-        flash[:alert] = "You cannot access this area."
+      unless current_user.order_items.completed_order.where(proficient_project: @proficient_project ,status:  ["Awarded", "In progress"]).present?
+        unless current_user.admin? || current_user.staff?
+          redirect_to development_programs_path
+          flash[:alert] = "You cannot access this area."
+        end
       end
     end
 

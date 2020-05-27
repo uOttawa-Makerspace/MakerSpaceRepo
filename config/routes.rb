@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  resources :videos, only: [:index, :new, :create]
+  resources :videos, only: [:index, :new, :create, :destroy]
   get 'videos/:id/download/:filename', to: 'videos#download', constraints: { filename: /.+/ }, as: 'download_video'
 
   require 'sidekiq/web'
@@ -12,10 +12,10 @@ Rails.application.routes.draw do
 
   resources :carts, only: [:index]
   resources :order_items, only: [:create, :update, :destroy] do
-    get :cancel, path: 'cancel'
+    get :revoke, path: 'revoke'
   end
 
-  resources :orders, only: [:index, :create]
+  resources :orders, only: [:index, :create, :destroy]
 
   get '/saml/auth' => 'saml_idp#login'
   get '/saml/metadata' => 'saml_idp#metadata'
@@ -214,13 +214,18 @@ Rails.application.routes.draw do
   resources :badges, only: [:index] do
     collection do
       get :admin
-      get "new_badge", path: 'new/:user_id/:order_item_id/:badge_id'
+      get :new_badge
+      get :revoke_badge
+      get :populate_badge_list
+      get "certify", path: 'new/:user_id/:order_item_id/:badge_id'
+      get "grant_badge", path: "grant"
     end
   end
 
   resources :proficient_projects do
     collection do
       get :join_development_program
+      get :open_modal
     end
   end
 

@@ -1,8 +1,10 @@
 class OrdersController < DevelopmentProgramsController
   before_action :check_wallet, only: :create
+  before_action :check_permission, only: :destroy
 
   def index
     @orders = current_user.orders.where(order_status: OrderStatus.find_by(name: "Completed")).order("created_at DESC")
+    @all_orders = Order.all.order("created_at DESC") if current_user.admin?
   end
 
   def create
@@ -27,6 +29,13 @@ class OrdersController < DevelopmentProgramsController
     end
   end
 
+  def destroy
+    @order = Order.find(params[:id])
+    @order.destroy
+    flash[:notice] = "The order was deleted and the CC points returned to the user."
+    redirect_to :back
+  end
+
   private
 
     def check_wallet
@@ -35,5 +44,13 @@ class OrdersController < DevelopmentProgramsController
         flash[:alert] = "Not enough Cc Points."
         redirect_to :back
       end
+    end
+
+    def check_permission
+      unless current_user.admin?
+        flash[:alert] = "You can't perform this action"
+        redirect_to :back
+      end
+
     end
 end

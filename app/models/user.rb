@@ -212,4 +212,8 @@ class User < ActiveRecord::Base
     self.update_attributes(wallet: self.get_total_cc)
   end
 
+  def has_required_badges?(badge_requirements)
+    badge_requirements.present? ? self.badges.pluck(:badge_template_id).include?(badge_requirements.map{|bq| bq.badge_template_id}) : true
+  end
+
 end

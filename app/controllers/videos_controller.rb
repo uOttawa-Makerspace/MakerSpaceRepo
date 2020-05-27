@@ -1,6 +1,6 @@
 class VideosController < DevelopmentProgramsController
   before_action :grant_access_admin
-  before_action :set_video, only: [:download]
+  before_action :set_video, only: [:download, :destroy]
 
   def index
     @videos = Video.order(created_at: :desc)
@@ -22,6 +22,12 @@ class VideosController < DevelopmentProgramsController
 
   def download
     redirect_to @video.video.expiring_url(30.seconds, :original)
+  end
+
+  def destroy
+    @video.destroy
+    flash[:notice] = "Video Deleted."
+    redirect_to videos_path
   end
 
   private

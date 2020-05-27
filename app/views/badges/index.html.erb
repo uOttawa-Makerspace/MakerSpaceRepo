@@ -3,50 +3,27 @@
         $('[data-toggle="tooltip"]').tooltip();
     });
 </script>
+<br>
+<div class="by-5">
+  <%= form_tag(badges_path, method: :get) do %>
+    <div class="form-inline">
+      <%= text_field_tag(:search, "", placeholder: "Badge Name, User, Description ...", class: 'form-control col-md-4 search_bar') %>
+    </div>
+  <% end %>
+</div>
 
-<% begin %>
-  <br>
-  <h2 style="text-align: center">Badges</h2>
-  <div style="width: 100%;" class="row">
-
-    <% @acclaim_data.each do |badges| %>
-
-      <div class="col-md-3">
-        <p style="text-align: center">
-          <% if badges.user_id.present? %>
-            <%= link_to(badges.issued_to, user_path(badges.username)) %>
-          <% else %>
-            <%= badges.issued_to %>
-          <% end %>
-        </p>
-
-        <% if badges.badge_url.present? %>
-          <a style="width: inherit" target="_blank" href="<%= badges.badge_url %>">
-            <%= image_tag(badges.image_url, :style => "width: inherit") %>
-          </a>
-        <% else %>
-          <%= image_tag(badges.image_url, :style => "width: inherit", "data-toggle" => "tooltip", :title => badges.issued_to + " didn't accept the badge yet") %>
-        <% end %>
-      </div>
-
-    <% end %>
-  </div>
-
-<% rescue %>
-  <div class="alert alert-danger" style="width: 100%; text-align: center">
-    An error has occurred while getting the badges, try again later or contact technical support. Sorry for the
-    inconvenience.
-  </div>
-<% end %>
+<div class="badge_list">
+  <%= render 'badges/badge_list' %>
+</div>
 
 <% if @user.orders.present? %>
   <h2 style="text-align: center">My Pending Badges</h2>
-  <p class="text-center">Before receiving this badge, you need to complete the project related to the badge and show it to Development Program Admin</p>
+  <p class="text-center">Before receiving this badge, you need to complete the project related to the badge and show it to Development Program Admin. For any questions, please contact your Proficient Project Administrator.</p>
   <div class="row">
     <% @user.orders.each do |order| %>
       <% order.order_items.each do |item| %>
         <% if ProficientProject.find(item.proficient_project_id).badge_id.present? and order.order_status == OrderStatus.find_by(name: "Completed") and item.status == "In progress" %>
-          <div class="col-md-3">
+          <div class="col-md-3" style="opacity: 0.3;">
             <%= image_tag(Badge.get_badge_image(ProficientProject.find(item.proficient_project_id).badge_id), :style => "width: inherit") %>
           </div>
         <% end %>
@@ -54,3 +31,23 @@
     <% end %>
   </div>
 <% end %>
+
+<script type="text/javascript" charset="utf-8">
+
+    $('.search_bar').on('keyup', debounce(function (e) {
+        $.ajax({
+            url: '/badges',
+            data: {search: $(this).serialize()},
+            format: 'js'
+        });
+    }, 100)); //
+
+
+
+    $(function() {
+        $(".badge_list th a, .badge_list .pagination a").on("click", function(){
+            $.getScript(this.href);
+            return false;
+        });
+    });
+</script>
