@@ -88,7 +88,7 @@ class BadgesController < ApplicationController
       user = User.find(params['user_id'])
       badge_id = params['badge_id']
       response = Excon.post('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges',
-                            :user => Rails.application.secrets.acclaim_api,
+                            :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
                             :password => '',
                             :headers => {"Content-type" => "application/json"},
                             :query => {:recipient_email => user.email, :badge_template_id => badge_id, :issued_to_first_name => user.name.split(" ", 2)[0], :issued_to_last_name => user.name.split(" ", 2)[1], :issued_at => Time.now}
@@ -110,7 +110,10 @@ class BadgesController < ApplicationController
     rescue
       flash[:alert] = "An error has occurred when creating the badge"
     ensure
-      @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).paginate(:page => params[:page], :per_page => 20)
+      order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).where.not(:proficient_projects => {badge_id: ""})
+      @order_items = order_items.where(status: "In progress").paginate(:page => params[:page], :per_page => 20)
+      @order_items_done = order_items.where.not(status: "In progress").paginate(:page => params[:page], :per_page => 20)
+      # @order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).paginate(:page => params[:page], :per_page => 20)
       if params[:coming_from] == "grant"
         redirect_to admin_badges_path
       end

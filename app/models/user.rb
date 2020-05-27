@@ -213,7 +213,8 @@ class User < ActiveRecord::Base
   end
 
   def has_required_badges?(badge_requirements)
-    badge_requirements.present? ? self.badges.pluck(:badge_template_id).include?(badge_requirements.map{|bq| bq.badge_template_id}) : true
+    # TODO: instead of any? it should be many? or something else
+    badge_requirements.present? ? (self.badges.pluck(:badge_template_id) & badge_requirements.map{|bq| bq.badge_template_id}).any? : true
   end
 
 end
