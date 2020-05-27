@@ -9,7 +9,7 @@
         <a href="<%= proficient_project_path(proficient_project.id) %>"><button type="button" class="btn btn-outline-success mb-2">Show Project</button></a>
       <% elsif current_user.order_items.where(proficient_project: proficient_project, status: "In progress").present? %>
         <button type="button" class="btn btn-outline-success disabled mb-2">Added to cart</button>
-      <% elsif ProficientProject.have_required_badges(@user.badges, proficient_project.badge_requirements) != true %>
+      <% elsif !current_user.has_required_badges?(proficient_project.badge_requirements) %>
         <button type="button" class="btn btn-outline-danger disabled mb-2">You don't have the required badges</button>
       <% else %>
         <%= form_for order_item, remote: true do |f| %>
