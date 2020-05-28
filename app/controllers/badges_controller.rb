@@ -52,7 +52,7 @@ class BadgesController < ApplicationController
       badge_template_id = user.badges.where(badge_id: badge_id).includes(:badge_template).first.badge_template.badge_id
       puts(ProficientProject.where(badge_id: badge_template_id).ids)
       response = Excon.put('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/'+badge_id+"/revoke",
-                            :user => Rails.application.secrets.acclaim_api,
+                            :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
                             :password => '',
                             :headers => {"Content-type" => "application/json"},
                             :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => false}
