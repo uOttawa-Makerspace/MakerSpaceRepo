@@ -31,26 +31,45 @@ class OrdersController < DevelopmentProgramsController
 
   def destroy
     @order = Order.find(params[:id])
-    @order.destroy
-    flash[:notice] = "The order was deleted and the CC points returned to the user."
-    redirect_to :back
+    user = User.find(@order.user_id)
+    @order.order_items.where(status: "Awarded").each do |order_item|
+      badge_id = user.badges.joins(:badge_template).where(badge_templates: {badge_id: ProficientProject.find(order_item.proficient_project_id).badge_id}).first.badge_id
+      begin
+        response = Excon.put('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/' + badge_id + "/revoke",
+                             :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
+                             :password => '',
+                             :headers => {"Content-type" => "application/json"},
+                             :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => false}
+
+        )
+        if response.status == 200
+          Badge.find_by_badge_id(badge_id).destroy
+        else
+          flash[:alert] = "An error occurred while trying to delete the order."
+          redirect_to orders_path
+        end
+      end
+      @order.destroy
+      flash[:notice] = "The order was deleted and the CC points returned to the user."
+      redirect_to orders_path
+    end
   end
 
   private
 
-    def check_wallet
-      current_user.update_wallet
-      unless current_user.wallet >= current_order.subtotal.to_i
-        flash[:alert] = "Not enough Cc Points."
-        redirect_to :back
-      end
+  def check_wallet
+    current_user.update_wallet
+    unless current_user.wallet >= current_order.subtotal.to_i
+      flash[:alert] = "Not enough Cc Points."
+      redirect_to :back
+    end
+  end
+
+  def check_permission
+    unless current_user.admin?
+      flash[:alert] = "You can't perform this action"
+      redirect_to :back
     end
 
-    def check_permission
-      unless current_user.admin?
-        flash[:alert] = "You can't perform this action"
-        redirect_to :back
-      end
-
-    end
+  end
 end

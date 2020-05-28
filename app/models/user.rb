@@ -2,17 +2,17 @@ class User < ActiveRecord::Base
   include BCrypt
   include ActiveModel::Serialization
 
-  has_one  :rfid,         dependent: :destroy
-  has_many :upvotes,      dependent: :destroy
-  has_many :comments,     dependent: :destroy
+  has_one :rfid, dependent: :destroy
+  has_many :upvotes, dependent: :destroy
+  has_many :comments, dependent: :destroy
   has_and_belongs_to_many :repositories, dependent: :destroy
   has_many :certifications, dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
   has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories
   has_many :project_proposals
-  has_many :project_joins,     dependent: :destroy
-  has_many :printer_sessions,     dependent: :destroy
+  has_many :project_joins, dependent: :destroy
+  has_many :printer_sessions, dependent: :destroy
   has_many :volunteer_hours
   has_many :volunteer_tasks
   has_one :skill
@@ -33,58 +33,58 @@ class User < ActiveRecord::Base
   has_many :order_items, through: :orders
 
   validates :name,
-    presence: true,
-    length: { maximum: 50 }
+            presence: true,
+            length: {maximum: 50}
 
   validates :username,
-    presence: true,
-    uniqueness: true,
-    format: { with: /\A[a-zA-Z\d]*\z/ },
-    length: { maximum: 20 }
+            presence: true,
+            uniqueness: true,
+            format: {with: /\A[a-zA-Z\d]*\z/},
+            length: {maximum: 20}
 
   validates :email,
-    presence: true,
-    uniqueness: true
+            presence: true,
+            uniqueness: true
 
   validates :how_heard_about_us,
-    length: { maximum: 250 }
+            length: {maximum: 250}
 
   validates :read_and_accepted_waiver_form,
-    inclusion: { in: [true] }, on: :create
+            inclusion: {in: [true]}, on: :create
 
   validates :password,
-    presence: true,
-    confirmation: true,
-    format: { with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/ }
+            presence: true,
+            confirmation: true,
+            format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/}
 
   validates :gender,
-    presence: true,
-    inclusion: { in: ["Male", "Female", "Other", "Prefer not to specify", "unknown"] }
+            presence: true,
+            inclusion: {in: ["Male", "Female", "Other", "Prefer not to specify", "unknown"]}
 
   validates :faculty,
-    presence: true, if: :student?
+            presence: true, if: :student?
 
   validates :program,
-    presence: true, if: :student?
+            presence: true, if: :student?
 
   validates :year_of_study,
-    presence: true, if: :student?
+            presence: true, if: :student?
 
   validates :student_id,
-    presence: true, if: :student?
+            presence: true, if: :student?
 
   validates :identity,
-    presence: true,
-    inclusion: { in: ['grad', 'undergrad', 'faculty_member', 'community_member', 'unknown'] }
+            presence: true,
+            inclusion: {in: ['grad', 'undergrad', 'faculty_member', 'community_member', 'unknown']}
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
 
   scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
-  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
-  scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace")}
-  scope :active, -> {where(:active => true)}
-  scope :unknown_identity, -> { where(identity:"unknown") }
+  scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
+  scope :frequency_between_dates, -> (start_date, end_date) { joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace") }
+  scope :active, -> { where(:active => true) }
+  scope :unknown_identity, -> { where(identity: "unknown") }
 
   def self.authenticate(username_email, password)
     user = User.username_or_email(username_email)
@@ -213,9 +213,16 @@ class User < ActiveRecord::Base
   end
 
   def has_required_badges?(badge_requirements)
-    user_badges_set = self.badges.pluck(:badge_template_id).to_set
-    badge_requirements_set = badge_requirements.pluck(:badge_template_id).to_set
-    badge_requirements_set.subset?(user_badges_set)
+
+      badge_requirements.each do |requirement|
+        if requirement.badge_template_id.present? == false
+          return true
+        end
+      end
+
+      user_badges_set = self.badges.pluck(:badge_template_id).to_set
+      badge_requirements_set = badge_requirements.pluck(:badge_template_id).to_set
+      badge_requirements_set.subset?(user_badges_set)
   end
 
 end
