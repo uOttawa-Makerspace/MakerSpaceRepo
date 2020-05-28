@@ -103,6 +103,7 @@ class BadgesController < ApplicationController
         )
 
         if response.status == 200
+          Badge.find_by_badge_id(params['badge_id']).destroy
           OrderItem.update(params['order_item_id'], :status => "In progress")
         else
           flash[:alert] = "An error has occurred while reinstating the badge"
@@ -187,7 +188,7 @@ class BadgesController < ApplicationController
 
       data['data'].each do |badges|
 
-        if User.where(email: badges['recipient_email']).present?
+        if User.where(email: badges['recipient_email']).present? and badges['state'] != "revoked"
           user = User.where(email: badges['recipient_email']).first
           if user.badges.where(badge_id: badges['id']).present? == false
             values = {user_id: user.id, username: user.username, image_url: badges['badge_template']['image']['url'], description: badges['badge_template']['description'], issued_to: badges['issued_to'], badge_id: badges['id'], badge_url: badges['badge_url'], :badge_template_id => BadgeTemplate.find_by_badge_id(badges['badge_template']['id'])}
