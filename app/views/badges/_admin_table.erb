@@ -12,6 +12,7 @@
     <div class="text-center">
       <table class="table table-striped">
         <tr>
+          <th>Date Updated</th>
           <th>Name</th>
           <th>Badge</th>
           <th>Project</th>
@@ -21,6 +22,7 @@
         <tbody>
         <% @order_items.each do |order_item| %>
           <tr>
+            <td><%= order_item.updated_at.strftime("%Y/%m/%d - %H:%M") %></td>
             <td><%= link_to order_item.order.user.name, order_item.order.user.username %></td>
             <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
             <td><%= order_item.proficient_project.title %></td>
@@ -52,6 +54,7 @@
     <div class="text-center">
       <table class="table table-striped">
         <tr>
+          <th>Date Updated</th>
           <th>Name</th>
           <th>Badge</th>
           <th>Project</th>
@@ -61,6 +64,7 @@
         <tbody>
         <% @order_items_done.each do |order_item| %>
           <tr>
+            <td><%= order_item.updated_at.strftime("%Y/%m/%d - %H:%M") %></td>
             <td><%= link_to order_item.order.user.name, order_item.order.user.username %></td>
             <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
             <td><%= order_item.proficient_project.title %></td>
