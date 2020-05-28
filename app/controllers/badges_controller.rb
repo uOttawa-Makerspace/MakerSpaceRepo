@@ -1,6 +1,6 @@
 class BadgesController < ApplicationController
   layout 'development_program'
-  before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge]
+  before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstante, :update_badge_template, :update_badge_data]
 
   def index
     if (@user.admin? || @user.staff?)
@@ -89,6 +89,36 @@ class BadgesController < ApplicationController
     render json: { badges: json_data }
   end
 
+  def reinstante
+    begin
+      if params[:previous_action] = "Revoked"
+        OrderItem.update(params['order_item_id'], :status => "In progress")
+      elsif params[:previous_action] = "Awarded"
+        badge_id = params['badge_id']
+        response = Excon.post('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/'+badge_id+"/revoke",
+                              :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
+                              :password => '',
+                              :headers => {"Content-type" => "application/json"},
+                              :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => false}
+        )
+
+        if response.status == 200
+          OrderItem.update(params['order_item_id'], :status => "In progress")
+        else
+          flash[:alert] = "An error has occurred while reinstating the badge"
+        end
+      end
+
+    rescue
+      flash[:alert] = "An error has occurred while reinstating the badge"
+    ensure
+      admin_variable_setup
+      redirect_to admin_badges_path
+    end
+
+  end
+
+
   def certify
     # TODO Repair the flash messages when reloading with rails
     begin
@@ -125,6 +155,56 @@ class BadgesController < ApplicationController
 
     end
 
+  end
+
+  def update_badge_templates
+    begin
+      response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badge_templates',
+                           :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
+                           :password => '',
+                           :headers => {"Content-type" => "application/json"})
+      data = JSON.parse(response.body)
+      data['data'].each do |badge_template|
+        bt = BadgeTemplate.find_or_create_by(badge_id: badge_template['id'])
+        bt.update_attributes(badge_description: badge_template['description'], badge_name: badge_template['name'], image_url: badge_template['image_url'])
+      end
+      flash[:notice] = "Update is now complete !"
+    rescue
+      flash[:alert] = "Update failed, please try again later"
+    ensure
+      redirect_to admin_badges_path
+    end
+  end
+
+  def update_badge_data
+    begin
+      response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/high_volume_issued_badge_search',
+                           :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
+                           :password => '',
+                           :headers => {"Content-type" => "application/json"}
+      )
+      data = JSON.parse(response.body)
+
+      data['data'].each do |badges|
+
+        if User.where(email: badges['recipient_email']).present?
+          user = User.where(email: badges['recipient_email']).first
+          if user.badges.where(badge_id: badges['id']).present? == false
+            values = {user_id: user.id, username: user.username, image_url: badges['badge_template']['image']['url'], description: badges['badge_template']['description'], issued_to: badges['issued_to'], badge_id: badges['id'], badge_url: badges['badge_url'], :badge_template_id => BadgeTemplate.find_by_badge_id(badges['badge_template']['id'])}
+            Badge.create(values)
+          elsif user.badges.where(badge_id: badges['id']).present? and user.badges.where(badge_url: badges['badge_url']).present? == false and badges['badge_url'] != ""
+            Badge.update(user.badges.where(badge_id: badges['id']), :badge_url => badges['badge_url'])
+          elsif user.badges.where(badge_id: badges['id']).present? and user.badges.where(badge_url: badges['badge_url']).present? and user.badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(badges['badge_template']['id'])).present? == false
+            Badge.update(user.badges.where(badge_id: badges['id']), :badge_template_id => BadgeTemplate.find_by_badge_id(badges['badge_template']['id']).id)
+          end
+        end
+      end
+      flash[:notice] = "Update is now complete !"
+    rescue
+      flash[:alert] = "Update failed, please try again later"
+    ensure
+      redirect_to admin_badges_path
+    end
   end
 
   def only_admin_access
