@@ -56,6 +56,7 @@
           <th>Badge</th>
           <th>Project</th>
           <th>Status</th>
+          <th>Action</th>
         </tr>
         <tbody>
         <% @order_items_done.each do |order_item| %>
@@ -64,6 +65,13 @@
             <td><%= BadgeTemplate.get_badge_name(order_item.proficient_project.badge_id) %></td>
             <td><%= order_item.proficient_project.title %></td>
             <td><%= order_item.status %></td>
+            <td>
+              <% if order_item.status == "Revoked"%>
+                <%= link_to "Award", certify_badges_path(order_item.order.user.id, order_item.id, order_item.proficient_project.badge_id, coming_from: "admin"), data: {confirm: "Are you sure? This will give the badge to the user"}, class: "btn btn-primary" %>
+              <% else %>
+                <%= link_to "Revoke", revoke_badge_badges_path(:user_id => order_item.order.user.id, :badge_id => order_item.order.user.badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(order_item.proficient_project.badge_id).id).first.badge_id, coming_from: "admin"), data: {confirm: "Are you sure? This revoke the badge that the user received."}, class: "btn btn-danger" %>
+              <% end %>
+            </td>
           </tr>
         <% end %>
         </tbody>

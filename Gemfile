@@ -64,6 +64,7 @@ end
 group :development do
   gem 'web-console', '~> 2.0'
   gem 'letter_opener' # Open emails in development
+  gem 'faker', '~> 1.1.2'
 
   # ssh deployment
   gem 'ed25519', '~> 1.2'
