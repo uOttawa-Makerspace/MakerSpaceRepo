@@ -219,6 +219,9 @@ Rails.application.routes.draw do
       get :populate_badge_list
       get "certify", path: 'new/:user_id/:order_item_id/:badge_id'
       get "grant_badge", path: "grant"
+      get :reinstante
+      get :update_badge_data
+      get :update_badge_templates
     end
   end
 
