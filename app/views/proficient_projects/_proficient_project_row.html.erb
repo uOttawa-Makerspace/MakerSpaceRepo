@@ -3,7 +3,11 @@
       <% badge_requirements = proficient_project.badge_requirements %>
       <% order_items = user_order_items.where(proficient_project: proficient_project) %>
       <% order_items.each do |order_item| %>
-        <button type="button" class="btn btn-outline-danger disabled mb-2"><%= order_item.status %></button>
+        <% if order_item.status == "Awarded" %>
+          <button type="button" class="btn btn-outline-success disabled mb-2"><%= order_item.status %></button>
+        <% else %>
+          <button type="button" class="btn btn-outline-danger disabled mb-2"><%= order_item.status %></button>
+        <% end %>
       <% end %>
       <br />
       <% if order_items.where(status: ["In progress", "Awarded"]).present? %>
