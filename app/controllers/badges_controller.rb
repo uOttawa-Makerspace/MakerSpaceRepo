@@ -6,7 +6,7 @@ class BadgesController < ApplicationController
     if (@user.admin? || @user.staff?)
       @acclaim_data = Badge.filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 20).all
     else
-      @acclaim_data = @user.badges.filter_by_attribute(params[:search]).paginate(:page => params[:page], :per_page => 20)
+      @acclaim_data = Badge.filter_by_attribute(params[:search]).where(user: @user).paginate(:page => params[:page], :per_page => 20)
     end
     respond_to do |format|
       format.js
