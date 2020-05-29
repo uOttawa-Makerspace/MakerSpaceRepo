@@ -1,7 +1,8 @@
 class BadgesController < DevelopmentProgramsController
   before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstate, :update_badge_template, :update_badge_data]
   before_action :get_rakes, only: [:update_badge_templates, :update_badge_data]
-  after_action :set_orders, only: [:reinstate]
+  after_action :set_orders, only: [:reinstate, :certify]
+  before_action :set_orders, only: [:admin]
 
   def index
     if (@user.admin? || @user.staff?)
@@ -37,13 +38,7 @@ class BadgesController < DevelopmentProgramsController
   end
 
   def admin
-    admin_variable_setup
   end
-
-  # def revoke
-  #
-  # end
-
 
   def revoke_badge
     begin
@@ -112,37 +107,27 @@ class BadgesController < DevelopmentProgramsController
     begin
       user = User.find(params['user_id'])
       badge_id = params['badge_id']
-      response = Excon.post('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges',
-                            :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
-                            :password => '',
-                            :headers => {"Content-type" => "application/json"},
-                            :query => {:recipient_email => user.email, :badge_template_id => badge_id, :issued_to_first_name => user.name.split(" ", 2)[0], :issued_to_last_name => user.name.split(" ", 2)[1], :issued_at => Time.now}
-      )
-
-      if response.status == 422
-        flash[:alert] = "An error has occurred when creating the badge, this message might help : " + JSON.parse(response.body)['data']['message']
-
-      elsif response.status == 201
+      order_item = OrderItem.find(params['order_item_id'])
+      response = Badge.acclaim_api_create_badge(user, badge_id)
+      if response.status == 201
         badge_data = JSON.parse(response.body)['data']
-        Badge.create(:username => user.username, :user_id => user.id, :image_url => badge_data['image_url'], :issued_to => badge_data['issued_to'], :description => badge_data['badge_template']['description'], :badge_id => badge_data['id'], :badge_template_id => BadgeTemplate.find_by_badge_id(badge_data['badge_template']['id']).id)
-        OrderItem.update(params['order_item_id'], :status => "Awarded")
+        Badge.create(:username => user.username,
+                     :user_id => user.id,
+                     :image_url => badge_data['image_url'],
+                     :issued_to => badge_data['issued_to'],
+                     :description => badge_data['badge_template']['description'],
+                     :badge_id => badge_data['id'],
+                     :badge_template_id => BadgeTemplate.find_by_badge_id(badge_data['badge_template']['id']).id)
+        order_item.update_attributes(:status => "Awarded")
         flash[:notice] = "The badge has been sent to the user !"
-
       else
-        flash[:alert] = "An error has occurred when creating the badge"
+        flash[:alert] = "An error has occurred when creating the badge, this message might help : " + JSON.parse(response.body)['data']['message']
       end
-
-    rescue
-      flash[:alert] = "An error has occurred when creating the badge"
+    rescue StandardError => e
+      flash[:alert] = "An error has occurred when creating the badge: #{e}"
     ensure
-      admin_variable_setup
-
-      if params[:coming_from] == "grant" or params[:coming_from] == "admin"
-        redirect_to admin_badges_path
-      end
-
+      redirect_to admin_badges_path
     end
-
   end
 
   def update_badge_data
@@ -166,16 +151,6 @@ class BadgesController < DevelopmentProgramsController
       flash[:alert] = "Only admin members can access this area."
     end
   end
-
-  def admin_variable_setup
-    order_items = OrderItem.completed_order.order(updated_at: :desc).includes(:order => :user).joins(:proficient_project).where.not(:proficient_projects => {badge_id: ""})
-    @order_items = order_items.where(status: "In progress").paginate(:page => params[:page], :per_page => 20)
-    @order_items_done = order_items.where.not(status: "In progress").paginate(:page => params[:page], :per_page => 20)
-  end
-
-  # def destroy
-  #
-  # end
 
   private
 

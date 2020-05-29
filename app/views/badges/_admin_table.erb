@@ -28,7 +28,7 @@
             <td><%= order_item.proficient_project.title %></td>
             <% if order_item.proficient_project.badge_id.present? %>
               <td>
-                <%= link_to "Certify", certify_badges_path(order_item.order.user.id, order_item.id, order_item.proficient_project.badge_id), {data: {confirm: 'Are you sure?'}, remote: true, class: "btn btn-primary"} %>
+                <%= link_to "Award", certify_badges_path(order_item.order.user.id, order_item.id, order_item.proficient_project.badge_id), {data: {confirm: 'Are you sure?'}, remote: true, class: "btn btn-primary"} %>
               </td>
             <% else %>
               <td>Not related to a badge</td>
