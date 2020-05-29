@@ -1,7 +1,7 @@
-class BadgesController < ApplicationController
-  layout 'development_program'
+class BadgesController < DevelopmentProgramsController
   before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstante, :update_badge_template, :update_badge_data]
   before_action :get_rakes, only: [:update_badge_templates, :update_badge_data]
+  after_action :set_orders, only: [:reinstate]
   def index
     if (@user.admin? || @user.staff?)
       @acclaim_data = Badge.filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 20).all
@@ -90,32 +90,19 @@ class BadgesController < ApplicationController
 
   def reinstante
     begin
-      if params[:previous_action] = "Revoked"
-        OrderItem.update(params['order_item_id'], :status => "In progress")
-      elsif params[:previous_action] = "Awarded"
-        badge_id = params['badge_id']
-        response = Excon.post('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/'+badge_id+"/revoke",
-                              :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
-                              :password => '',
-                              :headers => {"Content-type" => "application/json"},
-                              :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => false}
-        )
-
-        if response.status == 200
-          Badge.find_by_badge_id(params['badge_id']).destroy
-          OrderItem.update(params['order_item_id'], :status => "In progress")
-        else
-          flash[:alert] = "An error has occurred while reinstating the badge"
-        end
+      order_item = OrderItem.find(params['order_item_id'])
+      if params[:previous_action] == "Awarded"
+        badge = Badge.find_by(badge_id: params['badge_id'])
+        badge.acclaim_api_delete_badge
+        badge.destroy
+        flash[:notice] = "Badge Reinstated"
       end
-
-    rescue
-      flash[:alert] = "An error has occurred while reinstating the badge"
+      order_item.update_attributes(:status => "In progress")
+    rescue StandardError => e
+      flash[:alert] = "An error has occurred while reinstating the badge: #{e}"
     ensure
-      admin_variable_setup
       redirect_to admin_badges_path
     end
-
   end
 
 
@@ -159,8 +146,8 @@ class BadgesController < ApplicationController
 
   def update_badge_data
     Rake::Task['badges:get_data'].invoke
-    Rake::Task['badges:get_and_update_badge_templates'].reenable
     Rake::Task['badges:get_data'].reenable
+    Rake::Task['badges:get_and_update_badge_templates'].reenable
     flash[:notice] = "Update is now complete!"
     redirect_to admin_badges_path
   end
@@ -189,5 +176,11 @@ class BadgesController < ApplicationController
 
     def get_rakes
       load_rakes
+    end
+
+    def set_orders
+      order_items = OrderItem.completed_order.order(updated_at: :desc).includes(:order => :user).joins(:proficient_project).where.not(:proficient_projects => {badge_id: ""})
+      @order_items = order_items.where(status: "In progress").paginate(:page => params[:page], :per_page => 20)
+      @order_items_done = order_items.where.not(status: "In progress").paginate(:page => params[:page], :per_page => 20)
     end
 end
