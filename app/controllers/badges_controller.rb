@@ -1,5 +1,5 @@
 class BadgesController < DevelopmentProgramsController
-  before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstante, :update_badge_template, :update_badge_data]
+  before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstate, :update_badge_template, :update_badge_data]
   before_action :get_rakes, only: [:update_badge_templates, :update_badge_data]
   after_action :set_orders, only: [:reinstate]
   def index
@@ -88,16 +88,16 @@ class BadgesController < DevelopmentProgramsController
     render json: { badges: json_data }
   end
 
-  def reinstante
+  def reinstate
     begin
       order_item = OrderItem.find(params['order_item_id'])
-      if params[:previous_action] == "Awarded"
+      if order_item.status == "Awarded"
         badge = Badge.find_by(badge_id: params['badge_id'])
         badge.acclaim_api_delete_badge
         badge.destroy
-        flash[:notice] = "Badge Reinstated"
       end
       order_item.update_attributes(:status => "In progress")
+      flash[:notice] = "Badge Restored"
     rescue StandardError => e
       flash[:alert] = "An error has occurred while reinstating the badge: #{e}"
     ensure
