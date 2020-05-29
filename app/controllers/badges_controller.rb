@@ -2,6 +2,7 @@ class BadgesController < DevelopmentProgramsController
   before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstate, :update_badge_template, :update_badge_data]
   before_action :get_rakes, only: [:update_badge_templates, :update_badge_data]
   after_action :set_orders, only: [:reinstate]
+
   def index
     if (@user.admin? || @user.staff?)
       @acclaim_data = Badge.filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 20).all
@@ -39,24 +40,24 @@ class BadgesController < DevelopmentProgramsController
     admin_variable_setup
   end
 
+  # def revoke
+  #
+  # end
+
 
   def revoke_badge
     begin
       if params[:badge].present?
         user = User.find(params[:badge][:user_id])
         badge_id = params[:badge][:badge_id]
+        badge = Badge.find(badge_id)
       else
         user = User.find(params[:user_id])
         badge_id = params[:badge_id]
+        badge = Badge.find(badge_id)
       end
       badge_template_id = user.badges.where(badge_id: badge_id).includes(:badge_template).first.badge_template.badge_id
-      response = Excon.put('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/'+badge_id+"/revoke",
-                            :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
-                            :password => '',
-                            :headers => {"Content-type" => "application/json"},
-                            :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => false}
-
-      )
+      response = badge.acclaim_api_revoke_badge
       if response.status == 200
         user.order_items.each do |order_item|
           if ProficientProject.where(badge_id: badge_template_id).ids.include? order_item.proficient_project_id
@@ -92,9 +93,9 @@ class BadgesController < DevelopmentProgramsController
     begin
       order_item = OrderItem.find(params['order_item_id'])
       if order_item.status == "Awarded"
-        badge = Badge.find_by(badge_id: params['badge_id'])
-        badge.acclaim_api_delete_badge
-        badge.destroy
+        # TODO: Fix this query when we have a better relation with order_item and badges
+        badge = order_item.order.user.badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(order_item.proficient_project.badge_id).id).last
+        badge.destroy # Acclaim API will be destroy because of before_destroy in Badge model
       end
       order_item.update_attributes(:status => "In progress")
       flash[:notice] = "Badge Restored"
@@ -171,6 +172,10 @@ class BadgesController < DevelopmentProgramsController
     @order_items = order_items.where(status: "In progress").paginate(:page => params[:page], :per_page => 20)
     @order_items_done = order_items.where.not(status: "In progress").paginate(:page => params[:page], :per_page => 20)
   end
+
+  # def destroy
+  #
+  # end
 
   private
 

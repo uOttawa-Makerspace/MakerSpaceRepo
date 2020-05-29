@@ -1,6 +1,7 @@
 class Badge < ActiveRecord::Base
   belongs_to :user
   belongs_to :badge_template
+  before_destroy :acclaim_api_delete_badge
 
   def self.get_badge_image(badge_id)
     begin
@@ -43,6 +44,14 @@ class Badge < ActiveRecord::Base
                  :password => '',
                  :headers => {"Content-type" => "application/json"},
                  :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => false})
+  end
+
+  def acclaim_api_revoke_badge
+    Excon.put('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/'+self.badge_id+"/revoke",
+              :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
+              :password => '',
+              :headers => {"Content-type" => "application/json"},
+              :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => false})
   end
 
 end
