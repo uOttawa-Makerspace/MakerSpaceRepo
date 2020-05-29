@@ -101,4 +101,9 @@ module ApplicationHelper
     render :partial => 'partials/streaming', :locals => {:url => url}
   end
 
+  def load_rakes
+    require 'rake'
+    MakerSpaceRepo::Application.load_tasks if Rake::Task.tasks.empty?
+  end
+
 end

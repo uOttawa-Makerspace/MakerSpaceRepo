@@ -1,9 +1,6 @@
 namespace :badges do
   desc "Get all data from acclaim api"
-  task get_data: :environment do
-    puts "Getting Badges Templates..."
-    Rake::Task['badges:get_and_update_badge_templates'].invoke
-    puts "Done"
+  task get_data: [:environment, :get_and_update_badge_templates] do
     puts "Start updating badges..."
     begin
       data = Badge.acclaim_api_get_all_badges
