@@ -20,6 +20,7 @@
             <th>Date</th>
             <th>Subtotal</th>
             <th>Status</th>
+            <th>Item Status</th>
             <th>Total</th>
           </tr>
 
@@ -34,16 +35,24 @@
                   <% end %>
                 </td>
                 <td>
-                  <%= order.created_at.strftime("%Y/%m/%d") %>
+                  <p><%= order.created_at.strftime("%Y/%m/%d") %></p>
                 </td>
                 <td>
-                  <%= order.subtotal %>
+                  <p><%= order.subtotal %></p>
                 </td>
                 <td>
-                  <%= order.order_status.name %>
+                  <p><%= order.order_status.name %></p>
                 </td>
                 <td>
-                  <%= order.total %>
+                  <% order.order_items.each do |order_item| %>
+                    <p>
+                      <%= order_item.status %>
+                      <br>
+                    </p>
+                  <% end %>
+                </td>
+                <td>
+                  <p><%= order.total %></p>
                 </td>
               </tr>
             <% end %>
@@ -72,6 +81,7 @@
               <th>Date</th>
               <th>Subtotal</th>
               <th>Status</th>
+              <th>Item Status</th>
               <th>Total</th>
               <th>Action</th>
             </tr>
@@ -87,19 +97,27 @@
                   <% end %>
                 </td>
                 <td class="username">
-                  <%= link_to order.user.username, order.user.username %>
+                 <p> <%= link_to order.user.username, order.user.username %></p>
                 </td>
                 <td>
-                  <%= order.created_at.strftime("%Y/%m/%d") %>
+                  <p><%= order.created_at.strftime("%Y/%m/%d") %></p>
                 </td>
                 <td>
-                  <%= order.subtotal %>
+                  <p><%= order.subtotal %></p>
                 </td>
                 <td>
-                  <%= order.order_status.name %>
+                  <p><%= order.order_status.name %></p>
                 </td>
                 <td>
-                  <%= order.total %>
+                  <% order.order_items.each do |order_item| %>
+                    <p>
+                      <%= order_item.status %>
+                      <br>
+                    </p>
+                  <% end %>
+                </td>
+                <td>
+                  <p><%= order.total %></p>
                 </td>
                 <td>
                   <%= link_to "Delete", order, method: :delete, data: {confirm: "Are you sure? This will give back the CC points used to purchase this order."}, class: "btn btn-danger" %>

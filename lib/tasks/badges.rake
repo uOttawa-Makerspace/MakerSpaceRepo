@@ -12,7 +12,7 @@ namespace :badges do
 
       data['data'].each do |badges|
 
-        if User.where(email: badges['recipient_email']).present?
+        if User.where(email: badges['recipient_email']).present? and badges['state'] != "revoked"
           user = User.where(email: badges['recipient_email']).first
           if user.badges.where(badge_id: badges['id']).present? == false
             values = {user_id: user.id, username: user.username, image_url: badges['badge_template']['image']['url'], description: badges['badge_template']['description'], issued_to: badges['issued_to'], badge_id: badges['id'], badge_url: badges['badge_url'], :badge_template_id => BadgeTemplate.find_by_badge_id(badges['badge_template']['id'])}
