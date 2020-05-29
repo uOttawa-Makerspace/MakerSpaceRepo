@@ -213,13 +213,6 @@ class User < ActiveRecord::Base
   end
 
   def has_required_badges?(badge_requirements)
-
-      badge_requirements.each do |requirement|
-        if requirement.badge_template_id.present? == false
-          return true
-        end
-      end
-
       user_badges_set = self.badges.pluck(:badge_template_id).to_set
       badge_requirements_set = badge_requirements.pluck(:badge_template_id).to_set
       badge_requirements_set.subset?(user_badges_set)
