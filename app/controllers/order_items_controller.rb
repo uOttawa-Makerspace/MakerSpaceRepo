@@ -40,7 +40,6 @@ class OrderItemsController < DevelopmentProgramsController
     order_items = OrderItem.completed_order.order(status: :asc).includes(:order => :user).joins(:proficient_project).where.not(:proficient_projects => {badge_id: ""})
     @order_items = order_items.where(status: "In progress").paginate(:page => params[:page], :per_page => 20)
     @order_items_done = order_items.where.not(status: "In progress").paginate(:page => params[:page], :per_page => 20)
-
   end
 
   private

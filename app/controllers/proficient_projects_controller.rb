@@ -37,7 +37,9 @@ class ProficientProjectsController < DevelopmentProgramsController
     if @proficient_project.save
       if params[:badge_requirements].present?
         params[:badge_requirements].each do |requirement|
-          @proficient_project.badge_requirements.create(badge_template_id: requirement)
+          if requirement != ""
+            @proficient_project.badge_requirements.create(badge_template_id: requirement)
+          end
         end
       end
       create_photos
@@ -72,7 +74,9 @@ class ProficientProjectsController < DevelopmentProgramsController
 
     if params[:badge_requirements].present?
       params[:badge_requirements].each do |requirement|
-        @proficient_project.badge_requirements.create(badge_template_id: requirement)
+        if requirement != ""
+          @proficient_project.badge_requirements.create(badge_template_id: requirement)
+        end
       end
     end
 

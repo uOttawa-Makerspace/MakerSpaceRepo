@@ -21,7 +21,7 @@ class Badge < ActiveRecord::Base
       if value == "search="
         default_scoped
       else
-        value = value.split("=").last
+        value = value.split("=").last.gsub('+', ' ')
         where("LOWER(description) like LOWER(?) OR
                  LOWER(issued_to) like LOWER(?)", "%#{value}%", "%#{value}%")
       end
