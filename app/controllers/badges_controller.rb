@@ -109,10 +109,10 @@ class BadgesController < DevelopmentProgramsController
   def certify
     # TODO Repair the flash messages when reloading with rails
     begin
-      user = User.find(params['user_id'])
-      badge_id = params['badge_id']
       order_item = OrderItem.find(params['order_item_id'])
-      response = Badge.acclaim_api_create_badge(user, badge_id)
+      badge_template = order_item.proficient_project.badge_template
+      user = order_item.order.user
+      response = Badge.acclaim_api_create_badge(user, badge_template.acclaim_template_id)
       if response.status == 201
         badge_data = JSON.parse(response.body)['data']
         Badge.create(:username => user.username,
@@ -121,7 +121,7 @@ class BadgesController < DevelopmentProgramsController
                      :issued_to => badge_data['issued_to'],
                      :description => badge_data['badge_template']['description'],
                      :badge_id => badge_data['id'],
-                     :badge_template_id => BadgeTemplate.find_by_badge_id(badge_data['badge_template']['id']).id)
+                     :badge_template_id => badge_template.id)
         order_item.update_attributes(:status => "Awarded")
         flash[:notice] = "The badge has been sent to the user !"
       else

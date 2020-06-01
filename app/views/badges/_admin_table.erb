@@ -63,7 +63,7 @@
             <td><%= order_item.proficient_project.title %></td>
             <td><%= order_item.status %></td>
             <% if order_item.status == "Revoked"%>
-<!--              <td><%#= link_to "Award", certify_badges_path(order_item.order.user.id, order_item.id, order_item.proficient_project.badge_id, coming_from: "admin", format: "js"), data: {confirm: "Are you sure? This will give the badge to the user"}, class: "btn btn-primary" %></td>-->
+              <td><%= link_to "Award", certify_badges_path(order_item.id, format: "js"), data: {confirm: "Are you sure? This will give the badge to the user"}, class: "btn btn-primary" %></td>
             <% else %>
 <!--              <td><%#= link_to "Revoke", revoke_badge_badges_path(:user_id => order_item.order.user.id, :badge_id => order_item.order.user.badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(order_item.proficient_project.badge_id).id).first.badge_id, coming_from: "admin"), data: {confirm: "Are you sure? This will revoke the badge that the user received."}, class: "btn btn-danger" %></td>-->
             <% end %>
