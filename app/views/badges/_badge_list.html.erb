@@ -14,7 +14,7 @@
     <div class="col-md-3">
       <p style="text-align: center">
         <% if badges.user_id.present? %>
-          <%= link_to(badges.issued_to, user_path(badges.username)) %>
+          <%= link_to(badges.issued_to, user_path(User.find(badges.user_id).username)) %>
         <% else %>
           <%= badges.issued_to %>
         <% end %>
@@ -22,10 +22,10 @@
 
       <% if badges.badge_url.present? %>
         <a style="width: inherit" target="_blank" href="<%= badges.badge_url %>">
-          <%= image_tag(badges.image_url, :style => "width: inherit") %>
+          <%= image_tag(badges.badge_template.image_url, :style => "width: inherit") %>
         </a>
       <% else %>
-        <%= image_tag(badges.image_url, :style => "width: inherit", "data-toggle" => "tooltip", :title => badges.issued_to + " didn't accept the badge yet") %>
+        <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", "data-toggle" => "tooltip", :title => badges.issued_to + " didn't accept the badge yet") %>
       <% end %>
     </div>
 

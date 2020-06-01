@@ -23,9 +23,9 @@
   <div class="row">
     <% @user.orders.each do |order| %>
       <% order.order_items.each do |item| %>
-        <% if ProficientProject.find(item.proficient_project_id).badge_id.present? and order.order_status == OrderStatus.find_by(name: "Completed") and item.status == "In progress" %>
+        <% if ProficientProject.find(item.proficient_project_id).badge_template_id.present? and order.order_status == OrderStatus.find_by(name: "Completed") and item.status == "In progress" %>
           <div class="col-md-3" style="opacity: 0.3;">
-            <%= image_tag(Badge.get_badge_image(ProficientProject.find(item.proficient_project_id).badge_id), :style => "width: inherit") %>
+            <%= image_tag(Badge.get_badge_image(ProficientProject.find(item.proficient_project_id).acclaim_badge_id), :style => "width: inherit") %>
           </div>
         <% end %>
       <% end %>

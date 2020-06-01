@@ -8,7 +8,7 @@ namespace :badges do
         if User.where(email: badges['recipient_email']).present? and badges['state'] != "revoked"
           user = User.find_by(email: badges['recipient_email'])
           new_badge = Badge.find_or_create_by(acclaim_badge_id: badges['id'], user: user)
-          badge_template = BadgeTemplate.find_by_badge_id(badges['badge_template']['id'])
+          badge_template = BadgeTemplate.find_by_acclaim_template_id(badges['badge_template']['id'])
           values = {issued_to: badges['issued_to'],
                     acclaim_badge_id: badges['id'],
                     badge_url: badges['badge_url'],

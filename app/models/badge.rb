@@ -24,7 +24,7 @@ class Badge < ActiveRecord::Base
         where("LOWER(badge_templates.badge_name) like LOWER(?) OR
                  LOWER(issued_to) like LOWER(?) OR
                  LOWER(badge_templates.badge_description) like LOWER(?) OR
-                 LOWER(badge_templates.acclaim_badge_template) like LOWER(?)", "%#{value}%", "%#{value}%", "%#{value}%", "%#{value}%")
+                 LOWER(badge_templates.acclaim_template_id) like LOWER(?)", "%#{value}%", "%#{value}%", "%#{value}%", "%#{value}%")
       end
     else
       default_scoped

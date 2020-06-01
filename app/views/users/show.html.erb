@@ -147,10 +147,10 @@
               <div class="col-md-3">
                 <% if badges.badge_url.present? %>
                   <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges.acclaim_badge_id %>">
-                    <%= image_tag(badges.image_url, :style => "width: inherit") %>
+                    <%= image_tag(badges.badge_template.image_url, :style => "width: inherit") %>
                   </a>
                 <% else %>
-                  <%= image_tag(badges.image_url, :style => "width: inherit", 'data-toggle' => "modal", 'data-target' => "#pending_modal") %>
+                  <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", 'data-toggle' => "modal", 'data-target' => "#pending_modal") %>
                 <% end %>
               </div>
             <% end %>
