@@ -8,7 +8,7 @@ namespace :badges do
         if User.where(email: badges['recipient_email']).present? and badges['state'] != "revoked"
           user = User.find_by(email: badges['recipient_email'])
           new_badge = Badge.find_or_create_by(badge_id: badges['id'], user: user)
-          badge_template = BadgeTemplate.find_by_badge_id(badges['badge_template']['id'])
+          badge_template = BadgeTemplate.find_by_acclaim_template_id(badges['badge_template']['id'])
           values = {username: user.username,
                     image_url: badges['badge_template']['image']['url'],
                     description: badges['badge_template']['description'],
@@ -29,7 +29,7 @@ namespace :badges do
     puts "Starting..."
     data = BadgeTemplate.acclaim_api_get_all_badge_templates
     data['data'].each do |badge_template|
-      bt = BadgeTemplate.find_or_create_by(badge_id: badge_template['id'])
+      bt = BadgeTemplate.find_or_create_by(acclaim_template_id: badge_template['id'])
       bt.update_attributes(badge_description: badge_template['description'], badge_name: badge_template['name'], image_url: badge_template['image_url'])
       puts "#{bt.badge_name}: Updated!"
     end
