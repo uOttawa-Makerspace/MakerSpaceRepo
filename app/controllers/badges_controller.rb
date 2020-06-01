@@ -1,7 +1,7 @@
 class BadgesController < DevelopmentProgramsController
   before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstate, :update_badge_template, :update_badge_data]
   before_action :get_rakes, only: [:update_badge_templates, :update_badge_data]
-  after_action :set_orders, only: [:reinstate, :certify]
+  after_action :set_orders, only: [:reinstate]
   before_action :set_orders, only: [:admin]
 
   def index
