@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200601152257) do
+ActiveRecord::Schema.define(version: 20200601160514) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -50,11 +50,11 @@ ActiveRecord::Schema.define(version: 20200601152257) do
   add_index "badge_requirements", ["proficient_project_id"], name: "index_badge_requirements_on_proficient_project_id", using: :btree
 
   create_table "badge_templates", force: :cascade do |t|
-    t.text     "acclaim_badge_id"
+    t.text     "acclaim_template_id"
     t.text     "badge_description"
     t.text     "badge_name"
-    t.datetime "created_at",        null: false
-    t.datetime "updated_at",        null: false
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
     t.string   "image_url"
   end
 
@@ -301,7 +301,6 @@ ActiveRecord::Schema.define(version: 20200601152257) do
     t.string   "level",             default: "Beginner"
     t.integer  "cc",                default: 0
     t.boolean  "proficient",        default: true
-    t.string   "badge_id"
     t.integer  "badge_template_id"
   end
 
