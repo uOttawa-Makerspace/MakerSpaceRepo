@@ -7,7 +7,7 @@
   <%= form_for(@badges, url: {controller: "badges", action: "grant_badge"}, :html => {:method => :get}) do |f| %>
     <div class="form-group">
       <%= label :user_id, "User" %>
-      <%= f.select(:user_id, User.all.pluck(:name, :id) , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "options"}) %>
+      <%= f.select(:user_id, User.joins(:badges).uniq.all.pluck(:name, :id) , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "options"}) %>
       <br>
       <%= f.label :acclaim_badge_id, "Badge that will be acquired" %>
       <%= f.select(:acclaim_badge_id, options_for_select(ProficientProject.where.not(badge_template_id: nil).all.collect {|badge| [ BadgeTemplate.find(badge.badge_template_id).badge_name, BadgeTemplate.find(badge.badge_template_id).acclaim_template_id ] }), {:include_blank => true}, {:class => "form-control"}) %>

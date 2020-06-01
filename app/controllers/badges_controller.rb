@@ -48,9 +48,8 @@ class BadgesController < DevelopmentProgramsController
   def revoke_badge
     begin
       if params[:badge].present?
-        user = User.find(params[:badge][:user_id])
-        acclaim_badge_id = params[:badge][:acclaim_badge_id]
-        badge = Badge.find(acclaim_badge_id)
+        badge = Badge.find_by_acclaim_badge_id(params[:badge][:acclaim_badge_id])
+        order_item = badge.user.order_items.includes(:proficient_project).where(proficient_projects: {badge_template_id: badge.badge_template_id}).last
       else
         order_item = OrderItem.find(params['order_item_id'])
         badge_template = order_item.proficient_project.badge_template
