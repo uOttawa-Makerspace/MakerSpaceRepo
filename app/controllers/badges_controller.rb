@@ -25,12 +25,12 @@ class BadgesController < DevelopmentProgramsController
   def grant_badge
     begin
       user = User.find(params[:badge][:user_id])
-      if user.badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(params[:badge][:badge_id]).id).present? == false
+      if user.badges.where(badge_template_id: BadgeTemplate.find_by_acclaim_template_id(params[:badge][:acclaim_badge_id]).id).present? == false
         @order = Order.create(subtotal: 0, total: 0, user_id: params["badge"]['user_id'], order_status_id: OrderStatus.find_by(name: "Completed"))
         @order.update(order_status: OrderStatus.find_by(name: "Completed"))
-        @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order_id: @order.id, proficient_project_id: ProficientProject.find_by_badge_id(params[:badge][:badge_id]).id)
+        @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order_id: @order.id, proficient_project_id: ProficientProject.find_by_badge_template_id(BadgeTemplate.find_by_acclaim_template_id(params[:badge][:acclaim_badge_id]).id).id)
 
-        redirect_to certify_badges_path(user_id: params[:badge][:user_id], order_item_id: @order_item.id, badge_id: params[:badge][:badge_id], coming_from: "grant")
+        redirect_to certify_badges_path(user_id: params[:badge][:user_id], order_item_id: @order_item.id, badge_id: params[:badge][:acclaim_badge_id], coming_from: "grant")
       else
         flash[:alert] = "The user already has the badge."
         redirect_to new_badge_badges_path
