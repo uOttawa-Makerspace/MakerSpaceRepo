@@ -5,6 +5,7 @@ class BadgesController < DevelopmentProgramsController
   before_action :set_orders, only: [:admin]
 
   def index
+    @order_items = @user.order_items.completed_order.in_progress.joins(proficient_project: :badge_template)
     if (@user.admin? || @user.staff?)
       @acclaim_data = Badge.joins(:badge_template).filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 20).all
     else
@@ -22,9 +23,9 @@ class BadgesController < DevelopmentProgramsController
   end
 
   def grant_badge
-
     begin
-      if User.find(params[:badge][:user_id]).badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(params[:badge][:badge_id]).id).present? == false
+      user = User.find(params[:badge][:user_id])
+      if user.badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(params[:badge][:badge_id]).id).present? == false
         @order = Order.create(subtotal: 0, total: 0, user_id: params["badge"]['user_id'], order_status_id: OrderStatus.find_by(name: "Completed"))
         @order.update(order_status: OrderStatus.find_by(name: "Completed"))
         @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order_id: @order.id, proficient_project_id: ProficientProject.find_by_badge_id(params[:badge][:badge_id]).id)

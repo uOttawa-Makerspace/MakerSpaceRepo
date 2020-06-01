@@ -6,6 +6,7 @@ class OrderItem < ActiveRecord::Base
   belongs_to :proficient_project
   belongs_to :order
   scope :completed_order, -> {joins(:order => :order_status).where(order_statuses: {name: "Completed"})}
+  scope :in_progress, -> {where(status: "In progress")}
 
   def unit_price
     if persisted?
