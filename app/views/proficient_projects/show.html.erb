@@ -8,7 +8,7 @@
   <div class="text-center">
     Badge that will be Awarded:
     <br />
-    <% badge_template = BadgeTemplate.find_by(badge_id: @proficient_project.badge_id) %>
+    <% badge_template = @proficient_project.badge_template %>
     <% if badge_template.present? %>
       <%= image_tag(badge_template.image_url, :style => "width: 100px;") %>
     <% else %>
