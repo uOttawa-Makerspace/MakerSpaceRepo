@@ -2,7 +2,7 @@
 
 FactoryGirl.define do
   factory :badge_template do
-    badge_id "MyText"
+    acclaim_template_id "MyText"
     badge_description "MyText"
     badge_name "MyText"
   end
