@@ -6,9 +6,9 @@ class BadgesController < DevelopmentProgramsController
 
   def index
     if (@user.admin? || @user.staff?)
-      @acclaim_data = Badge.filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 20).all
+      @acclaim_data = Badge.joins(:badge_template).filter_by_attribute(params[:search]).order(user_id: :asc).paginate(:page => params[:page], :per_page => 20).all
     else
-      @acclaim_data = Badge.filter_by_attribute(params[:search]).where(user: @user).paginate(:page => params[:page], :per_page => 20)
+      @acclaim_data = Badge.joins(:badge_template).filter_by_attribute(params[:search]).where(user: @user).paginate(:page => params[:page], :per_page => 20)
     end
     respond_to do |format|
       format.js
@@ -24,12 +24,16 @@ class BadgesController < DevelopmentProgramsController
   def grant_badge
 
     begin
-      @order = Order.create(subtotal: 0, total: 0, user_id: params["badge"]['user_id'], order_status_id: OrderStatus.find_by(name: "Completed"))
-      @order.update(order_status: OrderStatus.find_by(name: "Completed"))
-      @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order_id: @order.id, proficient_project_id: ProficientProject.find_by_badge_id(params[:badge][:badge_id]).id)
+      if User.find(params[:badge][:user_id]).badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(params[:badge][:badge_id]).id).present? == false
+        @order = Order.create(subtotal: 0, total: 0, user_id: params["badge"]['user_id'], order_status_id: OrderStatus.find_by(name: "Completed"))
+        @order.update(order_status: OrderStatus.find_by(name: "Completed"))
+        @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order_id: @order.id, proficient_project_id: ProficientProject.find_by_badge_id(params[:badge][:badge_id]).id)
 
-      redirect_to certify_badges_path(user_id: params["badge"][:user_id], order_item_id: @order_item.id, badge_id: params["badge"][:badge_id], coming_from: "grant")
-
+        redirect_to certify_badges_path(user_id: params[:badge][:user_id], order_item_id: @order_item.id, badge_id: params[:badge][:badge_id], coming_from: "grant")
+      else
+        flash[:alert] = "The user already has the badge."
+        redirect_to new_badge_badges_path
+      end
     rescue
       flash[:alert] = "An error has occurred when creating the badge"
       redirect_to new_badge_badges_path
@@ -51,6 +55,7 @@ class BadgesController < DevelopmentProgramsController
         badge_id = params[:badge_id]
         badge = Badge.find(badge_id)
       end
+
       badge_template_id = user.badges.where(badge_id: badge_id).includes(:badge_template).first.badge_template.badge_id
       response = badge.acclaim_api_revoke_badge
       if response.status == 200
@@ -61,18 +66,17 @@ class BadgesController < DevelopmentProgramsController
         end
         user.badges.find_by_badge_id(badge_id).destroy
         flash[:notice] = "The badge has been revoked to the user"
-        if params[:coming_from] == "admin"
-          redirect_to admin_badges_path
-        else
-          redirect_to new_badge_badges_path
-        end
       else
         flash[:alert] = "An error has occurred when removing the badge"
-        redirect_to new_badge_badges_path
       end
     rescue
       flash[:alert] = "An error has occurred when removing the badge"
-      redirect_to new_badge_badges_path
+    ensure
+      if params[:coming_from] == "admin"
+        redirect_to admin_badges_path
+      else
+        redirect_to new_badge_badges_path
+      end
     end
   end
 
@@ -126,7 +130,14 @@ class BadgesController < DevelopmentProgramsController
     rescue StandardError => e
       flash[:alert] = "An error has occurred when creating the badge: #{e}"
     ensure
-      redirect_to admin_badges_path
+      set_orders
+      if params[:coming_from] == "grant"
+        redirect_to new_badge_badges_path
+      else
+        respond_to do |format|
+          format.js
+        end
+      end
     end
   end
 

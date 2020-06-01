@@ -22,8 +22,10 @@ class Badge < ActiveRecord::Base
         default_scoped
       else
         value = value.split("=").last.gsub('+', ' ')
-        where("LOWER(description) like LOWER(?) OR
-                 LOWER(issued_to) like LOWER(?)", "%#{value}%", "%#{value}%")
+        where("LOWER(badge_templates.badge_name) like LOWER(?) OR
+                 LOWER(issued_to) like LOWER(?) OR
+                 LOWER(badge_templates.badge_description) like LOWER(?) OR
+                 LOWER(badge_templates.badge_id) like LOWER(?)", "%#{value}%", "%#{value}%", "%#{value}%", "%#{value}%")
       end
     else
       default_scoped
