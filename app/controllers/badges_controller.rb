@@ -1,5 +1,5 @@
 class BadgesController < DevelopmentProgramsController
-  before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstate, :update_badge_template, :update_badge_data]
+  before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstate, :update_badge_templates, :update_badge_data]
   before_action :get_rakes, only: [:update_badge_templates, :update_badge_data]
   after_action :set_orders, only: [:reinstate]
   before_action :set_orders, only: [:admin]
@@ -93,7 +93,7 @@ class BadgesController < DevelopmentProgramsController
       order_item = OrderItem.find(params['order_item_id'])
       if order_item.status == "Awarded"
         # TODO: Fix this query when we have a better relation with order_item and badges
-        badge = order_item.order.user.badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(order_item.proficient_project.badge_id).id).last
+        badge = order_item.order.user.badges.where(badge_template: order_item.proficient_project.badge_template).last
         badge.destroy # Acclaim API will be destroy because of before_destroy in Badge model
       end
       order_item.update_attributes(:status => "In progress")
@@ -170,7 +170,7 @@ class BadgesController < DevelopmentProgramsController
     end
 
     def set_orders
-      order_items = OrderItem.completed_order.order(updated_at: :desc).includes(:order => :user).joins(:proficient_project).where.not(:proficient_projects => {badge_id: ""})
+      order_items = OrderItem.completed_order.order(updated_at: :desc).includes(:order => :user).joins(proficient_project: :badge_template)
       @order_items = order_items.where(status: "In progress").paginate(:page => params[:page], :per_page => 20)
       @order_items_done = order_items.where.not(status: "In progress").paginate(:page => params[:page], :per_page => 20)
     end
