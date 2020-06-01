@@ -7,13 +7,10 @@ namespace :badges do
       data['data'].each do |badges|
         if User.where(email: badges['recipient_email']).present? and badges['state'] != "revoked"
           user = User.find_by(email: badges['recipient_email'])
-          new_badge = Badge.find_or_create_by(badge_id: badges['id'], user: user)
+          new_badge = Badge.find_or_create_by(acclaim_badge_id: badges['id'], user: user)
           badge_template = BadgeTemplate.find_by_badge_id(badges['badge_template']['id'])
-          values = {username: user.username,
-                    image_url: badges['badge_template']['image']['url'],
-                    description: badges['badge_template']['description'],
-                    issued_to: badges['issued_to'],
-                    badge_id: badges['id'],
+          values = {issued_to: badges['issued_to'],
+                    acclaim_badge_id: badges['id'],
                     badge_url: badges['badge_url'],
                     badge_template_id: badge_template.id}
           new_badge.update_attributes(values)

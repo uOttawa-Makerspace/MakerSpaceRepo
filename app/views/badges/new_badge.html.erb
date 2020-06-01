@@ -9,8 +9,8 @@
       <%= label :user_id, "User" %>
       <%= f.select(:user_id, User.all.pluck(:name, :id) , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "options"}) %>
       <br>
-      <%= f.label :badge_id, "Badge that will be acquired" %>
-      <%= f.select(:badge_id, options_for_select(ProficientProject.where.not(badge_id: "").all.collect {|badge| [ BadgeTemplate.find_by_badge_id(badge.badge_id).badge_name, badge.badge_id ] }, :selected => f.object.badge_id), {:include_blank => true}, {:class => "form-control"}) %>
+      <%= f.label :acclaim_badge_id, "Badge that will be acquired" %>
+      <%= f.select(:acclaim_badge_id, options_for_select(ProficientProject.where.not(badge_id: "").all.collect {|badge| [ BadgeTemplate.find_by_badge_id(badge.badge_id).badge_name, badge.badge_id ] }), {:include_blank => true}, {:class => "form-control"}) %>
       <br>
       <br>
       <div class="text-center">
@@ -28,8 +28,8 @@
       <%= label :user_id, "User" %>
       <%= f.select(:user_id, User.all.pluck(:name, :id) , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "user_select"}) %>
       <br>
-      <%= f.label :badge_id, "Badge that will be revoked" %>
-      <%= f.select(:badge_id, options_for_select(BadgeTemplate.all.collect {|badge| [ badge.badge_name, badge.badge_id ] }), {:include_blank => true}, {:class => "form-control", :id => "badge_select"}) %>
+      <%= f.label :acclaim_badge_id, "Badge that will be revoked" %>
+      <%= f.select(:acclaim_badge_id, options_for_select(BadgeTemplate.all.collect {|badge| [ badge.badge_name, badge.badge_id ] }), {:include_blank => true}, {:class => "form-control", :id => "badge_select"}) %>
       <br>
       <div class="text-center">
         <%= f.submit "Revoke badge to user", class: "btn btn-danger" %>

@@ -1,6 +1,7 @@
 class BadgeTemplate < ActiveRecord::Base
   has_many :badge_requirements, dependent: :destroy
   has_many :badges
+
   def self.get_badge_name(badge_id)
     badge_template = self.find_by(badge_id: badge_id)
     badge_template.present? ? badge_template.badge_name : "Name not found"
@@ -13,4 +14,5 @@ class BadgeTemplate < ActiveRecord::Base
                          :headers => {"Content-type" => "application/json"})
     JSON.parse(response.body)
   end
+
 end
