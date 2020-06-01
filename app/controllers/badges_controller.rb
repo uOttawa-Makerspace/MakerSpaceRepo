@@ -109,6 +109,7 @@ class BadgesController < DevelopmentProgramsController
       if response.status == 201
         badge_data = JSON.parse(response.body)['data']
         Badge.create(:user_id => user.id,
+                     :issued_to => user.name,
                      :acclaim_badge_id => badge_data['id'],
                      :badge_template_id => badge_template.id)
         order_item.update_attributes(:status => "Awarded")
