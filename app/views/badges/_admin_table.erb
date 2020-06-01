@@ -26,7 +26,7 @@
             <td><%= link_to order_item.order.user.name, order_item.order.user.username %></td>
             <td><%= order_item.proficient_project.badge_template.badge_name %></td>
             <td><%= order_item.proficient_project.title %></td>
-            <td><%= link_to "Award", certify_badges_path(order_item.order.user.id, order_item.id, order_item.proficient_project.badge_template.acclaim_template_id), {data: {confirm: 'Are you sure?'}, remote: true, class: "btn btn-primary"} %></td>
+            <td><%= link_to "Award", certify_badges_path(order_item_id: order_item.id, format: "js"), data: {confirm: "Are you sure? This will give the badge to the user"}, remote: true, class: "btn btn-primary" %></td>
             <td><%= link_to "Revoke", order_item_revoke_path(order_item.id), {data: {confirm: 'Are you sure?'}, remote: true, class: "btn btn-danger"} %></td>
           </tr>
         <% end %>
