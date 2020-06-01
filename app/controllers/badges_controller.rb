@@ -10,7 +10,6 @@ class BadgesController < DevelopmentProgramsController
     else
       @acclaim_data = Badge.joins(:badge_template).filter_by_attribute(params[:search]).where(user: @user).paginate(:page => params[:page], :per_page => 20)
     end
-
     respond_to do |format|
       format.js
       format.html
@@ -25,12 +24,12 @@ class BadgesController < DevelopmentProgramsController
   def grant_badge
 
     begin
-      if User.find(params[:badge][:user_id]).badges.where(badge_template_id: BadgeTemplate.find_by_badge_id(params[:badge][:acclaim_badge_id]).id).present? == false
+      if User.find(params[:badge][:user_id]).badges.where(badge_template_id: BadgeTemplate.find_by_acclaim_template_id(params[:badge][:acclaim_template_id]).id).present? == false
         @order = Order.create(subtotal: 0, total: 0, user_id: params["badge"]['user_id'], order_status_id: OrderStatus.find_by(name: "Completed"))
         @order.update(order_status: OrderStatus.find_by(name: "Completed"))
         @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order_id: @order.id, proficient_project_id: ProficientProject.find_by_badge_id(params[:badge][:badge_id]).id)
 
-        redirect_to certify_badges_path(user_id: params[:badge][:user_id], order_item_id: @order_item.id, badge_id: params[:badge][:acclaim_badge_id], coming_from: "grant")
+        redirect_to certify_badges_path(user_id: params[:badge][:user_id], order_item_id: @order_item.id, badge_id: params[:badge][:badge_id], coming_from: "grant")
       else
         flash[:alert] = "The user already has the badge."
         redirect_to new_badge_badges_path
@@ -49,35 +48,26 @@ class BadgesController < DevelopmentProgramsController
     begin
       if params[:badge].present?
         user = User.find(params[:badge][:user_id])
-        badge_id = params[:badge][:acclaim_badge_id]
-        badge = Badge.find(badge_id)
+        acclaim_badge_id = params[:badge][:acclaim_badge_id]
+        badge = Badge.find(acclaim_badge_id)
       else
-        user = User.find(params[:user_id])
-        badge_id = params[:acclaim_badge_id]
-        badge = Badge.find(badge_id)
+        order_item = OrderItem.find(params['order_item_id'])
+        badge_template = order_item.proficient_project.badge_template
+        user = order_item.order.user
+        badge = user.badges.where(badge_template: badge_template).last
       end
-
-      badge_template_id = user.badges.where(acclaim_badge_id: badge_id).includes(:badge_template).first.badge_template.badge_id
       response = badge.acclaim_api_revoke_badge
       if response.status == 200
-        user.order_items.each do |order_item|
-          if ProficientProject.where(badge_id: badge_template_id).ids.include? order_item.proficient_project_id
-            OrderItem.update(order_item.id, status: "Revoked")
-          end
-        end
-        user.badges.find_by_acclaim_badge_id(badge_id).destroy
-        flash[:notice] = "The badge has been revoked to the user"
+        order_item.update_attributes(status: "Revoked")
+        badge.destroy
+        flash[:notice] = "The badge has been revoked"
       else
-        flash[:alert] = "An error has occurred when removing the badge"
+        flash[:alert] = "An error has occurred when removing the badge: " + JSON.parse(response.body)['data']['message']
       end
-    rescue
-      flash[:alert] = "An error has occurred when removing the badge"
+    rescue StandardError => e
+      flash[:alert] = "An error has occurred when removing the badge: #{e}"
     ensure
-      if params[:coming_from] == "admin"
-        redirect_to admin_badges_path
-      else
-        redirect_to new_badge_badges_path
-      end
+      redirect_to :back
     end
   end
 
@@ -95,7 +85,8 @@ class BadgesController < DevelopmentProgramsController
       if order_item.status == "Awarded"
         # TODO: Fix this query when we have a better relation with order_item and badges
         badge = order_item.order.user.badges.where(badge_template: order_item.proficient_project.badge_template).last
-        badge.destroy # Acclaim API will be destroy because of before_destroy in Badge model
+        badge.acclaim_api_delete_badge
+        badge.destroy
       end
       order_item.update_attributes(:status => "In progress")
       flash[:notice] = "Badge Restored"
@@ -110,16 +101,15 @@ class BadgesController < DevelopmentProgramsController
   def certify
     # TODO Repair the flash messages when reloading with rails
     begin
-      user = User.find(params['user_id'])
-      badge_id = params['badge_id']
       order_item = OrderItem.find(params['order_item_id'])
-      response = Badge.acclaim_api_create_badge(user, badge_id)
+      badge_template = order_item.proficient_project.badge_template
+      user = order_item.order.user
+      response = Badge.acclaim_api_create_badge(user, badge_template.acclaim_template_id)
       if response.status == 201
         badge_data = JSON.parse(response.body)['data']
         Badge.create(:user_id => user.id,
-                     :issued_to => badge_data['issued_to'],
                      :acclaim_badge_id => badge_data['id'],
-                     :badge_template_id => BadgeTemplate.find_by_badge_id(badge_data['badge_template']['id']).id)
+                     :badge_template_id => badge_template.id)
         order_item.update_attributes(:status => "Awarded")
         flash[:notice] = "The badge has been sent to the user !"
       else
