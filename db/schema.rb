@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200527162314) do
+ActiveRecord::Schema.define(version: 20200601152257) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -50,7 +50,7 @@ ActiveRecord::Schema.define(version: 20200527162314) do
   add_index "badge_requirements", ["proficient_project_id"], name: "index_badge_requirements_on_proficient_project_id", using: :btree
 
   create_table "badge_templates", force: :cascade do |t|
-    t.text     "badge_id"
+    t.text     "acclaim_badge_id"
     t.text     "badge_description"
     t.text     "badge_name"
     t.datetime "created_at",        null: false
@@ -258,8 +258,6 @@ ActiveRecord::Schema.define(version: 20200527162314) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
-    t.text     "email"
-    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -292,20 +290,22 @@ ActiveRecord::Schema.define(version: 20200527162314) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
   end
 
   create_table "proficient_projects", force: :cascade do |t|
     t.integer  "training_id"
     t.string   "title"
     t.text     "description"
-    t.datetime "created_at",                       null: false
-    t.datetime "updated_at",                       null: false
-    t.string   "level",       default: "Beginner"
-    t.integer  "cc",          default: 0
-    t.boolean  "proficient",  default: true
+    t.datetime "created_at",                             null: false
+    t.datetime "updated_at",                             null: false
+    t.string   "level",             default: "Beginner"
+    t.integer  "cc",                default: 0
+    t.boolean  "proficient",        default: true
     t.string   "badge_id"
+    t.integer  "badge_template_id"
   end
+
+  add_index "proficient_projects", ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id", using: :btree
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
     t.integer "user_id",               null: false
@@ -615,6 +615,7 @@ ActiveRecord::Schema.define(version: 20200527162314) do
   add_foreign_key "orders", "order_statuses"
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
+  add_foreign_key "proficient_projects", "badge_templates"
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"

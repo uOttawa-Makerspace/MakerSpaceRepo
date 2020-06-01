@@ -4,6 +4,7 @@ class ProficientProject < ActiveRecord::Base
   before_save :capitalize_title
   has_and_belongs_to_many :users
   belongs_to :training
+  belongs_to :badge_template
   has_many :photos,                     dependent: :destroy
   has_many :repo_files,                 dependent: :destroy
   has_many :videos,                     dependent: :destroy
