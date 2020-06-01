@@ -37,4 +37,15 @@ class ProficientProject < ActiveRecord::Base
       self
     end
   end
+
+  def delete_all_badge_requirements
+    self.badge_requirements.destroy_all
+  end
+
+  def create_badge_requirements(badge_requirements_id)
+    badge_requirements_id.each do |requirement_id|
+      badge_template = BadgeTemplate.find_by_id(requirement_id)
+      self.badge_requirements.create(badge_template: badge_template) if badge_template
+    end
+  end
 end
