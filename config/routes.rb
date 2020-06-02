@@ -222,6 +222,8 @@ Rails.application.routes.draw do
       get :reinstate
       get :update_badge_data
       get :update_badge_templates
+      get :populate_grant_users
+      get :populate_revoke_users
     end
   end
 

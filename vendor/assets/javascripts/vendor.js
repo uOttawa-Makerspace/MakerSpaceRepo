@@ -8,7 +8,7 @@
 //= require redactor-rails
 //= require popper
 //= require bootstrap-sprockets
-//= require select2
+//= require select2-full
 //= require turbolinks
 //= require clipboard
 //= require bootbox

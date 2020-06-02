@@ -7,7 +7,7 @@
   <%= form_for(@badges, url: {controller: "badges", action: "grant_badge"}, :html => {:method => :get}) do |f| %>
     <div class="form-group">
       <%= f.label :user_id, "User" %>
-      <%= f.select(:user_id, @all_users , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "options"}) %>
+      <%= f.select(:user_id, "" , {prompt: "Choose User..."} , {:class => "grant_user_select form-control", :id => "grant_user_select"}) %>
       <br>
       <%= f.label :badge_template_id, "Badge that will be acquired" %>
       <%= f.select(:badge_template_id, options_for_select(@badge_templates), {:include_blank => true}, {:class => "form-control"}) %>
@@ -26,7 +26,7 @@
   <%= form_for(@badges, url: {controller: "badges", action: "revoke_badge"}, :html => {:method => :get}) do |f| %>
     <div class="form-group">
       <%= label :user_id, "User" %>
-      <%= f.select(:user_id, @users_with_badges , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "user_select"}) %>
+      <%= f.select(:user_id, "" , {prompt: "Choose User..."} , {:class => "link_pp revoke_user_select form-control", :id => "user_select"}) %>
       <br>
       <%= f.label :acclaim_badge_id, "Badge that will be revoked" %>
       <%= f.select(:acclaim_badge_id, options_for_select(@badge_templates), {:include_blank => true}, {:class => "form-control", :id => "badge_select"}) %>
