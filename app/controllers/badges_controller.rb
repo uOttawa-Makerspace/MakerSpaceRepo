@@ -1,6 +1,5 @@
 class BadgesController < DevelopmentProgramsController
   before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstate, :update_badge_templates, :update_badge_data]
-  before_action :get_rakes, only: [:update_badge_templates, :update_badge_data]
   after_action :set_orders, only: [:reinstate]
   before_action :set_orders, only: [:admin]
 
@@ -169,10 +168,6 @@ class BadgesController < DevelopmentProgramsController
   end
 
   private
-
-    def get_rakes
-      load_rakes
-    end
 
     def set_orders
       order_items = OrderItem.completed_order.order(updated_at: :desc).includes(:order => :user).joins(proficient_project: :badge_template)
