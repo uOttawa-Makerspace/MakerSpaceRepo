@@ -3,6 +3,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :set_proficient_project, only: [:show, :destroy, :edit, :update]
   before_action :grant_access_to_project, only: [:show]
   before_action :set_training_categories, only: [:new, :edit]
+  before_action :set_badge_templates, only: [:new, :edit]
   before_action :set_files_photos_videos, only: [:show, :edit]
 
   def index
@@ -38,7 +39,6 @@ class ProficientProjectsController < DevelopmentProgramsController
       @proficient_project.create_badge_requirements(params[:badge_requirements_id]) if params[:badge_requirements_id].present?
       create_photos
       create_files
-      # create_videos
       flash[:notice] = "Proficient Project successfully created."
       render json: {redirect_uri: "#{proficient_project_path(@proficient_project.id)}"}
     else
@@ -119,12 +119,6 @@ class ProficientProjectsController < DevelopmentProgramsController
       end if params['files'].present?
     end
 
-    # def create_videos
-    #   params['videos'].each do |f|
-    #     Video.create(video: f, proficient_project_id: @proficient_project.id)
-    #   end if params['videos'].present?
-    # end
-
     def set_proficient_project
       @proficient_project = ProficientProject.find(params[:id])
     end
@@ -182,20 +176,14 @@ class ProficientProjectsController < DevelopmentProgramsController
           Video.destroy_all(video_file_name: f.video_file_name, proficient_project_id: @proficient_project.id)
         end
       end if params['deletevideos'].present?
-
-      # params['videos'].each do |f|
-      #   filename = f.original_filename.gsub(" ", "_")
-      #   if @proficient_project.videos.where(video_file_name: filename).blank? #checks if video exists
-      #     Video.create(video: f, proficient_project_id: @proficient_project.id)
-      #   else #updates existant videos
-      #     Video.destroy_all(video_file_name: filename, proficient_project_id: @proficient_project.id)
-      #     Video.create(video: f, proficient_project_id: @proficient_project.id)
-      #   end
-      # end if params['videos'].present?
     end
 
     def get_filter_params
       params.permit(:search, :level, :category, :proficiency, :my_projects)
+    end
+
+    def set_badge_templates
+      @badge_templates = BadgeTemplate.all.order(badge_name: :asc)
     end
 
 end
