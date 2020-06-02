@@ -15,7 +15,7 @@ $(document).ready(function() {
                 for (let i = 0; i < data['badges'].length; i++) {
                     option = document.createElement('option');
                     option.text = data['badges'][i].badge_template.badge_name;
-                    option.value = data['badges'][i].badge_id;
+                    option.value = data['badges'][i].acclaim_badge_id;
                     dropdown.add(option);
                 }
             }

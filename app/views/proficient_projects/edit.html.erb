@@ -36,11 +36,11 @@
               <%= f.label :proficient, "Learning Area (project will be free and in the learning area)" %>
               <br />
               <br />
-              <%= label :badge_requirements, "Prerequisite Badge" %>
-              <%= select_tag :badge_requirements, options_from_collection_for_select(BadgeTemplate.all, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.last.badge_template_id if @proficient_project.badge_requirements.present?)),  {:class => "form-control", :include_blank => "No required badge"} %>
+              <%= label :badge_requirements_id, "Prerequisite Badge (Hold control and click on the badges you want)" %>
+              <%= select_tag :badge_requirements_id, options_from_collection_for_select(BadgeTemplate.all, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => true, :class => "form-control"} %>
               <br>
-              <%= f.label :badge_id, "Badge that will be acquired" %>
-              <%= f.select(:badge_id, options_for_select(BadgeTemplate.all.collect {|badge| [ badge['badge_name'], badge['badge_id'] ] }, :selected => f.object.badge_id), {:include_blank => "No badge"}, {:class => "form-control"}) %>
+              <%= f.label :badge_template_id, "Badge that will be acquired" %>
+              <%= f.select(:badge_template_id, options_for_select(BadgeTemplate.pluck(:badge_name, :id), :selected => f.object.badge_template_id), {:include_blank => "No badge"}, {:class => "form-control"}) %>
               <br>
               <br>
               <%= label_tag :file, "Project files" %>

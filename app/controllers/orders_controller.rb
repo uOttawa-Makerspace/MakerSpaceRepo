@@ -3,8 +3,8 @@ class OrdersController < DevelopmentProgramsController
   before_action :check_permission, only: :destroy
 
   def index
-    @orders = current_user.orders.where(order_status: OrderStatus.find_by(name: "Completed")).order("created_at DESC")
-    @all_orders = Order.all.order("created_at DESC") if current_user.admin?
+    @orders = current_user.orders.where(order_status: OrderStatus.find_by(name: "Completed")).order("created_at DESC").paginate(:page => params[:page], :per_page => 20)
+    @all_orders = Order.all.order("created_at DESC").paginate(:page => params[:page], :per_page => 20) if current_user.admin?
   end
 
   def create
@@ -31,26 +31,33 @@ class OrdersController < DevelopmentProgramsController
 
   def destroy
     @order = Order.find(params[:id])
+    user = User.find(@order.user_id)
+    @order.order_items.where(status: "Awarded").each do |order_item|
+      badge_template = order_item.proficient_project.badge_template
+      badge = Badge.find_by(user: user, badge_template: badge_template)
+      badge.acclaim_api_delete_badge
+      badge.destroy
+    end
     @order.destroy
     flash[:notice] = "The order was deleted and the CC points returned to the user."
-    redirect_to :back
+    redirect_to orders_path
   end
 
   private
 
-    def check_wallet
-      current_user.update_wallet
-      unless current_user.wallet >= current_order.subtotal.to_i
-        flash[:alert] = "Not enough Cc Points."
-        redirect_to :back
-      end
+  def check_wallet
+    current_user.update_wallet
+    unless current_user.wallet >= current_order.subtotal.to_i
+      flash[:alert] = "Not enough Cc Points."
+      redirect_to :back
+    end
+  end
+
+  def check_permission
+    unless current_user.admin?
+      flash[:alert] = "You can't perform this action"
+      redirect_to :back
     end
 
-    def check_permission
-      unless current_user.admin?
-        flash[:alert] = "You can't perform this action"
-        redirect_to :back
-      end
-
-    end
+  end
 end

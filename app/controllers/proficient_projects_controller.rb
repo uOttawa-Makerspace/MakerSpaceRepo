@@ -35,12 +35,12 @@ class ProficientProjectsController < DevelopmentProgramsController
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
     if @proficient_project.save
-      @proficient_project.badge_requirements.create(badge_template_id: params[:badge_requirements]) if params[:badge_requirements].present?
+      @proficient_project.create_badge_requirements(params[:badge_requirements_id]) if params[:badge_requirements_id].present?
       create_photos
       create_files
       # create_videos
       flash[:notice] = "Proficient Project successfully created."
-      render json: { redirect_uri: "#{proficient_project_path(@proficient_project.id)}" }
+      render json: {redirect_uri: "#{proficient_project_path(@proficient_project.id)}"}
     else
       flash[:alert] = "Something went wrong"
       render json: @proficient_project.errors["title"].first, status: :unprocessable_entity
@@ -60,24 +60,15 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update
-    if @proficient_project.badge_requirements.present?
-      badge_requirement = @proficient_project.badge_requirements.last
-    else
-      badge_requirement = @proficient_project.badge_requirements.create(badge_template_id: params[:badge_requirements])
-    end
-
-    if params[:badge_requirements].present?
-      badge_requirement.update_attributes(badge_template_id: params[:badge_requirements])
-    else
-      badge_requirement.destroy
-    end
+    @proficient_project.delete_all_badge_requirements
+    @proficient_project.create_badge_requirements(params[:badge_requirements_id]) if params[:badge_requirements_id].present?
 
     if @proficient_project.update(proficient_project_params)
       update_photos
       update_files
       update_videos
       flash[:notice] = "Proficient Project successfully updated."
-      render json: { redirect_uri: "#{proficient_project_path(@proficient_project.id)}" }
+      render json: {redirect_uri: "#{proficient_project_path(@proficient_project.id)}"}
     else
       flash[:alert] = "Unable to apply the changes."
       render json: @proficient_project.errors["title"].first, status: :unprocessable_entity
@@ -96,7 +87,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   private
 
     def grant_access_to_project
-      unless current_user.order_items.completed_order.where(proficient_project: @proficient_project ,status:  ["Awarded", "In progress"]).present?
+      unless current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ["Awarded", "In progress"]).present?
         unless current_user.admin? || current_user.staff?
           redirect_to development_programs_path
           flash[:alert] = "You cannot access this area."
@@ -112,7 +103,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     end
 
     def proficient_project_params
-      params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_id)
+      params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id)
     end
 
     def create_photos
@@ -135,7 +126,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     # end
 
     def set_proficient_project
-      @proficient_project= ProficientProject.find(params[:id])
+      @proficient_project = ProficientProject.find(params[:id])
     end
 
     def set_training_categories

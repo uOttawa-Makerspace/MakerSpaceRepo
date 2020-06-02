@@ -17,19 +17,6 @@
 	<body>
 		<%= render 'layouts/header' %>
     <main class="main">
-      <% if flash[:notice] %>
-        <div class="alert alert-warning alert-dismissible" role="alert">
-          <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-          <%= flash[:notice] %>
-        </div>
-      <% end %>
-
-      <% if flash[:alert] %>
-        <div class="alert alert-danger alert-dismissible" role="alert">
-          <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-          <%= flash[:alert] %>
-        </div>
-      <% end %>
       <%= yield %>
     </main>
 		<%= render 'layouts/footer' %>
