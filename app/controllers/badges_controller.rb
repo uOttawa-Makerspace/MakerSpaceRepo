@@ -31,10 +31,11 @@ class BadgesController < DevelopmentProgramsController
       if badge.nil?
         badge_template = BadgeTemplate.find_by_id(params["badge"]['badge_template_id'])
         user_id = params["badge"]['user_id']
-        @order = Order.create(subtotal: 0, total: 0, user_id: user_id, order_status: OrderStatus.find_by(name: "Completed"))
-        @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order: @order, proficient_project: badge_template.proficient_projects.last)
-
-        redirect_to certify_badges_path(user_id: user_id, order_item_id: @order_item.id, coming_from: "grant")
+        order_status = OrderStatus.find_by(name: "Completed")
+        order = Order.create(subtotal: 0, total: 0, user_id: user_id)
+        order.update_attributes(order_status_id: order_status.id)
+        order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order: order, proficient_project: badge_template.proficient_projects.last)
+        redirect_to certify_badges_path(user_id: user_id, order_item_id: order_item.id, coming_from: "grant")
       else
         flash[:alert] = "The user already has the badge."
         redirect_to new_badge_badges_path
