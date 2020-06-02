@@ -33,26 +33,14 @@ class OrdersController < DevelopmentProgramsController
     @order = Order.find(params[:id])
     user = User.find(@order.user_id)
     @order.order_items.where(status: "Awarded").each do |order_item|
-      acclaim_badge_id = user.badges.joins(:badge_template).where(badge_templates: {acclaim_template_id: ProficientProject.find(order_item.proficient_project_id).badge_id}).first.acclaim_badge_id
-      begin
-        response = Excon.put('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/' + acclaim_badge_id + "/revoke",
-                             :user => Rails.application.secrets.acclaim_api || ENV.fetch('acclaim_api'),
-                             :password => '',
-                             :headers => {"Content-type" => "application/json"},
-                             :query => {:reason => "Admin revoked badge", :suppress_revoke_notification_email => false}
-
-        )
-        if response.status == 200
-          Badge.find_by_acclaim_badge_id(acclaim_badge_id).destroy
-        else
-          flash[:alert] = "An error occurred while trying to delete the order."
-          redirect_to orders_path
-        end
-      end
-      @order.destroy
-      flash[:notice] = "The order was deleted and the CC points returned to the user."
-      redirect_to orders_path
+      badge_template = order_item.proficient_project.badge_template
+      badge = Badge.find_by(user: user, badge_template: badge_template)
+      badge.acclaim_api_delete_badge
+      badge.destroy
     end
+    @order.destroy
+    flash[:notice] = "The order was deleted and the CC points returned to the user."
+    redirect_to orders_path
   end
 
   private
