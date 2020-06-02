@@ -20,6 +20,17 @@ class BadgesController < DevelopmentProgramsController
 
   def new_badge
     @badges = Badge.new
+    @users = User.all
+    if params[:search].present?
+      value = params[:search].split("=").last.gsub('+', ' ')
+      @users = User.joins(:badges).uniq.where("name like ?", "%#{value}%")
+      puts("---")
+      puts(@users)
+    end
+    respond_to do |format|
+      format.js
+      format.html
+    end
   end
 
   def grant_badge
