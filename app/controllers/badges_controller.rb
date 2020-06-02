@@ -75,29 +75,6 @@ class BadgesController < DevelopmentProgramsController
     end
   end
 
-  def populate_badge_list
-    json_data = User.find(params[:user_id]).badges.map do |badges|
-      badges.as_json(include: :badge_template)
-    end
-
-    render json: { badges: json_data }
-  end
-
-  def populate_grant_users
-    json_data = User.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
-      users.as_json
-    end
-
-    render json: { users: json_data }
-  end
-
-  def populate_revoke_users
-    json_data = User.joins(:badges).uniq.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
-      users.as_json
-    end
-    render json: { users: json_data }
-  end
-
   def reinstate
     begin
       order_item = OrderItem.find(params['order_item_id'])
@@ -147,6 +124,29 @@ class BadgesController < DevelopmentProgramsController
         end
       end
     end
+  end
+
+  def populate_badge_list
+    json_data = User.find(params[:user_id]).badges.map do |badges|
+      badges.as_json(include: :badge_template)
+    end
+
+    render json: { badges: json_data }
+  end
+
+  def populate_grant_users
+    json_data = User.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
+      users.as_json
+    end
+
+    render json: { users: json_data }
+  end
+
+  def populate_revoke_users
+    json_data = User.joins(:badges).uniq.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
+      users.as_json
+    end
+    render json: { users: json_data }
   end
 
   def update_badge_data
