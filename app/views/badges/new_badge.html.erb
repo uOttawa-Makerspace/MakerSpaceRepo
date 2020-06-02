@@ -6,11 +6,11 @@
   </div>
   <%= form_for(@badges, url: {controller: "badges", action: "grant_badge"}, :html => {:method => :get}) do |f| %>
     <div class="form-group">
-      <%= label :user_id, "User" %>
-      <%= f.select(:user_id, User.joins(:badges).uniq.all.pluck(:name, :id) , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "options"}) %>
+      <%= f.label :user_id, "User" %>
+      <%= f.select(:user_id, @all_users , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "options"}) %>
       <br>
-      <%= f.label :acclaim_badge_id, "Badge that will be acquired" %>
-      <%= f.select(:acclaim_badge_id, options_for_select(ProficientProject.where.not(badge_template_id: nil).all.collect {|badge| [ BadgeTemplate.find(badge.badge_template_id).badge_name, BadgeTemplate.find(badge.badge_template_id).acclaim_template_id ] }), {:include_blank => true}, {:class => "form-control"}) %>
+      <%= f.label :badge_template_id, "Badge that will be acquired" %>
+      <%= f.select(:badge_template_id, options_for_select(@badge_templates), {:include_blank => true}, {:class => "form-control"}) %>
       <br>
       <br>
       <div class="text-center">
@@ -26,10 +26,10 @@
   <%= form_for(@badges, url: {controller: "badges", action: "revoke_badge"}, :html => {:method => :get}) do |f| %>
     <div class="form-group">
       <%= label :user_id, "User" %>
-      <%= f.select(:user_id, User.all.pluck(:name, :id) , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "user_select"}) %>
+      <%= f.select(:user_id, @users_with_badges , {prompt: "Choose User..."} , {:class => "link_pp form-control", :id => "user_select"}) %>
       <br>
       <%= f.label :acclaim_badge_id, "Badge that will be revoked" %>
-      <%= f.select(:acclaim_badge_id, options_for_select(BadgeTemplate.all.collect {|badge| [ badge.badge_name, badge.acclaim_template_id ] }), {:include_blank => true}, {:class => "form-control", :id => "badge_select"}) %>
+      <%= f.select(:acclaim_badge_id, options_for_select(@badge_templates), {:include_blank => true}, {:class => "form-control", :id => "badge_select"}) %>
       <br>
       <div class="text-center">
         <%= f.submit "Revoke badge to user", class: "btn btn-danger" %>
