@@ -1,8 +1,9 @@
 class BadgesController < DevelopmentProgramsController
   before_action :only_admin_access, only: [:admin, :certify, :new_badge, :grant_badge, :revoke_badge, :reinstate, :update_badge_templates, :update_badge_data]
-  before_action :get_rakes, only: [:update_badge_templates, :update_badge_data]
   after_action :set_orders, only: [:reinstate]
   before_action :set_orders, only: [:admin]
+
+  include BadgesHelper
 
   def index
     @order_items = @user.order_items.completed_order.in_progress.joins(proficient_project: :badge_template)
@@ -75,29 +76,6 @@ class BadgesController < DevelopmentProgramsController
     end
   end
 
-  def populate_badge_list
-    json_data = User.find(params[:user_id]).badges.map do |badges|
-      badges.as_json(include: :badge_template)
-    end
-
-    render json: { badges: json_data }
-  end
-
-  def populate_grant_users
-    json_data = User.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
-      users.as_json
-    end
-
-    render json: { users: json_data }
-  end
-
-  def populate_revoke_users
-    json_data = User.joins(:badges).uniq.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
-      users.as_json
-    end
-    render json: { users: json_data }
-  end
-
   def reinstate
     begin
       order_item = OrderItem.find(params['order_item_id'])
@@ -149,18 +127,36 @@ class BadgesController < DevelopmentProgramsController
     end
   end
 
+  def populate_badge_list
+    json_data = User.find(params[:user_id]).badges.map do |badges|
+      badges.as_json(include: :badge_template)
+    end
+
+    render json: { badges: json_data }
+  end
+
+  def populate_grant_users
+    json_data = User.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
+      users.as_json
+    end
+
+    render json: { users: json_data }
+  end
+
+  def populate_revoke_users
+    json_data = User.joins(:badges).uniq.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
+      users.as_json
+    end
+    render json: { users: json_data }
+  end
+
   def update_badge_data
-    Rake::Task['badges:get_data'].invoke
-    Rake::Task['badges:get_data'].reenable
-    Rake::Task['badges:get_and_update_badge_templates'].reenable
-    flash[:notice] = "Update is now complete!"
+    update_badge_data_helper
     redirect_to admin_badges_path
   end
 
   def update_badge_templates
-    Rake::Task['badges:get_and_update_badge_templates'].invoke
-    Rake::Task['badges:get_and_update_badge_templates'].reenable
-    flash[:notice] = "Update is now complete!"
+    update_badge_templates_helper
     redirect_to admin_badges_path
   end
 
@@ -172,10 +168,6 @@ class BadgesController < DevelopmentProgramsController
   end
 
   private
-
-    def get_rakes
-      load_rakes
-    end
 
     def set_orders
       order_items = OrderItem.completed_order.order(updated_at: :desc).includes(:order => :user).joins(proficient_project: :badge_template)
