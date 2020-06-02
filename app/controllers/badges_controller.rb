@@ -4,6 +4,8 @@ class BadgesController < DevelopmentProgramsController
   after_action :set_orders, only: [:reinstate]
   before_action :set_orders, only: [:admin]
 
+  include BadgesHelper
+
   def index
     @order_items = @user.order_items.completed_order.in_progress.joins(proficient_project: :badge_template)
     if (@user.admin? || @user.staff?)
@@ -150,17 +152,12 @@ class BadgesController < DevelopmentProgramsController
   end
 
   def update_badge_data
-    Rake::Task['badges:get_data'].invoke
-    Rake::Task['badges:get_data'].reenable
-    Rake::Task['badges:get_and_update_badge_templates'].reenable
-    flash[:notice] = "Update is now complete!"
+    update_badge_data_helper
     redirect_to admin_badges_path
   end
 
   def update_badge_templates
-    Rake::Task['badges:get_and_update_badge_templates'].invoke
-    Rake::Task['badges:get_and_update_badge_templates'].reenable
-    flash[:notice] = "Update is now complete!"
+    update_badge_templates_helper
     redirect_to admin_badges_path
   end
 

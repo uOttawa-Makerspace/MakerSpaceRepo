@@ -124,6 +124,8 @@ Rails.application.routes.draw do
   namespace :admin do
     get 'index', path: '/'
 
+    get 'manage_badges'
+
     namespace :report_generator do
       get 'index', path: '/'
       post 'generate', path: '/generate', format: :xlsx
