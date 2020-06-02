@@ -20,37 +20,29 @@ class BadgesController < DevelopmentProgramsController
 
   def new_badge
     @badges = Badge.new
-    @users = User.all
-    if params[:search].present?
-      value = params[:search].split("=").last.gsub('+', ' ')
-      @users = User.joins(:badges).uniq.where("name like ?", "%#{value}%")
-      puts("---")
-      puts(@users)
-    end
-    respond_to do |format|
-      format.js
-      format.html
-    end
+    @all_users = User.all.pluck(:name, :id)
+    @users_with_badges = User.joins(:badges).uniq.all.pluck(:name, :id)
+    @badge_templates = BadgeTemplate.joins(:proficient_projects).pluck(:badge_name, :id)
   end
 
   def grant_badge
     begin
-      user = User.find(params[:badge][:user_id])
-      if user.badges.where(badge_template_id: BadgeTemplate.find_by_acclaim_template_id(params[:badge][:acclaim_badge_id]).id).present? == false
-        @order = Order.create(subtotal: 0, total: 0, user_id: params["badge"]['user_id'], order_status_id: OrderStatus.find_by(name: "Completed"))
-        @order.update(order_status: OrderStatus.find_by(name: "Completed"))
-        @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order_id: @order.id, proficient_project_id: ProficientProject.find_by_badge_template_id(BadgeTemplate.find_by_acclaim_template_id(params[:badge][:acclaim_badge_id]).id).id)
+      badge = Badge.find_by(badge_params)
+      if badge.nil?
+        badge_template = BadgeTemplate.find_by_id(params["badge"]['badge_template_id'])
+        user_id = params["badge"]['user_id']
+        @order = Order.create(subtotal: 0, total: 0, user_id: user_id, order_status: OrderStatus.find_by(name: "Completed"))
+        @order_item = OrderItem.create(unit_price: 0, total_price: 0, quantity: 1, status: "Awarded", order: @order, proficient_project: badge_template.proficient_projects.last)
 
-        redirect_to certify_badges_path(user_id: params[:badge][:user_id], order_item_id: @order_item.id, badge_id: params[:badge][:acclaim_badge_id], coming_from: "grant")
+        redirect_to certify_badges_path(user_id: user_id, order_item_id: @order_item.id, coming_from: "grant")
       else
         flash[:alert] = "The user already has the badge."
         redirect_to new_badge_badges_path
       end
-    rescue
-      flash[:alert] = "An error has occurred when creating the badge"
+    rescue StandardError => e
+      flash[:alert] = "An error has occurred when granting the badge: #{e}"
       redirect_to new_badge_badges_path
     end
-
   end
 
   def admin
@@ -88,6 +80,21 @@ class BadgesController < DevelopmentProgramsController
     end
 
     render json: { badges: json_data }
+  end
+
+  def populate_grant_users
+    json_data = User.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
+      users.as_json
+    end
+
+    render json: { users: json_data }
+  end
+
+  def populate_revoke_users
+    json_data = User.joins(:badges).uniq.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map do |users|
+      users.as_json
+    end
+    render json: { users: json_data }
   end
 
   def reinstate
@@ -173,5 +180,9 @@ class BadgesController < DevelopmentProgramsController
       order_items = OrderItem.completed_order.order(updated_at: :desc).includes(:order => :user).joins(proficient_project: :badge_template)
       @order_items = order_items.where(status: "In progress").paginate(:page => params[:page], :per_page => 20)
       @order_items_done = order_items.where.not(status: "In progress").paginate(:page => params[:page], :per_page => 20)
+    end
+
+    def badge_params
+      params.require(:badge).permit(:user_id, :badge_template_id)
     end
 end
