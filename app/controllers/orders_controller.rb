@@ -3,8 +3,8 @@ class OrdersController < DevelopmentProgramsController
   before_action :check_permission, only: :destroy
 
   def index
-    @orders = current_user.orders.where(order_status: OrderStatus.find_by(name: "Completed")).order("created_at DESC")
-    @all_orders = Order.all.order("created_at DESC") if current_user.admin?
+    @orders = current_user.orders.where(order_status: OrderStatus.find_by(name: "Completed")).order("created_at DESC").paginate(:page => params[:page], :per_page => 20)
+    @all_orders = Order.all.order("created_at DESC").paginate(:page => params[:page], :per_page => 20) if current_user.admin?
   end
 
   def create
