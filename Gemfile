@@ -59,6 +59,7 @@ group :development, :test do
   gem 'byebug', '~> 5.0.0'
   gem 'spring', '~> 1.3.4'
   gem 'railroady'
+  gem 'simplecov', require: false
 end
 
 group :development do
