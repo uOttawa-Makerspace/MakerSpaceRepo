@@ -1,16 +1,25 @@
+
+#default: &default
+#  adapter: postgresql
+#  encoding: unicode
+
 default: &default
   adapter: postgresql
-  database: <%= ENV["DB_NAME"] || "makerspacerepo" %>
-  username: <%= ENV["DB_USERNAME"] || "postgres" %>
-  password: <%= ENV["DB_PASSWORD"] || "postgres" %>
   host: <%= ENV["DB_HOST"] || "localhost" %>
   port: <%= ENV["DB_PORT"] || 5432 %>
 
 development:
   <<: *default
+  database: <%= ENV["DB_NAME"] || "makerspacerepo" %>
+  username: <%= ENV["DB_USERNAME"] || "postgres" %>
+  password: <%= ENV["DB_PASSWORD"] || "postgres" %>
 
 test:
   <<: *default
+  database: makerspacerepo_test
 
 production:
   <<: *default
+  database: <%= ENV["DB_NAME"] || "makerspacerepo" %>
+  username: <%= ENV["DB_USERNAME"] || "postgres" %>
+  password: <%= ENV["DB_PASSWORD"] || "postgres" %>
