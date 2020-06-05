@@ -59,6 +59,7 @@ group :development, :test do
   gem 'byebug', '~> 5.0.0'
   gem 'spring', '~> 1.3.4'
   gem 'railroady'
+  gem 'simplecov', require: false
 end
 
 group :development do
@@ -79,5 +80,4 @@ group :test do
   gem 'database_cleaner', '~> 1.0.1'
   gem 'launchy', '~> 2.3.0'
   gem 'selenium-webdriver', '~> 2.39.0'
-
 end

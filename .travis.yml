@@ -5,7 +5,7 @@ rvm:
 services:
 - postgresql
 before_script:
-- psql -c 'create database makerspacerepo;' -U postgres
+- psql -c 'create database makerspacerepo_test;' -U postgres
 - openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
 jobs:
   include:

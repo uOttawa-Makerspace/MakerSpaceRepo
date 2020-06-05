@@ -31,8 +31,8 @@
               <%= f.label :proficient, "Learning Area (project will be free and in the learning area)" %>
               <br />
               <br />
-              <%= label :badge_requirements_id, "Prerequisite Badge (Hold control and click on the badges you want)" %>
-              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name'), {:multiple => true, :class => "form-control", :include_blank => "No badge required"} %>
+              <%= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)" %>
+              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name'), {:multiple => true, :id => "badge_requirements", :class => "form-control select2"} %>
               <br>
               <%= f.label :badge_template_id, "Badge that will be acquired" %>
               <%= f.select(:badge_template_id, options_for_select(@badge_templates.pluck(:badge_name, :id)), {:include_blank => "No badge"}, {:class => "form-control"}) %>
