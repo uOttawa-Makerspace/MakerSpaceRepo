@@ -1,8 +1,3 @@
-
-#default: &default
-#  adapter: postgresql
-#  encoding: unicode
-
 default: &default
   adapter: postgresql
   host: <%= ENV["DB_HOST"] || "localhost" %>
