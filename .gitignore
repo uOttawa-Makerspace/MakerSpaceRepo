@@ -33,3 +33,6 @@ sunspot-solr.pid
 
 # don't want these going out to the world!
 certs/*
+
+# backport
+config/initializers/backport_pg_12_support_to_rails_4.rb

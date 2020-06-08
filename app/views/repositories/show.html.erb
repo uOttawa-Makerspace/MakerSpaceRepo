@@ -139,7 +139,7 @@
         </div>
       </div>
 
-      <% if @repository.users.pluck(:email).include?(@user.email) ||@user.admin? %>
+      <% if @repository.users.pluck(:email).include?(@user.email) || @user.admin? || @user.staff? %>
         <div class="repo-info-item">
           <div class="title">Link to Project Proposal:</div>
           <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
