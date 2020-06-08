@@ -57,7 +57,7 @@ class ProjectProposalsController < ApplicationController
         create_categories
         format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully created.' }
         format.json { render :show, status: :created, location: @project_proposal }
-        MsrMailer.send_new_project_proposals.deliver
+        MsrMailer.send_new_project_proposals.deliver_now
       else
         format.html { render :new }
         format.json { render json: @project_proposal.errors, status: :unprocessable_entity }
