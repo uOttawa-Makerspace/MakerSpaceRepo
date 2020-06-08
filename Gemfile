@@ -53,6 +53,7 @@ gem 'capistrano-bundler'
 gem 'capistrano-passenger', '>= 0.1.1'
 gem 'capistrano-rbenv', '~> 2.1'
 gem 'net-ssh'
+gem "shopify_app", "~> 7.2"
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
