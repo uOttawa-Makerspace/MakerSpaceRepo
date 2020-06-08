@@ -46,7 +46,9 @@
         <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
           <%= link_to "Redeem", "#", class: "dropdown-item" %>
           <%= link_to "My Coupons", "#", class: "dropdown-item" %>
-          <%= link_to "Settings", new_price_rule_path, class: "dropdown-item" %>
+          <% if current_user.admin? %>
+            <%= link_to "Settings", price_rules_path, class: "dropdown-item" %>
+          <% end %>
         </div>
       </li>
       <% if current_user.admin? %>
