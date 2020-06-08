@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200601160514) do
+ActiveRecord::Schema.define(version: 20200608170821) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -122,6 +122,19 @@ ActiveRecord::Schema.define(version: 20200601160514) do
 
   add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
   add_index "comments", ["user_id"], name: "index_comments_on_user_id", using: :btree
+
+  create_table "discount_codes", force: :cascade do |t|
+    t.integer  "price_rule_id"
+    t.integer  "user_id"
+    t.string   "shopify_discount_code_id"
+    t.string   "code"
+    t.integer  "usage_count"
+    t.datetime "created_at",               null: false
+    t.datetime "updated_at",               null: false
+  end
+
+  add_index "discount_codes", ["price_rule_id"], name: "index_discount_codes_on_price_rule_id", using: :btree
+  add_index "discount_codes", ["user_id"], name: "index_discount_codes_on_user_id", using: :btree
 
   create_table "equipment", force: :cascade do |t|
     t.integer  "repository_id"
@@ -238,6 +251,16 @@ ActiveRecord::Schema.define(version: 20200601160514) do
 
   add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
 
+  create_table "price_rules", force: :cascade do |t|
+    t.string   "shopify_price_rule_id"
+    t.string   "title"
+    t.integer  "value"
+    t.integer  "cc"
+    t.integer  "usage_limit"
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+  end
+
   create_table "print_orders", force: :cascade do |t|
     t.integer  "user_id"
     t.boolean  "approved"
@@ -255,8 +278,6 @@ ActiveRecord::Schema.define(version: 20200601160514) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
-    t.text     "email"
-    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -289,7 +310,6 @@ ActiveRecord::Schema.define(version: 20200601160514) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
   end
 
   create_table "proficient_projects", force: :cascade do |t|
@@ -605,6 +625,8 @@ ActiveRecord::Schema.define(version: 20200601160514) do
   add_foreign_key "certifications", "users"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
+  add_foreign_key "discount_codes", "price_rules"
+  add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "likes", "repositories"
