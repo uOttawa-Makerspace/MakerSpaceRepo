@@ -1,0 +1,25 @@
+<p id="notice"><%= notice %></p>
+
+<h1>Listing Price Rules</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @price_rules.each do |price_rule| %>
+      <tr>
+        <td><%= link_to 'Show', price_rule %></td>
+        <td><%= link_to 'Edit', edit_price_rule_path(price_rule) %></td>
+        <td><%= link_to 'Destroy', price_rule, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Price rule', new_price_rule_path %>
