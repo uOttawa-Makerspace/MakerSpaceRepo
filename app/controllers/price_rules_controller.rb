@@ -25,6 +25,7 @@ class PriceRulesController < DevelopmentProgramsController
   # POST /price_rules.json
   def create
     @price_rule = PriceRule.new(price_rule_params)
+    @price_rule.shopify_price_rule_id = "10"
 
     respond_to do |format|
       if @price_rule.save
