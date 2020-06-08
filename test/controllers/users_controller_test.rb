@@ -37,7 +37,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "new redirects to home if user is signed in" do
     session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
     get :new
     assert_redirected_to root_path, "User is signed in but failed at redirecting to home"
   end
