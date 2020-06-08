@@ -5,7 +5,7 @@ rvm:
 services:
 - postgresql
 before_install: 
-- gem install bundler -v 1.17.3
+- gem install bundler:1.17.3
 before_script:
 - psql -c 'create database makerspacerepo;' -U postgres
 - openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
@@ -14,7 +14,6 @@ jobs:
   - stage: test
     name: Test
     script:
-    - gem install bundler -v 1.17.3
     - bundle exec rake db:migrate RAILS_ENV=test
     - bundle exec rake test RAILS_ENV=test
   - stage: deploy
