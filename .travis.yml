@@ -1,6 +1,5 @@
 language: ruby
-cache: bundler
-dist: xenial
+#cache: bundler
 rvm:
 - 2.5.3
 services:
