@@ -1,5 +1,5 @@
 language: ruby
-#cache: bundler
+cache: bundler
 rvm:
 - 2.5.3
 services:
@@ -12,6 +12,7 @@ jobs:
   - stage: test
     name: Test
     script:
+    - gem install bundler -v 1.17.3
     - bundle exec rake db:migrate RAILS_ENV=test
     - bundle exec rake test RAILS_ENV=test
   - stage: deploy
