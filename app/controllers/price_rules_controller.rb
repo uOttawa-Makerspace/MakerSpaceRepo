@@ -14,10 +14,12 @@ class PriceRulesController < DevelopmentProgramsController
 
   def create
     @price_rule = PriceRule.new(price_rule_params)
-    @price_rule.shopify_price_rule_id = "10"
+
+    @price_rule.shopify_price_rule_id = PriceRule.create_price_rule(@price_rule.title, @price_rule.value)
 
     respond_to do |format|
       if @price_rule.save
+
         format.html { redirect_to price_rules_path, notice: 'Price rule was successfully created.' }
         format.json { render :index, status: :created, location: @price_rule }
       else
