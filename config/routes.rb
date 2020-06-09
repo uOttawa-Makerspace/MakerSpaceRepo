@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   resources :price_rules, only: [:index, :new, :create, :destroy, :edit, :update]
+  resources :discount_codes, only: [:new, :index, :create]
   resources :videos, only: [:index, :new, :create, :destroy]
   get 'videos/:id/download/:filename', to: 'videos#download', constraints: { filename: /.+/ }, as: 'download_video'
 

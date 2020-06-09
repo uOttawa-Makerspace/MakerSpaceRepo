@@ -17,8 +17,12 @@ class DiscountCode < ActiveRecord::Base
     DiscountCode.exists?(code: code)
   end
 
-  def shopify_api_create_discount_code
+  def self.start_session
     start_shopify_session
+  end
+
+  def shopify_api_create_discount_code
+    DiscountCode.start_session
     discount_code = ShopifyAPI::DiscountCode.new
     discount_code.prefix_options[:price_rule_id] = self.price_rule.shopify_price_rule_id
     discount_code.code = self.code
