@@ -2,6 +2,7 @@ class DiscountCodesController < DevelopmentProgramsController
   before_action :set_price_rule, only: :create
   before_action :check_user_wallet, only: :create
 
+
   def index
     @discount_codes = current_user.discount_codes.includes(:price_rule).order(:created_at => :desc)
     @all_discount_codes = DiscountCode.includes(:price_rule).order(:created_at => :desc) if current_user.admin?
@@ -36,6 +37,10 @@ class DiscountCodesController < DevelopmentProgramsController
   end
 
   private
+
+    def webhook_params
+      params.except(:controller, :action, :type)
+    end
 
     def set_price_rule
       @price_rule = PriceRule.find_by_id(params[:price_rule_id])
