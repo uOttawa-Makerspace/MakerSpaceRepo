@@ -10,7 +10,7 @@ class CcMoney < ActiveRecord::Base
 
   def self.make_new_payment(user, cc)
     cc *= -1 if cc > 0
-    cc_money = self.create(user_id: user, cc: cc)
+    cc_money = self.create(user: user, cc: cc)
     user.update_wallet
     self.exists?(id: cc_money.id)
   end
