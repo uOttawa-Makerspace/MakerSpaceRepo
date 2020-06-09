@@ -1,4 +1,5 @@
 class DiscountCode < ActiveRecord::Base
+  include ShopifyConcern
   belongs_to :price_rule
   belongs_to :user
   validates :shopify_discount_code_id, presence: true
@@ -16,13 +17,8 @@ class DiscountCode < ActiveRecord::Base
     DiscountCode.exists?(code: code)
   end
 
-  def self.start_shopify_session
-    shopify_session = ShopifyAPI::Session.new(domain: "SHOP_NAME.myshopify.com", api_version: api_version, token: nil)
-    ShopifyAPI::Base.activate_session(shopify_session)
-  end
-
   def shopify_api_create_discount_code
-    DiscountCode.start_shopify_session
+    start_shopify_session
     discount_code = ShopifyAPI::DiscountCode.new
     discount_code.prefix_options[:price_rule_id] = self.price_rule.shopify_price_rule_id
     discount_code.code = self.code
