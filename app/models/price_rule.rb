@@ -22,10 +22,10 @@ class PriceRule < ActiveRecord::Base
     return price_rule.id
   end
 
-  def self.delete_price_rule(price_rule_id)
+  def self.delete_price_rule_from_shopify(shopify_price_rule_id)
     start_shopify_session
-    price_rule = ShopifyAPI::PriceRule.find(price_rule_id)
-    price_rule.destroy
+    shopify_price_rule = ShopifyAPI::PriceRule.find(shopify_price_rule_id)
+    shopify_price_rule.destroy
   end
 
   def self.update_price_rule(id, title, value)

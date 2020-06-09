@@ -24,10 +24,16 @@ class DiscountCode < ActiveRecord::Base
 
   def shopify_api_create_discount_code
     DiscountCode.start_session
-    discount_code = ShopifyAPI::DiscountCode.new
-    discount_code.prefix_options[:price_rule_id] = self.price_rule.shopify_price_rule_id
-    discount_code.code = self.code
-    discount_code.save
-    discount_code
+    shopify_discount_code = ShopifyAPI::DiscountCode.new
+    shopify_discount_code.prefix_options[:price_rule_id] = self.price_rule.shopify_price_rule_id
+    shopify_discount_code.code = self.code
+    shopify_discount_code.save
+    shopify_discount_code
+  end
+
+  def delete_discount_code_from_shopify
+    DiscountCode.start_session
+    shopify_discount_code = ShopifyAPI::DiscountCode.find(self.shopify_discount_code_id)
+    shopify_discount_code.destroy
   end
 end
