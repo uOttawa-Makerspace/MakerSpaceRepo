@@ -8,4 +8,11 @@ class CcMoney < ActiveRecord::Base
     self.create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, cc: cc)
   end
 
+  def self.make_new_payment(user, cc)
+    cc *= -1 if cc > 0
+    cc_money = self.create(user_id: user, cc: cc)
+    user.update_wallet
+    self.exists?(id: cc_money.id)
+  end
+
 end

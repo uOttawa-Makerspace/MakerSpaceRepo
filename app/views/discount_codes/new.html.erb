@@ -1,12 +1,12 @@
 <br>
 <div class="text-center">
   <h1>Redeem your CC points!</h1>
-  <h5>Get discounts and buy in our <%= link_to 'makerstore', 'http://makerstore.ca/' %></h5>
+  <h5>Get discounts and buy in our <%= link_to 'makerstore', 'http://makerstore.ca/', target: :blank %></h5>
 </div>
 
 <div class="container my-5">
-  <div class="row text-center">
     <% @price_rules.each do |price_rule| %>
+    <div class="row text-center my-4">
       <div class="col">
         <%= price_rule.title %>
       </div>
@@ -17,10 +17,10 @@
         <%= price_rule.cc %>
       </div>
       <div class="col">
-        <%= link_to "Redeem", discount_codes_path(price_rule_id: price_rule.id), method: :post, class:  "btn btn-secondary" %>
+        <%= link_to "Redeem", discount_codes_path(price_rule_id: price_rule.id), method: :post, class:  "btn btn-secondary", data: {confirm: "Are you sure? You can't undo this action."} %>
       </div>
+    </div>
     <% end %>
-  </div>
 </div>
 <br>
 <br>

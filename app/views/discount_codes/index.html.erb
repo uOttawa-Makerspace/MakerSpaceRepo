@@ -7,10 +7,39 @@
     <% @discount_codes.each do |discount_code| %>
     <div class="row text-center">
       <div class="col-12">
-        <%= discount_code.code %>
+        Code (<%= discount_code.price_rule.title %>): <%= discount_code.code %>
       </div>
     </div>
     <% end %>
 </div>
-<br>
-<br>
+<% if current_user.admin? %>
+  <div class="container my-5">
+    <h1 class="text-center"> All Discount Codes Generated</h1>
+    <div class="table-responsive">
+      <table class="table table-striped">
+
+        <tr class="text-center">
+          <th>Date</th>
+          <th>User</th>
+          <th>Title</th>
+          <th>Value</th>
+          <th>CC</th>
+          <th>User Usage</th>
+        </tr>
+
+        <tbody>
+        <% @all_discount_codes.each do |discount_code| %>
+          <tr>
+            <td><%= discount_code.created_at.strftime('%Y/%m/%d-%H:%M') %></td>
+            <td class="username"><%= link_to discount_code.user.name, discount_code.user.username %></td>
+            <td><%= discount_code.price_rule.title %></td>
+            <td><%= discount_code.price_rule.value %></td>
+            <td><%= discount_code.price_rule.cc %></td>
+            <td><%= discount_code.usage_count %></td>
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>
