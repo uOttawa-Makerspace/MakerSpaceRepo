@@ -3,7 +3,6 @@ class PriceRulesController < DevelopmentProgramsController
 
   def index
     @price_rules = PriceRule.all
-    PriceRule.test_price_rule
   end
 
   def new

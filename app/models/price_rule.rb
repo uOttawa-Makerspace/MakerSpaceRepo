@@ -45,14 +45,4 @@ class PriceRule < ActiveRecord::Base
 
   end
 
-  def self.test_price_rule
-    start_shopify_session
-
-    a = ShopifyAPI::PriceRule.all
-    a.each do |b|
-      puts(b.id)
-      puts(b.value)
-    end
-  end
-
 end
