@@ -9,17 +9,18 @@
     <div class="col">
       Coupon Name
     </div>
-  <div class="col">
-    Coupon Value (In $)
+    <div class="col">
+      Coupon Value (In $)
+    </div>
+    <div class="col">
+      Coupon Price (In CC)
+    </div>
+    <div class="col">
+      Redeem
+    </div>
+
   </div>
-  <div class="col">
-    Coupon Price (In CC)
-  </div>
-  <div class="col">
-    Reedem
-  </div>
-  </div>
-    <% @price_rules.each do |price_rule| %>
+  <% @price_rules.each do |price_rule| %>
     <div class="row text-center my-4">
       <div class="col">
         <%= price_rule.title %>
@@ -31,10 +32,10 @@
         <%= price_rule.cc %> CCs
       </div>
       <div class="col">
-        <%= link_to "Redeem", discount_codes_path(price_rule_id: price_rule.id), method: :post, class:  "btn btn-secondary", data: {confirm: "Are you sure? You can't undo this action."} %>
+        <%= link_to "Redeem", discount_codes_path(price_rule_id: price_rule.id), method: :post, class: "btn btn-secondary", data: {confirm: "Are you sure? You can't undo this action."} %>
       </div>
     </div>
-    <% end %>
+  <% end %>
 </div>
 <br>
 <br>
