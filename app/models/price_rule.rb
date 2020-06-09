@@ -7,9 +7,7 @@ class PriceRule < ActiveRecord::Base
   validates :cc, presence: true
 
   def self.create_price_rule(title, value)
-
     start_shopify_session
-
     price_rule = ShopifyAPI::PriceRule.create(
         title: title,
         target_type: "line_item",
@@ -21,28 +19,25 @@ class PriceRule < ActiveRecord::Base
         starts_at: Time.now.iso8601,
         usage_limit: 1
     )
-
     return price_rule.id
   end
 
   def self.delete_price_rule(price_rule_id)
-
     start_shopify_session
-
     price_rule = ShopifyAPI::PriceRule.find(price_rule_id)
     price_rule.destroy
-
   end
 
   def self.update_price_rule(id, title, value)
-
     start_shopify_session
-
     price_rule = ShopifyAPI::PriceRule.find(id)
     price_rule.title = title
     price_rule.value = "-" + value.to_s
     price_rule.save
+  end
 
+  def has_discount_codes?
+    self.discount_codes.present?
   end
 
 end

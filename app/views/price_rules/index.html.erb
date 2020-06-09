@@ -14,7 +14,7 @@
     <% @price_rules.each do |price_rule| %>
       <tr>
         <td scope="row"><%= price_rule.title %></td>
-        <% if DiscountCode.find_by_price_rule_id(price_rule.id).present? %>
+        <% if price_rule.has_discount_codes? %>
           <td>Cannot Edit</td>
         <% else %>
           <td><%= link_to 'Edit', edit_price_rule_path(price_rule), class: "btn btn-primary" %></td>
