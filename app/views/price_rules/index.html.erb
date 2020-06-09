@@ -14,7 +14,11 @@
     <% @price_rules.each do |price_rule| %>
       <tr>
         <td scope="row"><%= price_rule.title %></td>
-        <td><%= link_to 'Edit', edit_price_rule_path(price_rule), class: "btn btn-primary" %></td>
+        <% if DiscountCode.find_by_price_rule_id(price_rule.id).present? %>
+          <td>Cannot Edit</td>
+        <% else %>
+          <td><%= link_to 'Edit', edit_price_rule_path(price_rule), class: "btn btn-primary" %></td>
+        <% end %>
         <td><%= link_to 'Destroy', price_rule, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %></td>
       </tr>
     <% end %>

@@ -3,6 +3,7 @@ class PriceRulesController < DevelopmentProgramsController
 
   def index
     @price_rules = PriceRule.all
+    PriceRule.test_price_rule
   end
 
   def new
@@ -32,8 +33,11 @@ class PriceRulesController < DevelopmentProgramsController
   def update
     respond_to do |format|
       if @price_rule.update(price_rule_params)
-        format.html { redirect_to price_rules_path, notice: 'Price rule was successfully updated.' }
-        format.json { render :index, status: :ok, location: @price_rule }
+
+        PriceRule.update_price_rule(@price_rule.shopify_price_rule_id, @price_rule.title, @price_rule.value)
+
+        format.html { redirect_to price_rules_url, notice: 'Price rule was successfully updated.' }
+        format.json { render :index, status: :ok }
       else
         format.html { render :edit }
         format.json { render json: @price_rule.errors, status: :unprocessable_entity }
@@ -42,6 +46,7 @@ class PriceRulesController < DevelopmentProgramsController
   end
 
   def destroy
+    PriceRule.delete_price_rule(@price_rule.shopify_price_rule_id)
     @price_rule.destroy
     respond_to do |format|
       format.html { redirect_to price_rules_url, notice: 'Price rule was successfully destroyed.' }
