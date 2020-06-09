@@ -47,7 +47,7 @@ class PriceRulesController < DevelopmentProgramsController
   end
 
   def destroy
-    PriceRule.delete_price_rule(@price_rule.shopify_price_rule_id)
+    PriceRule.delete_price_rule_from_shopify(@price_rule.shopify_price_rule_id)
     @price_rule.destroy
     respond_to do |format|
       format.html { redirect_to price_rules_url, notice: 'Price rule was successfully destroyed.' }

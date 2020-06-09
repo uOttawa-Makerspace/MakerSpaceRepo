@@ -13,8 +13,8 @@ class DiscountCodesController < DevelopmentProgramsController
   end
 
   def create
-    payment_confirmation = CcMoney.make_new_payment(current_user, @price_rule.cc)
-    if payment_confirmation
+    cc_money_payment = CcMoney.make_new_payment(current_user, @price_rule.cc)
+    if cc_money_payment.present?
       @discount_code = current_user.discount_codes.new
       @discount_code.code = DiscountCode.generate_code
       @discount_code.price_rule = @price_rule
@@ -23,11 +23,14 @@ class DiscountCodesController < DevelopmentProgramsController
         @discount_code.shopify_discount_code_id = shopify_discount_code.id
         @discount_code.usage_count = shopify_discount_code.usage_count
         if @discount_code.save
+          cc_money_payment.update_attributes(discount_code: @discount_code)
           flash[:notice] = "Discount Code created"
         else
+          cc_money_payment.destroy
           flash[:notice] = "Discount Code not created properly!"
         end
       else
+        cc_money_payment.destroy
         flash[:notice] = "Shopify API not working"
       end
     else

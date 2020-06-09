@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200608170821) do
+ActiveRecord::Schema.define(version: 20200609193019) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -96,8 +96,10 @@ ActiveRecord::Schema.define(version: 20200608170821) do
     t.datetime "updated_at",            null: false
     t.integer  "proficient_project_id"
     t.integer  "order_id"
+    t.integer  "discount_code_id"
   end
 
+  add_index "cc_moneys", ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id", using: :btree
   add_index "cc_moneys", ["order_id"], name: "index_cc_moneys_on_order_id", using: :btree
   add_index "cc_moneys", ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id", using: :btree
 
@@ -278,8 +280,6 @@ ActiveRecord::Schema.define(version: 20200608170821) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
-    t.text     "email"
-    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -312,7 +312,6 @@ ActiveRecord::Schema.define(version: 20200608170821) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
-    t.string   "rfid"
   end
 
   create_table "proficient_projects", force: :cascade do |t|
@@ -623,6 +622,7 @@ ActiveRecord::Schema.define(version: 20200608170821) do
   add_foreign_key "badges", "badge_templates"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
+  add_foreign_key "cc_moneys", "discount_codes"
   add_foreign_key "cc_moneys", "orders"
   add_foreign_key "cc_moneys", "proficient_projects"
   add_foreign_key "certifications", "users"
