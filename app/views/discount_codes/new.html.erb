@@ -1,0 +1,26 @@
+<br>
+<div class="text-center">
+  <h1>Redeem your CC points!</h1>
+  <h5>Get discounts and buy in our <%= link_to 'makerstore', 'http://makerstore.ca/' %></h5>
+</div>
+
+<div class="container my-5">
+  <div class="row text-center">
+    <% @price_rules.each do |price_rule| %>
+      <div class="col">
+        <%= price_rule.title %>
+      </div>
+      <div class="col">
+        <%= price_rule.value %>
+      </div>
+      <div class="col">
+        <%= price_rule.cc %>
+      </div>
+      <div class="col">
+        <%= link_to "Redeem", discount_codes_path(price_rule_id: price_rule.id), method: :post, class:  "btn btn-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+<br>
+<br>
