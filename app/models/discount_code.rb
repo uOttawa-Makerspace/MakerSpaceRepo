@@ -24,6 +24,10 @@ class DiscountCode < ActiveRecord::Base
     start_shopify_session
   end
 
+  def status
+    self.usage_count == 0 ? "Not used" : "Used"
+  end
+
   def shopify_api_create_discount_code
     DiscountCode.start_session
     shopify_discount_code = ShopifyAPI::DiscountCode.new
