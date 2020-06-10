@@ -1,6 +1,11 @@
 Rails.application.routes.draw do
   resources :price_rules, only: [:index, :new, :create, :destroy, :edit, :update]
   resources :discount_codes, only: [:new, :index, :create]
+  resources :custom_webhooks do
+    collection do
+      post :orders_paid
+    end
+  end
 
   resources :shopify_webhooks do
     collection do
