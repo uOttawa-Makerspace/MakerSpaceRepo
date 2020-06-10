@@ -5,8 +5,8 @@ class CustomWebhooksController < ApplicationController
     params.permit!
     discount_code_params = webhook_params.to_h
     if discount_code_params['discount_codes'].present?
-      shopify_discount_code_id = discount_code_params['discount_codes']['id']
-      discount_code = DiscountCode.find_by(shopify_discount_code_id: shopify_discount_code_id)
+      shopify_discount_code = discount_code_params['discount_codes'][0]['code']
+      discount_code = DiscountCode.find_by(code: shopify_discount_code)
       discount_code.update_attributes(usage_count: 1) if discount_code
     end
     head :ok
