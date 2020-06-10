@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class ShopifyWebhooksControllerControllerTest < ActionController::TestCase
+class ShopifyWebhooksControllerTest < ActionController::TestCase
   # test "the truth" do
   #   assert true
   # end
