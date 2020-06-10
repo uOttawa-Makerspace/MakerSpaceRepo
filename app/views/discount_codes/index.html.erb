@@ -1,26 +1,33 @@
 <br>
 <div class="text-center">
-  <h1>You can use these discount codes in our <%= link_to 'makerstore', 'http://makerstore.ca/', target: :blank %></h1>
+  <h1>You can use these discount codes in our <%= link_to 'makerstore', 'http://makerstore.ca/', target: :blank, class: "username" %></h1>
 </div>
 
 <div class="container py-5">
-  <div class="row">
-    <% @discount_codes.each do |discount_code| %>
-      <div class="col-md-12" style="padding-right: 5px; padding-left: 0px; margin-bottom: 5px;">
-        <div class="card" style="width: 100%;  border: 5px dotted #bbb;">
-          <div class="card-body">
-            <h5 class="card-title"><%= discount_code.price_rule.title %></h5>
-            <p class="card-text">
-              Use code : <span id="coupon-<%= discount_code.id %>"><%= discount_code.code %></span>
-              <button class="clipboard-btn btn btn-info float-right" data-toggle="popover" data-trigger="focus" data-content="Copied !" data-placement="left" data-clipboard-action="copy" data-clipboard-target="#coupon-<%= discount_code.id %>">Copy</button>
+  <% if @discount_codes.present? %>
+    <div class="row">
+      <% @discount_codes.each do |discount_code| %>
+        <div class="col-md-12" style="padding-right: 5px; padding-left: 0px; margin-bottom: 5px;">
+          <div class="card" style="width: 100%;  border: 5px dotted #bbb;">
+            <div class="card-body">
+              <h5 class="card-title"><%= discount_code.price_rule.title %></h5>
+              <p class="card-text">
+                Use code : <span id="coupon-<%= discount_code.id %>"><%= discount_code.code %></span>
+                <button class="clipboard-btn btn btn-info float-right" data-toggle="popover" data-trigger="focus" data-content="Copied !" data-placement="left" data-clipboard-action="copy" data-clipboard-target="#coupon-<%= discount_code.id %>">Copy</button>
+            </div>
           </div>
         </div>
-      </div>
+    <% end %>
+    </div>
+  <% else %>
+    <div class="text-center">
+      <p>You don't have any coupons.</p>
+      <p>Redeem your CC points <%= link_to 'here', new_discount_code_path, class: "username" %></p>
+    </div>
   <% end %>
-  </div>
 </div>
 
-<% if current_user.admin? %>
+<% if current_user.admin? && @all_discount_codes.present? %>
   <div class="container my-5">
     <h1 class="text-center"> All Discount Codes Generated</h1>
     <div class="table-responsive">
