@@ -4,7 +4,8 @@ class DiscountCodesController < DevelopmentProgramsController
 
 
   def index
-    @discount_codes = current_user.discount_codes.includes(:price_rule).order(:created_at => :desc)
+    @discount_codes = current_user.discount_codes.includes(:price_rule).where(usage_count: 0).order(:created_at => :desc)
+    @expired_codes = current_user.discount_codes.includes(:price_rule).where.not(usage_count: 0).count
     @all_discount_codes = DiscountCode.includes(:price_rule).order(:created_at => :desc) if current_user.admin?
   end
 
