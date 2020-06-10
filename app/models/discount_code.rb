@@ -28,7 +28,7 @@ class DiscountCode < ActiveRecord::Base
     if code.usage_count == 0
       "Not used"
     else
-      "used"
+      "Used"
     end
   end
 
