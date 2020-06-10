@@ -5,6 +5,8 @@ class DiscountCode < ActiveRecord::Base
   has_many :cc_moneys, dependent: :destroy
   validates :shopify_discount_code_id, presence: true
   validates :code, presence: true
+  scope :used_code, -> {where(usage_count: 1)}
+  scope :not_used, -> {where(usage_count: 0)}
 
   def self.generate_code
     code = SecureRandom.hex(15)
