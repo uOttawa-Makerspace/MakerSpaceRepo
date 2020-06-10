@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200601160514) do
+ActiveRecord::Schema.define(version: 20200609193019) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -96,8 +96,10 @@ ActiveRecord::Schema.define(version: 20200601160514) do
     t.datetime "updated_at",            null: false
     t.integer  "proficient_project_id"
     t.integer  "order_id"
+    t.integer  "discount_code_id"
   end
 
+  add_index "cc_moneys", ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id", using: :btree
   add_index "cc_moneys", ["order_id"], name: "index_cc_moneys_on_order_id", using: :btree
   add_index "cc_moneys", ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id", using: :btree
 
@@ -122,6 +124,19 @@ ActiveRecord::Schema.define(version: 20200601160514) do
 
   add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
   add_index "comments", ["user_id"], name: "index_comments_on_user_id", using: :btree
+
+  create_table "discount_codes", force: :cascade do |t|
+    t.integer  "price_rule_id"
+    t.integer  "user_id"
+    t.string   "shopify_discount_code_id"
+    t.string   "code"
+    t.integer  "usage_count"
+    t.datetime "created_at",               null: false
+    t.datetime "updated_at",               null: false
+  end
+
+  add_index "discount_codes", ["price_rule_id"], name: "index_discount_codes_on_price_rule_id", using: :btree
+  add_index "discount_codes", ["user_id"], name: "index_discount_codes_on_user_id", using: :btree
 
   create_table "equipment", force: :cascade do |t|
     t.integer  "repository_id"
@@ -237,6 +252,16 @@ ActiveRecord::Schema.define(version: 20200601160514) do
   end
 
   add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
+
+  create_table "price_rules", force: :cascade do |t|
+    t.string   "shopify_price_rule_id"
+    t.string   "title"
+    t.integer  "value"
+    t.integer  "cc"
+    t.integer  "usage_limit"
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+  end
 
   create_table "print_orders", force: :cascade do |t|
     t.integer  "user_id"
@@ -600,11 +625,14 @@ ActiveRecord::Schema.define(version: 20200601160514) do
   add_foreign_key "badges", "badge_templates"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
+  add_foreign_key "cc_moneys", "discount_codes"
   add_foreign_key "cc_moneys", "orders"
   add_foreign_key "cc_moneys", "proficient_projects"
   add_foreign_key "certifications", "users"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
+  add_foreign_key "discount_codes", "price_rules"
+  add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "likes", "repositories"

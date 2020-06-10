@@ -7,9 +7,6 @@
   <div class="collapse navbar-collapse" id="navbarSupportedContent2">
     <ul class="navbar-nav mx-auto">
       <li class="nav-item">
-        <%= link_to "Getting Started", development_programs_path, class: "nav-link"%>
-      </li>
-      <li class="nav-item">
         <%= link_to "Learning Area", proficient_projects_path(proficiency: false), class: "nav-link"%>
       </li>
       <li class="nav-item dropdown">
@@ -41,6 +38,18 @@
       </li>
       <li class="nav-item">
         <%= link_to "Orders", orders_path, class: "nav-link"%>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Coupons
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+          <%= link_to "Redeem", new_discount_code_path, class: "dropdown-item" %>
+          <%= link_to "My Coupons", discount_codes_path, class: "dropdown-item" %>
+          <% if current_user.admin? %>
+            <%= link_to "Settings", price_rules_path, class: "dropdown-item" %>
+          <% end %>
+        </div>
       </li>
       <% if current_user.admin? %>
         <li class="nav-item dropdown">
