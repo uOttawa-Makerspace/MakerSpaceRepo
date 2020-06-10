@@ -50,8 +50,8 @@
             <td><%= discount_code.created_at.strftime('%Y/%m/%d-%H:%M') %></td>
             <td class="username"><%= link_to discount_code.user.name, discount_code.user.username %></td>
             <td><%= discount_code.price_rule.title %></td>
-            <td><%= discount_code.price_rule.value %></td>
-            <td><%= discount_code.price_rule.cc %></td>
+            <td>$<%= discount_code.price_rule.value %></td>
+            <td><%= discount_code.price_rule.cc %> CCs</td>
             <td><%= discount_code.usage_count %></td>
           </tr>
         <% end %>
