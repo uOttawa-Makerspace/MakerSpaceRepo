@@ -7,12 +7,6 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :shopify_webhooks do
-    collection do
-      post :response
-    end
-  end
-
   resources :videos, only: [:index, :new, :create, :destroy]
   get 'videos/:id/download/:filename', to: 'videos#download', constraints: { filename: /.+/ }, as: 'download_video'
 
