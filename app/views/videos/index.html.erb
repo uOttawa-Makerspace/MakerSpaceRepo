@@ -1,0 +1,14 @@
+<div class="container p-5">
+  <div class="row text-center">
+    <% @videos.each do |f| %>
+      <div class="col-md-4" style="margin-bottom: 100px">
+        <h5><%= link_to f.proficient_project.title, f.proficient_project %></h5>
+        <h5><%= f.processed ? "<h5 class='text-success'>Done<h5>".html_safe : "<h5 class='text-danger'>In progress...<h5>".html_safe  %></h5>
+        <%= link_to "Delete", f, method: :delete, data: {confirm: "Are you sure?"} , class: "btn btn-danger" %>
+        <video autobuffer="autobuffer" preload="auto" controls="controls" width="100%" height="100%" >
+          <source  src="<%= f.video.url%>"  />
+        </video>
+      </div>
+    <% end %>
+  </div>
+</div>

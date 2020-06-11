@@ -1,0 +1,48 @@
+<script>
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+<br>
+<div class="by-5">
+  <%= form_tag(badges_path, method: :get) do %>
+    <div class="form-inline">
+      <%= fa_icon 'search', class: "fa-2x pr-2" %>
+      <%= text_field_tag(:search, "", placeholder: "Search by Badge Name, User, Description ...", class: 'form-control col-md-4 search_bar') %>
+    </div>
+  <% end %>
+</div>
+
+<div class="badge_list">
+  <%= render 'badges/badge_list' %>
+</div>
+
+<% if @order_items.present? %>
+  <h2 style="text-align: center">My Pending Badges</h2>
+  <p class="text-center">Before receiving these badges, you need to complete the project related to the badge and show it to Development Program Admin. For any questions, please contact your Proficient Project Administrator.</p>
+  <div class="row">
+    <% @order_items.each do |order_item| %>
+      <div class="col-md-3" style="opacity: 0.3;">
+        <%= image_tag(order_item.proficient_project.badge_template.image_url, :style => "width: inherit") %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<script type="text/javascript" charset="utf-8">
+
+    $('.search_bar').on('keyup', debounce(function (e) {
+        $.ajax({
+            url: '/badges',
+            data: {search: $(this).serialize()},
+            format: 'js'
+        });
+    }, 100));
+
+    $(function() {
+        $(".badge_list th a, .badge_list .pagination a").on("click", function(){
+            $.getScript(this.href);
+            return false;
+        });
+    });
+</script>

@@ -1,10 +1,6 @@
 <h1>List of prints / Laser
   Cuts    <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %></h1>
 
-<% if flash[:alert] %>
-  <div id="alert"><%= flash[:alert] %></div>
-<% end %>
-
 <% @order.each do |order, order_string| %>
   <% if @print_order.where(order).present? %>
     <h2><%= order_string %></h2>
@@ -15,6 +11,7 @@
         <th style="text-align: center;" scope="col">Identity</th>
         <th style="text-align: center;" scope="col">Type</th>
         <th style="text-align: center;" scope="col">ID</th>
+        <th style="text-align: center;" scope="col">Submitted on</th>
         <th style="text-align: center;" scope="col">Comments</th>
         <th style="text-align: center;" scope="col">STL/SVG</th>
         <% if @user.admin? || @user.staff? %>
@@ -30,37 +27,53 @@
         <th style="text-align: center;" scope="col">Delete</th>
       </tr>
       </thead>
+
       <% @print_order.where(order).each do |prints| %>
         <tbody>
         <tr>
           <th class="username" style="text-align: center;" scope="row">
-            <%= link_to prints.user.name, user_path(prints.user.username) %>
+            <%= link_to prints.user.name, user_path(prints.user.username) %> <br>
+            <a href="<%= prints.user.email %>"><%= prints.user.email %></a>
           </th>
+
           <% if (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") %>
             <td>Internal</td>
           <% else %>
             <td>External</td>
           <% end %>
-          <% if prints.order_type == 0 %>
-            <% if prints.grams %>
-              <td>3D Printing (<%= prints.grams %> g)</td>
-            <% else %>
-              <td>3D Printing</td>
-            <% end %>
+
+          <% if prints.order_type == 0 and prints.grams %>
+            <td>3D Printing (<%= prints.grams %> g)</td>
+          <% elsif prints.order_type == 0 %>
+            <td>3D Printing</td>
           <% elsif prints.order_type == 1 %>
             <td>Laser Cutting</td>
           <% else %>
             <td>Unknown</td>
           <% end %>
+
           <td style="text-align: center;"><%= prints.id %></td>
+
+          <td style="text-align: center;">
+            <% if prints.created_at %>
+              Submitted on <%= prints.created_at.to_formatted_s(:short) %>
+            <% else %>
+              Approved
+            <% end %>
+          </td>
+
           <td><%= prints.comments %></td>
+
           <td>
             <% if prints.file_file_name %>
               <a href="<%= prints.file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>">
                 <button class="btn btn-primary">Download</button>
               </a>
+            <% else %>
+              Not Available
             <% end %>
           </td>
+
           <% if @user.admin? || @user.staff? %>
             <td>
               <% if prints.final_file_file_name %>
@@ -72,132 +85,35 @@
               <% end %>
             </td>
           <% end %>
-          <% if prints.expedited == true %>
-            <td>Yes</td>
-          <% else %>
-            <td>No</td>
-          <% end %>
 
+          <td>
+            <% if prints.expedited == true %>
+              <b>Yes</b>
+            <% else %>
+              No
+            <% end %>
+          </td>
+
+          <td>
           <% if @user.admin? %>
             <% if prints.approved %>
-              <td>Approved</td>
+              Approved
             <% elsif prints.approved == false %>
-              <td>Disapproved</td>
+              Disapproved
             <% else %>
-              <td>
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#quote_modal_<%= prints.id %>">
-                  Approve
-                </button>
-                <div class="modal fade" id="quote_modal_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="quote_modal_<%= prints.id %>" aria-hidden="true">
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Quote</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
-                      </div>
-                      <%= form_for prints, url: print_order_path(prints) do |f| %>
-                        <div class="modal-body">
-                          <%= f.hidden_field :approved, :value => true %>
-                          <% if prints.order_type == 0 and (prints.sst != true) %>
-                            <%= f.label :quote, "Service Charges (In CAD) " %>
-                            <div class="form-group">
-                              <%= f.number_field :service_charge, step: "0.01",placeholder: "20", class: "form-control", :required => true %>
-                            </div>
-                            <%= f.label :quote, "Number of Grams" %>
-                            <div class="form-group">
-                              <%= f.number_field :grams, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
-                            </div>
-                            <%= f.label :quote, "Price Per Gram (In CAD) " %>
-                            <div class="form-group">
-                              <%= f.number_field :price_per_gram, step: "0.01", placeholder: "0.08", class: "form-control", :required => true %>
-                            </div>
-                          <% elsif prints.sst == true %>
-                            <%= f.label :quote, "Service Charges (In CAD) " %>
-                            <div class="form-group">
-                              <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
-                            </div>
-                            <%= f.label :quote, "Hours (In CAD) " %>
-                            <div class="form-group">
-                              <%= f.number_field :hours, step: "0.01", placeholder: "10", class: "form-control", :required => true %>
-                            </div>
-                            <%= f.label :quote, "Price Per Hour (In CAD) " %>
-                            <div class="form-group">
-                              <%= f.number_field :price_per_hour, step: "0.01", placeholder: "30.00", class: "form-control", :required => true %>
-                            </div>
+              <%= render 'staff_approval', prints: prints%>
 
-                          <% else %>
-                            <%= f.label :quote, "Service Charges (In CAD) " %>
-                            <div class="form-group">
-                              <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
-                            </div>
-                            <%= f.label :quote, "Material Cost (In CAD) " %>
-                            <div class="form-group">
-                              <%= f.number_field :material_cost, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
-                            </div>
-                            <%= f.label :quote, "Price For Hours Worked (In CAD) " %>
-                            <div class="form-group">
-                              <%= f.number_field :price_per_hour, step: "0.01", placeholder: "15.00", class: "form-control", :required => true %>
-                            </div>
-                          <% end %>
-                          <div class="form-group">
-                            <%= f.label :final_file, "PDF/GCode" %>
-                            <%= f.file_field :final_file, style: "display: block!important;" %>
-                          </div>
-
-                          <div class="form-group">
-                            <%= f.text_field :staff_comments, placeholder: "I will need to add supports", class: "form-control" %>
-                          </div>
-                        </div>
-                        <div class="modal-footer">
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                          <button class="btn btn-primary" onClick="checkFile(this.form)" type="button">Approve</button>
-                        </div>
-                      <% end %>
-                    </div>
-                  </div>
-                </div>
-                <br><br>
-
-                <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#disapprove_<%= prints.id %>">
-                  Disapprove
-                </button>
-                <div class="modal fade" id="disapprove_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="disapprove_<%= prints.id %>" aria-hidden="true">
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Quote</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
-                      </div>
-                      <%= form_for prints, url: print_order_path(prints) do |f| %>
-                        <div class="modal-body">
-                          <%= f.hidden_field :approved, :value => false %>
-                          <%= f.label :staff_comments, "Comments (Why is it not approved ?)" %>
-                          <div class="form-group">
-                            <%= f.text_field :staff_comments, placeholder: "The size won't fit", class: "form-control" %>
-                          </div>
-                        </div>
-                        <div class="modal-footer">
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                          <button class="btn btn-danger" type="submit">Disapprove</button>
-                        </div>
-                      <% end %>
-                    </div>
-                  </div>
-                </div>
             <% end %>
           <% else %>
             <% if prints.approved %>
-              <td>Approved</td>
+              Approved
             <% elsif prints.approved == false %>
-              <td>Disapproved</td>
+              Disapproved
             <% else %>
-              <td>Not Yet</td>
+              Not Yet
             <% end %>
           <% end %>
+          </td>
 
           <% if prints.user_id == @user.id and prints.approved %>
             <td>
@@ -262,7 +178,8 @@
             <% elsif prints.user_approval == false %>
               <td>Won't be printed</td>
             <% elsif prints.printed %>
-              <td>Printed<br><%= link_to 'Invoice', print_order_invoice_url(prints), method: :get,class: "btn btn-primary", target: :_blank %></td>
+              <td>Printed<br><%= link_to 'Invoice', print_order_invoice_url(prints), method: :get, class: "btn btn-primary", target: :_blank %>
+              </td>
             <% elsif prints.printed == false %>
               <td>Not Printed</td>
             <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>

@@ -1,0 +1,77 @@
+<% provide(:title, "New Proficient Project") %>
+<section class="card">
+  <div class="col-lg-7 mx-auto">
+    <br />
+    <h2 class="text-center">New Proficient Project</h2>
+      <div class="row">
+        <div class="col-lg-12">
+          <%= form_for @proficient_project, url: {controller: "proficient_projects", action: "create"}, html: {multipart: true} do |f| %>
+            <div class="form-group">
+              <%= f.label :title, "Title*" %>
+              <%= f.text_field :title, id:"repository_title", placeholder: "Title of the proficient project...", class: 'form-control', required: true %>
+              <br />
+              <%= f.label :description, "Description*" %>
+              <%= f.text_area :description, placeholder: "Description of the proficient project...", class: 'form-control', required: true, id: 'redactor' %>
+              <br />
+              <%= f.label :training_id, "Category*" %>
+              <%= f.select(:training_id, @training_categories , {} , {:class => "form-control"}) %>
+              <br />
+              <%= f.label :level, "Level*" %>
+              <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
+              <br />
+              <%= f.label :cc, "Cc Points (leave it 0 if the project is for the learning area)" %>
+              <%= f.number_field(:cc, :class => "form-control") %>
+              <br />
+              <%= f.label :proficient, "Project Type:" %>
+              <br />
+              <%= f.radio_button(:proficient, true , :style => 'display:inline') %>
+              <%= f.label :proficient, "Proficient Project (project will be paid)" %>
+              <br />
+              <%= f.radio_button(:proficient, false , :style => 'display:inline') %>
+              <%= f.label :proficient, "Learning Area (project will be free and in the learning area)" %>
+              <br />
+              <br />
+              <%= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)" %>
+              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name'), {:multiple => true, :id => "badge_requirements", :class => "form-control select2"} %>
+              <br>
+              <%= f.label :badge_template_id, "Badge that will be acquired" %>
+              <%= f.select(:badge_template_id, options_for_select(@badge_templates.pluck(:badge_name, :id)), {:include_blank => "No badge"}, {:class => "form-control"}) %>
+              <br>
+              <br>
+              <%= label_tag :file, "Project files"%>
+              <label class="custom-instructable-upload">
+                <%= file_field_tag 'files[]', type: :files, multiple: true %>
+                Choose files...
+              </label>
+              <div id="file-container"></div>
+              <br />
+              <%= label_tag :photo, "Gallery*" %>
+              <div class="repo-image mx-auto">
+                <div id="dragndrop">
+                  <%= fa_icon 'cloud-upload' %>
+                  <p>Drag &amp; Drop</p>
+                </div>
+                <label class="custom-image-upload">
+                  <%= file_field_tag 'images[]', type: :files, multiple: true %>
+                  or choose an image...
+                </label>
+              </div>
+              <div id="image-container" class="mx-auto"></div>
+
+              <br />
+
+              <div class="text-center">
+                <%= f.submit "Create Proficient Project", class: "btn btn-primary", id: "waiting-save-button" %>
+                <br />
+                <br />
+                This could take several minutes. Do not refresh this page.
+                <br />
+                <span id="status-save"> </span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+    </div>
+  </div>
+</section>
+

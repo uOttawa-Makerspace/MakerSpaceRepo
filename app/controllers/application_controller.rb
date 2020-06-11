@@ -6,11 +6,19 @@ class ApplicationController < ActionController::Base
 
   before_action :set_locale
   before_action :set_last_seen_at, if: proc { signed_in? && (current_user.last_seen_at.nil? || current_user.last_seen_at < 15.minutes.ago) }
-
+  helper_method :current_order
 
   def set_locale
     I18n.locale = params[:locale] || session[:locale] || I18n.default_locale
     session[:locale] = I18n.locale
+  end
+
+  def current_order
+    if !session[:order_id].nil?
+      Order.find(session[:order_id])
+    else
+      Order.new
+    end
   end
 
   private

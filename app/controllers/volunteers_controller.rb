@@ -23,8 +23,9 @@ class VolunteersController < ApplicationController
     if current_user.staff?
       flash[:notice] = "You already have access to the Volunteer Area."
     else
+      Program.create(user_id: current_user.id, program_type: Program::VOLUNTEER)
       current_user.update_attributes(:role => "volunteer")
-      Skill.create(:user_id => user.id)
+      Skill.create(:user_id => current_user.id)
       flash[:notice] = "You've joined the Volunteer Program"
     end
     redirect_to volunteers_path

@@ -1,0 +1,21 @@
+<% if status == 0 %>
+  <%= render 'interested_volunteer' %>
+  <hr />
+  <%= render 'interested_dev_program' %>
+<% elsif status == 1 %>
+  <%= render 'congratulations_volunteer' %>
+  <hr />
+  <%= render 'congratulations_dev_program' %>
+<% elsif status == 2 %>
+  <%= render 'already_volunteer' %>
+  <hr />
+  <%= render 'congratulations_dev_program' %>
+<% elsif status == 3 %>
+  <%= render 'congratulations_volunteer' %>
+  <hr />
+  <%= render 'already_dev_program' %>
+<% elsif status == 4 %>
+  <%= render 'already_volunteer' %>
+  <hr />
+  <%= render 'already_dev_program' %>
+<% end  %>

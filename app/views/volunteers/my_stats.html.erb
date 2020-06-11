@@ -82,7 +82,7 @@
         <% @certifications.each do |cert| %>
           <div class="col-md-4 text-center my-3">
             <b><%= cert.training.name %> </b> <br />
-            <%= image_tag(cert.get_badge_path, class: "badges") %>
+            <%= image_tag(cert.get_badge_path, class: "skills-badges") %>
             <br />
             <%= cert.training_session.level %>
           </div>
@@ -94,7 +94,7 @@
         <% @remaining_trainings.each do |training| %>
           <div class="col-md-4 text-center my-3">
             <b><%= training.name %> </b> <br />
-            <%= image_tag("badges/none.png", class: "badges") %>
+            <%= image_tag("badges/none.png", class: "skills-badges") %>
             <br />
             None
           </div>

@@ -39,6 +39,37 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "badge_requirements", force: :cascade do |t|
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+    t.integer  "badge_template_id"
+    t.integer  "proficient_project_id"
+  end
+
+  add_index "badge_requirements", ["badge_template_id"], name: "index_badge_requirements_on_badge_template_id", using: :btree
+  add_index "badge_requirements", ["proficient_project_id"], name: "index_badge_requirements_on_proficient_project_id", using: :btree
+
+  create_table "badge_templates", force: :cascade do |t|
+    t.text     "acclaim_template_id"
+    t.text     "badge_description"
+    t.text     "badge_name"
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
+    t.string   "image_url"
+  end
+
+  create_table "badges", force: :cascade do |t|
+    t.string   "issued_to"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
+    t.string   "acclaim_badge_id"
+    t.integer  "user_id"
+    t.string   "badge_url"
+    t.integer  "badge_template_id"
+  end
+
+  add_index "badges", ["badge_template_id"], name: "index_badges_on_badge_template_id", using: :btree
+
   create_table "categories", force: :cascade do |t|
     t.integer  "repository_id"
     t.string   "name"
@@ -61,9 +92,16 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.integer  "user_id"
     t.integer  "volunteer_task_id"
     t.integer  "cc"
-    t.datetime "created_at",        null: false
-    t.datetime "updated_at",        null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+    t.integer  "proficient_project_id"
+    t.integer  "order_id"
+    t.integer  "discount_code_id"
   end
+
+  add_index "cc_moneys", ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id", using: :btree
+  add_index "cc_moneys", ["order_id"], name: "index_cc_moneys_on_order_id", using: :btree
+  add_index "cc_moneys", ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id", using: :btree
 
   create_table "certifications", force: :cascade do |t|
     t.integer  "user_id"
@@ -86,6 +124,19 @@ ActiveRecord::Schema.define(version: 20200224233026) do
 
   add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
   add_index "comments", ["user_id"], name: "index_comments_on_user_id", using: :btree
+
+  create_table "discount_codes", force: :cascade do |t|
+    t.integer  "price_rule_id"
+    t.integer  "user_id"
+    t.string   "shopify_discount_code_id"
+    t.string   "code"
+    t.integer  "usage_count"
+    t.datetime "created_at",               null: false
+    t.datetime "updated_at",               null: false
+  end
+
+  add_index "discount_codes", ["price_rule_id"], name: "index_discount_codes_on_price_rule_id", using: :btree
+  add_index "discount_codes", ["user_id"], name: "index_discount_codes_on_user_id", using: :btree
 
   create_table "equipment", force: :cascade do |t|
     t.integer  "repository_id"
@@ -151,6 +202,32 @@ ActiveRecord::Schema.define(version: 20200224233026) do
   add_index "likes", ["repository_id"], name: "index_likes_on_repository_id", using: :btree
   add_index "likes", ["user_id"], name: "index_likes_on_user_id", using: :btree
 
+  create_table "order_items", force: :cascade do |t|
+    t.integer  "proficient_project_id"
+    t.integer  "order_id"
+    t.decimal  "unit_price",            precision: 12, scale: 3
+    t.decimal  "total_price",           precision: 12, scale: 3
+    t.integer  "quantity"
+    t.datetime "created_at",                                                             null: false
+    t.datetime "updated_at",                                                             null: false
+    t.string   "status",                                         default: "In progress"
+  end
+
+  create_table "order_statuses", force: :cascade do |t|
+    t.string   "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "orders", force: :cascade do |t|
+    t.integer  "order_status_id"
+    t.decimal  "subtotal",        precision: 12, scale: 3
+    t.decimal  "total",           precision: 12, scale: 3
+    t.datetime "created_at",                               null: false
+    t.datetime "updated_at",                               null: false
+    t.integer  "user_id"
+  end
+
   create_table "photos", force: :cascade do |t|
     t.integer  "repository_id"
     t.datetime "created_at",            null: false
@@ -176,6 +253,16 @@ ActiveRecord::Schema.define(version: 20200224233026) do
 
   add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
 
+  create_table "price_rules", force: :cascade do |t|
+    t.string   "shopify_price_rule_id"
+    t.string   "title"
+    t.integer  "value"
+    t.integer  "cc"
+    t.integer  "usage_limit"
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+  end
+
   create_table "print_orders", force: :cascade do |t|
     t.integer  "user_id"
     t.boolean  "approved"
@@ -193,6 +280,8 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.text     "staff_comments"
     t.boolean  "expedited"
     t.integer  "order_type",              default: 0
+    t.text     "email"
+    t.text     "name"
     t.datetime "timestamp_approved"
     t.string   "final_file_file_name"
     t.string   "final_file_content_type"
@@ -225,16 +314,22 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.string   "status",       default: "true"
     t.string   "availability", default: "true"
     t.string   "color",        default: "FF0000"
+    t.string   "rfid"
   end
 
   create_table "proficient_projects", force: :cascade do |t|
     t.integer  "training_id"
     t.string   "title"
     t.text     "description"
-    t.datetime "created_at",                       null: false
-    t.datetime "updated_at",                       null: false
-    t.string   "level",       default: "Beginner"
+    t.datetime "created_at",                             null: false
+    t.datetime "updated_at",                             null: false
+    t.string   "level",             default: "Beginner"
+    t.integer  "cc",                default: 0
+    t.boolean  "proficient",        default: true
+    t.integer  "badge_template_id"
   end
+
+  add_index "proficient_projects", ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id", using: :btree
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
     t.integer "user_id",               null: false
@@ -452,16 +547,19 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.boolean  "read_and_accepted_waiver_form", default: false
     t.boolean  "active",                        default: true
     t.datetime "last_seen_at"
+    t.integer  "wallet",                        default: 0
   end
 
   create_table "videos", force: :cascade do |t|
     t.integer  "proficient_project_id"
-    t.datetime "created_at",            null: false
-    t.datetime "updated_at",            null: false
+    t.datetime "created_at",                            null: false
+    t.datetime "updated_at",                            null: false
     t.string   "video_file_name"
     t.string   "video_content_type"
     t.integer  "video_file_size"
     t.datetime "video_updated_at"
+    t.string   "direct_upload_url",                     null: false
+    t.boolean  "processed",             default: false, null: false
   end
 
   add_index "videos", ["proficient_project_id"], name: "index_videos_on_proficient_project_id", using: :btree
@@ -522,17 +620,29 @@ ActiveRecord::Schema.define(version: 20200224233026) do
     t.decimal  "hours",       precision: 5, scale: 2, default: 0.0
   end
 
+  add_foreign_key "badge_requirements", "badge_templates"
+  add_foreign_key "badge_requirements", "proficient_projects"
+  add_foreign_key "badges", "badge_templates"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
+  add_foreign_key "cc_moneys", "discount_codes"
+  add_foreign_key "cc_moneys", "orders"
+  add_foreign_key "cc_moneys", "proficient_projects"
   add_foreign_key "certifications", "users"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
+  add_foreign_key "discount_codes", "price_rules"
+  add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
+  add_foreign_key "order_items", "orders"
+  add_foreign_key "order_items", "proficient_projects"
+  add_foreign_key "orders", "order_statuses"
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
+  add_foreign_key "proficient_projects", "badge_templates"
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"

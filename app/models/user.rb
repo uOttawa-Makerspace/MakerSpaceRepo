@@ -2,17 +2,17 @@ class User < ActiveRecord::Base
   include BCrypt
   include ActiveModel::Serialization
 
-  has_one  :rfid,         dependent: :destroy
-  has_many :upvotes,      dependent: :destroy
-  has_many :comments,     dependent: :destroy
+  has_one :rfid, dependent: :destroy
+  has_many :upvotes, dependent: :destroy
+  has_many :comments, dependent: :destroy
   has_and_belongs_to_many :repositories, dependent: :destroy
   has_many :certifications, dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
   has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories
   has_many :project_proposals
-  has_many :project_joins,     dependent: :destroy
-  has_many :printer_sessions,     dependent: :destroy
+  has_many :project_joins, dependent: :destroy
+  has_many :printer_sessions, dependent: :destroy
   has_many :volunteer_hours
   has_many :volunteer_tasks
   has_one :skill
@@ -25,61 +25,67 @@ class User < ActiveRecord::Base
   has_many :exam_responses
   has_many :print_orders
   has_many :volunteer_task_requests
-  has_many :cc_moneys
+  has_many :cc_moneys, dependent: :destroy
+  has_many :badges, dependent: :destroy
+  has_many :programs, dependent: :destroy
+  has_and_belongs_to_many :proficient_projects
+  has_many :orders, dependent: :destroy
+  has_many :order_items, through: :orders
+  has_many :discount_codes, dependent: :destroy
 
   validates :name,
-    presence: true,
-    length: { maximum: 50 }
+            presence: true,
+            length: {maximum: 50}
 
   validates :username,
-    presence: true,
-    uniqueness: true,
-    format: { with: /\A[a-zA-Z\d]*\z/ },
-    length: { maximum: 20 }
+            presence: true,
+            uniqueness: true,
+            format: {with: /\A[a-zA-Z\d]*\z/},
+            length: {maximum: 20}
 
   validates :email,
-    presence: true,
-    uniqueness: true
+            presence: true,
+            uniqueness: true
 
   validates :how_heard_about_us,
-    length: { maximum: 250 }
+            length: {maximum: 250}
 
   validates :read_and_accepted_waiver_form,
-    inclusion: { in: [true] }, on: :create
+            inclusion: {in: [true]}, on: :create
 
   validates :password,
-    presence: true,
-    confirmation: true,
-    format: { with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/ }
+            presence: true,
+            confirmation: true,
+            format: {with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/}
 
   validates :gender,
-    presence: true,
-    inclusion: { in: ["Male", "Female", "Other", "Prefer not to specify", "unknown"] }
+            presence: true,
+            inclusion: {in: ["Male", "Female", "Other", "Prefer not to specify", "unknown"]}
 
   validates :faculty,
-    presence: true, if: :student?
+            presence: true, if: :student?
 
   validates :program,
-    presence: true, if: :student?
+            presence: true, if: :student?
 
   validates :year_of_study,
-    presence: true, if: :student?
+            presence: true, if: :student?
 
   validates :student_id,
-    presence: true, if: :student?
+            presence: true, if: :student?
 
   validates :identity,
-    presence: true,
-    inclusion: { in: ['grad', 'undergrad', 'faculty_member', 'community_member', 'unknown'] }
+            presence: true,
+            inclusion: {in: ['grad', 'undergrad', 'faculty_member', 'community_member', 'unknown']}
 
   has_attached_file :avatar, :default_url => "default-avatar.png"
   validates_attachment_content_type :avatar, :content_type => /\Aimage\/.*\Z/
 
   scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
-  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
-  scope :frequency_between_dates, -> (start_date, end_date){joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace")}
-  scope :active, -> {where(:active => true)}
-  scope :unknown_identity, -> { where(identity:"unknown") }
+  scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
+  scope :frequency_between_dates, -> (start_date, end_date) { joins(:lab_sessions => :space).where("lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?", start_date, end_date, "Makerspace") }
+  scope :active, -> { where(:active => true) }
+  scope :unknown_identity, -> { where(identity: "unknown") }
 
   def self.authenticate(username_email, password)
     user = User.username_or_email(username_email)
@@ -115,6 +121,14 @@ class User < ActiveRecord::Base
 
   def volunteer?
     self.role.eql?("volunteer")
+  end
+
+  def volunteer_program?
+    self.programs.pluck(:program_type).include?(Program::VOLUNTEER)
+  end
+
+  def dev_program?
+    self.programs.pluck(:program_type).include?(Program::DEV_PROGRAM)
   end
 
 
@@ -177,6 +191,32 @@ class User < ActiveRecord::Base
       trainings << cert.training.id
     end
     return Training.all.where.not(id: trainings)
+  end
+
+  def return_program_status
+    certifications = self.get_certifications_names
+    if !(certifications.include?("3D Printing") && certifications.include?("Basic Training"))
+      status = 0
+    elsif !(self.volunteer? || self.volunteer_program?) && !self.dev_program?
+      status = 1
+    elsif (self.volunteer? || self.volunteer_program?) && !self.dev_program?
+      status = 2
+    elsif !(self.volunteer? || self.volunteer_program?) && self.dev_program?
+      status = 3
+    elsif (self.volunteer? || self.volunteer_program?) && self.dev_program?
+      status = 4
+    end
+    return status
+  end
+
+  def update_wallet
+    self.update_attributes(wallet: self.get_total_cc)
+  end
+
+  def has_required_badges?(badge_requirements)
+      user_badges_set = self.badges.pluck(:badge_template_id).to_set
+      badge_requirements_set = badge_requirements.pluck(:badge_template_id).to_set
+      badge_requirements_set.subset?(user_badges_set)
   end
 
 end

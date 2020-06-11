@@ -12,3 +12,13 @@ soldering:
   id: 3
   name: soldering
   spaces: mtc
+
+basic_training:
+  id: 4
+  name: Basic Training
+  spaces: makerspace, mtc, brunsfield
+
+3d_printing:
+  id: 5
+  name: 3D Printing
+  spaces: makerspace, mtc, brunsfield
