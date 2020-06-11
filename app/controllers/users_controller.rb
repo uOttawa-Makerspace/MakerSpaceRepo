@@ -65,6 +65,16 @@ class UsersController < SessionsController
       else
         @repositories = @repo_user.repositories.public_repos.where(make_id: nil).page params[:page]
       end
+
+      if params[:username] == @user.username
+        @acclaim_badge_url = "https://www.youracclaim.com/earner/earned/share/"
+      else
+        @acclaim_badge_url = "https://www.youracclaim.com/badges/"
+      end
+
+      @acclaim_data = @repo_user.badges
+
+
       @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
       @joined_projects = @user.project_joins
       @photos = photo_hash

@@ -1,0 +1,73 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+
+  <a class="navbar-brand" href="<%= development_programs_path %>">Development<strong>Program</strong></a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarSupportedContent2">
+    <ul class="navbar-nav mx-auto">
+      <li class="nav-item">
+        <%= link_to "Learning Area", proficient_projects_path(proficiency: false), class: "nav-link"%>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Proficient Projects
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+          <% if current_user.admin? %>
+            <%= link_to "New proficient Project", new_proficient_project_path, class: "dropdown-item" %>
+            <div class="dropdown-divider"></div>
+          <% end %>
+          <%= link_to "My Proficient Projects", proficient_projects_path(my_projects: true), class: "dropdown-item"%>
+          <%= link_to "All Proficient Projects", proficient_projects_path(proficiency: true), class: "dropdown-item"%>
+        </div>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Skills/Badge
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+          <%= link_to "Skills", skills_development_programs_path, class: "dropdown-item"%>
+            <div class="dropdown-divider"></div>
+          <%= link_to "Badges", badges_url, class: "dropdown-item"%>
+          <% if current_user.admin? %>
+            <%= link_to "Badges Requests", admin_badges_path, class: "dropdown-item"%>
+            <%= link_to "Grant/Revoke badge to user", new_badge_badges_path, class: "dropdown-item"%>
+          <% end %>
+        </div>
+      </li>
+      <li class="nav-item">
+        <%= link_to "Orders", orders_path, class: "nav-link"%>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Coupons
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+          <%= link_to "Redeem", new_discount_code_path, class: "dropdown-item" %>
+          <%= link_to "My Coupons", discount_codes_path, class: "dropdown-item" %>
+          <% if current_user.admin? %>
+            <%= link_to "Settings", price_rules_path, class: "dropdown-item" %>
+          <% end %>
+        </div>
+      </li>
+      <% if current_user.admin? %>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Videos
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+            <%= link_to "New video", new_video_path, class: "dropdown-item" %>
+            <%= link_to "All videos", videos_path, class: "dropdown-item" %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+    <ul class="navbar-nav ml-auto mr-1">
+      <li class="nav-link">
+        <%= render 'layouts/cart_text' %>
+      </li>
+    </ul>
+  </div>
+
+</nav>

@@ -38,12 +38,12 @@ $(document).on('ready page:load', function () {
         nav.removeClass('transition');
     });
 
-    collapse.on('show.bs.collapse hide.bs.collapse', function () {
-        doTransition(nav.hasClass('static_pages home') && $(window).scrollTop() <= 10 && collapse.hasClass('show'));
+    collapse.on('show.html.erb.bs.collapse hide.bs.collapse', function () {
+        doTransition(nav.hasClass('static_pages home') && $(window).scrollTop() <= 10 && collapse.hasClass('show.html.erb'));
     });
 
     $(window).on('scroll', function () {
-        doTransition(nav.hasClass('static_pages home') && $(window).scrollTop() <= 10 && !collapse.hasClass('show'));
+        doTransition(nav.hasClass('static_pages home') && $(window).scrollTop() <= 10 && !collapse.hasClass('show.html.erb'));
 
         if ($(window).scrollTop() <= 10) {
             chevron.css('opacity', 1);

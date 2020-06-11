@@ -1,0 +1,24 @@
+<% if !@order_item.nil? && @order_item.errors.any? %>
+    <div class="alert alert-danger">
+      <ul>
+        <% @order_item.errors.full_messages.each do |msg| %>
+            <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+<% end %>
+<% if @order_items.size == 0 %>
+    <p class="text-center m-5">
+      There are no items in your shopping cart. <br />
+      Please check our <%= link_to "proficient projects", proficient_projects_path(proficiency: true), class: "text-info" %> and add some items to your cart.
+    </p>
+<% else %>
+    <% @order_items.each do |order_item| %>
+        <%= render 'carts/cart_row', proficient_project: order_item.proficient_project, order_item: order_item, show_total: true %>
+    <% end %>
+    <h6 class="text-center">Order Total: <span style="color: green"><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></span></h6>
+    <br />
+    <div class="text-center">
+      <%= link_to "Confirm order", orders_path, :action => :create, :method => :post, class: "btn btn-secondary", data: {confirm:"Are you sure you want to proceed with the order ?"} %>
+    </div>
+<% end %>

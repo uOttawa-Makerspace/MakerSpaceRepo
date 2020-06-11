@@ -1,0 +1,27 @@
+<section class="p-5">
+  <div class="container text-center">
+    <h2>Skills</h2>
+    <div class="row my-5 mx-auto">
+      <% @certifications.each do |cert| %>
+        <div class="col-md-3 text-center my-3">
+          <b><%= cert.training.name %> </b> <br/>
+          <%= image_tag(cert.get_badge_path, class: "skills-badges") %>
+          <br/>
+          <%= cert.training_session.level %>
+        </div>
+        <br/>
+        <br/>
+        <br/>
+      <% end %>
+
+      <% @remaining_trainings.each do |training| %>
+        <div class="col-md-3 text-center my-3">
+          <b><%= training.name %> </b> <br/>
+          <%= image_tag("badges/none.png", class: "skills-badges") %>
+          <br/>
+          None
+        </div>
+      <% end %>
+    </div>
+  </div>
+</section>

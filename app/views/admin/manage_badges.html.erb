@@ -1,0 +1,15 @@
+<% provide(:title, "Admin Area | Manage Badges") %>
+
+<div class="edit-column">
+  <div class="setting-title">Manage Badges</div>
+  <br>
+  <div>Refresh Badges Data</div><hr>
+  <%= link_to "Refresh Badge Data", admin_manage_badges_path(refresh: "badges"), data: {confirm: "Are you sure? This will update all the badges from the Acclaim website, it will take time, please wait !"}, class: "btn btn-primary" %>
+
+  <br><br>
+  <div>Refresh Badges Templates</div><hr>
+  <%= link_to "Refresh Badge Templates", admin_manage_badges_path(refresh: "templates"), data: {confirm: "Are you sure? This will update all the badge's templates from the Acclaim website, it will take time, please wait !"}, class: "btn btn-primary" %>
+
+  <p>These updates will take a few seconds to be done, please be patient.</p>
+
+</div>

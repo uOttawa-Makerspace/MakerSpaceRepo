@@ -1,0 +1,26 @@
+<div class="container">
+  <div class="row">
+    <div class="col-md-6">
+      <h6><%= proficient_project.title %> (Qty: <%= order_item.quantity.to_i %>)</h6>
+    </div>
+    <div class="col-md-6">
+      <%= form_for order_item, url: {remote: true}, html: {class: "text-right"} do |f| %>
+        <div class="pricing float-right">
+          <h6>Unit Price: <span style="color: green"><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= order_item.unit_price %></span> </h6>
+          <div class="divider"></div>
+          <h6>Sub Total: <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %> <span style="color: green"><%= order_item.total_price %></span></h6>
+          <div class="btn-group">
+            <%#= f.number_field :quantity, value: order_item.quantity.to_i, class: "form-control", min: 1 %>
+            <%= f.hidden_field :quantity, value: order_item.quantity.to_i %>
+            <%= f.hidden_field :proficient_project_id, value: proficient_project.id %>
+            <%#= f.submit "Update", class: "btn btn-primary" %>
+            <%= link_to "Remove", order_item, { data: { confirm: "Are you sure you wish to delete the proficient project '#{order_item.proficient_project.title}' from your cart?" }, method: :delete, remote: true, class: "btn btn-danger" } %>
+          </div>
+        </div>
+         <br>
+        <br>
+      <% end %>
+    </div>
+  </div>
+</div>
+<br />

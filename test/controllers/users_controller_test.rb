@@ -37,7 +37,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "new redirects to home if user is signed in" do
     session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
     get :new
     assert_redirected_to root_path, "User is signed in but failed at redirecting to home"
   end
@@ -53,7 +53,7 @@ class UsersControllerTest < ActionController::TestCase
   #update tests
   test "user should be able to update profile with patch" do
     session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
     patch :update, username: "bob", user: {gender: "Female"} #from male
     assert_equal 'Profile updated successfully.', flash[:notice]
     assert_equal "Female", User.find_by(username: "bob").gender
@@ -65,7 +65,7 @@ class UsersControllerTest < ActionController::TestCase
   #change_password tests
   test "user should be able to change password" do
     session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
     @oldpass = User.find_by(username: "bob").password
     post :change_password, username: "bob.username",
       user: {old_password: "Password1", password: "Password2", password_confirmation: "Password2"}
@@ -77,7 +77,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "user can't change password if old password is wrong" do
     session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
     @oldpass = User.find_by(username: "bob").password
     post :change_password, username: "bob.username",
       user: {old_password: "WrongOldPass1", password: "Password2", password_confirmation: "Password2"}, pword: "Password1"
@@ -89,7 +89,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "user can't change password if passwords don't match" do
     session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
     @oldpass = User.find_by(username: "bob").password
     post :change_password, username: "bob.username",
       user: {old_password: "Password1", password: "Password2", password_confirmation: "WrongConfirmationPass1"}
@@ -101,7 +101,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "admin can view private repositories on user's profile" do
     session[:user_id] = User.find_by(username: "adam").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :show, username: "mary"
     @repo_user = User.find_by username: "mary"
@@ -111,7 +111,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "staff can view private repositories on user's profile" do
     session[:user_id] = User.find_by(username: "olivia").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :show, username: "mary"
     @repo_user = User.find_by username: "mary"
@@ -121,7 +121,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "Regular users cannot view private repos of another user" do
     session[:user_id] = User.find_by(username: "adam").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :show, username: "mary"
     @repo_user = User.find_by username: "mary"
@@ -132,7 +132,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "old valid user should be able to update profile" do
     session[:user_id] = User.find_by(username: "mary").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     patch :update, username: "mary", user: {name: "Mary", gender: "Female", identity: "community_member"}
     assert_equal 'Profile updated successfully.', flash[:notice]
@@ -144,7 +144,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "Profile cannot be updated if input is invalid" do
     session[:user_id] = User.find_by(username: "john").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     patch :update, username: "john", user: {name: "John", gender: "Male", identity: "grad"}
     assert_equal "Could not save changes.", flash[:alert]
@@ -153,7 +153,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "old valid user should be able to update profile with valid inputs" do
     session[:user_id] = User.find_by(username: "john").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     patch :update, username: "john", user: {name: "John", gender: "Male", identity: "grad", student_id: 9876543, faculty: "arts", program: "Honours BA in English", year_of_study: "3"}
     @user = User.find_by(username: "john")
@@ -171,7 +171,7 @@ class UsersControllerTest < ActionController::TestCase
   
   test "user can view their profile" do
     session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     # bob has an invalid repository
     get :show, username: "bob"
@@ -180,7 +180,7 @@ class UsersControllerTest < ActionController::TestCase
 
   test "users can view others' profile" do
     session[:user_id] = User.find_by(username: "adam").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     # bob has an invalid repository
     get :show, username: "bob"

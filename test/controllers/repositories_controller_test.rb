@@ -4,7 +4,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "users can create a repository" do
     session[:user_id] = User.find_by(username: "mary").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     post :create, user_username:"mary", slug:"repository44",
     repository: {id: 44,
@@ -19,7 +19,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "users can update their repository" do
     session[:user_id] = User.find_by(username: "mary").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     patch :update, user_username: "mary", slug: "repository2",
     repository:{description: "mydescription"}
@@ -31,7 +31,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "Changing share type to private happens successfully" do
     session[:user_id] = User.find_by(username: "mary").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     patch :update, user_username: "mary", slug: "repository2",
     repository:{share_type: "private", password: "myPass"}
@@ -44,7 +44,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "Changing share type to public happens successfully" do
     session[:user_id] = User.find_by(username: "mary").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     patch :update, user_username: "mary", slug: "repository2",
     repository:{share_type: "public"}
@@ -57,7 +57,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "Changing private to public happens successfully" do
     session[:user_id] = User.find_by(username: "mary").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     patch :update, user_username: "mary", slug: "repository3",
     repository:{share_type: "public"}
@@ -70,7 +70,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "user can remove repository" do
     session[:user_id] = User.find_by(username: "mary").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     delete :destroy, user_username: "mary", slug: "repository2",
     repository: {}
@@ -80,7 +80,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "unauthorized people will be redirected to password entry page for private repositories" do
     session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :show, user_username: "mary", slug: "repository3"
     assert_redirected_to password_entry_repository_url
@@ -88,7 +88,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "admins have access to private repositories" do
     session[:user_id] = User.find_by(username: "adam").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :show, user_username: "mary", slug: "repository3"
     assert_response :success
@@ -96,7 +96,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "staff have access to private repositories" do
     session[:user_id] = User.find_by(username: "olivia").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :show, user_username: "mary", slug: "repository3"
     assert_response :success
@@ -104,7 +104,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "after entering the password, a regular user can access the private repository" do
     session[:user_id] = User.find_by(username: "adam").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     post :pass_authenticate, user_username: "mary", slug: "repository3", password: "Password1",
     repository:{password: "Password1", slug:"repository3"}
@@ -114,7 +114,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "users can edit their own repository" do
     session[:user_id] = User.find_by(username: "bob").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :edit, user_username: "bob", slug: "repository1"
     assert_response :success
@@ -122,7 +122,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "Admins can edit users' repository" do
     session[:user_id] = User.find_by(username: "adam").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :edit, user_username: "bob", slug: "repository1"
     assert_response :success
@@ -130,7 +130,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "users cannot edit other users' repositories" do
     session[:user_id] = User.find_by(username: "sara").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :edit, user_username: "mary", slug: "repository2"
     assert_equal "You are not allowed to perform this action!", flash[:alert]
@@ -140,7 +140,7 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "repositories without a photo do not break on show" do
     session[:user_id] = User.find_by(username: "mary").id
-    session[:expires_at] = "Sat, 03 Jun 2020 05:01:41 UTC +00:00"
+    session[:expires_at] = "Sat, 03 Jun 2030 05:01:41 UTC +00:00"
 
     get :show, user_username: "bob", slug: "repository4"
     assert_response :success

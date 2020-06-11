@@ -39,29 +39,40 @@ gem 'bootbox-rails', '~>0.4'
 gem 'quick_random_records'
 gem 'wicked_pdf'
 gem 'wkhtmltopdf-binary'
+gem 'paperclip-av-transcoder'
+gem 'sidekiq'
+gem 'excon'
+gem 's3_direct_upload'
+gem 'caxlsx', '~> 3.0.1'
+# Flash messages in JS
+gem 'toastr-rails'
+# Capistrano deployment stuff
+gem 'capistrano', '~> 3.9'
+gem 'capistrano-rails'
+gem 'capistrano-bundler'
+gem 'capistrano-passenger', '>= 0.1.1'
+gem 'capistrano-rbenv', '~> 2.1'
+gem 'net-ssh'
+gem "shopify_app", "~> 7.2"
 
 group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
   gem 'byebug', '~> 5.0.0'
   gem 'spring', '~> 1.3.4'
   gem 'railroady'
+  gem 'simplecov', require: false
 end
 
 group :development do
-  gem "letter_opener"
   gem 'web-console', '~> 2.0'
-  gem "letter_opener" # Open emails in development
-
-  # Capistrano deployment stuff
-  gem 'capistrano', '~> 3.9'
-  gem 'capistrano-rails'
-  gem 'capistrano-bundler'
-  gem 'capistrano-passenger', '>= 0.1.1'
-  gem 'capistrano-rbenv', '~> 2.1'
+  gem 'letter_opener' # Open emails in development
+  gem 'faker', '~> 1.1.2'
 
   # ssh deployment
   gem 'ed25519', '~> 1.2'
   gem 'bcrypt_pbkdf', '~> 1.0'
+
+  gem 'dotenv-rails'
 end
 
 group :test do
@@ -70,5 +81,4 @@ group :test do
   gem 'database_cleaner', '~> 1.0.1'
   gem 'launchy', '~> 2.3.0'
   gem 'selenium-webdriver', '~> 2.39.0'
-
 end
