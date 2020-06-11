@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class ChangeBadgeIdFromProficientProject < ActiveRecord::Migration
+class ChangeBadgeIdFromProficientProject < ActiveRecord::Migration[5.0]
   def change
     transfer_info_from_badge_id_to_badge_template
     remove_column :proficient_projects, :badge_id

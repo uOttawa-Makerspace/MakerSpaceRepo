@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateTrainingSessionsUsersJoinTable < ActiveRecord::Migration
+class CreateTrainingSessionsUsersJoinTable < ActiveRecord::Migration[5.0]
   def change
     create_table :training_sessions_users, id: false do |t|
       t.integer :training_session_id

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class FixCategorieOptions < ActiveRecord::Migration
+class FixCategorieOptions < ActiveRecord::Migration[5.0]
   def up
     @gng1103OptionA = CategoryOption.find_by(name: 'GNG1103')
     @gng1103OptionB = CategoryOption.find_by(name: 'gng1103')

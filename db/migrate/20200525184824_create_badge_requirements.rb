@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateBadgeRequirements < ActiveRecord::Migration
+class CreateBadgeRequirements < ActiveRecord::Migration[5.0]
   def change
     create_table :badge_requirements do |t|
       t.timestamps null: false

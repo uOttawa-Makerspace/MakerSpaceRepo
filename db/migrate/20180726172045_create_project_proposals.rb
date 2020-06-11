@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateProjectProposals < ActiveRecord::Migration
+class CreateProjectProposals < ActiveRecord::Migration[5.0]
   def change
     create_table :project_proposals do |t|
       t.integer :user_id

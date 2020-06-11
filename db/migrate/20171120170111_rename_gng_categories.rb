@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class RenameGngCategories < ActiveRecord::Migration
+class RenameGngCategories < ActiveRecord::Migration[5.0]
   def up
     Category.where(name: 'gng1103').update_all(name: 'gng1103/gng1503')
     CategoryOption.where(name: 'gng1103').update_all(name: 'gng1103/gng1503')

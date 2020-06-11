@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateDiscountCodes < ActiveRecord::Migration
+class CreateDiscountCodes < ActiveRecord::Migration[5.0]
   def change
     create_table :discount_codes do |t|
       t.references :price_rule, index: true, foreign_key: true

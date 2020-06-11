@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateJoinTableUsersRepositories < ActiveRecord::Migration
+class CreateJoinTableUsersRepositories < ActiveRecord::Migration[5.0]
   def change
     create_join_table :users, :repositories do |t|
       # t.index [:user_id, :repository_id]

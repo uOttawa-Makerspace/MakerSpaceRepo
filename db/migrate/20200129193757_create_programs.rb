@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreatePrograms < ActiveRecord::Migration
+class CreatePrograms < ActiveRecord::Migration[5.0]
   def change
     create_table :programs do |t|
       t.integer :user_id

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateExamResponses < ActiveRecord::Migration
+class CreateExamResponses < ActiveRecord::Migration[5.0]
   def change
     create_table :exam_responses do |t|
       t.integer :exam_question_id

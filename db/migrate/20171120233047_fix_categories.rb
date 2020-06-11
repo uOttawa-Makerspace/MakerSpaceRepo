@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class FixCategories < ActiveRecord::Migration
+class FixCategories < ActiveRecord::Migration[5.0]
   def up
     @gng1103CatsA = Category.where(name: 'GNG1103')
     @gng1103CatsA.each do |cat|

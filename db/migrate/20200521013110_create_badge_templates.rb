@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateBadgeTemplates < ActiveRecord::Migration
+class CreateBadgeTemplates < ActiveRecord::Migration[5.0]
   def change
     create_table :badge_templates do |t|
       t.text :badge_id

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class ChangeColumnNamePrintOrder < ActiveRecord::Migration
+class ChangeColumnNamePrintOrder < ActiveRecord::Migration[5.0]
   def change
     rename_column :print_orders, :staffid, :staff_id
     rename_column :print_orders, :UserApproval, :user_approval

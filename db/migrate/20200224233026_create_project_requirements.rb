@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateProjectRequirements < ActiveRecord::Migration
+class CreateProjectRequirements < ActiveRecord::Migration[5.0]
   def change
     create_table :project_requirements do |t|
       t.integer :proficient_project_id

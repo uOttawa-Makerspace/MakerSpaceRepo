@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateUpvotes < ActiveRecord::Migration
+class CreateUpvotes < ActiveRecord::Migration[5.0]
   def change
     create_table :upvotes do |t|
       t.references :user, index: true, foreign_key: true
