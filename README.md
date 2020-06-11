@@ -1,6 +1,7 @@
 # MakerRepo
 A website where makers can publish projects. An initiative by the University of Ottawa's
 [Centre for Entrepreneurship and Engineering Design (CEED)](https://engineering.uottawa.ca/CEED).
+[![Build Status](https://travis-ci.org/uOttawa-Makerspace/MakerSpaceRepo.svg?branch=master)](https://travis-ci.org/uOttawa-Makerspace/MakerSpaceRepo)
 
 ## New Developer Setup
 You must have Git and Ruby 2.5.3 installed. See [the Ruby website](https://www.ruby-lang.org/) for more information.
