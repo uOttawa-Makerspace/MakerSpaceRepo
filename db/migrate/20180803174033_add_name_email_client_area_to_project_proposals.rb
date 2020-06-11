@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddNameEmailClientAreaToProjectProposals < ActiveRecord::Migration
   def change
     add_column :project_proposals, :username, :string

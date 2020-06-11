@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 class SkillsController < ApplicationController
   before_action :current_user
   before_action :signed_in?
   before_action :check_user
-  layout "setting"
+  layout 'setting'
 
   def edit
     @skills = Skill.find(params[:id])
@@ -11,9 +13,9 @@ class SkillsController < ApplicationController
   def update
     skill = Skill.find(params[:id])
     if skill.update(skill_params)
-      flash[:notice] = "Skills updated"
+      flash[:notice] = 'Skills updated'
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = 'Something went wrong'
     end
     redirect_to edit_skill_path
   end
@@ -26,9 +28,8 @@ class SkillsController < ApplicationController
 
   def check_user
     unless current_user.eql?(Skill.find(params[:id]).user) || current_user.admin? || current_user.staff?
-      flash[:alert] = "You are not allowed in this section"
+      flash[:alert] = 'You are not allowed in this section'
       redirect_to root_path
     end
   end
-
 end

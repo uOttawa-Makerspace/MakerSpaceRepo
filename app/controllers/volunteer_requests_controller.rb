@@ -1,22 +1,22 @@
+# frozen_string_literal: true
+
 class VolunteerRequestsController < ApplicationController
   layout 'volunteer'
-  before_action :grant_access, only: [:index, :show]
+  before_action :grant_access, only: %i[index show]
   def index
-    @total_volunteers = User.where(role: "volunteer").count
+    @total_volunteers = User.where(role: 'volunteer').count
     @all_volunteer_requests = VolunteerRequest.all.count
-    @pending_volunteer_requests = VolunteerRequest.not_processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
-    @processed_volunteer_requests = VolunteerRequest.processed.order(created_at: :desc).paginate(:page => params[:page], :per_page => 15)
+    @pending_volunteer_requests = VolunteerRequest.not_processed.order(created_at: :desc).paginate(page: params[:page], per_page: 15)
+    @processed_volunteer_requests = VolunteerRequest.processed.order(created_at: :desc).paginate(page: params[:page], per_page: 15)
   end
 
   def create
     if !VolunteerRequest.find_by(user_id: current_user.id)
       @volunteer_request = VolunteerRequest.new(request_params)
       @volunteer_request.user_id = current_user.id
-      if @volunteer_request.save!
-        flash[:notice] = "You've successfully submitted your volunteer request."
-      end
+      flash[:notice] = "You've successfully submitted your volunteer request." if @volunteer_request.save!
     else
-      flash[:notice] = "You already requested to be a volunteer."
+      flash[:notice] = 'You already requested to be a volunteer.'
     end
     redirect_to root_path
   end
@@ -30,19 +30,19 @@ class VolunteerRequestsController < ApplicationController
   def update_approval
     volunteer_request = VolunteerRequest.find(params[:id])
     user = volunteer_request.user
-    if volunteer_request.update_attributes(:approval => params[:approval])
+    if volunteer_request.update(approval: params[:approval])
       if volunteer_request.approval == true
-        user.update_attributes(:role => "volunteer")
-        Skill.create(:user_id => user.id, :printing => volunteer_request.printing,
-                     :laser_cutting => volunteer_request.laser_cutting, :virtual_reality => volunteer_request.virtual_reality,
-                     :embroidery => volunteer_request.embroidery, :arduino => volunteer_request.arduino,
-                     :soldering => volunteer_request.soldering)
+        user.update(role: 'volunteer')
+        Skill.create(user_id: user.id, printing: volunteer_request.printing,
+                     laser_cutting: volunteer_request.laser_cutting, virtual_reality: volunteer_request.virtual_reality,
+                     embroidery: volunteer_request.embroidery, arduino: volunteer_request.arduino,
+                     soldering: volunteer_request.soldering)
       else
-        user.update_attributes(:role => "regular_user")
+        user.update(role: 'regular_user')
       end
-      flash[:notice] = "Volunteer Request updated"
+      flash[:notice] = 'Volunteer Request updated'
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = 'Something went wrong'
     end
     redirect_to volunteer_requests_path
   end
@@ -50,8 +50,8 @@ class VolunteerRequestsController < ApplicationController
   private
 
   def grant_access
-    if !current_user.staff?
-      flash[:alert] = "You cannot access this area."
+    unless current_user.staff?
+      flash[:alert] = 'You cannot access this area.'
       redirect_to root_path
     end
   end

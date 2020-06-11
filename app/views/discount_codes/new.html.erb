@@ -1,0 +1,29 @@
+<br>
+<div class="text-center">
+  <h1>Redeem your CC points!</h1>
+  <h5>Get discounts and buy in our <%= link_to 'makerstore', 'http://makerstore.ca/', target: :blank %></h5>
+</div>
+
+<div class="container my-5">
+  <% if @price_rules.present? %>
+    <div class="row row-cols-md-2">
+      <% @price_rules.each do |price_rule| %>
+        <div class="card" style="width:18rem; border: 5px dotted #bbb; margin-right: 5px; margin-bottom: 5px;">
+          <div class="card-body">
+            <h5 class="card-title"><%= price_rule.title %></h5>
+            <p class="card-text">Monetary value : $<%= price_rule.value %></p>
+            <p class="card-text">Coupon Price : <%= price_rule.cc %> CCs</p>
+            <%= link_to "Redeem", discount_codes_path(price_rule_id: price_rule.id), method: :post, class: "btn btn-info btn-block", data: {confirm: "Are you sure you want to buy the coupon for #{price_rule.cc} CCs ? You can't undo this action."} %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="text-center">
+      <p>Sorry. At this moment we don't have any coupons to offer.</p>
+      <p>Please come back another day or contact us at uottawa.makerepo@gmail.com</p>
+    </div>
+  <% end %>
+</div>
+<br>
+<br>

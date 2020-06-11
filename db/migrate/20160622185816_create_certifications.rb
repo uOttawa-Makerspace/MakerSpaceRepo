@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateCertifications < ActiveRecord::Migration
   def change
     create_table :certifications do |t|

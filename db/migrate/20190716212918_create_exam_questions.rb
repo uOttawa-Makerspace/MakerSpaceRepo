@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateExamQuestions < ActiveRecord::Migration
   def change
     create_table :exam_questions do |t|

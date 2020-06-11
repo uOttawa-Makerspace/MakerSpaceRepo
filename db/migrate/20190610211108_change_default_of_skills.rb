@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ChangeDefaultOfSkills < ActiveRecord::Migration
   def up
     change_column :skills, :printing, :string, default: 'No Experience'

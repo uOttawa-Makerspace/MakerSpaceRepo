@@ -1,0 +1,45 @@
+<% begin %>
+  <br>
+  <h2 style="text-align: center">Badges</h2>
+
+  <div class="apple_pagination">
+  <%= page_entries_info @acclaim_data, :model => 'badge' %>
+  <%= will_paginate @acclaim_data, :container => false %>
+</div>
+<br>
+<div style="width: 100%;" class="row">
+
+  <% @acclaim_data.each do |badges| %>
+
+    <div class="col-md-3">
+      <p style="text-align: center">
+        <% if badges.user_id.present? %>
+          <%= link_to(badges.issued_to, user_path(User.find(badges.user_id).username)) %>
+        <% else %>
+          <%= badges.issued_to %>
+        <% end %>
+      </p>
+
+      <% if badges.badge_url.present? %>
+        <a style="width: inherit" target="_blank" href="<%= badges.badge_url %>">
+          <%= image_tag(badges.badge_template.image_url, :style => "width: inherit") %>
+        </a>
+      <% else %>
+        <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", "data-toggle" => "tooltip", :title => badges.issued_to + " didn't accept the badge yet") %>
+      <% end %>
+    </div>
+
+  <% end %>
+</div>
+<br>
+<div class="apple_pagination">
+  <%= page_entries_info @acclaim_data, :model => 'badge' %>
+  <%= will_paginate @acclaim_data, :container => false %>
+</div>
+
+<% rescue %>
+<div class="alert alert-danger" style="width: 100%; text-align: center">
+  An error has occurred while getting the badges, try again later or contact technical support. Sorry for the
+  inconvenience.
+</div>
+<% end %>

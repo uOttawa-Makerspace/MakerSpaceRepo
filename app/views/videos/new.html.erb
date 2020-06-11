@@ -1,0 +1,37 @@
+<% provide(:title, "New Video") %>
+<section class="card">
+  <div class="col-lg-7 mx-auto">
+    <br />
+    <h2 class="text-center">New Video</h2>
+    <div class="row">
+      <div class="col-lg-12 text-center">
+        <div class="form-group">
+          <%= select_tag :proficient_project_id, options_for_select(@proficient_projects), :include_blank => 'Choose a Project...',class: "form-control", id: "select_proficient_id", :onchange => 'setProficientProject()', required: true%>
+          <p id="proficient_project"></p>
+
+          <%= s3_uploader_form id: "s3-uploader",
+                               callback_url: videos_url,
+                               callback_param: ["video[direct_upload_url]"],
+                               expiration: 24.hours.from_now.utc.iso8601,
+                               max_file_size: 8000.megabytes do %>
+            <br />
+            <label class="custom-instructable-upload-video d-none" id="choose_video">
+              <%= file_field_tag :file, multiple: true %>
+              Choose videos...
+            </label>
+          <% end %>
+
+          <div id="uploads_container"></div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script id="template-upload" type="text/x-tmpl">
+  <div id="upload_{%=o.unique_id%}" class="upload mx-auto">
+    {%=o.name%}
+    <div class="progress progress-striped active"><div class="bar" style="width: 0%"></div></div>
+  </div>
+</script>

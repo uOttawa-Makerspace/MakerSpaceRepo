@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Rails.application.configure do
   $n_exams_question = 3
   # Settings specified here will take precedence over those in config/application.rb.
@@ -47,34 +49,33 @@ Rails.application.configure do
     c.client_secret    = ENV['GITHUB_APP_KEY_SECRET']
   end
 
-  #SMTP GMail Settings
-  config.action_mailer.default_url_options = { :host => 'localhost:3000'}
+  # SMTP GMail Settings
+  config.action_mailer.default_url_options = { host: 'localhost:3000' }
 
   # Use letter opener to open emails i development mode
   # config.action_mailer.delivery_method = :smtp
   config.action_mailer.delivery_method = :letter_opener
   config.action_mailer.perform_deliveries = true
 
-  #GMAIL SETUP
+  # GMAIL SETUP
   config.action_mailer.smtp_settings = {
-    :address => "smtp.sendgrid.net",
-    :port => 587,
-    :user_name => ENV['SMTP_USER'],
-    :password => ENV['SMTP_PASSWORD'],
-    :authentication => 'plain',
-    :enable_starttls_auto => true
+    address: 'smtp.sendgrid.net',
+    port: 587,
+    user_name: ENV['SMTP_USER'],
+    password: ENV['SMTP_PASSWORD'],
+    authentication: 'plain',
+    enable_starttls_auto: true
   }
-  
+
   # config.force_ssl = true
 
   config.paperclip_defaults = {
-      storage: :s3,
-      s3_region: ENV.fetch('AWS_REGION', "us-west-2"),
-  s3_credentials: {
-          bucket: ENV.fetch('S3_BUCKET_NAME', "makerspace-testing-for-real"),
-          access_key_id: ENV.fetch('AWS_ACCESS_KEY_ID', "wrong"),
-          secret_access_key: ENV.fetch('AWS_SECRET_ACCESS_KEY', "wrong"),
-      }
+    storage: :s3,
+    s3_region: ENV.fetch('AWS_REGION', 'us-west-2'),
+    s3_credentials: {
+      bucket: ENV.fetch('S3_BUCKET_NAME', 'makerspace-testing-for-real'),
+      access_key_id: ENV.fetch('AWS_ACCESS_KEY_ID', 'wrong'),
+      secret_access_key: ENV.fetch('AWS_SECRET_ACCESS_KEY', 'wrong')
+    }
   }
-
 end

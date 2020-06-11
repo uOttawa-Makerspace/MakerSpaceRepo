@@ -1,0 +1,80 @@
+<div class="container">
+  <div class="row">
+    <div class="col-lg-12 text-center mb-4">
+      <h2>Badges' Requests</h2>
+      <div class="apple_pagination">
+        <%= page_entries_info @order_items, :model => 'badge' %>
+        <%= will_paginate @order_items, :container => false %>
+      </div>
+    </div>
+  </div>
+  <% if @order_items.present? %>
+    <div class="text-center">
+      <table class="table table-striped">
+        <tr>
+          <th>Date Updated</th>
+          <th>Name</th>
+          <th>Badge</th>
+          <th>Project</th>
+          <th>Certify</th>
+          <th>Revoke</th>
+        </tr>
+        <tbody>
+        <% @order_items.each do |order_item| %>
+          <tr>
+            <td><%= order_item.updated_at.strftime("%Y/%m/%d - %H:%M") %></td>
+            <td><%= link_to order_item.order.user.name, order_item.order.user.username %></td>
+            <td><%= order_item.proficient_project.badge_template.badge_name %></td>
+            <td><%= order_item.proficient_project.title %></td>
+            <td><%= link_to "Award", certify_badges_path(order_item_id: order_item.id, format: "js"), data: {confirm: "Are you sure? This will give the badge to the user"}, remote: true, class: "btn btn-primary" %></td>
+            <td><%= link_to "Revoke", order_item_revoke_path(order_item.id), {data: {confirm: 'Are you sure?'}, remote: true, class: "btn btn-danger"} %></td>
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-center">No Requests made.</p>
+  <% end %>
+  <br />
+  <h2 class="text-center">Awarded and Revoked Badges</h2>
+  <div class="apple_pagination">
+    <%= page_entries_info @order_items_done, :model => 'badge' %>
+    <%= will_paginate @order_items_done, :container => false %>
+  </div>
+  <% if @order_items_done.present? %>
+    <div class="text-center">
+      <table class="table table-striped">
+        <tr>
+          <th>Date Updated</th>
+          <th>Name</th>
+          <th>Badge</th>
+          <th>Project</th>
+          <th>Status</th>
+          <th>Action</th>
+          <th>Reinstate</th>
+        </tr>
+        <tbody>
+        <% @order_items_done.each do |order_item| %>
+          <tr>
+            <td><%= order_item.updated_at.strftime("%Y/%m/%d - %H:%M") %></td>
+            <td><%= link_to order_item.order.user.name, order_item.order.user.username %></td>
+            <td><%= order_item.proficient_project.badge_template.badge_name %></td>
+            <td><%= order_item.proficient_project.title %></td>
+            <td><%= order_item.status %></td>
+            <% if order_item.status == "Revoked"%>
+              <td><%= link_to "Award", certify_badges_path(:order_item_id => order_item.id, render: "js"), data: {confirm: "Are you sure? This will give the badge to the user"}, remote: true, class: "btn btn-primary" %></td>
+            <% else %>
+              <td><%= link_to "Revoke", revoke_badge_badges_path(:order_item_id => order_item.id), data: {confirm: "Are you sure? This will revoke the badge that the user received."}, class: "btn btn-danger" %></td>
+            <% end %>
+            <td><%= link_to "Reinstate", reinstate_badges_path(order_item_id: order_item.id), class: "btn btn-secondary", data: {confirm: "Are you sure? This will delete eventual badges awarded and restore it to badges' requests."} %></td>
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-center">No badges awarded/revoked.</p>
+  <% end %>
+
+</div>

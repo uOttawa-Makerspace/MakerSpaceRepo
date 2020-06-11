@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ChangeDefaultOfVolunteerRequest < ActiveRecord::Migration
   def up
     change_column :volunteer_requests, :printing, :string, default: 'No Experience'

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddPricePerGramServiceChargeGramPricePerHourMaterialToPrintOrders < ActiveRecord::Migration
   def change
     add_column :print_orders, :grams, :float

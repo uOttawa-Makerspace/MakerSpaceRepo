@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddReputationToUser < ActiveRecord::Migration
   def change
     add_column :users, :reputation, :integer, default: 0

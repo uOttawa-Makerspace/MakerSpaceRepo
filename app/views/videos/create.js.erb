@@ -1,0 +1,6 @@
+<% if @video.persisted? %>
+  $('#upload_<%=params[:unique_id]%>').remove();
+  $('#uploads_container').append("<%= j(render @video) %>");
+<% else %>
+  $('#upload_<%=params[:unique_id]%> div.progress').removeClass('active progress-striped').addClass('progress-danger');
+<% end %>

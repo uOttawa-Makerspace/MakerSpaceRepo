@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddQuoteAndStaffToPrintOrder < ActiveRecord::Migration
   def change
     add_column :print_orders, :quote, :float

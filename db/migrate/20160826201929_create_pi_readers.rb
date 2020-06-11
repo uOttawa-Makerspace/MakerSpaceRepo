@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreatePiReaders < ActiveRecord::Migration
   def change
     create_table :pi_readers do |t|

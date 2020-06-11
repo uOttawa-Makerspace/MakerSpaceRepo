@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddAdditonalInfoToUsers < ActiveRecord::Migration
   def change
     add_column :users, :gender, :string

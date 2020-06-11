@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateJoinTableSpaceTrainings < ActiveRecord::Migration
   def change
     create_join_table :spaces, :trainings do |t|

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateTrainingSessions < ActiveRecord::Migration
   def change
     create_table :training_sessions do |t|

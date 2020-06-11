@@ -1,67 +1,64 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 
 class RepositoryTest < ActiveSupport::TestCase
+  test 'Presence of title' do
+    repository = repositories(:one)
 
-	test "Presence of title" do
-		repository = repositories(:one)
+    repository.title = 'Project 1'
+    assert repository.valid?, 'Project title is required.'
 
-		repository.title = "Project 1"
-		assert repository.valid? , "Project title is required."
+    repository.title = nil
+    assert repository.invalid?, 'Project title is required.'
+  end
 
-		repository.title = nil
-		assert repository.invalid? , "Project title is required."
-	end
+  test 'Uniqueness of repository title' do
+    repository = repositories(:two)
 
-	test "Uniqueness of repository title" do
+    repository.title = 'Repository1'
+    repository.user_username = 'bob'
+    assert repository.invalid?, 'Project title is already in use.'
 
-		repository = repositories(:two)
+    repository.title = 'Repository2'
+    assert repository.valid?, 'Project title is already in use.'
+  end
 
-		repository.title = "Repository1"
-		repository.user_username = "bob"
-		assert repository.invalid? , "Project title is already in use."
+  test 'Valid project title' do
+    repository = repositories(:one)
 
+    repository.title = 'MakerRepo'
+    assert repository.valid?, 'Invalid project title'
 
-		repository.title = "Repository2"
-		assert repository.valid? , "Project title is already in use."
-	end
+    repository.title = '/*MakerRepo*/'
+    assert repository.invalid?, 'Invalid project title'
+  end
 
-	test "Valid project title" do
-		repository = repositories(:one)
+  test 'presence of share type' do
+    repository = repositories(:one)
 
-		repository.title = "MakerRepo"
-		assert repository.valid?, "Invalid project title"
+    assert repository.valid?, 'Share_type is required'
 
-		repository.title = "/*MakerRepo*/"
-		assert repository.invalid?, "Invalid project title"
-	end
+    repository.share_type = nil
+    assert repository.invalid?, 'Share_type is required'
+  end
 
-	test "presence of share type" do
-		repository = repositories(:one)
+  test 'valid share type' do
+    repository = repositories(:one)
 
-		assert repository.valid?, "Share_type is required"
+    repository.share_type = 'unknown'
+    assert repository.invalid?, 'share type should be either public or private'
 
-		repository.share_type = nil
-		assert repository.invalid?, "Share_type is required"
-	end
+    repository.share_type = 'public'
+    assert repository.valid?, 'share type should be either public or private'
+  end
 
-	test "valid share type" do
-		repository = repositories(:one)
+  test 'presence of password for private repositories' do
+    repository = repositories(:three)
 
-		repository.share_type = "unknown"
-		assert repository.invalid?, "share type should be either public or private"
+    assert repository.valid?, 'private repositories require password'
 
-		repository.share_type = "public"
-		assert repository.valid?, "share type should be either public or private"
-
-	end
-
-	test "presence of password for private repositories" do
-		repository = repositories(:three)
-
-		assert repository.valid?, "private repositories require password"
-
-		repository.password = nil
-		assert repository.invalid?, "private repositories require password"
-	end
-
+    repository.password = nil
+    assert repository.invalid?, 'private repositories require password'
+  end
 end

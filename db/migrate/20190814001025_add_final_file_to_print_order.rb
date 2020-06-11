@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddFinalFileToPrintOrder < ActiveRecord::Migration
   def self.up
     change_table :print_orders do |t|

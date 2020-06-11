@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateCcMoneys < ActiveRecord::Migration
   def change
     create_table :cc_moneys do |t|

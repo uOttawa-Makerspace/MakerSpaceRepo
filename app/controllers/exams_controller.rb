@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ExamsController < ApplicationController
   before_action :current_user
   before_action :set_exam
@@ -5,7 +7,7 @@ class ExamsController < ApplicationController
   before_action :check_exam_status, only: [:show]
 
   def index
-    @exams = current_user.exams.order(category: :desc).paginate(:page => params[:page], :per_page => 50)
+    @exams = current_user.exams.order(category: :desc).paginate(page: params[:page], per_page: 50)
   end
 
   def new
@@ -43,16 +45,16 @@ class ExamsController < ApplicationController
   def show
     # TODO: User cannot open new tab when clicking "Finish Exam"
     @exam = Exam.find(params[:id])
-    @exam.update_attributes(:status => Exam::STATUS[:incomplete]) if @exam.status == Exam::STATUS[:not_started]
+    @exam.update(status: Exam::STATUS[:incomplete]) if @exam.status == Exam::STATUS[:not_started]
     @questions = @exam.questions
   end
 
   def destroy
     exam = Exam.find(params[:id])
     if exam.destroy
-      flash[:notice] = "Exam Deleted"
+      flash[:notice] = 'Exam Deleted'
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = 'Something went wrong'
     end
     redirect_to exams_path
   end
@@ -64,12 +66,14 @@ class ExamsController < ApplicationController
     training_session = exam.training_session
     if score < Exam::SCORE_TO_PASS
       status = Exam::STATUS[:failed]
-      create_exam_and_exam_questions(user, training_session) if user.exams.where(training_session_id: training_session.id).count < 2
+      if user.exams.where(training_session_id: training_session.id).count < 2
+        create_exam_and_exam_questions(user, training_session)
+      end
     else
       status = Exam::STATUS[:passed]
       Certification.certify_user(training_session.id, user.id)
     end
-    exam.update_attributes(status: status, score: score)
+    exam.update(status: status, score: score)
     MsrMailer.finishing_exam(user, exam).deliver_now
     # MsrMailer.exam_results_staff(user, exam).deliver_now
     flash[:notice] = "Score: #{score}. You #{status} the exam."
@@ -79,13 +83,13 @@ class ExamsController < ApplicationController
   private
 
   def create_exam_and_exam_questions(user, training_session)
-    new_exam = user.exams.new(:training_session_id => training_session.id,
-                              :category => training_session.training.name, :expired_at => DateTime.now + 3.days)
+    new_exam = user.exams.new(training_session_id: training_session.id,
+                              category: training_session.training.name, expired_at: DateTime.now + 3.days)
     new_exam.save!
     if ExamQuestion.create_exam_questions(new_exam.id, new_exam.training.id, $n_exams_question)
       flash[:notice] = "You've successfully sent exams to all users in this training."
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = 'Something went wrong'
     end
   end
 
@@ -95,18 +99,18 @@ class ExamsController < ApplicationController
 
   def grant_access
     unless @exam.user.eql?(current_user) || current_user.staff?
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = 'You cannot access this area.'
       redirect_to root_path
     end
   end
 
   def exam_params
-    params.require(:exam).permit(trainings_attributes:[:id])
+    params.require(:exam).permit(trainings_attributes: [:id])
   end
 
   def check_exam_status
-    unless (@exam.status == Exam::STATUS[:incomplete] || @exam.status == Exam::STATUS[:not_started])
-      flash[:alert] = "You cannot access an exam after being finished."
+    unless @exam.status == Exam::STATUS[:incomplete] || @exam.status == Exam::STATUS[:not_started]
+      flash[:alert] = 'You cannot access an exam after being finished.'
       redirect_to exams_path
     end
   end

@@ -1,4 +1,6 @@
-require File.expand_path('../boot', __FILE__)
+# frozen_string_literal: true
+require_relative 'boot'
+require File.expand_path('boot', __dir__)
 
 require 'csv'
 require 'rails/all'
@@ -9,12 +11,13 @@ Bundler.require(*Rails.groups)
 
 module MakerSpaceRepo
   class Application < Rails::Application
-
     config.before_configuration do
       env_file = File.join(Rails.root, 'config', 'local_env.yml')
-      YAML.load(File.open(env_file)).each do |key, value|
-        ENV[key.to_s] = value
-      end if File.exists?(env_file)
+      if File.exist?(env_file)
+        YAML.safe_load(File.open(env_file)).each do |key, value|
+          ENV[key.to_s] = value
+        end
+      end
     end
 
     # Settings in config/environments/* take precedence over those specified here.
@@ -33,45 +36,45 @@ module MakerSpaceRepo
     config.active_record.raise_in_transactional_callbacks = true
 
     SamlIdp.configure do |config|
-      config.x509_certificate = IO.read "certs/saml.crt"
-      config.secret_key = IO.read "certs/saml.key"
+      config.x509_certificate = IO.read 'certs/saml.crt'
+      config.secret_key = IO.read 'certs/saml.key'
 
       service_providers = {
-          "wiki.makerepo.com" => {
-              response_hosts: ["wiki.makerepo.com", "staff.makerepo.com"]
-          }
+        'wiki.makerepo.com' => {
+          response_hosts: ['wiki.makerepo.com', 'staff.makerepo.com']
+        }
       }
 
       config.name_id.formats = {
-          email_address: -> (p) { p.email },
-          transient: -> (p) { p.username },
-          persistent: -> (p) { p.username }
+        email_address: ->(p) { p.email },
+        transient: ->(p) { p.username },
+        persistent: ->(p) { p.username }
       }
 
       config.attributes = {
-          "email_address": {
-            :getter => -> (p) { p.email }
-          },
-          "username": {
-            :getter => -> (p) { p.username }
-          },
-          "name": {
-            :getter => -> (p) { p.name }
-          },
-          "is_staff": {
-            :getter => -> (p) { p.staff? }
-          },
-          "is_admin": {
-            :getter => -> (p) { p.admin? }
-          },
-          "is_volunteer": {
-            :getter => -> (p) { p.volunteer? }
-          }
+        "email_address": {
+          getter: ->(p) { p.email }
+        },
+        "username": {
+          getter: ->(p) { p.username }
+        },
+        "name": {
+          getter: ->(p) { p.name }
+        },
+        "is_staff": {
+          getter: ->(p) { p.staff? }
+        },
+        "is_admin": {
+          getter: ->(p) { p.admin? }
+        },
+        "is_volunteer": {
+          getter: ->(p) { p.volunteer? }
+        }
       }
 
-      config.service_provider.finder = ->(issuer_or_entity_id) do
+      config.service_provider.finder = lambda { |issuer_or_entity_id|
         service_providers[issuer_or_entity_id]
-      end
+      }
     end
   end
 end

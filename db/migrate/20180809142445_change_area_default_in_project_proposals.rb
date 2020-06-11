@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ChangeAreaDefaultInProjectProposals < ActiveRecord::Migration
   def change
     change_column :project_proposals, :area, :string, array: true, default: []

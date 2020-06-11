@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddAttachmentFileToRepoFiles < ActiveRecord::Migration
   def change
     change_table :repo_files do |t|

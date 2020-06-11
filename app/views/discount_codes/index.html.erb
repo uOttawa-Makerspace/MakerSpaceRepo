@@ -1,0 +1,68 @@
+<br>
+<div class="text-center">
+  <h1>You can use these discount codes in our <%= link_to 'makerstore', 'http://makerstore.ca/', target: :blank, class: "username" %></h1>
+</div>
+
+<div class="container py-5">
+  <% if @discount_codes.present? %>
+    <div class="row">
+      <% @discount_codes.each do |discount_code| %>
+        <div class="col-md-12" style="padding-right: 5px; padding-left: 0px; margin-bottom: 5px;">
+          <div class="card" style="width: 100%;  border: 5px dotted #bbb;">
+            <div class="card-body">
+              <h5 class="card-title"><%= discount_code.price_rule.title %></h5>
+              <p class="card-text">
+                Use code : <span id="coupon-<%= discount_code.id %>"><%= discount_code.code %></span>
+                <button class="clipboard-btn btn btn-info float-right" data-toggle="popover" data-trigger="focus" data-content="Copied !" data-placement="left" data-clipboard-action="copy" data-clipboard-target="#coupon-<%= discount_code.id %>">Copy</button>
+            </div>
+          </div>
+        </div>
+    <% end %>
+    </div>
+  <% else %>
+    <div class="text-center">
+      <p>You don't have any coupons.</p>
+      <p>Redeem your CC points <%= link_to 'here', new_discount_code_path, class: "username" %></p>
+    </div>
+  <% end %>
+
+   <p class="text-center">You have <%= @expired_codes %> used/expired coupons</p>
+</div>
+
+<% if current_user.admin? && @all_discount_codes.present? %>
+  <div class="container my-5">
+    <h1 class="text-center"> All Discount Codes Generated</h1>
+    <div class="table-responsive">
+      <table class="table table-striped">
+
+        <tr class="text-center">
+          <th>Date</th>
+          <th>User</th>
+          <th>Title</th>
+          <th>Value</th>
+          <th>CC</th>
+          <th>User Usage</th>
+        </tr>
+
+        <tbody>
+        <% @all_discount_codes.each do |discount_code| %>
+          <tr>
+            <td><%= discount_code.created_at.strftime('%Y/%m/%d-%H:%M') %></td>
+            <td class="username"><%= link_to discount_code.user.name, discount_code.user.username %></td>
+            <td><%= discount_code.price_rule.title %></td>
+            <td>$<%= discount_code.price_rule.value %></td>
+            <td><%= discount_code.price_rule.cc %> CCs</td>
+            <td><%= discount_code.status %></td>
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>
+
+<script>
+    $('.popover-dismiss').popover({
+        trigger: 'focus'
+    })
+</script>

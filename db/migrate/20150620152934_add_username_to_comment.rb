@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddUsernameToComment < ActiveRecord::Migration
   def change
     add_column :comments, :username, :string

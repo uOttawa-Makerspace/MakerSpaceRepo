@@ -1,0 +1,28 @@
+<div class="well">
+    <div class="col-xs-4">
+      <% badge_requirements = proficient_project.badge_requirements %>
+      <% order_items = user_order_items.where(proficient_project: proficient_project) %>
+      <% order_items.each do |order_item| %>
+        <button type="button" class="btn disabled mb-2 pp-status-button"><%= order_item.status %></button>
+      <% end %>
+      <br />
+      <% if order_items.where(status: ["In progress", "Awarded"]).present? %>
+        <a href="<%= proficient_project_path(proficient_project.id) %>"><button type="button" class="btn btn-outline-success mb-2">Show Project</button></a>
+      <% elsif current_user.order_items.where(proficient_project: proficient_project, status: "In progress").present? %>
+        <button type="button" class="btn btn-outline-success disabled mb-2">Added to cart</button>
+      <% elsif !current_user.has_required_badges?(badge_requirements) %>
+        <button type="button" class="btn btn-outline-danger disabled mb-2">You don't have the required badges</button>
+      <% else %>
+        <%= form_for order_item, remote: true do |f| %>
+          <div class="input-group">
+            <%#= f.number_field :quantity, value: 1, class: "form-control", min: 1 %>
+            <%= f.hidden_field :quantity, value: 1 %>
+            <div class="input-group-btn mx-auto mb-2">
+              <%= f.hidden_field :proficient_project_id, value: proficient_project.id %>
+              <%= f.submit "Add to Cart", class: "btn btn-secondary", id: "cart-button" %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+</div>

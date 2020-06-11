@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddAccessTokenToUser < ActiveRecord::Migration
   def change
     add_column :users, :access_token, :string

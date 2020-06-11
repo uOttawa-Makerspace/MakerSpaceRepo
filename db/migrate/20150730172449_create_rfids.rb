@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateRfids < ActiveRecord::Migration
   def change
     create_table :rfids do |t|

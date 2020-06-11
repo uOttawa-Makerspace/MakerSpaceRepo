@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Rails.application.configure do
   $n_exams_question = 20
   # Settings specified here will take precedence over those in config/application.rb.
@@ -79,36 +81,35 @@ Rails.application.configure do
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 
-  config.assets.precompile += %w( vendor.js vendor.css )
+  config.assets.precompile += %w[vendor.js vendor.css]
 
   Octokit.configure do |c|
     c.client_id        = Rails.application.secrets.github_app_key
     c.client_secret    = Rails.application.secrets.github_app_key_secret
   end
 
-  #SMTP GMail Settings
-  config.action_mailer.default_url_options = { :host => 'makerepo.com'}
+  # SMTP GMail Settings
+  config.action_mailer.default_url_options = { host: 'makerepo.com' }
 
   config.action_mailer.delivery_method = :smtp
 
-  #GMAIL SETUP
+  # GMAIL SETUP
   config.action_mailer.smtp_settings = {
-    :address => "smtp.sendgrid.net",
-    :port => 587,
-    :user_name => Rails.application.secrets.smtp_user,
-    :password => Rails.application.secrets.smtp_password,
-    :authentication => 'plain',
-    :enable_starttls_auto => true
+    address: 'smtp.sendgrid.net',
+    port: 587,
+    user_name: Rails.application.secrets.smtp_user,
+    password: Rails.application.secrets.smtp_password,
+    authentication: 'plain',
+    enable_starttls_auto: true
   }
-  
+
   config.paperclip_defaults = {
     storage: :s3,
     s3_credentials: {
       bucket: Rails.application.secrets.s3_bucket_name,
       access_key_id: Rails.application.secrets.access_key_id,
       secret_access_key: Rails.application.secrets.secret_access_key,
-      s3_region: "us-west-2"
+      s3_region: 'us-west-2'
     }
   }
-
 end

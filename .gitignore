@@ -7,7 +7,6 @@
 # Ignore bundler config.
 /.bundle
 /public/system
-config.ru
 
 # Ignore Credentials
 /config/local_env.yml
@@ -26,10 +25,19 @@ sunspot-solr.pid
 
 #macs
 .DS_Store
-
 .idea
 .generators
-.DS_Store
 
 # don't want these going out to the world!
 certs/*
+
+# don't commit that for now
+config/initializers/backport_pg_12_support_to_rails_4.rb
+
+# This is for redis
+dump.rdb
+
+.env
+
+#SampleCov
+coverage

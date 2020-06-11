@@ -1,20 +1,22 @@
+# frozen_string_literal: true
+
 class TrainingSession < ApplicationRecord
   belongs_to :training
   belongs_to :user
 
-  has_and_belongs_to_many :users, :uniq => true
+  has_and_belongs_to_many :users, uniq: true
   has_many :certifications, dependent: :destroy
   belongs_to :space
 
-  validates :training, presence: { message: "A training subject is required"}
-  validates :user, presence: { message: "A trainer is required"}
+  validates :training, presence: { message: 'A training subject is required' }
+  validates :user, presence: { message: 'A trainer is required' }
   validate :is_staff
 
   before_save :check_course
   has_many :exams, dependent: :destroy
 
   def is_staff
-    errors.add(:string, "user must be staff") unless self.user.staff?
+    errors.add(:string, 'user must be staff') unless user.staff?
   end
 
   def courses
@@ -22,21 +24,22 @@ class TrainingSession < ApplicationRecord
   end
 
   def completed?
-    return self.certifications.length > 0
+    !certifications.empty?
   end
 
   def levels
-    ['Beginner', 'Intermediate', 'Advanced']
+    %w[Beginner Intermediate Advanced]
+  end
+
+  def self.return_levels
+    %w[Beginner Intermediate Advanced]
   end
 
   private
 
   def check_course
-    if self.course == 'no course'
-      self.course = nil
-    end
+    self.course = nil if course == 'no course'
   end
 
-  scope :between_dates_picked, ->(start_date , end_date){ where('created_at BETWEEN ? AND ? ', start_date , end_date) }
-
+  scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
 end

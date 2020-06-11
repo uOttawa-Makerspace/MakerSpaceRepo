@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ChangeColumnNamePrintOrder < ActiveRecord::Migration
   def change
     rename_column :print_orders, :staffid, :staff_id

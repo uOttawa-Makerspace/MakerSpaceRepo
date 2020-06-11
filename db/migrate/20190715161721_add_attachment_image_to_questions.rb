@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddAttachmentImageToQuestions < ActiveRecord::Migration
   def self.up
     change_table :questions do |t|

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateLabSessions < ActiveRecord::Migration
   def change
     create_table :lab_sessions do |t|

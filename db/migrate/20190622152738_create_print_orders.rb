@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreatePrintOrders < ActiveRecord::Migration
   def change
     create_table :print_orders do |t|

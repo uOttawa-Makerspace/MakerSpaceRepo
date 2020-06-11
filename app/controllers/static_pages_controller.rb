@@ -1,59 +1,46 @@
-class StaticPagesController < SessionsController
+# frozen_string_literal: true
 
+class StaticPagesController < SessionsController
   before_action :current_user, except: [:reset_password]
 
-  def home
-    @request = VolunteerRequest.new
-    if current_user
-      @certifications = current_user.get_certifications_names
-    end
-  end
+  def home; end
 
-  def about
-  end
+  def about; end
 
-  def admin
-  end
+  def admin; end
 
-  def contact
-  end
+  def contact; end
 
-  def terms_of_service
-  end
+  def terms_of_service; end
 
-  def hours
-  end
+  def hours; end
 
-  def calendar
-  end
+  def calendar; end
 
-  def forgot_password
-  end
+  def forgot_password; end
 
   def reset_password
-    @user = User.find_by_email(params[:email])
+    @user = User.find_by(email: params[:email])
 
     begin
-      random_password = Array.new(10).map { (65 + rand(58)).chr }.join
+      random_password = Array.new(10).map { rand(65..122).chr }.join
       @user.pword = random_password
 
       if @user.save!
-        MsrMailer.reset_password_email(@user.email, random_password ).deliver_now
-        flash[:notice] = "Check your email for your new password.";
+        MsrMailer.reset_password_email(@user.email, random_password).deliver_now
+        flash[:notice] = 'Check your email for your new password.'
         redirect_to root_path
       end
-
-    rescue
-      flash[:alert] = "Something went wrong, try again.";
+    rescue StandardError
+      flash[:alert] = 'Something went wrong, try again.'
       redirect_to forgot_password_path
     end
   end
 
   def report_repository
-  	repository = Repository.find params[:repository_id]
-  	# MsrMailer.repo_report(repository).deliver
-  	flash[:alert] = "Repository has been reported"
-  	redirect_to request.referrer
+    repository = Repository.find params[:repository_id]
+    # MsrMailer.repo_report(repository).deliver
+    flash[:alert] = 'Repository has been reported'
+    redirect_to request.referer
   end
-
 end

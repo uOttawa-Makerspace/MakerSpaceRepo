@@ -1,4 +1,3 @@
-# encoding: UTF-8
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
@@ -11,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200128203210) do
+ActiveRecord::Schema.define(version: 20200609193019) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -39,6 +38,35 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "badge_requirements", force: :cascade do |t|
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+    t.integer  "badge_template_id"
+    t.integer  "proficient_project_id"
+    t.index ["badge_template_id"], name: "index_badge_requirements_on_badge_template_id", using: :btree
+    t.index ["proficient_project_id"], name: "index_badge_requirements_on_proficient_project_id", using: :btree
+  end
+
+  create_table "badge_templates", force: :cascade do |t|
+    t.text     "acclaim_template_id"
+    t.text     "badge_description"
+    t.text     "badge_name"
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
+    t.string   "image_url"
+  end
+
+  create_table "badges", force: :cascade do |t|
+    t.string   "issued_to"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
+    t.string   "acclaim_badge_id"
+    t.integer  "user_id"
+    t.string   "badge_url"
+    t.integer  "badge_template_id"
+    t.index ["badge_template_id"], name: "index_badges_on_badge_template_id", using: :btree
+  end
+
   create_table "categories", force: :cascade do |t|
     t.integer  "repository_id"
     t.string   "name"
@@ -46,10 +74,9 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.datetime "updated_at",          null: false
     t.integer  "category_option_id"
     t.integer  "project_proposal_id"
+    t.index ["category_option_id"], name: "index_categories_on_category_option_id", using: :btree
+    t.index ["repository_id"], name: "index_categories_on_repository_id", using: :btree
   end
-
-  add_index "categories", ["category_option_id"], name: "index_categories_on_category_option_id", using: :btree
-  add_index "categories", ["repository_id"], name: "index_categories_on_repository_id", using: :btree
 
   create_table "category_options", force: :cascade do |t|
     t.string   "name"
@@ -61,8 +88,14 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.integer  "user_id"
     t.integer  "volunteer_task_id"
     t.integer  "cc"
-    t.datetime "created_at",        null: false
-    t.datetime "updated_at",        null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+    t.integer  "proficient_project_id"
+    t.integer  "order_id"
+    t.integer  "discount_code_id"
+    t.index ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id", using: :btree
+    t.index ["order_id"], name: "index_cc_moneys_on_order_id", using: :btree
+    t.index ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id", using: :btree
   end
 
   create_table "certifications", force: :cascade do |t|
@@ -70,9 +103,8 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.datetime "created_at",          null: false
     t.datetime "updated_at",          null: false
     t.integer  "training_session_id"
+    t.index ["user_id"], name: "index_certifications_on_user_id", using: :btree
   end
-
-  add_index "certifications", ["user_id"], name: "index_certifications_on_user_id", using: :btree
 
   create_table "comments", force: :cascade do |t|
     t.integer  "user_id"
@@ -82,19 +114,29 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.datetime "created_at",                null: false
     t.datetime "updated_at",                null: false
     t.string   "username"
+    t.index ["repository_id"], name: "index_comments_on_repository_id", using: :btree
+    t.index ["user_id"], name: "index_comments_on_user_id", using: :btree
   end
 
-  add_index "comments", ["repository_id"], name: "index_comments_on_repository_id", using: :btree
-  add_index "comments", ["user_id"], name: "index_comments_on_user_id", using: :btree
+  create_table "discount_codes", force: :cascade do |t|
+    t.integer  "price_rule_id"
+    t.integer  "user_id"
+    t.string   "shopify_discount_code_id"
+    t.string   "code"
+    t.integer  "usage_count"
+    t.datetime "created_at",               null: false
+    t.datetime "updated_at",               null: false
+    t.index ["price_rule_id"], name: "index_discount_codes_on_price_rule_id", using: :btree
+    t.index ["user_id"], name: "index_discount_codes_on_user_id", using: :btree
+  end
 
   create_table "equipment", force: :cascade do |t|
     t.integer  "repository_id"
     t.string   "name"
     t.datetime "created_at",    null: false
     t.datetime "updated_at",    null: false
+    t.index ["repository_id"], name: "index_equipment_on_repository_id", using: :btree
   end
-
-  add_index "equipment", ["repository_id"], name: "index_equipment_on_repository_id", using: :btree
 
   create_table "equipment_options", force: :cascade do |t|
     t.string   "name"
@@ -136,34 +178,58 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.datetime "updated_at",    null: false
     t.string   "mac_address"
     t.integer  "space_id"
+    t.index ["space_id"], name: "index_lab_sessions_on_space_id", using: :btree
+    t.index ["user_id"], name: "index_lab_sessions_on_user_id", using: :btree
   end
-
-  add_index "lab_sessions", ["space_id"], name: "index_lab_sessions_on_space_id", using: :btree
-  add_index "lab_sessions", ["user_id"], name: "index_lab_sessions_on_user_id", using: :btree
 
   create_table "likes", force: :cascade do |t|
     t.integer  "user_id"
     t.integer  "repository_id"
     t.datetime "created_at",    null: false
     t.datetime "updated_at",    null: false
+    t.index ["repository_id"], name: "index_likes_on_repository_id", using: :btree
+    t.index ["user_id"], name: "index_likes_on_user_id", using: :btree
   end
 
-  add_index "likes", ["repository_id"], name: "index_likes_on_repository_id", using: :btree
-  add_index "likes", ["user_id"], name: "index_likes_on_user_id", using: :btree
+  create_table "order_items", force: :cascade do |t|
+    t.integer  "proficient_project_id"
+    t.integer  "order_id"
+    t.decimal  "unit_price",            precision: 12, scale: 3
+    t.decimal  "total_price",           precision: 12, scale: 3
+    t.integer  "quantity"
+    t.datetime "created_at",                                                             null: false
+    t.datetime "updated_at",                                                             null: false
+    t.string   "status",                                         default: "In progress"
+  end
+
+  create_table "order_statuses", force: :cascade do |t|
+    t.string   "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "orders", force: :cascade do |t|
+    t.integer  "order_status_id"
+    t.decimal  "subtotal",        precision: 12, scale: 3
+    t.decimal  "total",           precision: 12, scale: 3
+    t.datetime "created_at",                               null: false
+    t.datetime "updated_at",                               null: false
+    t.integer  "user_id"
+  end
 
   create_table "photos", force: :cascade do |t|
     t.integer  "repository_id"
-    t.datetime "created_at",         null: false
-    t.datetime "updated_at",         null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
     t.string   "image_file_name"
     t.string   "image_content_type"
     t.integer  "image_file_size"
     t.datetime "image_updated_at"
     t.integer  "height"
     t.integer  "width"
+    t.integer  "proficient_project_id"
+    t.index ["repository_id"], name: "index_photos_on_repository_id", using: :btree
   end
-
-  add_index "photos", ["repository_id"], name: "index_photos_on_repository_id", using: :btree
 
   create_table "pi_readers", force: :cascade do |t|
     t.string   "pi_mac_address"
@@ -171,9 +237,18 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.datetime "created_at",     null: false
     t.datetime "updated_at",     null: false
     t.integer  "space_id"
+    t.index ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
   end
 
-  add_index "pi_readers", ["space_id"], name: "index_pi_readers_on_space_id", using: :btree
+  create_table "price_rules", force: :cascade do |t|
+    t.string   "shopify_price_rule_id"
+    t.string   "title"
+    t.integer  "value"
+    t.integer  "cc"
+    t.integer  "usage_limit"
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+  end
 
   create_table "print_orders", force: :cascade do |t|
     t.integer  "user_id"
@@ -229,6 +304,31 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.string   "rfid"
   end
 
+  create_table "proficient_projects", force: :cascade do |t|
+    t.integer  "training_id"
+    t.string   "title"
+    t.text     "description"
+    t.datetime "created_at",                             null: false
+    t.datetime "updated_at",                             null: false
+    t.string   "level",             default: "Beginner"
+    t.integer  "cc",                default: 0
+    t.boolean  "proficient",        default: true
+    t.integer  "badge_template_id"
+    t.index ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id", using: :btree
+  end
+
+  create_table "proficient_projects_users", id: false, force: :cascade do |t|
+    t.integer "user_id",               null: false
+    t.integer "proficient_project_id", null: false
+  end
+
+  create_table "programs", force: :cascade do |t|
+    t.integer  "user_id"
+    t.string   "program_type"
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
+  end
+
   create_table "project_joins", force: :cascade do |t|
     t.integer  "user_id"
     t.integer  "project_proposal_id"
@@ -256,6 +356,13 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.text     "equipments",            default: "Not informed."
   end
 
+  create_table "project_requirements", force: :cascade do |t|
+    t.integer  "proficient_project_id"
+    t.integer  "required_project_id"
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+  end
+
   create_table "questions", force: :cascade do |t|
     t.integer  "user_id"
     t.text     "description"
@@ -270,15 +377,15 @@ ActiveRecord::Schema.define(version: 20200128203210) do
 
   create_table "repo_files", force: :cascade do |t|
     t.integer  "repository_id"
-    t.datetime "created_at",        null: false
-    t.datetime "updated_at",        null: false
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
     t.string   "file_file_name"
     t.string   "file_content_type"
     t.integer  "file_file_size"
     t.datetime "file_updated_at"
+    t.integer  "proficient_project_id"
+    t.index ["repository_id"], name: "index_repo_files_on_repository_id", using: :btree
   end
-
-  add_index "repo_files", ["repository_id"], name: "index_repo_files_on_repository_id", using: :btree
 
   create_table "repositories", force: :cascade do |t|
     t.integer  "user_id"
@@ -300,9 +407,8 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.boolean  "featured",            default: false
     t.string   "youtube_link"
     t.integer  "project_proposal_id"
+    t.index ["user_id"], name: "index_repositories_on_user_id", using: :btree
   end
-
-  add_index "repositories", ["user_id"], name: "index_repositories_on_user_id", using: :btree
 
   create_table "repositories_users", id: false, force: :cascade do |t|
     t.integer "user_id",       null: false
@@ -322,9 +428,8 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.datetime "created_at",  null: false
     t.datetime "updated_at",  null: false
     t.string   "mac_address"
+    t.index ["user_id"], name: "index_rfids_on_user_id", using: :btree
   end
-
-  add_index "rfids", ["user_id"], name: "index_rfids_on_user_id", using: :btree
 
   create_table "sd_signins", force: :cascade do |t|
     t.integer  "printer_id"
@@ -364,27 +469,24 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.string   "course"
     t.integer  "space_id"
     t.string   "level",       default: "Beginner"
+    t.index ["training_id"], name: "index_training_sessions_on_training_id", using: :btree
+    t.index ["user_id"], name: "index_training_sessions_on_user_id", using: :btree
   end
-
-  add_index "training_sessions", ["training_id"], name: "index_training_sessions_on_training_id", using: :btree
-  add_index "training_sessions", ["user_id"], name: "index_training_sessions_on_user_id", using: :btree
 
   create_table "training_sessions_users", id: false, force: :cascade do |t|
     t.integer "training_session_id"
     t.integer "user_id"
+    t.index ["training_session_id"], name: "index_training_sessions_users_on_training_session_id", using: :btree
+    t.index ["user_id"], name: "index_training_sessions_users_on_user_id", using: :btree
   end
-
-  add_index "training_sessions_users", ["training_session_id"], name: "index_training_sessions_users_on_training_session_id", using: :btree
-  add_index "training_sessions_users", ["user_id"], name: "index_training_sessions_users_on_user_id", using: :btree
 
   create_table "trainings", force: :cascade do |t|
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer  "space_id"
+    t.index ["space_id"], name: "index_trainings_on_space_id", using: :btree
   end
-
-  add_index "trainings", ["space_id"], name: "index_trainings_on_space_id", using: :btree
 
   create_table "upvotes", force: :cascade do |t|
     t.integer  "user_id"
@@ -392,10 +494,9 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean  "downvote"
+    t.index ["comment_id"], name: "index_upvotes_on_comment_id", using: :btree
+    t.index ["user_id"], name: "index_upvotes_on_user_id", using: :btree
   end
-
-  add_index "upvotes", ["comment_id"], name: "index_upvotes_on_comment_id", using: :btree
-  add_index "upvotes", ["user_id"], name: "index_upvotes_on_user_id", using: :btree
 
   create_table "users", force: :cascade do |t|
     t.string   "username"
@@ -425,15 +526,29 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.boolean  "read_and_accepted_waiver_form", default: false
     t.boolean  "active",                        default: true
     t.datetime "last_seen_at"
+    t.integer  "wallet",                        default: 0
+  end
+
+  create_table "videos", force: :cascade do |t|
+    t.integer  "proficient_project_id"
+    t.datetime "created_at",                            null: false
+    t.datetime "updated_at",                            null: false
+    t.string   "video_file_name"
+    t.string   "video_content_type"
+    t.integer  "video_file_size"
+    t.datetime "video_updated_at"
+    t.string   "direct_upload_url",                     null: false
+    t.boolean  "processed",             default: false, null: false
+    t.index ["proficient_project_id"], name: "index_videos_on_proficient_project_id", using: :btree
   end
 
   create_table "volunteer_hours", force: :cascade do |t|
-    t.integer  "volunteer_task_id",                                       null: false
-    t.integer  "user_id",                                                 null: false
+    t.integer  "volunteer_task_id",                                         null: false
+    t.integer  "user_id",                                                   null: false
     t.datetime "date_of_task"
-    t.decimal  "total_time",        precision: 9, scale: 2, default: 0.0
-    t.datetime "created_at",                                              null: false
-    t.datetime "updated_at",                                              null: false
+    t.decimal  "total_time",        precision: 9, scale: 2, default: "0.0"
+    t.datetime "created_at",                                                null: false
+    t.datetime "updated_at",                                                null: false
     t.boolean  "approval"
   end
 
@@ -480,20 +595,32 @@ ActiveRecord::Schema.define(version: 20200128203210) do
     t.integer  "joins",                               default: 1
     t.string   "category",                            default: "Other"
     t.integer  "cc",                                  default: 0
-    t.decimal  "hours",       precision: 5, scale: 2, default: 0.0
+    t.decimal  "hours",       precision: 5, scale: 2, default: "0.0"
   end
 
+  add_foreign_key "badge_requirements", "badge_templates"
+  add_foreign_key "badge_requirements", "proficient_projects"
+  add_foreign_key "badges", "badge_templates"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
+  add_foreign_key "cc_moneys", "discount_codes"
+  add_foreign_key "cc_moneys", "orders"
+  add_foreign_key "cc_moneys", "proficient_projects"
   add_foreign_key "certifications", "users"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
+  add_foreign_key "discount_codes", "price_rules"
+  add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
+  add_foreign_key "order_items", "orders"
+  add_foreign_key "order_items", "proficient_projects"
+  add_foreign_key "orders", "order_statuses"
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
+  add_foreign_key "proficient_projects", "badge_templates"
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"
@@ -502,4 +629,5 @@ ActiveRecord::Schema.define(version: 20200128203210) do
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
+  add_foreign_key "videos", "proficient_projects"
 end

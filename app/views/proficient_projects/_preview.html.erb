@@ -1,0 +1,38 @@
+<!-- Modal-->
+<div class="modal-content">
+  <div class="modal-header">
+    <h5 class="modal-title"><%= proficient_project.title %></h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">x</button>
+  </div>
+  <div class="modal-body">
+    <h5 class="modal-title">Level: <%= proficient_project.level %></h5>
+    <h5>Price: <%= proficient_project.cc %></h5>
+    <div class="jumbotron text-center text-wrap">
+      <%= proficient_project.description.html_safe %>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="mx-auto">
+
+      Required Badges:
+      <% badge_requirements = proficient_project.badge_requirements %>
+      <% if badge_requirements.present? %>
+        <% badge_requirements.each do |badge_requirement| %>
+          <%= image_tag(badge_requirement.badge_template.image_url, :style => "width: 80px;") %>
+        <% end %>
+      <% else %>
+        None
+      <% end %>
+      <br />
+      Badge being Awarded:
+      <% badge_template = proficient_project.badge_template %>
+      <% if badge_template.present? %>
+        <%= image_tag(badge_template.image_url, :style => "width: 80px;") %>
+      <% else %>
+        None
+      <% end %>
+
+      <%= render "proficient_project_row", proficient_project: proficient_project, order_item: order_item, user_order_items: user_order_items %>
+    </div>
+  </div>
+</div>

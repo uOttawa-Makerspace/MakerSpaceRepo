@@ -1,5 +1,6 @@
-class PiReader < ApplicationRecord
+# frozen_string_literal: true
 
+class PiReader < ApplicationRecord
   belongs_to :space
 
   def pi_mac_with_location

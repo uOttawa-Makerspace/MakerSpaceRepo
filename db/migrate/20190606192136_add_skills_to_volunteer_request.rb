@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddSkillsToVolunteerRequest < ActiveRecord::Migration
   def change
     add_column :volunteer_requests, :space_id, :integer

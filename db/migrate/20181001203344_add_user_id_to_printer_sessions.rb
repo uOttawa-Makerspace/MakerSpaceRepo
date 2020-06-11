@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddUserIdToPrinterSessions < ActiveRecord::Migration
   def change
     add_column :printer_sessions, :user_id, :integer

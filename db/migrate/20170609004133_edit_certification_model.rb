@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class EditCertificationModel < ActiveRecord::Migration
   def change
     remove_column :certifications, :training_name, :string

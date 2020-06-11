@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 
 class GettingStartedControllerTest < ActionController::TestCase
@@ -15,5 +17,4 @@ class GettingStartedControllerTest < ActionController::TestCase
   #   get :creating_make_repository
   #   assert_response :success
   # end
-
 end

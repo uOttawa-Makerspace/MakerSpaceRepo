@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddModelToPrinters < ActiveRecord::Migration
   def change
     add_column :printers, :model, :string

@@ -1,0 +1,10 @@
+<section class="p-5 admin-badge-request" style="padding-bottom: 10px!important;">
+  <%= render 'badges/admin_table' %>
+</section>
+<section class="text-center">
+  <%= link_to "Refresh Badge Data", update_badge_data_badges_path, data: {confirm: "Are you sure? This will update all the badges from the Acclaim website, it will take time, please wait !"}, class: "btn btn-primary" %>
+  <%= link_to "Refresh Badge Templates", update_badge_templates_badges_path, data: {confirm: "Are you sure? This will update all the badge's templates from the Acclaim website, it will take time, please wait !"}, class: "btn btn-primary" %>
+  <p>These updates will take a few seconds to be done, please be patient.</p>
+  <br>
+</section>
+
