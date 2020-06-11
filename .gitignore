@@ -7,7 +7,6 @@
 # Ignore bundler config.
 /.bundle
 /public/system
-config.ru
 
 # Ignore Credentials
 /config/local_env.yml
@@ -26,10 +25,8 @@ sunspot-solr.pid
 
 #macs
 .DS_Store
-
 .idea
 .generators
-.DS_Store
 
 # don't want these going out to the world!
 certs/*
@@ -42,4 +39,5 @@ dump.rdb
 
 .env
 
+#SampleCov
 coverage

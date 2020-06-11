@@ -19,7 +19,7 @@ gem 'photoswipe-rails', '~> 4.0.8a'
 gem 'fastimage', '~> 1.7.0'
 gem 'font-awesome-rails', '~> 4.6.3.0'
 gem 'octokit', '~> 3.0'
-gem 'kaminari', '~> 0.16.3'
+gem 'kaminari', '~> 1.2.1'
 gem 'progress_bar', '~> 1.0.3'
 gem 'redactor-rails', '~> 0.5.0'
 gem 'sdoc', '~> 0.4.0', group: :doc
@@ -61,12 +61,12 @@ group :development, :test do
   gem 'spring', '~> 1.3.4'
   gem 'railroady'
   gem 'simplecov', require: false
+  gem 'faker', '~> 1.1.2'
 end
 
 group :development do
   gem 'web-console', '~> 2.0'
   gem 'letter_opener' # Open emails in development
-  gem 'faker', '~> 1.1.2'
 
   # ssh deployment
   gem 'ed25519', '~> 1.2'
@@ -76,7 +76,6 @@ group :development do
 end
 
 group :test do
-  gem 'faker', '~> 1.1.2'
   gem 'capybara', '~> 2.1.0'
   gem 'database_cleaner', '~> 1.0.1'
   gem 'launchy', '~> 2.3.0'
