@@ -1,4 +1,4 @@
-class VolunteerRequest < ActiveRecord::Base
+class VolunteerRequest < ApplicationRecord
   belongs_to :user
   belongs_to :space
   scope :approved, -> {where(:approval => true)}

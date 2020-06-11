@@ -1,4 +1,4 @@
-class ProjectProposal < ActiveRecord::Base
+class ProjectProposal < ApplicationRecord
   has_many :categories,     dependent: :destroy
   has_many :project_joins,  dependent: :destroy
   has_many :repositories

@@ -1,4 +1,4 @@
-class VolunteerTask < ActiveRecord::Base
+class VolunteerTask < ApplicationRecord
   belongs_to :user
   belongs_to :space
   has_many :volunteer_hours, dependent: :destroy

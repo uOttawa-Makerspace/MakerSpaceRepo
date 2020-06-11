@@ -1,4 +1,4 @@
-class CategoryOption < ActiveRecord::Base
+class CategoryOption < ApplicationRecord
   belongs_to :admin
   has_many :categories
 

@@ -1,4 +1,4 @@
-class Training < ActiveRecord::Base
+class Training < ApplicationRecord
   has_and_belongs_to_many :spaces
   has_many :training_sessions, dependent: :destroy
   has_many :certifications, through: :training_sessions

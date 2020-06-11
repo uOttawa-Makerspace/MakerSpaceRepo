@@ -1,4 +1,4 @@
-class CcMoney < ActiveRecord::Base
+class CcMoney < ApplicationRecord
   belongs_to :user
   belongs_to :volunteer_task
 

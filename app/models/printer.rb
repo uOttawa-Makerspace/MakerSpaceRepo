@@ -1,4 +1,4 @@
-class Printer < ActiveRecord::Base
+class Printer < ApplicationRecord
   has_many :printer_sessions,     dependent: :destroy
   scope :show_options, -> { order("lower(model) ASC").all }
 

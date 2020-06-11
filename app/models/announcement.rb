@@ -1,4 +1,4 @@
-class Announcement < ActiveRecord::Base
+class Announcement < ApplicationRecord
   belongs_to :user
   scope :active, -> {where(active: true)}
   scope :volunteers, -> {where(public_goal: "volunteer")}

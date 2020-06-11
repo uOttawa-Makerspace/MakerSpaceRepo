@@ -1,4 +1,4 @@
-class ExamResponse < ActiveRecord::Base
+class ExamResponse < ApplicationRecord
   belongs_to :answer
   belongs_to :exam_question
   has_one :exam, through: :exam_question

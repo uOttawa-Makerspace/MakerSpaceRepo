@@ -1,4 +1,4 @@
-class Photo < ActiveRecord::Base
+class Photo < ApplicationRecord
   belongs_to :repository
 
   has_attached_file :image,

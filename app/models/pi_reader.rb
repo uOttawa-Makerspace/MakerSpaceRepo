@@ -1,4 +1,4 @@
-class PiReader < ActiveRecord::Base
+class PiReader < ApplicationRecord
 
   belongs_to :space
 

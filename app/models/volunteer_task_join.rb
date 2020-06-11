@@ -1,4 +1,4 @@
-class VolunteerTaskJoin < ActiveRecord::Base
+class VolunteerTaskJoin < ApplicationRecord
   belongs_to :volunteer_task
   belongs_to :user
 

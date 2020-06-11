@@ -1,4 +1,4 @@
-class RequireTraining < ActiveRecord::Base
+class RequireTraining < ApplicationRecord
   belongs_to :training
   belongs_to :volunteer_task
 

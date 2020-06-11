@@ -1,4 +1,4 @@
-class Upvote < ActiveRecord::Base
+class Upvote < ApplicationRecord
   belongs_to :user
   belongs_to :comment
   

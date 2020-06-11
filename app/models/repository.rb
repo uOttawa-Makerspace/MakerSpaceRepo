@@ -1,4 +1,4 @@
-class Repository < ActiveRecord::Base
+class Repository < ApplicationRecord
   include BCrypt
 
   has_and_belongs_to_many :users

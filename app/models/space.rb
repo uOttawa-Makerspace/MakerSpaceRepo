@@ -1,4 +1,4 @@
-class Space < ActiveRecord::Base
+class Space < ApplicationRecord
   has_many :pi_readers
   has_many :lab_sessions, dependent: :destroy
   has_many :users, through: :lab_sessions

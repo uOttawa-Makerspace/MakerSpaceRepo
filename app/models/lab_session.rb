@@ -1,4 +1,4 @@
-class LabSession < ActiveRecord::Base
+class LabSession < ApplicationRecord
   belongs_to :user
   belongs_to :space
 

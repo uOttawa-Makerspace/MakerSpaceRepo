@@ -1,4 +1,4 @@
-class ProjectJoin < ActiveRecord::Base
+class ProjectJoin < ApplicationRecord
   belongs_to :project_proposal
   belongs_to :user
 

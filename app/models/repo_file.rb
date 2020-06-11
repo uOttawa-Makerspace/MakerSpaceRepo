@@ -1,4 +1,4 @@
-class RepoFile < ActiveRecord::Base
+class RepoFile < ApplicationRecord
   belongs_to :repository
   
   has_attached_file :file,

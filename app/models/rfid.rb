@@ -1,4 +1,4 @@
-class Rfid < ActiveRecord::Base
+class Rfid < ApplicationRecord
   belongs_to :user
 
   scope :recent_unset, -> {
