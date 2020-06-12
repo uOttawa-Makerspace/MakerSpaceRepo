@@ -68,7 +68,9 @@ group :development do
   gem 'letter_opener'
   gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
-  gem 'web-console', '~> 2.0'
+  gem 'web-console', '>= 3.3.0'
+  gem 'listen', '~> 3.0.5'
+  gem 'spring-watcher-listen', '~> 2.0.0'
 
   # ssh deployment
   gem 'bcrypt_pbkdf', '~> 1.0'
