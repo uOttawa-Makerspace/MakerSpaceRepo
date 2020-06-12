@@ -23,4 +23,5 @@ ActiveSupport.to_time_preserves_timezone = false
 Rails.application.config.active_record.belongs_to_required_by_default = false
 
 # Do not halt callback chains when a callback returns false. Previous versions had true.
+# # TODO: check all return false and change to `throw(:abort) if you_need_to_halt`and change this to false
 ActiveSupport.halt_callback_chains_on_return_false = true
