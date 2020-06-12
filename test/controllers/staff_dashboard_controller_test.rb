@@ -34,7 +34,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
     assert response.body.include? 'Welcome to '
 
     put :change_space, params: { space_name: 'Brunsfield Centre' }
-    assert_redirected_to :back
+    assert_redirected_to @request.env['HTTP_REFERER'] # redirec_to back
     assert_equal flash[:notice], 'Space changed successfully'
   end
 
@@ -44,7 +44,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
     @request.env['HTTP_REFERER'] = user_url(users(:sara))
     rfid = rfids(:no_user)
     put :link_rfid, params: { card_number: rfid.card_number, user_id: users(:sara) }
-    assert_redirected_to :back
+    assert_redirected_to @request.env['HTTP_REFERER']
     assert users(:sara).rfid.present?
   end
 
@@ -54,7 +54,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
     @request.env['HTTP_REFERER'] = user_url(users(:sara))
     rfid = rfids(:marys)
     put :unlink_rfid, params: { card_number: rfid.card_number }
-    assert_redirected_to :back
+    assert_redirected_to @request.env['HTTP_REFERER']
     assert_not users(:mary).rfid.present?
   end
 
