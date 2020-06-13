@@ -19,7 +19,9 @@ Rails.application.config.action_controller.forgery_protection_origin_check = fal
 ActiveSupport.to_time_preserves_timezone = false
 
 # Require `belongs_to` associations by default. Previous versions had false.
+# TODO: set this to true and update all belongs_to (choose the ones that are optional and the ones that are not: belongs_to :model, optional: true)
 Rails.application.config.active_record.belongs_to_required_by_default = false
 
 # Do not halt callback chains when a callback returns false. Previous versions had true.
+# # TODO: check all return false and change to `throw(:abort) if you_need_to_halt`and change this to false
 ActiveSupport.halt_callback_chains_on_return_false = true

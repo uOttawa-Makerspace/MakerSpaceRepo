@@ -2,6 +2,7 @@
 
 source 'https://rubygems.org'
 ruby '2.5.3'
+gem 'rails', '~> 5.0.0'
 
 gem 'aws-sdk', '~> 2.0'
 gem 'bcrypt', '~> 3.1.10'
@@ -27,7 +28,6 @@ gem 'progress_bar', '~> 1.0.3'
 gem 'pry', '~> 0.10.1'
 gem 'pry-rails', group: :development
 gem 'quick_random_records'
-gem 'rails', '~> 5.0.0'
 gem 'redactor-rails', '~> 0.5.0'
 gem 'rubyzip', '~> 1.3', require: 'zip'
 gem 's3_direct_upload'
@@ -70,7 +70,9 @@ group :development do
   gem 'letter_opener'
   gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
-  gem 'web-console', '~> 2.0'
+  gem 'web-console', '>= 3.3.0'
+  gem 'listen', '~> 3.0.5'
+  gem 'spring-watcher-listen', '~> 2.0.0'
 
   # ssh deployment
   gem 'bcrypt_pbkdf', '~> 1.0'

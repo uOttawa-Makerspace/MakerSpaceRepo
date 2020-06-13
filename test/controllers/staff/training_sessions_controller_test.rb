@@ -31,7 +31,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
                                    user_id: @user.id).present?
     assert_not TrainingSession.find_by(training_id: Training.find_by(name: 'lathe_1'),
                                        user_id: @user.id).present?
-    assert_redirected_to :back
+    assert_redirected_to @request.env['HTTP_REFERER'] # redirect_to :back
     assert_equal flash[:notice], 'Training session updated succesfully'
   end
 

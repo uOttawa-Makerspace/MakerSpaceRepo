@@ -65,7 +65,7 @@ Rails.application.routes.draw do
     get 'about'
     get 'contact'
     get 'calendar'
-    get 'report_repository', path: 'report_repository/:repository_id'
+    get "report_repository/:repository_id", :as => "report_repository", :action => "report_repository"
   end
 
   # RFID
@@ -77,9 +77,9 @@ Rails.application.routes.draw do
   namespace :search, path: '/', as: nil do
     get 'explore'
     get 'search'
-    get 'category', path: 'category/:slug'
-    get 'featured', path: 'category/:slug/featured'
-    get 'equipment', path: 'equipment/:slug'
+    get "category/:slug", :as => "category", :action => "category"
+    get "category/:slug/featured", :as => "featured", :action => "featured"
+    get "equipment/:slug", :as => "equipment", :action => "equipment"
   end
 
   # TEMPLATE
@@ -132,13 +132,13 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    get 'index', path: '/'
+    get "/", :as => "index", :action => "index"
 
     get 'manage_badges'
 
     namespace :report_generator do
-      get 'index', path: '/'
-      post 'generate', path: '/generate', format: :xlsx
+      get "/", :as => "index", :action => "index"
+      post "/generate", :as => "generate", :action => "generate", format: :xlsx
     end
 
     resources :users, only: %i[index edit update show] do
@@ -154,7 +154,7 @@ Rails.application.routes.draw do
     end
 
     resources :spaces, only: %i[index create edit] do
-      delete 'destroy', path: '/edit/'
+      delete "/edit/", :as => "destroy", :action => "destroy"
     end
 
     resources :pi_readers, only: [:update]
@@ -162,7 +162,7 @@ Rails.application.routes.draw do
     resources :trainings
 
     resources :training_sessions do
-      get 'index', path: '/'
+      get "/", :as => "index", :action => "index"
 
       member do
         patch 'update'
@@ -189,10 +189,10 @@ Rails.application.routes.draw do
   end
 
   namespace :staff do
-    get 'index', path: '/'
+    get "/", :as => "index", :action => "index"
 
     resources :training_sessions do
-      get 'index', path: '/', on: :collection
+      get "/", :as => "index", :action => "index", on: :collection
       member do
         post 'certify_trainees'
         patch 'renew_certification'
@@ -203,12 +203,12 @@ Rails.application.routes.draw do
   end
 
   namespace :staff_dashboard do
-    get 'index', path: '/'
+    get "/", :as => "index", :action => "index"
     get 'search'
     get 'present_users_report'
-    put 'change_space', path: '/change_space'
-    put 'sign_in_users', path: '/add_users'
-    put 'sign_out_users', path: '/remove_users'
+    put "/change_space", :as => "change_space", :action => "change_space"
+    put "/add_users", :as => "sign_in_users", :action => "sign_in_users"
+    put "/remove_users", :as => "sign_out_users", :action => "sign_out_users"
     put 'link_rfid'
     put 'unlink_rfid'
     get 'sign_out_all_users'
@@ -228,7 +228,7 @@ Rails.application.routes.draw do
       get :revoke_badge
       get :populate_badge_list
       get :certify
-      get 'grant_badge', path: 'grant'
+      get "grant", :as => "grant_badge", :action => "grant_badge"
       get :reinstate
       get :update_badge_data
       get :update_badge_templates
@@ -314,7 +314,7 @@ Rails.application.routes.draw do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post 'vote', to: 'users#vote', path: 'vote/:comment_id'
+  post "vote/:comment_id", :as => "vote", :action => "vote", to: 'users#vote'
 
   # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
@@ -330,14 +330,14 @@ Rails.application.routes.draw do
   resources :repositories, path: '/:user_username', param: :slug, except: :index do
     post 'add_like', on: :member
     collection do
-      get 'download_files', path: ':slug/download_files'
-      get 'download', path: ':slug/download'
+      get ":slug/download_files", :as => "download_files", :action => "download_files"
+      get ":slug/download", :as => "download", :action => "download"
       patch :link_to_pp
       patch :add_owner
       patch :remove_owner
     end
     member do
-      get 'password_entry', path: '/password_entry'
+      get "/password_entry", :as => "password_entry", :action => "password_entry"
       post 'pass_authenticate'
     end
   end
