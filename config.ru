@@ -16,5 +16,5 @@
 # # Max memory size (RSS) per worker
 # use Unicorn::WorkerKiller::Oom, oom_min, oom_max
 
-require ::File.expand_path('../config/environment', __FILE__)
+require_relative 'config/environment'
 run Rails.application

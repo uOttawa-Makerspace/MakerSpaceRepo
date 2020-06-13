@@ -9,7 +9,7 @@ gem 'bootbox-rails', '~>0.4'
 gem 'bootstrap', '~> 4.3.1'
 gem 'caxlsx', '~> 3.0.1'
 gem 'clipboard-rails'
-gem 'coffee-rails', '~> 4.1.0'
+gem 'coffee-rails', '~> 4.2'
 gem 'excon'
 gem 'fastimage', '~> 1.7.0'
 gem 'font-awesome-rails', '~> 4.6.3.0'
@@ -40,7 +40,7 @@ gem 'sidekiq'
 gem 'simplecov'
 gem 'thin', '~> 1.6.3'
 gem 'toastr-rails'
-gem 'turbolinks', '~> 2.5.4'
+gem 'turbolinks', '~> 5'
 gem 'uglifier', '>= 1.3.0'
 gem 'unicorn-worker-killer', '~> 0.4.3'
 gem 'whenever', require: false
@@ -58,10 +58,12 @@ gem 'capistrano-rbenv', '~> 2.1'
 gem 'net-ssh'
 
 group :development, :test do
-  gem 'byebug', '~> 5.0.0'
+  gem 'byebug', platform: :mri
   gem 'factory_girl_rails', '~> 4.2.1'
   gem 'railroady'
   gem 'spring', '~> 1.3.4'
+  gem 'listen', '~> 3.0.5'
+  gem 'spring-watcher-listen', '~> 2.0.0'
 end
 
 group :development do
