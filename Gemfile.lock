@@ -267,7 +267,7 @@ GEM
     pry-rails (0.3.9)
       pry (>= 0.10.4)
     quick_random_records (0.3.2)
-      activerecord (= 5.1.7)
+      activerecord (>= 3)
     rack (2.2.2)
     rack-protection (2.0.8.1)
       rack
@@ -500,7 +500,7 @@ DEPENDENCIES
   progress_bar (~> 1.0.3)
   pry (~> 0.10.4)
   pry-rails (~> 0.3.9)
-  quick_random_records
+  quick_random_records (~> 0.3.2)
   railroady
   rails (~> 5.1.0)
   rails-controller-testing
