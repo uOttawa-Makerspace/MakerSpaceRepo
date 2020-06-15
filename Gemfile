@@ -25,8 +25,8 @@ gem 'paperclip-av-transcoder'
 gem 'pg', '~> 0.18.2'
 gem 'photoswipe-rails', '~> 4.0.8a'
 gem 'progress_bar', '~> 1.0.3'
-gem 'pry', '~> 0.10.1'
-gem 'pry-rails', group: :development
+gem 'pry', '~> 0.10.4'
+gem 'pry-rails', '~> 0.3.9', group: :development
 gem 'quick_random_records'
 gem 'redactor-rails', '~> 0.5.0'
 gem 'rubyzip', '~> 2.1', require: 'zip'
@@ -35,7 +35,7 @@ gem 'saml_idp', '~> 0.8.0'
 gem 'sass-rails', '~> 5.0.3'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'select2-rails'
-gem 'shopify_app'
+gem 'shopify_app', '~> 9.0.4'
 gem 'sidekiq'
 gem 'simplecov'
 gem 'thin', '~> 1.6.3'
@@ -63,7 +63,7 @@ group :development, :test do
   gem 'factory_girl_rails', '~> 4.2.1'
   gem 'railroady'
   gem 'spring', '~> 2.1.0'
-  gem 'listen', '~> 3.0.5'
+  gem 'listen', '~> 3.2.1'
   gem 'spring-watcher-listen', '~> 2.0.0'
 end
 
@@ -81,7 +81,7 @@ group :test do
   gem 'capybara', '~> 2.1.0'
   gem 'database_cleaner', '~> 1.0.1'
   gem 'faker', '~> 1.1.2'
-  gem 'launchy', '~> 2.3.0'
+  gem 'launchy', '~> 2.2.0'
   gem 'rails-controller-testing'
   gem 'selenium-webdriver', '~> 3.142.7'
 end
