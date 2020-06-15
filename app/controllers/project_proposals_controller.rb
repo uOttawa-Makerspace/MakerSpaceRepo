@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 class ProjectProposalsController < ApplicationController
-  before_action :set_project_proposal, only: [:show, :edit, :update, :destroy]
+  before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
   before_action :show_only_project_approved, only: [:show]
 
@@ -7,13 +9,13 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals.json
   def index
     @user = current_user
-    unless @user.admin?
-      @project_proposals = ProjectProposal.all
-          .joins('LEFT OUTER JOIN project_joins ON (project_proposals.id = project_joins.project_proposal_id)')
-          .where('project_joins.id IS NULL')
-          .order(created_at: :desc)
-    else
+    if @user.admin?
       @project_proposals = ProjectProposal.all.order(created_at: :desc)
+    else
+      @project_proposals = ProjectProposal.all
+                                          .joins('LEFT OUTER JOIN project_joins ON (project_proposals.id = project_joins.project_proposal_id)')
+                                          .where('project_joins.id IS NULL')
+                                          .order(created_at: :desc)
     end
   end
 
@@ -21,7 +23,7 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals/1.json
   def show
     @categories = @project_proposal.categories
-    @repositories = @project_proposal.repositories.paginate(:per_page=>12,:page=>params[:page]).public_repos.order([sort_order].to_h).page params[:page]
+    @repositories = @project_proposal.repositories.paginate(per_page: 12, page: params[:page]).public_repos.order([sort_order].to_h).page params[:page]
     @photos = photo_hash
   end
 
@@ -37,9 +39,9 @@ class ProjectProposalsController < ApplicationController
 
   def projects_assigned
     @project_proposals = ProjectProposal.joins(:project_joins)
-                             .joins('LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id)')
-                             .where('repositories.id IS NULL')
-                             .uniq.order(created_at: :desc)
+                                        .joins('LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id)')
+                                        .where('repositories.id IS NULL')
+                                        .uniq.order(created_at: :desc)
   end
 
   def projects_completed
@@ -93,15 +95,15 @@ class ProjectProposalsController < ApplicationController
 
   def approval
     @project_proposal = ProjectProposal.find(params[:id])
-    @project_proposal.update_attributes(:approved => 1, :admin_id => current_user.id)
-    flash[:notice] = "Project Proposal Approved"
+    @project_proposal.update(approved: 1, admin_id: current_user.id)
+    flash[:notice] = 'Project Proposal Approved'
     redirect_to @project_proposal
   end
 
   def disapproval
     @project_proposal = ProjectProposal.find(params[:id])
-    @project_proposal.update_attributes(:approved => 0, :admin_id => current_user.id)
-    flash[:notice] = "Project Proposal Disapproved"
+    @project_proposal.update(approved: 0, admin_id: current_user.id)
+    flash[:notice] = 'Project Proposal Disapproved'
     redirect_to @project_proposal
   end
 
@@ -110,10 +112,10 @@ class ProjectProposalsController < ApplicationController
     @project_join = ProjectJoin.new(project_join_params)
     @project_join.user_id = @user.id
     if @project_join.save
-      flash[:notice] = "You joined this project."
+      flash[:notice] = 'You joined this project.'
       redirect_to @project_proposal
     else
-      flash[:alert] = "You already joined this project or something went wrong."
+      flash[:alert] = 'You already joined this project or something went wrong.'
       redirect_to @project_proposal
     end
   end
@@ -122,52 +124,55 @@ class ProjectProposalsController < ApplicationController
     @project_proposal = ProjectProposal.find(params[:project_proposal_id])
     @project_join = ProjectJoin.find(params[:project_join_id])
     if @project_join.delete
-      flash[:notice] = "You unjoined this project."
+      flash[:notice] = 'You unjoined this project.'
       redirect_to @project_proposal
     else
-      flash[:alert] = "Something went wrong."
+      flash[:alert] = 'Something went wrong.'
       redirect_to @project_proposal
     end
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_project_proposal
-      @project_proposal = ProjectProposal.find(params[:id])
-    end
 
-    # Never trust parameters from the scary internet, only allow the white list through.
-    def project_proposal_params
-      params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description,
-                                               :youtube_link, :username, :email, :client, :client_type,
-                                               :client_interest, :client_background, :supervisor_background, :equipments, :area => [])
-    end
+  # Use callbacks to share common setup or constraints between actions.
+  def set_project_proposal
+    @project_proposal = ProjectProposal.find(params[:id])
+  end
 
-    def create_categories
+  # Never trust parameters from the scary internet, only allow the white list through.
+  def project_proposal_params
+    params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description,
+                                             :youtube_link, :username, :email, :client, :client_type,
+                                             :client_interest, :client_background, :supervisor_background, :equipments, area: [])
+  end
+
+  def create_categories
+    if params['categories'].present?
       params['categories'].first(5).each do |c|
         Category.create(name: c, project_proposal_id: @project_proposal.id)
-      end if params['categories'].present?
-    end
-
-    def project_join_params
-      params.permit(:project_proposal_id)
-    end
-
-    def show_only_project_approved
-      if !@user.admin? && @project_proposal.approved != 1
-        flash[:alert] = "You are not allowed to access this project."
-        redirect_to root_path
       end
+      end
+  end
+
+  def project_join_params
+    params.permit(:project_proposal_id)
+  end
+
+  def show_only_project_approved
+    if !@user.admin? && @project_proposal.approved != 1
+      flash[:alert] = 'You are not allowed to access this project.'
+      redirect_to root_path
     end
+  end
 
   # TODO: sort_order and photo_hash for everyone
   def sort_order
     case params[:sort]
-      when 'newest' then [:created_at, :desc]
-      when 'most_likes' then [:like, :desc]
-      when 'most_makes' then [:make, :desc]
-      when 'recently_updated' then [:updated_at, :desc]
-      else [:created_at, :desc]
+    when 'newest' then %i[created_at desc]
+    when 'most_likes' then %i[like desc]
+    when 'most_makes' then %i[make desc]
+    when 'recently_updated' then %i[updated_at desc]
+    else %i[created_at desc]
     end
   end
 
@@ -175,6 +180,6 @@ class ProjectProposalsController < ApplicationController
     repository_ids = @repositories.map(&:id)
     photo_ids = Photo.where(repository_id: repository_ids).group(:repository_id).minimum(:id)
     photos = Photo.find(photo_ids.values)
-    photos.inject({}) { |h,e| h.merge!(e.repository_id => e) }
+    photos.inject({}) { |h, e| h.merge!(e.repository_id => e) }
   end
 end

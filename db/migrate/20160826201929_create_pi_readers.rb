@@ -1,4 +1,6 @@
-class CreatePiReaders < ActiveRecord::Migration
+# frozen_string_literal: true
+
+class CreatePiReaders < ActiveRecord::Migration[5.0]
   def change
     create_table :pi_readers do |t|
       t.string :pi_mac_address

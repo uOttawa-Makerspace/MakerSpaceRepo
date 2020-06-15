@@ -1,7 +1,9 @@
-class Video < ActiveRecord::Base
+# frozen_string_literal: true
+
+class Video < ApplicationRecord
   include Sidekiq::Worker
   belongs_to :proficient_project
-  scope :processed, -> {where(processed: true)}
+  scope :processed, -> { where(processed: true) }
 
   has_attached_file :video
   # Large files are not pratical to transcode
@@ -10,10 +12,10 @@ class Video < ActiveRecord::Base
   #     :thumb => { :geometry => "100x100#", :format => 'jpg', :time => 10 }
   # }, :processors => [:transcoder]
 
-  Rails.env.eql?("development") ? BUCKET_NAME = ENV.fetch('S3_BUCKET_NAME', "makerspace-testing-for-real") : BUCKET_NAME = Rails.application.secrets.s3_bucket_name
+  Rails.env.eql?('development') ? BUCKET_NAME = ENV.fetch('S3_BUCKET_NAME', 'makerspace-testing-for-real') : BUCKET_NAME = Rails.application.secrets.s3_bucket_name
   DIRECT_UPLOAD_URL_FORMAT = %r{\Ahttps:\/\/#{BUCKET_NAME}\.s3\.amazonaws\.com\/(?<path>.+\/(?<filename>.+))\z}.freeze
 
-  validates_attachment_content_type :video, :content_type => /\Avideo\/.*\Z/
+  validates_attachment_content_type :video, content_type: %r{\Avideo/.*\Z}
   validates :direct_upload_url, presence: true, format: { with: DIRECT_UPLOAD_URL_FORMAT }
   # before_create :set_video_attributes
   after_create :queue_finalize_and_cleanup
@@ -24,7 +26,11 @@ class Video < ActiveRecord::Base
 
   # Store an unescaped version of the escaped URL that Amazon returns from direct upload.
   def direct_upload_url=(escaped_url)
-    write_attribute(:direct_upload_url, (CGI.unescape(escaped_url) rescue nil))
+    self[:direct_upload_url] = (begin
+                                           CGI.unescape(escaped_url)
+                                rescue StandardError
+                                  nil
+                                         end)
   end
 
   def self.finalize_and_cleanup(id)

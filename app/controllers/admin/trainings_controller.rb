@@ -1,6 +1,7 @@
-class Admin::TrainingsController < AdminAreaController
+# frozen_string_literal: true
 
-  before_action :changed_training, only: [:update, :destroy]
+class Admin::TrainingsController < AdminAreaController
+  before_action :changed_training, only: %i[update destroy]
 
   layout 'admin_area'
 
@@ -21,9 +22,9 @@ class Admin::TrainingsController < AdminAreaController
   def create
     @new_training = Training.new(training_params)
     if @new_training.save
-      flash[:notice] = "Training added successfully!"
+      flash[:notice] = 'Training added successfully!'
     else
-      flash[:alert] = "Input is invalid"
+      flash[:alert] = 'Input is invalid'
     end
     redirect_to admin_trainings_path
   end
@@ -31,28 +32,25 @@ class Admin::TrainingsController < AdminAreaController
   def update
     @changed_training.update(training_params)
     if @changed_training.save
-      flash[:notice] = "Training renamed successfully"
+      flash[:notice] = 'Training renamed successfully'
     else
-      flash[:alert] = "Input is invalid"
+      flash[:alert] = 'Input is invalid'
     end
     redirect_to admin_trainings_path
   end
 
   def destroy
-    if @changed_training.destroy
-      flash[:notice] = "Training removed successfully"
-    end
+    flash[:notice] = 'Training removed successfully' if @changed_training.destroy
     redirect_to admin_trainings_path
   end
 
   private
 
   def training_params
-      params.require(:training).permit(:name, space_ids: [])
+    params.require(:training).permit(:name, space_ids: [])
   end
 
   def changed_training
     @changed_training = Training.find(params['id'])
   end
-
 end

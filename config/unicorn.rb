@@ -1,4 +1,6 @@
-APP_PATH = "/home/deploy/apps/Makerepo/current"
+# frozen_string_literal: true
+
+APP_PATH = '/home/deploy/apps/Makerepo/current'
 pid "#{APP_PATH}/tmp/pids/unicorn.pid"
 
 # Use at least one worker per core if you're on a dedicated server,
@@ -7,7 +9,7 @@ worker_processes 2
 
 working_directory APP_PATH
 
-listen "/var/run/makerspacerepo/unicorn.sock", :backlog => 64
+listen '/var/run/makerspacerepo/unicorn.sock', backlog: 64
 
 timeout 30
 
@@ -28,7 +30,7 @@ check_client_connection false
 # local variable to guard against running a hook multiple times
 run_once = true
 
-before_fork do |server, worker|
+before_fork do |_server, _worker|
   # the following is highly recomended for Rails + "preload_app true"
   # as there's no need for the master process to hold a connection
   defined?(ActiveRecord::Base) and
@@ -41,14 +43,10 @@ before_fork do |server, worker|
     # do_something_once_here ...
     run_once = false # prevent from firing again
   end
-
 end
 
-after_fork do |server, worker|
-
+after_fork do |_server, _worker|
   # the following is *required* for Rails + "preload_app true",
   defined?(ActiveRecord::Base) and
     ActiveRecord::Base.establish_connection
-
 end
-

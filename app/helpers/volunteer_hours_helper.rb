@@ -1,16 +1,18 @@
+# frozen_string_literal: true
+
 module VolunteerHoursHelper
   def calculate_hours(volunteer_hours)
-    return volunteer_hours.sum
+    volunteer_hours.sum
   end
 
   def return_approval(approval)
     case approval
     when nil
-      "Not Accessed"
+      'Not Accessed'
     when true
-      "Approved"
+      'Approved'
     when false
-      "Not Approved"
+      'Not Approved'
     end
   end
 

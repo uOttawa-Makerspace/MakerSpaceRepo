@@ -1,4 +1,6 @@
-class ExamQuestion < ActiveRecord::Base
+# frozen_string_literal: true
+
+class ExamQuestion < ApplicationRecord
   belongs_to :exam
   belongs_to :question
   has_one    :exam_response

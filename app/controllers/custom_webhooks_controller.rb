@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CustomWebhooksController < ApplicationController
   include ShopifyApp::WebhookVerification
 
@@ -7,7 +9,7 @@ class CustomWebhooksController < ApplicationController
     if discount_code_params['discount_codes'].present?
       shopify_discount_code = discount_code_params['discount_codes'][0]['code']
       discount_code = DiscountCode.find_by(code: shopify_discount_code)
-      discount_code.update_attributes(usage_count: 1) if discount_code
+      discount_code&.update(usage_count: 1)
     end
     head :ok
   end

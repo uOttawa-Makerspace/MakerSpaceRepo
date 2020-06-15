@@ -1,4 +1,6 @@
-class CreateJoinTableUsersProficientProjects < ActiveRecord::Migration
+# frozen_string_literal: true
+
+class CreateJoinTableUsersProficientProjects < ActiveRecord::Migration[5.0]
   def change
     create_join_table :users, :proficient_projects do |t|
       # t.index [:user_id, :proficient_project_id]

@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 class VideosController < DevelopmentProgramsController
   before_action :grant_access_admin
-  before_action :set_video, only: [:download, :destroy]
+  before_action :set_video, only: %i[download destroy]
 
   def index
     @videos = Video.order(created_at: :desc)
@@ -12,11 +14,11 @@ class VideosController < DevelopmentProgramsController
 
   def create
     @video = Video.new(video_params)
-    @video.proficient_project_id = params["proficient_project_id"]
-    @video.video_file_name = params["filename"]
-    @video.video_file_size = params["filesize"]
-    @video.video_content_type = params["filetype"]
-    @video.video_updated_at = params["lastModifiedDate"]
+    @video.proficient_project_id = params['proficient_project_id']
+    @video.video_file_name = params['filename']
+    @video.video_file_size = params['filesize']
+    @video.video_content_type = params['filetype']
+    @video.video_updated_at = params['lastModifiedDate']
     @video.save
   end
 
@@ -26,7 +28,7 @@ class VideosController < DevelopmentProgramsController
 
   def destroy
     @video.destroy
-    flash[:notice] = "Video Deleted."
+    flash[:notice] = 'Video Deleted.'
     redirect_to videos_path
   end
 
@@ -43,7 +45,7 @@ class VideosController < DevelopmentProgramsController
   def grant_access_admin
     unless current_user.admin?
       redirect_to root_path
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = 'You cannot access this area.'
     end
   end
 end

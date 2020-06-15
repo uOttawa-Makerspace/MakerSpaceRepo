@@ -1,11 +1,10 @@
+# frozen_string_literal: true
+
 namespace :csv do
-
-  task :certify_existing_users,[:path] => :environment do |t, args|
-
+  task :certify_existing_users, [:path] => :environment do |_t, args|
     test_spreadsheet = Rails.root.join(args[:path])
 
     CSV.foreach(test_spreadsheet) do |row|
-
       student_id = row[2]
       name = row[3]
       email = row[6]
@@ -17,7 +16,9 @@ namespace :csv do
 
       if user && training && trainer
         certs = user.certifications.map(&:training)
-        unless certs.include?(training)
+        if certs.include?(training)
+          puts "Ignored: #{user.username} is already certified for #{training}."
+        else
           training_session = TrainingSession.new(training_id: Training.find_by(name: training).id, user_id: User.find_by(name: trainer).id, course: course)
           training_session.users << user
           if training_session.save
@@ -30,13 +31,10 @@ namespace :csv do
           else
             puts "Error: (a) #{trainer} not recognized as a Staff or (b) #{training} not found as a TrainingOption."
           end
-        else
-          puts "Ignored: #{user.username} is already certified for #{training}."
         end
       else
         puts "Error: #{name} is not found as a user"
       end
     end
   end
-
 end

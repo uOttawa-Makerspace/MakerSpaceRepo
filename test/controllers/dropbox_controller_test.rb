@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 
 class DropboxControllerTest < ActionController::TestCase
@@ -15,5 +17,4 @@ class DropboxControllerTest < ActionController::TestCase
   #   get :callback
   #   assert_response :success
   # end
-
 end

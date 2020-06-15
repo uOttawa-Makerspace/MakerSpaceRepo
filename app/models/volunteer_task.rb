@@ -1,4 +1,6 @@
-class VolunteerTask < ActiveRecord::Base
+# frozen_string_literal: true
+
+class VolunteerTask < ApplicationRecord
   belongs_to :user
   belongs_to :space
   has_many :volunteer_hours, dependent: :destroy

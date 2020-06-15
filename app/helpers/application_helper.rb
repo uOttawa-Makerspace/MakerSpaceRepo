@@ -1,13 +1,12 @@
-module ApplicationHelper
+# frozen_string_literal: true
 
+module ApplicationHelper
   attr_accessor :github
 
   def sign_in(username, password)
     user = User.authenticate(username, password)
 
-    unless user.nil?
-      session[:user_id] = user.id
-    end
+    session[:user_id] = user.id unless user.nil?
 
     user
   end
@@ -42,32 +41,31 @@ module ApplicationHelper
   end
 
   def license_url
-    {"Creative Commons - Attribution" => licenses_cca_path,
-     "Creative Commons - Attribution - Share Alike" => licenses_ccasa_path,
-     "Creative Commons - Attribution - No Derivatives" => licenses_ccand_path,
-     "Creative Commons - Attribution - Non-Commercial" => licenses_ccanc_path,
-     "Attribution - Non-Commercial - Share Alike" => licenses_ancsa_path,
-     "Attribution - Non-Commercial - No Derivatives" => licenses_ancnd_path}
+    { 'Creative Commons - Attribution' => licenses_cca_path,
+      'Creative Commons - Attribution - Share Alike' => licenses_ccasa_path,
+      'Creative Commons - Attribution - No Derivatives' => licenses_ccand_path,
+      'Creative Commons - Attribution - Non-Commercial' => licenses_ccanc_path,
+      'Attribution - Non-Commercial - Share Alike' => licenses_ancsa_path,
+      'Attribution - Non-Commercial - No Derivatives' => licenses_ancnd_path }
   end
 
   private
 
-    def page_title (curr_page = '')
-      base_title = "MakerRepo"
-      if curr_page.empty?
-        base_title
-      else
-        curr_page + " | " + base_title
-      end
+  def page_title(curr_page = '')
+    base_title = 'MakerRepo'
+    if curr_page.empty?
+      base_title
+    else
+      curr_page + ' | ' + base_title
     end
+  end
 
-    def youtube_video(url)
-      render :partial => 'partials/streaming', :locals => {:url => url}
-    end
+  def youtube_video(url)
+    render partial: 'partials/streaming', locals: { url: url }
+  end
 
-    def load_rakes
-      require 'rake'
-      MakerSpaceRepo::Application.load_tasks if Rake::Task.tasks.empty?
-    end
-
+  def load_rakes
+    require 'rake'
+    MakerSpaceRepo::Application.load_tasks if Rake::Task.tasks.empty?
+  end
 end
