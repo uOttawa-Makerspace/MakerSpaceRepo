@@ -1,4 +1,6 @@
-class CreateCertifications < ActiveRecord::Migration
+# frozen_string_literal: true
+
+class CreateCertifications < ActiveRecord::Migration[5.0]
   def change
     create_table :certifications do |t|
       t.references :user, index: true, foreign_key: true

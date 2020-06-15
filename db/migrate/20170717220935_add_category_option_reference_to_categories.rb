@@ -1,4 +1,6 @@
-class AddCategoryOptionReferenceToCategories < ActiveRecord::Migration
+# frozen_string_literal: true
+
+class AddCategoryOptionReferenceToCategories < ActiveRecord::Migration[5.0]
   def change
     add_reference :categories, :category_option, index: true, foreign_key: true
   end

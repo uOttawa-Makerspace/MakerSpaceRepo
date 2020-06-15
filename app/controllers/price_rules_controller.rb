@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 class PriceRulesController < DevelopmentProgramsController
   before_action :admin_access
-  before_action :set_price_rule, only: [:edit, :update, :destroy]
-  before_action :check_discount_codes, only: [:edit, :update]
+  before_action :set_price_rule, only: %i[edit update destroy]
+  before_action :check_discount_codes, only: %i[edit update]
 
   def index
     @price_rules = PriceRule.all
@@ -11,8 +13,7 @@ class PriceRulesController < DevelopmentProgramsController
     @price_rule = PriceRule.new
   end
 
-  def edit
-  end
+  def edit; end
 
   def create
     @price_rule = PriceRule.new(price_rule_params)
@@ -57,24 +58,25 @@ class PriceRulesController < DevelopmentProgramsController
 
   private
 
-    def admin_access
-      unless current_user.admin?
-        flash[:alert] = "Forbbiden Area"
-        redirect_to root_path
-      end
+  def admin_access
+    unless current_user.admin?
+      flash[:alert] = 'Forbbiden Area'
+      redirect_to root_path
     end
-    def set_price_rule
-      @price_rule = PriceRule.find(params[:id])
-    end
+  end
 
-    def price_rule_params
-      params.require(:price_rule).permit(:title, :value, :cc)
-    end
+  def set_price_rule
+    @price_rule = PriceRule.find(params[:id])
+  end
 
-    def check_discount_codes
-      unless !@price_rule.has_discount_codes?
-        flash[:alert] = "This price rule cannot be eddited/deleted because it has already discount codes"
-        redirect_to price_rules_path
-      end
+  def price_rule_params
+    params.require(:price_rule).permit(:title, :value, :cc)
+  end
+
+  def check_discount_codes
+    if @price_rule.has_discount_codes?
+      flash[:alert] = 'This price rule cannot be eddited/deleted because it has already discount codes'
+      redirect_to price_rules_path
     end
+  end
 end

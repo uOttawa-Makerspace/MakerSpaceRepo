@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Rails.application.configure do
   $n_exams_question = 3
   # Settings specified here will take precedence over those in config/application.rb.
@@ -10,9 +12,18 @@ Rails.application.configure do
   # Do not eager load code on boot.
   config.eager_load = false
 
-  # Show full error reports and disable caching.
-  config.consider_all_requests_local       = true
-  config.action_controller.perform_caching = false
+  config.consider_all_requests_local = true
+
+  if Rails.root.join('tmp/caching-dev.txt').exist?
+    config.action_controller.perform_caching = true
+    config.cache_store = :memory_store
+    config.public_file_server.headers = {
+        'Cache-Control' => 'public, max-age=172800'
+    }
+  else
+    config.action_controller.perform_caching = false
+    config.cache_store = :null_store
+  end
 
   # Don't care if the mailer can't send.
   config.action_mailer.raise_delivery_errors = false
@@ -28,14 +39,9 @@ Rails.application.configure do
   # number of complex assets.
   config.assets.debug = true
 
-  # Asset digests allow you to set far-future HTTP expiration dates on all assets,
-  # yet still be able to expire them through the digest params.
-  config.assets.digest = true
+  config.assets.quiet = true
 
-  # Adds additional error checking when serving assets at runtime.
-  # Checks for improperly declared sprockets dependencies.
-  # Raises helpful error messages.
-  config.assets.raise_runtime_errors = true
+  config.file_watcher = ActiveSupport::EventedFileUpdateChecker
 
   # Raises error for missing translations
   # config.action_view.raise_on_missing_translations = true
@@ -47,34 +53,34 @@ Rails.application.configure do
     c.client_secret    = ENV['GITHUB_APP_KEY_SECRET']
   end
 
-  #SMTP GMail Settings
-  config.action_mailer.default_url_options = { :host => 'localhost:3000'}
+  # SMTP GMail Settings
+  config.action_mailer.perform_caching = false
+  config.action_mailer.default_url_options = { host: 'localhost:3000' }
 
   # Use letter opener to open emails i development mode
   # config.action_mailer.delivery_method = :smtp
   config.action_mailer.delivery_method = :letter_opener
   config.action_mailer.perform_deliveries = true
 
-  #GMAIL SETUP
+  # GMAIL SETUP
   config.action_mailer.smtp_settings = {
-    :address => "smtp.sendgrid.net",
-    :port => 587,
-    :user_name => ENV['SMTP_USER'],
-    :password => ENV['SMTP_PASSWORD'],
-    :authentication => 'plain',
-    :enable_starttls_auto => true
+    address: 'smtp.sendgrid.net',
+    port: 587,
+    user_name: ENV['SMTP_USER'],
+    password: ENV['SMTP_PASSWORD'],
+    authentication: 'plain',
+    enable_starttls_auto: true
   }
-  
+
   # config.force_ssl = true
 
   config.paperclip_defaults = {
-      storage: :s3,
-      s3_region: ENV.fetch('AWS_REGION', "us-west-2"),
-      s3_credentials: {
-          bucket: ENV.fetch('S3_BUCKET_NAME', "makerspace-testing-for-real"),
-          access_key_id: ENV.fetch('AWS_ACCESS_KEY_ID', "wrong"),
-          secret_access_key: ENV.fetch('AWS_SECRET_ACCESS_KEY', "wrong")
-      }
+    storage: :s3,
+    s3_region: ENV.fetch('AWS_REGION', 'us-west-2'),
+    s3_credentials: {
+      bucket: ENV.fetch('S3_BUCKET_NAME', 'makerspace-testing-for-real'),
+      access_key_id: ENV.fetch('AWS_ACCESS_KEY_ID', 'wrong'),
+      secret_access_key: ENV.fetch('AWS_SECRET_ACCESS_KEY', 'wrong')
+    }
   }
-
 end

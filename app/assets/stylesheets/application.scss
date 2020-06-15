@@ -116,10 +116,10 @@ span.form-error{
   font-size: 0.6rem;
 }
 
-html.turbolinks-progress-bar::before {
-  background-color: theme-color("primary") !important;
-  height: 10px !important;
-}
+//html.turbolinks-progress-bar::before {
+//  background-color: theme-color("primary") !important;
+//  height: 10px !important;
+//}
 
 .main {
   flex-shrink: 0;

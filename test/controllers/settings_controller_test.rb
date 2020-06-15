@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 
 class SettingsControllerTest < ActionController::TestCase
@@ -10,5 +12,4 @@ class SettingsControllerTest < ActionController::TestCase
   #   get :admin
   #   assert_response :success
   # end
-
 end

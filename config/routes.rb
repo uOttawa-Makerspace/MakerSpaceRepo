@@ -1,35 +1,37 @@
+# frozen_string_literal: true
+
 Rails.application.routes.draw do
-  resources :price_rules, only: [:index, :new, :create, :destroy, :edit, :update]
-  resources :discount_codes, only: [:new, :index, :create]
+  resources :price_rules, only: %i[index new create destroy edit update]
+  resources :discount_codes, only: %i[new index create]
   resources :custom_webhooks do
     collection do
       post :orders_paid
     end
   end
 
-  resources :videos, only: [:index, :new, :create, :destroy]
+  resources :videos, only: %i[index new create destroy]
   get 'videos/:id/download/:filename', to: 'videos#download', constraints: { filename: /.+/ }, as: 'download_video'
 
   require 'sidekiq/web'
   Sidekiq::Web.use Rack::Auth::Basic do |username, password|
-    get_username = Rails.application.secrets.sidekiq_username || "adam"
-    get_password = Rails.application.secrets.sidekiq_password || "Password1"
+    get_username = Rails.application.secrets.sidekiq_username || 'adam'
+    get_password = Rails.application.secrets.sidekiq_password || 'Password1'
     username == get_username && password == get_password
   end
   mount Sidekiq::Web => '/sidekiq'
 
   resources :carts, only: [:index]
-  resources :order_items, only: [:create, :update, :destroy] do
+  resources :order_items, only: %i[create update destroy] do
     get :revoke, path: 'revoke'
   end
 
-  resources :orders, only: [:index, :create, :destroy]
+  resources :orders, only: %i[index create destroy]
 
   get '/saml/auth' => 'saml_idp#login'
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
 
-  resources :print_orders, only: [:index, :create, :update, :new, :destroy] do
+  resources :print_orders, only: %i[index create update new destroy] do
     get :invoice
   end
 
@@ -52,7 +54,7 @@ Rails.application.routes.draw do
     end
   end
 
-  root "static_pages#home"
+  root 'static_pages#home'
 
   # STATIC PAGES
   namespace :static_pages, path: '/', as: nil do
@@ -63,7 +65,7 @@ Rails.application.routes.draw do
     get 'about'
     get 'contact'
     get 'calendar'
-    get 'report_repository', path: 'report_repository/:repository_id'
+    get "report_repository/:repository_id", :as => "report_repository", :action => "report_repository"
   end
 
   # RFID
@@ -75,9 +77,9 @@ Rails.application.routes.draw do
   namespace :search, path: '/', as: nil do
     get 'explore'
     get 'search'
-    get 'category', path: 'category/:slug'
-    get 'featured', path: 'category/:slug/featured'
-    get 'equipment', path: 'equipment/:slug'
+    get "category/:slug", :as => "category", :action => "category"
+    get "category/:slug/featured", :as => "featured", :action => "featured"
+    get "equipment/:slug", :as => "equipment", :action => "equipment"
   end
 
   # TEMPLATE
@@ -110,10 +112,10 @@ Rails.application.routes.draw do
     get 'admin'
   end
 
-  resources :skills, only: [:edit, :update]
+  resources :skills, only: %i[edit update]
 
   get 'help', to: 'help#main'
-  put 'send_email', to:'help#send_email'
+  put 'send_email', to: 'help#send_email'
 
   namespace :licenses do
     get 'common-creative-attribution', as: 'cca'
@@ -130,16 +132,16 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    get 'index', path: '/'
+    get "/", :as => "index", :action => "index"
 
     get 'manage_badges'
 
     namespace :report_generator do
-      get 'index', path: '/'
-      post 'generate', path: '/generate', format: :xlsx
+      get "/", :as => "index", :action => "index"
+      post "/generate", :as => "generate", :action => "generate", format: :xlsx
     end
 
-    resources :users, only: [:index, :edit, :update, :show] do
+    resources :users, only: %i[index edit update show] do
       collection do
         get 'search'
         post 'bulk_add_certifications'
@@ -151,8 +153,8 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :spaces, only: [:index, :create, :edit] do
-      delete 'destroy', path: '/edit/'
+    resources :spaces, only: %i[index create edit] do
+      delete "/edit/", :as => "destroy", :action => "destroy"
     end
 
     resources :pi_readers, only: [:update]
@@ -160,7 +162,7 @@ Rails.application.routes.draw do
     resources :trainings
 
     resources :training_sessions do
-      get 'index', path: '/'
+      get "/", :as => "index", :action => "index"
 
       member do
         patch 'update'
@@ -182,17 +184,15 @@ Rails.application.routes.draw do
         post 'submit_pi'
         post 'remove_pi'
         get 'pin_unpin_repository'
-
       end
     end
   end
 
-
   namespace :staff do
-    get 'index', path: '/'
+    get "/", :as => "index", :action => "index"
 
     resources :training_sessions do
-      get 'index', path: '/', on: :collection
+      get "/", :as => "index", :action => "index", on: :collection
       member do
         post 'certify_trainees'
         patch 'renew_certification'
@@ -203,12 +203,12 @@ Rails.application.routes.draw do
   end
 
   namespace :staff_dashboard do
-    get 'index', path: '/'
+    get "/", :as => "index", :action => "index"
     get 'search'
     get 'present_users_report'
-    put 'change_space', path: '/change_space'
-    put 'sign_in_users', path: '/add_users'
-    put 'sign_out_users', path: '/remove_users'
+    put "/change_space", :as => "change_space", :action => "change_space"
+    put "/add_users", :as => "sign_in_users", :action => "sign_in_users"
+    put "/remove_users", :as => "sign_out_users", :action => "sign_out_users"
     put 'link_rfid'
     put 'unlink_rfid'
     get 'sign_out_all_users'
@@ -228,7 +228,7 @@ Rails.application.routes.draw do
       get :revoke_badge
       get :populate_badge_list
       get :certify
-      get "grant_badge", path: "grant"
+      get "grant", :as => "grant_badge", :action => "grant_badge"
       get :reinstate
       get :update_badge_data
       get :update_badge_templates
@@ -244,7 +244,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :project_requirements, only: [:create, :destroy]
+  resources :project_requirements, only: %i[create destroy]
 
   resources :volunteers, only: [:index] do
     collection do
@@ -258,7 +258,7 @@ Rails.application.routes.draw do
 
   resources :questions
 
-  resources :exams, only: [:index, :create, :show, :destroy] do
+  resources :exams, only: %i[index create show destroy] do
     collection do
       get :finish_exam
       get :create_from_training
@@ -290,13 +290,13 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :volunteer_requests, only: [:index, :create, :show] do
+  resources :volunteer_requests, only: %i[index create show] do
     collection do
       put :update_approval
     end
   end
 
-  resources :volunteer_hours, only: [:index, :create, :new, :edit, :destroy, :update] do
+  resources :volunteer_hours, only: %i[index create new edit destroy update] do
     collection do
       get :volunteer_hour_requests
       put :update_approval
@@ -314,9 +314,9 @@ Rails.application.routes.draw do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post 'vote', to: 'users#vote', path: 'vote/:comment_id'
+  post "vote/:comment_id", :as => "vote", :action => "vote", to: 'users#vote'
 
-   # USER RESOURCES
+  # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
     collection do
       post :create, path: '/new'
@@ -330,17 +330,16 @@ Rails.application.routes.draw do
   resources :repositories, path: '/:user_username', param: :slug, except: :index do
     post 'add_like', on: :member
     collection do
-      get 'download_files', path: ':slug/download_files'
-      get 'download', path: ':slug/download'
+      get ":slug/download_files", :as => "download_files", :action => "download_files"
+      get ":slug/download", :as => "download", :action => "download"
       patch :link_to_pp
       patch :add_owner
       patch :remove_owner
     end
     member do
-      get 'password_entry', path: '/password_entry'
+      get "/password_entry", :as => "password_entry", :action => "password_entry"
       post 'pass_authenticate'
     end
-
   end
 
   namespace :makes, path: 'makes/:user_username/:slug' do
@@ -352,5 +351,4 @@ Rails.application.routes.draw do
     post :create, path: '/:slug'
     delete :destroy, path: '/:id/destroy'
   end
-
 end

@@ -1,5 +1,6 @@
-class StaffDashboardController < StaffAreaController
+# frozen_string_literal: true
 
+class StaffDashboardController < StaffAreaController
   def index
     @users = User.order(id: :desc).limit(10)
   end
@@ -27,34 +28,33 @@ class StaffDashboardController < StaffAreaController
       users = User.where(username: params['added_users'])
       users.each do |user|
         lab_session = LabSession.new(
-                        user_id: user.id,
-                        space_id: @space.id,
-                        sign_in_time: Time.zone.now,
-                        sign_out_time: Time.zone.now + 8.hours)
-        unless lab_session.save
-          flash[:alert] = "Error signing #{user.name} in"
-        end
+          user_id: user.id,
+          space_id: @space.id,
+          sign_in_time: Time.zone.now,
+          sign_out_time: Time.zone.now + 8.hours
+        )
+        flash[:alert] = "Error signing #{user.name} in" unless lab_session.save
       end
     end
     redirect_to staff_dashboard_index_path(space_id: @space.id)
   end
 
   def change_space
-
     if new_space = Space.find_by(name: params['space_name'])
       if current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
         current_sesh.sign_out_time = Time.zone.now
         current_sesh.save
       end
       new_sesh = LabSession.new(
-                    user_id: current_user.id,
-                    sign_in_time: Time.zone.now,
-                    sign_out_time: Time.zone.now + 8.hours,
-                    space_id: new_space.id)
+        user_id: current_user.id,
+        sign_in_time: Time.zone.now,
+        sign_out_time: Time.zone.now + 8.hours,
+        space_id: new_space.id
+      )
       if new_sesh.save
-        flash[:notice] = "Space changed successfully"
+        flash[:notice] = 'Space changed successfully'
       else
-        flash[:alert] = "Something went wrong"
+        flash[:alert] = 'Something went wrong'
       end
     end
     redirect_to staff_index_url
@@ -66,7 +66,7 @@ class StaffDashboardController < StaffAreaController
       rfid.user_id = params['user_id']
       rfid.save
     end
-    redirect_to :back
+    redirect_back(fallback_location: root_path)
   end
 
   def unlink_rfid
@@ -79,30 +79,28 @@ class StaffDashboardController < StaffAreaController
       end
       rfid.save
     end
-    redirect_to :back
+    redirect_back(fallback_location: root_path)
   end
 
   def search
-    unless params[:query].blank?
+    if params[:query].blank?
+      redirect_back(fallback_location: root_path)
+      flash[:alert] = 'Invalid parameters!'
+    else
       @query = params[:query]
       @users = User.where('LOWER(name) like LOWER(?) OR
                            LOWER(email) like LOWER(?) OR
                            LOWER(username) like LOWER(?)',
-                           "%#{@query}%", "%#{@query}%", "%#{@query}%")
-                           .includes(:lab_sessions)
-                           .order(:updated_at)
-    else
-      redirect_to (:back)
-      flash[:alert] = "Invalid parameters!"
+                          "%#{@query}%", "%#{@query}%", "%#{@query}%")
+                   .includes(:lab_sessions)
+                   .order(:updated_at)
     end
   end
-
 
   def present_users_report
     respond_to do |format|
       format.html
-      format.xlsx {send_data ReportGenerator.generate_space_present_users_report(@space.id).to_stream.read }
+      format.xlsx { send_data ReportGenerator.generate_space_present_users_report(@space.id).to_stream.read }
     end
   end
-
  end

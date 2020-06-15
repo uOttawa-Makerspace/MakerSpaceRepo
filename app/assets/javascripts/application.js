@@ -14,7 +14,7 @@
 //
 //= require_tree .
 
-Turbolinks.enableProgressBar();
+// Turbolinks.enableProgressBar();
 
 // needed since by default bootstrap-select doesn't register page:load events
 $(document).on('ready page:load', function () {

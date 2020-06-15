@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class GithubController < SessionsController
   before_action :current_user
   before_action :signed_in, except: [:callback]
@@ -14,8 +16,8 @@ class GithubController < SessionsController
   def unauthorize
     github.revoke_application_authorization(@user.access_token)
     @user.update access_token: nil
-    flash[:notice] = "Successfully revoked access to github account."
-    redirect_to settings_admin_path 
+    flash[:notice] = 'Successfully revoked access to github account.'
+    redirect_to settings_admin_path
   end
 
   def callback
@@ -26,13 +28,12 @@ class GithubController < SessionsController
   end
 
   def repositories
-    @repos = @github_client.repos.inject([]) { |a,e| a.push(e.name) }
+    @repos = @github_client.repos.inject([]) { |a, e| a.push(e.name) }
   end
 
   private
 
-   def github
+  def github
     @github ||= Octokit::Client.new
-   end
-
+  end
 end

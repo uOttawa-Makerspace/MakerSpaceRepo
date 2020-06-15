@@ -1,26 +1,25 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 
 class RfidTest < ActiveSupport::TestCase
+  test "Card's presence" do
+    rfid = rfids(:marys)
 
-	test "Card's presence" do
-		rfid = rfids(:marys)
+    rfid.card_number = '123456'
+    assert rfid.valid?, 'Card number is required.'
 
-		rfid.card_number = "123456"
-		assert rfid.valid? , "Card number is required."
+    rfid.card_number = nil
+    assert rfid.invalid?, 'Card number is required.'
+  end
 
-		rfid.card_number = nil
-		assert rfid.invalid? , "Card number is required."
-	end
+  test "Card's uniqueness" do
+    rfid = rfids(:marys)
 
-	test "Card's uniqueness" do
+    rfid.card_number = '123456789'
+    assert rfid.invalid?, 'Card number is already in use.'
 
-		rfid = rfids(:marys)
-
-		rfid.card_number = "123456789"
-		assert rfid.invalid?, "Card number is already in use."
-
-		rfid.card_number = "987654321"
-		assert rfid.valid?, "Card number is already in use."
-	end
-
+    rfid.card_number = '987654321'
+    assert rfid.valid?, 'Card number is already in use.'
+  end
 end

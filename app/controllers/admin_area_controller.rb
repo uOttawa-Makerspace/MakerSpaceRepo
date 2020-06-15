@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AdminAreaController < SessionsController
   before_action :current_user
   before_action :ensure_admin
@@ -6,9 +8,6 @@ class AdminAreaController < SessionsController
 
   def ensure_admin
     @user = current_user
-    unless @user.admin?
-      redirect_to '/' and return
-    end
-
+    redirect_to '/' and return unless @user.admin?
   end
 end

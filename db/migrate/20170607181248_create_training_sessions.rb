@@ -1,4 +1,6 @@
-class CreateTrainingSessions < ActiveRecord::Migration
+# frozen_string_literal: true
+
+class CreateTrainingSessions < ActiveRecord::Migration[5.0]
   def change
     create_table :training_sessions do |t|
       t.references :training, index: true, foreign_key: true

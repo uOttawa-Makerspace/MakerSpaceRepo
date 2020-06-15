@@ -1,4 +1,6 @@
-class CreatePrintOrders < ActiveRecord::Migration
+# frozen_string_literal: true
+
+class CreatePrintOrders < ActiveRecord::Migration[5.0]
   def change
     create_table :print_orders do |t|
       t.integer :userid

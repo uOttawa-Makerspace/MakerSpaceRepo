@@ -1,16 +1,18 @@
+# frozen_string_literal: true
+
 class QuestionsController < ApplicationController
   layout 'staff_area'
   before_action :current_user
   before_action :grant_access
 
   def index
-    @questions = Question.all.order(created_at: :desc).paginate(:page => params[:page], :per_page => 50)
+    @questions = Question.all.order(created_at: :desc).paginate(page: params[:page], per_page: 50)
   end
 
   def new
     @new_question = Question.new
     @categories = Training.all.order(:name).pluck(:name, :id)
-    5.times{@new_question.answers.new}
+    5.times { @new_question.answers.new }
   end
 
   def create
@@ -34,9 +36,9 @@ class QuestionsController < ApplicationController
   def update
     question = Question.find(params[:id])
     if question.update(question_params)
-      flash[:notice] = "Question updated"
+      flash[:notice] = 'Question updated'
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = 'Something went wrong'
     end
     redirect_to questions_path
   end
@@ -44,9 +46,9 @@ class QuestionsController < ApplicationController
   def destroy
     question = Question.find(params[:id])
     if question.destroy
-      flash[:notice] = "Question Deleted"
+      flash[:notice] = 'Question Deleted'
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = 'Something went wrong'
     end
     redirect_to questions_path
   end
@@ -55,12 +57,12 @@ class QuestionsController < ApplicationController
 
   def grant_access
     unless current_user.staff? || current_user.admin?
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = 'You cannot access this area.'
       redirect_to root_path
     end
   end
 
   def question_params
-    params.require(:question).permit(:description, :training_id, :image, answers_attributes:[:id, :description, :correct])
+    params.require(:question).permit(:description, :training_id, :image, answers_attributes: %i[id description correct])
   end
 end

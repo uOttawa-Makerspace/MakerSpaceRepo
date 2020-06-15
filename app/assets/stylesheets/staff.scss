@@ -68,7 +68,7 @@ div.panel-title:hover{
   margin-bottom: 20px;
 
   &:hover:not(.vp-button){
-    background-color: #5f9ea0 + 20;
+    background-color: #73b2b4;
   }
   &:hover{
     cursor: pointer;
@@ -122,11 +122,11 @@ table{
   td.action-cell{
 
       .x-button{
-        color: red - 80;
+        color: #af0000;
         font-size: 1.4em;
       }
       .check-button{
-        color: green - 30;
+        color: #006200;
         font-size: 1.4em;
       }
 
@@ -229,7 +229,7 @@ div.cert-name{
 
 div.cert-name-red{
   cursor:pointer;
-  background-color: red + 130;
+  background-color: #ff8282;
 }
 
 
@@ -239,7 +239,7 @@ div.cert-name:hover div#cert-details{
 
 div.cert-name-red:hover div#cert-details{
     visibility:visible;
-    background-color: red + 130;
+    background-color: #ff8282;
 
 }
 

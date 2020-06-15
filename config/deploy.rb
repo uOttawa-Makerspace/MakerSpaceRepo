@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 set :application, 'MakerRepo'
 set :repo_url, 'https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git'
 set :rbenv_type, :user
