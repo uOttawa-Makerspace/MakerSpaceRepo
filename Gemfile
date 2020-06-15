@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 ruby '2.5.3'
-gem 'rails', '~> 5.0.0'
+gem 'rails', '~> 5.1.0'
 
 gem 'aws-sdk', '~> 2.0'
 gem 'bcrypt', '~> 3.1.10'
@@ -10,7 +10,7 @@ gem 'bootbox-rails', '~>0.4'
 gem 'bootstrap', '~> 4.3.1'
 gem 'caxlsx', '~> 3.0.1'
 gem 'clipboard-rails'
-gem 'coffee-rails', '~> 4.2'
+gem 'coffee-rails', '4.2.2'
 gem 'excon'
 gem 'fastimage', '~> 1.7.0'
 gem 'font-awesome-rails', '~> 4.6.3.0'
@@ -67,12 +67,9 @@ group :development, :test do
 end
 
 group :development do
-  gem 'letter_opener'
   gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
-  gem 'web-console', '>= 3.3.0'
-  gem 'listen', '~> 3.0.5'
-  gem 'spring-watcher-listen', '~> 2.0.0'
+  gem 'web-console', '>= 3.7'
 
   # ssh deployment
   gem 'bcrypt_pbkdf', '~> 1.0'
