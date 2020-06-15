@@ -1,4 +1,4 @@
-$(document).on('ready page:load', function () {
+$(document).on('turbolinks:load', function () {
     var nav = $('nav.navbar');
     var chevron = $('.down-indicator');
     var collapse = nav.find('.navbar-collapse');
