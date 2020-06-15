@@ -15,14 +15,18 @@ $(document).on('turbolinks:load', function () {
             nav.removeClass('navbar-light');
             background.removeClass('bg-light');
             nav.addClass('navbar-dark');
-            cc_image_white.style.display = 'inline';
-            cc_image_black.style.display = 'none';
+            if (cc_image_white && cc_image_black){
+                cc_image_white.style.display = 'inline';
+                cc_image_black.style.display = 'none';
+            }
         } else {
             nav.removeClass('navbar-dark');
             nav.addClass('navbar-light');
             background.addClass('bg-light');
-            cc_image_white.style.display = 'none';
-            cc_image_black.style.display = 'inline';
+            if (cc_image_white && cc_image_black){
+                cc_image_white.style.display = 'none';
+                cc_image_black.style.display = 'inline';
+            }
         }
     }
 
