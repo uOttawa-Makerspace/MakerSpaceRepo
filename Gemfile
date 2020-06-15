@@ -29,7 +29,7 @@ gem 'pry', '~> 0.10.1'
 gem 'pry-rails', group: :development
 gem 'quick_random_records'
 gem 'redactor-rails', '~> 0.5.0'
-gem 'rubyzip', '~> 1.3', require: 'zip'
+gem 'rubyzip', '~> 2.1', require: 'zip'
 gem 's3_direct_upload'
 gem 'saml_idp', '~> 0.8.0'
 gem 'sass-rails', '~> 5.0.3'
@@ -49,6 +49,7 @@ gem 'will_paginate', '~> 3.3.0'
 gem 'will_paginate-bootstrap4'
 gem 'wkhtmltopdf-binary'
 gem 'youtube_id'
+
 # Capistrano deployment stuff
 gem 'capistrano', '~> 3.9'
 gem 'capistrano-bundler'
@@ -61,7 +62,7 @@ group :development, :test do
   gem 'byebug', platform: :mri
   gem 'factory_girl_rails', '~> 4.2.1'
   gem 'railroady'
-  gem 'spring', '~> 1.3.4'
+  gem 'spring', '~> 2.1.0'
   gem 'listen', '~> 3.0.5'
   gem 'spring-watcher-listen', '~> 2.0.0'
 end
@@ -82,5 +83,5 @@ group :test do
   gem 'faker', '~> 1.1.2'
   gem 'launchy', '~> 2.3.0'
   gem 'rails-controller-testing'
-  gem 'selenium-webdriver', '~> 2.39.0'
+  gem 'selenium-webdriver', '~> 3.142.7'
 end
