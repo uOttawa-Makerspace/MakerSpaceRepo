@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class GettingStartedController < ApplicationController
+class GettingStartedController < SessionsController
   skip_before_action :session_expiry
   before_action :current_user
 
