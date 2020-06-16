@@ -32,7 +32,7 @@ gem 'redactor-rails', '~> 0.5.0'
 gem 'rubyzip', '~> 2.1', require: 'zip'
 gem 's3_direct_upload'
 gem 'saml_idp', '~> 0.8.0'
-gem 'sass-rails', '~> 5.0.3'
+gem 'sass-rails', '~> 5.0.7'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'select2-rails'
 gem 'shopify_app', '9.0.4'
