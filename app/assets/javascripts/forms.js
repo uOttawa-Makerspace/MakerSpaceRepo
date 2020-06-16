@@ -5,11 +5,7 @@ var categoryArray;
 var equipmentArray;
 var certificationArray;
 
-$(document).on('page:load', function(){
-  load();
-});
-
-$(document).on('ready', function(){
+$(document).on("turbolinks:load", function(){
   load();
 });
 
