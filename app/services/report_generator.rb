@@ -450,7 +450,7 @@ class ReportGenerator
       .joins(ls.join(s).on(s[:id].eq(ls[:space_id])).join_sources)
       .where(ls[:sign_in_time].between(start_date..end_date))
       .group(ls[:space_id], ls[:user_id], u[:faculty], u[:identity], u[:gender])
-      .as(g.name)
+      .arel.as(g.name)
     )
     .order(g[:space_name].minimum, g[:identity], g[:faculty], g[:gender])
     .group(g[:space_id], g[:identity], g[:faculty], g[:gender]).to_sql)

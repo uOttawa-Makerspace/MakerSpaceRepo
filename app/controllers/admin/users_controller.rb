@@ -59,13 +59,13 @@ class Admin::UsersController < AdminAreaController
       if params[:q].present?
         @query = params[:q]
         if params[:filter] == 'Name'
-          @users = User.where('LOWER(name) like LOWER(?)', "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}").paginate(page: params[:page], per_page: 20)
+          @users = User.where('LOWER(name) like LOWER(?)', "%#{@query}%").includes(:lab_sessions).order(Arel.sql("#{params[:sort]} #{params[:direction]}")).paginate(page: params[:page], per_page: 20)
         elsif params[:filter] == 'Email'
-          @users = User.where('LOWER(email) like LOWER(?)', "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}").paginate(page: params[:page], per_page: 20)
+          @users = User.where('LOWER(email) like LOWER(?)', "%#{@query}%").includes(:lab_sessions).order(Arel.sql("#{params[:sort]} #{params[:direction]}")).paginate(page: params[:page], per_page: 20)
         elsif params[:filter] == 'Username'
-          @users = User.where('LOWER(username) like LOWER(?)', "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}").paginate(page: params[:page], per_page: 20)
+          @users = User.where('LOWER(username) like LOWER(?)', "%#{@query}%").includes(:lab_sessions).order(Arel.sql("#{params[:sort]} #{params[:direction]}")).paginate(page: params[:page], per_page: 20)
         elsif params[:filter].blank?
-          @users = User.where('LOWER(name) like LOWER(?) OR LOWER(email) like LOWER(?) OR LOWER(username) like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%").includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}").paginate(page: params[:page], per_page: 20)
+          @users = User.where('LOWER(name) like LOWER(?) OR LOWER(email) like LOWER(?) OR LOWER(username) like LOWER(?)', "%#{@query}%", "%#{@query}%", "%#{@query}%").includes(:lab_sessions).order(Arel.sql("#{params[:sort]} #{params[:direction]}")).paginate(page: params[:page], per_page: 20)
         end
       else
         redirect_back(fallback_location: root_path)

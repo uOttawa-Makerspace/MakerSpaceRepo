@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 ruby '2.5.3'
-gem 'rails', '~> 5.1.0'
+gem 'rails', '~> 5.2.0'
 
 gem 'aws-sdk', '~> 2.0'
 gem 'bcrypt', '~> 3.1.10'
@@ -49,6 +49,7 @@ gem 'will_paginate', '~> 3.3.0'
 gem 'will_paginate-bootstrap4'
 gem 'wkhtmltopdf-binary'
 gem 'youtube_id'
+gem 'bootsnap', require: false
 
 # Capistrano deployment stuff
 gem 'capistrano', '~> 3.9'
