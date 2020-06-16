@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 class RepositoriesController < SessionsController
   before_action :current_user, :check_session
   before_action :signed_in, except: %i[index show download download_files]
