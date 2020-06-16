@@ -4,7 +4,8 @@ source 'https://rubygems.org'
 ruby '2.5.3'
 gem 'rails', '~> 5.2.0'
 
-gem 'aws-sdk', '~> 2.0'
+gem 'aws-sdk', '~> 3.0.1'
+gem "aws-sdk-s3", require: false
 gem 'bcrypt', '~> 3.1.10'
 gem 'bootbox-rails', '~>0.4'
 gem 'bootstrap', '~> 4.3.1'

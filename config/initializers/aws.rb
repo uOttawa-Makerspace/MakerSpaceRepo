@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'aws-sdk'
+Aws::VERSION =  Gem.loaded_specs["aws-sdk"].version
 
 if Rails.env.eql?('development')
   Aws.config.update({
