@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 ruby '2.5.3'
-gem 'rails', '~> 5.1.0'
+gem 'rails', '~> 5.2.0'
 
 gem 'aws-sdk', '~> 2.0'
 gem 'bcrypt', '~> 3.1.10'

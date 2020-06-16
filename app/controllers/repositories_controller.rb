@@ -12,7 +12,7 @@ class RepositoriesController < SessionsController
     end
 
     @photos = @repository.photos&.first(5) || []
-    @files = @repository.repo_files.order('LOWER(file_file_name)')
+    @files = @repository.repo_files.order(Arel.sql('LOWER(file_file_name)'))
     @categories = @repository.categories
     @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
@@ -55,7 +55,7 @@ class RepositoriesController < SessionsController
   def edit
     if @repository.users.pluck(:email).include?(@user.email) || (@user.role == 'admin')
       @photos = @repository.photos.first(5)
-      @files = @repository.repo_files.order('LOWER(file_file_name)')
+      @files = @repository.repo_files.order(Arel.sql('LOWER(file_file_name)'))
       @categories = @repository.categories
       @equipments = @repository.equipments
     else
