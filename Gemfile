@@ -50,6 +50,8 @@ gem 'will_paginate-bootstrap4'
 gem 'wkhtmltopdf-binary'
 gem 'youtube_id'
 gem 'bootsnap', require: false
+gem 'actiontext', github: 'kobaltz/actiontext', branch: 'archive', require: 'action_text'
+gem 'image_processing'
 
 # Capistrano deployment stuff
 gem 'capistrano', '~> 3.9'
