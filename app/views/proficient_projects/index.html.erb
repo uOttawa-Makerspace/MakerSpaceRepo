@@ -40,17 +40,19 @@
             <%=link_to 'Delete', pp, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin? %>
           </div>
         </form>
-        <% if @user_order_items.where(proficient_project: pp, status:  ["Awarded", "In progress"]).present? %>
-          <a href="<%= proficient_project_path(pp.id) %>">
-            <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
-            </div>
-          </a>
-        <% else %>
-          <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_proficient_projects_path(id: pp.id) %>">
-            <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
-            </div>
-          </a>
-        <% end  %>
+        <% if pp.photos.present? %>
+          <% if @user_order_items.where(proficient_project: pp, status:  ["Awarded", "In progress"]).present? %>
+            <a href="<%= proficient_project_path(pp.id) %>">
+              <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
+              </div>
+            </a>
+          <% else %>
+            <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_proficient_projects_path(id: pp.id) %>">
+              <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
+              </div>
+            </a>
+          <% end  %>
+        <% end %>
         <div>
           <b class="float-right pt-2 text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + " Ccs" %></b>
           <br />
