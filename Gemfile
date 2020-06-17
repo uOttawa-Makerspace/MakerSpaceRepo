@@ -4,7 +4,8 @@ source 'https://rubygems.org'
 ruby '2.5.3'
 gem 'rails', '~> 5.2.0'
 
-gem 'aws-sdk', '~> 2.0'
+gem 'aws-sdk', '~> 3.0.1'
+gem "aws-sdk-s3", require: false
 gem 'bcrypt', '~> 3.1.10'
 gem 'bootbox-rails', '~>0.4'
 gem 'bootstrap', '~> 4.3.1'
@@ -50,6 +51,8 @@ gem 'will_paginate-bootstrap4'
 gem 'wkhtmltopdf-binary'
 gem 'youtube_id'
 gem 'bootsnap', require: false
+gem 'actiontext', github: 'kobaltz/actiontext', branch: 'archive', require: 'action_text'
+gem 'image_processing'
 
 # Capistrano deployment stuff
 gem 'capistrano', '~> 3.9'
