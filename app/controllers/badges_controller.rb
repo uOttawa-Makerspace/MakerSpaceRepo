@@ -23,7 +23,7 @@ class BadgesController < DevelopmentProgramsController
   def new_badge
     @badges = Badge.new
     @all_users = User.all.pluck(:name, :id)
-    @users_with_badges = User.joins(:badges).uniq.all.pluck(:name, :id)
+    @users_with_badges = User.all.joins(:badges).uniq.pluck(:name, :id)
     @badge_templates = BadgeTemplate.joins(:proficient_projects).pluck(:badge_name, :id)
   end
 

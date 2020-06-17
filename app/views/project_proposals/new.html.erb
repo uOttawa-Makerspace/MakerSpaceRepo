@@ -78,7 +78,7 @@
     <div class="form-group">
       <%= f.label :description, "*Description" %>
       <div style="width: 420px;">
-        <%= f.text_area :description, class: 'form-control', id: 'redactor' %>
+        <%= f.trix_editor :description, class: 'form-control' %>
       </div>
     </div>
     <br />

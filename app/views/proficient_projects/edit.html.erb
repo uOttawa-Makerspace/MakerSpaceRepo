@@ -16,7 +16,7 @@
               <%= f.text_field :title, id:"repository_title", placeholder: "Title of the proficient project...", class: 'form-control', required: true %>
               <br />
               <%= f.label :description, "Description" %>
-              <%= f.text_area :description, placeholder: "Description of the proficient project...", class: 'form-control', required: true, id: 'redactor' %>
+              <%= f.trix_editor :description, placeholder: "Description of the proficient project...", class: 'form-control', required: true %>
               <br />
               <%= f.label :training_id, "Category" %>
               <%= f.select(:training_id, @training_categories , {} , {:class => "form-control"}) %>
@@ -37,7 +37,7 @@
               <br />
               <br />
               <%= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)" %>
-              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => true, :id => "badge_requirements", :class => "form-control select2"} %>
+              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => "multiple", :id => "badge_requirements", :class => "form-control select2"} %>
               <br>
               <%= f.label :badge_template_id, "Badge that will be acquired" %>
               <%= f.select(:badge_template_id, options_for_select(@badge_templates.pluck(:badge_name, :id), :selected => f.object.badge_template_id), {:include_blank => "No badge"}, {:class => "form-control"}) %>

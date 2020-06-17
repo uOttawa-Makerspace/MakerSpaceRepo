@@ -63,7 +63,7 @@
       <br />
       <%= f.label :description %>
       <div style="width: 420px;">
-        <%= f.text_area :description, class: 'repo', id: 'redactor' %>
+        <%= f.trix_editor :description, class: 'repo' %>
       </div>
       <br>
       <%= f.label :youtube_link, "Youtube Link" %>

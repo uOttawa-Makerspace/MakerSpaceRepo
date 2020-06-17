@@ -16,8 +16,9 @@
     <br>
     <%= f.label :description %>
     <div style="width: 420px;">
-      <%= f.text_area :description, class: 'repo form-control', id: 'redactor' %>
+      <%= f.trix_editor :description, class: 'repo form-control' %>
     </div>
+
     </div>
     <%= label_tag :file, "Project files" %>
     <label class="custom-instructable-upload">

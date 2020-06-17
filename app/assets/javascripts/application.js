@@ -12,12 +12,26 @@
 //
 // Do not add libraries from gems here! Put them in vendor/assets/javascripts/vendor.js instead.
 //
+//= require jquery
+//= require popper
+//= require bootstrap-sprockets
+//= require jquery_ujs
+//= require jquery-ui/autocomplete
+//= require photoswipe
+//= require jquery-ui/effect.all
+//= require turbolinks
+//= require clipboard
+//= require bootbox
+//= require s3_direct_upload
+//= require toastr
+//= require trix
+//= require select2-full
 //= require_tree .
 
 // Turbolinks.enableProgressBar();
 
 // needed since by default bootstrap-select doesn't register page:load events
-$(document).on('ready page:load', function () {
+$(document).on('turbolinks:load', function () {
     $('[data-radio-enable]').on('change', function () {
         var $inputs = $('input[type="radio"][name="' + $(this).attr('name') + '"]');
 

@@ -64,7 +64,7 @@ GEM
       sshkit (>= 1.6.1, != 1.7.0)
     arel (9.0.0)
     ast (2.4.1)
-    autoprefixer-rails (9.4.10)
+    autoprefixer-rails (9.7.6)
       execjs
     av (0.9.0)
       cocaine (~> 0.5.3)
@@ -984,10 +984,13 @@ GEM
     bootbox-rails (0.5.0)
     bootsnap (1.4.6)
       msgpack (~> 1.0)
-    bootstrap (4.3.1)
+    bootstrap (4.5.0)
       autoprefixer-rails (>= 9.1.0)
       popper_js (>= 1.14.3, < 2)
       sassc-rails (>= 2.0.0)
+    bootstrap-sass (3.4.1)
+      autoprefixer-rails (>= 5.2.1)
+      sassc (>= 2.0.0)
     browser_sniffer (1.1.3)
     builder (3.2.4)
     byebug (11.0.0)
@@ -1039,12 +1042,6 @@ GEM
     crass (1.0.6)
     daemons (1.2.6)
     database_cleaner (1.0.1)
-    devise (4.7.2)
-      bcrypt (~> 3.0)
-      orm_adapter (~> 0.1)
-      railties (>= 4.1.0)
-      responders
-      warden (~> 1.2.3)
     docile (1.3.2)
     ed25519 (1.2.4)
     erubi (1.9.0)
@@ -1165,7 +1162,6 @@ GEM
       activesupport
       omniauth-oauth2 (~> 1.5.0)
     options (2.3.2)
-    orm_adapter (0.5.0)
     paperclip (5.2.1)
       activemodel (>= 4.2.0)
       activesupport (>= 4.2.0)
@@ -1180,7 +1176,7 @@ GEM
       ast (~> 2.4.0)
     pg (0.18.4)
     photoswipe-rails (4.0.8a)
-    popper_js (1.14.5)
+    popper_js (1.16.0)
     progress_bar (1.0.5)
       highline (~> 1.6)
       options (~> 2.3.0)
@@ -1233,15 +1229,8 @@ GEM
     rb-inotify (0.10.1)
       ffi (~> 1.0)
     rdoc (4.3.0)
-    redactor-rails (0.5.0)
-      devise
-      mime-types
-      orm_adapter
     redis (4.2.1)
     regexp_parser (1.7.1)
-    responders (3.0.1)
-      actionpack (>= 5.0)
-      railties (>= 5.0)
     rexml (3.2.4)
     rubocop (0.85.1)
       parallel (~> 1.10)
@@ -1283,11 +1272,10 @@ GEM
       sprockets (>= 2.8, < 4.0)
       sprockets-rails (>= 2.0, < 4.0)
       tilt (>= 1.1, < 3)
-    sassc (2.0.1)
+    sassc (2.4.0)
       ffi (~> 1.9)
-      rake
-    sassc-rails (2.1.0)
-      railties (>= 5.1.0)
+    sassc-rails (2.1.2)
+      railties (>= 4.0.0)
       sassc (>= 2.0)
       sprockets (> 3.0)
       sprockets-rails
@@ -1346,6 +1334,8 @@ GEM
     tilt (2.0.10)
     toastr-rails (1.0.3)
       railties (>= 3.1.0)
+    trix-rails (2.2.0)
+      rails (> 4.1, < 6.1)
     turbolinks (5.2.1)
       turbolinks-source (~> 5.2)
     turbolinks-source (5.2.0)
@@ -1362,8 +1352,6 @@ GEM
       unicorn (>= 4, < 6)
     uuid (2.3.9)
       macaddr (~> 1.0)
-    warden (1.2.8)
-      rack (>= 2.0.6)
     web-console (3.7.0)
       actionview (>= 5.1.7)
       activemodel (>= 5.1.7)
@@ -1388,14 +1376,15 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  actiontext!
   aws-sdk (~> 3.0.1)
   aws-sdk-s3
-  actiontext!
   bcrypt (~> 3.1.10)
   bcrypt_pbkdf (~> 1.0)
   bootbox-rails (~> 0.4)
   bootsnap
-  bootstrap (~> 4.3.1)
+  bootstrap (~> 4.5.0)
+  bootstrap-sass
   byebug
   capistrano (~> 3.9)
   capistrano-bundler
@@ -1435,7 +1424,6 @@ DEPENDENCIES
   railroady
   rails (~> 5.2.0)
   rails-controller-testing
-  redactor-rails (~> 0.5.0)
   rubocop-rails
   rubyzip (~> 2.1)
   s3_direct_upload
@@ -1451,6 +1439,7 @@ DEPENDENCIES
   spring-watcher-listen (~> 2.0.0)
   thin (~> 1.6.3)
   toastr-rails
+  trix-rails
   turbolinks (~> 5)
   uglifier (>= 1.3.0)
   unicorn-worker-killer (~> 0.4.3)
