@@ -41,7 +41,7 @@ gem 'sidekiq'
 gem 'simplecov'
 gem 'thin', '~> 1.6.3'
 gem 'toastr-rails'
-gem 'turbolinks', '~> 5'
+gem 'turbolinks', '~> 5.2.0'
 gem 'uglifier', '>= 1.3.0'
 gem 'unicorn-worker-killer', '~> 0.4.3'
 gem 'whenever', require: false
