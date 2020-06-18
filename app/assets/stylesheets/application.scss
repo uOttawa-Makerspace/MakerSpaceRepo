@@ -150,3 +150,8 @@ span.form-error{
 trix-toolbar .trix-button-group--file-tools {
   display: none;
 }
+
+// Fixing Div bug for Trix editor
+.trix-content {
+  height: auto;
+}
