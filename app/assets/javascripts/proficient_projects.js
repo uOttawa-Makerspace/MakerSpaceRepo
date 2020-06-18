@@ -12,7 +12,7 @@ $(document).ready(function () {
     }
 });
 
-$(document).ready(function () {
+$(document).on("turbolinks:load", function () {
     $("#badge_requirements").select2({
         allowClear: true,
         multiple: true

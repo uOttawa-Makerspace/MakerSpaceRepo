@@ -9,10 +9,9 @@
  * compiled file so the styles you add here take precedence over styles defined in any styles
  * defined in the other CSS/SCSS files in this directory. It is generally better to create a new
  * file per style scope.
- *
- *= require select2
- *= require select2-bootstrap
- *= require_tree .
+
+*= require_tree .
+*= require_self
  */
 
 /* Theming stuff */
@@ -25,8 +24,11 @@ $navbar-light-hover-color: rgba(0, 0, 0, 1.0);
 $navbar-dark-color: rgba(255, 255, 255, 0.7);
 $navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
 
-@import "s3_direct_upload_progress_bars";
 @import "bootstrap";
+@import "trix";
+@import 'select2';
+@import "select2-bootstrap";
+@import "s3_direct_upload_progress_bars";
 @import "lib";
 @import "font-awesome";
 @import "toastr";
@@ -142,4 +144,14 @@ span.form-error{
 .divider {
   border-top: 1px solid #000;
   width: 100%;
+}
+
+// Hiding File button for Trix editor
+trix-toolbar .trix-button-group--file-tools {
+  display: none;
+}
+
+// Fixing Div bug for Trix editor
+.trix-content {
+  height: auto;
 }
