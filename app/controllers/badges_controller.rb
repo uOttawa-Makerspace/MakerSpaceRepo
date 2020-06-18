@@ -23,7 +23,7 @@ class BadgesController < DevelopmentProgramsController
   def new_badge
     @badges = Badge.new
     @all_users = User.all.pluck(:name, :id)
-    @users_with_badges = User.all.joins(:badges).uniq.pluck(:name, :id)
+    @users_with_badges = User.all.joins(:badges).distinct.pluck(:name, :id)
     @badge_templates = BadgeTemplate.joins(:proficient_projects).pluck(:badge_name, :id)
   end
 
@@ -134,7 +134,7 @@ class BadgesController < DevelopmentProgramsController
   end
 
   def populate_revoke_users
-    json_data = User.joins(:badges).uniq.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
+    json_data = User.joins(:badges).distinct.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
     render json: { users: json_data }
   end
 
