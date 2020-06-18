@@ -1,6 +1,6 @@
 var photoArray = [];
 
-$(document).on('page:change', function(){
+$(document).on('turbolinks:load', function(){
 
   photoArray = [];
   var gallery = photoSwipe();
