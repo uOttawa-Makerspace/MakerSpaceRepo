@@ -11,19 +11,7 @@ $(document).on("turbolinks:load", function(){
 
 function load() {
   
-  $('#redactor').redactor({
-    minHeight: 100,
-    buttons: ['formatting', 'bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist', 'alignment', 'link', 'horizontalrule'],
-    toolbarFixed: false
-  });
-
-  $('#comment-redactor').redactor({
-    minHeight: 100,
-    buttons: ['bold', 'italic', 'deleted', 'unorderedlist', 'orderedlist'],
-    toolbarFixed: false
-  });
-  
-  $('#select-all').click(function(event) {   
+  $('#select-all').click(function(event) {
     if(this.checked) {
         $(':checkbox').each(function() {
             this.checked = true;                        

@@ -1,8 +1,8 @@
-$(document).ready(function() {
+$(document).on("turbolinks:load", function() {
     $(".link_pp").select2({});
 });
 
-$(document).ready(function() {
+$(document).on("turbolinks:load", function() {
     $("#user_select").on('change', function () {
         $.ajax({
             url: "populate_badge_list",
@@ -23,7 +23,7 @@ $(document).ready(function() {
     });
 });
 
-$(document).ready(function(){
+$(document).on("turbolinks:load", function() {
 
     $(".grant_user_select").select2({
         ajax: {
@@ -51,7 +51,7 @@ $(document).ready(function(){
     });
 });
 
-$(document).ready(function(){
+$(document).on("turbolinks:load", function() {
 
     $(".revoke_user_select").select2({
         ajax: {

@@ -11,7 +11,7 @@
               <%= f.text_field :title, id:"repository_title", placeholder: "Title of the proficient project...", class: 'form-control', required: true %>
               <br />
               <%= f.label :description, "Description*" %>
-              <%= f.text_area :description, placeholder: "Description of the proficient project...", class: 'form-control', required: true, id: 'redactor' %>
+              <%= f.trix_editor :description, placeholder: "Description of the proficient project...", class: 'form-control', required: true, id: 'redactor' %>
               <br />
               <%= f.label :training_id, "Category*" %>
               <%= f.select(:training_id, @training_categories , {} , {:class => "form-control"}) %>
