@@ -9,7 +9,7 @@ gem "aws-sdk-s3", require: false
 gem 'bcrypt', '~> 3.1.10'
 gem 'bootbox-rails', '~>0.4'
 gem 'bootstrap', '~> 4.5.0'
-gem 'bootstrap-sass'
+# gem 'bootstrap-sass'
 gem 'caxlsx', '~> 3.0.1'
 gem 'clipboard-rails'
 gem 'coffee-rails', '4.2.2'
