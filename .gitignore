@@ -7,6 +7,7 @@
 # Ignore bundler config.
 /.bundle
 /public/system
+storage/
 
 # Ignore Credentials
 /config/local_env.yml
