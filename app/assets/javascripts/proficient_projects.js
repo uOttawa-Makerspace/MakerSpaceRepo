@@ -1,4 +1,4 @@
-$(document).ready(function () {
+$(document).on("turbolinks:load", function () {
     var x = document.getElementsByClassName('pp-status-button');
     var i;
     for (i = 0; i < x.length; i++) {
