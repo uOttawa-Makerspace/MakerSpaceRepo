@@ -3,14 +3,7 @@
 require 'aws-sdk'
 Aws::VERSION =  Gem.loaded_specs["aws-sdk"].version
 
-if Rails.env.eql?('development')
-  Aws.config.update({
-                      region: 'us-west-2',
-                      credentials: Aws::Credentials.new(ENV.fetch('AWS_ACCESS_KEY_ID', 'wrong'), ENV.fetch('AWS_SECRET_ACCESS_KEY', 'wrong'))
-                    })
-else
-  Aws.config.update({
-                      region: 'us-west-2',
-                      credentials: Aws::Credentials.new(Rails.application.secrets.access_key_id, Rails.application.secrets.secret_access_key)
-                    })
-end
+Aws.config.update({
+                      region: Rails.application.credentials[Rails.env.to_sym][:aws][:region],
+                      credentials: Aws::Credentials.new(Rails.application.credentials[Rails.env.to_sym][:aws][:access_key_id], Rails.application.credentials[Rails.env.to_sym][:aws][:secret_access_key])
+                  })
