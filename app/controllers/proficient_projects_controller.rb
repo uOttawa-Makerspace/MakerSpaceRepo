@@ -156,7 +156,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     if params['images'].present?
       params['images'].each do |img|
         dimension = FastImage.size(img.tempfile)
-        Photo.create(image: img, repository_id: @proficient_project.id, width: dimension.first, height: dimension.last)
+        Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
       end
     end
   end
@@ -174,7 +174,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     if params['files'].present?
 
       params['files'].each do |f|
-        RepoFile.create(file: f, repository_id: @proficient_project.id)
+        RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
       end
 
     end

@@ -11,6 +11,7 @@ storage/
 
 # Ignore Credentials
 /config/local_env.yml
+/config/master.key
 
 # Ignore the default SQLite database.
 /db/*.sqlite3

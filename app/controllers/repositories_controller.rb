@@ -26,24 +26,38 @@ class RepositoriesController < SessionsController
     send_data data.read, type: data.content_type, filename: File.basename(url), x_sendfile: true
   end
 
+
   def download_files
-    @files = @repository.repo_files.order('LOWER(file_file_name)')
-    tmp_filename = "tmp_zip_#{@repository.title}" << Time.zone.now.strftime('%Y%m%d%H%M%S').to_s << '.zip'
-    temp_file = Tempfile.new("#{tmp_filename}-#{@repository.title}")
-    Zip::OutputStream.open(temp_file.path) do |zos|
+
+    @files = @repository.repo_files
+
+    file_location = "#{Rails.root}/public/tmp/makerepo_file_#{@repository.id.to_s}.zip"
+
+    begin
+      File.delete(file_location)
+    rescue Errno::ENOENT => e
+      puts("a")
+    end
+
+    Zip::ZipFile.open(file_location, Zip::File::CREATE) do |zip|
+
       @files.each do |file|
-        zos.put_next_entry(file.file_file_name)
-        attachment = Paperclip.io_adapters.for(file.file)
-        zos.print IO.read(attachment.path)
+        File.open("#{Rails.root}/public/tmp/#{file.file.filename}", 'wb') do |downloaded_file|
+          downloaded_file.write(file.file.download)
+        end
+
+        zip.add(file.file.filename, "#{Rails.root}/public/tmp/#{file.file.filename}")
       end
     end
 
-    filename = "#{@repository.title}_files_MakerRepo.zip"
-    send_file temp_file.path, type: 'application/zip',
-              disposition: 'attachment',
-              filename: filename
-    temp_file.close
-    cookies[:downloadStarted] = {value: 1, expires: 60.seconds.from_now}
+    @files.each do |file|
+
+      File.delete("#{Rails.root}/public/tmp/#{file.file.filename}")
+
+    end
+
+    redirect_to "/tmp/makerepo_file_#{@repository.id.to_s}.zip"
+
   end
 
   def new
@@ -287,4 +301,5 @@ class RepositoriesController < SessionsController
       end
     end
   end
+
 end

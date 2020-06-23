@@ -55,6 +55,7 @@ gem 'actiontext', github: 'kobaltz/actiontext', branch: 'archive', require: 'act
 gem 'image_processing'
 gem 'file_validators'
 gem 'trix-rails', require: 'trix'
+gem 'zip-zip'
 
 
 # Capistrano deployment stuff
