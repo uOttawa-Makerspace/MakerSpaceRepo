@@ -25,7 +25,7 @@ Rails.application.configure do
 
   # Ensures that a master key has been made available in either ENV["RAILS_MASTER_KEY"]
   # or in config/master.key. This key is used to decrypt credentials (and other encrypted files).
-  # config.require_master_key = true
+  config.require_master_key = true
 
   # Disable serving static files from the `/public` folder by default since
   # Apache or NGINX already handles this.
@@ -103,8 +103,8 @@ Rails.application.configure do
   config.assets.precompile += %w[vendor.js vendor.css]
 
   Octokit.configure do |c|
-    c.client_id        = Rails.application.secrets.github_app_key
-    c.client_secret    = Rails.application.secrets.github_app_key_secret
+    c.client_id        = Rails.application.credentials[Rails.env.to_sym][:github][:app_key]
+    c.client_secret    = Rails.application.credentials[Rails.env.to_sym][:github][:app_key_secret]
   end
 
   # Use a different logger for distributed setups.
@@ -125,8 +125,8 @@ Rails.application.configure do
   config.action_mailer.smtp_settings = {
     address: 'smtp.sendgrid.net',
     port: 587,
-    user_name: Rails.application.secrets.smtp_user,
-    password: Rails.application.secrets.smtp_password,
+    user_name: Rails.application.credentials[Rails.env.to_sym][:smtp_user],
+    password: Rails.application.credentials[Rails.env.to_sym][:smtp_password],
     authentication: 'plain',
     enable_starttls_auto: true
   }
@@ -134,10 +134,10 @@ Rails.application.configure do
   config.paperclip_defaults = {
     storage: :s3,
     s3_credentials: {
-      bucket: Rails.application.secrets.s3_bucket_name,
-      access_key_id: Rails.application.secrets.access_key_id,
-      secret_access_key: Rails.application.secrets.secret_access_key,
-      s3_region: 'us-west-2'
+      bucket: Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name],
+      access_key_id: Rails.application.credentials[Rails.env.to_sym][:aws][:access_key_id],
+      secret_access_key: Rails.application.credentials[Rails.env.to_sym][:aws][:secret_access_key],
+      s3_region: Rails.application.credentials[Rails.env.to_sym][:aws][:region]
     }
   }
 end
