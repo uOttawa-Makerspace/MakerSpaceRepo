@@ -10,8 +10,7 @@ before_install:
 before_script:
 - psql -c 'create database makerspacerepo_test;' -U postgres
 - mkdir certs && touch certs/saml.key && touch certs/saml.crt
-- openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days
-  1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
+- openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
 jobs:
   include:
   - stage: test
@@ -22,8 +21,7 @@ jobs:
   - stage: deploy
     name: Deploy
     script:
-    - openssl aes-256-cbc -k $DEPLOY_KEY -d -a -in config/deploy_id_rsa_enc_travis
-      -out config/deploy_id_rsa
+    - openssl aes-256-cbc -k $DEPLOY_KEY -d -a -in config/deploy_id_rsa_enc_travis -out config/deploy_id_rsa
     - chmod 600 config/deploy_id_rsa
     - eval "$(ssh-agent -s)"
     - ssh-add config/deploy_id_rsa
