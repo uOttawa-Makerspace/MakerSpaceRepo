@@ -41,11 +41,11 @@
             <%= @proficient_project.description.html_safe %>
           </div>
           <div id="show-photo">
-            <%= image_tag @photos.first.try(:image).try(:url), data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+            <%= image_tag @photos.first.image, data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
           </div>
           <div id="photo-slide">
             <% @photos.each do |p| %>
-              <%= image_tag p.image.url, data: { width: p.width, height: p.height} %>
+              <%= image_tag p.image, data: { width: p.width, height: p.height} %>
             <% end %>
           </div>
           <br />
@@ -64,7 +64,7 @@
 
 <% @files.each do |f| %>
   <div class="embed-responsive embed-responsive-16by9">
-    <iframe class="embed-responsive-item" src="<%= f.file %>" allowfullscreen></iframe>
+    <iframe class="embed-responsive-item" src="<%= url_for(f.file) %>" allowfullscreen></iframe>
     <br />
   </div>
 <% end %>
@@ -89,7 +89,7 @@
           </div>
         </form>
         <a href="<%= proficient_project_path(project_required.id) %>">
-          <div class="card card-image projects-image" style="background-image: url(<%= project_required.photos.first.image.url %>);">
+          <div class="card card-image projects-image" style="background-image: url(<%= url_for(project_required.photos.first.image) %>);">
           </div>
         </a>
         <div>
@@ -113,7 +113,7 @@
           </div>
         </form>
         <a href="<%= proficient_project_path(inverse_required_project.id) %>">
-          <div class="card card-image projects-image" style="background-image: url(<%= inverse_required_project.photos.first.image.url %>);">
+          <div class="card card-image projects-image" style="background-image: url(<%= url_for(inverse_required_project.photos.first.image) %>);">
           </div>
         </a>
         <div>

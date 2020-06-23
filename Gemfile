@@ -53,6 +53,7 @@ gem 'youtube_id'
 gem 'bootsnap', require: false
 gem 'actiontext', github: 'kobaltz/actiontext', branch: 'archive', require: 'action_text'
 gem 'image_processing'
+gem 'file_validators'
 gem 'trix-rails', require: 'trix'
 
 

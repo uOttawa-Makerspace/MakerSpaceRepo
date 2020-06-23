@@ -1057,6 +1057,9 @@ GEM
     fastimage (1.7.0)
       addressable (~> 2.3, >= 2.3.5)
     ffi (1.13.1)
+    file_validators (2.3.0)
+      activemodel (>= 3.2)
+      mime-types (>= 1.0)
     font-awesome-rails (4.6.3.1)
       railties (>= 3.2, < 6.0)
     get_process_mem (0.2.3)
@@ -1397,6 +1400,7 @@ DEPENDENCIES
   factory_girl_rails (~> 4.2.1)
   faker (~> 1.1.2)
   fastimage (~> 1.7.0)
+  file_validators
   font-awesome-rails (~> 4.6.3.0)
   image_processing
   jbuilder (~> 2.8.0)

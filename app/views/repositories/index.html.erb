@@ -18,7 +18,7 @@
   <% @repositories.each do |repository| %>
     <div class="repository-container">
 
-      <div class="repo-display-wrapper" <%= "style=background-image:url('#{repository.photos.first.image.url}')"  %> >
+      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.image)}')"  %> >
         <%= link_to "", repository_path(repository.user_username, repository.title) %>
       </div>
 
@@ -28,7 +28,7 @@
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div> 
           <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
         </div>
-        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div> 
+        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
       </div>
     </div>
   <% end %>

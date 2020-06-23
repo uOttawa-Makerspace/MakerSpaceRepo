@@ -30,9 +30,9 @@
       <% @files.each do |f| %>
         <table>
           <tr class="file-item">
-            <td><%= fa_icon "file-text-o" %> <%= f.file_file_name %></td>
-            <td><span><%= f.file.size/1000 %> KB</span></td>
-            <td><span id="<%= f.file_file_name %>" class="file-remove">remove</span></td>
+            <td><%= fa_icon "file-text-o" %> <%= f.file.filename %></td>
+            <td><span><%= f.file.byte_size/1000 %> KB</span></td>
+            <td><span id="<%= f.file.id %>" class="file-remove">remove</span></td>
           </tr>
         </table>
       <% end %>
@@ -56,8 +56,8 @@
 
     <% @photos.each do |img| %>
       <div class="image-item">
-        <span id="<%= img.image_file_name %>" class="image-remove"></span>
-        <img src="<%= img.image.url %>">
+        <span id="<%= img.image.filename %>" class="image-remove"></span>
+        <%= image_tag img.image %>
       </div>
     <% end %>
     <%= hidden_field_tag 'deleteimages' %>

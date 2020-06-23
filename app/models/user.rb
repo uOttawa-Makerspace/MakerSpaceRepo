@@ -34,6 +34,12 @@ class User < ApplicationRecord
   has_many :orders, dependent: :destroy
   has_many :order_items, through: :orders
   has_many :discount_codes, dependent: :destroy
+  has_one_attached :avatar
+
+  validates :avatar, file_content_type: {
+      allow: ['image/jpeg', 'image/png'],
+      if: -> {avatar.attached?},
+  }
 
   validates :name,
             presence: true,
@@ -80,14 +86,20 @@ class User < ApplicationRecord
             presence: true,
             inclusion: { in: %w[grad undergrad faculty_member community_member unknown] }
 
-  has_attached_file :avatar, default_url: 'default-avatar.png'
-  validates_attachment_content_type :avatar, content_type: %r{\Aimage/.*\Z}
 
   scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
   scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
   scope :frequency_between_dates, ->(start_date, end_date) { joins(lab_sessions: :space).where('lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?', start_date, end_date, 'Makerspace') }
   scope :active, -> { where(active: true) }
   scope :unknown_identity, -> { where(identity: 'unknown') }
+
+  def self.display_avatar(user)
+    if user.avatar.attached?
+      user.avatar
+    else
+      "default-avatar.png"
+    end
+  end
 
   def self.authenticate(username_email, password)
     user = User.username_or_email(username_email)

@@ -11,7 +11,7 @@ amazon:
    service: S3
    access_key_id: <%= Rails.application.secrets.access_key_id  %>
    secret_access_key: <%= Rails.application.secrets.secret_access_key  %>
-   region: <%= Rails.application.secrets.s3_region  %>
+   region: us-west-2
    bucket: <%= Rails.application.secrets.s3_bucket_name  %>
 
 # Remember not to checkin your GCS keyfile to a repository

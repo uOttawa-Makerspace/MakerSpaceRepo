@@ -31,8 +31,8 @@ class ProficientProjectsController < DevelopmentProgramsController
     @project_requirements = @proficient_project.project_requirements
     @inverse_required_projects = @proficient_project.inverse_required_projects
     @proficient_projects_selected = ProficientProject
-                                    .where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id)
-                                    .order(title: :asc)
+                                        .where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id)
+                                        .order(title: :asc)
   end
 
   def create
@@ -44,7 +44,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       create_photos
       create_files
       flash[:notice] = 'Proficient Project successfully created.'
-      render json: { redirect_uri: proficient_project_path(@proficient_project.id).to_s }
+      render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
     else
       flash[:alert] = 'Something went wrong'
       render json: @proficient_project.errors['title'].first, status: :unprocessable_entity
@@ -74,7 +74,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       update_files
       update_videos
       flash[:notice] = 'Proficient Project successfully updated.'
-      render json: { redirect_uri: proficient_project_path(@proficient_project.id).to_s }
+      render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
     else
       flash[:alert] = 'Unable to apply the changes.'
       render json: @proficient_project.errors['title'].first, status: :unprocessable_entity
@@ -118,7 +118,7 @@ class ProficientProjectsController < DevelopmentProgramsController
         dimension = FastImage.size(img.tempfile)
         Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
       end
-      end
+    end
   end
 
   def create_files
@@ -126,7 +126,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       params['files'].each do |f|
         RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
       end
-      end
+    end
   end
 
   def set_proficient_project
@@ -146,22 +146,17 @@ class ProficientProjectsController < DevelopmentProgramsController
   def update_photos
     if params['deleteimages'].present?
       @proficient_project.photos.each do |img|
-        if params['deleteimages'].include?(img.image_file_name) # checks if the file should be deleted
-          Photo.destroy_all(image_file_name: img.image_file_name, proficient_project_id: @proficient_project.id)
+        if params['deleteimages'].include?(img.image.filename.to_s) # checks if the file should be deleted
+          img.image.purge
+          img.destroy
         end
       end
     end
+
     if params['images'].present?
       params['images'].each do |img|
-        filename = img.original_filename.gsub(' ', '_')
-        if @proficient_project.photos.where(image_file_name: filename).blank? # checks if file exists
-          dimension = FastImage.size(img.tempfile)
-          Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
-        else # updates existant files
-          Photo.destroy_all(image_file_name: filename, proficient_project_id: @proficient_project.id)
-          dimension = FastImage.size(img.tempfile)
-          Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
-        end
+        dimension = FastImage.size(img.tempfile)
+        Photo.create(image: img, repository_id: @proficient_project.id, width: dimension.first, height: dimension.last)
       end
     end
   end
@@ -169,22 +164,19 @@ class ProficientProjectsController < DevelopmentProgramsController
   def update_files
     if params['deletefiles'].present?
       @proficient_project.repo_files.each do |f|
-        if params['deletefiles'].include?(f.file_file_name) # checks if the file should be deleted
-          RepoFile.destroy_all(file_file_name: f.file_file_name, proficient_project_id: @proficient_project.id)
+        if params['deletefiles'].include?(f.file.filename.to_s) # checks if the file should be deleted
+          f.file.purge
+          f.destroy
         end
       end
     end
 
     if params['files'].present?
+
       params['files'].each do |f|
-        filename = f.original_filename.gsub(' ', '_')
-        if @proficient_project.repo_files.where(file_file_name: filename).blank? # checks if file exists
-          RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
-        else # updates existant files
-          RepoFile.destroy_all(file_file_name: filename, proficient_project_id: @proficient_project.id)
-          RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
-        end
+        RepoFile.create(file: f, repository_id: @proficient_project.id)
       end
+
     end
   end
 

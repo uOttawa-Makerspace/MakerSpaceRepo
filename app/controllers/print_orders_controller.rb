@@ -103,11 +103,11 @@ class PrintOrdersController < ApplicationController
     if params[:print_order][:approved] == 'true'
       MsrMailer.send_print_quote(expedited_price, @user, @print_order, params[:print_order][:staff_comments]).deliver_now
     elsif params[:print_order][:approved] == 'false'
-      MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file_file_name).deliver_now
+      MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
     elsif params[:print_order][:user_approval] == 'true'
       MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
     elsif params[:print_order][:printed] == 'true'
-      MsrMailer.send_print_finished(@user, @print_order.file_file_name, @print_order.id, @print_order.quote).deliver_now
+      MsrMailer.send_print_finished(@user, @print_order.id, @print_order.quote).deliver_now
       MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
     end
 

@@ -460,17 +460,16 @@ function load() {
 
     });
 
-  $('div#file-container').children().each(function(){
-    var file_item = $(this);
-    
+
+
     $("span.file-remove").click(function(e){
-      var index = $(file_item).index();
+      var index = $($(this)).index();
       instructableFiles.splice(index, 1);
+      console.log(document.getElementById("deletefiles").value + e.target.id + ",")
       document.getElementById("deletefiles").value = document.getElementById("deletefiles").value + e.target.id + ",";
       e.target.parentElement.parentElement.parentElement.remove();
     });
 
-  });
 
     $('div#video-container').children().each(function(){
         var file_item = $(this);

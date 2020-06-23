@@ -8,7 +8,7 @@
       <h2><b><%= @question.description %></b></h2>
     </div>
 
-    <%= image_tag @question.image.url(:medium) if !@question.image.blank? %>
+    <%= image_tag @question.image.variant(resize: "300x300") if !@question.image.blank? %>
 
     <hr>
 

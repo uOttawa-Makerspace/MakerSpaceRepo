@@ -13,7 +13,7 @@
 
 
     <div class="avatar-column">
-      <%= image_tag @user.avatar.url, class: 'edit-avatar' %>
+      <%= image_tag User.display_avatar(@user), class: 'edit-avatar' %>
       <label class="custom-file-upload">
         <%= f.file_field :avatar %>
         Choose new image<br>Choisi une nouvelle image

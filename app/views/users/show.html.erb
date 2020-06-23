@@ -10,7 +10,7 @@
 
     <%= link_to settings_profile_path do %>
       <div class="user-avatar">
-        <%= image_tag @repo_user.avatar.url %>
+        <%= image_tag User.display_avatar(@repo_user) %>
         <div class="edit-avatar">
           Change avatar
         </div>
@@ -22,7 +22,7 @@
 
     <%= link_to settings_profile_path do %>
       <div class="user-avatar">
-        <%= image_tag @repo_user.avatar.url %>
+        <%= image_tag User.display_avatar(@repo_user) %>
         <div class="edit-avatar">
           Change avatar
         </div>
@@ -30,7 +30,7 @@
     <% end %>
   <% else %>
     <div class="user-avatar">
-      <%= image_tag @repo_user.avatar.url %>
+      <%= image_tag User.display_avatar(@repo_user) %>
     </div>
   <% end %>
 

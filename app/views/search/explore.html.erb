@@ -24,7 +24,7 @@
   <% @repositories.each do |repository| %>
     <div class="repository-container">
 
-        <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')"  %> >
+        <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.present?}')"  %> >
           <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
         </div>
 

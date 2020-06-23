@@ -31,7 +31,7 @@
                 <div id="image-target" class="mx-auto text-center"></div>
 
                 <div class="text-center" id="edit-image">
-                  <%= image_tag @question.image.url(:medium) if !@question.image.blank? %>
+                  <%= image_tag @question.image.variant(resize: "300x300") if !@question.image.blank? %>
                 </div>
 
               </div>
