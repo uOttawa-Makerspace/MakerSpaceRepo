@@ -9,8 +9,8 @@ class RepositoriesController < SessionsController
       redirect_to password_entry_repository_path(@repository.user_username, @repository.slug) and return
     end
 
-    @photos = @repository.photos&.first(5) || []
-    @files = @repository.repo_files
+    @photos = @repository.photos.joins(:image_attachment)&.first(5) || []
+    @files = @repository.repo_files.joins(:file_attachment)
     @categories = @repository.categories
     @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
@@ -52,8 +52,8 @@ class RepositoriesController < SessionsController
 
   def edit
     if @repository.users.pluck(:email).include?(@user.email) || (@user.role == 'admin')
-      @photos = @repository.photos.first(5)
-      @files = @repository.repo_files
+      @photos = @repository.photos.joins(:image_attachment).first(5)
+      @files = @repository.repo_files.joins(:file_attachment)
       @categories = @repository.categories
       @equipments = @repository.equipments
     else
