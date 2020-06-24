@@ -32,7 +32,7 @@ four:
   height: 3
   width: 3
 
-four:
+five:
   repository_id:
   image_file_name: p4
   image_content_type: image/png

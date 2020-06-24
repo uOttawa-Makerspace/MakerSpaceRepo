@@ -289,8 +289,8 @@
     <% if repos != @joined_projects %>
       <% repos.each do |repository| %>
         <div class="repository-container">
-          <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.first.present?}')" %> >
-            <% if repository.user_username.eql?(@user.username) %>
+          <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if (repository.photos.present? and repository.photos.first.present? and repository.photos.first.image.attached? )}')" %> >
+          <% if repository.user_username.eql?(@user.username) %>
               <%= link_to "Delete", repository_path(repository.user_username, repository.slug),
                           method: :delete, data: {confirm: "Are you sure? Once you delete the repository there is no coming back!"}, class: 'delete-repo' %>
               <%= link_to "Edit", edit_repository_path(repository.user_username, repository.slug), class: 'edit-repo' %>
