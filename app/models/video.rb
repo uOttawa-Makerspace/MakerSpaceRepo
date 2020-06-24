@@ -12,7 +12,7 @@ class Video < ApplicationRecord
   #     :thumb => { :geometry => "100x100#", :format => 'jpg', :time => 10 }
   # }, :processors => [:transcoder]
 
-  Rails.env.eql?('development') ? BUCKET_NAME = ENV.fetch('S3_BUCKET_NAME', 'makerspace-testing-for-real') : BUCKET_NAME = Rails.application.secrets.s3_bucket_name
+  BUCKET_NAME = Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name]
   DIRECT_UPLOAD_URL_FORMAT = %r{\Ahttps:\/\/#{BUCKET_NAME}\.s3\.amazonaws\.com\/(?<path>.+\/(?<filename>.+))\z}.freeze
 
   validates_attachment_content_type :video, content_type: %r{\Avideo/.*\Z}
