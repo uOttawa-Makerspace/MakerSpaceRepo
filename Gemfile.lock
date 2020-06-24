@@ -1057,6 +1057,9 @@ GEM
     fastimage (1.7.0)
       addressable (~> 2.3, >= 2.3.5)
     ffi (1.13.1)
+    file_validators (2.3.0)
+      activemodel (>= 3.2)
+      mime-types (>= 1.0)
     font-awesome-rails (4.6.3.1)
       railties (>= 3.2, < 6.0)
     get_process_mem (0.2.3)
@@ -1078,10 +1081,6 @@ GEM
       activesupport (>= 5.1.0)
       multi_json (>= 1.2)
     jmespath (1.4.0)
-    jquery-fileupload-rails (0.4.7)
-      actionpack (>= 3.1)
-      railties (>= 3.1)
-      sass (>= 3.2)
     jquery-rails (4.0.5)
       rails-dom-testing (~> 2.0)
       railties (>= 5.1.0)
@@ -1248,11 +1247,6 @@ GEM
     ruby-vips (2.0.17)
       ffi (~> 1.9)
     rubyzip (2.3.0)
-    s3_direct_upload (0.1.7)
-      coffee-rails (>= 3.1)
-      jquery-fileupload-rails (~> 0.4.1)
-      rails (>= 3.1)
-      sass-rails (>= 3.1)
     saml_idp (0.8.1)
       activesupport (>= 3.2)
       builder (>= 3.0)
@@ -1397,6 +1391,7 @@ DEPENDENCIES
   factory_girl_rails (~> 4.2.1)
   faker (~> 1.1.2)
   fastimage (~> 1.7.0)
+  file_validators
   font-awesome-rails (~> 4.6.3.0)
   image_processing
   jbuilder (~> 2.8.0)
@@ -1422,7 +1417,6 @@ DEPENDENCIES
   rails-controller-testing
   rubocop-rails
   rubyzip (~> 2.1)
-  s3_direct_upload
   saml_idp (~> 0.8.0)
   sass-rails (~> 5.0.7)
   sdoc (~> 0.4.0)

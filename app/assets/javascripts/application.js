@@ -19,10 +19,10 @@
 //= require jquery-ui/autocomplete
 //= require photoswipe
 //= require jquery-ui/effect.all
+//= require activestorage
 //= require turbolinks
 //= require clipboard
 //= require bootbox
-//= require s3_direct_upload
 //= require toastr
 //= require trix
 //= require select2-full
