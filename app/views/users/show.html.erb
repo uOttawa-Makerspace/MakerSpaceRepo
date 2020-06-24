@@ -126,7 +126,8 @@
                 <h4 class="modal-title">Badge pending</h4>
               </div>
               <div class="modal-body">
-                <p>To accept your badge, please look into your emails (it could be in the spam folder), you should have received an email from Acclaim or CEED with a link to accept the badge !</p>
+                <p>To accept your badge, please look into your emails (it could be in the spam folder), you should have
+                  received an email from Acclaim or CEED with a link to accept the badge !</p>
                 <p>Congratulations for your badge !</p>
               </div>
               <div class="modal-footer">
@@ -284,13 +285,19 @@
 
     <% if @repositories.empty? or params[:show].eql?('makes') and @makes.empty? %>
       <%= content_tag :div, "#{@repo_user.username} doesn't have any repositories yet.", class: "empty-repo" %>
+    <% else %>
+      <div class="apple_pagination">
+        <%= page_entries_info @repositories, :model => 'Repository' %>
+        <%= will_paginate @repositories, :container => false %>
+      </div>
+      <br>
     <% end %>
     <% repos = params[:show].eql?('makes') ? @makes : params[:show].eql?('projects_assigned') ? @joined_projects : @repositories %>
     <% if repos != @joined_projects %>
       <% repos.each do |repository| %>
         <div class="repository-container">
-          <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if (repository.photos.present? and repository.photos.first.present? and repository.photos.first.image.attached? )}')" %> >
-          <% if repository.user_username.eql?(@user.username) %>
+          <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if (repository.photos.present? and repository.photos.first.present? and repository.photos.first.image.attached?)}')" %> >
+            <% if repository.user_username.eql?(@user.username) %>
               <%= link_to "Delete", repository_path(repository.user_username, repository.slug),
                           method: :delete, data: {confirm: "Are you sure? Once you delete the repository there is no coming back!"}, class: 'delete-repo' %>
               <%= link_to "Edit", edit_repository_path(repository.user_username, repository.slug), class: 'edit-repo' %>
@@ -307,8 +314,9 @@
             <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           </div>
         </div>
+
       <% end %>
-      <%= paginate repos %>
+
     <% else %>
       <% repos.each do |joined_project| %>
         <table class="spacing_table">
@@ -328,5 +336,6 @@
       </tbody>
       </table>
     <% end %>
+
   </section>
 </section>
