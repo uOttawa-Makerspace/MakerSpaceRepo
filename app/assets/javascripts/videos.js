@@ -11,3 +11,9 @@ function check_proficient_project(proficient_project_id) {
         document.getElementById("choose_video").classList.remove('d-none');
     }
 }
+
+function fetch_attachment_name() {
+    var file_input = document.getElementById("video");
+    var filename = file_input.value;
+    document.getElementById("video-name").innerHTML=(filename);
+}
