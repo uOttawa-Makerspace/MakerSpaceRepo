@@ -69,9 +69,9 @@ class UsersController < SessionsController
     @repo_user = User.find_by username: params[:username]
     @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
     @repositories = if params[:username] == @user.username || @user.admin? || @user.staff?
-                      @repo_user.repositories.where(make_id: nil).paginate(page: params[:page], per_page: 20)
+                      @repo_user.repositories.where(make_id: nil).paginate(page: params[:page], per_page: 18)
                     else
-                      @repo_user.repositories.public_repos.where(make_id: nil).paginate(page: params[:page], per_page: 20)
+                      @repo_user.repositories.public_repos.where(make_id: nil).paginate(page: params[:page], per_page: 18)
                     end
 
     @acclaim_badge_url = if params[:username] == @user.username
