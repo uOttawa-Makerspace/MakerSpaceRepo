@@ -36,7 +36,6 @@ class RepositoriesController < SessionsController
     begin
       File.delete(file_location)
     rescue Errno::ENOENT => e
-      puts("a")
     end
 
     Zip::ZipFile.open(file_location, Zip::File::CREATE) do |zip|
@@ -56,6 +55,7 @@ class RepositoriesController < SessionsController
 
     end
 
+    cookies[:downloadStarted] = { value: 1, expires: 60.seconds.from_now }
     redirect_to "/tmp/makerepo_file_#{@repository.id.to_s}.zip"
 
   end

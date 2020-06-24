@@ -124,7 +124,10 @@ class ProficientProjectsController < DevelopmentProgramsController
   def create_files
     if params['files'].present?
       params['files'].each do |f|
-        RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
+        @repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
+        unless @repo.save
+          flash[:alert] = 'Make sure you only upload PDFs for the project files'
+        end
       end
     end
   end
@@ -174,7 +177,10 @@ class ProficientProjectsController < DevelopmentProgramsController
     if params['files'].present?
 
       params['files'].each do |f|
-        RepoFile.create(file: f, proficient_project_id: @proficient_project.id)
+        repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
+        unless repo.save
+          flash[:alert] = 'Make sure you only upload PDFs for the project files, the PDFs were uploaded'
+        end
       end
 
     end

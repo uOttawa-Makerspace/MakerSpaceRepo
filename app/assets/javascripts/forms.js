@@ -44,7 +44,8 @@ function load() {
       }
     }
   };
-  
+
+
   $('#download-zip').click(function(event) {
     $("#download-zip").attr('class', 'no-bg-download');
     $("#download-zip").html("<img src='/assets/loader-65526d2bb686aee87b0257dcbc756449cffeebf62d6646ba9a9979de8b51111a.gif' height='15px'>");
@@ -64,6 +65,7 @@ function load() {
       downloadTimeout = setTimeout(checkDownloadCookie, 1000);
     }
   };
+
   
   //**************** END | download zip stuff *******************//
 

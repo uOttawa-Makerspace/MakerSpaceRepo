@@ -316,10 +316,12 @@ Rails.application.routes.draw do
   # get 'repositories', to: 'repositories#index'
   post "vote/:comment_id", :as => "vote", :action => "vote", to: 'users#vote'
 
+
   # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
     collection do
       post :create, path: '/new'
+      get :remove_avatar
     end
 
     get 'likes', on: :member

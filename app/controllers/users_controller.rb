@@ -27,7 +27,13 @@ class UsersController < SessionsController
     return redirect_to root_path if signed_in?
 
     @new_user = User.new
-   end
+  end
+
+
+  def remove_avatar
+    @user.avatar.purge
+    redirect_to settings_profile_path
+  end
 
   def update
     if @user.update(user_params)

@@ -37,7 +37,7 @@ class User < ApplicationRecord
   has_one_attached :avatar
 
   validates :avatar, file_content_type: {
-      allow: ['image/jpeg', 'image/png'],
+      allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],
       if: -> {avatar.attached?},
   }
 

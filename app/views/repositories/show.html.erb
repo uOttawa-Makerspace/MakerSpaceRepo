@@ -186,9 +186,10 @@
 
   <section id="repo-comments">
     <div class="title">Comments</div>
-    <%= form_for comments_create_path, id: 'comment', remote: true do %>
+    <%= form_for("Comments", url: comments_create_path, id: 'comment', remote: true ) do%>
       <div style="max-width: 50rem" class="form-group">
-        <%= text_area_tag 'content', nil, rows: 5, id: 'comment-redactor', class: "form-control" %>
+        <%= hidden_field_tag :content %>
+        <trix-editor input="content"></trix-editor>
       </div>
       <%= submit_tag 'Post comment', class: "btn btn-primary" %>
     <% end %>

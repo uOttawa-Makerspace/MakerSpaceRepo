@@ -7,8 +7,8 @@
   <div class="modal-body">
     <h5 class="modal-title">Level: <%= proficient_project.level %></h5>
     <h5>Price: <%= proficient_project.cc %></h5>
-    <div class="jumbotron text-center text-wrap">
-      <%= proficient_project.description.html_safe %>
+    <div class="jumbotron text-center text-wrap" style="word-break: break-all">
+      <%= raw(proficient_project.description) %>
     </div>
   </div>
   <div class="modal-footer">

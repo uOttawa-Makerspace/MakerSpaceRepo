@@ -11,7 +11,6 @@
 
     <%= f.label :avatar, "Profile Picture<br>Photo de Profile".html_safe, class: "profile-label" %>
 
-
     <div class="avatar-column">
       <%= image_tag User.display_avatar(@user), class: 'edit-avatar' %>
       <label class="custom-file-upload">
@@ -19,7 +18,9 @@
         Choose new image<br>Choisi une nouvelle image
       </label>
     </div>
-    <br><br>
+
+    <br><br><br>
+
     <div class="form-group">
     <%= f.label :name, "Full Name/Nom", class: "profile-label" %>
     <%= content_tag :span, @user.errors[:name].first, class: 'form-error' %>
@@ -290,6 +291,10 @@ l’Événement.
     <%= f.text_area :description, class: "profile-text" %>    -->
 
     <%= f.submit "Save/Enregistrer", class: "btn btn-secondary" %>
+    <% unless User.display_avatar(@user) == "default-avatar.png" %>
+      <%= link_to "Remove Avatar", remove_avatar_users_path, class: "btn btn-danger", data: {confirm: "Are you sure you want to remove your Avatar Pictures ?"} %>
+      <% end %>
+
     <br><br><br>
     <% if flash[:notice] %>
       <div id="notice"><%= flash[:notice] %></div>

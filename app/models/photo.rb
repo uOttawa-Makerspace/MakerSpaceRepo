@@ -6,7 +6,7 @@ class Photo < ApplicationRecord
 
   has_one_attached :image
   validates :image, file_content_type: {
-      allow: ['image/jpeg', 'image/png'],
+      allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],
       if: -> {image.attached?},
   }
 end
