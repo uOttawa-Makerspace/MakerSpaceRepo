@@ -11,7 +11,7 @@
             <p id="proficient_project"></p>
             <div class="d-none" id="choose_video">
                 <%= f.file_field :video, direct_upload: true, accept: "video/*", :onchange => 'fetch_attachment_name()', id: "video" %>
-                <label for="video" class="custom-instructable-upload-video">Choose Video...</label>
+                <label for="video" class="custom-instructable-upload-video" id="video-label">Choose Video...</label>
               <div class="text-center mb-5" id="video-name"></div>
               <br />
               <%= f.submit "Upload Video", class: "btn btn-secondary" %>
