@@ -189,8 +189,9 @@ class ProficientProjectsController < DevelopmentProgramsController
   def update_videos
     if params['deletevideos'].present?
       @proficient_project.videos.each do |f|
-        if params['deletevideos'].include?(f.video_file_name) # checks if the file should be deleted
-          Video.destroy_all(video_file_name: f.video_file_name, proficient_project_id: @proficient_project.id)
+        if params['deletevideos'].include?(f.video_file_name)
+          f.video.purge
+          f.destroy
         end
       end
     end
