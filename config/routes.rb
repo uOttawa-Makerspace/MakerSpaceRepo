@@ -14,8 +14,8 @@ Rails.application.routes.draw do
 
   require 'sidekiq/web'
   Sidekiq::Web.use Rack::Auth::Basic do |username, password|
-    get_username = Rails.application.secrets.sidekiq_username || 'adam'
-    get_password = Rails.application.secrets.sidekiq_password || 'Password1'
+    get_username = Rails.application.credentials[Rails.env.to_sym][:sidekiq][:username] || 'adam'
+    get_password = Rails.application.credentials[Rails.env.to_sym][:sidekiq][:password] || 'Password1'
     username == get_username && password == get_password
   end
   mount Sidekiq::Web => '/sidekiq'

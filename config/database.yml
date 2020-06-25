@@ -1,18 +1,22 @@
 default: &default
-  adapter: postgresql
-  host: <%= ENV["DB_HOST"] || "localhost" %>
-  port: <%= ENV["DB_PORT"] || 5432 %>
-  username: <%= ENV["DB_USERNAME"] || "postgres" %>
-  password: <%= ENV["DB_PASSWORD"] || "postgres" %>
+  adapter: <%= Rails.application.credentials[Rails.env.to_sym][:database][:adapter] || postgresql %>
+  host: <%= Rails.application.credentials[Rails.env.to_sym][:database][:host] || localhost %>
+  port: <%= Rails.application.credentials[Rails.env.to_sym][:database][:port] || 5432 %>
+  username: <%= Rails.application.credentials[Rails.env.to_sym][:database][:username] || postgres %>
+  password: <%= Rails.application.credentials[Rails.env.to_sym][:database][:password] || postgres %>
 
 development:
   <<: *default
-  database: <%= ENV["DB_NAME"] || "makerspacerepo" %>
+  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo %>
 
 test:
   <<: *default
-  database: makerspacerepo_test
+  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>
 
 production:
   <<: *default
-  database: <%= ENV["DB_NAME"] || "makerspacerepo" %>
+  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
+
+staging:
+  <<: *default
+  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
