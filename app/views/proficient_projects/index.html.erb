@@ -43,12 +43,12 @@
         <% if pp.photos.present? %>
           <% if @user_order_items.where(proficient_project: pp, status:  ["Awarded", "In progress"]).present? %>
             <a href="<%= proficient_project_path(pp.id) %>">
-              <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
+              <div class="card card-image projects-image" style="background-image: url(<%= url_for(pp.photos.first.image) %>);">
               </div>
             </a>
           <% else %>
             <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_proficient_projects_path(id: pp.id) %>">
-              <div class="card card-image projects-image" style="background-image: url(<%= pp.photos.first.image.url %>);">
+              <div class="card card-image projects-image" style="background-image: url(<%= url_for(pp.photos.first.image) %>);">
               </div>
             </a>
           <% end  %>

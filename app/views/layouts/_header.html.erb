@@ -60,7 +60,7 @@
 
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <%= image_tag @user.avatar.url, class: 'avatar', alt: 'Avatar' %>
+            <%= image_tag User.display_avatar(@user), class: 'avatar', alt: 'Avatar' %>
             <%= @user.username %>
           </a>
           <div class="dropdown-menu">

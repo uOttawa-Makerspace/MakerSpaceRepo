@@ -5,9 +5,7 @@
         <h5><%= link_to f.proficient_project.title, f.proficient_project %></h5>
         <h5><%= f.processed ? "<h5 class='text-success'>Done<h5>".html_safe : "<h5 class='text-danger'>In progress...<h5>".html_safe  %></h5>
         <%= link_to "Delete", f, method: :delete, data: {confirm: "Are you sure?"} , class: "btn btn-danger" %>
-        <video autobuffer="autobuffer" preload="auto" controls="controls" width="100%" height="100%" >
-          <source  src="<%= f.video.url%>"  />
-        </video>
+        <%= video_tag url_for(f.video), size: "300x300", controls: true, controlslist: "nodownload" if f.video.attached? %>
       </div>
     <% end %>
   </div>

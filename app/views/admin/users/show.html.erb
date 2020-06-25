@@ -4,7 +4,7 @@
 <section id="user-show-admin">
   <div id="user-info">
       <div class="user-avatar">
-        <%= image_tag @edit_admin_user.avatar.url, class: 'edit-avatar'%>
+        <%= image_tag @edit_admin_user5.1.7.url, class: 'edit-avatar'%>
         <% if @all_sessions.where("sign_out_time > ?", Time.zone.now).present? %>
           <div class="status-online">
             <%= fa_icon "check-circle-o" %>

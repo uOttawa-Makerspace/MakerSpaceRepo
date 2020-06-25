@@ -10,7 +10,7 @@
 
     <%= link_to settings_profile_path do %>
       <div class="user-avatar">
-        <%= image_tag @repo_user.avatar.url %>
+        <%= image_tag User.display_avatar(@repo_user) %>
         <div class="edit-avatar">
           Change avatar
         </div>
@@ -22,7 +22,7 @@
 
     <%= link_to settings_profile_path do %>
       <div class="user-avatar">
-        <%= image_tag @repo_user.avatar.url %>
+        <%= image_tag User.display_avatar(@repo_user) %>
         <div class="edit-avatar">
           Change avatar
         </div>
@@ -30,7 +30,7 @@
     <% end %>
   <% else %>
     <div class="user-avatar">
-      <%= image_tag @repo_user.avatar.url %>
+      <%= image_tag User.display_avatar(@repo_user) %>
     </div>
   <% end %>
 
@@ -126,7 +126,8 @@
                 <h4 class="modal-title">Badge pending</h4>
               </div>
               <div class="modal-body">
-                <p>To accept your badge, please look into your emails (it could be in the spam folder), you should have received an email from Acclaim or CEED with a link to accept the badge !</p>
+                <p>To accept your badge, please look into your emails (it could be in the spam folder), you should have
+                  received an email from Acclaim or CEED with a link to accept the badge !</p>
                 <p>Congratulations for your badge !</p>
               </div>
               <div class="modal-footer">
@@ -267,7 +268,7 @@
     </div>
   </div>
 
-  <section id="user-show-links" class="m-5">
+  <section id="user-show-links" class="m-5" style="margin-bottom: 20px!important;">
     <% active = params[:show].eql?("makes") ? ["#eee", "#5f9ea0", "#eee"] : params[:show].eql?("projects_assigned") ? ["#eee", "#eee", "#5f9ea0"] : ["#5f9ea0", "#eee", "#eee"] %>
     <%= link_to "#{user_path(show: :repositories)}#user-show-links", style: 'border-color:' << active[0] do %>
       <span class="number"><%= @repositories.count %></span> REPOS
@@ -281,15 +282,20 @@
   </section>
 
   <section id="repositories-container" class="m-5">
-
     <% if @repositories.empty? or params[:show].eql?('makes') and @makes.empty? %>
       <%= content_tag :div, "#{@repo_user.username} doesn't have any repositories yet.", class: "empty-repo" %>
+    <% else %>
+      <div class="apple_pagination">
+        <%= page_entries_info @repositories, :model => 'Repository' %>
+        <%= will_paginate @repositories, :container => false %>
+      </div>
+      <br>
     <% end %>
     <% repos = params[:show].eql?('makes') ? @makes : params[:show].eql?('projects_assigned') ? @joined_projects : @repositories %>
     <% if repos != @joined_projects %>
       <% repos.each do |repository| %>
         <div class="repository-container">
-          <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')" %> >
+          <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if (repository.photos.present? and repository.photos.first.present? and repository.photos.first.image.attached?)}')" %> >
             <% if repository.user_username.eql?(@user.username) %>
               <%= link_to "Delete", repository_path(repository.user_username, repository.slug),
                           method: :delete, data: {confirm: "Are you sure? Once you delete the repository there is no coming back!"}, class: 'delete-repo' %>
@@ -307,8 +313,9 @@
             <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           </div>
         </div>
+
       <% end %>
-      <%= paginate repos %>
+
     <% else %>
       <% repos.each do |joined_project| %>
         <table class="spacing_table">
@@ -328,5 +335,6 @@
       </tbody>
       </table>
     <% end %>
+
   </section>
 </section>

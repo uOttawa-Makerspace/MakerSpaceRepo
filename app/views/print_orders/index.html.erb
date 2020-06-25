@@ -65,10 +65,8 @@
           <td><%= prints.comments %></td>
 
           <td>
-            <% if prints.file_file_name %>
-              <a href="<%= prints.file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>">
-                <button class="btn btn-primary">Download</button>
-              </a>
+            <% if prints.file.attached? %>
+              <%= link_to "Download", rails_blob_path(prints.file, disposition: 'attachment'), class: "btn btn-primary" %>
             <% else %>
               Not Available
             <% end %>
@@ -76,10 +74,8 @@
 
           <% if @user.admin? || @user.staff? %>
             <td>
-              <% if prints.final_file_file_name %>
-                <a href="<%= prints.final_file.s3_object.presigned_url(:get, :response_content_disposition => "attachment") %>">
-                  <button class="btn btn-primary">Download</button>
-                </a>
+              <% if prints.final_file.attached? %>
+                <%= link_to "Download", rails_blob_path(prints.final_file, disposition: 'attachment'), class: "btn btn-primary" %>
               <% else %>
                 Not Available
               <% end %>
@@ -95,24 +91,24 @@
           </td>
 
           <td>
-          <% if @user.admin? %>
-            <% if prints.approved %>
-              Approved
-            <% elsif prints.approved == false %>
-              Disapproved
-            <% else %>
-              <%= render 'staff_approval', prints: prints%>
+            <% if @user.admin? %>
+              <% if prints.approved %>
+                Approved
+              <% elsif prints.approved == false %>
+                Disapproved
+              <% else %>
+                <%= render 'staff_approval', prints: prints %>
 
-            <% end %>
-          <% else %>
-            <% if prints.approved %>
-              Approved
-            <% elsif prints.approved == false %>
-              Disapproved
+              <% end %>
             <% else %>
-              Not Yet
+              <% if prints.approved %>
+                Approved
+              <% elsif prints.approved == false %>
+                Disapproved
+              <% else %>
+                Not Yet
+              <% end %>
             <% end %>
-          <% end %>
           </td>
 
           <% if prints.user_id == @user.id and prints.approved %>

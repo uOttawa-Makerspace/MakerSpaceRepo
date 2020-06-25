@@ -30,9 +30,9 @@
       <% @files.each do |f| %>
         <table>
           <tr class="file-item">
-            <td><%= fa_icon "file-text-o" %> <%= f.file_file_name %></td>
-            <td><span><%= f.file.size/1000 %> KB</span></td>
-            <td><span id="<%= f.file_file_name %>" class="file-remove">remove</span></td>
+            <td><%= fa_icon "file-text-o" %> <%= f.file.filename %></td>
+            <td><span><%= f.file.byte_size/1000 %> KB</span></td>
+            <td><span id="<%= f.file.id %>" class="file-remove">remove</span></td>
           </tr>
         </table>
       <% end %>
@@ -42,7 +42,7 @@
     <%= label_tag :photo, "Gallery" %>
     <div>A maximum of five photos can be uploaded per repository.</div>
     <div class="repo-image">
-      <div id="dragndrop"></div>
+      <div id="dragndrop">
         <%= fa_icon 'cloud-upload'%>
         <p>Drag &amp; Drop</p>
       </div>
@@ -50,14 +50,14 @@
         <%= file_field_tag 'images[]', type: :files, multiple: true %>
         or choose an image...
       </label>
+      </div>
     </div>
 
     <div id="image-container">
-
     <% @photos.each do |img| %>
       <div class="image-item">
-        <span id="<%= img.image_file_name %>" class="image-remove"></span>
-        <img src="<%= img.image.url %>">
+        <span id="<%= img.image.filename %>" class="image-remove"></span>
+        <%= image_tag img.image %>
       </div>
     <% end %>
     <%= hidden_field_tag 'deleteimages' %>
@@ -97,7 +97,7 @@
     <div id= "share_option">
         <%= f.label :share_type, "Your project is..." %>
         <%= fa_icon('globe') %>
-        <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline",:onclick => "hidePass();")%><%= f.label(:share_type, "Public", :id =>"type", :style => "display:inline")  %>
+        <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline",:onclick => "hidePass();", required: true)%><%= f.label(:share_type, "Public", :id =>"type", :style => "display:inline")  %>
         <div id= "description"> Anyone can see this repository </div>
         <%= fa_icon('lock') %>
         <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline", :onclick => "showPass();") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>

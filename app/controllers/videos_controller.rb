@@ -1,6 +1,5 @@
-# frozen_string_literal: true
-
 class VideosController < DevelopmentProgramsController
+  include VideosHelper
   before_action :grant_access_admin
   before_action :set_video, only: %i[download destroy]
 
@@ -10,20 +9,28 @@ class VideosController < DevelopmentProgramsController
 
   def new
     @proficient_projects = ProficientProject.all.order(created_at: :asc).pluck(:title, :id)
+    @new_video = Video.new
   end
 
   def create
     @video = Video.new(video_params)
-    @video.proficient_project_id = params['proficient_project_id']
-    @video.video_file_name = params['filename']
-    @video.video_file_size = params['filesize']
-    @video.video_content_type = params['filetype']
-    @video.video_updated_at = params['lastModifiedDate']
-    @video.save
-  end
-
-  def download
-    redirect_to @video.video.expiring_url(30.seconds, :original)
+    @video.direct_upload_url = ""
+    if @video.save
+      blob = @video.video.blob
+      blob_size = bytes_to_megabytes(blob.byte_size)
+      @video.update_attributes(
+          video_file_name: blob.filename,
+          video_file_size: blob_size,
+          video_content_type: blob.content_type,
+          video_updated_at: blob.created_at,
+          processed: true
+          )
+      flash[:notice] = "Video Uploaded"
+      redirect_to videos_path
+    else
+      flash[:alert] = "Something went wrong. Try again."
+      redirect_to new_video_path
+    end
   end
 
   def destroy
@@ -39,7 +46,7 @@ class VideosController < DevelopmentProgramsController
   end
 
   def video_params
-    params.require(:video).permit(:direct_upload_url)
+    params.require(:video).permit(:video, :proficient_project_id)
   end
 
   def grant_access_admin
