@@ -67,6 +67,7 @@ gem 'net-ssh'
 
 group :development, :test do
   gem 'byebug', platform: :mri
+  gem 'rspec-rails'
   gem 'factory_girl_rails', '~> 4.2.1'
   gem 'railroady'
   gem 'spring', '~> 2.1.0'
