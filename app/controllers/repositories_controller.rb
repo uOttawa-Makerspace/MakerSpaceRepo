@@ -9,8 +9,8 @@ class RepositoriesController < SessionsController
       redirect_to password_entry_repository_path(@repository.user_username, @repository.slug) and return
     end
 
-    @photos = @repository.photos&.first(5) || []
-    @files = @repository.repo_files.order(Arel.sql('LOWER(file_file_name)'))
+    @photos = @repository.photos.joins(:image_attachment)&.first(5) || []
+    @files = @repository.repo_files.joins(:file_attachment)
     @categories = @repository.categories
     @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
@@ -26,24 +26,38 @@ class RepositoriesController < SessionsController
     send_data data.read, type: data.content_type, filename: File.basename(url), x_sendfile: true
   end
 
+
   def download_files
-    @files = @repository.repo_files.order('LOWER(file_file_name)')
-    tmp_filename = "tmp_zip_#{@repository.title}" << Time.zone.now.strftime('%Y%m%d%H%M%S').to_s << '.zip'
-    temp_file = Tempfile.new("#{tmp_filename}-#{@repository.title}")
-    Zip::OutputStream.open(temp_file.path) do |zos|
+
+    @files = @repository.repo_files
+
+    file_location = "#{Rails.root}/public/tmp/makerepo_file_#{@repository.id.to_s}.zip"
+
+    begin
+      File.delete(file_location)
+    rescue Errno::ENOENT => e
+    end
+
+    Zip::ZipFile.open(file_location, Zip::File::CREATE) do |zip|
+
       @files.each do |file|
-        zos.put_next_entry(file.file_file_name)
-        attachment = Paperclip.io_adapters.for(file.file)
-        zos.print IO.read(attachment.path)
+        File.open("#{Rails.root}/public/tmp/#{file.file.filename}", 'wb') do |downloaded_file|
+          downloaded_file.write(file.file.download)
+        end
+
+        zip.add(file.file.filename, "#{Rails.root}/public/tmp/#{file.file.filename}")
       end
     end
 
-    filename = "#{@repository.title}_files_MakerRepo.zip"
-    send_file temp_file.path, type: 'application/zip',
-                              disposition: 'attachment',
-                              filename: filename
-    temp_file.close
+    @files.each do |file|
+
+      File.delete("#{Rails.root}/public/tmp/#{file.file.filename}")
+
+    end
+
     cookies[:downloadStarted] = { value: 1, expires: 60.seconds.from_now }
+    redirect_to "/tmp/makerepo_file_#{@repository.id.to_s}.zip"
+
   end
 
   def new
@@ -52,8 +66,8 @@ class RepositoriesController < SessionsController
 
   def edit
     if @repository.users.pluck(:email).include?(@user.email) || (@user.role == 'admin')
-      @photos = @repository.photos.first(5)
-      @files = @repository.repo_files.order(Arel.sql('LOWER(file_file_name)'))
+      @photos = @repository.photos.joins(:image_attachment).first(5)
+      @files = @repository.repo_files.joins(:file_attachment)
       @categories = @repository.categories
       @equipments = @repository.equipments
     else
@@ -75,7 +89,7 @@ class RepositoriesController < SessionsController
       create_files
       create_categories
       create_equipments
-      render json: { redirect_uri: repository_path(@user.username, @repository.slug).to_s }
+      render json: {redirect_uri: repository_path(@user.username, @repository.slug).to_s}
     else
       render json: @repository.errors['title'].first, status: :unprocessable_entity
     end
@@ -91,7 +105,7 @@ class RepositoriesController < SessionsController
       create_categories
       create_equipments
       flash[:notice] = 'Project updated successfully!'
-      render json: { redirect_uri: repository_path(@repository.user_username, @repository.slug).to_s }
+      render json: {redirect_uri: repository_path(@repository.user_username, @repository.slug).to_s}
     else
       flash[:alert] = 'Unable to apply the changes.'
       render json: @repository.errors['title'].first, status: :unprocessable_entity
@@ -110,12 +124,13 @@ class RepositoriesController < SessionsController
     @repository.likes.create!(user_id: @user.id)
     repo_user = @repository.user
     repo_user.increment!(:reputation, 5)
-    render json: { like: @repository.like, rep: repo_user.reputation }
+    render json: {like: @repository.like, rep: repo_user.reputation}
   rescue StandardError
-    render json: { failed: true }
+    render json: {failed: true}
   end
 
-  def password_entry; end
+  def password_entry;
+  end
 
   def pass_authenticate
     @auth = Repository.authenticate(params[:slug], params[:password])
@@ -196,9 +211,12 @@ class RepositoriesController < SessionsController
 
   def comment_filter
     case params['comment_filter']
-    when 'newest' then 'created_at DESC'
-    when 'top' then 'upvote DESC'
-    else 'upvote DESC'
+    when 'newest' then
+      'created_at DESC'
+    when 'top' then
+      'upvote DESC'
+    else
+      'upvote DESC'
     end
   end
 
@@ -208,7 +226,7 @@ class RepositoriesController < SessionsController
         dimension = FastImage.size(img.tempfile)
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end
-      end
+    end
   end
 
   def create_files
@@ -216,28 +234,23 @@ class RepositoriesController < SessionsController
       params['files'].each do |f|
         RepoFile.create(file: f, repository_id: @repository.id)
       end
-      end
+    end
   end
 
   def update_photos
     if params['deleteimages'].present?
       @repository.photos.each do |img|
-        if params['deleteimages'].include?(img.image_file_name) # checks if the file should be deleted
-          Photo.destroy_all(image_file_name: img.image_file_name, repository_id: @repository.id)
+        if params['deleteimages'].include?(img.image.filename.to_s) # checks if the file should be deleted
+          img.image.purge
+          img.destroy
         end
       end
     end
+
     if params['images'].present?
       params['images'].each do |img|
-        filename = img.original_filename.gsub(' ', '_')
-        if @repository.photos.where(image_file_name: filename).blank? # checks if file exists
-          dimension = FastImage.size(img.tempfile)
-          Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
-        else # updates existant files
-          Photo.destroy_all(image_file_name: filename, repository_id: @repository.id)
-          dimension = FastImage.size(img.tempfile)
-          Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
-        end
+        dimension = FastImage.size(img.tempfile)
+        Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end
     end
   end
@@ -245,21 +258,19 @@ class RepositoriesController < SessionsController
   def update_files
     if params['deletefiles'].present?
       @repository.repo_files.each do |f|
-        if params['deletefiles'].include?(f.file_file_name) # checks if the file should be deleted
-          RepoFile.destroy_all(file_file_name: f.file_file_name, repository_id: @repository.id)
+        if params['deletefiles'].include?(f.file.filename.to_s) # checks if the file should be deleted
+          f.file.purge
+          f.destroy
         end
       end
     end
+
     if params['files'].present?
+
       params['files'].each do |f|
-        filename = f.original_filename.gsub(' ', '_')
-        if @repository.repo_files.where(file_file_name: filename).blank? # checks if file exists
-          RepoFile.create(file: f, repository_id: @repository.id)
-        else # updates existant files
-          RepoFile.destroy_all(file_file_name: filename, repository_id: @repository.id)
-          RepoFile.create(file: f, repository_id: @repository.id)
-        end
+        RepoFile.create(file: f, repository_id: @repository.id)
       end
+
     end
   end
 
@@ -268,7 +279,7 @@ class RepositoriesController < SessionsController
       params['categories'].first(5).each do |c|
         Category.create(name: c, repository_id: @repository.id)
       end
-      end
+    end
   end
 
   def create_equipments
@@ -276,7 +287,7 @@ class RepositoriesController < SessionsController
       params['equipments'].first(5).each do |e|
         Equipment.create(name: e, repository_id: @repository.id)
       end
-      end
+    end
   end
 
   def update_password
@@ -290,4 +301,5 @@ class RepositoriesController < SessionsController
       end
     end
   end
+
 end

@@ -41,11 +41,11 @@ class ProjectProposalsController < ApplicationController
     @project_proposals = ProjectProposal.joins(:project_joins)
                                         .joins('LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id)')
                                         .where('repositories.id IS NULL')
-                                        .uniq.order(created_at: :desc)
+                                        .distinct.order(created_at: :desc)
   end
 
   def projects_completed
-    @project_proposals = ProjectProposal.joins(:repositories).uniq.order(created_at: :desc)
+    @project_proposals = ProjectProposal.joins(:repositories).distinct.order(created_at: :desc)
   end
 
   # POST /project_proposals

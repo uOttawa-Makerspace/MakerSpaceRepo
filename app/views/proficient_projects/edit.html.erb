@@ -37,7 +37,7 @@
               <br />
               <br />
               <%= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)" %>
-              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => "multiple", :id => "badge_requirements", :class => "form-control select2"} %>
+              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => true, :id => "badge_requirements", :class => "form-control select2"} %>
               <br>
               <%= f.label :badge_template_id, "Badge that will be acquired" %>
               <%= f.select(:badge_template_id, options_for_select(@badge_templates.pluck(:badge_name, :id), :selected => f.object.badge_template_id), {:include_blank => "No badge"}, {:class => "form-control"}) %>
@@ -53,9 +53,9 @@
                 <% @files.each do |f| %>
                   <table>
                     <tr class="file-item">
-                      <td><%= fa_icon "file-text-o" %> <%= f.file_file_name %></td>
-                      <td><span><%= f.file.size/1000 %> KB</span></td>
-                      <td><span id="<%= f.file_file_name %>" class="file-remove">remove</span></td>
+                      <td><%= fa_icon "file-text-o" %> <%= f.file.filename %></td>
+                      <td><span><%= f.file.byte_size/1000 %> KB</span></td>
+                      <td><span id="<%= f.file.filename %>" class="file-remove">remove</span></td>
                     </tr>
                   </table>
                 <% end %>
@@ -98,8 +98,8 @@
               <div id="image-container" class="mx-auto">
                 <% @photos.each do |img| %>
                   <div class="image-item">
-                    <span id="<%= img.image_file_name %>" class="image-remove"></span>
-                    <img src="<%= img.image.url %>">
+                    <span id="<%= img.image.filename %>" class="image-remove"></span>
+                    <%= image_tag img.image %>
                   </div>
                 <% end %>
                 <%= hidden_field_tag 'deleteimages' %>
