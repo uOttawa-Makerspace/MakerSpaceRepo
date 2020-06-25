@@ -11,15 +11,7 @@ class CommentsController < SessionsController
     comment.username = @user.username
 
     if comment.save!
-      render json: {
-        username: comment.username,
-        user_id: comment.id,
-        user_url: user_path(@user.username),
-        comment: comment.content,
-        rep: comment.user.reputation,
-        comment_id: comment.id,
-        created_at: comment.created_at
-      }
+      redirect_to repository_path(slug: repository.slug, user_username: repository.user_username, :anchor => "repo-comments")
     else
       redirect_to root_path
     end
