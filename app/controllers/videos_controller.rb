@@ -1,6 +1,5 @@
-# frozen_string_literal: true
-
 class VideosController < DevelopmentProgramsController
+  include VideosHelper
   before_action :grant_access_admin
   before_action :set_video, only: %i[download destroy]
 
@@ -18,9 +17,10 @@ class VideosController < DevelopmentProgramsController
     @video.direct_upload_url = ""
     if @video.save
       blob = @video.video.blob
+      blob_size = bytes_to_megabytes(blob.byte_size)
       @video.update_attributes(
           video_file_name: blob.filename,
-          video_file_size: blob.byte_size,
+          video_file_size: blob_size,
           video_content_type: blob.content_type,
           video_updated_at: blob.created_at,
           processed: true
