@@ -1,6 +1,6 @@
 require 'faker'
 
-FactoryBot.define do
+FactoryGirl.define do
 
   factory :user do
     id { 1 }
