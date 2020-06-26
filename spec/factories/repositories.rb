@@ -4,7 +4,7 @@ FactoryGirl.define do
 
   factory :repository do
     user_id { 1 }
-    id { 2 }
+    id { 1 }
     title { Faker::Lorem.word }
     description { Faker::Lorem.paragraph }
     share_type { "public" }
