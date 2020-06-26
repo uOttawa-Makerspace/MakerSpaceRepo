@@ -1,22 +1,14 @@
 require 'faker'
 
-FactoryGirl.define do
+FactoryBot.define do
+
   factory :comment do
-    id 1
-    content { Faker::Lorem.words }
-    upvote 1
-    username { Faker::Lorem.word }
-    after(:create) do
-      create(:repo1)
-      create(:user1)
-    end
+    repository_id { 2 }
+    user_id { 1 }
+    id { 5 }
+    content { Faker::Lorem.paragraph }
+    upvote { 1 }
+    username { "Bob" }
   end
 
-  factory :other_comment do
-    id 2
-    user_id 2
-    content { Faker::Lorem.words }
-    upvote 1
-    username { Faker::Lorem.word }
-  end
 end
