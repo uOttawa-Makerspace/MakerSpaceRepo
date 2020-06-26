@@ -43,7 +43,9 @@ namespace :active_storage do
           url = "https://#{@bucket_name}.s3-#{@region}.amazonaws.com/#{klass}/#{attachment.pluralize}/#{id_partition}/original/#{filename}"
         end
 
-        next if return_response_from_url(url) != "200"
+        response, url = return_response_from_url_and_url(url)
+
+        next if response != "200"
 
         puts url
 
@@ -55,14 +57,14 @@ namespace :active_storage do
       end
     end
 
-    def return_response_from_url(url)
+    def return_response_from_url_and_url(url)
       url = url.gsub(" ", "_")
       url = URI.encode(url)
       url = URI.parse(url)
       req = Net::HTTP.new(url.host, url.port)
       req.use_ssl = true
       res = req.request_head(url.path)
-      res.code
+      return res.code, url
     end
 
 end
