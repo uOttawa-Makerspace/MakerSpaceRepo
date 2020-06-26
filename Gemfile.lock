@@ -1046,11 +1046,6 @@ GEM
     eventmachine (1.2.7)
     excon (0.73.0)
     execjs (2.7.0)
-    factory_bot (6.0.2)
-      activesupport (>= 5.0.0)
-    factory_bot_rails (6.0.0)
-      factory_bot (~> 6.0.0)
-      railties (>= 5.0.0)
     factory_girl (4.2.0)
       activesupport (>= 3.0.0)
     factory_girl_rails (4.2.1)
@@ -1413,7 +1408,6 @@ DEPENDENCIES
   database_cleaner (~> 1.0.1)
   ed25519 (~> 1.2)
   excon
-  factory_bot_rails
   factory_girl_rails (~> 4.2.1)
   faker
   fastimage (~> 1.7.0)
