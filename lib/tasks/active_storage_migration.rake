@@ -1,5 +1,5 @@
 namespace :active_storage do
-  task migration: :environment do
+  task migrate: :environment do
     Rails.application.eager_load!
     models = ActiveRecord::Base.descendants.reject(&:abstract_class?)
     @bucket_name = Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name]
