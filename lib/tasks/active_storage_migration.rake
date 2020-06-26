@@ -57,6 +57,7 @@ namespace :active_storage do
 
     def return_response_from_url(url)
       url = url.gsub(" ", "_")
+      url = URI.encode(url)
       url = URI.parse(url)
       req = Net::HTTP.new(url.host, url.port)
       req.use_ssl = true
