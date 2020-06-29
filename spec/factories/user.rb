@@ -43,6 +43,23 @@ FactoryGirl.define do
       gender { "Male" }
     end
 
+    trait :student do
+      id { 4 }
+      username { "Justine" }
+      password { "fda3A353$" }
+      email {Faker::Internet.email}
+      name {Faker::Lorem.words}
+      read_and_accepted_waiver_form { true }
+      active { true }
+      role { "regular_user" }
+      identity { "undergrad" }
+      program { "BASc in Software Engineering" }
+      faculty { "Engineering" }
+      year_of_study { 2020 }
+      student_id { 234139242 }
+      gender { "Female" }
+    end
+
   end
 
 end

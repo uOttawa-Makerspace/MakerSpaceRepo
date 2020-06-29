@@ -52,17 +52,19 @@ class PrintOrdersController < ApplicationController
   end
 
   def create
+
     if params[:print_order][:material] && params[:print_order][:comments]
       params[:print_order][:comments] = params[:print_order][:material] + ', ' + params[:print_order][:comments]
     end
 
     params[:print_order][:sst] = 'true' if params[:print_order][:material] == 'SST'
 
-    if params[:print_order][:comments] && (params[:print_order][:comments_box] != '')
+    if params[:print_order][:comments] and params[:print_order][:comments_box].present? and params[:print_order][:comments_box].empty?
       params[:print_order][:comments] = params[:print_order][:comments] + ', ' + params[:print_order][:comments_box]
     end
 
     @print_order = PrintOrder.create(print_order_params)
+
     if @print_order.id.nil? || @print_order.id == 0
       redirect_to print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !'
     else
@@ -118,10 +120,6 @@ class PrintOrdersController < ApplicationController
     @print_order = PrintOrder.find(params[:id])
     @print_order.destroy
     redirect_to print_orders_path
-  end
-
-  def edit
-    @print_order = PrintOrder.find(params[:id])
   end
 
   def invoice

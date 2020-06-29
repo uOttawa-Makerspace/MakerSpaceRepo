@@ -2,6 +2,7 @@ require 'faker'
 
 FactoryGirl.define do
   factory :print_order do
+    id { 1 }
     user_id { 1 }
     comments { Faker::Lorem.paragraph }
     approved { false }
