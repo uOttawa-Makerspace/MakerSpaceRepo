@@ -88,7 +88,7 @@ end
 
 group :test do
   gem 'capybara', '~> 2.1.0'
-  gem 'database_cleaner', '~> 1.0.1'
+  gem 'database_cleaner-active_record'
   gem 'launchy', '~> 2.2'
   gem 'rails-controller-testing'
   gem 'selenium-webdriver', '~> 3.142.7'
