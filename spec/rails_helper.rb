@@ -4,6 +4,8 @@ require 'spec_helper'
 require 'factory_girl'
 require 'support/factory_girl'
 require 'support/database_cleaner'
+require 'simplecov'
+SimpleCov.start
 
 ENV['RAILS_ENV'] ||= 'test'
 require File.expand_path('../config/environment', __dir__)
