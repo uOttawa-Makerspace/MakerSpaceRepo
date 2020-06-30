@@ -67,8 +67,10 @@ gem 'net-ssh'
 
 group :development, :test do
   gem 'byebug', platform: :mri
-  gem 'factory_girl_rails', '~> 4.2.1'
+  gem 'rspec-rails'
+  gem 'faker'
   gem 'railroady'
+  gem 'factory_girl_rails', '~> 4.2.1'
   gem 'spring', '~> 2.1.0'
   gem 'listen', '~> 3.2.1'
   gem 'spring-watcher-listen', '~> 2.0.0'
@@ -79,15 +81,14 @@ group :development do
   gem 'rubocop-rails'
   gem 'web-console', '>= 3.7'
 
-  # ssh deployment
+  # ssh deploymentque
   gem 'bcrypt_pbkdf', '~> 1.0'
   gem 'ed25519', '~> 1.2'
 end
 
 group :test do
   gem 'capybara', '~> 2.1.0'
-  gem 'database_cleaner', '~> 1.0.1'
-  gem 'faker', '~> 1.1.2'
+  gem 'database_cleaner-active_record'
   gem 'launchy', '~> 2.2'
   gem 'rails-controller-testing'
   gem 'selenium-webdriver', '~> 3.142.7'
