@@ -11,7 +11,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     context 'user' do
       it 'should return a 200' do
         user = create :user, :regular_user
-        create(:print_order, :with_file)
+        create(:print_order, :working_print_order)
         session[:user_id] = user.id
         get :index
         expect(response).to have_http_status(:success)
@@ -22,7 +22,7 @@ RSpec.describe PrintOrdersController, type: :controller do
       it 'should return a 200' do
         admin = create :user, :admin_user
         create :user, :regular_user
-        create(:print_order, :with_file)
+        create(:print_order, :working_print_order)
         session[:user_id] = admin.id
         get :index
         expect(response).to have_http_status(:success)
@@ -72,7 +72,7 @@ RSpec.describe PrintOrdersController, type: :controller do
 
     context 'create print order' do
       it 'should create a print order with notice' do
-        print_order_params = FactoryGirl.attributes_for(:print_order, :with_file)
+        print_order_params = FactoryGirl.attributes_for(:print_order, :working_print_order)
         post :create, params: {print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(flash[:notice]).to eq('The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision.')
@@ -80,12 +80,80 @@ RSpec.describe PrintOrdersController, type: :controller do
       end
 
       it 'should send an email to makerspace@uottawa.ca' do
-        print_order_params = FactoryGirl.attributes_for(:print_order, :with_file)
+        print_order_params = FactoryGirl.attributes_for(:print_order, :working_print_order)
         post :create, params: {print_order: print_order_params}
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq('makerspace@uottawa.ca')
       end
 
+      it 'should fail creating the print order' do
+        print_order_params = FactoryGirl.attributes_for(:print_order, :broken_print_order)
+        post :create, params: {print_order: print_order_params}
+        expect(response).to redirect_to print_orders_path
+        expect(flash[:alert]).to eq('The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !')
+        expect { post :create, params: {print_order: print_order_params} }.to change(PrintOrder, :count).by(0)
+      end
+
+    end
+  end
+
+
+  describe 'update method' do
+
+    before(:each) do
+      user = create :user, :regular_user
+      session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
+      session[:user_id] = user.id
+    end
+
+    context 'Update print order to approved' do
+      it 'should update the print order and send the quote' do
+        create(:print_order, :working_print_order)
+        print_order_params = FactoryGirl.attributes_for(:print_order, :approved_print_order)
+        patch :update, params: {id: 1, print_order: print_order_params}
+        expect(response).to redirect_to print_orders_path
+        expect(PrintOrder.find(1).quote).to eq(70)
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq(User.find(1).email)
+      end
+    end
+
+    context 'Update print order to disapproved' do
+      it 'should update the print order to disapproved and send an email' do
+        create(:print_order, :working_print_order)
+        print_order_params = FactoryGirl.attributes_for(:print_order, :disapproved_print_order)
+        patch :update, params: {id: 1, print_order: print_order_params}
+        expect(response).to redirect_to print_orders_path
+        expect(PrintOrder.find(1).approved?).to eq(false)
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq(User.find(1).email)
+      end
+    end
+
+    context 'User approves print order' do
+      it 'should update the print order to user_approval = true' do
+        create(:print_order, :working_print_order)
+        print_order_params = FactoryGirl.attributes_for(:print_order, :user_approved_print_order)
+        patch :update, params: {id: 1, print_order: print_order_params}
+        expect(response).to redirect_to print_orders_path
+        expect(PrintOrder.find(1).user_approval?).to eq(true)
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq("makerspace@uottawa.ca")
+      end
+    end
+
+    context 'Print order printed' do
+      it 'should update the print order to printed = true and send emails' do
+        create(:print_order, :working_print_order)
+        print_order_params = FactoryGirl.attributes_for(:print_order, :printed_print_order)
+        patch :update, params: {id: 1, print_order: print_order_params}
+        expect(response).to redirect_to print_orders_path
+        expect(PrintOrder.find(1).printed?).to eq(true)
+        expect(ActionMailer::Base.deliveries.count).to eq(2)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq(User.find(1).email)
+        expect(ActionMailer::Base.deliveries.second.to.first).to eq("uomakerspaceprintinvoices@gmail.com")
+
+      end
     end
   end
 
@@ -95,7 +163,7 @@ RSpec.describe PrintOrdersController, type: :controller do
         user = create :user, :regular_user
         session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
         session[:user_id] = user.id
-        create(:print_order, :with_file)
+        create(:print_order, :working_print_order)
         expect { delete :destroy, params: {id: 1} }.to change(PrintOrder, :count).by(-1)
         expect(response).to redirect_to print_orders_path
       end
@@ -106,15 +174,15 @@ RSpec.describe PrintOrdersController, type: :controller do
     context 'create an invoice for print order' do
 
       it 'should return render a pdf' do
-
         user = create :user, :regular_user
         session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
         session[:user_id] = user.id
-        print_order = create(:print_order, :with_file)
+        print_order = create(:print_order, :working_print_order)
         print_order.printed = true
         get :invoice, params: {print_order_id: 1, format: :pdf}
         expect(response).to have_http_status(:success)
       end
+
     end
   end
 

@@ -86,6 +86,7 @@ class PrintOrdersController < ApplicationController
       if @print_order.expedited == true
         params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
       end
+
     elsif params[:print_order][:price_per_hour] && params[:print_order][:hours] && params[:print_order][:service_charge]
       params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:price_per_hour].to_f * params[:print_order][:hours].to_f)
       if @print_order.expedited == true
