@@ -72,7 +72,7 @@ RSpec.describe PrintOrdersController, type: :controller do
 
     context 'create print order' do
       it 'should create a print order with notice' do
-        print_order_params = FactoryGirl.attributes_for(:print_order, :working_print_order)
+        print_order_params = FactoryBot.attributes_for(:print_order, :working_print_order)
         post :create, params: {print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(flash[:notice]).to eq('The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision.')
@@ -80,14 +80,14 @@ RSpec.describe PrintOrdersController, type: :controller do
       end
 
       it 'should send an email to makerspace@uottawa.ca' do
-        print_order_params = FactoryGirl.attributes_for(:print_order, :working_print_order)
+        print_order_params = FactoryBot.attributes_for(:print_order, :working_print_order)
         post :create, params: {print_order: print_order_params}
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq('makerspace@uottawa.ca')
       end
 
       it 'should fail creating the print order' do
-        print_order_params = FactoryGirl.attributes_for(:print_order, :broken_print_order)
+        print_order_params = FactoryBot.attributes_for(:print_order, :broken_print_order)
         post :create, params: {print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(flash[:alert]).to eq('The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !')
@@ -109,7 +109,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     context 'Update print order to approved' do
       it 'should update the print order and send the quote' do
         create(:print_order, :working_print_order)
-        print_order_params = FactoryGirl.attributes_for(:print_order, :approved_print_order)
+        print_order_params = FactoryBot.attributes_for(:print_order, :approved_print_order)
         patch :update, params: {id: 1, print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(PrintOrder.find(1).quote).to eq(70)
@@ -121,7 +121,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     context 'Update print order to disapproved' do
       it 'should update the print order to disapproved and send an email' do
         create(:print_order, :working_print_order)
-        print_order_params = FactoryGirl.attributes_for(:print_order, :disapproved_print_order)
+        print_order_params = FactoryBot.attributes_for(:print_order, :disapproved_print_order)
         patch :update, params: {id: 1, print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(PrintOrder.find(1).approved?).to eq(false)
@@ -133,7 +133,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     context 'User approves print order' do
       it 'should update the print order to user_approval = true' do
         create(:print_order, :working_print_order)
-        print_order_params = FactoryGirl.attributes_for(:print_order, :user_approved_print_order)
+        print_order_params = FactoryBot.attributes_for(:print_order, :user_approved_print_order)
         patch :update, params: {id: 1, print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(PrintOrder.find(1).user_approval?).to eq(true)
@@ -145,7 +145,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     context 'Print order printed' do
       it 'should update the print order to printed = true and send emails' do
         create(:print_order, :working_print_order)
-        print_order_params = FactoryGirl.attributes_for(:print_order, :printed_print_order)
+        print_order_params = FactoryBot.attributes_for(:print_order, :printed_print_order)
         patch :update, params: {id: 1, print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(PrintOrder.find(1).printed?).to eq(true)

@@ -1,8 +1,8 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 
 require 'spec_helper'
-require 'factory_girl'
-require 'support/factory_girl'
+require 'factory_bot'
+require 'support/factory_bot'
 require 'support/database_cleaner'
 require 'simplecov'
 SimpleCov.start

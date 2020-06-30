@@ -70,7 +70,7 @@ group :development, :test do
   gem 'rspec-rails'
   gem 'faker'
   gem 'railroady'
-  gem 'factory_girl_rails', '~> 4.2.1'
+  gem "factory_bot_rails"
   gem 'spring', '~> 2.1.0'
   gem 'listen', '~> 3.2.1'
   gem 'spring-watcher-listen', '~> 2.0.0'
