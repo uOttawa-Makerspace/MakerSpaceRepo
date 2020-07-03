@@ -130,7 +130,7 @@ class MsrMailer < ApplicationMailer
     @subject = subject
     @comments = comments
 
-    mail(to: 'webmaster@makerepo.com', subject: 'Issue Report')
+    mail(to: 'uottawa.makerepo@gmail.com', subject: 'Issue Report')
   end
 
   def send_exam(user, training_session)
