@@ -1054,8 +1054,8 @@ GEM
     factory_bot_rails (6.0.0)
       factory_bot (~> 6.0.0)
       railties (>= 5.0.0)
-    faker (1.1.2)
-      i18n (~> 0.5)
+    faker (2.0)
+      i18n (>= 0.7)
     faraday (0.9.2)
       multipart-post (>= 1.2, < 3)
     fastimage (1.7.0)
@@ -1412,7 +1412,7 @@ DEPENDENCIES
   ed25519 (~> 1.2)
   excon
   factory_bot_rails
-  faker
+  faker (~> 2.0.0)
   fastimage (~> 1.7.0)
   file_validators
   font-awesome-rails (~> 4.6.3.0)

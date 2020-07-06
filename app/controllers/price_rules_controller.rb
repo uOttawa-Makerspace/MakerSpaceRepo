@@ -13,7 +13,9 @@ class PriceRulesController < DevelopmentProgramsController
     @price_rule = PriceRule.new
   end
 
-  def edit; end
+  def edit
+
+  end
 
   def create
     @price_rule = PriceRule.new(price_rule_params)
@@ -75,7 +77,7 @@ class PriceRulesController < DevelopmentProgramsController
 
   def check_discount_codes
     if @price_rule.has_discount_codes?
-      flash[:alert] = 'This price rule cannot be eddited/deleted because it has already discount codes'
+      flash[:alert] = 'This price rule cannot be edited/deleted because it has already discount codes'
       redirect_to price_rules_path
     end
   end

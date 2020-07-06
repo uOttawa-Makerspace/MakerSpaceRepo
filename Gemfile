@@ -68,7 +68,7 @@ gem 'net-ssh'
 group :development, :test do
   gem 'byebug', platform: :mri
   gem 'rspec-rails'
-  gem 'faker'
+  gem 'faker', '~> 2.0.0'
   gem 'railroady'
   gem "factory_bot_rails"
   gem 'spring', '~> 2.1.0'
