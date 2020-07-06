@@ -28,6 +28,7 @@ FactoryBot.define do
       role { "admin" }
       identity { "community_member" }
       gender { "Male" }
+      wallet { 1000 }
     end
 
     trait :other_user do
