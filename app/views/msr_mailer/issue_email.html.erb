@@ -1,11 +1,13 @@
 <section style="padding-left: 8vw;padding-top: 5vw;">
 
-<p style="font: 400 1.2em 'Raleway', sans-serif;color: #333;"> New issue reported by <b><%= @name %></b>:
-<br>
-Subject: <b><%= @subject%></b> <br>
-"<%= @comments %>"
+<p style="font: 400 1.2em 'Raleway', sans-serif;color: #333;">
+  New issue reported by <b><%= @name %>, <%= @email %></b>:
+  <br />
+  Subject: <b><%= @subject%></b> <br>
+  <div class="jumbotron text-center">
+    "<%= @comments %>"
+  </div>
 <br><br>
- you can contact this user by the following email address: <b><%= @email %></b> </p>
 
   <p style="  font: 400 1.1em 'Raleway', sans-serif;color: #333;">
     Cheers,<br>
