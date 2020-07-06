@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 class HelpController < SessionsController
   skip_before_action :session_expiry
   before_action :current_user
@@ -15,6 +13,6 @@ class HelpController < SessionsController
     @comments = params[:comments]
     MsrMailer.issue_email(@name, @email, @subject, @comments).deliver_now
     flash[:notice] = 'Email successfuly send. You will be contacted soon.'
-    redirect_to root_path
+    redirect_to help_path
   end
 end
