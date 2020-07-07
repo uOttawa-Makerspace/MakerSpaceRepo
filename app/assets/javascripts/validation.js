@@ -45,7 +45,7 @@ function validation_proposal(){
     var email = $("input#project_proposal_email");
     var client = $("input#project_proposal_client");
     var client_background = $("input#project_proposal_client_background");
-    var description = $("#redactor");
+    var description = $("#trix_editor");
     $('span.form-error.repo-form').remove();
     var span = $('<span>').addClass('form-error repo-form');
     var regex = /^[-a-zA-Z\d\s]*$/;
@@ -53,18 +53,21 @@ function validation_proposal(){
     if( name.val().length === 0 ){
         span.text("Your name is required");
         $('input#project_proposal_username').before(span);
+        scrow_to_error("project_proposal_username");
         return false;
     }
 
     if( email.val().length === 0 ){
         span.text("Your email is required");
         $('input#project_proposal_email').before(span);
+        scrow_to_error("project_proposal_email");
         return false;
     }
 
     if( client.val().length === 0 ){
         span.text("Client is required");
         $('input#project_proposal_client').before(span);
+        scrow_to_error("project_proposal_client");
         return false;
     }
 
@@ -72,25 +75,39 @@ function validation_proposal(){
     if( title.val().length === 0 ){
         span.text("Project title is required.");
         $('input#project_proposal_title').before(span);
+        scrow_to_error("project_proposal_title");
         return false;
     }
 
     if( !regex.test(title.val()) ){
         span.text("Project title may only contain letters and numbers.");
         $('input#project_proposal_title').before(span);
+        scrow_to_error("project_proposal_title");
         return false;
     }
 
     if( client_background.val().length === 0 ){
         span.text("Client background is required.");
         $('input#project_proposal_client_background').before(span);
+        scrow_to_error("project_proposal_client_background");
         return false;
     }
 
     if( description.val().length === 0 ){
         span.text("Description is required.");
-        $('#redactor').before(span);
+        $('#trix_editor').before(span);
+        scrow_to_error("trix_editor");
         return false;
     }
     return true
+}
+
+
+function scrow_to_error(element_id) {
+    var elmnt = document.getElementById(element_id);
+    elmnt.scrollIntoView(true);
+    const scrolledY = window.scrollY;
+    if (scrolledY) {
+        window.scroll(0, scrolledY - 170);
+    }
 }
