@@ -8,3 +8,4 @@ class Announcement < ApplicationRecord
   scope :admins, -> { where(public_goal: 'admin') }
   scope :staff, -> { where(public_goal: 'staff') }
 end
+
