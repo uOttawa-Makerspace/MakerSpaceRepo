@@ -8,6 +8,22 @@ FactoryBot.define do
       cc { 50 }
     end
 
+    trait 'working_print_rule_with_id' do
+      id { 1 }
+      shopify_price_rule_id { Faker::Number.number(digits: 13) }
+      title { "5$ coupon" }
+      value { 5 }
+      cc { 50 }
+    end
+
+    trait 'working_print_rule_with_id' do
+      id { 100 }
+      shopify_price_rule_id { Faker::Number.number(digits: 13) }
+      title { "5$ coupon" }
+      value { 5 }
+      cc { 50 }
+    end
+
     trait 'missing_shopify_price_rule_id' do
       title { "5$ coupon" }
       value { 5 }
