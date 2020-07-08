@@ -17,10 +17,7 @@
                   <br />
                   Categories:
                   <br />
-                  <div class="form-check mt-3">
-                    <%#= f.collection_check_boxes( :training_ids, @categories, :id, :name, bootstrap: {check_inline: true}, class: "") do |b| %>
-                      <%#= b.label(:"data-value" => b.value) { b.check_box + b.text } %>
-                    <%# end %>
+                  <div class="mt-3">
                     <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name'), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
                   </div>
                   <br />
