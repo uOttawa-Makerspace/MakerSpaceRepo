@@ -1,16 +1,15 @@
 require 'rails_helper'
 
 RSpec.describe Announcement, type: :model do
-  describe 'Relation testing' do
+  describe 'Association' do
     context 'belongs_to' do
-      it 'should belongs_to :user' do
-        should respond_to(:user)
-      end
+      it { should belong_to(:user) }
     end
   end
 
   describe 'Scope testing' do
     before :all do
+      create(:user, :admin_user)
       create(:announcement, :all)
       create(:announcement, :all)
       create(:announcement, :all, active: false)
@@ -33,13 +32,13 @@ RSpec.describe Announcement, type: :model do
     end
 
     context '#active' do
-      it 'should return 3 active users' do
+      it 'should return active announcements' do
         expect(Announcement.active.count).to eq(10)
       end
     end
 
     context '#volunteers' do
-      it 'should return only volunteer announcements' do
+      it 'should return announcements for volunteers' do
         expect(Announcement.volunteers.count).to eq(5)
       end
     end

@@ -1,17 +1,16 @@
 require 'faker'
 
 FactoryBot.define do
-
   factory :user do
+    read_and_accepted_waiver_form { true }
+    active { true }
+    email { Faker::Internet.email }
+    name { Faker::Name.name }
+    username{ Faker::Name.first_name }
 
     trait :regular_user do
-      id { 1 }
-      username { "Bob" }
+      # username { "Bob" }
       password { "asa32A353#" }
-      email {Faker::Internet.email}
-      name {Faker::Lorem.words}
-      read_and_accepted_waiver_form { true }
-      active { true }
       role { "regular_user" }
       identity { "community_member" }
       gender { "Male" }
@@ -19,13 +18,8 @@ FactoryBot.define do
     end
 
     trait :admin_user do
-      id { 2 }
-      username { "John" }
+      # username { "John" }
       password { "asa32A353#" }
-      email {Faker::Internet.email}
-      name {Faker::Lorem.words}
-      read_and_accepted_waiver_form { true }
-      active { true }
       role { "admin" }
       identity { "community_member" }
       gender { "Male" }
@@ -33,26 +27,16 @@ FactoryBot.define do
     end
 
     trait :other_user do
-      id { 3 }
-      username { "Jim" }
+      # username { "Jim" }
       password { "asa32A353#" }
-      email {Faker::Internet.email}
-      name {Faker::Lorem.words}
-      read_and_accepted_waiver_form { true }
-      active { true }
       role { "regular_user" }
       identity { "community_member" }
       gender { "Male" }
     end
 
     trait :student do
-      id { 4 }
-      username { "Justine" }
+      # username { "Justine" }
       password { "fda3A353$" }
-      email {Faker::Internet.email}
-      name {Faker::Lorem.words}
-      read_and_accepted_waiver_form { true }
-      active { true }
       role { "regular_user" }
       identity { "undergrad" }
       program { "BASc in Software Engineering" }
@@ -62,6 +46,13 @@ FactoryBot.define do
       gender { "Female" }
     end
 
+    factory :user_with_announcements do
+      transient do
+        announcements_count { 5 }
+      end
+      after(:create) do |user, evaluator|
+        create_list(:announcement, evaluator.announcements_count, user: user)
+      end
+    end
   end
-
 end

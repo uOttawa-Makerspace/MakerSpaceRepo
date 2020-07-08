@@ -92,4 +92,5 @@ group :test do
   gem 'launchy', '~> 2.2'
   gem 'rails-controller-testing'
   gem 'selenium-webdriver', '~> 3.142.7'
+  gem 'shoulda-matchers', '~> 4.0'
 end
