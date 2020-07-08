@@ -4,7 +4,7 @@ RSpec.describe Announcement, type: :model do
 
   describe 'Scope testing' do
 
-    before :all do
+    before :each do
       create(:user, :admin_user)
     end
 

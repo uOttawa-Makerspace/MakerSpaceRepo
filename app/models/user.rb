@@ -112,7 +112,7 @@ class User < ApplicationRecord
   end
 
   def pword
-    @pword ||= Password.new(password)
+    @pword ||= Password.create(password)
   end
 
   def pword=(new_password)
