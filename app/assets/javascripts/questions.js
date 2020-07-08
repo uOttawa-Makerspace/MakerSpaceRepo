@@ -32,3 +32,10 @@ $(document).on('turbolinks:load', function () {
         }
     });
 });
+
+$(document).on("turbolinks:load", function () {
+    $("#questions_trainings").select2({
+        allowClear: true,
+        multiple: true
+    });
+});
