@@ -7,7 +7,7 @@ FactoryBot.define do
     trait :regular_user do
       id { 1 }
       username { "Bob" }
-      password { "asa32A353#" }
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       email {Faker::Internet.email}
       name { Faker::Lorem.words }
       read_and_accepted_waiver_form { true }

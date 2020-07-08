@@ -1,4 +1,6 @@
 require 'rails_helper'
+include BCrypt
+include ActiveModel::Serialization
 
 RSpec.describe User, type: :model do
 
@@ -377,12 +379,12 @@ RSpec.describe User, type: :model do
 
       it 'should return nothing' do
         create(:user, :regular_user, email: "a@b.com")
-        expect(User.authenticate("a@b.com", "false")).to be_nil
+        expect(User.authenticate("a@b.com", 'somethingelse')).to be_nil
       end
 
       it 'should return the user' do
         create(:user, :regular_user, email: "a@b.com")
-        expect(User.authenticate("a@b.com", "asa32A353#").id).to eq(1)
+        expect(User.authenticate("a@b.com", 'asa32A353#').id).to eq(1)
       end
 
     end
