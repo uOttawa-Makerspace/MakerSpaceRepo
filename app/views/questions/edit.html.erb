@@ -18,7 +18,7 @@
                   Categories:
                   <br />
                   <div class="form-check mt-3">
-                    <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name'), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
+                    <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', :selected => (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
                   </div>
                 </div>
                 <br />
