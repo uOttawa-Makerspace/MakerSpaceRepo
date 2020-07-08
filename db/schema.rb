@@ -403,6 +403,11 @@ ActiveRecord::Schema.define(version: 2020_06_23_130427) do
     t.integer "training_id"
   end
 
+  create_table "questions_trainings", id: false, force: :cascade do |t|
+    t.bigint "question_id", null: false
+    t.bigint "training_id", null: false
+  end
+
   create_table "repo_files", id: :serial, force: :cascade do |t|
     t.integer "repository_id"
     t.datetime "created_at", null: false

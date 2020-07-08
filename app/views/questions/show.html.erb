@@ -1,14 +1,13 @@
 <section class="page-contents">
   <div class="edit-column text-center">
 
-    <h2>Question in "<%= @question.training.name if @question.training %>"</h2>
+    <h2>Question in "<%= @question.trainings.map(&:name).join(", ").html_safe if @question.trainings.present? %>"</h2>
     <br />
 
     <div class=" text-left word-break">
       <h2><b><%= @question.description %></b></h2>
     </div>
-
-    <%= image_tag @question.image.variant(resize: "300x300") if !@question.image.blank? %>
+    <%= image_tag(@question.image.variant(resize: "300x300")) if @question.image.attached? %>
 
     <hr>
 

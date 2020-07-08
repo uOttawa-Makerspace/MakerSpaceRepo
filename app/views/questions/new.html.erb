@@ -15,8 +15,11 @@
                     Please provide the question description.
                   </div>
                   <br />
-                  Category:
-                  <%= f.select(:training_id, @categories , {} , {:class => "form-control"}) %>
+                  Categories:
+                  <br />
+                  <div class="mt-3">
+                    <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name'), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
+                  </div>
                   <br />
                   <br />
 

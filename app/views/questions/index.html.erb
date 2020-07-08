@@ -33,7 +33,10 @@
               </td>
 
               <td>
-                <%= q.training.name if q.training %>
+                <% q.trainings.each do |t| %>
+                    <%= t.name %>
+                    <br />
+                <% end %>
               </td>
 
               <td class="word-break">

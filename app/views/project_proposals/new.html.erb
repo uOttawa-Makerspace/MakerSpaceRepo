@@ -2,7 +2,7 @@
 <section id="new-repo">
   <div class="title">New Project Proposal<br>Nouvelle Proposition de Projet</div>
 
-  <%= form_for @project_proposal, url: {controller: "project_proposals", action: "create"}, html: { multipart: true } do |f| %>
+  <%= form_for @project_proposal do |f| %>
       <br>
       <div class="form-group">
       <%= f.label :username, "*Name/Nom" %>
@@ -13,7 +13,7 @@
       <div class="form-group">
       <%= f.label :email, "*Email/Adresse Courriel" %>
       <div>What is your email? <br> Quel est votre adresse courriel?</div>
-      <%= f.text_field :email, class: 'form-control' %>
+      <%= f.email_field :email, class: 'form-control' %>
       </div>
       <br>
       <div class="form-group">
@@ -78,7 +78,7 @@
     <div class="form-group">
       <%= f.label :description, "*Description" %>
       <div style="width: 420px;">
-        <%= f.trix_editor :description, class: 'form-control' %>
+        <%= f.trix_editor :description, class: 'form-control', id: "trix_editor" %>
       </div>
     </div>
     <br />
@@ -102,7 +102,7 @@
       <br>
       <br>
       <br>
-      <%= f.submit "Create Project Proposal/Créer une proposition de projet", class: "btn btn-primary", id: "waiting-save-button" %>
+      <%= f.submit "Create Project Proposal/Créer une proposition de projet", class: "btn btn-primary", id: "waiting-save-button", data: { disable_with: false } %>
       <span id="status-save"></span>
 
   <% end %>

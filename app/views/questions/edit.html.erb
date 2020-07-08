@@ -15,8 +15,11 @@
                     Please provide the question description.
                   </div>
                   <br />
-                  Category:
-                  <%= f.select(:training_id, @categories , {} , {:class => "form-control"}) %>
+                  Categories:
+                  <br />
+                  <div class="mt-3">
+                    <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', :selected => (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
+                  </div>
                 </div>
                 <br />
 
@@ -31,7 +34,7 @@
                 <div id="image-target" class="mx-auto text-center"></div>
 
                 <div class="text-center" id="edit-image">
-                  <%= image_tag @question.image.variant(resize: "300x300") if !@question.image.blank? %>
+                  <%= image_tag @question.image.variant(resize: "300x300") if @question.image.attached? %>
                 </div>
 
               </div>

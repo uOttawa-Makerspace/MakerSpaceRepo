@@ -2,7 +2,7 @@
 
 class Question < ApplicationRecord
   belongs_to :user
-  belongs_to :training
+  has_and_belongs_to_many :trainings
   has_many :exam_questions
   has_many :exams, through: :exam_questions
   has_many :answers, dependent: :destroy
