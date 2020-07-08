@@ -15,8 +15,13 @@
                     Please provide the question description.
                   </div>
                   <br />
-                  Category:
-                  <%= f.select(:training_id, @categories , {} , {:class => "form-control"}) %>
+                  Categories:
+                  <br />
+                  <div class="form-check mt-3">
+                    <%= f.collection_check_boxes( :training_ids, @categories, :id, :name, bootstrap: {check_inline: true}, class: "") do |b| %>
+                      <%= b.label(:"data-value" => b.value) { b.check_box + b.text } %>
+                    <% end %>
+                  </div>
                 </div>
                 <br />
 
@@ -31,7 +36,7 @@
                 <div id="image-target" class="mx-auto text-center"></div>
 
                 <div class="text-center" id="edit-image">
-                  <%= image_tag @question.image.variant(resize: "300x300") if !@question.image.blank? %>
+                  <%= image_tag @question.image.variant(resize: "300x300") if @question.image.attached? %>
                 </div>
 
               </div>
