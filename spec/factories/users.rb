@@ -9,7 +9,7 @@ FactoryBot.define do
       username { "Bob" }
       password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       email {Faker::Internet.email}
-      name { Faker::Lorem.words }
+      name { Faker::Lorem.word }
       read_and_accepted_waiver_form { true }
       active { true }
       role { "regular_user" }
@@ -22,9 +22,9 @@ FactoryBot.define do
     trait :regular_user_with_avatar do
       id { 1 }
       username { "Bob" }
-      password { "asa32A353#" }
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       email {Faker::Internet.email}
-      name { Faker::Lorem.words }
+      name { Faker::Lorem.word }
       read_and_accepted_waiver_form { true }
       active { true }
       role { "regular_user" }
@@ -32,7 +32,9 @@ FactoryBot.define do
       gender { "Male" }
       wallet { 1000 }
       how_heard_about_us { Faker::Lorem.paragraph }
-      avatar { AvatarTestHelper.png }
+      after(:build) do |avatar|
+        avatar.avatar.attach(io: File.open(Rails.root.join('spec', 'support', 'assets', 'avatar.png')), filename: 'avatar.png', content_type: 'image/png')
+      end
     end
 
     trait :regular_user_with_broken_avatar do
