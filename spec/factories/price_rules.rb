@@ -1,5 +1,9 @@
 FactoryBot.define do
   factory :price_rule do
+    shopify_price_rule_id { Faker::Number.number(digits: 13) }
+    title { "5$ coupon" }
+    value { 5 }
+    cc { 50 }
 
     trait 'working_print_rule' do
       shopify_price_rule_id { Faker::Number.number(digits: 13) }

@@ -1,91 +1,78 @@
 require 'rails_helper'
 
 RSpec.describe DiscountCode, type: :model do
-
-  describe 'validation' do
-
-    context 'Validation of shopify discount rule id' do
-      it 'should be false' do
-        discount = build(:discount_code, :missing_shopify_discount_code_id)
-        expect(discount.valid?).to be_falsey
+  describe 'Association' do
+    context 'belongs_to' do
+      it { should belong_to(:price_rule) }
+      it { should belong_to(:user) }
+    end
+    context 'has_many' do
+      it { should have_many(:cc_moneys) }
+      it 'dependent destroy: should destroy cc_moneys if destroyed' do
+        discount_code = create(:discount_code_with_cc_moneys)
+        expect { discount_code.destroy }.to change { CcMoney.count }.by(-discount_code.cc_moneys.count)
       end
     end
-
-    context 'Validation of the code' do
-      it 'should be false' do
-        discount_code = build :discount_code, :missing_code
-        expect(discount_code.valid?).to be_falsey
-      end
-    end
-
   end
 
-  describe 'scopes' do
-
-    context 'Scope get used' do
-      it 'should return used code' do
-        create(:user, :regular_user)
-        create(:price_rule, :working_print_rule_with_id)
-        create(:discount_code, :used_discount_code)
-        create(:discount_code, :used_discount_code)
-        expect(DiscountCode.all.used_code.count).to eq(2)
-      end
+  describe 'Validations' do
+    context 'presence' do
+      it { should validate_presence_of(:shopify_discount_code_id) }
+      it { should validate_presence_of(:code) }
     end
-
-    context 'Scope get not used' do
-      it 'should return unused codes' do
-        create(:user, :regular_user)
-        create(:price_rule, :working_print_rule_with_id)
-        create(:discount_code, :unused_code)
-        create(:discount_code, :unused_code)
-        expect(DiscountCode.all.not_used.count).to eq(2)
-      end
-    end
-
   end
 
-  context 'methods' do
+  describe 'Scopes' do
+    before :all do
+      create(:discount_code, :used)
+      create(:discount_code, :used)
+      create(:discount_code, :unused)
+      create(:discount_code, :unused)
+      create(:discount_code, :unused)
+    end
 
-    context 'generate code' do
+    context '#used_code' do
+      it 'should return used discount codes' do
+        expect(DiscountCode.used_code.count).to eq(2)
+      end
+    end
 
+    context '#not_used' do
+      it 'should return unused discount codes' do
+        expect(DiscountCode.not_used.count).to eq(3)
+      end
+    end
+  end
+
+  context 'Methods' do
+    context '#generate_code' do
       it 'should be a hex' do
         expect(DiscountCode.generate_code.bytesize).to eq(30)
       end
-
     end
 
-    context 'code exists' do
-
+    context '#code_exist?' do
       it 'should be true' do
-        code = DiscountCode.generate_code
-        create(:price_rule, :working_print_rule_with_id)
-        create(:discount_code, :unused_code, code: code)
-        expect(DiscountCode.code_exist?(code)).to be_truthy
+        discount_code = create(:discount_code, :unused)
+        expect(DiscountCode.code_exist?(discount_code.code)).to be_truthy
       end
 
       it 'should be false' do
-        code = "32532n32h35h32h5"
+        code = "123"
         expect(DiscountCode.code_exist?(code)).to be_falsey
       end
-
     end
 
-    context 'status' do
-
+    context '#status' do
       it 'should be Used' do
-        create(:price_rule, :working_print_rule_with_id)
-        code = create(:discount_code, :used_discount_code)
-        expect(code.status).to eq("Used")
+        discount_code = create(:discount_code, :used)
+        expect(discount_code.status).to eq("Used")
       end
 
       it 'should be Not Used' do
-        create(:price_rule, :working_print_rule_with_id)
-        code = create(:discount_code, :unused_code)
-        expect(code.status).to eq("Not used")
+        discount_code = create(:discount_code, :unused)
+        expect(discount_code.status).to eq("Not used")
       end
-
     end
-
   end
-
 end

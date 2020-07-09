@@ -7,9 +7,8 @@ RSpec.describe Announcement, type: :model do
     end
   end
 
-  describe 'Scope testing' do
+  describe 'Scopes' do
     before :all do
-      create(:user, :admin_user)
       create(:announcement, :all)
       create(:announcement, :all)
       create(:announcement, :all, active: false)

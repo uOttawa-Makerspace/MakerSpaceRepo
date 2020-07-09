@@ -9,7 +9,6 @@ FactoryBot.define do
     username{ Faker::Name.first_name }
 
     trait :regular_user do
-      # username { "Bob" }
       password { "asa32A353#" }
       role { "regular_user" }
       identity { "community_member" }
@@ -18,7 +17,6 @@ FactoryBot.define do
     end
 
     trait :admin_user do
-      # username { "John" }
       password { "asa32A353#" }
       role { "admin" }
       identity { "community_member" }
@@ -27,7 +25,6 @@ FactoryBot.define do
     end
 
     trait :other_user do
-      # username { "Jim" }
       password { "asa32A353#" }
       role { "regular_user" }
       identity { "community_member" }
@@ -35,7 +32,6 @@ FactoryBot.define do
     end
 
     trait :student do
-      # username { "Justine" }
       password { "fda3A353$" }
       role { "regular_user" }
       identity { "undergrad" }

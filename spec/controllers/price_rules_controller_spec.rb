@@ -142,7 +142,7 @@ RSpec.describe PriceRulesController, type: :controller do
       it 'check discount codes price rule with delete' do
         price_rule_params = FactoryBot.attributes_for(:price_rule, :working_print_rule)
         post :create, params: {price_rule: price_rule_params}
-        create(:discount_code, :other_discount_code, user_id: session[:user_id], shopify_discount_code_id: PriceRule.last.shopify_price_rule_id, price_rule_id: PriceRule.last.id)
+        create(:discount_code, user_id: session[:user_id], shopify_discount_code_id: PriceRule.last.shopify_price_rule_id, price_rule_id: PriceRule.last.id)
         patch :update, params: {id: PriceRule.last.id, price_rule: {title: "6$ coupon", value: 6, cc: 60}}
         expect(response).to redirect_to price_rules_path
         expect(flash[:alert]).to eq('This price rule cannot be edited/deleted because it has already discount codes')
