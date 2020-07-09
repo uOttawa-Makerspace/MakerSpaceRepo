@@ -108,25 +108,25 @@ RSpec.describe PrintOrdersController, type: :controller do
 
     context 'Update print order to approved' do
       it 'should update the print order and send the quote' do
-        create(:print_order, :working_print_order)
+        print_order = create(:print_order, :working_print_order)
         print_order_params = FactoryBot.attributes_for(:print_order, :approved_print_order)
         patch :update, params: {id: 1, print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(PrintOrder.find(1).quote).to eq(70)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
-        expect(ActionMailer::Base.deliveries.first.to.first).to eq(User.find(1).email)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq(print_order.user.email)
       end
     end
 
     context 'Update print order to disapproved' do
       it 'should update the print order to disapproved and send an email' do
-        create(:print_order, :working_print_order)
+        print_order = create(:print_order, :working_print_order)
         print_order_params = FactoryBot.attributes_for(:print_order, :disapproved_print_order)
         patch :update, params: {id: 1, print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(PrintOrder.find(1).approved?).to eq(false)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
-        expect(ActionMailer::Base.deliveries.first.to.first).to eq(User.find(1).email)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq(print_order.user.email)
       end
     end
 
@@ -144,13 +144,13 @@ RSpec.describe PrintOrdersController, type: :controller do
 
     context 'Print order printed' do
       it 'should update the print order to printed = true and send emails' do
-        create(:print_order, :working_print_order)
+        print_order = create(:print_order, :working_print_order)
         print_order_params = FactoryBot.attributes_for(:print_order, :printed_print_order)
         patch :update, params: {id: 1, print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(PrintOrder.find(1).printed?).to eq(true)
         expect(ActionMailer::Base.deliveries.count).to eq(2)
-        expect(ActionMailer::Base.deliveries.first.to.first).to eq(User.find(1).email)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq(print_order.user.email)
         expect(ActionMailer::Base.deliveries.second.to.first).to eq("uomakerspaceprintinvoices@gmail.com")
 
       end

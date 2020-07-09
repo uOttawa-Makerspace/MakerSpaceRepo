@@ -1,53 +1,25 @@
 require 'rails_helper'
 
 RSpec.describe Comment, type: :model do
-
-  before(:all) do
-    build :user, :regular_user
-    build(:repository)
-  end
-
-  context 'validation of content' do
-
-    it 'should be false' do
-      comment = build(:comment)
-
-      comment.content = nil
-      expect(comment.valid?).to be_falsey
+  describe 'Association' do
+    context 'belongs_to' do
+      it { should belong_to(:user) }
+      it { should belong_to(:repository) }
     end
-
-    it 'should be true' do
-      comment = build(:comment)
-      expect(comment.valid?).to be_truthy
+    context 'has_many' do
+      it { should have_many(:upvotes) }
+      it 'dependent destroy: should destroy upvotes if destroyed' do
+        comment = create(:comment_with_upvotes)
+        expect { comment.destroy }.to change { Upvote.count }.by(-comment.upvotes.count)
+      end
     end
   end
 
-  context "validation of user ID" do
-    it 'should be false' do
-      comment = build(:comment)
-      comment.user_id = nil
-      expect(comment.valid?).to be_falsey
-    end
-
-    it 'should be true' do
-      comment = build(:comment)
-      expect(comment.valid?).to be_truthy
+  describe 'Validations' do
+    context 'presence' do
+      it { should validate_presence_of(:content) }
+      it { should validate_presence_of(:user_id) }
+      it { should validate_presence_of(:repository_id) }
     end
   end
-
-  context 'Presence of repository ID' do
-    it 'should be false' do
-      comment = build(:comment)
-      comment.repository_id = nil
-      expect(comment.valid?).to be_falsey
-    end
-
-    it 'should be true' do
-      comment = build(:comment)
-      expect(comment.valid?).to be_truthy
-    end
-  end
-
 end
-
-
