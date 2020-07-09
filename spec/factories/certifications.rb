@@ -4,16 +4,18 @@ FactoryBot.define do
 
   factory :certification do
 
+    association :user, :regular_user
+
     trait :first do
-      training_session_id { 1 }
+      association :training_session, :normal
     end
 
     trait :three_d do
-      training_session_id { 2 }
+      association :training_session, :three_d
     end
 
     trait :basic do
-      training_session_id { 3 }
+      association :training_session, :basic
     end
 
   end

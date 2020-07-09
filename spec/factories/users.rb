@@ -1,93 +1,87 @@
-require 'faker'
-
 FactoryBot.define do
-
   factory :user do
+    read_and_accepted_waiver_form { true }
+    active { true }
+    email { Faker::Internet.email }
+    name { Faker::Name.name }
+    username{ Faker::Name.unique.first_name }
+    wallet { 1000 }
 
     trait :regular_user do
-      id { 1 }
-      username { "Bob" }
       password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
-      email {Faker::Internet.email}
-      name { Faker::Lorem.word }
-      read_and_accepted_waiver_form { true }
-      active { true }
       role { "regular_user" }
       identity { "community_member" }
       gender { "Male" }
-      wallet { 1000 }
-      how_heard_about_us { Faker::Lorem.paragraph }
     end
 
     trait :regular_user_with_avatar do
-      id { 1 }
-      username { "Bob" }
       password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
-      email {Faker::Internet.email}
-      name { Faker::Lorem.word }
-      read_and_accepted_waiver_form { true }
-      active { true }
       role { "regular_user" }
       identity { "community_member" }
       gender { "Male" }
-      wallet { 1000 }
-      how_heard_about_us { Faker::Lorem.paragraph }
       after(:build) do |avatar|
         avatar.avatar.attach(io: File.open(Rails.root.join('spec', 'support', 'assets', 'avatar.png')), filename: 'avatar.png', content_type: 'image/png')
       end
     end
 
     trait :regular_user_with_broken_avatar do
-      id { 1 }
-      username { "Bob" }
-      password { "asa32A353#" }
-      email {Faker::Internet.email}
-      name { Faker::Lorem.words }
-      read_and_accepted_waiver_form { true }
-      active { true }
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "regular_user" }
       identity { "community_member" }
       gender { "Male" }
-      wallet { 1000 }
-      how_heard_about_us { Faker::Lorem.paragraph }
       avatar { AvatarTestHelper.stl }
     end
 
     trait :admin_user do
-      id { 2 }
-      username { "John" }
-      password { "asa32A353#" }
-      email {Faker::Internet.email}
-      name {Faker::Lorem.words}
-      read_and_accepted_waiver_form { true }
-      active { true }
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "admin" }
       identity { "community_member" }
       gender { "Male" }
-      wallet { 1000 }
+    end
+
+    trait :staff do
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+      role { "staff" }
+      identity { "community_member" }
+      gender { "Male" }
+    end
+
+    trait :volunteer do
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+      role { "volunteer" }
+      identity { "community_member" }
+      gender { "Male" }
+    end
+
+    trait :volunteer_with_volunteer_program do
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+      role { "volunteer" }
+      identity { "community_member" }
+      gender { "Male" }
+      after(:create) do |volunteer|
+        Program.create(user_id: volunteer.id, program_type: Program::VOLUNTEER)
+      end
+    end
+
+    trait :volunteer_with_dev_program do
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+      role { "volunteer" }
+      identity { "community_member" }
+      gender { "Male" }
+      after(:create) do |volunteer|
+        Program.create(user_id: volunteer.id, program_type: Program::DEV_PROGRAM)
+      end
     end
 
     trait :other_user do
-      id { 3 }
-      username { "Jim" }
-      password { "asa32A353#" }
-      email {Faker::Internet.email}
-      name {Faker::Lorem.words}
-      read_and_accepted_waiver_form { true }
-      active { true }
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "regular_user" }
       identity { "community_member" }
       gender { "Male" }
     end
 
     trait :student do
-      id { 4 }
-      username { "Justine" }
       password { "fda3A353$" }
-      email {Faker::Internet.email}
-      name {Faker::Lorem.words}
-      read_and_accepted_waiver_form { true }
-      active { true }
       role { "regular_user" }
       identity { "undergrad" }
       program { "BASc in Software Engineering" }
@@ -97,33 +91,13 @@ FactoryBot.define do
       gender { "Female" }
     end
 
-    trait :staff do
-      username { Faker::Lorem.word }
-      password { "asa32A353#" }
-      email {Faker::Internet.email}
-      name {Faker::Lorem.words}
-      read_and_accepted_waiver_form { true }
-      active { true }
-      role { "staff" }
-      identity { "community_member" }
-      gender { "Male" }
-      wallet { 1000 }
+    factory :user_with_announcements do
+      transient do
+        announcements_count { 5 }
+      end
+      after(:create) do |user, evaluator|
+        create_list(:announcement, evaluator.announcements_count, user: user)
+      end
     end
-
-    trait :volunteer do
-      id { 5 }
-      username { "John" }
-      password { "asa32A353#" }
-      email {Faker::Internet.email}
-      name {Faker::Lorem.words}
-      read_and_accepted_waiver_form { true }
-      active { true }
-      role { "volunteer" }
-      identity { "community_member" }
-      gender { "Male" }
-      wallet { 1000 }
-    end
-
   end
-
 end

@@ -5,7 +5,6 @@ FactoryBot.define do
   factory :volunteer_task do
 
     trait :first do
-      id  { 1 }
       title { Faker::Lorem.word }
       description { Faker::Lorem.paragraph }
       space_id { 1 }

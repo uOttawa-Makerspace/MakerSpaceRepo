@@ -73,16 +73,16 @@ RSpec.describe PrintersController, type: :controller do
         create :user, :regular_user
         admin = create(:user, :admin_user)
         session[:user_id] = admin.id
-        create(:printer_session, :um2p_session)
-        create(:printer_session, :um3_session)
-        create(:printer_session, :rpl2_session)
-        create(:printer_session, :dremel_session)
+        um2p_session = create(:printer_session, :um2p_session)
+        um3_session = create(:printer_session, :um3_session)
+        rpl2_session = create(:printer_session, :rpl2_session)
+        dremel_session = create(:printer_session, :dremel_session)
         get :staff_printers
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@last_session_ultimaker).user.id).to eq(1)
-        expect(@controller.instance_variable_get(:@last_session_ultimaker3).user.id).to eq(2)
-        expect(@controller.instance_variable_get(:@last_session_replicator2).user.id).to eq(1)
-        expect(@controller.instance_variable_get(:@last_session_dremel).user.id).to eq(2)
+        expect(@controller.instance_variable_get(:@last_session_ultimaker).user).to eq(um2p_session.user)
+        expect(@controller.instance_variable_get(:@last_session_ultimaker3).user).to eq(um3_session.user)
+        expect(@controller.instance_variable_get(:@last_session_replicator2).user).to eq(rpl2_session.user)
+        expect(@controller.instance_variable_get(:@last_session_dremel).user).to eq(dremel_session.user)
       end
 
     end

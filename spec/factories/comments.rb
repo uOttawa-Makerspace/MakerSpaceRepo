@@ -1,27 +1,17 @@
-require 'faker'
-
 FactoryBot.define do
-
   factory :comment do
+    association :user, :regular_user
+    association :repository
+    content { Faker::Lorem.paragraph }
+    username { "Bob" }
 
-    trait :comment do
-      id { 5 }
-      repository_id { 1 }
-      user_id { 1 }
-      content { Faker::Lorem.paragraph }
-      upvote { 0 }
-      username { "Bob" }
+    factory :comment_with_upvotes do
+      transient do
+        upvote_count { 5 }
+      end
+      after(:create) do |comment, evaluator|
+        create_list(:upvote, evaluator.upvote_count, comment: comment)
+      end
     end
-
-    trait :other_comment do
-      id { 6 }
-      repository_id { 1 }
-      user_id { 1 }
-      content { Faker::Lorem.paragraph }
-      upvote { 0 }
-      username { "Bob" }
-    end
-
   end
-
 end

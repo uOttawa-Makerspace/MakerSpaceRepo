@@ -26,17 +26,14 @@ RSpec.describe PriceRulesController, type: :controller do
   end
 
   describe 'edit' do
-
     context 'edit' do
-
       it 'should return a 200' do
         admin = create :user, :admin_user
         session[:user_id] = admin.id
-        price_rule = create :price_rule, :working_print_rule
+        price_rule = create(:price_rule)
         get :edit, params: {id: price_rule.id}
         expect(response).to have_http_status(:success)
       end
-
     end
   end
 
@@ -65,7 +62,7 @@ RSpec.describe PriceRulesController, type: :controller do
     context 'create price rule' do
 
       it 'should create a price rule' do
-        price_rule_params = FactoryBot.attributes_for(:price_rule, :missing_shopify_price_rule_id)
+        price_rule_params = FactoryBot.attributes_for(:price_rule, shopify_price_rule_id: nil)
         post :create, params: {price_rule: price_rule_params}
         expect(response).to redirect_to price_rules_path
         expect(flash[:notice]).to eq('Price rule was successfully created.')
@@ -73,7 +70,7 @@ RSpec.describe PriceRulesController, type: :controller do
       end
 
       it 'should redirect to new' do
-        price_rule_params = FactoryBot.attributes_for(:price_rule, :missing_shopify_price_rule_id)
+        price_rule_params = FactoryBot.attributes_for(:price_rule, shopify_price_rule_id: nil)
         post :create, params: {price_rule: price_rule_params}
         expect(response).to have_http_status(302)
       end
@@ -92,7 +89,7 @@ RSpec.describe PriceRulesController, type: :controller do
     context 'update price rule' do
 
       it 'should create a price rule' do
-        price_rule_params = FactoryBot.attributes_for(:price_rule, :missing_shopify_price_rule_id)
+        price_rule_params = FactoryBot.attributes_for(:price_rule, shopify_price_rule_id: nil)
         post :create, params: {price_rule: price_rule_params}
         patch :update, params: {id: PriceRule.last.id, price_rule: {title: "6$ coupon", value: 6, cc: 60}}
         expect(response).to redirect_to price_rules_path
@@ -100,7 +97,7 @@ RSpec.describe PriceRulesController, type: :controller do
       end
 
       it 'should redirect to edit' do
-        price_rule_params = FactoryBot.attributes_for(:price_rule, :missing_shopify_price_rule_id)
+        price_rule_params = FactoryBot.attributes_for(:price_rule, shopify_price_rule_id: nil)
         post :create, params: {price_rule: price_rule_params}
         patch :update, params: {id: PriceRule.last.id, price_rule: {titled: "6$ coupon", cc: "asfa"}}
         expect(response).to have_http_status(302)
@@ -120,7 +117,7 @@ RSpec.describe PriceRulesController, type: :controller do
     context 'destroy price rule' do
 
       it 'should destroy a price rule' do
-        price_rule_params = FactoryBot.attributes_for(:price_rule, :missing_shopify_price_rule_id)
+        price_rule_params = FactoryBot.attributes_for(:price_rule, shopify_price_rule_id: nil)
         post :create, params: {price_rule: price_rule_params}
         expect { delete :destroy, params: {id: PriceRule.last.id} }.to change(PriceRule, :count).by(-1)
         expect(response).to redirect_to price_rules_path
@@ -140,9 +137,9 @@ RSpec.describe PriceRulesController, type: :controller do
     context 'check discount codes price rule' do
 
       it 'check discount codes price rule with delete' do
-        price_rule_params = FactoryBot.attributes_for(:price_rule, :working_print_rule)
+        price_rule_params = FactoryBot.attributes_for(:price_rule)
         post :create, params: {price_rule: price_rule_params}
-        create(:discount_code, :other_discount_code, user_id: session[:user_id], shopify_discount_code_id: PriceRule.last.shopify_price_rule_id, price_rule_id: PriceRule.last.id)
+        create(:discount_code, user_id: session[:user_id], shopify_discount_code_id: PriceRule.last.shopify_price_rule_id, price_rule_id: PriceRule.last.id)
         patch :update, params: {id: PriceRule.last.id, price_rule: {title: "6$ coupon", value: 6, cc: 60}}
         expect(response).to redirect_to price_rules_path
         expect(flash[:alert]).to eq('This price rule cannot be edited/deleted because it has already discount codes')

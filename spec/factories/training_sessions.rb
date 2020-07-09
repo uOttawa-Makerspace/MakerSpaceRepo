@@ -3,26 +3,22 @@ require 'faker'
 FactoryBot.define do
 
   factory :training_session do
+    level { "Beginner" }
+    association :user, :admin_user
 
     trait :normal do
-      id { 1 }
-      training_id { 1 }
-      space_id { 1 }
-      level { "Beginner" }
+      association :space, :makerspace
+      association :training, :test
     end
 
     trait :three_d do
-      id { 2 }
-      training_id { 3 }
-      space_id { 1 }
-      level { "Beginner" }
+      association :space, :makerspace
+      association :training, :three_d
     end
 
     trait :basic do
-      id { 3 }
-      training_id { 4 }
-      space_id { 2 }
-      level { "Beginner" }
+      association :space, :brunsfield
+      association :training, :basic
     end
 
   end

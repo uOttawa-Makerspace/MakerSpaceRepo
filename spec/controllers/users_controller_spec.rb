@@ -30,14 +30,14 @@ RSpec.describe UsersController, type: :controller do
       it 'should create the user' do
         user_params = FactoryBot.attributes_for(:user, :regular_user, password: "asa32A353#")
         expect { post :create, params: {user: user_params} }.to change(User, :count).by(1)
-        expect(response).to redirect_to settings_profile_path("Bob")
+        expect(response).to redirect_to settings_profile_path(User.last.username)
         expect(flash[:notice]).to eq('Profile created successfully.')
       end
 
       it 'should create the user with avatar' do
         user_params = FactoryBot.attributes_for(:user, :regular_user_with_avatar, password: "asa32A353#")
         expect { post :create, params: {user: user_params} }.to change(User, :count).by(1)
-        expect(response).to redirect_to settings_profile_path("Bob")
+        expect(response).to redirect_to settings_profile_path(User.last.username)
         expect(flash[:notice]).to eq('Profile created successfully.')
       end
 
@@ -170,7 +170,7 @@ RSpec.describe UsersController, type: :controller do
           user = create(:user, :regular_user)
           session[:user_id] = user.id
           session[:expires_at] = Time.zone.now + 10000
-          create(:repository, :repository)
+          create(:repository)
           Repository.last.users << User.find(user.id)
           create(:repository, :private)
           Repository.last.users << User.find(user.id)
@@ -183,7 +183,7 @@ RSpec.describe UsersController, type: :controller do
           other_user = create(:user, :regular_user)
           session[:user_id] = user.id
           session[:expires_at] = Time.zone.now + 10000
-          create(:repository, :repository)
+          create(:repository)
           Repository.last.users << User.find(other_user.id)
           create(:repository, :private)
           Repository.last.users << User.find(other_user.id)
@@ -223,10 +223,10 @@ RSpec.describe UsersController, type: :controller do
           user = create(:user, :regular_user)
           session[:user_id] = user.id
           session[:expires_at] = Time.zone.now + 10000
-          create(:repository, :repository)
-          create(:repository, :private)
-          create(:like, :repo1)
-          create(:like, :repo2)
+          repo1 = create(:repository)
+          repo2 = create(:repository, :private)
+          Like.create(user_id: user.id, repository_id: repo1.id)
+          Like.create(user_id: user.id, repository_id: repo2.id)
           get :likes, params: {username: user.username}
           expect(response).to have_http_status(:success)
           expect(@controller.instance_variable_get(:@repositories).count).to eq(2)
@@ -258,11 +258,10 @@ RSpec.describe UsersController, type: :controller do
           user = create(:user, :regular_user)
           session[:user_id] = user.id
           session[:expires_at] = Time.zone.now + 10000
-          create(:repository, :repository)
-          comment = create(:comment, :comment)
-          create(:comment, :other_comment)
+          comment = create(:comment)
+          create(:comment)
           post :vote, params: {comment_id: comment.id, downvote: "f", voted: false}, format: 'json'
-          expect(User.find(user.id).reputation).to eq(2)
+          expect(Comment.find(comment.id).user.reputation).to eq(2)
           expect(Comment.find(comment.id).upvote).to eq(1)
         end
 
@@ -270,11 +269,10 @@ RSpec.describe UsersController, type: :controller do
           user = create(:user, :regular_user)
           session[:user_id] = user.id
           session[:expires_at] = Time.zone.now + 10000
-          create(:repository, :repository)
-          comment = create(:comment, :comment)
-          create(:comment, :other_comment)
+          comment = create(:comment)
+          create(:comment)
           post :vote, params: {comment_id: comment.id, downvote: "t", voted: false}, format: 'json'
-          expect(User.find(user.id).reputation).to eq(-2)
+          expect(Comment.find(comment.id).user.reputation).to eq(-2)
           expect(Comment.find(comment.id).upvote).to eq(-1)
         end
 
@@ -286,10 +284,9 @@ RSpec.describe UsersController, type: :controller do
           user = create(:user, :regular_user)
           session[:user_id] = user.id
           session[:expires_at] = Time.zone.now + 10000
-          create(:repository, :repository)
-          comment = create(:comment, :comment, upvote: 1)
+          comment = create(:comment, upvote: 1)
           Upvote.create(user_id: user.id, comment_id: comment.id, downvote: false)
-          create(:comment, :other_comment)
+          create(:comment)
           post :vote, params: {comment_id: comment.id, downvote: "t", voted: true}, format: 'json'
           expect(Comment.find(comment.id).upvote).to eq(0)
         end
@@ -298,10 +295,9 @@ RSpec.describe UsersController, type: :controller do
           user = create(:user, :regular_user)
           session[:user_id] = user.id
           session[:expires_at] = Time.zone.now + 10000
-          create(:repository, :repository)
-          comment = create(:comment, :comment, upvote: -1)
+          comment = create(:comment, upvote: -1)
           Upvote.create(user_id: user.id, comment_id: comment.id, downvote: true)
-          create(:comment, :other_comment)
+          create(:comment)
           post :vote, params: {comment_id: comment.id, downvote: "t", voted: true}, format: 'json'
           expect(Comment.find(comment.id).upvote).to eq(-1)
         end
@@ -310,9 +306,9 @@ RSpec.describe UsersController, type: :controller do
           user = create(:user, :regular_user)
           session[:user_id] = user.id
           session[:expires_at] = Time.zone.now + 10000
-          create(:repository, :repository)
-          comment = create(:comment, :comment)
-          create(:comment, :other_comment)
+          create(:repository)
+          comment = create(:comment)
+          create(:comment)
           post :vote, params: {comment_id: comment.id, downvote: "t", voted: true}, format: 'json'
           expect(response).to have_http_status(500)
         end

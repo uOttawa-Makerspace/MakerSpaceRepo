@@ -4,6 +4,49 @@ include ActiveModel::Serialization
 
 RSpec.describe User, type: :model do
 
+  describe 'Association' do
+
+    context 'has_one' do
+      it { should have_one(:rfid) }
+      it { should have_one(:skill) }
+      it { should have_one(:volunteer_request) }
+    end
+
+    context 'accepts_nested_attributes_for' do
+      it { should accept_nested_attributes_for(:repositories) }
+    end
+
+    context 'has_and_belongs_to_many' do
+      it { should have_and_belong_to_many(:repositories) }
+      it { should have_and_belong_to_many(:training_sessions) }
+      it { should have_and_belong_to_many(:proficient_projects) }
+    end
+
+    context 'has_many' do
+      it { should have_many(:upvotes) }
+      it { should have_many(:comments) }
+      it { should have_many(:certifications) }
+      it { should have_many(:lab_sessions) }
+      it { should have_many(:project_proposals) }
+      it { should have_many(:project_joins) }
+      it { should have_many(:printer_sessions) }
+      it { should have_many(:volunteer_hours) }
+      it { should have_many(:volunteer_task_joins) }
+      it { should have_many(:training_sessions) }
+      it { should have_many(:announcements) }
+      it { should have_many(:questions) }
+      it { should have_many(:exams) }
+      it { should have_many(:print_orders) }
+      it { should have_many(:volunteer_task_requests) }
+      it { should have_many(:cc_moneys) }
+      it { should have_many(:badges) }
+      it { should have_many(:programs) }
+      it { should have_many(:orders) }
+      it { should have_many(:order_items) }
+      it { should have_many(:discount_codes) }
+    end
+  end
+
   describe "validation" do
 
     context 'avatar' do
@@ -27,251 +70,118 @@ RSpec.describe User, type: :model do
 
     context 'name' do
 
-      it 'should not be valid (too long)' do
-        user = build(:user, :regular_user)
-        user.name = "abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should not be valid (nil)' do
-        user = build(:user, :regular_user)
-        user.name = nil
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
+      it { should validate_length_of(:name).is_at_most(50) }
+      it { should validate_presence_of(:name) }
 
     end
 
     context 'username' do
 
-      it 'should not be valid (special characters)' do
-        user = build(:user, :regular_user)
-        user.username = "gds%%$32"
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should not be valid (Too long)' do
-        user = build(:user, :regular_user)
-        user.username = "abcdefghijklmnopqrstuvwxyz"
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should not be valid (Nil)' do
-        user = build(:user, :regular_user)
-        user.username = nil
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should not be valid (uniqueness)' do
-        create(:user, :regular_user, id: 5)
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
+      it { should_not allow_value("gds%%$32").for(:username) }
+      it { should allow_value("johndoe").for(:username) }
+      it { should validate_length_of(:username).is_at_most(20) }
+      it { should validate_presence_of(:username) }
+      it { should validate_uniqueness_of(:username) }
 
     end
 
     context 'email' do
 
-      it 'should not be valid (nil)' do
-        user = build(:user, :regular_user)
-        user.email = nil
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should not be valid (uniqueness)' do
-        user1 = create(:user, :regular_user)
-        user2 = build(:user, :regular_user)
-        user2.email = user1.email
-        expect(user2.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
+      it { should validate_presence_of(:email) }
+      it { should validate_uniqueness_of(:email) }
 
     end
 
     context 'how_heard_about_us' do
 
-      it 'should not be valid (length)' do
-        user = build(:user, :regular_user)
-        user.how_heard_about_us = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent et mauris vel velit pretium ornare. Donec vitae ligula nunc. Morbi feugiat est in diam ornare ultricies. Sed ultricies feugiat diam, a euismod risus ultrices vitae. Cras posuere purus non pellentesque gravida. Ut sed lorem eu ante id."
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
+      it { should validate_length_of(:how_heard_about_us).is_at_most(250) }
 
     end
 
     context 'read_and_accepted_waiver_form' do
 
-      it 'should not be valid' do
-        user = build(:user, :regular_user)
-        user.read_and_accepted_waiver_form = false
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
+      it { should_not allow_value(false).for(:read_and_accepted_waiver_form) }
+      it { should allow_value(true).for(:read_and_accepted_waiver_form) }
 
     end
 
     context 'password' do
 
-      it 'should not be valid (format)' do
-        user = build(:user, :regular_user)
-        user.password = "abc"
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should not be valid (nil)' do
-        user = build(:user, :regular_user)
-        user.password = nil
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        user.password = "abc123ABC123"
-        expect(user.valid?).to be_truthy
-      end
+      it { should_not allow_value('abc').for(:password) }
+      it { should allow_value("AbCdE123").for(:password) }
+      it { should validate_presence_of(:password) }
 
     end
 
     context 'gender' do
 
-      it 'should not be valid (format)' do
-        user = build(:user, :regular_user)
-        user.gender = "abc123"
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should not be valid (nil)' do
-        user = build(:user, :regular_user)
-        user.gender = nil
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
+      it { should_not allow_value("Something else").for(:gender) }
+      it { should allow_value('Male', 'Female', 'Other', 'Prefer not to specify', 'unknown').for(:gender) }
+      it { should validate_presence_of(:gender) }
 
     end
 
-    context 'faculty' do
+    context 'faculty student' do
 
-      it 'should not be valid (nil)' do
-        user = build(:user, :student)
-        user.faculty = nil
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
-
-      it 'should be valid' do
-        user = build(:user, :student)
-        expect(user.valid?).to be_truthy
-      end
+      subject { build(:user, :student, faculty: nil) }
+      it { should validate_presence_of(:faculty) }
 
     end
 
-    context 'program' do
+    context 'faculty non-student' do
 
-      it 'should not be valid (nil)' do
-        user = build(:user, :student)
-        user.program = nil
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
-
-      it 'should be valid' do
-        user = build(:user, :student)
-        expect(user.valid?).to be_truthy
-      end
+      subject { build(:user, :regular_user, faculty: nil) }
+      it { should_not validate_presence_of(:faculty) }
 
     end
 
-    context 'year_of_study' do
+    context 'program student' do
 
-      it 'should not be valid (nil)' do
-        user = build(:user, :student)
-        user.year_of_study = nil
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
-
-      it 'should be valid' do
-        user = build(:user, :student)
-        expect(user.valid?).to be_truthy
-      end
+      subject { build(:user, :student, program: nil) }
+      it { should validate_presence_of(:program) }
 
     end
 
-    context 'student_id' do
+    context 'program non-student' do
 
-      it 'should not be valid (nil)' do
-        user = build(:user, :student)
-        user.student_id = nil
-        expect(user.valid?).to be_falsey
-      end
+      subject { build(:user, :regular_user, program: nil) }
+      it { should_not validate_presence_of(:program) }
 
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
+    end
 
-      it 'should be valid' do
-        user = build(:user, :student)
-        expect(user.valid?).to be_truthy
-      end
+    context 'year_of_study student' do
+
+      subject { build(:user, :student, year_of_study: nil) }
+      it { should validate_presence_of(:year_of_study) }
+
+    end
+
+    context 'year_of_study non-student' do
+
+      subject { build(:user, :regular_user, year_of_study: nil) }
+      it { should_not validate_presence_of(:year_of_study) }
+
+    end
+
+    context 'student_id student' do
+
+      subject { build(:user, :student, student_id: nil) }
+      it { should validate_presence_of(:student_id) }
+
+    end
+
+    context 'student_id non-student' do
+
+      subject { build(:user, :regular_user, student_id: nil) }
+      it { should_not validate_presence_of(:student_id) }
 
     end
 
     context 'identity' do
 
-      it 'should not be valid (nil)' do
-        user = build(:user, :regular_user)
-        user.identity = nil
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should not be valid (wrong identity)' do
-        user = build(:user, :regular_user)
-        user.identity = "Something else"
-        expect(user.valid?).to be_falsey
-      end
-
-      it 'should be valid' do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
+      it { should validate_presence_of(:identity) }
+      it { should_not allow_value("Something else").for(:identity) }
+      it { should allow_value('grad', 'undergrad', 'faculty_member', 'community_member', 'unknown').for(:identity) }
 
     end
 
@@ -279,16 +189,23 @@ RSpec.describe User, type: :model do
 
   describe "scopes" do
 
-    context 'no_waiver_users' do
+    before :all do
+      create(:user, :regular_user)
+      create(:user, :regular_user)
+      create(:user, :admin_user)
+      create(:user, :staff)
+      create(:user, :volunteer)
+    end
+
+    context '#no_waiver_users' do
 
       it 'should return nothing' do
-        create(:user, :regular_user)
         expect(User.no_waiver_users.count).to eq(0)
       end
 
     end
 
-    context 'between_dates_picked' do
+    context '#between_dates_picked' do
 
       it 'should return one' do
         create(:user, :regular_user, created_at: '2017-07-07 19:15:39.406247')
@@ -306,32 +223,26 @@ RSpec.describe User, type: :model do
 
     end
 
-    context 'active' do
+    context '#active' do
 
-      it 'should return 2 active users' do
-        create(:user, :regular_user)
-        create(:user, :admin_user)
-        expect(User.active.count).to eq(2)
+      it 'should return 5 active users' do
+        expect(User.active.count).to eq(User.all.count)
       end
 
-      it 'should return 1 active user' do
-        create(:user, :regular_user)
+      it 'should return 5 active user' do
         create(:user, :admin_user, active: false)
-        expect(User.active.count).to eq(1)
+        expect(User.active.count).to eq(User.all.count - 1)
       end
 
     end
 
-    context 'unknown_identity' do
+    context '#unknown_identity' do
 
       it 'should return 0 users' do
-        create(:user, :regular_user)
-        create(:user, :admin_user)
         expect(User.unknown_identity.count).to eq(0)
       end
 
       it 'should return 1 user' do
-        create(:user, :regular_user)
         create(:user, :admin_user, identity: "unknown")
         expect(User.unknown_identity.count).to eq(1)
       end
@@ -342,21 +253,21 @@ RSpec.describe User, type: :model do
 
   describe 'model methods' do
 
-    context 'display_avatar' do
+    context '#display_avatar' do
 
       it 'should get the avatar' do
-        create(:user, :regular_user_with_avatar)
-        expect(User.display_avatar(User.find(1)).filename).to eq("avatar.png")
+        user = create(:user, :regular_user_with_avatar)
+        expect(User.display_avatar(User.find(user.id)).filename).to eq("avatar.png")
       end
 
       it 'should get the default avatar' do
-        create(:user, :regular_user)
-        expect(User.display_avatar(User.find(1))).to eq("default-avatar.png")
+        user = create(:user, :regular_user)
+        expect(User.display_avatar(User.find(user.id))).to eq("default-avatar.png")
       end
 
     end
 
-    context 'username_or_email' do
+    context '#username_or_email' do
 
       it 'should return nothing' do
         create(:user, :regular_user, email: "a@b.com")
@@ -364,18 +275,18 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return the user (by email)' do
-        create(:user, :regular_user, email: "a@b.com")
-        expect(User.username_or_email("a@b.com").id).to eq(1)
+        user = create(:user, :regular_user)
+        expect(User.username_or_email(user.email).id).to eq(user.id)
       end
 
       it 'should return the user (by username)' do
-        create(:user, :regular_user)
-        expect(User.username_or_email("Bob").id).to eq(1)
+        user = create(:user, :regular_user)
+        expect(User.username_or_email(user.username).id).to eq(user.id)
       end
 
     end
 
-    context 'authenticate' do
+    context '#authenticate' do
 
       it 'should return nothing' do
         create(:user, :regular_user, email: "a@b.com")
@@ -383,13 +294,13 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return the user' do
-        create(:user, :regular_user, email: "a@b.com")
-        expect(User.authenticate("a@b.com", 'asa32A353#').id).to eq(1)
+        user = create(:user, :regular_user, email: "a@b.com")
+        expect(User.authenticate("a@b.com", 'asa32A353#').id).to eq(user.id)
       end
 
     end
 
-    context 'student?' do
+    context '#student?' do
       it 'should return false' do
         user = create(:user, :regular_user)
         expect(user.student?).to be_falsey
@@ -401,7 +312,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context 'admin?' do
+    context '#admin?' do
       it 'should return false' do
         user = create(:user, :regular_user)
         expect(user.admin?).to be_falsey
@@ -413,7 +324,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context 'staff?' do
+    context '#staff?' do
       it 'should return false' do
         user = create(:user, :regular_user)
         expect(user.staff?).to be_falsey
@@ -425,7 +336,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context 'volunteer?' do
+    context '#volunteer?' do
       it 'should return false' do
         user = create(:user, :regular_user)
         expect(user.volunteer?).to be_falsey
@@ -437,47 +348,43 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context 'volunteer_program?' do
+    context '#volunteer_program?' do
       it 'should return false' do
         user = create(:user, :volunteer)
         expect(user.volunteer_program?).to be_falsey
       end
 
       it 'should return true' do
-        user = create(:user, :volunteer)
-        Program.create(user_id: user.id, program_type: Program::VOLUNTEER)
+        user = create(:user, :volunteer_with_volunteer_program)
         expect(user.volunteer_program?).to be_truthy
       end
     end
 
-    context 'dev_program?' do
+    context '#dev_program?' do
       it 'should return false' do
         user = create(:user, :volunteer)
         expect(user.dev_program?).to be_falsey
       end
 
       it 'should return true' do
-        user = create(:user, :volunteer)
-        Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
+        user = create(:user, :volunteer_with_dev_program)
         expect(user.dev_program?).to be_truthy
       end
     end
 
-    context 'location' do
+    context '#location' do
       it 'should return no sign in yet' do
         user = create(:user, :regular_user)
         expect(user.location).to eq("no sign in yet")
       end
 
       it 'should return makerspace' do
-        user = create(:user, :regular_user)
-        create(:space, :makerspace)
-        LabSession.create(user_id: user.id, space_id: 1)
-        expect(user.location).to eq("makerspace")
+        create(:space, :makerspace_with_lab_session)
+        expect(User.last.location).to eq("makerspace")
       end
     end
 
-    context 'get_total_cc' do
+    context '#get_total_cc' do
       it 'should return 0' do
         user = create(:user, :regular_user)
         expect(user.get_total_cc).to eq(0)
@@ -490,25 +397,19 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context 'get_total_hours' do
+    context '#get_total_hours' do
       it 'should return 0 hours' do
-        user = create(:user, :regular_user)
-        task = create(:volunteer_task, :first, user_id: user.id)
-        create(:volunteer_hour, :not_approved1, user_id: user.id, volunteer_task_id: task.id)
-        expect(user.get_total_hours).to eq(0)
+        create(:volunteer_hour, :not_approved1)
+        expect(User.last.get_total_hours).to eq(0)
       end
 
       it 'should return 15 hours' do
-        user = create(:user, :regular_user)
-        task = create(:volunteer_task, :first, user_id: user.id)
-        create(:volunteer_hour, :approved1, user_id: user.id, volunteer_task_id: task.id)
-        create(:volunteer_hour, :approved2, user_id: user.id, volunteer_task_id: task.id)
-        create(:volunteer_hour, :not_approved1, user_id: user.id, volunteer_task_id: task.id)
-        expect(user.get_total_hours).to eq(15)
+        create(:volunteer_hour, :approved1)
+        expect(User.last.get_total_hours).to eq(10)
       end
     end
 
-    context 'update_wallet' do
+    context '#update_wallet' do
 
       it 'should update wallet to a 100' do
         user = create(:user, :regular_user)
@@ -518,72 +419,59 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context 'get_certifications_names' do
+    context '#get_certifications_names' do
 
       it 'should get all certifications' do
         user = create(:user, :admin_user)
-        create(:space, :makerspace)
-        create(:training, :test)
-        create(:training_session, :normal, user_id: user.id)
+        create(:training, :test2)
         create(:certification, :first, user_id: user.id)
         expect(user.get_certifications_names).to eq(['Test'])
       end
     end
 
-    context 'get_volunteer_tasks_from_volunteer_joins' do
+    context '#get_volunteer_tasks_from_volunteer_joins' do
 
       it 'should get all volunteer tasks' do
-        user = create(:user, :admin_user)
-        create(:space, :makerspace)
-        create(:volunteer_task, :first, user_id: user.id)
-        create(:volunteer_task_join, :first, user_id: user.id)
-        expect(user.get_volunteer_tasks_from_volunteer_joins.first.id).to eq(VolunteerTask.last.id)
+        create(:volunteer_task_join, :first)
+        expect(User.last.get_volunteer_tasks_from_volunteer_joins.first.id).to eq(VolunteerTask.last.id)
       end
     end
 
-    context 'get_badges' do
+    context '#get_badges' do
 
       it 'should get badge called none' do
         user = create(:user, :admin_user)
-        create(:space, :makerspace)
         training = create(:training, :test)
         expect(user.get_badges(training.id)).to eq('badges/none.png')
       end
 
       it 'should get badge called bronze' do
-        user = create(:user, :admin_user)
-        create(:space, :makerspace)
-        training = create(:training, :test)
-        create(:training_session, :normal, user_id: user.id)
+        user = create(:user, :regular_user)
         create(:certification, :first, user_id: user.id)
-        expect(user.get_badges(training.id)).to eq('badges/bronze.png')
+        expect(user.get_badges(Training.last.id)).to eq('badges/bronze.png')
       end
 
     end
 
-    context 'remaining_trainings' do
+    context '#remaining_trainings' do
 
       it 'should get the two remaining trainings' do
-        user = create(:user, :admin_user)
-        create(:space, :makerspace)
+        create(:user, :admin_user)
         create(:training, :test)
         create(:training, :test2)
-        expect(user.remaining_trainings.ids).to eq([1,2])
+        expect(User.last.remaining_trainings.ids).to eq([1,2])
       end
 
       it 'should get the remaining training' do
         user = create(:user, :admin_user)
-        create(:space, :makerspace)
-        create(:training, :test)
         create(:training, :test2)
-        create(:training_session, :normal, user_id: user.id)
         create(:certification, :first, user_id: user.id)
         expect(user.remaining_trainings.ids).to eq([2])
       end
 
     end
 
-    context 'return_program_status' do
+    context '#return_program_status' do
 
       it 'should return status 0' do
         user = create(:user, :regular_user)
@@ -593,28 +481,14 @@ RSpec.describe User, type: :model do
 
       it 'should return status 1' do
         user = create(:user, :regular_user)
-        staff = create(:user, :staff)
-        create(:space, :makerspace)
-        create(:training, :three_d)
-        create(:training_session, :three_d, user_id: staff.id)
         create(:certification, :three_d, user_id: user.id)
-        create(:space, :brunsfield)
-        create(:training, :basic)
-        create(:training_session, :basic, user_id: staff.id)
         create(:certification, :basic, user_id: user.id)
         expect(user.return_program_status).to eq(1)
       end
 
       it 'should return status 2' do
         user = create(:user, :regular_user)
-        staff = create(:user, :staff)
-        create(:space, :makerspace)
-        create(:training, :three_d)
-        create(:training_session, :three_d, user_id: staff.id)
         create(:certification, :three_d, user_id: user.id)
-        create(:space, :brunsfield)
-        create(:training, :basic)
-        create(:training_session, :basic, user_id: staff.id)
         create(:certification, :basic, user_id: user.id)
         Program.create(user_id: user.id, program_type: Program::VOLUNTEER)
         expect(user.return_program_status).to eq(2)
@@ -622,58 +496,29 @@ RSpec.describe User, type: :model do
 
       it 'should return status 2' do
         volunteer = create(:user, :volunteer)
-        staff = create(:user, :staff)
-        create(:space, :makerspace)
-        create(:training, :three_d)
-        create(:training_session, :three_d, user_id: staff.id)
         create(:certification, :three_d, user_id: volunteer.id)
-        create(:space, :brunsfield)
-        create(:training, :basic)
-        create(:training_session, :basic, user_id: staff.id)
         create(:certification, :basic, user_id: volunteer.id)
         expect(volunteer.return_program_status).to eq(2)
       end
 
       it 'should return status 3' do
         user = create(:user, :regular_user)
-        staff = create(:user, :staff)
-        create(:space, :makerspace)
-        create(:training, :three_d)
-        create(:training_session, :three_d, user_id: staff.id)
         create(:certification, :three_d, user_id: user.id)
-        create(:space, :brunsfield)
-        create(:training, :basic)
-        create(:training_session, :basic, user_id: staff.id)
         create(:certification, :basic, user_id: user.id)
         Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
         expect(user.return_program_status).to eq(3)
       end
 
       it 'should return status 4' do
-        volunteer = create(:user, :volunteer)
-        staff = create(:user, :staff)
-        create(:space, :makerspace)
-        create(:training, :three_d)
-        create(:training_session, :three_d, user_id: staff.id)
+        volunteer = create(:user, :volunteer_with_dev_program)
         create(:certification, :three_d, user_id: volunteer.id)
-        create(:space, :brunsfield)
-        create(:training, :basic)
-        create(:training_session, :basic, user_id: staff.id)
         create(:certification, :basic, user_id: volunteer.id)
-        Program.create(user_id: volunteer.id, program_type: Program::DEV_PROGRAM)
         expect(volunteer.return_program_status).to eq(4)
       end
 
       it 'should return status 4' do
         user = create(:user, :regular_user)
-        staff = create(:user, :staff)
-        create(:space, :makerspace)
-        create(:training, :three_d)
-        create(:training_session, :three_d, user_id: staff.id)
         create(:certification, :three_d, user_id: user.id)
-        create(:space, :brunsfield)
-        create(:training, :basic)
-        create(:training_session, :basic, user_id: staff.id)
         create(:certification, :basic, user_id: user.id)
         Program.create(user_id: user.id, program_type: Program::VOLUNTEER)
         Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
@@ -682,7 +527,7 @@ RSpec.describe User, type: :model do
 
     end
 
-    context 'has_required_badges?' do
+    context '#has_required_badges?' do
 
       before :each do
         create(:badge_template, :three_d_printing)

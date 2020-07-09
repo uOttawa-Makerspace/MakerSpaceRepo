@@ -6,14 +6,14 @@ RSpec.describe CommentsController, type: :controller do
 
     before(:each) do
       create :user, :regular_user
-      create(:repository, :repository)
+      create(:repository)
       session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
     end
 
     context 'users can delete their own comments' do
 
       it 'should be deleting the user\'s comment' do
-        comment1 = create(:comment, :comment)
+        comment1 = create(:comment)
         session[:user_id] = comment1.user_id
         delete :destroy, params: {id: comment1.id}
         expect(flash[:notice]).to eq('Comment deleted succesfully')
@@ -24,7 +24,7 @@ RSpec.describe CommentsController, type: :controller do
     context 'admins can delete any comment' do
 
       it 'should be deleting the user\'s comment' do
-        comment1 = create(:comment, :comment)
+        comment1 = create(:comment)
         session[:user_id] = (create :user, :admin_user).id
         delete :destroy, params: {id: comment1.id}
         expect(flash[:notice]).to eq('Comment deleted succesfully')
@@ -35,7 +35,7 @@ RSpec.describe CommentsController, type: :controller do
     context 'users can\'t delete others\' comments' do
 
       it 'should be not deleting the user\'s comment' do
-        comment1 = create(:comment, :comment)
+        comment1 = create(:comment)
         session[:user_id] = (create :user, :other_user).id
         delete :destroy, params: {id: comment1.id}
         expect(flash[:alert]).to eq('Something went wrong')

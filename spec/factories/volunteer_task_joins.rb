@@ -3,10 +3,10 @@ require 'faker'
 FactoryBot.define do
 
   factory :volunteer_task_join do
+    association :user, :admin_user
+    association :volunteer_task
 
     trait :first do
-      id { 1 }
-      volunteer_task_id { 1 }
       active { true }
       user_type { "Admin" }
     end
