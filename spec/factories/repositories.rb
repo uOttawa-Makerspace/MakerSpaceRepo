@@ -2,7 +2,7 @@ require 'faker'
 
 FactoryBot.define do
   factory :repository do
-    title { Faker::Lorem.word }
+    title { Faker::Lorem.unique.word }
     description { Faker::Lorem.paragraph }
     share_type { "public" }
     user_username { "Bob" }

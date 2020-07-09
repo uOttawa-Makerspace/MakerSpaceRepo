@@ -6,7 +6,7 @@ FactoryBot.define do
     active { true }
     email { Faker::Internet.email }
     name { Faker::Name.name }
-    username{ Faker::Name.first_name }
+    username{ Faker::Name.unique.first_name }
 
     trait :regular_user do
       password { "asa32A353#" }
