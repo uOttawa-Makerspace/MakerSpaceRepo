@@ -5,7 +5,7 @@ FactoryBot.define do
 
     trait :working_print_order do
       id { 1 }
-      user_id { 1 }
+      association :user, :regular_user
       comments { Faker::Lorem.paragraph }
       approved { false }
       user_approval { false }
@@ -38,7 +38,7 @@ FactoryBot.define do
 
     trait :file_broken_print_order do
       id { 1 }
-      user_id { 1 }
+      association :user, :regular_user
       comments { Faker::Lorem.paragraph }
       approved { false }
       user_approval { false }
