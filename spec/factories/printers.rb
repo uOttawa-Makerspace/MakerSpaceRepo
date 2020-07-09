@@ -1,5 +1,3 @@
-# Read about factories at https://github.com/thoughtbot/factory_bot
-
 FactoryBot.define do
   factory :printer do
     trait :UM2P_01 do

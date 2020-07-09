@@ -1,5 +1,3 @@
-require 'faker'
-
 FactoryBot.define do
   factory :repository do
     title { Faker::Lorem.unique.word }

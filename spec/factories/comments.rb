@@ -1,5 +1,3 @@
-require 'faker'
-
 FactoryBot.define do
   factory :comment do
     association :user, :regular_user

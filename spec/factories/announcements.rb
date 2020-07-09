@@ -1,5 +1,3 @@
-require 'faker'
-
 FactoryBot.define do
   factory :announcement do
     association :user, :admin_user

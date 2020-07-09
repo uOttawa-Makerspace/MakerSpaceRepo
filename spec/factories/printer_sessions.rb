@@ -1,5 +1,3 @@
-require 'faker'
-
 FactoryBot.define do
   factory :printer_session do
 

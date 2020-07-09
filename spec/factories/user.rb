@@ -1,5 +1,3 @@
-require 'faker'
-
 FactoryBot.define do
   factory :user do
     read_and_accepted_waiver_form { true }

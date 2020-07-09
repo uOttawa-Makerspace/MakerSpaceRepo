@@ -1,5 +1,3 @@
-require 'faker'
-
 FactoryBot.define do
   factory :print_order do
 
