@@ -88,6 +88,17 @@ RSpec.describe DiscountCode, type: :model do
         shopify_discount_code = @discount_code.shopify_api_create_discount_code
         fetched_shopify_discount_code = ShopifyAPI::DiscountCode.where(id: shopify_discount_code.id, price_rule_id: @discount_code.price_rule.shopify_price_rule_id)
         expect(fetched_shopify_discount_code.present?).to eq(true)
+        @discount_code.update_attributes(shopify_discount_code_id: shopify_discount_code.id)
+      end
+    end
+
+    context '#delete_discount_code_from_shopify' do
+      it 'should delete discount code from shop' do
+        shopify_price_rule_id = @discount_code.price_rule.shopify_price_rule_id
+        shopify_discount_code_id = @discount_code.shopify_discount_code_id
+        @discount_code.delete_discount_code_from_shopify
+        fetched_shopify_discount_code = ShopifyAPI::DiscountCode.where(id: shopify_discount_code_id, price_rule_id: shopify_price_rule_id)
+        expect(fetched_shopify_discount_code.present?).to eq(false)
       end
     end
 
