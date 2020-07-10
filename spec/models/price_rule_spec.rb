@@ -22,33 +22,42 @@ RSpec.describe PriceRule, type: :model do
     end
   end
 
-  describe 'Methods' do
-    context '#create_price_rule from shopify' do
-      it 'should be an integer' do
-        expect(PriceRule.create_price_rule("5$ Coupon", 5)).to be_a_kind_of(Integer)
-      end
+  describe 'Methods Shopify' do
+    before :context do
+      @shopify_price_rule_id = PriceRule.create_price_rule("2$ Coupon", 2)
     end
 
-    context '#delete_price_rule_from_shopify' do
-      it 'should be deleting the price rule' do
-        price_rule = PriceRule.create_price_rule("5$ Coupon", 5)
-        PriceRule.delete_price_rule_from_shopify(price_rule)
-        expect {
-          ShopifyAPI::PriceRule.find(price_rule)
-        }.to raise_error(ActiveResource::ResourceNotFound)
+    context '#create_price_rule from shopify' do
+      it 'should be an integer' do
+        expect(@shopify_price_rule_id).to be_a_kind_of(Integer)
       end
     end
 
     context '#update_price_rule from shopify' do
       it 'should update the price rule' do
-        price_rule = PriceRule.create_price_rule("5$ Coupon", 5)
-        PriceRule.update_price_rule(price_rule, "6$ Coupon", 6)
-        shopify_price_rule = ShopifyAPI::PriceRule.find(price_rule)
+        PriceRule.update_price_rule(@shopify_price_rule_id, "6$ Coupon", 6)
+        shopify_price_rule = ShopifyAPI::PriceRule.find(@shopify_price_rule_id)
         expect(shopify_price_rule.value).to eq("-6.0")
         expect(shopify_price_rule.title).to eq("6$ Coupon")
       end
     end
 
+    context '#delete_price_rule_from_shopify' do
+      it 'should be deleting the price rule' do
+        shopify_price_rule_id = PriceRule.create_price_rule("7$ Coupon", 7)
+        PriceRule.delete_price_rule_from_shopify(shopify_price_rule_id)
+        expect {
+          ShopifyAPI::PriceRule.find(shopify_price_rule_id)
+        }.to raise_error(ActiveResource::ResourceNotFound)
+      end
+    end
+
+    after :context do
+      PriceRule.delete_price_rule_from_shopify(@shopify_price_rule_id)
+    end
+  end
+
+  describe 'Methods' do
     context '#has_discount_codes?' do
       before(:all) do
         @price_rule = create(:price_rule_with_discount_codes)
