@@ -8,12 +8,12 @@ RSpec.describe PrintOrder, type: :model do
 
   context 'validate file type' do
     it 'should be false' do
-      print_order = build :print_order,  :file_broken_print_order
+      print_order = build(:print_order, :with_invalid_file)
       expect(print_order.valid?).to be_falsey
     end
 
     it 'should be true' do
-      print_order = build :print_order,  :working_print_order
+      print_order = build :print_order
       expect(print_order.valid?).to be_truthy
     end
   end
