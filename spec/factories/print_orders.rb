@@ -16,6 +16,14 @@ FactoryBot.define do
       file { FilesTestHelper.png }
     end
 
+    trait :with_final_file do
+      final_file { FilesTestHelper.stl }
+    end
+
+    trait :with_invalid_final_file do
+      final_file { FilesTestHelper.png }
+    end
+
     trait :approved do
       approved { true }
       service_charge { 20 }
@@ -36,27 +44,6 @@ FactoryBot.define do
       quote {}
       price_per_gram { 0.5 }
       user_approval { true }
-    end
-
-    trait :printed do
-      approved { true }
-      service_charge { 20 }
-      grams { 100 }
-      quote {}
-      price_per_gram { 0.5 }
-      user_approval { true }
-      printed { true }
-    end
-
-    trait :broken_print_order do
-      id { 1 }
-      comments { Faker::Lorem.paragraph }
-      approved { false }
-      user_approval { false }
-      printed { false }
-      expedited { false }
-      material { "PLA" }
-      file { FilesTestHelper.png }
     end
   end
 end

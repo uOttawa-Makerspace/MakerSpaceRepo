@@ -2,7 +2,7 @@ require 'rails_helper'
 include FilesTestHelper
 
 RSpec.describe PrintOrdersController, type: :controller do
-  describe 'index method' do
+  describe 'GET #index' do
     before(:each) do
       session[:expires_at] = DateTime.tomorrow.end_of_day
     end
@@ -29,7 +29,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     end
   end
 
-  describe 'new method' do
+  describe 'GET #new' do
 
     before(:each) do
       session[:expires_at] = DateTime.tomorrow.end_of_day
@@ -61,7 +61,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     end
   end
 
-  describe 'create method' do
+  describe ' POST #create' do
 
     before(:each) do
       user = create(:user, :regular_user)
@@ -86,7 +86,7 @@ RSpec.describe PrintOrdersController, type: :controller do
       end
 
       it 'should fail creating the print order' do
-        print_order_params = FactoryBot.attributes_for(:print_order, :broken_print_order)
+        print_order_params = FactoryBot.attributes_for(:print_order, :with_invalid_file)
         post :create, params: {print_order: print_order_params}
         expect(response).to redirect_to print_orders_path
         expect(flash[:alert]).to eq('The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !')
@@ -97,7 +97,7 @@ RSpec.describe PrintOrdersController, type: :controller do
   end
 
 
-  describe 'update method' do
+  describe 'PATCH #update' do
 
     before(:each) do
       user = create :user, :regular_user
@@ -156,7 +156,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     end
   end
 
-  describe 'destroy method' do
+  describe 'DELETE #destroy' do
     context 'destroy print order' do
       it 'should return a 200' do
         user = create :user, :regular_user
@@ -169,7 +169,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     end
   end
 
-  describe 'invoice method' do
+  describe 'GET #invoice' do
     context 'create an invoice for print order' do
 
       it 'should return render a pdf' do

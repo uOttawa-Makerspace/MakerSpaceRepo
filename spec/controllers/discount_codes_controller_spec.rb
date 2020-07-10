@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe DiscountCodesController, type: :controller do
-  describe "index" do
+  describe "GET #index" do
     before :context do
       @user = create(:user, :regular_user)
       @admin = create(:user, :admin_user)
@@ -36,7 +36,7 @@ RSpec.describe DiscountCodesController, type: :controller do
       @shopify_price_rule_id = PriceRule.create_price_rule("10$ Coupon", 10)
       @price_rule = create(:price_rule, shopify_price_rule_id: @shopify_price_rule_id, value: 10)
     end
-    context 'new' do
+    context 'GET #new' do
       it 'should be giving a 200' do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
@@ -47,7 +47,7 @@ RSpec.describe DiscountCodesController, type: :controller do
       end
     end
 
-    context 'create' do
+    context 'POST #create' do
       it 'should be redirecting to discount code path and creating a discount code' do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
