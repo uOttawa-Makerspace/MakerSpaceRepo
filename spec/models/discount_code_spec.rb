@@ -75,4 +75,24 @@ RSpec.describe DiscountCode, type: :model do
       end
     end
   end
+
+  describe 'Methods Shopify' do
+    before :context do
+      @shopify_price_rule_id = PriceRule.create_price_rule("20$ Coupon", 20)
+      @price_rule = create(:price_rule, shopify_price_rule_id: @shopify_price_rule_id, value: 20)
+      @discount_code = create(:discount_code, price_rule: @price_rule)
+    end
+
+    context '#shopify_api_create_discount_code' do
+      it 'should create discount code on shop' do
+        shopify_discount_code = @discount_code.shopify_api_create_discount_code
+        fetched_shopify_discount_code = ShopifyAPI::DiscountCode.where(id: shopify_discount_code.id, price_rule_id: @discount_code.price_rule.shopify_price_rule_id)
+        expect(fetched_shopify_discount_code.present?).to eq(true)
+      end
+    end
+
+    after :context do
+      PriceRule.delete_price_rule_from_shopify(@shopify_price_rule_id)
+    end
+  end
 end
