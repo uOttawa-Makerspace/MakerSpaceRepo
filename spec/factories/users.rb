@@ -20,8 +20,8 @@ FactoryBot.define do
       identity { "community_member" }
       gender { "Male" }
       after(:create) do |user|
-        create(:certification, :three_d, user_id: user.id)
-        create(:certification, :basic, user_id: user.id)
+        create(:certification, :'3d_printing', user_id: user.id)
+        create(:certification, :basic_training, user_id: user.id)
       end
     end
 
