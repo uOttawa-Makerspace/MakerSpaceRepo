@@ -4,7 +4,7 @@ FactoryBot.define do
     active { true }
     email { Faker::Internet.email }
     name { Faker::Name.name }
-    username{ Faker::Name.unique.first_name }
+    username { Faker::Name.unique.first_name }
     wallet { 1000 }
 
     trait :regular_user do
