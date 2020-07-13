@@ -6,6 +6,7 @@ RSpec.describe Comment, type: :model do
       it { should belong_to(:user) }
       it { should belong_to(:repository) }
     end
+
     context 'has_many' do
       it { should have_many(:upvotes) }
       it 'dependent destroy: should destroy upvotes if destroyed' do
