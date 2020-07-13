@@ -13,7 +13,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       end
 
       it 'should get all project proposals (admin)' do
-        admin = create(:user, :admin_user)
+        admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
         get :index
@@ -73,7 +73,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
     context "edit" do
 
       it 'should show the form to edit the project proposal' do
-        admin = create(:user, :admin_user)
+        admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
         pp = create(:project_proposal, :normal)
@@ -200,7 +200,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
 
     context 'Approve project proposal' do
       it 'should approve the project proposal' do
-        admin = create :user, :admin_user
+        admin = create :user, :admin
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = admin.id
         project_proposal = create(:project_proposal, :normal)
@@ -218,7 +218,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
 
     context 'Disapprove project proposal' do
       it 'should disapprove the project proposal' do
-        admin = create :user, :admin_user
+        admin = create :user, :admin
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = admin.id
         project_proposal = create(:project_proposal, :normal)
