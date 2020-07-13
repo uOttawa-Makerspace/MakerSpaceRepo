@@ -42,9 +42,12 @@ RSpec.describe DiscountCodesController, type: :controller do
       CcMoney.create(user_id: @user.id, cc: 1000)
     end
 
+    before(:each) do
+      session[:user_id] = @user.id
+    end
+
     context 'GET /new' do
       it 'should return 200' do
-        session[:user_id] = @user.id
         get :new
         expect(response).to have_http_status(:success)
         expect(@controller.instance_variable_get(:@price_rules).count).to eq(3)
@@ -53,7 +56,6 @@ RSpec.describe DiscountCodesController, type: :controller do
 
     context 'POST /create' do
       it 'should be redirecting to discount code path and creating a discount code' do
-        session[:user_id] = @user.id
         expect { post :create, params: {price_rule_id: @price_rule.id} }.to change(DiscountCode, :count).by(1)
         expect(response).to redirect_to discount_codes_path
         expect(flash[:notice]).to eq('Discount Code created')
@@ -62,7 +64,6 @@ RSpec.describe DiscountCodesController, type: :controller do
 
     context 'POST /create with no CC points' do
       it 'should fail to create the discount code and redirect to root' do
-        session[:user_id] = @user.id
         CcMoney.create(user_id: @user.id, cc: -1000)
         post :create, params: {price_rule_id: @price_rule.id}
         expect(response).to redirect_to root_path

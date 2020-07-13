@@ -14,17 +14,13 @@ class PriceRulesController < DevelopmentProgramsController
   end
 
   def edit
-
   end
 
   def create
     @price_rule = PriceRule.new(price_rule_params)
-
     @price_rule.shopify_price_rule_id = PriceRule.create_price_rule(@price_rule.title, @price_rule.value)
-
     respond_to do |format|
       if @price_rule.save
-
         format.html { redirect_to price_rules_path, notice: 'Price rule was successfully created.' }
         format.json { render :index, status: :created, location: @price_rule }
       else
@@ -37,9 +33,7 @@ class PriceRulesController < DevelopmentProgramsController
   def update
     respond_to do |format|
       if @price_rule.update(price_rule_params)
-
         PriceRule.update_price_rule(@price_rule.shopify_price_rule_id, @price_rule.title, @price_rule.value)
-
         format.html { redirect_to price_rules_url, notice: 'Price rule was successfully updated.' }
         format.json { render :index, status: :ok }
       else
