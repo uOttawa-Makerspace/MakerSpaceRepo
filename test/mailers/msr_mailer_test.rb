@@ -96,6 +96,6 @@ class MsrMailerTest < ActionMailer::TestCase
     assert email.body.to_s.include? 'photo upload not working'
     assert email.body.to_s.include? 'Julia'
     assert email.body.to_s.include? 'julia@gmail.com'
-    assert_equal 'Issue Report', email.subject
+    assert_equal 'Issue Report | issue', email.subject
   end
 end

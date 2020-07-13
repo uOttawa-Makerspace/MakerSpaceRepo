@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :announcement do
-    association :user, :admin_user
+    association :user, :admin
     description { Faker::Lorem.paragraph }
     active { true }
 

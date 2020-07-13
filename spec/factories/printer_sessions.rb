@@ -7,7 +7,7 @@ FactoryBot.define do
     end
 
     trait :um3_session do
-      association :user, :admin_user
+      association :user, :admin
       printer_id { 3 }
     end
 
@@ -17,7 +17,7 @@ FactoryBot.define do
     end
 
     trait :dremel_session do
-      association :user, :admin_user
+      association :user, :admin
       printer_id { 6 }
     end
 

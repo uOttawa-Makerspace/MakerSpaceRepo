@@ -4,7 +4,7 @@ FactoryBot.define do
 
   factory :training_session do
     level { "Beginner" }
-    association :user, :admin_user
+    association :user, :admin
 
     trait :normal do
       association :space, :makerspace
