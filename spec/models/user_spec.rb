@@ -192,7 +192,7 @@ RSpec.describe User, type: :model do
     before :all do
       create(:user, :regular_user)
       create(:user, :regular_user)
-      create(:user, :admin_user)
+      create(:user, :admin)
       create(:user, :staff)
       create(:user, :volunteer)
     end
@@ -230,7 +230,7 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return 5 active user' do
-        create(:user, :admin_user, active: false)
+        create(:user, :admin, active: false)
         expect(User.active.count).to eq(User.all.count - 1)
       end
 
@@ -243,7 +243,7 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return 1 user' do
-        create(:user, :admin_user, identity: "unknown")
+        create(:user, :admin, identity: "unknown")
         expect(User.unknown_identity.count).to eq(1)
       end
 
@@ -319,7 +319,7 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return true' do
-        user = create(:user, :admin_user)
+        user = create(:user, :admin)
         expect(user.admin?).to be_truthy
       end
     end
@@ -422,7 +422,7 @@ RSpec.describe User, type: :model do
     context '#get_certifications_names' do
 
       it 'should get all certifications' do
-        user = create(:user, :admin_user)
+        user = create(:user, :admin)
         create(:training, :test2)
         create(:certification, :first, user_id: user.id)
         expect(user.get_certifications_names).to eq(['Test'])
@@ -440,7 +440,7 @@ RSpec.describe User, type: :model do
     context '#get_badges' do
 
       it 'should get badge called none' do
-        user = create(:user, :admin_user)
+        user = create(:user, :admin)
         training = create(:training, :test)
         expect(user.get_badges(training.id)).to eq('badges/none.png')
       end
@@ -456,14 +456,14 @@ RSpec.describe User, type: :model do
     context '#remaining_trainings' do
 
       it 'should get the two remaining trainings' do
-        create(:user, :admin_user)
+        create(:user, :admin)
         create(:training, :test)
         create(:training, :test2)
         expect(User.last.remaining_trainings.ids).to eq([1,2])
       end
 
       it 'should get the remaining training' do
-        user = create(:user, :admin_user)
+        user = create(:user, :admin)
         create(:training, :test2)
         create(:certification, :first, user_id: user.id)
         expect(user.remaining_trainings.ids).to eq([2])

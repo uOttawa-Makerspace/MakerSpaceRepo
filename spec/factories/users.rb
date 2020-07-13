@@ -43,7 +43,7 @@ FactoryBot.define do
       avatar { AvatarTestHelper.stl }
     end
 
-    trait :admin_user do
+    trait :admin do
       password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "admin" }
       identity { "community_member" }
@@ -82,13 +82,6 @@ FactoryBot.define do
       after(:create) do |volunteer|
         Program.create(user_id: volunteer.id, program_type: Program::DEV_PROGRAM)
       end
-    end
-
-    trait :other_user do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
-      role { "regular_user" }
-      identity { "community_member" }
-      gender { "Male" }
     end
 
     trait :student do
