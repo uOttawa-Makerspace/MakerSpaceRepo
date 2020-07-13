@@ -4,7 +4,7 @@ RSpec.describe DiscountCodesController, type: :controller do
   describe "GET #index" do
     before :context do
       @user = create(:user, :regular_user)
-      @admin = create(:user, :admin_user)
+      @admin = create(:user, :admin)
       Program.create(user_id: @user.id, program_type: Program::DEV_PROGRAM)
       create(:discount_code, :unused, user: @user)
       create(:discount_code, :unused, user: @admin)

@@ -16,7 +16,7 @@ RSpec.describe PriceRulesController, type: :controller do
       end
 
       it 'should leave the admin to the price rule path' do
-        admin = create :user, :admin_user
+        admin = create :user, :admin
         session[:user_id] = admin.id
         get :index
         expect(response).to have_http_status(:success)
@@ -28,7 +28,7 @@ RSpec.describe PriceRulesController, type: :controller do
   describe 'edit' do
     context 'edit' do
       it 'should return a 200' do
-        admin = create :user, :admin_user
+        admin = create :user, :admin
         session[:user_id] = admin.id
         price_rule = create(:price_rule)
         get :edit, params: {id: price_rule.id}
@@ -42,7 +42,7 @@ RSpec.describe PriceRulesController, type: :controller do
     context 'new' do
 
       it 'should return a 200' do
-        admin = create :user, :admin_user
+        admin = create :user, :admin
         session[:user_id] = admin.id
         get :new
         expect(response).to have_http_status(:success)
@@ -54,7 +54,7 @@ RSpec.describe PriceRulesController, type: :controller do
   describe 'create method' do
 
     before(:each) do
-      admin = create :user, :admin_user
+      admin = create :user, :admin
       session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
       session[:user_id] = admin.id
     end
@@ -81,7 +81,7 @@ RSpec.describe PriceRulesController, type: :controller do
   describe 'update method' do
 
     before(:each) do
-      admin = create :user, :admin_user
+      admin = create :user, :admin
       session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
       session[:user_id] = admin.id
     end
@@ -109,7 +109,7 @@ RSpec.describe PriceRulesController, type: :controller do
   describe 'destroy method' do
 
     before(:each) do
-      admin = create :user, :admin_user
+      admin = create :user, :admin
       session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
       session[:user_id] = admin.id
     end
@@ -129,7 +129,7 @@ RSpec.describe PriceRulesController, type: :controller do
   describe 'check discount codes method' do
 
     before(:each) do
-      admin = create :user, :admin_user
+      admin = create :user, :admin
       session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
       session[:user_id] = admin.id
     end

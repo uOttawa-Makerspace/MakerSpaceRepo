@@ -14,19 +14,12 @@ FactoryBot.define do
       wallet { 1000 }
     end
 
-    trait :admin_user do
+    trait :admin do
       password { "asa32A353#" }
       role { "admin" }
       identity { "community_member" }
       gender { "Male" }
       wallet { 1000 }
-    end
-
-    trait :other_user do
-      password { "asa32A353#" }
-      role { "regular_user" }
-      identity { "community_member" }
-      gender { "Male" }
     end
 
     trait :student do

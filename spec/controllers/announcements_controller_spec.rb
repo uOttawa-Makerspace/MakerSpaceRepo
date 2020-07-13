@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe AnnouncementsController, type: :controller do
   before(:all) do
-    @admin = create(:user, :admin_user)
+    @admin = create(:user, :admin)
     @announcement_admin = create(:announcement, :admin)
     @announcement_all = create(:announcement, :all)
     @announcement_volunteer = create(:announcement, :volunteer)

@@ -17,7 +17,7 @@ RSpec.describe PrintersController, type: :controller do
 
       it 'should create a Printer Session' do
         create :user, :regular_user
-        admin = create(:user, :admin_user)
+        admin = create(:user, :admin)
         session[:user_id] = admin.id
         patch :link_printer_to_user, params: {printer: {user_id: 1, printer_id: 1}}
         expect(flash[:notice]).to eq("Printer Session Created")
@@ -34,7 +34,7 @@ RSpec.describe PrintersController, type: :controller do
 
       it 'should fail creating the print session' do
         create :user, :regular_user
-        admin = create(:user, :admin_user)
+        admin = create(:user, :admin)
         session[:user_id] = admin.id
         patch :link_printer_to_user, params: {printer: {user_id: 1, printer_id: ""}}
         expect(flash[:alert]).to eq("Please add both printer and user.")
@@ -59,7 +59,7 @@ RSpec.describe PrintersController, type: :controller do
 
       it 'should setup all variables for staff_printers_updates' do
         create :user, :regular_user
-        admin = create(:user, :admin_user)
+        admin = create(:user, :admin)
         session[:user_id] = admin.id
         get :staff_printers_updates
         expect(response).to have_http_status(:success)
@@ -71,7 +71,7 @@ RSpec.describe PrintersController, type: :controller do
 
       it 'should create all the variables for staff_printers' do
         create :user, :regular_user
-        admin = create(:user, :admin_user)
+        admin = create(:user, :admin)
         session[:user_id] = admin.id
         um2p_session = create(:printer_session, :um2p_session)
         um3_session = create(:printer_session, :um3_session)

@@ -19,7 +19,7 @@ RSpec.describe PrintOrdersController, type: :controller do
 
     context 'admin' do
       it 'should return a 200' do
-        admin = create(:user, :admin_user)
+        admin = create(:user, :admin)
         create :user, :regular_user
         create(:print_order)
         session[:user_id] = admin.id
