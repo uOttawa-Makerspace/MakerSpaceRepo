@@ -480,16 +480,12 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return status 1' do
-        user = create(:user, :regular_user)
-        create(:certification, :three_d, user_id: user.id)
-        create(:certification, :basic, user_id: user.id)
+        user = create(:user, :regular_user_with_certifications)
         expect(user.return_program_status).to eq(1)
       end
 
       it 'should return status 2' do
-        user = create(:user, :regular_user)
-        create(:certification, :three_d, user_id: user.id)
-        create(:certification, :basic, user_id: user.id)
+        user = create(:user, :regular_user_with_certifications)
         Program.create(user_id: user.id, program_type: Program::VOLUNTEER)
         expect(user.return_program_status).to eq(2)
       end
@@ -502,9 +498,7 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return status 3' do
-        user = create(:user, :regular_user)
-        create(:certification, :three_d, user_id: user.id)
-        create(:certification, :basic, user_id: user.id)
+        user = create(:user, :regular_user_with_certifications)
         Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
         expect(user.return_program_status).to eq(3)
       end
@@ -517,9 +511,7 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return status 4' do
-        user = create(:user, :regular_user)
-        create(:certification, :three_d, user_id: user.id)
-        create(:certification, :basic, user_id: user.id)
+        user = create(:user, :regular_user_with_certifications)
         Program.create(user_id: user.id, program_type: Program::VOLUNTEER)
         Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
         expect(user.return_program_status).to eq(4)

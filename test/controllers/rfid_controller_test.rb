@@ -86,7 +86,6 @@ class RfidControllerTest < ActionController::TestCase
 
     lab_session = LabSession.where(user_id: rfid.user_id, space_id: raspi.space.id).last
     rfid_status = JSON.parse(response.body)['success']
-
     assert rfid_status == 'RFID sign out' # this is what the raspberry pi recieves
     assert lab_session.present?
     assert lab_session.sign_out_time < Time.zone.now

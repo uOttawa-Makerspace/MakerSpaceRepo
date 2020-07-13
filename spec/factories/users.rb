@@ -14,6 +14,17 @@ FactoryBot.define do
       gender { "Male" }
     end
 
+    trait :regular_user_with_certifications do
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+      role { "regular_user" }
+      identity { "community_member" }
+      gender { "Male" }
+      after(:create) do |user|
+        create(:certification, :three_d, user_id: user.id)
+        create(:certification, :basic, user_id: user.id)
+      end
+    end
+
     trait :regular_user_with_avatar do
       password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "regular_user" }
