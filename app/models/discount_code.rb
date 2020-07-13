@@ -39,7 +39,7 @@ class DiscountCode < ApplicationRecord
 
   def delete_discount_code_from_shopify
     DiscountCode.start_session
-    shopify_discount_code = ShopifyAPI::DiscountCode.find(shopify_discount_code_id)
+    shopify_discount_code = ShopifyAPI::DiscountCode.where(id: shopify_discount_code_id, price_rule_id: price_rule.shopify_price_rule_id).last
     shopify_discount_code.destroy
   end
 end
