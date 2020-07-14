@@ -1,8 +1,6 @@
-require 'faker'
-
 FactoryBot.define do
-
   factory :space do
+    name { Faker::Name.unique.name }
 
     trait :makerspace do
       id { 1 }
@@ -10,7 +8,6 @@ FactoryBot.define do
     end
 
     trait :makerspace_with_lab_session do
-
       before(:create) do
         create(:user, :regular_user)
       end
@@ -27,8 +24,6 @@ FactoryBot.define do
       id { 2 }
       name { "Brunsfield" }
     end
-
   end
-
 end
 

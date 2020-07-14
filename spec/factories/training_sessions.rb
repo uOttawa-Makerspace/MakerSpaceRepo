@@ -1,10 +1,9 @@
-require 'faker'
-
 FactoryBot.define do
-
   factory :training_session do
-    level { "Beginner" }
     association :user, :admin
+    level { "Beginner" }
+    association :space
+    association :training
 
     trait :normal do
       association :space, :makerspace

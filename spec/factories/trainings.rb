@@ -1,5 +1,7 @@
 FactoryBot.define do
   factory :training do
+    name { Faker::Name.unique.name }
+
     trait :test do
       name { "Test" }
     end
