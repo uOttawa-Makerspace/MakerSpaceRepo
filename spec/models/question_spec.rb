@@ -37,4 +37,10 @@ RSpec.describe Question, type: :model do
       end
     end
   end
+
+  describe 'Methods' do
+    context '#response_for_exam' do
+
+    end
+  end
 end
