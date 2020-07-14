@@ -122,8 +122,9 @@ class RepositoriesController < SessionsController
 
   def add_like # MAKE A LIKE CONTROLLER TO PUT THIS IN
     @repository.likes.create!(user_id: @user.id)
-    repo_user = @repository.user
-    repo_user.increment!(:reputation, 5)
+    @repository.users.each do |u|
+      u.increment!(:reputation, 5)
+    end
     render json: {like: @repository.like, rep: repo_user.reputation}
   rescue StandardError
     render json: {failed: true}

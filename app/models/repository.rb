@@ -2,6 +2,7 @@
 
 class Repository < ApplicationRecord
   include BCrypt
+  require 'bcrypt'
 
   has_and_belongs_to_many :users
   belongs_to :project_proposal
@@ -66,8 +67,8 @@ class Repository < ApplicationRecord
   end
 
   def pword=(new_password)
-    @pword = Password.create(new_password)
-    self.password = @pword
+    pass = BCrypt::Password.create(new_password)
+    self.password = pass
   end
 
   def self.to_csv(attributes)

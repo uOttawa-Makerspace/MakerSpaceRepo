@@ -7,7 +7,7 @@ FactoryBot.define do
     youtube_link { "" }
 
     trait :private do
-      password { "$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2" } # Password : ABC
+      password { "$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2" } # Password : abc
       share_type { "private" }
     end
 
