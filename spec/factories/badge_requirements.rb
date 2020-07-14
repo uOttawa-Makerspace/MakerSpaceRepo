@@ -4,7 +4,7 @@ FactoryBot.define do
 
   factory :badge_requirement do
 
-    trait :three_d_printing do
+    trait :'3d_printing' do
       badge_template_id { 1 }
     end
 

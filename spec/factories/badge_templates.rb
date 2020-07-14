@@ -1,10 +1,8 @@
-require 'faker'
-
 FactoryBot.define do
 
   factory :badge_template do
 
-    trait :three_d_printing do
+    trait :'3d_printing' do
       id { 1 }
       acclaim_template_id { '7fc521fa-00s4-4ase-a7f6-902802262e3b' }
       badge_description { 'The badge earner has demonstrated their ability to understand and apply the basic rules for 3D printing an object, how to slice a 3D model and start a print on the machine. || Le porteur a démontré sa capacité à comprendre et à appliquer les règles de base lors de l’impression 3D d’un objet; comment trancher son modèle et l’utilisation de l’imprimante afin de réaliser son objet.' }

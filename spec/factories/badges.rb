@@ -4,7 +4,7 @@ FactoryBot.define do
 
   factory :badge do
 
-    trait :three_d_printing do
+    trait :'3d_printing' do
       issued_to { Faker::Lorem.word }
       acclaim_badge_id { 'dc2f214f-3c2e-4455-sa72-ba5d523e830f' }
       badge_template_id { 1 }
