@@ -47,7 +47,7 @@ class Repository < ApplicationRecord
   end
 
   before_destroy do
-    users do |u|
+    users.each do |u|
       u.decrement!(:reputation, 25)
     end
   end

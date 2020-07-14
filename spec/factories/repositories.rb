@@ -4,10 +4,19 @@ FactoryBot.define do
     description { Faker::Lorem.paragraph }
     share_type { "public" }
     user_username { "Bob" }
+    youtube_link { "" }
 
     trait :private do
-      password { "abc" }
+      password { "$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2" } # Password : ABC
       share_type { "private" }
+    end
+
+    trait :broken_link do
+      youtube_link { "https://google.ca" }
+    end
+
+    trait :working_link do
+      youtube_link { "https://www.youtube.com/watch?v=AbcdeFGHIJLK" }
     end
 
     factory :repository_with_users do
