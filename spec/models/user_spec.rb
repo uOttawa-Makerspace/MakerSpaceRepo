@@ -379,8 +379,10 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return makerspace' do
-        create(:space, :makerspace_with_lab_session)
-        expect(User.last.location).to eq("makerspace")
+        user = create(:user, :regular_user)
+        space = create(:space)
+        LabSession.create(user: user, space: space)
+        expect(user.location).to eq(space.name)
       end
     end
 
@@ -475,7 +477,7 @@ RSpec.describe User, type: :model do
 
       it 'should return status 0' do
         user = create(:user, :regular_user)
-        create(:space, :makerspace)
+        create(:space)
         expect(user.return_program_status).to eq(0)
       end
 
