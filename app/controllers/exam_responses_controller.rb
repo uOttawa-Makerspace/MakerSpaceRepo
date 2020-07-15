@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 class ExamResponsesController < ApplicationController
   before_action :current_user
   before_action :grant_access
@@ -18,20 +16,20 @@ class ExamResponsesController < ApplicationController
       response.save!
     end
     respond_to do |format|
-      format.js { render nothing: true }
+      format.js { head :no_content }
     end
   end
 
   private
 
-  def grant_access
-    unless Exam.find(exam_response_params[:exam_id]).user.eql?(current_user)
-      flash[:danger] = 'Do not try this'
-      redirect_to :root
+    def grant_access
+      unless Exam.find(exam_response_params[:exam_id]).user.eql?(current_user)
+        flash[:alert] = 'Do not try this'
+        redirect_to :root
+      end
     end
-  end
 
-  def exam_response_params
-    params.permit(:answer_id, :exam_id, :response_id)
-  end
+    def exam_response_params
+      params.permit(:answer_id, :exam_id, :response_id)
+    end
 end
