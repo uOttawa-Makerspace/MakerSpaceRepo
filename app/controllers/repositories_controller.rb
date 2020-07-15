@@ -239,9 +239,9 @@ class RepositoriesController < SessionsController
   end
 
   def update_photos
-    if params['deleteimages'].present?
+    if params[:deleteimages].present?
       @repository.photos.each do |img|
-        if params['deleteimages'].include?(img.image.filename.to_s) # checks if the file should be deleted
+        if params[:deleteimages].include?(img.image.filename.to_s) # checks if the file should be deleted
           img.image.purge
           img.destroy
         end

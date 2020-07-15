@@ -14,11 +14,9 @@ FactoryBot.define do
     end
 
     trait :with_repo_files do
-      after(:build) do |repo|
-        file1 = RepoFile.create(repository_id: repo.id)
-        file1.file.attach(io: File.open(Rails.root.join('spec', 'support', 'assets', 'RepoFile1.pdf')), filename: 'RepoFile1.pdf', content_type: 'application/pdf')
-        file2 = RepoFile.create(repository_id: repo.id)
-        file2.file.attach(io: File.open(Rails.root.join('spec', 'support', 'assets', 'RepoFile2.pdf')), filename: 'RepoFile2.pdf', content_type: 'application/pdf')
+      after(:create) do |repo|
+        RepoFile.create(repository_id: repo.id, file: fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf'))
+        Photo.create(repository_id: repo.id, image: fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png'))
       end
     end
 
