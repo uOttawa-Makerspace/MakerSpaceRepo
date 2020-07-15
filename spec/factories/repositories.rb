@@ -1,3 +1,5 @@
+include ActionDispatch::TestProcess
+
 FactoryBot.define do
   factory :repository do
     title { Faker::Lorem.unique.word }
@@ -20,8 +22,17 @@ FactoryBot.define do
       end
     end
 
+    trait :with_equipement_and_categories do
+      categories { ['Laser', '3D Printing'] }
+      equipments { ['Laser Cutter', '3D Printer'] }
+    end
+
     trait :broken_link do
       youtube_link { "https://google.ca" }
+    end
+
+    trait :broken do
+      title { "$$$" }
     end
 
     trait :working_link do

@@ -114,6 +114,26 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
       end
 
+      it 'should create a repository with images and files' do
+        repo_params = FactoryBot.attributes_for(:repository)
+        expect { post :create, params: {user_username: User.last.username, repository: repo_params, files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')]} }.to change(Repository, :count).by(1)
+        expect(Repository.last.users.first.id).to eq(User.last.id)
+        expect(User.last.reputation).to eq(25)
+        expect(RepoFile.count).to eq(1)
+        expect(Photo.count).to eq(1)
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+      end
+
+      it 'should create a repository with categories and equipements' do
+        repo_params = FactoryBot.attributes_for(:repository, :with_equipement_and_categories)
+        expect { post :create, params: {user_username: User.last.username, repository: repo_params} }.to change(Repository, :count).by(1)
+        expect(Repository.last.users.first.id).to eq(User.last.id)
+        expect(User.last.reputation).to eq(25)
+        expect(Repository.last.categories.count).to eq(2)
+        expect(Repository.last.equipments.count).to eq(2)
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+      end
+
       it 'should create a private repository' do
         repo_params = FactoryBot.attributes_for(:repository, :private)
         expect { post :create, params: {user_username: User.last.username, repository: repo_params} }.to change(Repository, :count).by(1)
@@ -121,6 +141,13 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(User.last.reputation).to eq(25)
         expect(Repository.last.password).not_to be_nil
         expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+      end
+
+      it 'should fail to create a repository' do
+        repo_params = FactoryBot.attributes_for(:repository, :broken)
+        expect { post :create, params: {user_username: User.last.username, repository: repo_params} }.to change(Repository, :count).by(0)
+        expect(User.last.reputation).to eq(0)
+        expect(response).to have_http_status(:unprocessable_entity)
       end
 
     end
@@ -140,6 +167,15 @@ RSpec.describe RepositoriesController, type: :controller do
         create(:repository)
         patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, repository: {title: "abc"}}
         expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+        expect(flash[:notice]).to eq('Project updated successfully!')
+      end
+
+      it 'should update the repository with photos and files' do
+        create(:repository)
+        patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, repository: {title: "abc"}, files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')]}
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+        expect(RepoFile.count).to eq(1)
+        expect(Photo.count).to eq(1)
         expect(flash[:notice]).to eq('Project updated successfully!')
       end
 
@@ -266,7 +302,6 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(flash[:notice]).to eq('This Repository was linked to the selected Project Proposal')
         expect(Repository.last.project_proposal_id).to eq(pp.id)
       end
-
     end
     
   end

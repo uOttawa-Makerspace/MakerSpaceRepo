@@ -158,11 +158,10 @@ class RepositoriesController < SessionsController
     repository.project_proposal_id = project_proposal_id
     if repository.save
       flash[:notice] = 'This Repository was linked to the selected Project Proposal'
-      redirect_back(fallback_location: root_path)
     else
       flash[:alert] = 'Something went wrong.'
-      redirect_back(fallback_location: root_path)
     end
+    redirect_back(fallback_location: root_path)
   end
 
   def add_owner
@@ -171,11 +170,10 @@ class RepositoriesController < SessionsController
     repository.users << User.find(owner_id)
     if repository.save
       flash[:notice] = 'This owner was added to your repository'
-      redirect_back(fallback_location: root_path)
     else
       flash[:alert] = 'Something went wrong.'
-      redirect_back(fallback_location: root_path)
     end
+    redirect_back(fallback_location: root_path)
   end
 
   def remove_owner
@@ -184,11 +182,10 @@ class RepositoriesController < SessionsController
     owner = User.find(owner_id)
     if repository.users.delete(owner)
       flash[:notice] = 'This owner was removed from your repository'
-      redirect_back(fallback_location: root_path)
     else
       flash[:alert] = 'Something went wrong.'
-      redirect_back(fallback_location: root_path)
     end
+    redirect_back(fallback_location: root_path)
   end
 
   private
@@ -225,8 +222,8 @@ class RepositoriesController < SessionsController
   end
 
   def create_photos
-    if params['images'].present?
-      params['images'].first(5).each do |img|
+    if params[:images].present?
+      params[:images].first(5).each do |img|
         dimension = FastImage.size(img.tempfile)
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end
@@ -234,8 +231,8 @@ class RepositoriesController < SessionsController
   end
 
   def create_files
-    if params['files'].present?
-      params['files'].each do |f|
+    if params[:files].present?
+      params[:files].each do |f|
         RepoFile.create(file: f, repository_id: @repository.id)
       end
     end
@@ -279,16 +276,16 @@ class RepositoriesController < SessionsController
   end
 
   def create_categories
-    if params['categories'].present?
-      params['categories'].first(5).each do |c|
+    if params[:repository][:categories].present?
+      params[:repository][:categories].first(5).each do |c|
         Category.create(name: c, repository_id: @repository.id)
       end
     end
   end
 
   def create_equipments
-    if params['equipments'].present?
-      params['equipments'].first(5).each do |e|
+    if params[:repository][:equipments].present?
+      params[:repository][:equipments].first(5).each do |e|
         Equipment.create(name: e, repository_id: @repository.id)
       end
     end
