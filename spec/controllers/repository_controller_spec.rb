@@ -35,6 +35,23 @@ RSpec.describe RepositoriesController, type: :controller do
 
   end
 
+  describe "#download_fles" do
+
+    context "Download ZIP" do
+
+      it 'should create the zip' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        repo = create(:repository, :with_repo_files)
+        get :download_files, params: {slug: Repository.last.slug, user_username: Repository.last.user_username}
+        expect { File.open("#{Rails.root}/public/tmp/makerepo_file_#{repo.id.to_s}.zip") }.to_not raise_error(Errno::ENOENT)
+      end
+
+    end
+    
+  end
+
   describe "#new" do
 
     context "new" do
@@ -189,7 +206,52 @@ RSpec.describe RepositoriesController, type: :controller do
     end
     
   end
-  
+
+  describe "#password_entry" do
+
+    context "password_entry" do
+
+      it 'should get the password page' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        create(:repository, :private)
+        get :password_entry, params: {user_username: User.last.username, slug: Repository.last.slug}
+        expect(response).to have_http_status(:success)
+      end
+
+    end
+
+  end
+
+  describe "#pass_authenticate" do
+
+    context "pass_authenticate" do
+
+      it 'should go back to the password page' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        create(:repository, :private)
+        get :pass_authenticate, params: {user_username: User.last.username, slug: Repository.last.slug, password: ""}
+        expect(response).to redirect_to password_entry_repository_path(Repository.last.user_username, Repository.last.slug)
+        expect(flash[:alert]).to eq('Incorrect password. Try again!')
+      end
+
+      it 'should go to the authenticate user and go the repo page' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        create(:repository, :private)
+        get :pass_authenticate, params: {user_username: User.last.username, slug: Repository.last.slug, password: "abc"}
+        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.slug)
+        expect(flash[:notice]).to eq('Success')
+      end
+
+    end
+
+  end
+
   describe "#link_to_pp" do
 
     context "Link to PP" do
@@ -207,6 +269,43 @@ RSpec.describe RepositoriesController, type: :controller do
 
     end
     
+  end
+
+  describe "#add_owner" do
+
+    context "Add Owner" do
+
+      it 'add owner' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        repo = create(:repository)
+        post :add_owner, params: {user_username: user.username, repo_owner: {repository_id: repo.id, owner_id: user.id}}
+        expect(flash[:notice]).to eq('This owner was added to your repository')
+        expect(Repository.last.users.first.id).to eq(user.id)
+      end
+
+    end
+
+  end
+
+  describe "#remove_owner" do
+
+    context "Remove Owner" do
+
+      it 'remove owner' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        repo = create(:repository)
+        post :add_owner, params: {user_username: user.username, repo_owner: {repository_id: repo.id, owner_id: user.id}}
+        post :remove_owner, params: {user_username: user.username, repo_owner: {repository_id: repo.id, owner_id: user.id}}
+        expect(flash[:notice]).to eq('This owner was removed from your repository')
+        expect(Repository.last.users).not_to eq(user.id)
+      end
+
+    end
+
   end
 
 end

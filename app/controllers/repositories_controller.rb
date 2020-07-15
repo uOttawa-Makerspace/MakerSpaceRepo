@@ -1,4 +1,5 @@
 class RepositoriesController < SessionsController
+  include BCrypt
   before_action :current_user, :check_session
   before_action :signed_in, except: %i[index show download download_files]
   before_action :set_repository, only: %i[show add_like destroy edit update download_files check_auth pass_authenticate]
@@ -20,12 +21,12 @@ class RepositoriesController < SessionsController
     @all_users = User.where.not(id: @owners.pluck(:id)).pluck(:name, :id)
   end
 
-  def download
-    url = "http://s3-us-west-2.amazonaws.com/uottawa-makerspace#{params[:file]}"
-    data = open(url)
-    send_data data.read, type: data.content_type, filename: File.basename(url), x_sendfile: true
-  end
-
+  # Not used anymore
+  # def download
+  #  url = "http://s3-us-west-2.amazonaws.com/uottawa-makerspace#{params[:file]}"
+  #  data = open(url)
+  #  send_data data.read, type: data.content_type, filename: File.basename(url), x_sendfile: true
+  # end
 
   def download_files
 
@@ -82,6 +83,7 @@ class RepositoriesController < SessionsController
     @repository.user_id = @user.id
     @repository.users << @user
     @repository.user_username = @user.username
+    update_password
 
     if @repository.save
       @user.increment!(:reputation, 25)
@@ -99,6 +101,7 @@ class RepositoriesController < SessionsController
     @repository.categories.destroy_all
     @repository.equipments.destroy_all
     update_password
+
     if @repository.update(repository_params)
       update_photos
       update_files
@@ -292,13 +295,13 @@ class RepositoriesController < SessionsController
   end
 
   def update_password
-    if repository_params['share_type'].eql?('public')
+    if repository_params[:share_type].eql?('public')
       @repository.password = nil
       @repository.save
     else
-      if params['password'].present?
-        @repository.pword = params['password']
-        @repository.save
+      if params[:password].present?
+        pass = params[:password].join("")
+        @repository.update(password: BCrypt::Password.create(pass))
       end
     end
   end

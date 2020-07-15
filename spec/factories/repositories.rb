@@ -11,6 +11,15 @@ FactoryBot.define do
       share_type { "private" }
     end
 
+    trait :with_repo_files do
+      after(:build) do |repo|
+        file1 = RepoFile.create(repository_id: repo.id)
+        file1.file.attach(io: File.open(Rails.root.join('spec', 'support', 'assets', 'RepoFile1.pdf')), filename: 'RepoFile1.pdf', content_type: 'application/pdf')
+        file2 = RepoFile.create(repository_id: repo.id)
+        file2.file.attach(io: File.open(Rails.root.join('spec', 'support', 'assets', 'RepoFile2.pdf')), filename: 'RepoFile2.pdf', content_type: 'application/pdf')
+      end
+    end
+
     trait :broken_link do
       youtube_link { "https://google.ca" }
     end
