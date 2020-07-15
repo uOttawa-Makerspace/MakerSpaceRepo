@@ -44,10 +44,11 @@ RSpec.describe Repository, type: :model do
   describe "Validations" do
 
     context "title" do
+      subject { build :repository }
       it { should_not allow_value("gds%%$32").for(:title).with_message("Invalid project title") }
       it { should allow_value("johndoe").for(:title) }
       it { should validate_presence_of(:title).with_message("Project title is required.") }
-        #it { should validate_uniqueness_of(:title).scoped_to(:user_username).with_message("Project title is already in use.") }
+      it { should validate_uniqueness_of(:title).scoped_to(:user_username).with_message("Project title is already in use.") }
     end
 
     context "share type" do
