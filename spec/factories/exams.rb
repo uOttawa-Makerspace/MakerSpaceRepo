@@ -11,7 +11,7 @@ FactoryBot.define do
         exam_questions_count { 4 }
       end
       after(:create) do |exam, evaluator|
-        create_list(:exam_question, evaluator.exam_questions_count, exam: exam)
+        create_list(:exam_question, evaluator.exam_questions_count, :with_question_and_answers, exam: exam)
       end
     end
 
