@@ -17,6 +17,15 @@ FactoryBot.define do
     trait :basic_training do
       name { "Basic Training" }
     end
+
+    factory :training_with_questions do
+      transient do
+        question_count { 4 }
+      end
+      after(:create) do |training, evaluator|
+        create_list(:question, evaluator.question_count, trainings: [training])
+      end
+    end
   end
 end
 
