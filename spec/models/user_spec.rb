@@ -379,8 +379,10 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return makerspace' do
-        create(:space, :makerspace_with_lab_session)
-        expect(User.last.location).to eq("makerspace")
+        user = create(:user, :regular_user)
+        space = create(:space)
+        LabSession.create(user: user, space: space)
+        expect(user.location).to eq(space.name)
       end
     end
 
@@ -456,17 +458,17 @@ RSpec.describe User, type: :model do
     context '#remaining_trainings' do
 
       it 'should get the two remaining trainings' do
-        create(:user, :admin)
-        create(:training, :test)
-        create(:training, :test2)
-        expect(User.last.remaining_trainings.ids).to eq([1,2])
+        user = create(:user, :admin)
+        training1 = create(:training, :test)
+        training2 = create(:training, :test2)
+        expect(user.remaining_trainings.ids).to eq([training1.id,training2.id])
       end
 
       it 'should get the remaining training' do
         user = create(:user, :admin)
-        create(:training, :test2)
+        training = create(:training, :test2)
         create(:certification, :first, user_id: user.id)
-        expect(user.remaining_trainings.ids).to eq([2])
+        expect(user.remaining_trainings.ids).to eq([training.id])
       end
 
     end
@@ -475,7 +477,7 @@ RSpec.describe User, type: :model do
 
       it 'should return status 0' do
         user = create(:user, :regular_user)
-        create(:space, :makerspace)
+        create(:space)
         expect(user.return_program_status).to eq(0)
       end
 
@@ -492,8 +494,8 @@ RSpec.describe User, type: :model do
 
       it 'should return status 2' do
         volunteer = create(:user, :volunteer)
-        create(:certification, :three_d, user_id: volunteer.id)
-        create(:certification, :basic, user_id: volunteer.id)
+        create(:certification, :'3d_printing', user_id: volunteer.id)
+        create(:certification, :basic_training, user_id: volunteer.id)
         expect(volunteer.return_program_status).to eq(2)
       end
 
@@ -505,8 +507,8 @@ RSpec.describe User, type: :model do
 
       it 'should return status 4' do
         volunteer = create(:user, :volunteer_with_dev_program)
-        create(:certification, :three_d, user_id: volunteer.id)
-        create(:certification, :basic, user_id: volunteer.id)
+        create(:certification, :'3d_printing', user_id: volunteer.id)
+        create(:certification, :basic_training, user_id: volunteer.id)
         expect(volunteer.return_program_status).to eq(4)
       end
 
@@ -522,28 +524,28 @@ RSpec.describe User, type: :model do
     context '#has_required_badges?' do
 
       before :each do
-        create(:badge_template, :three_d_printing)
+        create(:badge_template, :'3d_printing')
         create(:badge_template, :laser_cutting)
         create(:badge_template, :arduino)
       end
 
       it 'should be false' do
         user = create(:user, :regular_user)
-        create(:badge_requirement, :three_d_printing)
+        create(:badge_requirement, :'3d_printing')
         expect(user.has_required_badges?(BadgeRequirement.all)).to be_falsey
       end
 
       it 'should be true' do
         user = create(:user, :regular_user)
-        create(:badge, :three_d_printing, user_id: user.id)
-        create(:badge_requirement, :three_d_printing)
+        create(:badge, :'3d_printing', user_id: user.id)
+        create(:badge_requirement, :'3d_printing')
         expect(user.has_required_badges?(BadgeRequirement.all)).to be_truthy
       end
 
       it 'should be true' do
         user = create(:user, :regular_user)
-        create(:badge, :three_d_printing, user_id: user.id)
-        create(:badge_requirement, :three_d_printing)
+        create(:badge, :'3d_printing', user_id: user.id)
+        create(:badge_requirement, :'3d_printing')
         create(:badge, :laser_cutting, user_id: user.id)
         create(:badge_requirement, :laser_cutting)
         create(:badge, :arduino, user_id: user.id)
