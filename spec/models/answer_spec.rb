@@ -13,10 +13,6 @@ RSpec.describe Answer, type: :model do
         expect(answer.correct).to eq(true)
       end
     end
-
-    context 'has_many' do
-      it { should have_many(:exam_responses) }
-    end
   end
 
   describe 'Association' do
