@@ -188,9 +188,10 @@ RSpec.describe RepositoriesController, type: :controller do
       it 'should create a private repository' do
         create(:repository, :private)
         old_pass = Repository.last.password
-        patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, repository: {title: "abc", password: "abcd"}}
+        patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, password: ["abcd"], repository: {title: "abc"}}
         expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
         expect(Repository.last.password).not_to eq(old_pass)
+        expect(BCrypt::Password.new(Repository.last.password) == "abcd").to be_truthy
         expect(flash[:notice]).to eq('Project updated successfully!')
       end
 
