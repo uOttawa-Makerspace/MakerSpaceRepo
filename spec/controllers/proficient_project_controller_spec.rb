@@ -207,6 +207,23 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
   end
 
+  describe "#open_modal" do
+
+    context "open modal" do
+
+      it 'should open modal' do
+        user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        create(:proficient_project)
+        get :open_modal, format: "js", params: {id: ProficientProject.last.id}
+        expect(response).to have_http_status(:success)
+      end
+
+    end
+
+  end
+
 end
 
 
