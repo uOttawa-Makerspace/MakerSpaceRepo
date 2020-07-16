@@ -33,6 +33,10 @@ FactoryBot.define do
       proficient { false }
     end
 
+    trait :with_badge do
+      association :badge_template, :arduino
+    end
+
     trait :with_badge_requirements do
       after :create do |pp|
         create(:badge_template, :'3d_printing')

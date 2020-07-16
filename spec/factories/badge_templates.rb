@@ -17,7 +17,6 @@ FactoryBot.define do
     end
 
     trait :arduino do
-      id { 3 }
       acclaim_template_id { 'd36b6e25-732b-43b1-a40e-b254207c734d' }
       badge_description { 'The earner has developed the applied skills of writing simple control logic commands that will help control a variety of inputs and outputs connected to an Arduino Uno microcontroller. || Le porteur a développé les compétences nécessaires afin d’écrire des commandes logiques de contrôle simples leur permettant de contrôler diverses entrées et sorties connectées à un microcontrôleur Arduino.' }
       badge_name { 'Beginner - Arduino || Débutant - Arduino' }

@@ -22,9 +22,9 @@ RSpec.describe Order, type: :model do
     context "set_order_status" do
 
       it 'should set the order status' do
-        OrderStatus.create(name: "In progress")
+        status = OrderStatus.create(name: "In progress")
         create(:order)
-        expect(Order.last.order_status_id).to eq(1)
+        expect(Order.last.order_status_id).to eq(status.id)
       end
 
     end
