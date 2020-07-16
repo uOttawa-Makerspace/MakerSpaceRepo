@@ -5,10 +5,6 @@ FactoryBot.define do
     association :training
     level { "Beginner" }
 
-    trait :normal do
-      association :training, :test
-    end
-
     trait :'3d_printing' do
       association :training, :'3d_printing'
     end

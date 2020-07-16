@@ -425,9 +425,9 @@ RSpec.describe User, type: :model do
 
       it 'should get all certifications' do
         user = create(:user, :admin)
-        create(:training, :test2)
-        create(:certification, :first, user_id: user.id)
-        expect(user.get_certifications_names).to eq(['Test'])
+        certification = create(:certification, user_id: user.id)
+        training = certification.training
+        expect(user.get_certifications_names).to eq([training.name])
       end
     end
 
@@ -443,13 +443,13 @@ RSpec.describe User, type: :model do
 
       it 'should get badge called none' do
         user = create(:user, :admin)
-        training = create(:training, :test)
+        training = create(:training)
         expect(user.get_badges(training.id)).to eq('badges/none.png')
       end
 
       it 'should get badge called bronze' do
         user = create(:user, :regular_user)
-        create(:certification, :first, user_id: user.id)
+        create(:certification, user_id: user.id)
         expect(user.get_badges(Training.last.id)).to eq('badges/bronze.png')
       end
 
@@ -459,15 +459,15 @@ RSpec.describe User, type: :model do
 
       it 'should get the two remaining trainings' do
         user = create(:user, :admin)
-        training1 = create(:training, :test)
-        training2 = create(:training, :test2)
+        training1 = create(:training)
+        training2 = create(:training)
         expect(user.remaining_trainings.ids).to eq([training1.id,training2.id])
       end
 
       it 'should get the remaining training' do
         user = create(:user, :admin)
-        training = create(:training, :test2)
-        create(:certification, :first, user_id: user.id)
+        training = create(:training)
+        create(:certification, user_id: user.id)
         expect(user.remaining_trainings.ids).to eq([training.id])
       end
 
