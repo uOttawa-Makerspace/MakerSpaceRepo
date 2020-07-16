@@ -26,4 +26,11 @@ RSpec.describe Training, type: :model do
       end
     end
   end
+
+  describe 'Validations' do
+    context 'presence' do
+      it { should validate_presence_of(:name) }
+      it { should validate_uniqueness_of(:name) }
+    end
+  end
 end
