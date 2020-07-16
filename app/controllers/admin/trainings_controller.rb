@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 class Admin::TrainingsController < AdminAreaController
-  before_action :changed_training, only: %i[update destroy]
-
   layout 'admin_area'
+  before_action :changed_training, only: %i[update destroy]
+  before_action :set_spaces, only: %i[new edit]
 
   def index
     @trainings = Training.all.order(:name)
@@ -11,12 +9,10 @@ class Admin::TrainingsController < AdminAreaController
 
   def new
     @new_training = Training.new
-    @spaces = Space.all.order(:name)
   end
 
   def edit
     @training = Training.find(params[:id])
-    @spaces = Space.all.order(:name)
   end
 
   def create
@@ -46,11 +42,15 @@ class Admin::TrainingsController < AdminAreaController
 
   private
 
-  def training_params
-    params.require(:training).permit(:name, space_ids: [])
-  end
+    def training_params
+      params.require(:training).permit(:name, space_ids: [])
+    end
 
-  def changed_training
-    @changed_training = Training.find(params['id'])
-  end
+    def changed_training
+      @changed_training = Training.find(params['id'])
+    end
+
+    def set_spaces
+      @spaces ||= Space.order(:name)
+    end
 end
