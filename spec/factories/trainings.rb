@@ -27,6 +27,33 @@ FactoryBot.define do
         create_list(:space, evaluator.space_count, trainings: [training])
       end
     end
+
+    factory :training_with_training_sessions do
+      transient do
+        training_session_count { 7 }
+      end
+      after(:create) do |training, evaluator|
+        create_list(:training_session, evaluator.training_session_count, training: training)
+      end
+    end
+
+    factory :training_with_require_trainings do
+      transient do
+        require_training_count { 6 }
+      end
+      after(:create) do |training, evaluator|
+        create_list(:require_training, evaluator.require_training_count, training: training)
+      end
+    end
+
+    factory :training_with_proficient_projects do
+      transient do
+        proficient_project_count { 3 }
+      end
+      after(:create) do |training, evaluator|
+        create_list(:proficient_project, evaluator.proficient_project_count, training: training)
+      end
+    end
   end
 end
 
