@@ -63,7 +63,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         OrderStatus.create(name: "Completed", id: 2)
         create(:order_item, :awarded)
-        Order.last.update(user_id: user.id, order_status_id: 2)
+        Order.last.update(user_id: user.id)
         get :show, params: {id: ProficientProject.last.id}
         expect(response).to have_http_status(:success)
       end

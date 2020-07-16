@@ -131,7 +131,7 @@ RSpec.describe ProficientProject, type: :model do
         pp = create(:proficient_project)
         create(:badge_template, :laser_cutting)
         create(:badge_template, :arduino)
-        ProficientProject.find(pp.id).create_badge_requirements([2, 3])
+        ProficientProject.find(pp.id).create_badge_requirements([2, BadgeTemplate.last.id])
         expect(BadgeRequirement.where(proficient_project_id: pp.id).count).to eq(2)
       end
 

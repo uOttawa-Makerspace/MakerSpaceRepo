@@ -9,8 +9,17 @@ FactoryBot.define do
     quantity { 1 }
     status { "In progress" }
 
+    trait :order_in_progress do
+      association :order
+    end
+
     trait :awarded do
       status { "Awarded" }
+    end
+
+    trait :awarded_with_badge do
+      status { "Awarded" }
+      association :proficient_project, :with_badge
     end
 
   end

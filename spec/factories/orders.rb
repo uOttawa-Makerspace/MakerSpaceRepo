@@ -3,10 +3,11 @@ FactoryBot.define do
 
     subtotal { 50.000 }
     total { 50.000 }
-    order_status_id { 1 }
 
     trait :completed do
-      order_status_id { 2 }
+      after(:create) do |order|
+        order.update(order_status_id: OrderStatus.find_by_name("Completed").id)
+      end
     end
 
   end
