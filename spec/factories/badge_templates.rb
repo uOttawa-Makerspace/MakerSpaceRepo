@@ -1,7 +1,5 @@
 FactoryBot.define do
-
   factory :badge_template do
-
     trait :'3d_printing' do
       id { 1 }
       acclaim_template_id { '7fc521fa-00s4-4ase-a7f6-902802262e3b' }
@@ -25,9 +23,7 @@ FactoryBot.define do
       badge_name { 'Beginner - Arduino || Débutant - Arduino' }
       image_url { 'https://images.youracclaim.com/images/1c6b8766-cf74-4314-b5af-bce55cbbd863/3.png' }
     end
-
   end
-
 end
 
 

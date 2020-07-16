@@ -1,10 +1,7 @@
 FactoryBot.define do
   factory :certification do
     association :user, :regular_user
-
-    trait :first do
-      association :training_session, :normal
-    end
+    association :training_session
 
     trait :'3d_printing' do
       association :training_session, :'3d_printing'
