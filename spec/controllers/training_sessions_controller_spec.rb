@@ -2,9 +2,8 @@ require 'rails_helper'
 
 RSpec.describe Admin::TrainingSessionsController, type: :controller do
   before(:all) do
-    3.times { create(:training_session) }
     @admin = create(:user, :admin)
-    @training_session = TrainingSession.last
+    @training_session = create(:training_session)
   end
 
   before(:each) do
