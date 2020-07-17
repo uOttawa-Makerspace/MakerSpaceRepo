@@ -23,7 +23,7 @@ class TrainingSession < ApplicationRecord
   end
 
   def completed?
-    !certifications.empty?
+    certifications.any?
   end
 
   def levels
