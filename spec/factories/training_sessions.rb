@@ -4,6 +4,10 @@ FactoryBot.define do
     association :space
     association :training
 
+    trait :staff_user do
+      association :user, :staff
+    end
+
     trait :'3d_printing' do
       association :training, :'3d_printing'
     end

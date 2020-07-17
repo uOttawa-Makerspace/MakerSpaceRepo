@@ -26,7 +26,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
     if changed_params['user_id'].present?
       unless @user.admin?
         flash[:alert] = "You're not an admin."
-        redirect_back(fallback_location: root_path)
+        redirect_back(fallback_location: root_path) and return
       end
     end
 
