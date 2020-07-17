@@ -28,7 +28,8 @@ RSpec.describe TrainingSession, type: :model do
 
   describe 'Methods' do
     before(:all) do
-      @training_session = create(:training_session, created_at: DateTime.yesterday.beginning_of_day)
+      @training_session = create(:training_session, created_at: DateTime.yesterday.end_of_day)
+      3.times { create(:training_session, created_at: DateTime.now.end_of_day) }
     end
 
     context '#courses' do
@@ -79,17 +80,15 @@ RSpec.describe TrainingSession, type: :model do
 
     context '#between_dates_picked' do
       it 'should return no training sessions' do
-        create(:training_session, created_at: DateTime.tomorrow.end_of_day)
-        start_date = DateTime.yesterday.end_of_day
-        end_date = DateTime.now.end_of_day
-        expect(TrainingSession.between_dates_picked(start_date, end_date).count).to eq(0)
+        start_date = DateTime.yesterday.beginning_of_day
+        end_date = DateTime.yesterday.end_of_day
+        expect(TrainingSession.between_dates_picked(start_date, end_date).count).to eq(1)
       end
 
       it 'should return one training sessions' do
-        create(:training_session, created_at: DateTime.now.beginning_of_day)
-        start_date = DateTime.yesterday.end_of_day
-        end_date = DateTime.tomorrow.beginning_of_day
-        expect(TrainingSession.between_dates_picked(start_date, end_date).count).to eq(1)
+        start_date = DateTime.now.beginning_of_day
+        end_date = DateTime.tomorrow.end_of_day
+        expect(TrainingSession.between_dates_picked(start_date, end_date).count).to eq(3)
       end
     end
 
