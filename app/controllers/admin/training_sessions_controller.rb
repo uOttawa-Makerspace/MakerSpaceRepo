@@ -1,16 +1,15 @@
 # frozen_string_literal: true
 
 class Admin::TrainingSessionsController < AdminAreaController
+  layout 'admin_area'
   before_action :training_session_params, only: [:update]
   before_action :training_session, only: %i[update destroy]
-
-  layout 'admin_area'
 
   def index; end
 
   def update
-    @training_session.update(training_session_params)
-    if @training_session.save
+    # TODO: check where this is being used?
+    if @training_session.update(training_session_params)
       flash[:notice] = 'Updated Successfully'
       redirect_back(fallback_location: root_path)
     else
@@ -30,11 +29,11 @@ class Admin::TrainingSessionsController < AdminAreaController
 
   private
 
-  def training_session
-    @training_session = TrainingSession.find(params[:id])
-  end
+    def training_session
+      @training_session = TrainingSession.find(params[:id])
+    end
 
-  def training_session_params
-    params.require(:training_session).permit(:user_id).reject { |_, v| v.blank? }
-  end
+    def training_session_params
+      params.require(:training_session).permit(:user_id).reject { |_, v| v.blank? }
+    end
 end
