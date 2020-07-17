@@ -86,9 +86,9 @@ RSpec.describe TrainingSession, type: :model do
       end
 
       it 'should return one training sessions' do
-        start_date = DateTime.now.beginning_of_day
+        start_date = DateTime.yesterday.beginning_of_day
         end_date = DateTime.tomorrow.end_of_day
-        expect(TrainingSession.between_dates_picked(start_date, end_date).count).to eq(3)
+        expect(TrainingSession.between_dates_picked(start_date, end_date).count).to eq(4)
       end
     end
 
