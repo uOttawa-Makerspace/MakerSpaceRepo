@@ -7,12 +7,11 @@ class TrainingSession < ApplicationRecord
   has_many :certifications, dependent: :destroy
   has_many :exams, dependent: :destroy
   has_and_belongs_to_many :users, uniq: true
-
   validates :training, presence: { message: 'A training subject is required' }
   validates :user, presence: { message: 'A trainer is required' }
   validate :is_staff
-
   before_save :check_course
+  scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
 
   def is_staff
     errors.add(:string, 'user must be staff') unless user.staff?
@@ -39,6 +38,4 @@ class TrainingSession < ApplicationRecord
   def check_course
     self.course = nil if course == 'no course'
   end
-
-  scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
 end

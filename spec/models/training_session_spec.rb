@@ -7,9 +7,9 @@ RSpec.describe TrainingSession, type: :model do
     end
 
     context 'belongs_to' do
-      it { TrainingSession.reflect_on_association(:training).macro.should eq(:belongs_to) }
-      it { TrainingSession.reflect_on_association(:user).macro.should eq(:belongs_to) }
-      it { TrainingSession.reflect_on_association(:space).macro.should eq(:belongs_to) }
+      it { expect(TrainingSession.reflect_on_association(:training).macro).to eq(:belongs_to) }
+      it { expect(TrainingSession.reflect_on_association(:user).macro).to eq(:belongs_to) }
+      it { expect(TrainingSession.reflect_on_association(:space).macro).to eq(:belongs_to) }
     end
 
     context 'has_many' do
@@ -28,7 +28,7 @@ RSpec.describe TrainingSession, type: :model do
 
   describe 'Methods' do
     before(:all) do
-      @training_session = create(:training_session)
+      @training_session = create(:training_session, created_at: DateTime.yesterday.beginning_of_day)
     end
 
     context '#courses' do
@@ -46,6 +46,50 @@ RSpec.describe TrainingSession, type: :model do
       it 'should return true' do
         training_session = create(:training_session_with_certifications)
         expect(training_session.completed?).to eq(true)
+      end
+    end
+
+    context '#levels' do
+      it 'should return list of levels' do
+        levels = %w[Beginner Intermediate Advanced]
+        expect(@training_session.levels).to eq(levels)
+      end
+    end
+
+    context '#return_levels' do
+      it 'should return list of levels' do
+        levels = %w[Beginner Intermediate Advanced]
+        expect(TrainingSession.return_levels).to eq(levels)
+      end
+    end
+
+    context '#check_course' do
+      it 'should return course as nil' do
+        training_session = build(:training_session, course: 'no course')
+        training_session.send(:check_course)
+        expect(training_session.course).to eq(nil)
+      end
+
+      it 'should not return course as nil' do
+        training_session = build(:training_session, course: 'GNG2101')
+        training_session.send(:check_course)
+        expect(training_session.course).to eq('GNG2101')
+      end
+    end
+
+    context '#between_dates_picked' do
+      it 'should return no training sessions' do
+        create(:training_session, created_at: DateTime.tomorrow.end_of_day)
+        start_date = DateTime.yesterday.end_of_day
+        end_date = DateTime.now.end_of_day
+        expect(TrainingSession.between_dates_picked(start_date, end_date).count).to eq(0)
+      end
+
+      it 'should return one training sessions' do
+        create(:training_session, created_at: DateTime.now.beginning_of_day)
+        start_date = DateTime.yesterday.end_of_day
+        end_date = DateTime.tomorrow.beginning_of_day
+        expect(TrainingSession.between_dates_picked(start_date, end_date).count).to eq(1)
       end
     end
 
