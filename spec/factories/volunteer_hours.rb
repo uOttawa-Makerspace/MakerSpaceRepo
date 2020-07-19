@@ -16,6 +16,11 @@ FactoryBot.define do
       approval { false }
     end
 
+    trait :not_processed do
+      total_time { 10 }
+      approval { nil }
+    end
+
   end
 
 end
