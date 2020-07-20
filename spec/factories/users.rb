@@ -62,6 +62,19 @@ FactoryBot.define do
       role { "volunteer" }
       identity { "community_member" }
       gender { "Male" }
+      after(:create) do |volunteer|
+        Skill.create(user_id: volunteer.id, active: true)
+      end
+    end
+
+    trait :unactive_volunteer do
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+      role { "volunteer" }
+      identity { "community_member" }
+      gender { "Male" }
+      after(:create) do |volunteer|
+        Skill.create(user_id: volunteer.id, active: false)
+      end
     end
 
     trait :volunteer_with_volunteer_program do
