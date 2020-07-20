@@ -136,7 +136,7 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
     context 'logged as admin' do
       it 'should destroy the training session' do
         get :training_report, params: {:id => @training_session.id}, format: :xlsx
-        expect(response).to be_success
+        expect(response).to have_http_status(:success)
       end
     end
   end
