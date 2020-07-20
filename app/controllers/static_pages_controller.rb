@@ -7,8 +7,6 @@ class StaticPagesController < SessionsController
 
   def about; end
 
-  def admin; end
-
   def contact; end
 
   def terms_of_service; end
@@ -39,8 +37,8 @@ class StaticPagesController < SessionsController
 
   def report_repository
     repository = Repository.find params[:repository_id]
-    # MsrMailer.repo_report(repository).deliver
+    MsrMailer.repo_report(repository).deliver_now
     flash[:alert] = 'Repository has been reported'
-    redirect_to request.referer
+    redirect_back(fallback_location: root_path)
   end
 end

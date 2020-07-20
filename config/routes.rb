@@ -59,8 +59,8 @@ Rails.application.routes.draw do
   # STATIC PAGES
   namespace :static_pages, path: '/', as: nil do
     get 'forgot_password'
-    get 'reset_password'
-    get 'terms-of-service', as: 'tos'
+    patch 'reset_password'
+    get 'terms_of_service', as: 'tos'
     get 'hours'
     get 'about'
     get 'contact'
