@@ -30,23 +30,23 @@ class PrintOrdersController < ApplicationController
              end
     @table = if params[:type] == 'laser'
                [
-                 ['Laser - mdf 1/8" (Per Sheet)', prices[10], 20],
-                 ["Laser - mdf 1/4\" (Per Sheet)\t", prices[11], 20],
-                 ['Laser - acrylic 1/8" (Per Sheet)', prices[12], 20],
-                 ['Laser - acrylic 1/4" (Per Sheet)', prices[13], 20]
+                 ['Laser - mdf 1/8" (Per Sheet)', prices[10], 15],
+                 ["Laser - mdf 1/4\" (Per Sheet)\t", prices[11], 15],
+                 ['Laser - acrylic 1/8" (Per Sheet)', prices[12], 15],
+                 ['Laser - acrylic 1/4" (Per Sheet)', prices[13], 15]
                ]
              else
                [
-                 ['3D Low (PLA/ABS), (per g)', prices[0], 15],
-                 ['3D Medium (PLA/ABS), (per g)', prices[1], 15],
-                 ['3D High (PLA/ABS), (per g)', prices[2], 15],
-                 ['3D Low (Other Materials), (per g)', prices[3], 15],
-                 ['3D Medium (Other Materials), (per g)', prices[4], 15],
-                 ['3D High (Other Materials), (per g)', prices[5], 15],
-                 ['SST Printer (Per Hour)', prices[6], 15],
-                 ['M2 Onyx (per cm3)', prices[7], 15],
-                 ['M2 Carbon Fiber (per cm3)', prices[8], 15],
-                 ["M2 Fiberglass (per cm3)\t", prices[9], 15]
+                 ['3D Low (PLA/ABS), (per g)', prices[0], 10],
+                 ['3D Medium (PLA/ABS), (per g)', prices[1], 10],
+                 ['3D High (PLA/ABS), (per g)', prices[2], 10],
+                 ['3D Low (Other Materials), (per g)', prices[3], 10],
+                 ['3D Medium (Other Materials), (per g)', prices[4], 10],
+                 ['3D High (Other Materials), (per g)', prices[5], 10],
+                 ['SST Printer (Per Hour)', prices[6], 10],
+                 ['M2 Onyx (per cm3)', prices[7], 10],
+                 ['M2 Carbon Fiber (per cm3)', prices[8], 10],
+                 ["M2 Fiberglass (per cm3)\t", prices[9], 10]
                ]
              end
   end
