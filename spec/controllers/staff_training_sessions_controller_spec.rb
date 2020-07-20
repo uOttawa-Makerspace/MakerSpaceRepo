@@ -51,34 +51,34 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
   end
 
   describe 'PATCH /update' do
-    context 'logged as admin' do
-      context 'logged as staff user' do
-        it 'should not update training session, verify if user owns the training session and redirect user to root' do
-          staff = create(:user, :staff)
-          session[:user_id] = staff.id
-          patch :update, params: { id: @training_session.id, changed_params: {training_id: @training_session.id, user_id: staff.id } }
-          expect(flash[:alert]).to eq("Can't access training session")
-          expect(response).to redirect_to new_staff_training_session_path
-        end
-
-        it 'should not update training session, verify if user owns the training session and redirect user to root' do
-          training_session = create(:training_session, :staff_user)
-          staff = training_session.user
-          session[:user_id] = staff.id
-          patch :update, params: { id: training_session.id, changed_params: {training_id: @training_session.id, user_id: staff.id } }
-          expect(flash[:alert]).to eq("You're not an admin.")
-          expect(response).to redirect_to root_path
-        end
+    context 'logged as staff user' do
+      it 'should not update training session, verify if user owns the training session and redirect user to root' do
+        staff = create(:user, :staff)
+        session[:user_id] = staff.id
+        patch :update, params: { id: @training_session.id, changed_params: {training_id: @training_session.id, user_id: staff.id } }
+        expect(flash[:alert]).to eq("Can't access training session")
+        expect(response).to redirect_to new_staff_training_session_path
       end
 
-      context 'logged as admin user' do
-        it 'should update the training session' do
-          admin = create(:user, :admin)
-          patch :update, params: {id: @training_session.id, changed_params: {training_id: @training_session.id, user_id: admin.id } }
-          expect(TrainingSession.find(@training_session.id).user.id).to eq(admin.id)
-          expect(flash[:notice]).to eq('Training session updated succesfully')
-          expect(response).to redirect_to root_path
-        end
+      it 'should not update training session, verify if user owns the training session and redirect user to root' do
+        training_session = create(:training_session, :staff_user)
+        staff = training_session.user
+        session[:user_id] = staff.id
+        patch :update, params: { id: training_session.id, changed_params: {training_id: @training_session.id, user_id: staff.id } }
+        expect(flash[:alert]).to eq("You're not an admin.")
+        expect(response).to redirect_to root_path
+      end
+    end
+  end
+
+  describe 'PATCH /update' do
+    context 'logged as admin user' do
+      it 'should update the training session' do
+        admin = create(:user, :admin)
+        patch :update, params: {id: @training_session.id, changed_params: {training_id: @training_session.id, user_id: admin.id } }
+        expect(TrainingSession.find(@training_session.id).user.id).to eq(admin.id)
+        expect(flash[:notice]).to eq('Training session updated succesfully')
+        expect(response).to redirect_to root_path
       end
     end
   end
