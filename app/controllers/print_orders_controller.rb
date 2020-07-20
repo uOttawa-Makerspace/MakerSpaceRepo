@@ -7,11 +7,11 @@ class PrintOrdersController < ApplicationController
   def index
     # TODO: Too much logic in index.html.erb
     @order = {
-        'approved is NULL' => 'Waiting for Staff Approval',
-        'user_approval is NULL and approved is TRUE' => 'Waiting for user Approval',
-        'user_approval is TRUE and approved is TRUE and printed is NULL' => 'Waiting to be printed',
-        'user_approval is TRUE and approved is TRUE and printed is TRUE' => 'Printed',
-        'user_approval is FALSE or approved is FALSE' => 'Disapproved'
+      'approved is NULL' => 'Waiting for Staff Approval',
+      'user_approval is NULL and approved is TRUE' => 'Waiting for user Approval',
+      'user_approval is TRUE and approved is TRUE and printed is NULL' => 'Waiting to be printed',
+      'user_approval is TRUE and approved is TRUE and printed is TRUE' => 'Printed',
+      'user_approval is FALSE or approved is FALSE' => 'Disapproved'
     }
 
     @print_order = if @user.staff? || @user.admin?
@@ -30,41 +30,39 @@ class PrintOrdersController < ApplicationController
              end
     @table = if params[:type] == 'laser'
                [
-                   ['Laser - mdf 1/8" (Per Sheet)', prices[10], 20],
-                   ["Laser - mdf 1/4\" (Per Sheet)\t", prices[11], 20],
-                   ['Laser - acrylic 1/8" (Per Sheet)', prices[12], 20],
-                   ['Laser - acrylic 1/4" (Per Sheet)', prices[13], 20]
+                 ['Laser - mdf 1/8" (Per Sheet)', prices[10], 15],
+                 ["Laser - mdf 1/4\" (Per Sheet)\t", prices[11], 15],
+                 ['Laser - acrylic 1/8" (Per Sheet)', prices[12], 15],
+                 ['Laser - acrylic 1/4" (Per Sheet)', prices[13], 15]
                ]
              else
                [
-                   ['3D Low (PLA/ABS), (per g)', prices[0], 15],
-                   ['3D Medium (PLA/ABS), (per g)', prices[1], 15],
-                   ['3D High (PLA/ABS), (per g)', prices[2], 15],
-                   ['3D Low (Other Materials), (per g)', prices[3], 15],
-                   ['3D Medium (Other Materials), (per g)', prices[4], 15],
-                   ['3D High (Other Materials), (per g)', prices[5], 15],
-                   ['SST Printer (Per Hour)', prices[6], 15],
-                   ['M2 Onyx (per cm3)', prices[7], 15],
-                   ['M2 Carbon Fiber (per cm3)', prices[8], 15],
-                   ["M2 Fiberglass (per cm3)\t", prices[9], 15]
+                 ['3D Low (PLA/ABS), (per g)', prices[0], 10],
+                 ['3D Medium (PLA/ABS), (per g)', prices[1], 10],
+                 ['3D High (PLA/ABS), (per g)', prices[2], 10],
+                 ['3D Low (Other Materials), (per g)', prices[3], 10],
+                 ['3D Medium (Other Materials), (per g)', prices[4], 10],
+                 ['3D High (Other Materials), (per g)', prices[5], 10],
+                 ['SST Printer (Per Hour)', prices[6], 10],
+                 ['M2 Onyx (per cm3)', prices[7], 10],
+                 ['M2 Carbon Fiber (per cm3)', prices[8], 10],
+                 ["M2 Fiberglass (per cm3)\t", prices[9], 10]
                ]
              end
   end
 
   def create
-
     if params[:print_order][:material] && params[:print_order][:comments]
-      params[:print_order][:comments] = params[:print_order][:material] + ', ' + params[:print_order][:comments]
+      params[:print_order][:comments] = params[:print_order][:material].to_s + ', ' + params[:print_order][:comments].to_s
     end
 
     params[:print_order][:sst] = 'true' if params[:print_order][:material] == 'SST'
 
-    if params[:print_order][:comments] and params[:print_order][:comments_box].present? and params[:print_order][:comments_box].empty?
-      params[:print_order][:comments] = params[:print_order][:comments] + ', ' + params[:print_order][:comments_box]
+    if params[:print_order][:comments] && (params[:print_order][:comments_box] != '')
+      params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:print_order][:comments_box].to_s
     end
 
     @print_order = PrintOrder.create(print_order_params)
-
     if @print_order.id.nil? || @print_order.id == 0
       redirect_to print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !'
     else
@@ -86,7 +84,6 @@ class PrintOrdersController < ApplicationController
       if @print_order.expedited == true
         params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
       end
-
     elsif params[:print_order][:price_per_hour] && params[:print_order][:hours] && params[:print_order][:service_charge]
       params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:price_per_hour].to_f * params[:print_order][:hours].to_f)
       if @print_order.expedited == true
@@ -121,6 +118,10 @@ class PrintOrdersController < ApplicationController
     @print_order = PrintOrder.find(params[:id])
     @print_order.destroy
     redirect_to print_orders_path
+  end
+
+  def edit
+    @print_order = PrintOrder.find(params[:id])
   end
 
   def invoice

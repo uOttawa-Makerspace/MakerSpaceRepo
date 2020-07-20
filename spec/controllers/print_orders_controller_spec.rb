@@ -43,12 +43,12 @@ RSpec.describe PrintOrdersController, type: :controller do
       it 'should return a return internal pricing of 0.15' do
         session[:user_id] = @student.id
         get :new
-        expect(@controller.instance_variable_get(:@table)[0]).to eq(['3D Low (PLA/ABS), (per g)', 0.15, 15])
+        expect(@controller.instance_variable_get(:@table)[0]).to eq(['3D Low (PLA/ABS), (per g)', 0.15, 10])
       end
 
       it 'should return a return external pricing of 0.3' do
         get :new
-        expect(@controller.instance_variable_get(:@table)[0]).to eq(['3D Low (PLA/ABS), (per g)', 0.3, 15])
+        expect(@controller.instance_variable_get(:@table)[0]).to eq(['3D Low (PLA/ABS), (per g)', 0.3, 10])
       end
     end
   end
