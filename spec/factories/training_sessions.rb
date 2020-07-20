@@ -33,6 +33,15 @@ FactoryBot.define do
         create_list(:exam, evaluator.exam_count, training_session: training_session)
       end
     end
+
+    factory :training_session_with_users do
+      after(:create) do |training_session|
+        users = 5.times.inject([]) { |arr| arr << create(:user, :regular_user) }
+        users.each do |user|
+          training_session.users << user
+        end
+      end
+    end
   end
 end
 
