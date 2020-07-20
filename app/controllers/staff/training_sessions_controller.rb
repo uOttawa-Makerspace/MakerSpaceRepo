@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
 class Staff::TrainingSessionsController < StaffDashboardController
+  layout 'staff_area'
   before_action :current_training_session, except: %i[new create index]
   before_action :changed_params, only: [:update]
   before_action :verify_ownership, except: %i[new create index renew_certification]
-
-  layout 'staff_area'
 
   def index; end
 
@@ -15,13 +14,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def create
     @new_training_session = TrainingSession.new(default_params)
-
-    if params['training_session_users'].present?
-      params['training_session_users'].each do |user_id|
-        @new_training_session.users << User.find(user_id)
-      end
-    end
-
     if @new_training_session.save
       redirect_to staff_training_session_path(@new_training_session.id)
     else
@@ -34,7 +26,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
     if changed_params['user_id'].present?
       unless @user.admin?
         flash[:alert] = "You're not an admin."
-        redirect_back(fallback_location: root_path)
+        redirect_back(fallback_location: root_path) and return
       end
     end
 
@@ -53,7 +45,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
     end
 
     @current_training_session.users += User.where(username: params['added_users']) if params['added_users'].present?
-
     @current_training_session.users = @current_training_session.users.uniq
 
     if @current_training_session.save
@@ -61,7 +52,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
     else
       flash[:alert] = 'Something went wrong, please try again'
     end
-
     redirect_back(fallback_location: root_path)
   end
 
@@ -113,33 +103,33 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   private
 
-  def default_params
-    if params[:user_id].present?
-      if @user.admin?
-        { user_id: params[:user_id], training_id: params[:training_id], course: params[:course], space_id: params[:training_session][:space_id], level: params[:level] }
+    def default_params
+      if params[:user_id].present?
+        if @user.admin?
+          { user_id: params[:user_id], training_id: params[:training_id], course: params[:course], space_id: params[:training_session][:space_id], level: params[:level], user_ids: params['training_session_users'] }
+        end
+      else
+        { user_id: current_user.id, training_id: params[:training_id], course: params[:course], space_id: params[:training_session][:space_id], level: params[:level], user_ids: params['training_session_users'] }
       end
-    else
-      { user_id: current_user.id, training_id: params[:training_id], course: params[:course], space_id: params[:training_session][:space_id], level: params[:level] }
     end
-  end
 
-  def training_session_params
-    params.require(:training_session).permit(:training_id, :course, :users, :space_id)
-  end
-
-  def current_training_session
-    @current_training_session = TrainingSession.find(params[:id])
-    @staff = User.find(@current_training_session.user_id)
-  end
-
-  def changed_params
-    params.require(:changed_params).permit(:training_id, :course, :user_id, :level).reject { |_, v| v.blank? }
-  end
-
-  def verify_ownership
-    unless @user.admin? || @current_training_session.user == @user
-      flash[:alert] = "Can't access training session"
-      redirect_to new_staff_training_session_path
+    def training_session_params
+      params.require(:training_session).permit(:training_id, :course, :users, :space_id)
     end
-  end
+
+    def current_training_session
+      @current_training_session = TrainingSession.find(params[:id])
+      @staff = User.find(@current_training_session.user_id)
+    end
+
+    def changed_params
+      params.require(:changed_params).permit(:training_id, :course, :user_id, :level).reject { |_, v| v.blank? }
+    end
+
+    def verify_ownership
+      unless @user.admin? || @current_training_session.user == @user
+        flash[:alert] = "Can't access training session"
+        redirect_to new_staff_training_session_path
+      end
+    end
 end
