@@ -461,7 +461,8 @@ RSpec.describe User, type: :model do
         user = create(:user, :admin)
         training1 = create(:training)
         training2 = create(:training)
-        expect(user.remaining_trainings.ids).to eq([training1.id,training2.id])
+        expect(user.remaining_trainings.ids).to include(training1.id)
+        expect(user.remaining_trainings.ids).to include(training2.id)
       end
 
       it 'should get the remaining training' do
