@@ -31,16 +31,4 @@ RSpec.describe Video, type: :model do
       end
     end
   end
-
-  # describe 'Methods' do
-  #   context '#response_for_exam' do
-  #     it "should return exam_response's exam" do
-  #       3.times { create(:exam_with_exam_questions_and_exam_responses) }
-  #       exam = Exam.first
-  #       question = exam.questions.first
-  #       exam_response = question.exam_questions.find_by(exam: exam).exam_response
-  #       expect(question.response_for_exam(exam)).to eq(exam_response)
-  #     end
-  #   end
-  # end
 end
