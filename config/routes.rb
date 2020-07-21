@@ -118,12 +118,12 @@ Rails.application.routes.draw do
   put 'send_email', to: 'help#send_email'
 
   namespace :licenses do
-    get 'common-creative-attribution', as: 'cca'
-    get 'common-creative-attribution-share-alike', as: 'ccasa'
-    get 'common-creative-attribution-no-derivatives', as: 'ccand'
-    get 'common-creative-attribution-non-commercial', as: 'ccanc'
-    get 'attribution-non-commercial-share-alike', as: 'ancsa'
-    get 'attribution-non-commercial-no-derivatives', as: 'ancnd'
+    get 'common_creative_attribution', as: 'cca'
+    get 'common_creative_attribution_share_alike', as: 'ccasa'
+    get 'common_creative_attribution_no_derivatives', as: 'ccand'
+    get 'common_creative_attribution_non_commercial', as: 'ccanc'
+    get 'attribution_non_commercial_share_alike', as: 'ancsa'
+    get 'attribution_non_commercial_no_derivatives', as: 'ancnd'
   end
 
   namespace :getting_started, path: 'getting-started' do
