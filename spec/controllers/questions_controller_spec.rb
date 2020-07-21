@@ -72,7 +72,7 @@ RSpec.describe QuestionsController, type: :controller do
 
   describe 'PATCH /update' do
     context 'logged as admin' do
-      it 'should update the announcement' do
+      it 'should update the question' do
         patch :update, params: {id: @question.id, question: {description: "updated"} }
         expect(response).to redirect_to questions_path
         expect(Question.find(@question.id).description).to eq("updated")
@@ -83,7 +83,7 @@ RSpec.describe QuestionsController, type: :controller do
 
   describe "DELETE /destroy" do
     context 'logged as admin' do
-      it 'should destroy the announcement' do
+      it 'should destroy the question' do
         expect {  delete :destroy, params: {id: @question.id} }.to change(Question, :count).by(-1)
         expect(response).to redirect_to questions_path
         expect(flash[:notice]).to eq("Question Deleted")

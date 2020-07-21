@@ -8,6 +8,9 @@ module FilesTestHelper
   def png_name; 'test.png' end
   def png; upload(png_name, 'image/png') end
 
+  def mp4_name; '1sec.mp4' end
+  def mp4; upload(mp4_name, 'video/mp4') end
+
   private
 
   def upload(name, type)
