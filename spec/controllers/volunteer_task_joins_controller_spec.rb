@@ -66,8 +66,3 @@ RSpec.describe VolunteerTaskJoinsController, type: :controller do
   end
 
 end
-
-
-
-
-
