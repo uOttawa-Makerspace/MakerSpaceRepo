@@ -53,7 +53,7 @@ class BadgesController < DevelopmentProgramsController
       badge = Badge.find_by(acclaim_badge_id: params[:badge][:acclaim_badge_id])
       order_item = badge.user.order_items.includes(:proficient_project).where(proficient_projects: { badge_template_id: badge.badge_template_id }).last
     else
-      order_item = OrderItem.find(params['order_item_id'])
+      order_item = OrderItem.find(params[:order_item_id])
       badge_template = order_item.proficient_project.badge_template
       user = order_item.order.user
       badge = user.badges.where(badge_template: badge_template).last
@@ -129,7 +129,6 @@ class BadgesController < DevelopmentProgramsController
 
   def populate_grant_users
     json_data = User.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
-
     render json: { users: json_data }
   end
 
@@ -148,14 +147,14 @@ class BadgesController < DevelopmentProgramsController
     redirect_to admin_badges_path
   end
 
+  private
+
   def only_admin_access
     unless current_user.admin?
       redirect_to development_programs_path
       flash[:alert] = 'Only admin members can access this area.'
     end
   end
-
-  private
 
   def set_orders
     order_items = OrderItem.completed_order.order(updated_at: :desc).includes(order: :user).joins(proficient_project: :badge_template)
