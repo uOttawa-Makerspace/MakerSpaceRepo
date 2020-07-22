@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 class OrderItem < ApplicationRecord
+  belongs_to :proficient_project
+  belongs_to :order
   validates :quantity, presence: true, numericality: { only_integer: true, greater_than: 0 }
   validate :product_present
   validate :order_present
   before_save :finalize
-  belongs_to :proficient_project
-  belongs_to :order
   scope :completed_order, -> { joins(order: :order_status).where(order_statuses: { name: 'Completed' }) }
   scope :in_progress, -> { where(status: 'In progress') }
 
