@@ -374,7 +374,7 @@ function load() {
     
   });
 
-  $("form#new_repository, form.edit_repository, form#new_proficient_project, form.edit_proficient_project").submit(function(e){
+  $("form#new_repository, form.edit_repository, form#new_proficient_project, form.edit_proficient_project, form.makes_new").submit(function(e){
     e.preventDefault();
     var validate = validation();
 
