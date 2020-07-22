@@ -8,6 +8,13 @@ FactoryBot.define do
       image_url { 'https://images.youracclaim.com/images/1836ef76-cb9a-410b-bcea-97dcd0f2c3d4/1.png' }
     end
 
+    trait :'3d_printing_no_id' do
+      acclaim_template_id { '79135bb6-a371-4871-853c-3e41f1724147' }
+      badge_description { 'The badge earner has demonstrated their ability to understand and apply the basic rules for 3D printing an object, how to slice a 3D model and start a print on the machine. || Le porteur a démontré sa capacité à comprendre et à appliquer les règles de base lors de l’impression 3D d’un objet; comment trancher son modèle et l’utilisation de l’imprimante afin de réaliser son objet.' }
+      badge_name { 'Beginner - 3D printing || Débutant - Impression 3D' }
+      image_url { 'https://images.youracclaim.com/images/1836ef76-cb9a-410b-bcea-97dcd0f2c3d4/1.png' }
+    end
+
     trait :laser_cutting_no_id do
       acclaim_template_id { '37a17118-9be4-438a-b012-a575f9d06a71' }
       badge_description { 'The badge earner has demonstrated the basic skills needed for 2D modelling and to operate a laser cutter. || Le porteur de ce badge a démontré les compétences de base nécessaires pour la modélisation 2D et à l\'utilisation d\'une machine laser.' }
