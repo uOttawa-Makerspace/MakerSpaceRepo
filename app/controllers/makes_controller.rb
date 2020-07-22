@@ -14,6 +14,7 @@ class MakesController < SessionsController
       r.github_url = @repository.github_url
       r.user_username = @user.username
       r.user_id = @user.id
+      r.share_type = "public"
     end
 
     if @repo.save
@@ -38,8 +39,8 @@ class MakesController < SessionsController
   end
 
   def create_photos
-    if params['images'].present?
-      params['images'].each do |img|
+    if params[:images].present?
+      params[:images].each do |img|
         dimension = FastImage.size(img.tempfile)
         Photo.create(image: img, repository_id: @repo.id, width: dimension.first, height: dimension.last)
       end
@@ -50,7 +51,7 @@ class MakesController < SessionsController
     @repository.categories.each do |c|
       Category.create(name: c.name, repository_id: @repo.id, category_option_id: c.category_option_id)
     end
-    @repository.equipment.each do |e|
+    @repository.equipments.each do |e|
       Equipment.create(name: e.name, repository_id: @repo.id)
     end
   end
