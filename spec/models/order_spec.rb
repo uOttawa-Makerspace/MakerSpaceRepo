@@ -2,6 +2,11 @@ require 'rails_helper'
 
 RSpec.describe Order, type: :model do
 
+  before(:all) do
+    OrderStatus.create(name: "In progress")
+    OrderStatus.create(name: "Completed")
+  end
+
   describe 'Association' do
 
     context 'has_many' do
@@ -22,9 +27,8 @@ RSpec.describe Order, type: :model do
     context "set_order_status" do
 
       it 'should set the order status' do
-        status = OrderStatus.create(name: "In progress")
         create(:order)
-        expect(Order.last.order_status_id).to eq(status.id)
+        expect(Order.last.order_status_id).to eq(OrderStatus.find_by_name("In progress").id)
       end
 
     end
@@ -36,8 +40,6 @@ RSpec.describe Order, type: :model do
     context "completed" do
 
       it 'should set the order status' do
-        OrderStatus.create(name: "In progress")
-        OrderStatus.create(name: "Completed")
         create(:order)
         create(:order)
         create(:order, :completed)
@@ -54,8 +56,6 @@ RSpec.describe Order, type: :model do
     context "#subtotal" do
 
       it 'should calculate the subtotal' do
-        OrderStatus.create(name: "In progress")
-        OrderStatus.create(name: "Completed")
         create(:order_item)
         expect(Order.last.subtotal).to eq(10) # 10 because the PP CC is 10
       end
@@ -63,11 +63,6 @@ RSpec.describe Order, type: :model do
     end
 
     context "#completed?" do
-
-      before(:each) do
-        OrderStatus.create(name: "In progress")
-        OrderStatus.create(name: "Completed")
-      end
 
       it 'should check if the order is completed (true)' do
         create(:order, :completed)
