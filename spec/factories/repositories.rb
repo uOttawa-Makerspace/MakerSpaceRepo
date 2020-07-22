@@ -20,6 +20,15 @@ FactoryBot.define do
       end
     end
 
+    trait :create_equipement_and_categories do
+      after(:create) do |repo|
+        Category.create(name: "Laser", repository_id: repo.id)
+        Category.create(name: "3D printing", repository_id: repo.id)
+        Equipment.create(name: "Laser Cutter", repository_id: repo.id)
+        Equipment.create(name: "3D Printer", repository_id: repo.id)
+      end
+    end
+
     trait :with_equipement_and_categories do
       categories { ['Laser', '3D Printing'] }
       equipments { ['Laser Cutter', '3D Printer'] }
