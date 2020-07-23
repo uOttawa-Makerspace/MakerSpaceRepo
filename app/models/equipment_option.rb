@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 class EquipmentOption < ApplicationRecord
   belongs_to :admin
   validates :name, presence: true
