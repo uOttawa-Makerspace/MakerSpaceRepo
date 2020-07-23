@@ -87,18 +87,6 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
 
-  def cat_params
-    params.require(:category_option).permit(:name)
-  end
-
-  def area_params
-    params.require(:area_option).permit(:name)
-  end
-
-  def printer_params
-    params.require(:printer).permit(:model, :number)
-  end
-
   def add_equipment
     if params[:equipment_option][:name].blank?
       flash[:alert] = 'Invalid equipment name.'
@@ -178,5 +166,19 @@ class Admin::SettingsController < AdminAreaController
       flash[:alert] = 'something went wrong'
     end
     redirect_back(fallback_location: root_path)
+  end
+
+  private
+
+  def cat_params
+    params.require(:category_option).permit(:name)
+  end
+
+  def area_params
+    params.require(:area_option).permit(:name)
+  end
+
+  def printer_params
+    params.require(:printer).permit(:model, :number)
   end
 end
