@@ -3,22 +3,22 @@ FactoryBot.define do
 
     trait :um2p_session do
       association :user, :regular_user
-      printer_id { 2 }
+      association :printer, :UM2P_02
     end
 
     trait :um3_session do
       association :user, :admin
-      printer_id { 3 }
+      association :printer, :UM3_01
     end
 
     trait :rpl2_session do
       association :user, :regular_user
-      printer_id { 5 }
+      association :printer, :RPL2_01
     end
 
     trait :dremel_session do
       association :user, :admin
-      printer_id { 6 }
+      association :printer, :dremel_10_17
     end
 
   end

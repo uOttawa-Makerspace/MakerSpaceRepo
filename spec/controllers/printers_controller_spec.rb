@@ -46,13 +46,13 @@ RSpec.describe PrintersController, type: :controller do
 
   describe 'controllers that have views' do
 
-    before(:all) do
-      create :printer, :UM2P_01
-      create :printer, :UM2P_02
-      create :printer, :UM3_01
-      create :printer, :RPL2_01
-      create :printer, :RPL2_02
-      create :printer, :dremel_10_17
+    before(:each) do
+      @um2_1 = create :printer, :UM2P_01
+      @um2_2 = create :printer, :UM2P_02
+      @um3 = create :printer, :UM3_01
+      @rpl1 = create :printer, :RPL2_01
+      @rpl2 = create :printer, :RPL2_02
+      @dremel = create :printer, :dremel_10_17
     end
 
     context 'Variable setup for views' do
@@ -63,10 +63,10 @@ RSpec.describe PrintersController, type: :controller do
         session[:user_id] = admin.id
         get :staff_printers_updates
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@ultimaker_printer_ids)).to eq([1, 2])
-        expect(@controller.instance_variable_get(:@ultimaker3_printer_ids)).to eq([3])
-        expect(@controller.instance_variable_get(:@replicator2_printer_ids)).to eq([4, 5])
-        expect(@controller.instance_variable_get(:@dremel_printer_ids)).to eq([6])
+        expect(@controller.instance_variable_get(:@ultimaker_printer_ids)).to eq([@um2_1.id, @um2_2.id])
+        expect(@controller.instance_variable_get(:@ultimaker3_printer_ids)).to eq([@um3.id])
+        expect(@controller.instance_variable_get(:@replicator2_printer_ids)).to eq([@rpl1.id, @rpl2.id])
+        expect(@controller.instance_variable_get(:@dremel_printer_ids)).to eq([@dremel.id])
       end
 
       it 'should create all the variables for staff_printers' do
