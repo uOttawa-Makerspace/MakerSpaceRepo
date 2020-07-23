@@ -1,7 +1,38 @@
 require 'rails_helper'
 
 RSpec.describe CommentsController, type: :controller do
-  describe 'delete method' do
+
+  describe 'POST /create' do
+
+    before(:all) do
+      @user = create(:user, :regular_user)
+    end
+
+    before(:each) do
+      session[:expires_at] = DateTime.tomorrow.end_of_day
+      session[:user_id] = @user.id
+    end
+
+    context "create comment" do
+
+      it "should create a comment" do
+        repo = create(:repository)
+        expect{ post :create, params: {slug: repo.slug, content: "abc"} }.to change(Comment, :count).by(1)
+        expect(response).to redirect_to repository_path(slug: repo.slug, user_username: repo.user_username, :anchor => "repo-comments")
+      end
+
+      it "should fail to create a comment" do
+        repo = create(:repository)
+        expect{ post :create, params: {slug: repo.slug, content: ""} }.to change(Comment, :count).by(0)
+        expect(response).to redirect_to root_path
+      end
+
+    end
+
+  end
+
+  describe 'DELETE /destroy' do
+
     before(:each) do
       session[:expires_at] = DateTime.tomorrow.end_of_day
       @comment = create(:comment)
@@ -32,5 +63,7 @@ RSpec.describe CommentsController, type: :controller do
         expect(flash[:notice]).to eq('Comment deleted succesfully')
       end
     end
+
   end
+
 end

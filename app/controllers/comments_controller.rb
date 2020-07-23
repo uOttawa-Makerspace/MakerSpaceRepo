@@ -10,7 +10,7 @@ class CommentsController < SessionsController
     comment.user_id = @user.id
     comment.username = @user.username
 
-    if comment.save!
+    if comment.save
       redirect_to repository_path(slug: repository.slug, user_username: repository.user_username, :anchor => "repo-comments")
     else
       redirect_to root_path
