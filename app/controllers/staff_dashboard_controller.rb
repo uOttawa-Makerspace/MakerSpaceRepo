@@ -6,8 +6,8 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_out_users
-    if params['dropped_users'].present?
-      users = User.where(username: params['dropped_users']).map(&:id)
+    if params[:dropped_users].present?
+      users = User.where(username: params[:dropped_users]).map(&:id)
       lab_sessions = LabSession.where(user_id: users)
       lab_sessions.update_all(sign_out_time: Time.zone.now)
     end
@@ -24,8 +24,8 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_in_users
-    if params['added_users'].present?
-      users = User.where(username: params['added_users'])
+    if params[:added_users].present?
+      users = User.where(username: params[:added_users])
       users.each do |user|
         lab_session = LabSession.new(
           user_id: user.id,
@@ -40,7 +40,7 @@ class StaffDashboardController < StaffAreaController
   end
 
   def change_space
-    if new_space = Space.find_by(name: params['space_name'])
+    if new_space = Space.find_by(name: params[:space_name])
       if current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
         current_sesh.sign_out_time = Time.zone.now
         current_sesh.save
@@ -61,17 +61,17 @@ class StaffDashboardController < StaffAreaController
   end
 
   def link_rfid
-    if params['user_id'].present? && params['card_number'].present?
-      rfid = Rfid.find_by(card_number: params['card_number'])
-      rfid.user_id = params['user_id']
+    if params[:user_id].present? && params[:card_number].present?
+      rfid = Rfid.find_by(card_number: params[:card_number])
+      rfid.user_id = params[:user_id]
       rfid.save
     end
     redirect_back(fallback_location: root_path)
   end
 
   def unlink_rfid
-    if params['card_number'].present?
-      rfid = Rfid.find_by(card_number: params['card_number'])
+    if params[:card_number].present?
+      rfid = Rfid.find_by(card_number: params[:card_number])
       rfid.user_id = nil
       if pi = Space.find_by(name: @user.location)&.pi_readers.first
         new_mac = pi.pi_mac_address
