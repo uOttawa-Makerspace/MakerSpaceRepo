@@ -1,12 +1,11 @@
 FactoryBot.define do
   factory :order do
-
     subtotal { 50.000 }
     total { 50.000 }
-
     trait :completed do
       after(:create) do |order|
-        order.update(order_status_id: OrderStatus.find_by_name("Completed").id)
+        order_status = OrderStatus.find_or_create_by(name: "Completed")
+        order.update(order_status: order_status)
       end
     end
 
