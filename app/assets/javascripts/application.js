@@ -16,7 +16,7 @@
 //= require popper
 //= require bootstrap-sprockets
 //= require jquery_ujs
-//= require jquery-ui/autocomplete
+//= require jquery-ui/widgets/autocomplete
 //= require photoswipe
 //= require jquery-ui/effect.all
 //= require activestorage
