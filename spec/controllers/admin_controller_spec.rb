@@ -26,6 +26,20 @@ RSpec.describe AdminController, type: :controller do
       end
     end
   end
+
+  describe "GET /manage_badges" do
+    context "logged as admin" do
+      it 'should update badges' do
+        get :manage_badges, params: { refresh: "badges" }
+        expect(flash[:notice]).to eq('Badges Update is now complete!')
+      end
+
+      it 'should update badge templates' do
+        get :manage_badges, params: { refresh: "templates" }
+        expect(flash[:notice]).to eq('Badge Templates Update is now complete!')
+      end
+    end
+  end
 end
 
 
