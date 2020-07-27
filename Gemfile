@@ -87,7 +87,7 @@ group :development do
 end
 
 group :test do
-  gem 'capybara', '~> 2.1.0'
+  gem 'capybara'
   gem 'database_cleaner-active_record'
   gem 'launchy', '~> 2.2'
   gem 'rails-controller-testing'
