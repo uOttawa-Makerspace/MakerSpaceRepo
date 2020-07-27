@@ -1066,8 +1066,8 @@ GEM
     file_validators (2.3.0)
       activemodel (>= 3.2)
       mime-types (>= 1.0)
-    font-awesome-rails (4.6.3.1)
-      railties (>= 3.2, < 6.0)
+    font-awesome-rails (4.7.0.5)
+      railties (>= 3.2, < 6.1)
     get_process_mem (0.2.3)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
@@ -1417,7 +1417,7 @@ DEPENDENCIES
   faker (~> 2.0.0)
   fastimage (~> 1.7.0)
   file_validators
-  font-awesome-rails (~> 4.6.3.0)
+  font-awesome-rails
   image_processing
   jbuilder
   jquery-rails
