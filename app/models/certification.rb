@@ -4,11 +4,11 @@ class Certification < ApplicationRecord
   belongs_to :user
   belongs_to :training_session
   has_one :space, through: :training_session
+  has_one :training, through: :training_session
 
   validates :user, presence: { message: 'A user is required.' }
   validates :training_session, presence: { message: 'A training session is required.' }
   validate :unique_cert
-  has_one :training, through: :training_session
 
   scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
 
@@ -29,7 +29,7 @@ class Certification < ApplicationRecord
   end
 
   def unique_cert
-    @user_certs = user.certifications
+    @user_certs = user.certifications if user
     if @user_certs
       @user_certs.each do |cert|
         if (cert.training.id == training.id) && (cert.training_session.level == training_session.level)
