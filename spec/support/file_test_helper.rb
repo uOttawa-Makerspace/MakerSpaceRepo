@@ -11,6 +11,9 @@ module FilesTestHelper
   def mp4_name; '1sec.mp4' end
   def mp4; upload(mp4_name, 'video/mp4') end
 
+  def pdf_name; 'RepoFile1.pdf' end
+  def pdf; upload(pdf_name, 'application/pdf') end
+
   private
 
   def upload(name, type)
