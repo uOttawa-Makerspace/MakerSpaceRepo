@@ -15,10 +15,10 @@ gem 'clipboard-rails'
 gem 'coffee-rails', '4.2.2'
 gem 'excon'
 gem 'fastimage', '~> 1.7.0'
-gem 'font-awesome-rails', '~> 4.6.3.0'
-gem 'jbuilder', '~> 2.8.0'
-gem 'jquery-rails', '~> 4.0.5'
-gem 'jquery-ui-rails', '~> 5.0.5'
+gem 'font-awesome-rails'
+gem 'jbuilder'
+gem 'jquery-rails'
+gem 'jquery-ui-rails'
 gem 'kaminari'
 gem 'mocha'
 gem 'octokit', '~> 3.0'
@@ -38,7 +38,7 @@ gem 'select2-rails'
 gem 'shopify_app', '9.0.4'
 gem 'sidekiq'
 gem 'simplecov'
-gem 'thin', '~> 1.6.3'
+gem 'thin'
 gem 'toastr-rails'
 gem 'turbolinks', '~> 5.2.0'
 gem 'uglifier', '>= 1.3.0'
@@ -79,7 +79,7 @@ end
 group :development do
   gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
-  gem 'web-console', '>= 3.7'
+  gem 'web-console'
 
   # ssh deploymentque
   gem 'bcrypt_pbkdf', '~> 1.0'
@@ -87,7 +87,7 @@ group :development do
 end
 
 group :test do
-  gem 'capybara', '~> 2.1.0'
+  gem 'capybara'
   gem 'database_cleaner-active_record'
   gem 'launchy', '~> 2.2'
   gem 'rails-controller-testing'
