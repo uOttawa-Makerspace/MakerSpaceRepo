@@ -1,6 +1,6 @@
 language: ruby
 cache: bundler
-dist: trusty
+bundler_args: --full-index
 rvm:
 - 2.5.3
 services:
