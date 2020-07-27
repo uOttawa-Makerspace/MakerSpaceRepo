@@ -79,7 +79,7 @@ end
 group :development do
   gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
-  gem 'web-console', '>= 3.7'
+  gem 'web-console'
 
   # ssh deploymentque
   gem 'bcrypt_pbkdf', '~> 1.0'
