@@ -24,11 +24,10 @@ class UsersController < SessionsController
   end
 
   def new
-    return redirect_to root_path if signed_in?
+    redirect_to root_path if signed_in?
 
     @new_user = User.new
   end
-
 
   def remove_avatar
     @user.avatar.purge
@@ -81,7 +80,6 @@ class UsersController < SessionsController
                          end
 
     @acclaim_data = @repo_user.badges
-
     @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
     @joined_projects = @user.project_joins
     @photos = photo_hash
@@ -97,7 +95,7 @@ class UsersController < SessionsController
 
   def destroy
     @user.destroy
-    disconnect_user
+    #disconnect_user
     redirect_to root_path
   end
 
@@ -125,7 +123,7 @@ class UsersController < SessionsController
       render json: { upvote_count: count, comment_id: comment.id, voted: 'true', color: '#19c1a5' }
     end
   rescue StandardError
-    render nothing: true
+    head 500
   end
 
   private

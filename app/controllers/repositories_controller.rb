@@ -1,4 +1,5 @@
 class RepositoriesController < SessionsController
+  include BCrypt
   before_action :current_user, :check_session
   before_action :signed_in, except: %i[index show download download_files]
   before_action :set_repository, only: %i[show add_like destroy edit update download_files check_auth pass_authenticate]
@@ -20,12 +21,12 @@ class RepositoriesController < SessionsController
     @all_users = User.where.not(id: @owners.pluck(:id)).pluck(:name, :id)
   end
 
-  def download
-    url = "http://s3-us-west-2.amazonaws.com/uottawa-makerspace#{params[:file]}"
-    data = open(url)
-    send_data data.read, type: data.content_type, filename: File.basename(url), x_sendfile: true
-  end
-
+  # Not used anymore
+  # def download
+  #  url = "http://s3-us-west-2.amazonaws.com/uottawa-makerspace#{params[:file]}"
+  #  data = open(url)
+  #  send_data data.read, type: data.content_type, filename: File.basename(url), x_sendfile: true
+  # end
 
   def download_files
 
@@ -82,6 +83,7 @@ class RepositoriesController < SessionsController
     @repository.user_id = @user.id
     @repository.users << @user
     @repository.user_username = @user.username
+    update_password
 
     if @repository.save
       @user.increment!(:reputation, 25)
@@ -99,6 +101,7 @@ class RepositoriesController < SessionsController
     @repository.categories.destroy_all
     @repository.equipments.destroy_all
     update_password
+
     if @repository.update(repository_params)
       update_photos
       update_files
@@ -122,8 +125,9 @@ class RepositoriesController < SessionsController
 
   def add_like # MAKE A LIKE CONTROLLER TO PUT THIS IN
     @repository.likes.create!(user_id: @user.id)
-    repo_user = @repository.user
-    repo_user.increment!(:reputation, 5)
+    @repository.users.each do |u|
+      u.increment!(:reputation, 5)
+    end
     render json: {like: @repository.like, rep: repo_user.reputation}
   rescue StandardError
     render json: {failed: true}
@@ -154,11 +158,10 @@ class RepositoriesController < SessionsController
     repository.project_proposal_id = project_proposal_id
     if repository.save
       flash[:notice] = 'This Repository was linked to the selected Project Proposal'
-      redirect_back(fallback_location: root_path)
     else
       flash[:alert] = 'Something went wrong.'
-      redirect_back(fallback_location: root_path)
     end
+    redirect_back(fallback_location: root_path)
   end
 
   def add_owner
@@ -167,11 +170,10 @@ class RepositoriesController < SessionsController
     repository.users << User.find(owner_id)
     if repository.save
       flash[:notice] = 'This owner was added to your repository'
-      redirect_back(fallback_location: root_path)
     else
       flash[:alert] = 'Something went wrong.'
-      redirect_back(fallback_location: root_path)
     end
+    redirect_back(fallback_location: root_path)
   end
 
   def remove_owner
@@ -180,11 +182,10 @@ class RepositoriesController < SessionsController
     owner = User.find(owner_id)
     if repository.users.delete(owner)
       flash[:notice] = 'This owner was removed from your repository'
-      redirect_back(fallback_location: root_path)
     else
       flash[:alert] = 'Something went wrong.'
-      redirect_back(fallback_location: root_path)
     end
+    redirect_back(fallback_location: root_path)
   end
 
   private
@@ -221,8 +222,8 @@ class RepositoriesController < SessionsController
   end
 
   def create_photos
-    if params['images'].present?
-      params['images'].first(5).each do |img|
+    if params[:images].present?
+      params[:images].first(5).each do |img|
         dimension = FastImage.size(img.tempfile)
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end
@@ -230,17 +231,17 @@ class RepositoriesController < SessionsController
   end
 
   def create_files
-    if params['files'].present?
-      params['files'].each do |f|
+    if params[:files].present?
+      params[:files].each do |f|
         RepoFile.create(file: f, repository_id: @repository.id)
       end
     end
   end
 
   def update_photos
-    if params['deleteimages'].present?
+    if params[:deleteimages].present?
       @repository.photos.each do |img|
-        if params['deleteimages'].include?(img.image.filename.to_s) # checks if the file should be deleted
+        if params[:deleteimages].include?(img.image.filename.to_s) # checks if the file should be deleted
           img.image.purge
           img.destroy
         end
@@ -275,29 +276,29 @@ class RepositoriesController < SessionsController
   end
 
   def create_categories
-    if params['categories'].present?
-      params['categories'].first(5).each do |c|
+    if params[:categories].present?
+      params[:categories].first(5).each do |c|
         Category.create(name: c, repository_id: @repository.id)
       end
     end
   end
 
   def create_equipments
-    if params['equipments'].present?
-      params['equipments'].first(5).each do |e|
+    if params[:equipments].present?
+      params[:equipments].first(5).each do |e|
         Equipment.create(name: e, repository_id: @repository.id)
       end
     end
   end
 
   def update_password
-    if repository_params['share_type'].eql?('public')
+    if repository_params[:share_type].eql?('public')
       @repository.password = nil
       @repository.save
     else
-      if params['password'].present?
-        @repository.pword = params['password']
-        @repository.save
+      if params[:password].present?
+        pass = params[:password].join("")
+        @repository.update(password: BCrypt::Password.create(pass))
       end
     end
   end

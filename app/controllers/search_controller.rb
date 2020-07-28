@@ -36,8 +36,8 @@ class SearchController < SessionsController
       @repositories2 = []
     end
 
-    @repositories3 = if categroy_option = CategoryOption.find_by(name: name)
-                       Category.where(category_option_id: categroy_option.id).distinct.includes(:repository).map(&:repository)
+    @repositories3 = if (category_option = CategoryOption.find_by(name: name))
+                       Category.where(category_option_id: category_option.id).distinct.includes(:repository).map(&:repository)
                      else
                        []
                      end

@@ -26,6 +26,9 @@ class Admin::UsersController < AdminAreaController
         end
         @users = User.includes(:lab_sessions).order("#{params[:sort]} #{params[:direction]}").paginate(page: params[:page], per_page: 20)
         @total_pages = @users.total_pages
+      else
+        redirect_to admin_users_path
+        flash[:alert] = 'Invalid parameters!'
       end
     else
       redirect_to admin_users_path
@@ -39,20 +42,20 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
-  def bulk_add_certifications
-    if params['bulk_cert_users'].present? && params['bulk_certifications'].present?
-      params['bulk_cert_users'].each do |user|
-        if User.find(user).certifications.where(name: params['bulk_certifications']).blank?
-          Certification.create(name: params['bulk_certifications'], user_id: user)
-        end
-      end
-      redirect_back(fallback_location: root_path)
-      flash[:notice] = 'Certifications added succesfully!'
-    else
-      redirect_back(fallback_location: root_path)
-      flash[:alert] = 'Invalid parameters!'
-    end
-  end
+  # def bulk_add_certifications
+  #   if params['bulk_cert_users'].present? && params['bulk_certifications'].present?
+  #     params['bulk_cert_users'].each do |user|
+  #       if User.find(user).certifications.where(name: params['bulk_certifications']).blank?
+  #         Certification.create(name: params['bulk_certifications'], user_id: user)
+  #       end
+  #     end
+  #     redirect_back(fallback_location: root_path)
+  #     flash[:notice] = 'Certifications added succesfully!'
+  #   else
+  #     redirect_back(fallback_location: root_path)
+  #     flash[:alert] = 'Invalid parameters!'
+  #   end
+  # end
 
   def search
     if sort_params

@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 class Video < ApplicationRecord
   include Sidekiq::Worker
   belongs_to :proficient_project

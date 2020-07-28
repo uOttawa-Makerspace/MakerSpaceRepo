@@ -53,13 +53,13 @@ class PrintOrdersController < ApplicationController
 
   def create
     if params[:print_order][:material] && params[:print_order][:comments]
-      params[:print_order][:comments] = params[:print_order][:material] + ', ' + params[:print_order][:comments]
+      params[:print_order][:comments] = params[:print_order][:material].to_s + ', ' + params[:print_order][:comments].to_s
     end
 
     params[:print_order][:sst] = 'true' if params[:print_order][:material] == 'SST'
 
     if params[:print_order][:comments] && (params[:print_order][:comments_box] != '')
-      params[:print_order][:comments] = params[:print_order][:comments] + ', ' + params[:print_order][:comments_box]
+      params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:print_order][:comments_box].to_s
     end
 
     @print_order = PrintOrder.create(print_order_params)

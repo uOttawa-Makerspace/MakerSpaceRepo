@@ -1,5 +1,6 @@
 language: ruby
 cache: bundler
+#bundler_args: --full-index
 rvm:
 - 2.5.3
 services:
@@ -17,6 +18,7 @@ jobs:
     name: Test
     script:
     - bundle exec rake db:migrate RAILS_ENV=test
+    - bundle exec rake spec RAILS_ENV=test
     - bundle exec rake test RAILS_ENV=test
   - stage: deploy
     name: Deploy

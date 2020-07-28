@@ -4,7 +4,7 @@ class CcMoney < ApplicationRecord
   belongs_to :user
   belongs_to :volunteer_task
   belongs_to :proficient_project
-  belongs_to :order_item
+  belongs_to :order
   belongs_to :discount_code
 
   def self.create_cc_money_from_approval(volunteer_task_id, volunteer_id, cc)

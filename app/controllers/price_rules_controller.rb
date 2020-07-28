@@ -13,16 +13,14 @@ class PriceRulesController < DevelopmentProgramsController
     @price_rule = PriceRule.new
   end
 
-  def edit; end
+  def edit
+  end
 
   def create
     @price_rule = PriceRule.new(price_rule_params)
-
     @price_rule.shopify_price_rule_id = PriceRule.create_price_rule(@price_rule.title, @price_rule.value)
-
     respond_to do |format|
       if @price_rule.save
-
         format.html { redirect_to price_rules_path, notice: 'Price rule was successfully created.' }
         format.json { render :index, status: :created, location: @price_rule }
       else
@@ -35,9 +33,7 @@ class PriceRulesController < DevelopmentProgramsController
   def update
     respond_to do |format|
       if @price_rule.update(price_rule_params)
-
         PriceRule.update_price_rule(@price_rule.shopify_price_rule_id, @price_rule.title, @price_rule.value)
-
         format.html { redirect_to price_rules_url, notice: 'Price rule was successfully updated.' }
         format.json { render :index, status: :ok }
       else
@@ -75,7 +71,7 @@ class PriceRulesController < DevelopmentProgramsController
 
   def check_discount_codes
     if @price_rule.has_discount_codes?
-      flash[:alert] = 'This price rule cannot be eddited/deleted because it has already discount codes'
+      flash[:alert] = 'This price rule cannot be edited/deleted because it has already discount codes'
       redirect_to price_rules_path
     end
   end

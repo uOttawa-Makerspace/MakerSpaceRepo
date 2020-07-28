@@ -87,18 +87,6 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
 
-  def cat_params
-    params.require(:category_option).permit(:name)
-  end
-
-  def area_params
-    params.require(:area_option).permit(:name)
-  end
-
-  def printer_params
-    params.require(:printer).permit(:model, :number)
-  end
-
   def add_equipment
     if params[:equipment_option][:name].blank?
       flash[:alert] = 'Invalid equipment name.'
@@ -116,8 +104,7 @@ class Admin::SettingsController < AdminAreaController
     elsif params[:rename_equipment] == ''
       flash[:alert] = 'Please select a piece of equipment.'
     else
-      puts "params: #{params[:rename_equipment]}"
-      EquipmentOption.where(id: params[:rename_equipment]).update_all(equip_params)
+      EquipmentOption.where(id: params[:rename_equipment]).update_all(name: equip_params['name'])
       flash[:notice] = 'Equipment renamed successfully!'
     end
     redirect_to admin_settings_path
@@ -131,10 +118,6 @@ class Admin::SettingsController < AdminAreaController
       flash[:alert] = 'Please select a piece of equipment.'
     end
     redirect_to admin_settings_path
-  end
-
-  def equip_params
-    params.require(:equipment_option).permit(:name)
   end
 
   # def submit_pi
@@ -159,10 +142,6 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
 
-  def pi_params
-    params.require(:pi_reader).permit(:pi_location)
-  end
-
   def pin_unpin_repository
     params.require(:repository_id)
     repo = Repository.find_by(id: params[:repository_id])
@@ -178,5 +157,27 @@ class Admin::SettingsController < AdminAreaController
       flash[:alert] = 'something went wrong'
     end
     redirect_back(fallback_location: root_path)
+  end
+
+  private
+
+  def pi_params
+    params.require(:pi_reader).permit(:pi_location)
+  end
+
+  def equip_params
+    params.require(:equipment_option).permit(:name)
+  end
+
+  def cat_params
+    params.require(:category_option).permit(:name)
+  end
+
+  def area_params
+    params.require(:area_option).permit(:name)
+  end
+
+  def printer_params
+    params.require(:printer).permit(:model, :number)
   end
 end
