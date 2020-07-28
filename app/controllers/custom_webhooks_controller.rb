@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class CustomWebhooksController < ApplicationController
-  include ShopifyApp::WebhookVerification
+  include ShopifyApp::WebhookVerification unless Rails.env == 'test'
 
   def orders_paid
     params.permit!
