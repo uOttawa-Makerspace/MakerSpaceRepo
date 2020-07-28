@@ -25,7 +25,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     case range_type
     when 'semester'
       unless year && (year.to_i > 0)
-        render text: 'Invalid year', status: :bad_request
+        render plain: 'Invalid year', status: :bad_request
         return
       end
 
@@ -42,25 +42,25 @@ class Admin::ReportGeneratorController < AdminAreaController
         start_date = DateTime.new(year, 9, 1).beginning_of_day
         end_date = DateTime.new(year, 12, 31).end_of_day
       else
-        render text: 'Invalid term', status: :bad_request
+        render plain: 'Invalid term', status: :bad_request
         return
       end
     when 'date_range'
       begin
         start_date = Date.parse(params[:from_date]).to_datetime.beginning_of_day
       rescue ParseError
-        render text: 'Failed to parse start date'
+        render plain: 'Failed to parse start date'
         return
       end
 
       begin
         end_date = Date.parse(params[:to_date]).to_datetime.end_of_day
       rescue ParseError
-        render text: 'Failed to parse end date'
+        render plain: 'Failed to parse end date'
         return
       end
     else
-      render text: 'Invalid range type', status: :bad_request
+      render plain: 'Invalid range type', status: :bad_request
       return
     end
 
@@ -80,7 +80,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     when 'visits_by_hour'
       spreadsheet = ReportGenerator.generate_peak_hours_report(start_date, end_date)
     else
-      render text: 'Unknown report type', status: :bad_request
+      render plain: 'Unknown report type', status: :bad_request
       return
     end
 

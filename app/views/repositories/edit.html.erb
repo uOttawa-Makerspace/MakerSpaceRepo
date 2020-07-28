@@ -70,7 +70,7 @@
     <br>
     <%= f.label :categories %>
     <div>Choose at most 5 categories that fit your project.</div>
-    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), include_blank: "Select a category..." %>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), include_blank: "Select a category...", multiple: true %>
 
     <div id="category-container">
       <% @categories.each do |category| %>
@@ -81,7 +81,7 @@
     <br>
     <%= f.label :equipment %>
     <div>Choose at most 5 pieces of equipment that are related to your project.</div>
-    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a piece of equipment..." %>
+    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a piece of equipment...", multiple: true %>
 
     <div id="equipment-container">
     <% @equipments.each do |equipment| %>
