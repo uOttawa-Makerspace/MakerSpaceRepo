@@ -125,8 +125,8 @@ RSpec.describe RepositoriesController, type: :controller do
       end
 
       it 'should create a repository with categories and equipements' do
-        repo_params = FactoryBot.attributes_for(:repository, :with_equipement_and_categories)
-        expect { post :create, params: {user_username: User.last.username, repository: repo_params} }.to change(Repository, :count).by(1)
+        repo_params = FactoryBot.attributes_for(:repository)
+        expect { post :create, params: {user_username: User.last.username, repository: repo_params, categories: ['Laser', '3D Printing'], equipments: ['Laser Cutter', '3D Printer'] }}.to change(Repository, :count).by(1)
         expect(Repository.last.users.first.id).to eq(User.last.id)
         expect(User.last.reputation).to eq(25)
         expect(Repository.last.categories.count).to eq(2)

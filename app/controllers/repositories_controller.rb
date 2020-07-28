@@ -276,16 +276,16 @@ class RepositoriesController < SessionsController
   end
 
   def create_categories
-    if params[:repository][:categories].present?
-      params[:repository][:categories].first(5).each do |c|
+    if params[:categories].present?
+      params[:categories].first(5).each do |c|
         Category.create(name: c, repository_id: @repository.id)
       end
     end
   end
 
   def create_equipments
-    if params[:repository][:equipments].present?
-      params[:repository][:equipments].first(5).each do |e|
+    if params[:equipments].present?
+      params[:equipments].first(5).each do |e|
         Equipment.create(name: e, repository_id: @repository.id)
       end
     end
