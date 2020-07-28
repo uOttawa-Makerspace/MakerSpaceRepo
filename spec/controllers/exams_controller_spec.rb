@@ -29,14 +29,6 @@ RSpec.describe ExamsController, type: :controller do
     end
   end
 
-  # describe 'GET /new' do
-  #   context 'logged as admin' do
-  #     it 'should return a 200' do
-  #       get :new
-  #       expect(response).to have_http_status(:success)
-  #     end
-  #   end
-  # end
   #
   # describe "GET /show" do
   #   context 'logged as admin' do
