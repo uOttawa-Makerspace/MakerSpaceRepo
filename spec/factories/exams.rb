@@ -23,5 +23,14 @@ FactoryBot.define do
         create_list(:exam_question_with_exam_response, evaluator.exam_questions_count, exam: exam)
       end
     end
+
+    factory :exam_with_exam_questions_and_exam_responses_wrong do
+      transient do
+        exam_questions_count { 6 }
+      end
+      after(:create) do |exam, evaluator|
+        create_list(:exam_question_with_exam_response_wrong, evaluator.exam_questions_count, exam: exam)
+      end
+    end
   end
 end
