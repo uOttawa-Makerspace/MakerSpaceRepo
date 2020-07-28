@@ -141,17 +141,17 @@ Rails.application.routes.draw do
       post "/generate", :as => "generate", :action => "generate", format: :xlsx
     end
 
-    resources :users, only: %i[index edit update show] do
-      collection do
-        get 'search'
-        post 'bulk_add_certifications'
-        patch 'set_role'
-        delete 'delete_repository'
-        delete 'delete_project_proposal'
-        delete 'delete_user'
-        get 'manage_roles'
-      end
-    end
+    # resources :users, only: %i[index edit update show] do
+    #   collection do
+    #     get 'search'
+    #     post 'bulk_add_certifications'
+    #     patch 'set_role'
+    #     delete 'delete_repository'
+    #     delete 'delete_project_proposal'
+    #     delete 'delete_user'
+    #     get 'manage_roles'
+    #   end
+    # end
 
     resources :spaces, only: %i[index create edit] do
       delete "/edit/", :as => "destroy", :action => "destroy"
