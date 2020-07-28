@@ -5,6 +5,7 @@ class ProjectRequirementsController < ProficientProjectsController
   before_action :set_proficient_project, except: :destroy
   def create
     project_requirement = @proficient_project.project_requirements.build(required_project_id: params[:required_project_id])
+
     if project_requirement.save
       flash[:notice] = 'Required project added.'
     else

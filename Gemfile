@@ -15,10 +15,10 @@ gem 'clipboard-rails'
 gem 'coffee-rails', '4.2.2'
 gem 'excon'
 gem 'fastimage', '~> 1.7.0'
-gem 'font-awesome-rails', '~> 4.6.3.0'
-gem 'jbuilder', '~> 2.8.0'
-gem 'jquery-rails', '~> 4.0.5'
-gem 'jquery-ui-rails', '~> 5.0.5'
+gem 'font-awesome-rails'
+gem 'jbuilder'
+gem 'jquery-rails'
+gem 'jquery-ui-rails'
 gem 'kaminari'
 gem 'mocha'
 gem 'octokit', '~> 3.0'
@@ -38,7 +38,7 @@ gem 'select2-rails'
 gem 'shopify_app', '9.0.4'
 gem 'sidekiq'
 gem 'simplecov'
-gem 'thin', '~> 1.6.3'
+gem 'thin'
 gem 'toastr-rails'
 gem 'turbolinks', '~> 5.2.0'
 gem 'uglifier', '>= 1.3.0'
@@ -67,8 +67,10 @@ gem 'net-ssh'
 
 group :development, :test do
   gem 'byebug', platform: :mri
-  gem 'factory_girl_rails', '~> 4.2.1'
+  gem 'rspec-rails'
+  gem 'faker', '~> 2.0.0'
   gem 'railroady'
+  gem "factory_bot_rails"
   gem 'spring', '~> 2.1.0'
   gem 'listen', '~> 3.2.1'
   gem 'spring-watcher-listen', '~> 2.0.0'
@@ -77,18 +79,18 @@ end
 group :development do
   gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
-  gem 'web-console', '>= 3.7'
+  gem 'web-console'
 
-  # ssh deployment
+  # ssh deploymentque
   gem 'bcrypt_pbkdf', '~> 1.0'
   gem 'ed25519', '~> 1.2'
 end
 
 group :test do
-  gem 'capybara', '~> 2.1.0'
-  gem 'database_cleaner', '~> 1.0.1'
-  gem 'faker', '~> 1.1.2'
+  gem 'capybara'
+  gem 'database_cleaner-active_record'
   gem 'launchy', '~> 2.2'
   gem 'rails-controller-testing'
   gem 'selenium-webdriver', '~> 3.142.7'
+  gem 'shoulda-matchers', '~> 4.0'
 end

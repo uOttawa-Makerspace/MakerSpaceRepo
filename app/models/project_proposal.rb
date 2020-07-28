@@ -17,4 +17,5 @@ class ProjectProposal < ApplicationRecord
   before_save do
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)
   end
+
 end

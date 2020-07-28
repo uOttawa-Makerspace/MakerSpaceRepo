@@ -1,13 +1,13 @@
 function showPass(){
-	document.getElementById("password").style.display = 'block'
+	document.getElementById("password_repo_field").style.display = 'block'
 }
 
 function hidePass(){
-	$("#change_pass").hide();
-	document.getElementById("password").style.display = 'none'
+    $("#change_pass").hide();
+	document.getElementById("password_repo_field").style.display = 'none'
 }
 function togglePass() {
-		var x = document.getElementById("password")
+		var x = document.getElementById("password_repo_field")
 		if (x.style.display === 'none') {
 			x.style.display = 'block'
 		} else {

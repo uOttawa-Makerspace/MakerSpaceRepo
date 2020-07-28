@@ -2,8 +2,6 @@
 
 class ProficientProject < ApplicationRecord
   include Filterable
-  validates :title, presence: { message: 'A title is required.' }, uniqueness: { message: 'Title already exists' }
-  before_save :capitalize_title
   has_and_belongs_to_many :users
   belongs_to :training
   belongs_to :badge_template
@@ -17,6 +15,9 @@ class ProficientProject < ApplicationRecord
   has_many :cc_moneys,                  dependent: :destroy
   has_many :order_items,                dependent: :destroy
   has_many :badge_requirements,         dependent: :destroy
+
+  validates :title, presence: { message: 'A title is required.' }, uniqueness: { message: 'Title already exists' }
+  before_save :capitalize_title
 
   scope :filter_by_level, ->(level) { where(level: level) }
   scope :filter_by_proficiency, ->(proficient) { where(proficient: proficient) }
