@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 class ExamsController < ApplicationController
   before_action :current_user
   before_action :set_exam
@@ -8,16 +6,6 @@ class ExamsController < ApplicationController
 
   def index
     @exams = current_user.exams.order(category: :desc).paginate(page: params[:page], per_page: 50)
-  end
-
-  def create
-    @new_exam = current_user.exams.new(exam_params)
-    @new_exam.save!
-    ExamQuestion.create_exam_questions(@new_exam.id, @new_exam.training.id, $n_exams_question)
-    if @new_exam.save!
-      redirect_to exams_path
-      flash[:notice] = "You've successfully created a new exam!"
-    end
   end
 
   def create_from_training
@@ -97,10 +85,6 @@ class ExamsController < ApplicationController
         flash[:alert] = 'You cannot access this area.'
         redirect_to root_path
       end
-    end
-
-    def exam_params
-      params.require(:exam).permit(trainings_attributes: [:id])
     end
 
     def check_exam_status
