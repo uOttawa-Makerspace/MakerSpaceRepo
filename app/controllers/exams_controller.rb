@@ -23,7 +23,7 @@ class ExamsController < ApplicationController
   def create_from_training
     training_session = TrainingSession.find(params[:training_session_id])
     training_session.users.find_each do |user|
-      Exam.create_exam_and_exam_questions(user, training_session)
+      create_exam_and_exam_questions(user, training_session)
       MsrMailer.send_exam(user, training_session).deliver_now
     end
     redirect_to staff_dashboard_index_path(space_id: training_session.space.id)
@@ -32,7 +32,7 @@ class ExamsController < ApplicationController
   def create_for_single_user
     training_session = TrainingSession.find(params[:training_session_id])
     user = User.find(params[:user_id])
-    Exam.create_exam_and_exam_questions(user, training_session)
+    create_exam_and_exam_questions(user, training_session)
     redirect_to staff_training_session_path(training_session.id)
     # SEND EMAIL
   end
@@ -62,7 +62,7 @@ class ExamsController < ApplicationController
     if score < Exam::SCORE_TO_PASS
       status = Exam::STATUS[:failed]
       if user.exams.where(training_session_id: training_session.id).count < 2
-        Exam.create_exam_and_exam_questions(user, training_session)
+        create_exam_and_exam_questions(user, training_session)
       end
     else
       status = Exam::STATUS[:passed]

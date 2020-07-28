@@ -29,6 +29,19 @@ RSpec.describe ExamsController, type: :controller do
     end
   end
 
+  context '/create_exam_and_exam_questions' do
+    it 'should create exam and exam questions' do
+      training = create(:training_with_questions)
+      training_session = create(:training_session_with_users, training: training)
+      user = create(:user, :regular_user)
+      training_session.users << user
+      expect{ @controller.send(:create_exam_and_exam_questions, user, training_session) }.to change{ Exam.count }.by(1)
+                                                                                   .and change{ ExamQuestion.count }.by($n_exams_question)
+      expect(Exam.last.category).to eq(training_session.training.name)
+      expect(flash[:notice]).to eq("You've successfully sent exams to all users in this training.")
+    end
+  end
+
   #
   # describe "GET /show" do
   #   context 'logged as admin' do

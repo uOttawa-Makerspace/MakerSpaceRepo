@@ -6,5 +6,9 @@ FactoryBot.define do
     trait :correct do
       correct { true }
     end
+
+    trait :wrong do
+      correct { true }
+    end
   end
 end

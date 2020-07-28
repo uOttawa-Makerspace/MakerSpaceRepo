@@ -51,7 +51,20 @@ RSpec.describe Exam, type: :model do
   describe 'Methods' do
     context '#calculate_score' do
       it 'should calculate user score after finishing exam' do
+        exam = create(:exam_with_exam_questions_and_exam_responses)
+        expect(exam.calculate_score).to eq(100.0)
+      end
+    end
 
+    context '#failed?' do
+      it 'should return true' do
+        exam = create(:exam, status: Exam::STATUS[:failed])
+        expect(exam.failed?).to eq(true)
+      end
+
+      it 'should return false' do
+        exam = create(:exam, status: Exam::STATUS[:passed])
+        expect(exam.failed?).to eq(false)
       end
     end
   end
