@@ -35,16 +35,11 @@ RSpec.describe Training, type: :model do
   end
 
   describe "methods" do
-
     context "#all_training_names" do
-
       it 'should get the training names' do
         create(:training, :'3d_printing')
         expect(Training.all_training_names).to eq(["3D Printing"])
       end
-
     end
-    
   end
-  
 end
