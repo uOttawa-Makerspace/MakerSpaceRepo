@@ -144,7 +144,7 @@ Rails.application.routes.draw do
     resources :users, only: %i[index edit update show] do
       collection do
         get 'search'
-        post 'bulk_add_certifications'
+        #post 'bulk_add_certifications'
         patch 'set_role'
         delete 'delete_repository'
         delete 'delete_project_proposal'
