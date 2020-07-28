@@ -59,7 +59,7 @@
 
 
 
-    <%= f.select( :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), { :class => "form-control"}, { :include_blank => "Select a category.../Sélectionne une catégorie..."}) %>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name, multiple: true), class: "form-control", include_blank: "Select a category.../Sélectionne une catégorie..." %>
     </div>
     <div id="category-container"></div>
 
@@ -71,7 +71,7 @@
       d'équipment qui sont reliés newà ton
     </div>
 
-    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text form-control", include_blank: "Select a piece of equipment.../Sélectionne une piéce d'équipement..." %>
+    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name, multiple: true), class: "profile-text form-control", include_blank: "Select a piece of equipment.../Sélectionne une piéce d'équipement..." %>
     </div>
     <div id="equipment-container"></div>
 
