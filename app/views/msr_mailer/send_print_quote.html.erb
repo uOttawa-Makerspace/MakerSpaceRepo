@@ -16,8 +16,23 @@
     Time: <%= @print_order.hours %> hours<br>
     Price: <%= number_to_currency(@print_order.price_per_hour) %>/h
   <% else %>
-    Weight: <%= @print_order.grams %> grams<br>
-    Price: <%= number_to_currency(@print_order.price_per_gram) %>/g
+    <% if @print_order.material == "M2 Onyx" %>
+      Onyx: <br>
+      Time: <%= @print_order.grams %> cm3<br>
+      Price: <%= number_to_currency(@print_order.price_per_gram) %>/g
+      <br>
+      Carbon fiber: <br>
+      Time: <%= @print_order.grams_carbonfiber %> cm3<br>
+      Price: <%= number_to_currency(@print_order.price_per_gram_carbonfiber) %>/g
+      <br>
+      Fiber glass: <br>
+      Time: <%= @print_order.grams_fiberglass %> cm3<br>
+      Price: <%= number_to_currency(@print_order.price_per_gram_fiberglass) %>/g
+      <br>
+    <% else %>>
+      Weight: <%= @print_order.grams %> grams<br>
+      Price: <%= number_to_currency(@print_order.price_per_gram) %>/g
+    <% end %>
   <% end %>
   <br>
   <% if @print_order.expedited == true %>

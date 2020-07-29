@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_06_23_130427) do
+ActiveRecord::Schema.define(version: 2020_07_29_171201) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -312,9 +312,12 @@ ActiveRecord::Schema.define(version: 2020_06_23_130427) do
     t.float "material_cost"
     t.boolean "sst"
     t.text "material"
-    t.float "grams2"
-    t.float "price_per_gram2"
     t.float "hours"
+    t.string "comments_for_staff"
+    t.float "grams_fiberglass", default: 0.0
+    t.float "price_per_gram_fiberglass", default: 0.0
+    t.float "grams_carbonfiber", default: 0.0
+    t.float "price_per_gram_carbonfiber", default: 0.0
   end
 
   create_table "printer_sessions", id: :serial, force: :cascade do |t|

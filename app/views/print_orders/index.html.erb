@@ -91,27 +91,21 @@
           </td>
 
           <td>
-            <% if @user.admin? %>
-              <% if prints.approved %>
-                Approved
-              <% elsif prints.approved == false %>
-                Disapproved
-              <% else %>
-                <%= render 'staff_approval', prints: prints %>
-
+            <% if prints.approved %>
+              Approved
+              <% if @user.staff? %>
+                <%= render 'comments_for_staff', prints: prints %>
               <% end %>
+            <% elsif prints.approved == false %>
+              Disapproved
             <% else %>
-              <% if prints.approved %>
-                Approved
-              <% elsif prints.approved == false %>
-                Disapproved
-              <% else %>
-                Not Yet
+              <% if @user.admin? %>
+                <%= render 'staff_approval', prints: prints %>
               <% end %>
             <% end %>
           </td>
 
-          <% if prints.user_id == @user.id and prints.approved %>
+          <% if (prints.user_id == @user.id and prints.approved) or (@user.admin? and prints.approved) %>
             <td>
               <% if prints.user_approval %>
                 <% if prints.timestamp_approved %>
@@ -161,7 +155,7 @@
               <td>
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <%= f.hidden_field :staff_id, :value => @user.id %>
-                  <button class="btn btn-primary" type="submit">I will print it</button>
+                  <%= f.submit 'I will print it', class: "btn btn-primary", data: {confirm: "Please read the following instructions : #{prints.comments_for_staff}"} %>
                 <% end %>
               </td>
             <% else %>
