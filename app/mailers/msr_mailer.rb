@@ -74,7 +74,7 @@ class MsrMailer < ApplicationMailer
   def repo_report(repository, user)
     @repository = repository
     @user = user
-    mail(to: 'uottawa.makerepo@gmail.com', subject: "Repository #{repository.title} reported")
+    mail(from: user.email, to: 'uottawa.makerepo@gmail.com', subject: "Repository #{repository.title} reported")
   end
 
   def reset_password_email(email, newpassword)
