@@ -1,2 +1,2 @@
 <p>The Repository <%= link_to @repository.title, repository_url(@repository.user_username, @repository.slug) %> was reported as inappropriate.</p>
-<p>Reported by: <%= link_to @user.name, user_url(@user) %></p>
+<p>Reported by: <%= link_to @user.name, user_url(@user.username) %></p>
