@@ -36,10 +36,14 @@ class StaticPagesController < SessionsController
   end
 
   def report_repository
-    repository = Repository.find params[:repository_id]
-    user = current_user
-    MsrMailer.repo_report(repository, user).deliver_now
-    flash[:alert] = 'Repository has been reported'
+    if signed_in?
+      repository = Repository.find params[:repository_id]
+      user = current_user
+      MsrMailer.repo_report(repository, user).deliver_now
+      flash[:alert] = 'Repository has been reported'
+    else
+      flash[:alert] = 'Please login if you wish to report this repository'
+    end
     redirect_back(fallback_location: root_path)
   end
 end
