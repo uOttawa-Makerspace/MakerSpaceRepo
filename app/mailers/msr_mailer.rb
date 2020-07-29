@@ -71,8 +71,9 @@ class MsrMailer < ApplicationMailer
     mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students', bcc: all_users)
   end
 
-  def repo_report(repository)
+  def repo_report(repository, user)
     @repository = repository
+    @user = user
     mail(to: 'uottawa.makerepo@gmail.com', subject: "Repository #{repository.title} reported")
   end
 
