@@ -2,6 +2,7 @@
 
 class PrintOrder < ApplicationRecord
   belongs_to :user
+  after_save :set_filename
 
   has_one_attached :file
   validates :file, file_content_type: {
@@ -14,5 +15,10 @@ class PrintOrder < ApplicationRecord
       allow: ['application/pdf', 'image/svg+xml', 'text/html', 'model/stl', 'application/vnd.ms-pki.stl', 'application/octet-stream', 'text/plain', "model/x.stl-binary", 'model/x.stl-binary', 'text/x.gcode'],
       if: -> {final_file.attached?},
   }
+
+  def set_filename
+    file.blob.update(filename: "#{id}_#{file.filename}") if file.attached? and !file.filename.to_s.start_with?(id.to_s)
+    final_file.blob.update(filename: "#{id}_#{final_file.filename}") if final_file.attached? and !final_file.filename.to_s.start_with?(id.to_s)
+  end
 
 end

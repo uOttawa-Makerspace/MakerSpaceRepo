@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe PrintOrder, type: :model do
+
   describe 'Association' do
     context 'belongs_to' do
       it { should belong_to(:user) }
@@ -32,4 +33,18 @@ RSpec.describe PrintOrder, type: :model do
       end
     end
   end
+
+  describe "after_save" do
+
+    context "#set_filename" do
+
+      it 'should change the filename' do
+        print_order = create(:print_order, :with_file)
+        expect(PrintOrder.last.file.filename).to eq("#{print_order.id}_test.stl")
+      end
+
+    end
+
+  end
+
 end
