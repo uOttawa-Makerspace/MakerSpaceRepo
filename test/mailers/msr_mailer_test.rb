@@ -17,7 +17,8 @@ class MsrMailerTest < ActionMailer::TestCase
 
   test 'Repository email' do
     repository = repositories(:one)
-    email = MsrMailer.repo_report(repository)
+    user = users(:bob)
+    email = MsrMailer.repo_report(repository, user)
 
     assert_equal ['uottawa.makerepo@gmail.com'], email.from
     assert_equal ['uottawa.makerepo@gmail.com'], email.to
