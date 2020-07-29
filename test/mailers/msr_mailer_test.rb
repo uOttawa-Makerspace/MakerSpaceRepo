@@ -20,7 +20,7 @@ class MsrMailerTest < ActionMailer::TestCase
     user = users(:bob)
     email = MsrMailer.repo_report(repository, user)
 
-    assert_equal ['uottawa.makerepo@gmail.com'], email.from
+    assert_equal [user.email], email.from
     assert_equal ['uottawa.makerepo@gmail.com'], email.to
     assert_equal 'Repository Repository1 reported', email.subject
   end
