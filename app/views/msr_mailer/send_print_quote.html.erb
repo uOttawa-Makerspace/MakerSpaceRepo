@@ -11,7 +11,7 @@
   Service charges: <%= number_to_currency(@print_order.service_charge) %> <br>
   <% if @print_order.order_type == 1 %>
     Material cost: $<%= @print_order.material_cost %> <br>
-    Price: <%= @print_order.price_per_hour.number_to_currency %>
+    Price: <%= number_to_currency(@print_order.price_per_hour) %>
   <% elsif @print_order.order_type == 0 and (@print_order.sst == true) %>
     Time: <%= @print_order.hours %> hours<br>
     Price: <%= number_to_currency(@print_order.price_per_hour) %>/h
