@@ -1,0 +1,21 @@
+<a href="#" class="btn btn-primary" data-toggle="modal" data-target="#comment_for_staff_modal_<%= prints.id %>">Comments</a>
+
+<div class="modal fade" id="comment_for_staff_modal_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="comment_for_staff_modal_<%= prints.id %>" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Staff Comments</h5>
+      </div>
+      <div class="modal-body">
+        <% if prints.comments_for_staff.present? %>
+          <p><%= prints.comments_for_staff %></p>
+        <% else %>
+          <p>There isn't any comments</p>
+        <% end %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

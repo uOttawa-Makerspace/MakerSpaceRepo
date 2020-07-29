@@ -18,13 +18,45 @@
             <div class="form-group">
               <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
             </div>
-            <%= f.label :quote, "Number of Grams" %>
-            <div class="form-group">
-              <%= f.number_field :grams, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
-            </div>
-            <%= f.label :quote, "Price Per Gram (In CAD) " %>
-            <div class="form-group">
-              <%= f.number_field :price_per_gram, step: "0.01", placeholder: "0.08", class: "form-control", :required => true %>
+            <div class="row">
+              <div class="col-md-6">
+                <%= f.label :quote, "Number of Grams (Or CM3)" %>
+                <div class="form-group">
+                  <%= f.number_field :grams, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <%= f.label :quote, "Price Per Gram (In CAD) " %>
+                <div class="form-group">
+                  <%= f.number_field :price_per_gram, step: "0.01", placeholder: "0.08", class: "form-control", :required => true %>
+                </div>
+              </div>
+              <% if prints.material == "M2 Onyx" %>
+                <div class="col-md-6">
+                  <%= f.label :grams_fiberglass, "CM3 Fiberglass" %>
+                  <div class="form-group">
+                    <%= f.number_field :grams_fiberglass, step: "0.01", value: 0, class: "form-control", :required => true %>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <%= f.label :price_per_gram_fiberglass, "Price Per Gram (Fiberglass) " %>
+                  <div class="form-group">
+                    <%= f.number_field :price_per_gram_fiberglass, step: "0.01", value: 0, class: "form-control", :required => true %>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <%= f.label :grams_carbonfiber, "CM3 Carbon fiber" %>
+                  <div class="form-group">
+                    <%= f.number_field :grams_carbonfiber, step: "0.01", value: 0, class: "form-control", :required => true %>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <%= f.label :price_per_gram_carbonfiber, "Price Per Gram (Carbonfiber) " %>
+                  <div class="form-group">
+                    <%= f.number_field :price_per_gram_carbonfiber, step: "0.01", value: 0, class: "form-control", :required => true %>
+                  </div>
+                </div>
+              <% end  %>
             </div>
           <% elsif prints.sst == true %>
             <%= f.label :quote, "Service Charges (In CAD) " %>
@@ -39,19 +71,24 @@
             <div class="form-group">
               <%= f.number_field :price_per_hour, step: "0.01", placeholder: "30.00", class: "form-control", :required => true %>
             </div>
-
           <% else %>
             <%= f.label :quote, "Service Charges (In CAD) " %>
             <div class="form-group">
               <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
             </div>
-            <%= f.label :quote, "Material Cost (In CAD) " %>
-            <div class="form-group">
-              <%= f.number_field :material_cost, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
-            </div>
-            <%= f.label :quote, "Price For Hours Worked (In CAD) " %>
-            <div class="form-group">
-              <%= f.number_field :price_per_hour, step: "0.01", placeholder: "15.00", class: "form-control", :required => true %>
+            <div class="row">
+              <div class="col-md-6">
+                <%= f.label :quote, "Material Cost (In CAD) " %>
+                <div class="form-group">
+                  <%= f.number_field :material_cost, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <%= f.label :quote, "Price For Hours Worked (In CAD) " %>
+                <div class="form-group">
+                  <%= f.number_field :price_per_hour, step: "0.01", placeholder: "15.00", class: "form-control", :required => true %>
+                </div>
+              </div>
             </div>
           <% end %>
           <div class="form-group">
@@ -60,7 +97,12 @@
           </div>
 
           <div class="form-group">
+            <%= f.label :staff_comments, "Comments for the user" %>
             <%= f.text_field :staff_comments, placeholder: "I will need to add supports", class: "form-control" %>
+          </div>
+          <div class="form-group">
+            <%= f.label :comments_for_staff, "Comments for the staff members" %>
+            <%= f.text_field :comments_for_staff, placeholder: "Use the Raise 3D", class: "form-control" %>
           </div>
         </div>
         <div class="modal-footer">
