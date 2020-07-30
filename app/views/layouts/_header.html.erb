@@ -51,6 +51,7 @@
     <ul class="navbar-nav ml-auto align-items-xl-baseline">
 
       <% unless signed_in? %>
+        <% render 'login_modal' %>
         <li class="nav-item"><a class="nav-link" data-toggle="modal" data-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
         <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
       <% else %>
@@ -98,32 +99,8 @@
   </div>
 </nav>
 
-<div class="modal fade" id="popUpWindow">
-  <div class="modal-dialog">
-    <div class="modal-content">
+<%= render 'login_modal' if !signed_in? %>
 
-      <div class="modal-header">
-        <h1 class="text-center"><%= t('sessions.login.sign_in') %></h1>
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-      </div>
-
-      <div class="modal-body">
-        <%= form_tag login_authentication_path do %>
-          <div class="form-group attach">
-            <%= text_field_tag :username_email, params[:username_email], placeholder: t('sessions.login.username_or_email'), class: 'form-control', autofocus: true %>
-            <%= password_field_tag :password, nil, placeholder: t('sessions.login.password'), class: 'form-control' %>
-          </div>
-          <%= submit_tag t('sessions.login.sign_in'), class: 'btn btn-primary w-100' %>
-        <% end %>
-      </div>
-
-      <div class="modal-footer">
-        <%= link_to t('sessions.login.forgot_password'), forgot_password_path, class: "btn btn-link w-100" %>
-      </div>
-
-    </div>
-  </div>
-</div>
 <div class="flash">
   <%= render 'layouts/flash' %>
 </div>
