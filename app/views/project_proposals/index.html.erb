@@ -9,5 +9,6 @@
 <% end %>
 
 <%= render :partial => 'listing', :locals => {:tittle => "Pending Project Proposals", :approval => nil} if @user.admin? %>
+<%= render :partial => 'listing_user', :locals => {:tittle => "Pending Project Proposals", :approval => nil} if !@user.admin? %>
 <%= render :partial => 'listing', :locals => {:tittle => "List of Project Proposals", :approval => 1} %>
 <%= render :partial => 'listing', :locals => {:tittle => "Project Proposals not approved", :approval => 0} if @user.admin? %>

@@ -1,0 +1,30 @@
+<% if @project_proposals.where(:approved => approval).present? %>
+  <br>
+  <div class="titlepp"><%= tittle %></div>
+  <table class="spacing_table table-striped text-center">
+    <thead>
+    <tr>
+      <th>#</th>
+      <th>Title</th>
+      <th>Categories</th>
+      <th>Proposed on</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <% @project_proposals.where(:approved => approval, user_id: @user.id).each.with_index do |project_proposal, n| %>
+      <tr>
+        <td><%= n+1 %></td>
+        <td><%= project_proposal.title %></td>
+        <td><% project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
+        <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+  <br>
+<% else %>
+  <br>
+  <div class="titlepp">No Projects Here</div>
+<% end %>
+
