@@ -322,6 +322,7 @@ Rails.application.routes.draw do
     collection do
       post :create, path: '/new'
       get :remove_avatar
+      post :flag
     end
 
     get 'likes', on: :member
