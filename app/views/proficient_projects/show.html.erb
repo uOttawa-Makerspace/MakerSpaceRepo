@@ -57,8 +57,8 @@
 </section>
 
 <% @videos.each do |f| %>
-  <div class="text-center my-3">
-    <%= video_tag url_for(f.video), controls: true, controlslist: "nodownload" if f.video.attached? %>
+  <div class="imgbox">
+    <%= video_tag url_for(f.video), controls: true, controlslist: "nodownload", class: "center-fit" if f.video.attached? %>
   </div>
 <% end %>
 
