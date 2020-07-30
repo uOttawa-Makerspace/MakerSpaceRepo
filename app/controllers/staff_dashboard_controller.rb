@@ -100,7 +100,7 @@ class StaffDashboardController < StaffAreaController
   def present_users_report
     respond_to do |format|
       format.html
-      format.xlsx { send_data ReportGenerator.generate_space_present_users_report(@space.id).to_stream.read }
+      format.xlsx { send_data ReportGenerator.generate_space_present_users_report(@space.id).to_stream.read, filename: "#{@space.name}_#{Time.new.strftime("%Y-%m-%d_%Hh%M")}_present_users_report.xlsx" }
     end
   end
  end
