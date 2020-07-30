@@ -16,7 +16,7 @@
     <br>
     <%= form_for admin_spaces_path, :url => { :action => "create", controller: 'admin/spaces'} do |f| %>
       <%= text_field_tag 'space_params[name]', nil, placeholder: 'Enter a unique name', style: 'width:200px;height:20px;font-size:1.3em;' %><br><br>
-      <%= submit_tag "create", class:"save-button"%>
+      <%= submit_tag "Create", class:"btn btn-primary"%>
     <%end%>
     <br></br>
   </div>

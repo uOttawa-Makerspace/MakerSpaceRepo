@@ -8,13 +8,13 @@
     <%= form_for @cat_option, url: {controller: "admin/settings", action: "add_category"} do |f| %>
       <%= f.label :add_a_category, class: "profile-label" %>
       <%= f.text_field :name, class: "profile-text" %>
-      <%= f.submit "Add", class: 'save-button' %>
+      <%= f.submit "Add", class: 'btn btn-primary' %>
     <% end %>
     <br>
     <%= form_for @cat_option, url: {controller: "admin/settings", action: "remove_category"} do |f| %>
       <%= f.label :remove_a_category, class: "profile-label" %>
       <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-select", include_blank: "Select a category..." %>
-      <%= f.submit "Remove", class: 'save-button' %>
+      <%= f.submit "Remove", class: 'btn btn-primary' %>
     <% end %>
 
     <br><br><br>
@@ -23,13 +23,13 @@
     <%= form_for @area_option, url: {controller: "admin/settings", action: "add_area"} do |f| %>
         <%= f.label :add_an_area, class: "profile-label" %>
         <%= f.text_field :name, class: "profile-text" %>
-        <%= f.submit "Add", class: 'save-button' %>
+        <%= f.submit "Add", class: 'btn btn-primary' %>
     <% end %>
     <br>
     <%= form_for @area_option, url: {controller: "admin/settings", action: "remove_area"} do |f| %>
         <%= f.label :remove_an_area, class: "profile-label" %>
         <%= select_tag :remove_area, options_from_collection_for_select(AreaOption.show_options, :id, :name), class: "profile-select", include_blank: "Select an area..." %>
-        <%= f.submit "Remove", class: 'save-button' %>
+        <%= f.submit "Remove", class: 'btn btn-primary' %>
     <% end %>
 
     <br><br><br>
@@ -40,13 +40,13 @@
         <%= f.label "Printer Number", class: "profile-label" %>
         <%= f.text_field :number, class: "profile-text" %>
         <br>
-        <%= f.submit "Add", class: 'save-button' %>
+        <%= f.submit "Add", class: 'btn btn-primary' %>
     <% end %>
     <br>
     <%= form_for @printer, url: {controller: "admin/settings", action: "remove_printer"} do |f| %>
         <%= f.label :remove_a_printer, class: "profile-label" %>
         <%= select_tag :remove_printer, options_from_collection_for_select(Printer.show_options, :id, :model_and_number), class: "profile-select", include_blank: "Select a printer..." %>
-        <%= f.submit "Remove", class: 'save-button' %>
+        <%= f.submit "Remove", class: 'btn btn-primary' %>
   <% end %>
 
     <br><br><br>
@@ -54,20 +54,20 @@
     <%= form_for @equip_option, url: {controller: "admin/settings", action: "add_equipment"} do |f| %>
       <%= f.label :add_equipment, class: "profile-label" %>
       <%= f.text_field :name, class: "profile-text" %>
-      <%= f.submit "Add", class: 'save-button' %>
+      <%= f.submit "Add", class: 'btn btn-primary' %>
     <% end %>
     <br>
     <%= form_for @equip_option, url: {controller: "admin/settings", action: "remove_equipment"} do |f| %>
       <%= f.label :remove_equipment, class: "profile-label" %>
       <%= select_tag :remove_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-select", include_blank: "Select a piece of equipment..." %>
-      <%= f.submit "Remove", class: 'save-button' %>
+      <%= f.submit "Remove", class: 'btn btn-primary' %>
     <% end %>
     <br>
     <%= form_for @equip_option, url: {controller: "admin/settings", action: "rename_equipment"} do |f| %>
       <%= f.label :rename_equipment, class: "profile-label" %>
       <%= select_tag :rename_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-select", include_blank: "Select..." %>
       <%= f.text_field :name, class: "profile-text", id:"rename_equipment_text" %>
-      <%= f.submit "Rename", class: 'save-button' %>
+      <%= f.submit "Rename", class: 'btn btn-primary' %>
     <% end %>
 
     <br><br><br>
@@ -76,7 +76,7 @@
     <%= form_for @pi_option, url: {controller: "admin/settings", action: "remove_pi"} do |f| %>
       <%= f.label :remove_card_reader, class: "profile-label" %>
       <%= select_tag :remove_pi, options_from_collection_for_select(PiReader.all, :id, :pi_mac_with_location), class: "profile-select", include_blank: "Select a card reader..." %>
-      <%= f.submit "Remove", class: 'save-button' %>
+      <%= f.submit "Remove", class: 'btn btn-primary' %>
     <% end %>
     <br><br>
 
