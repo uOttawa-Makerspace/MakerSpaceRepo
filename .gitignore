@@ -21,7 +21,7 @@ storage/
 /log/*
 !/log/.keep
 /tmp
-/public/tmp
+/public/tmp/
 
 #igore sunspot
 sunspot-solr.pid
