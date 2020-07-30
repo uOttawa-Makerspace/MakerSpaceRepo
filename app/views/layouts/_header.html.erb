@@ -51,7 +51,6 @@
     <ul class="navbar-nav ml-auto align-items-xl-baseline">
 
       <% unless signed_in? %>
-        <% render 'login_modal' %>
         <li class="nav-item"><a class="nav-link" data-toggle="modal" data-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
         <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
       <% else %>
@@ -99,7 +98,7 @@
   </div>
 </nav>
 
-<%= render 'login_modal' if !signed_in? %>
+<%= render 'static_pages/login_modal' if !signed_in? %>
 
 <div class="flash">
   <%= render 'layouts/flash' %>
