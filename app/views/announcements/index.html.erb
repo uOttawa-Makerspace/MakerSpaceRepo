@@ -49,11 +49,11 @@
               </td>
 
               <td class="action-cell">
-                <%=link_to "Edit", edit_announcement_path(a.id), class:"btn-block visit-button mb-1 mt-0" if current_user.staff?%>
-                <%=link_to "Show", announcement_path(a.id), class:"btn-block show-button mt-0 mb-1" %>
+                <%=link_to "Edit", edit_announcement_path(a.id), class:"btn btn-primary btn-block btn-sm mb-1 mt-0" if current_user.staff?%>
+                <%=link_to "Show", announcement_path(a.id), class:"btn btn-info btn-block btn-sm mt-0 mb-1" %>
                 <%=link_to "Delete", { controller: :announcements ,action: :destroy, id: a.id }, method: :delete,
                            data: { confirm: 'Are you sure that you want to delete this announcement?' },
-                           class:"btn-block destroy-button mb-1 mr-0" %>
+                           class:"btn btn-danger btn-sm btn-block mb-1 mr-0" %>
               </td>
 
             </tr>

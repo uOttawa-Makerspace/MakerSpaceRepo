@@ -2,10 +2,10 @@
   <div class="edit-column">
       <div class="setting-title">Admin Training Sessions Manager</div>
       <br>
-      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
-
-      <br></br>
-      <table class="sessions-table">
+      <div class="form-group">
+        <input type="text" style="width: 100%" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username" class="form-control">
+      </div>
+     <table class="sessions-table">
         <tr>
           <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
           <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
@@ -14,12 +14,11 @@
           <th>Status <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
           <th>Users <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           <th class="action-header">Action</th>
-
         </tr>
-
         <tbody>
         <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20) %>
         <%= will_paginate @sessions, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+        <br>
         <% @sessions.each do |sesh| %>
           <tr>
             <td class="date-cell">
@@ -66,12 +65,12 @@
             </td>
 
             <td class="action-cell">
-              <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %>
+              <%=link_to "Visit", staff_training_session_url(sesh), class:"btn btn-primary btn-block btn-sm" %>
               <%=link_to "Download",
                     training_report_staff_training_session_path(id:sesh.id, format: "xlsx" ),
                     action: :training_report,
-                    class:"download-button" %>
-              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
+                    class:"btn btn-info btn-block btn-sm" %>
+              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"btn btn-danger btn-block btn-sm"%>
             <br></br>
           </td>
 
