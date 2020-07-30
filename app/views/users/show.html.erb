@@ -44,7 +44,20 @@
     <div>
       <b>CCs:</b> <%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <b><%= @repo_user.get_total_cc %></b>
       <br/>
-      <b>Hours Worked: <%= @repo_user.get_total_hours %></b>
+      <b>Hours Worked: <%= @repo_user.get_total_hours %></b><br>
+      <% if @user.staff? %>
+        <%= render 'users/flag' %>
+        <b>Flagged: <%= @repo_user.flagged? ? "Yes" : "No"%></b><br>
+        <% if !@repo_user.flagged? %>
+          <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#flag_user">
+            Flag
+          </button>
+          <% else %>
+          <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#flag_message">
+            See flag
+          </button>
+        <% end %>
+      <% end %><br>
     </div>
     <br/>
     <br/>
@@ -164,80 +177,79 @@
       <br>
       Certifications:
       <br></br>
-      <div class="user-certifications-container">
-        <table class="staff-table table table-striped text-center">
-          <tr>
-            <th>TRAINING</th>
-            <th>TRAINER</th>
-            <th>CREATED ON</th>
-            <th>RENEWED ON</th>
-            <% if current_user.admin? %>
-              <th>ACTION</th>
-            <% end %>
-          </tr>
-          <% @repo_user.certifications.each do |certification| %>
-            <% if certification.out_of_date? %>
-              <tr class="cert-row-red">
-            <% else %>
-              <tr>
-            <% end %>
-            <td>
-              <%= certification.training.name %>
-              <br/>
-              (<%= certification.training_session.level %>)
-            </td>
-            <td>
-              <%= certification.trainer %>
-            </td>
-            <td>
-              <%= if (@user.admin? || (@user.name == certification.trainer))
-                    link_to certification.created_at.strftime("%B %d, %Y"), staff_training_session_path(id: certification.training_session.id), style: "text-decoration:underline;"
-                  else
-                    certification.created_at.strftime("%B %d, %Y")
-                  end
-              %>
-            </td>
-            <td>
-              <%= certification.updated_at.strftime("%B %d, %Y") %>
-            </td>
-            <% if @user.admin? || (@user == certification.training_session.user) %>
-              <td class="action-cell">
-                <%=
-                  link_to "renew", renew_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
-                          method: :patch, class: 'btn btn-success btn-block btn-sm', style: "background-color:#53BE6A;"
-                %>
-                <%=
-                  link_to "revoke", revoke_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
-                          method: :delete, class: 'btn btn-danger btn-block btn-sm'
+        <div class="user-certifications-container">
+          <table class="staff-table table table-striped text-center">
+            <tr>
+              <th>TRAINING</th>
+              <th>TRAINER</th>
+              <th>CREATED ON</th>
+              <th>RENEWED ON</th>
+              <% if current_user.admin? %>
+                <th>ACTION</th>
+              <% end %>
+            </tr>
+            <% @repo_user.certifications.each do |certification| %>
+              <% if certification.out_of_date? %>
+                <tr class="cert-row-red">
+              <% else %>
+                <tr>
+              <% end %>
+              <td>
+                <%= certification.training.name %>
+                <br/>
+                (<%= certification.training_session.level %>)
+              </td>
+              <td>
+                <%= certification.trainer %>
+              </td>
+              <td>
+                <%= if (@user.admin? || (@user.name == certification.trainer))
+                      link_to certification.created_at.strftime("%B %d, %Y"), staff_training_session_path(id: certification.training_session.id), style: "text-decoration:underline;"
+                    else
+                      certification.created_at.strftime("%B %d, %Y")
+                    end
                 %>
               </td>
-            <% end %>
-            </tr>
-          <% end %>
-        </table>
-        <br><br>
-        <% if @user.admin? %>
-          <div id="role-container">
-            <div style="font-weight: bold;"> Current role:</div>
-            <%= @repo_user.role.gsub("_", " ") %>
-            <br></br>
-            <div id="change-to" style="font-weight: bold;"> Change to:
-              <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
-                <%= radio_button_tag :role, "admin" %>
-                <%= label_tag "Admin" %>
-                <%= radio_button_tag :role, "staff" %>
-                <%= label_tag "Staff" %>
-                <%= radio_button_tag :role, "regular_user" %>
-                <%= label_tag "Regular User" %>
-                <%= radio_button_tag :role, "volunteer" %>
-                <%= label_tag "Volunteer" %>
-                <br></br>
-                <%= submit_tag "update role", class: "btn btn-primary" %>
+              <td>
+                <%= certification.updated_at.strftime("%B %d, %Y") %>
+              </td>
+              <% if @user.admin? || (@user == certification.training_session.user) %>
+                <td class="action-cell">
+                  <%=
+                    link_to "renew", renew_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                            method: :patch, class: 'btn btn-success btn-block btn-sm', style: "background-color:#53BE6A;"
+                  %>
+                  <%=
+                    link_to "revoke", revoke_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                            method: :delete, class: 'btn btn-danger btn-block btn-sm'
+                  %>
+                </td>
               <% end %>
-        <% end %>
+              </tr>
+            <% end %>
+          </table>
+          <% if @user.admin? %>
+            <div id="role-container">
+              <div style="font-weight: bold;"> Current role:</div>
+              <%= @repo_user.role.gsub("_", " ") %>
+              <br></br>
+              <div id="change-to" style="font-weight: bold;"> Change to:
+                <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
+                  <%= radio_button_tag :role, "admin" %>
+                  <%= label_tag "Admin" %>
+                  <%= radio_button_tag :role, "staff" %>
+                  <%= label_tag "Staff" %>
+                  <%= radio_button_tag :role, "regular_user" %>
+                  <%= label_tag "Regular User" %>
+                  <%= radio_button_tag :role, "volunteer" %>
+                  <%= label_tag "Volunteer" %>
+                  <br></br>
+                  <%= submit_tag "update role", class: "btn btn-primary" %>
+                <% end %>
+          <% end %>
+          </div>
+          </div>
         </div>
-        </div>
-      </div>
     </div>
   </div>
   <div class="container text-center">

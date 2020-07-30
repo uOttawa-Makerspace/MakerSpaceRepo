@@ -29,6 +29,20 @@ class UsersController < SessionsController
     @new_user = User.new
   end
 
+  def flag
+    if params[:flag].present? and params[:flagged_user].present? and @user.staff?
+      @flagged_user = User.find(params[:flagged_user])
+      if params[:flag] == "flag" and params[:flag_message].present?
+        @flagged_user.update(flagged: true, flag_message: params[:flag_message])
+      elsif params[:flag] == "unflag"
+        @flagged_user.update(flagged: false, flag_message: "")
+      end
+      redirect_to user_path(@flagged_user.username) and return
+    else
+      redirect_to user_path(@user.username) and return
+    end
+  end
+
   def remove_avatar
     @user.avatar.purge
     redirect_to settings_profile_path

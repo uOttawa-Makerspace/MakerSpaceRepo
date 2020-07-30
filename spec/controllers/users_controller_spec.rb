@@ -23,6 +23,49 @@ RSpec.describe UsersController, type: :controller do
 
   end
 
+  describe "POST /flag" do
+
+    context 'flag' do
+
+      it 'should flag user' do
+        admin = create(:user, :admin)
+        session[:user_id] = admin.id
+        session[:expires_at] = Time.zone.now + 10000
+        user = create(:user, :regular_user)
+        post :flag, params: {flagged_user: user.id, flag: "flag", flag_message: "abc"}
+        expect(response).to redirect_to user_path(user.username)
+        expect(User.last.flagged?).to be_truthy
+        expect(User.last.flag_message).to eq("abc")
+      end
+
+      it 'should unflag user' do
+        admin = create(:user, :admin)
+        session[:user_id] = admin.id
+        session[:expires_at] = Time.zone.now + 10000
+        user = create(:user, :regular_user, flagged: true, flag_message: "abc")
+        post :flag, params: {flagged_user: user.id, flag: "unflag"}
+        expect(response).to redirect_to user_path(user.username)
+        expect(User.last.flagged?).to be_falsey
+        expect(User.last.flag_message).to eq("")
+      end
+
+      it 'should redirect user' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        post :flag, params: {flagged_user: user.id, flag: "flag"}
+        expect(response).to redirect_to user_path(user.username)
+      end
+
+      it 'should give a 200' do
+        get :new
+        expect(response).to have_http_status(:success)
+      end
+
+    end
+
+  end
+
   describe 'create' do
 
     context 'create user' do
