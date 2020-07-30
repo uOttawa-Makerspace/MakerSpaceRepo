@@ -60,6 +60,7 @@
   <div class="imgbox">
     <%= video_tag url_for(f.video), controls: true, controlslist: "nodownload", class: "center-fit" if f.video.attached? %>
   </div>
+  <br />
 <% end %>
 
 <% @files.each do |f| %>
