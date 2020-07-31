@@ -16,7 +16,8 @@ class ProficientProjectsController < DevelopmentProgramsController
     else
       @proficient_projects = @proficient_projects.where.not(id: current_user.order_items.completed_order.pluck(:proficient_project_id))
     end
-    @training_levels = TrainingSession.return_levels
+    @prices ||= %w[Free Paid]
+    @training_levels ||= TrainingSession.return_levels
     @training_categories_names = Training.all.order('name ASC').pluck(:name)
     @order_item = current_order.order_items.new
     @user_order_items = current_user.order_items.completed_order
@@ -198,7 +199,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def get_filter_params
-    params.permit(:search, :level, :category, :proficiency, :my_projects)
+    params.permit(:search, :level, :category, :proficiency, :my_projects, :price)
   end
 
   def set_badge_templates
