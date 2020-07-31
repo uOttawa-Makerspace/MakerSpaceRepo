@@ -62,6 +62,15 @@ RSpec.describe DiscountCodesController, type: :controller do
       end
     end
 
+    context 'POST /create with expired price rule /check_and_set_price_rule_expiration' do
+      it 'should not create a discount code and redirect to new discount code path' do
+        price_rule = create(:price_rule, expired_at: DateTime.yesterday)
+        expect { post :create, params: {price_rule_id: price_rule.id} }.to change(DiscountCode, :count).by(0)
+        expect(response).to redirect_to new_discount_code_path
+        expect(flash[:alert]).to eq("This coupon is expired")
+      end
+    end
+
     context 'POST /create with no CC points' do
       it 'should fail to create the discount code and redirect to root' do
         CcMoney.create(user_id: @user.id, cc: -1000)
