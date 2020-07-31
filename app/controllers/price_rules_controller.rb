@@ -54,25 +54,25 @@ class PriceRulesController < DevelopmentProgramsController
 
   private
 
-  def admin_access
-    unless current_user.admin?
-      flash[:alert] = 'Forbbiden Area'
-      redirect_to root_path
+    def admin_access
+      unless current_user.admin?
+        flash[:alert] = 'Forbbiden Area'
+        redirect_to root_path
+      end
     end
-  end
 
-  def set_price_rule
-    @price_rule = PriceRule.find(params[:id])
-  end
-
-  def price_rule_params
-    params.require(:price_rule).permit(:title, :value, :cc, :expired_at)
-  end
-
-  def check_discount_codes
-    if @price_rule.has_discount_codes?
-      flash[:alert] = 'This price rule cannot be edited/deleted because it has already discount codes'
-      redirect_to price_rules_path
+    def set_price_rule
+      @price_rule = PriceRule.find(params[:id])
     end
-  end
+
+    def price_rule_params
+      params.require(:price_rule).permit(:title, :value, :cc, :expired_at)
+    end
+
+    def check_discount_codes
+      if @price_rule.has_discount_codes?
+        flash[:alert] = 'This price rule cannot be edited/deleted because it has already discount codes'
+        redirect_to price_rules_path
+      end
+    end
 end

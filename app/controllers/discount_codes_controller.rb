@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class DiscountCodesController < DevelopmentProgramsController
-  before_action :set_price_rule, only: :create
+  before_action :check_and_set_price_rule_expiration, only: :create
   before_action :check_user_wallet, only: :create
 
   def index
@@ -12,7 +12,7 @@ class DiscountCodesController < DevelopmentProgramsController
   end
 
   def new
-    @price_rules = PriceRule.all
+    @price_rules = PriceRule.where("expired_at > ? OR expired_at IS NULL", DateTime.now)
   end
 
   def create
@@ -44,19 +44,27 @@ class DiscountCodesController < DevelopmentProgramsController
 
   private
 
-  def webhook_params
-    params.except(:controller, :action, :type)
-  end
-
-  def set_price_rule
-    @price_rule = PriceRule.find_by(id: params[:price_rule_id])
-  end
-
-  def check_user_wallet
-    current_user.update_wallet
-    unless current_user.wallet >= @price_rule.cc
-      flash[:alert] = 'Not enough CC points'
-      redirect_back(fallback_location: root_path)
+    def check_and_set_price_rule_expiration
+      @price_rule = PriceRule.find_by(id: params[:price_rule_id])
+      unless @price_rule.expired_at.nil? || @price_rule.expired_at > DateTime.now
+        flash[:alert] = "This coupon is expired"
+        redirect_to new_discount_codes_path
+      end
     end
-  end
+
+    def webhook_params
+      params.except(:controller, :action, :type)
+    end
+
+    def set_price_rule
+      @price_rule = PriceRule.find_by(id: params[:price_rule_id])
+    end
+
+    def check_user_wallet
+      current_user.update_wallet
+      unless current_user.wallet >= @price_rule.cc
+        flash[:alert] = 'Not enough CC points'
+        redirect_back(fallback_location: root_path)
+      end
+    end
 end
