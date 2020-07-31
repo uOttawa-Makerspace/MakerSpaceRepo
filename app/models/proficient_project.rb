@@ -37,6 +37,10 @@ class ProficientProject < ApplicationRecord
                  LOWER(description) like LOWER(?)", "%#{value}%", "%#{value}%", "%#{value}%")
     elsif attribute == 'proficiency'
       filter_by_proficiency(value)
+    elsif attribute == 'price'
+      bool = true if value.eql?('Paid')
+      bool = false if value.eql?('Free')
+      where(proficient: bool)
     else
       self
     end
