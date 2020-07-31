@@ -66,7 +66,7 @@ class PriceRulesController < DevelopmentProgramsController
   end
 
   def price_rule_params
-    params.require(:price_rule).permit(:title, :value, :cc)
+    params.require(:price_rule).permit(:title, :value, :cc, :expired_at)
   end
 
   def check_discount_codes
