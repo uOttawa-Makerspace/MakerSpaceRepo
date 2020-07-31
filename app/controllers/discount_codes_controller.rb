@@ -48,7 +48,7 @@ class DiscountCodesController < DevelopmentProgramsController
       @price_rule = PriceRule.find_by(id: params[:price_rule_id])
       unless @price_rule.expired_at.nil? || @price_rule.expired_at > DateTime.now
         flash[:alert] = "This coupon is expired"
-        redirect_to new_discount_codes_path
+        redirect_to new_discount_code_path
       end
     end
 
