@@ -1,15 +1,43 @@
-<% if flash[:notice] %>
-  <br>
-  <div class="alert alert-info alert-dismissible text-center">
-    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-    <%= flash[:notice] %>
-  </div>
-<% end %>
-
-<% if flash[:alert] %>
-  <br>
-  <div class="alert alert-danger alert-dismissible text-center">
-    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-    <%= flash[:alert] %>
-  </div>
+<% flash.each do |key, msg| %>
+  <% if key == "notice" %>
+    <div class="alert alert-success alert-dismissible fade show col-md-12 text-center">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      <%= msg %>
+    </div>
+  <% elsif key == "alert_blue" %>
+    <div class="alert alert-info alert-dismissible fade show col-md-12 text-center">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      <%= msg %>
+    </div>
+  <% elsif key == "alert_yellow" %>
+    <div class="alert alert-warning alert-dismissible fade show col-md-12 text-center">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      <%= msg %>
+    </div>
+  <% elsif key == "alert" %>
+    <div class="alert alert-danger alert-dismissible fade show col-md-12 text-center">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      <%= msg %>
+    </div>
+  <% elsif key == "alert_darkblue" %>
+    <div class="alert alert-primary alert-dismissible fade show col-md-12 text-center">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      <%= msg %>
+    </div>
+  <% elsif key == "alert_gray" %>
+    <div class="alert alert-secondary alert-dismissible fade show col-md-12 text-center">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      <%= msg %>
+    </div>
+  <% elsif key == "alert_darkgray" %>
+    <div class="alert alert-dark alert-dismissible fade show col-md-12 text-center">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      <%= msg %>
+    </div>
+  <% elsif key == "alert_light" %>
+    <div class="alert alert-light alert-dismissible fade show col-md-12 text-center">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      <%= msg %>
+    </div>
+  <% end %>
 <% end %>
