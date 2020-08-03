@@ -155,6 +155,7 @@ Rails.application.routes.draw do
 
     resources :spaces, only: %i[index create edit] do
       delete "/edit/", :as => "destroy", :action => "destroy"
+      post "/edit/", :as => "update_name", :action => "update_name"
     end
 
     resources :pi_readers, only: [:update]
