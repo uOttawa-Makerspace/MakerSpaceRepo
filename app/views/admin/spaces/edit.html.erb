@@ -78,7 +78,16 @@
     </div>
 
     <br></br>
-    <br></br>
+    <h3>Edit space name</h3>
+    New name
+    <%= form_for admin_spaces_path, action: :update_name, method: :post do |f| %>
+      <div class="form-group">
+        <%= text_field_tag :name, "", class: "form-control" %>
+        <%= hidden_field_tag :space_id, @space.id %> <br>
+        <%= f.submit "Edit name", class: "btn btn-primary",   data: { confirm: 'Are your sure you want to change the name of the space ?' }  %>
+      </div>
+  <% end %>
+    <br><br>
 
     <table><th class="destroy-header">Destroy Space</th></table>
     <div>
