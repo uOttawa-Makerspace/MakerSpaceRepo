@@ -37,6 +37,17 @@ RSpec.describe Admin::SpacesController, type: :controller do
     end
   end
 
+  describe 'POST /update_name' do
+    context 'update name' do
+      it 'should return a 200' do
+        space = create(:space)
+        post :update_name, params: {space_id: space.id, name: "ABC123"}
+        expect(response).to have_http_status(302)
+        expect(Space.last.name).to eq("ABC123")
+      end
+    end
+  end
+
   describe 'POST /create' do
     context 'create a space' do
       it 'should create a space' do

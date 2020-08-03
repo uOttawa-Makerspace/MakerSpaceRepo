@@ -27,6 +27,14 @@ class Admin::SpacesController < AdminAreaController
     end
   end
 
+  def update_name
+    @space = Space.find(params[:space_id])
+    if @space.update(name: params[:name])
+      flash[:notice] = 'Space Name updated !'
+      redirect_back(fallback_location: root_path)
+    end
+  end
+
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
