@@ -88,7 +88,7 @@ RSpec.describe DiscountCode, type: :model do
         shopify_discount_code = @discount_code.shopify_api_create_discount_code
         fetched_shopify_discount_code = ShopifyAPI::DiscountCode.where(id: shopify_discount_code.id, price_rule_id: @discount_code.price_rule.shopify_price_rule_id)
         expect(fetched_shopify_discount_code.present?).to eq(true)
-        @discount_code.update_attributes(shopify_discount_code_id: shopify_discount_code.id)
+        @discount_code.update(shopify_discount_code_id: shopify_discount_code.id)
       end
     end
 

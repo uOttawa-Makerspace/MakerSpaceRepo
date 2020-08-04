@@ -18,7 +18,7 @@ class VideosController < DevelopmentProgramsController
     if @video.save
       blob = @video.video.blob
       blob_size = bytes_to_megabytes(blob.byte_size)
-      @video.update_attributes(
+      @video.update(
           video_file_name: blob.filename,
           video_file_size: blob_size,
           video_content_type: blob.content_type,
