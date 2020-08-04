@@ -172,7 +172,7 @@ RSpec.describe RepositoriesController, type: :controller do
 
       it 'should update the repository with photos and files' do
         create(:repository, :with_repo_files)
-        patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, repository: {title: "abc"}, files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')], deleteimages: [Photo.last.image.filename.to_s], deletefiles: [RepoFile.last.file.filename.to_s]}
+        patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, repository: {title: "abc"}, files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')], deleteimages: [Photo.last.image.filename.to_s], deletefiles: [RepoFile.last.file.id.to_s]}
         expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
