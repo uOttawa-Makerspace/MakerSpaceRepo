@@ -15,7 +15,6 @@ Rails.application.configure do
 
   # Full error reports are disabled and caching is turned on.
   config.consider_all_requests_local       = false
-
   config.action_controller.perform_caching = true
 
   # Attempt to read encrypted secrets from `config/secrets.yml.enc`.
@@ -79,7 +78,7 @@ Rails.application.configure do
   # config.action_controller.asset_host = 'http://assets.example.com'
   # Use a real queuing backend for Active Job (and separate queues per environment)
   # config.active_job.queue_adapter     = :resque
-  # config.active_job.queue_name_prefix = "maker_space_repo_#{Rails.env}"
+  # config.active_job.queue_name_prefix = "maker_space_repo_production"
   #
   config.action_mailer.perform_caching = false
 

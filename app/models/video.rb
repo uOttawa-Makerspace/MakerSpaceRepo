@@ -5,7 +5,7 @@ class Video < ApplicationRecord
 
   has_one_attached :video
 
-  ALLOWED_CONTENT_TYPES = %w[video/mp4 video/avi video/mov].freeze
+  ALLOWED_CONTENT_TYPES = %w[video/mp4 video/avi video/mov video/quicktime].freeze
 
   validates :video, file_content_type: {
       allow: [ALLOWED_CONTENT_TYPES],
