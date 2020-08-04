@@ -377,9 +377,11 @@ function load() {
   $("form#new_repository, form.edit_repository, form#new_proficient_project, form.edit_proficient_project, form.makes_new").submit(function(e){
     e.preventDefault();
 
-    console.log(categoryArray.length)
+    console.log(categoryArray.length);
 
     var validate = validation();
+
+    $("#form-error-span").text("");
 
     var _this = $(this),
         uri   = _this[0].action,
@@ -424,6 +426,12 @@ function load() {
         $('input#repository_title').before(span); 
         console.log('error');
       });
+    } else {
+        $("#waiting-save-button").attr('disabled', 'true');
+        $("#form-error-span").text("Please check all the errors in the form and try again !").addClass('form-error repo-form');
+        setTimeout(() => {
+            $("#waiting-save-button").removeAttr('data-disable-with').removeAttr('disabled');
+        }, 1000);
     }
     
   });
