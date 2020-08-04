@@ -15,17 +15,6 @@
 *= require photoswipe
  */
 
-/* Theming stuff */
-$theme-colors: (
-  "primary": rgb(95, 158, 160) // "MakerRepo Green"
-);
-
-$navbar-light-color: rgba(0, 0, 0, 0.7);
-$navbar-light-hover-color: rgba(0, 0, 0, 1.0);
-$navbar-dark-color: rgba(255, 255, 255, 0.7);
-$navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
-
-@import "bootstrap";
 @import "trix";
 @import 'select2';
 @import "select2-bootstrap";
@@ -43,7 +32,7 @@ body {
   margin: 0;
   padding: 6rem 0 0 0;
   background-color: rgba(238,238,238,0.5);
-  font-family: 'Raleway', helvetica, sans-serif;
+  font-family: 'Raleway', helvetica, sans-serif!important;
   display: flex;
   flex-direction: column;
 }

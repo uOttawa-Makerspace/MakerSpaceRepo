@@ -1,5 +1,16 @@
 @import "lib";
-@import "bootstrap";
+
+$theme-colors: (
+        "primary": rgb(95, 158, 160) // "MakerRepo Green"
+);
+
+$navbar-light-color: rgba(0, 0, 0, 0.7);
+$navbar-light-hover-color: rgba(0, 0, 0, 1.0);
+$navbar-dark-color: rgba(255, 255, 255, 0.7);
+$navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
+
+
+@import '../../../node_modules/bootstrap/scss/bootstrap';
 
 section#signup, section#login, section#forgot-password {
   // TODO remove when old CSS is completely removed
