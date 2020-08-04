@@ -120,6 +120,8 @@
     <% content_tag "repository[slug]", @repository.slug%>
     <%= f.submit "Update Project", class: "btn btn-primary", id: "waiting-save-button" %>
     <span id="status-save"></span>
+    <br>
+    <div id="form-error-span"></div>
     <% if flash[:alert] %>
       <div id="alert"><%= flash[:alert] %></div>
     <% end %>
