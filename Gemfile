@@ -4,6 +4,7 @@ source 'https://rubygems.org'
 ruby '2.5.3'
 gem 'rails', '~> 6.0.3.2'
 
+gem 'webpacker'
 gem 'aws-sdk', '~> 3.0.1'
 gem "aws-sdk-s3", require: false
 gem 'bcrypt', '~> 3.1.10'
