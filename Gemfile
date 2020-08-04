@@ -36,7 +36,7 @@ gem 'sass-rails', '~> 5.0.7'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'select2-rails'
 gem 'shopify_app', '9.0.4'
-gem 'sidekiq'
+gem 'sidekiq', '~> 6.1.1'
 gem 'simplecov'
 gem 'thin'
 gem 'toastr-rails'
