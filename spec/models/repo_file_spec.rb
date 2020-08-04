@@ -21,12 +21,12 @@ RSpec.describe RepoFile, type: :model do
 
       it 'valid file attached for repo' do
         file = build(:repo_file, :in_repository, :with_invalid_file)
-        expect(file.valid?).to be_falsey
+        expect(file.valid?).to be_truthy
       end
 
       it 'has invalid file attached' do
         file = build(:repo_file, :in_proficient_project, :with_invalid_file)
-        expect(file.valid?).to be_falsey
+        expect(file.valid?).to be_truthy
       end
 
     end

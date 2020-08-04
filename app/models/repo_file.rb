@@ -6,11 +6,10 @@ class RepoFile < ApplicationRecord
 
   has_one_attached :file
 
-  if :proficient_project
-    validates :file, file_content_type: {
-        allow: ['application/pdf', 'image/svg+xml', 'text/html'],
-        if: -> {file.attached?},
-    }
-  end
+
+  validates :file, file_content_type: {
+      allow: ['application/pdf', 'image/svg+xml', 'text/html'],
+      if: -> {file.attached? and proficient_project_id.present?},
+  }
 
 end
