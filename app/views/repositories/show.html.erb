@@ -160,7 +160,7 @@
           <%= form_for :repo_owner, url: {controller: "repositories", action: "add_owner"}, method: :patch do |f| %>
               <div class="form-group">
                 <%= f.hidden_field :repository_id, value: @repository.id %>
-                <%= f.select(:owner_id, @all_users , {prompt: "Choose..."} , {:class => "search_users form-control", :id => "options"}) %>
+                <%= f.select(:owner_id, @all_users , {prompt: "Choose..."} , {:class => "search_users_add form-control", :id => "search_users_add"}) %>
                 <br> </br>
                 <%= f.submit "Add", class: "btn btn-success" %>
               </div>
@@ -173,12 +173,13 @@
             <%= form_for :repo_owner, url: {controller: "repositories", action: "remove_owner"}, method: :patch do |f| %>
                 <div class="form-group">
                   <%= f.hidden_field :repository_id, value: @repository.id %>
-                  <%= f.select(:owner_id, @owners.pluck(:name, :id) , {prompt: "Choose..."} , {:class => "search_users form-control", :id => "options"}) %>
+                  <%= f.select(:owner_id, @owners.pluck(:name, :id) , {prompt: "Choose..."} , {:class => "search_users_remove form-control", :id => "search_users_remove"}) %>
                   <br> </br>
                   <%= f.submit "Remove", class: "btn btn-danger" %>
                 </div>
             <% end %>
           </div>
+
           </div>
       <% end %>
 
@@ -239,9 +240,3 @@
 </section>
 
 <%= render 'layouts/photoswipe' %>
-
-<script>
-    $(document).ready(function() {
-        $(".search_users").select2({});
-    });
-</script>

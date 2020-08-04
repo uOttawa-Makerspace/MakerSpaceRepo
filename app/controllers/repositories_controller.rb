@@ -259,7 +259,7 @@ class RepositoriesController < SessionsController
   def update_files
     if params['deletefiles'].present?
       @repository.repo_files.each do |f|
-        if params['deletefiles'].include?(f.file.filename.to_s) # checks if the file should be deleted
+        if params['deletefiles'].include?(f.file.id.to_s) # checks if the file should be deleted
           f.file.purge
           f.destroy
         end
