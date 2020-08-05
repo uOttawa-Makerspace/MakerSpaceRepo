@@ -14,6 +14,10 @@ before_install:
 #- npm i -g yarn
 #- yarn install
 before_script:
+- nvm install node
+- node -v
+- npm i -g yarn
+- yarn install
 - psql -c 'create database makerspacerepo_test;' -U postgres
 - mkdir certs && touch certs/saml.key && touch certs/saml.crt
 - openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
