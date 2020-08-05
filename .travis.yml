@@ -12,7 +12,7 @@ install:
 - nvm install node
 - node -v
 - npm i -g yarn
-- yarn
+- yarn install
 before_script:
 - psql -c 'create database makerspacerepo_test;' -U postgres
 - mkdir certs && touch certs/saml.key && touch certs/saml.crt
@@ -24,6 +24,7 @@ jobs:
     name: Test
     script:
     - bundle exec rake db:migrate RAILS_ENV=test
+    - yarn test
     - bundle exec rake spec RAILS_ENV=test
     - bundle exec rake test RAILS_ENV=test
   - stage: deploy
