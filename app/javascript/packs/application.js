@@ -39,6 +39,7 @@ require("packs/forms");
 require("packs/header");
 require("packs/page_jumping");
 require("packs/photo_gallery");
+require("packs/print_orders");
 require("packs/proficient_projects");
 require("packs/questions");
 require("packs/repositories");
