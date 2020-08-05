@@ -1,4 +1,4 @@
-function examResponse(exam_id, answer_id){
+window.examResponse = function(exam_id, answer_id){
     $.ajax({
         url: "/exam_responses#create",
         type: "POST",

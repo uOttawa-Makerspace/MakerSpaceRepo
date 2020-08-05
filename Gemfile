@@ -4,11 +4,12 @@ source 'https://rubygems.org'
 ruby '2.5.3'
 gem 'rails', '~> 6.0.3.2'
 
+gem 'webpacker'
 gem 'aws-sdk', '~> 3.0.1'
 gem "aws-sdk-s3", require: false
 gem 'bcrypt', '~> 3.1.10'
 gem 'bootbox-rails', '~>0.4'
-gem 'bootstrap', '~> 4.5.0'
+# gem 'bootstrap', '~> 4.5.0'
 # gem 'bootstrap-sass'
 gem 'caxlsx', '~> 3.0.1'
 gem 'clipboard-rails'
@@ -25,7 +26,7 @@ gem 'octokit', '~> 3.0'
 gem 'paperclip'
 gem 'paperclip-av-transcoder'
 gem 'pg', '~> 0.18.2'
-gem 'photoswipe-rails', '~> 4.0.8a'
+# gem 'photoswipe-rails', '~> 4.0.8a'
 gem 'progress_bar', '~> 1.0.3'
 gem 'pry', '~> 0.10.4'
 gem 'pry-rails', '~> 0.3.9', group: :development
@@ -55,7 +56,7 @@ gem 'image_processing'
 gem 'file_validators'
 gem 'trix-rails', require: 'trix'
 gem 'zip-zip'
-
+gem 'concurrent-ruby', '~> 1.1', '>= 1.1.6'
 
 # Capistrano deployment stuff
 gem 'capistrano', '~> 3.9'

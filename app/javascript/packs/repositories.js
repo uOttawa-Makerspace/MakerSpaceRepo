@@ -1,12 +1,12 @@
-function showPass(){
+window.showPass = function() {
 	document.getElementById("password_repo_field").style.display = 'block'
-}
+};
 
-function hidePass(){
+window.hidePass = function() {
     $("#change_pass").hide();
 	document.getElementById("password_repo_field").style.display = 'none'
-}
-function togglePass() {
+};
+window.togglePass = function() {
     var x = document.getElementById("password_repo_field")
     if (x.style.display === 'none') {
         x.style.display = 'block'

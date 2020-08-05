@@ -26,7 +26,7 @@ function findSession(table_class, id = 'query') {
 }
 
 var sort_direction = 1;
-function sortTable(table_class, col) {
+window.sortTable = function(table_class, col) {
   if(sort_direction === 1){
     var table, rows, switching, i, x, y, shouldSwitch;
     table = document.getElementsByClassName(table_class)[0];
@@ -83,7 +83,7 @@ function sortTable(table_class, col) {
 }
 
 var select_direction = 1;
-function selectAll(table_id){
+window.selectAll = function(table_id){
   if(select_direction == 1){
     boxes = document.getElementById(table_id).getElementsByTagName("input");
     for (i = 0; i < (boxes.length ); i++) {
