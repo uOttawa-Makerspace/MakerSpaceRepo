@@ -56,7 +56,7 @@ gem 'image_processing'
 gem 'file_validators'
 gem 'trix-rails', require: 'trix'
 gem 'zip-zip'
-
+gem 'concurrent-ruby', '~> 1.1', '>= 1.1.6'
 
 # Capistrano deployment stuff
 gem 'capistrano', '~> 3.9'

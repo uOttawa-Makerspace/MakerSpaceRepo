@@ -1411,6 +1411,7 @@ DEPENDENCIES
   caxlsx (~> 3.0.1)
   clipboard-rails
   coffee-rails (= 5.0.0)
+  concurrent-ruby (~> 1.1, >= 1.1.6)
   database_cleaner-active_record
   ed25519 (~> 1.2)
   excon
