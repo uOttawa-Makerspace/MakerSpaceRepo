@@ -83,7 +83,7 @@ window.sortTable = function(table_class, col) {
 }
 
 var select_direction = 1;
-function selectAll(table_id){
+window.selectAll = function(table_id){
   if(select_direction == 1){
     boxes = document.getElementById(table_id).getElementsByTagName("input");
     for (i = 0; i < (boxes.length ); i++) {
