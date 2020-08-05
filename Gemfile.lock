@@ -1178,7 +1178,6 @@ GEM
     parser (2.7.1.4)
       ast (~> 2.4.1)
     pg (0.18.4)
-    photoswipe-rails (4.0.8a)
     progress_bar (1.0.5)
       highline (~> 1.6)
       options (~> 2.3.0)
@@ -1434,7 +1433,6 @@ DEPENDENCIES
   paperclip
   paperclip-av-transcoder
   pg (~> 0.18.2)
-  photoswipe-rails (~> 4.0.8a)
   progress_bar (~> 1.0.3)
   pry (~> 0.10.4)
   pry-rails (~> 0.3.9)

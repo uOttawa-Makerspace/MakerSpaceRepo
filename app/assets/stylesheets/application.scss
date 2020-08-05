@@ -13,7 +13,11 @@
 *= require_tree .
 *= require_self
 *= require photoswipe
+
  */
+@import '../../../node_modules/photoswipe/src/css/main';
+@import '../../../node_modules/photoswipe/src/css/default-skin/default-skin';
+
 
 @import "trix";
 @import 'select2';

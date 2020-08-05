@@ -4975,7 +4975,7 @@ jquery-ui@^1.12.1:
   resolved "https://registry.yarnpkg.com/jquery-ui/-/jquery-ui-1.12.1.tgz#bcb4045c8dd0539c134bc1488cdd3e768a7a9e51"
   integrity sha1-vLQEXI3QU5wTS8FIjN0+dop6nlE=
 
-jquery@>=1.12.0, jquery@^3.4.1, jquery@^3.5.1:
+jquery@>=1.12.0, jquery@>=1.7.0, jquery@^3.4.1, jquery@^3.5.1:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.5.1.tgz#d7b4d08e1bfdb86ad2f1a3d039ea17304717abb5"
   integrity sha512-XwIBPqcMn57FxfT+Go5pzySnm4KWkT1Tv7gjrpT1srtf8Weynl6R273VJ5GjkRb51IzMp5nbaPjJXMWeju2MKg==
@@ -5150,6 +5150,13 @@ levenary@^1.1.1:
   integrity sha512-mkAdOIt79FD6irqjYSs4rdbnlT5vRonMEvBVPVb3XmevfS8kgRXwfes0dhPdEtzTWD/1eNE/Bm/G1iRt6DcnQQ==
   dependencies:
     leven "^3.1.0"
+
+lightgallery@^1.7.2:
+  version "1.7.2"
+  resolved "https://registry.yarnpkg.com/lightgallery/-/lightgallery-1.7.2.tgz#081692c896d08686ab283ce2edbef214c6de3b36"
+  integrity sha512-y5xeJySeZWYSIc/SGB2Ahz7oSw1pQCg8aTWLrjttaxY4qRKN4YyzdpV1b9pyd5QJ+CJ4POHor/Yc5ZIum6YySA==
+  dependencies:
+    jquery ">=1.7.0"
 
 lines-and-columns@^1.1.6:
   version "1.1.6"

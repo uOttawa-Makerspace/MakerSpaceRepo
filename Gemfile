@@ -26,7 +26,7 @@ gem 'octokit', '~> 3.0'
 gem 'paperclip'
 gem 'paperclip-av-transcoder'
 gem 'pg', '~> 0.18.2'
-gem 'photoswipe-rails', '~> 4.0.8a'
+# gem 'photoswipe-rails', '~> 4.0.8a'
 gem 'progress_bar', '~> 1.0.3'
 gem 'pry', '~> 0.10.4'
 gem 'pry-rails', '~> 0.3.9', group: :development

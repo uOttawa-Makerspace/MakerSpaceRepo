@@ -14,17 +14,21 @@
 //
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
+import 'core-js/stable'
+import 'regenerator-runtime/runtime'
 require("@rails/ujs").start();
 require("turbolinks").start();
 require("@rails/activestorage").start();
 require("jquery");
 require("select2");
-global.toastr = require("toastr")
+global.toastr = require("toastr");
 require("trix");
 require("jquery-ui");
-require("photoswipe");
-require("clipboard");
+global.PhotoSwipe = require('photoswipe');
+global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
+var Clipboard = require("clipboard");
 require("bootbox");
+require("packs/validation");
 require("packs/badges");
 require("packs/direct_uploads");
 require("packs/discount_codes");
@@ -42,7 +46,6 @@ require("packs/requests");
 require("packs/settings");
 require("packs/sorting");
 require("packs/users");
-require("packs/validation");
 require("packs/vendor");
 require("packs/videos");
 require("packs/volunteer_hours");
