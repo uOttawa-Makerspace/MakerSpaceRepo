@@ -1,4 +1,4 @@
-$(document).on('ready page:load', function () {
+$(document).on("turbolinks:load", function() {
     $("[data-show]").on('change', function () {
         var selector = $(this).data('show');
         var show = $(this).prop('checked');
