@@ -14,8 +14,6 @@
 *= require_self
 
  */
-//@import '../../../node_modules/photoswipe/src/css/main';
-//@import '../../../node_modules/photoswipe/src/css/default-skin/default-skin';
 
 @import './shared/variables';
 @import "trix";
@@ -33,7 +31,7 @@ html {
 body {
   min-height: 100%;
   margin: 0;
-  padding: 6rem 0 0 0;
+  //padding: 6rem 0 0 0;
   background-color: rgba(238,238,238,0.5);
   font-family: 'Raleway', helvetica, sans-serif!important;
   display: flex;
