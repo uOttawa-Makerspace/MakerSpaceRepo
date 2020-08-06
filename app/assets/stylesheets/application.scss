@@ -15,13 +15,13 @@
 
  */
 
+@import "toastr";
 @import './shared/variables';
 @import "trix";
 @import 'select2';
 @import "select2-bootstrap";
 @import "lib";
 @import "font-awesome";
-@import "toastr";
 
 html {
   height: 100%;
@@ -31,7 +31,7 @@ html {
 body {
   min-height: 100%;
   margin: 0;
-  //padding: 6rem 0 0 0;
+  padding: 6rem 0 0 0;
   background-color: rgba(238,238,238,0.5);
   font-family: 'Raleway', helvetica, sans-serif!important;
   display: flex;
