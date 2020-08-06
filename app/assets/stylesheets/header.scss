@@ -1,16 +1,4 @@
 @import "lib";
-//
-//$theme-colors: (
-//        "primary": rgb(95, 158, 160) // "MakerRepo Green"
-//);
-//
-//$navbar-light-color: rgba(0, 0, 0, 0.7);
-//$navbar-light-hover-color: rgba(0, 0, 0, 1.0);
-//$navbar-dark-color: rgba(255, 255, 255, 0.7);
-//$navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
-//
-//@import "bootstrap/scss/bootstrap";
-
 @import './shared/variables';
 
 .navbar {
@@ -45,7 +33,7 @@
     border-color: $navbar-dark-color;
   }
 
-  @include media-breakpoint-down(lg) {
+  @media (max-width: 1199.98px) {
     .navbar-divider {
       bottom: 0;
       height: auto;
@@ -53,6 +41,15 @@
       border-bottom: 1px solid;
     }
   }
+
+  //@include media-breakpoint-down(lg) {
+  //  .navbar-divider {
+  //    bottom: 0;
+  //    height: auto;
+  //    border-left: none;
+  //    border-bottom: 1px solid;
+  //  }
+  //}
 
   .avatar {
     height: 40px;
@@ -75,11 +72,17 @@
     }
   }
 
-  @include media-breakpoint-up(xl) {
+  @media (min-width: 1200px) {
     .form-search {
       margin: 0 1rem 0 2rem;
     }
   }
+
+  //@include media-breakpoint-up(xl) {
+  //  .form-search {
+  //    margin: 0 1rem 0 2rem;
+  //  }
+  //}
 }
 
 span.msr-logo a{
