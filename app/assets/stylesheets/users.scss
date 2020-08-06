@@ -10,7 +10,7 @@ $navbar-dark-color: rgba(255, 255, 255, 0.7);
 $navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
 
 
-@import "bootstrap/scss/bootstrap.scss";
+@import "../../../node_modules/bootstrap/scss/bootstrap";
 
 section#signup, section#login, section#forgot-password {
   // TODO remove when old CSS is completely removed
