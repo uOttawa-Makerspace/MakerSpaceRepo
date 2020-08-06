@@ -1,6 +1,7 @@
 @import "lib";
-$body-top-padding: 6rem; // equivalent to navbar height
-@import "bootstrap/scss/bootstrap";
+//$body-top-padding: 6rem; // equivalent to navbar height
+//@import "bootstrap/scss/bootstrap";
+@import './shared/variables';
 
 section#home-header {
   overflow: hidden;
