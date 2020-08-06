@@ -23,7 +23,9 @@
     "select2": "^4.0.13",
     "toastr": "^2.1.4",
     "trix": "^1.2.4",
-    "turbolinks": "^5.2.0"
+    "turbolinks": "^5.2.0",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
   },
   "devDependencies": {
     "webpack-dev-server": "^3.11.0"
