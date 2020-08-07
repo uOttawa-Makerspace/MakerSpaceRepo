@@ -42,7 +42,6 @@ require("packs/photo_gallery");
 require("packs/print_orders");
 require("packs/proficient_projects");
 require("packs/questions");
-require("packs/toastr");
 require("packs/repositories");
 require("packs/requests");
 require("packs/settings");
@@ -56,6 +55,7 @@ require("packs/volunteer_tasks");
 
 import "bootstrap";
 import "../stylesheets/application"
+require("packs/toastr");
 
 document.addEventListener("turbolinks:load", () => {
     $('[data-toggle="tooltip"]').tooltip()
