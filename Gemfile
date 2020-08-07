@@ -57,13 +57,6 @@ gem 'file_validators'
 gem 'trix-rails', require: 'trix'
 gem 'zip-zip'
 gem 'concurrent-ruby', '~> 1.1', '>= 1.1.6'
-
-# Capistrano deployment stuff
-gem 'capistrano', '~> 3.9'
-gem 'capistrano-bundler'
-gem 'capistrano-passenger', '>= 0.1.1'
-gem 'capistrano-rails'
-gem 'capistrano-rbenv', '~> 2.1'
 gem 'net-ssh'
 
 group :development, :test do
@@ -78,6 +71,13 @@ group :development, :test do
 end
 
 group :development do
+  # Capistrano deployment stuff
+  gem 'capistrano', "~> 3.10", require: false
+  gem 'capistrano-rails', "~> 1.6", require: false
+  gem 'capistrano-bundler'
+  gem 'capistrano-passenger', '>= 0.1.1'
+  gem 'capistrano-rbenv', '~> 2.1'
+
   gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
   gem 'web-console'
