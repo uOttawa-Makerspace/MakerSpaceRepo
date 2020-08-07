@@ -1401,10 +1401,10 @@ DEPENDENCIES
   bootbox-rails (~> 0.4)
   bootsnap
   byebug
-  capistrano (~> 3.9)
+  capistrano (~> 3.10)
   capistrano-bundler
   capistrano-passenger (>= 0.1.1)
-  capistrano-rails
+  capistrano-rails (~> 1.6)
   capistrano-rbenv (~> 2.1)
   capybara
   caxlsx (~> 3.0.1)
