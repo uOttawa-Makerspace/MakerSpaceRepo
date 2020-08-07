@@ -68,8 +68,6 @@ GEM
     airbrussh (1.4.0)
       sshkit (>= 1.6.1, != 1.7.0)
     ast (2.4.1)
-    autoprefixer-rails (9.8.6.1)
-      execjs
     av (0.9.0)
       cocaine (~> 0.5.3)
     aws-eventstream (1.1.0)
@@ -996,10 +994,6 @@ GEM
     bootbox-rails (0.5.0)
     bootsnap (1.4.7)
       msgpack (~> 1.0)
-    bootstrap (4.5.0)
-      autoprefixer-rails (>= 9.1.0)
-      popper_js (>= 1.14.3, < 2)
-      sassc-rails (>= 2.0.0)
     browser_sniffer (1.1.3)
     builder (3.2.4)
     byebug (11.1.3)
@@ -1184,8 +1178,6 @@ GEM
     parser (2.7.1.4)
       ast (~> 2.4.1)
     pg (0.18.4)
-    photoswipe-rails (4.0.8a)
-    popper_js (1.16.0)
     progress_bar (1.0.5)
       highline (~> 1.6)
       options (~> 2.3.0)
@@ -1198,6 +1190,8 @@ GEM
     quick_random_records (0.3.2)
       activerecord (>= 3)
     rack (2.2.3)
+    rack-proxy (0.6.5)
+      rack
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
     railroady (1.5.3)
@@ -1293,14 +1287,6 @@ GEM
       sprockets (>= 2.8, < 4.0)
       sprockets-rails (>= 2.0, < 4.0)
       tilt (>= 1.1, < 3)
-    sassc (2.4.0)
-      ffi (~> 1.9)
-    sassc-rails (2.1.2)
-      railties (>= 4.0.0)
-      sassc (>= 2.0)
-      sprockets (> 3.0)
-      sprockets-rails
-      tilt
     sawyer (0.6.0)
       addressable (~> 2.3.5)
       faraday (~> 0.8, < 0.10)
@@ -1311,6 +1297,7 @@ GEM
     selenium-webdriver (3.142.7)
       childprocess (>= 0.5, < 4.0)
       rubyzip (>= 1.2.2)
+    semantic_range (2.3.0)
     shopify_api (9.2.0)
       activeresource (>= 4.1.0, < 6.0.0)
       graphql-client
@@ -1380,6 +1367,11 @@ GEM
       activemodel (>= 6.0.0)
       bindex (>= 0.4.0)
       railties (>= 6.0.0)
+    webpacker (5.1.1)
+      activesupport (>= 5.2)
+      rack-proxy (>= 0.6.1)
+      railties (>= 5.2)
+      semantic_range (>= 2.3.0)
     websocket-driver (0.7.3)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
@@ -1408,17 +1400,17 @@ DEPENDENCIES
   bcrypt_pbkdf (~> 1.0)
   bootbox-rails (~> 0.4)
   bootsnap
-  bootstrap (~> 4.5.0)
   byebug
-  capistrano (~> 3.9)
+  capistrano (~> 3.10)
   capistrano-bundler
   capistrano-passenger (>= 0.1.1)
-  capistrano-rails
+  capistrano-rails (~> 1.6)
   capistrano-rbenv (~> 2.1)
   capybara
   caxlsx (~> 3.0.1)
   clipboard-rails
   coffee-rails (= 5.0.0)
+  concurrent-ruby (~> 1.1, >= 1.1.6)
   database_cleaner-active_record
   ed25519 (~> 1.2)
   excon
@@ -1441,7 +1433,6 @@ DEPENDENCIES
   paperclip
   paperclip-av-transcoder
   pg (~> 0.18.2)
-  photoswipe-rails (~> 4.0.8a)
   progress_bar (~> 1.0.3)
   pry (~> 0.10.4)
   pry-rails (~> 0.3.9)
@@ -1470,6 +1461,7 @@ DEPENDENCIES
   uglifier (>= 1.3.0)
   unicorn-worker-killer (~> 0.4.3)
   web-console
+  webpacker
   whenever
   wicked_pdf
   will_paginate (~> 3.3.0)

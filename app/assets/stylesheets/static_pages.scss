@@ -1,7 +1,5 @@
 @import "lib";
-@import "bootstrap";
-
-$body-top-padding: 6rem; // equivalent to navbar height
+@import './shared/variables';
 
 section#home-header {
   overflow: hidden;
@@ -21,17 +19,30 @@ section#home-header {
     font-weight: 300;
     line-height: 1.2;
 
-    @include media-breakpoint-down(md) {
+    //@include media-breakpoint-down(md) {
+    //  font-size: 4.5rem;
+    //}
+
+    //@include media-breakpoint-down(sm) {
+    //  font-size: 3.5rem;
+    //}
+
+    //@include media-breakpoint-down(xs) {
+    //  font-size: 3rem;
+    //}
+
+    @media (min-width: 768px) and (max-width: 991.98px) {
       font-size: 4.5rem;
     }
 
-    @include media-breakpoint-down(sm) {
+    @media (min-width: 576px) and (max-width: 767.98px) {
       font-size: 3.5rem;
     }
 
-    @include media-breakpoint-down(xs) {
+    @media (max-width: 575.98px) {
       font-size: 3rem;
     }
+
   }
 
   .container {
@@ -120,7 +131,11 @@ section#home-categories {
       font-weight: lighter;
       font-size: 1.75rem;
 
-      @include media-breakpoint-down(sm) {
+      //@include media-breakpoint-down(sm) {
+      //  font-size: 1.25rem;
+      //}
+
+      @media (max-width: 575.98px) {
         font-size: 1.25rem;
       }
 

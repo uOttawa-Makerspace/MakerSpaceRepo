@@ -1,5 +1,5 @@
 @import "lib";
-@import "bootstrap";
+@import './shared/variables';
 
 section#signup, section#login, section#forgot-password {
   // TODO remove when old CSS is completely removed

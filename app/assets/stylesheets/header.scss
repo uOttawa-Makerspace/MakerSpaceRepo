@@ -1,8 +1,8 @@
 @import "lib";
-@import "bootstrap";
+@import './shared/variables';
 
 .navbar {
-  position: relative;
+  //position: relative;
 
   &.bg-dark-gradient {
     background: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0)) !important;
@@ -33,7 +33,7 @@
     border-color: $navbar-dark-color;
   }
 
-  @include media-breakpoint-down(lg) {
+  @media (max-width: 1199.98px) {
     .navbar-divider {
       bottom: 0;
       height: auto;
@@ -41,6 +41,15 @@
       border-bottom: 1px solid;
     }
   }
+
+  //@include media-breakpoint-down(lg) {
+  //  .navbar-divider {
+  //    bottom: 0;
+  //    height: auto;
+  //    border-left: none;
+  //    border-bottom: 1px solid;
+  //  }
+  //}
 
   .avatar {
     height: 40px;
@@ -63,11 +72,17 @@
     }
   }
 
-  @include media-breakpoint-up(xl) {
+  @media (min-width: 1200px) {
     .form-search {
       margin: 0 1rem 0 2rem;
     }
   }
+
+  //@include media-breakpoint-up(xl) {
+  //  .form-search {
+  //    margin: 0 1rem 0 2rem;
+  //  }
+  //}
 }
 
 span.msr-logo a{
