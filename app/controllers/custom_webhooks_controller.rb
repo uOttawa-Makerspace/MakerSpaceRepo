@@ -12,8 +12,6 @@ class CustomWebhooksController < ApplicationController
       discount_code&.update(usage_count: 1)
     end
 
-    byebug
-
     discount_code_params['line_items'].each do |item|
       increment_cc_money(item, discount_code_params['customer']['email'])
     end if discount_code_params['line_items'].present?
