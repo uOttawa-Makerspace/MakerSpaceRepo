@@ -23,6 +23,7 @@ require("jquery");
 require("select2");
 global.toastr = require("toastr");
 require("trix");
+require("@shopify/buy-button-js");
 require("jquery-ui");
 global.PhotoSwipe = require('photoswipe');
 global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
