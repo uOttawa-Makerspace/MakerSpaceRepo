@@ -26,8 +26,8 @@ class CustomWebhooksController < ApplicationController
     end
 
     def increment_cc_money(product_params, email)
-      if product_params['product_id'] == 4359597129784
-        cc = 10*product_params['quantity']
+      if product_params['product_id'].to_i == 4359597129784
+        cc = 10*product_params['quantity'].to_i
         if User.find_by_email(email).present?
           CcMoney.create(user_id: User.find_by_email(email).id, cc: cc)
         else
