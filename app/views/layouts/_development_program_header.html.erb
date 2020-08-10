@@ -9,6 +9,9 @@
       <li class="nav-item">
         <%= link_to "Learning Area", proficient_projects_path(proficiency: false), class: "nav-link"%>
       </li>
+      <li class="nav-item">
+        <%= link_to "My Projects", proficient_projects_path(my_projects: true), class: "nav-link"%>
+      </li>
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Proficient Projects
@@ -18,7 +21,6 @@
             <%= link_to "New proficient Project", new_proficient_project_path, class: "dropdown-item" %>
             <div class="dropdown-divider"></div>
           <% end %>
-          <%= link_to "My Proficient Projects", proficient_projects_path(my_projects: true), class: "dropdown-item"%>
           <%= link_to "All Proficient Projects", proficient_projects_path(proficiency: true), class: "dropdown-item"%>
         </div>
       </li>
