@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  resources :cc_moneys, only: [:index]
   resources :price_rules, only: %i[index new create destroy edit update]
   resources :discount_codes, only: %i[new index create]
   resources :custom_webhooks do
@@ -355,6 +356,4 @@ Rails.application.routes.draw do
     post :create, path: '/:slug'
     delete :destroy, path: '/:id/destroy'
   end
-
-  resources :cc_moneys, only: [:index]
 end
