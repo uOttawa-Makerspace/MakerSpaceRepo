@@ -55,6 +55,9 @@
         <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
       <% else %>
         <li class="nav-item">
+          <a class="nav-link" data-toggle="modal" data-target="#shopify-cc-modal"><%= t('navbar.buy_cc_money') %></a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
         </li>
 
@@ -97,6 +100,35 @@
     </ul>
   </div>
 </nav>
+
+<div class="modal fade" id="shopify-cc-modal" tabindex="-1" aria-labelledby="shopify-cc-modal" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Buy CC Money</h5>
+      </div>
+      <div class="modal-body text-center">
+        <div id="cc-money-shopify" style="display: inline-block"></div>
+      </div>
+      <script type="text/javascript" charset="utf-8">
+
+          var client = ShopifyBuy.buildClient({
+              domain: 'uottawa-makerspace.myshopify.com',
+              storefrontAccessToken: '907521a2176d178e041f542c129f52b1',
+          });
+          var ui = ShopifyBuy.UI.init(client);
+          ui.createComponent('product', {
+              id: 4359597129784,
+              node: document.getElementById('cc-money-shopify')
+          });
+
+      </script>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <%= render 'static_pages/login_modal' if !signed_in? %>
 
