@@ -46,7 +46,6 @@ require("packs/repositories");
 require("packs/requests");
 require("packs/settings");
 require("packs/sorting");
-require("packs/shopify");
 require("packs/users");
 require("packs/vendor");
 require("packs/videos");
