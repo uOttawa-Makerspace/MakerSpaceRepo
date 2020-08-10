@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_08_04_153312) do
+ActiveRecord::Schema.define(version: 2020_08_10_190545) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -124,6 +124,7 @@ ActiveRecord::Schema.define(version: 2020_08_04_153312) do
     t.integer "proficient_project_id"
     t.integer "order_id"
     t.integer "discount_code_id"
+    t.boolean "linked", default: true
     t.index ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id"
     t.index ["order_id"], name: "index_cc_moneys_on_order_id"
     t.index ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id"

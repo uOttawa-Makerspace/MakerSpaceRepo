@@ -1,0 +1,19 @@
+<section style="padding-left: 8vw;padding-top: 5vw;">
+  <p style="font: 400 1.3em 'Raleway', sans-serif;color: #333;">
+  <h1>
+    Hello,
+  </h1>
+  </p>
+
+  <p style="font: 400 1.1em 'Raleway', sans-serif;color: #333; line-height: 35px;">
+    You have successfully bought CC Money for <a href="https://makerepo.com">MakerRepo.com</a>!<br>
+    The amount of CCs is: <b><%= @cc %> CCs</b>.<br>
+    You can link them to your makerepo account by going on this <%= link_to "link", redeem_cc_moneys_url(id: @hash) %>. <br>
+    If the link doesn't work, you can copy the following link : <%= redeem_cc_moneys_url(id: @hash)  %>
+  </p>
+
+  <p style="font: 400 1.1em 'Raleway', sans-serif;color: #333;">
+    Cheers,<br>
+    The MakerRepo Team
+  </p>
+</section>

@@ -16,6 +16,12 @@ class MsrMailer < ApplicationMailer
     mail(to: email, subject: 'Makerspace/Brunsfield Centre Survey - $25 Amazon gift card draw!')
   end
 
+  def send_cc_money_email(email, cc, hash)
+    @cc = cc
+    @hash = hash
+    mail(to: email, subject: "Your CC Money order")
+  end
+
   def send_print_user_approval_to_makerspace(id)
     @print_id = id
     mail(to: 'makerspace@uottawa.ca', subject: 'A user has approved a print order')
