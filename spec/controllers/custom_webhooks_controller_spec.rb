@@ -8,6 +8,13 @@ RSpec.describe CustomWebhooksController, type: :controller do
         post :orders_paid, params: { 'discount_codes' => [ {'code' => discount_code.code } ] }
         expect(DiscountCode.find_by(id: discount_code.id).usage_count).to eq(1)
       end
+
+      it 'should increment cc_points after purchase' do
+        user = create(:user, :regular_user)
+        post :orders_paid, params: { 'customer' => { 'email' => user.email }, 'line_items' => [ {'product_id' => 4359597129784, 'quantity' => 2 } ] }
+        expect(user.cc_moneys.count).to eq(1)
+        expect(user.cc_moneys.sum(:cc)).to eq(20)
+      end
     end
   end
 end

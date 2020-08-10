@@ -17,6 +17,7 @@ en:
     create_account: "Register"
     search: "Search"
     create_project: "Create Project"
+    buy_cc_money: "Buy CC"
     user:
       profile: "Profile"
       liked: "Liked"
