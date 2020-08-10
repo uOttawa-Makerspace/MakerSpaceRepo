@@ -20,6 +20,8 @@ Rails.application.routes.draw do
   end
   mount Sidekiq::Web => '/sidekiq'
 
+  resources :cc_moneys, only: [:index]
+
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
     get :revoke, path: 'revoke'
@@ -356,5 +358,4 @@ Rails.application.routes.draw do
     delete :destroy, path: '/:id/destroy'
   end
 
-  resources :cc_moneys, only: [:index]
 end
