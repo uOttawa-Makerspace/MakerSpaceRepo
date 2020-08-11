@@ -1,5 +1,5 @@
 class CcMoneysController < ApplicationController
-  before_action :signed_in, only: :redeem
+  before_action :signed_in, only: %i[link_cc_to_user redeem]
   before_action :set_verifier, only: %i[link_cc_to_user redeem]
 
   def index
@@ -30,18 +30,6 @@ class CcMoneysController < ApplicationController
     end
     redirect_to cc_moneys_path
   end
-
-  # def redeem
-  #   cc_id = Rails.application.message_verifier(:cc).verify(params[:id])
-  #   if CcMoney.find(cc_id).linked? == false
-  #     CcMoney.find(cc_id).update(user_id: @user.id, linked: true)
-  #     flash[:notice] = "The CC Money has been added to your wallet !"
-  #     redirect_to cc_moneys_path
-  #   else
-  #     flash[:alert] = "The CC Money has already been added to an account"
-  #     redirect_to cc_moneys_path
-  #   end
-  # end
 
   private
 
