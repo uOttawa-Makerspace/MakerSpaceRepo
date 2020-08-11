@@ -9,11 +9,11 @@ class ProjectKitsController < DevelopmentProgramsController
 
   def mark_delivered
     if current_user.admin? || current_user.staff?
-      if ProjectKit.find(params[:project_kit_id]).present?
+      if params[:project_kit_id].present? and ProjectKit.find(params[:project_kit_id]).present?
         ProjectKit.find(params[:project_kit_id]).update(delivered: true)
         flash[:notice] = "The kit has been marked as delivered"
       else
-        flash[:notice] = "There was an error, try again later"
+        flash[:alert] = "There was an error, try again later"
       end
       redirect_to project_kits_path
     else

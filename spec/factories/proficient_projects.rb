@@ -17,6 +17,10 @@ FactoryBot.define do
       end
     end
 
+    trait :with_kit do
+      has_project_kit { true }
+    end
+
     trait :broken do
       title { "" }
     end
