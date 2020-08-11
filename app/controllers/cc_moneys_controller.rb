@@ -10,6 +10,7 @@ class CcMoneysController < ApplicationController
     if @verifier.valid_message?(@cc_token)
       cc_id = @verifier.verify(@cc_token)
       @cc_money = CcMoney.find_by_id(cc_id)
+      redirect_to cc_moneys_path, alert: "The CC Money has already been added to an account" if @cc_money.linked?
     else
       flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
       redirect_to cc_moneys_path
