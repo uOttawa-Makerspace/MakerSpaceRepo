@@ -28,7 +28,13 @@ class CustomWebhooksController < ApplicationController
     def increment_cc_money(product_params, email)
       if product_params['product_id'].to_i == 4359597129784
         cc = 10*product_params['quantity'].to_i
-        CcMoney.create(user: User.find_by(email: email), cc: cc)
+        if User.find_by_email(email).present?
+          CcMoney.create(user_id: User.find_by_email(email).id, cc: cc)
+        else
+          new_cc = CcMoney.create(cc: cc, linked: false)
+          hash = Rails.application.message_verifier(:cc).generate(new_cc.id)
+          MsrMailer.send_cc_money_email(email, cc, hash).deliver_now
+        end
       end
     end
 end

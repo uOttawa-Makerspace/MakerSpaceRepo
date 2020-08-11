@@ -15,6 +15,13 @@ RSpec.describe CustomWebhooksController, type: :controller do
         expect(user.cc_moneys.count).to eq(1)
         expect(user.cc_moneys.sum(:cc)).to eq(20)
       end
+
+      it 'should send email after not signed_in purchase' do
+        post :orders_paid, params: { 'customer' => { 'email' => Faker::Internet.email }, 'line_items' => [ {'product_id' => 4359597129784, 'quantity' => 2 } ] }
+        expect(CcMoney.last.linked).to be_falsey
+        expect(CcMoney.last.cc).to eq(20)
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+      end
     end
   end
 end

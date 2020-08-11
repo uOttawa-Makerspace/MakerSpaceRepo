@@ -20,7 +20,12 @@ Rails.application.routes.draw do
   end
   mount Sidekiq::Web => '/sidekiq'
 
-  resources :cc_moneys, only: [:index]
+  resources :cc_moneys, only: [:index] do
+    collection do
+      get :redeem
+      get :link_cc_to_user
+    end
+  end
 
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
