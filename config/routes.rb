@@ -20,6 +20,10 @@ Rails.application.routes.draw do
   end
   mount Sidekiq::Web => '/sidekiq'
 
+  resources :project_kits, only: [:index] do
+    get :mark_delivered
+  end
+
   resources :cc_moneys, only: [:index] do
     collection do
       get :redeem
