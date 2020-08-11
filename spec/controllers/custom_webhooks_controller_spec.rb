@@ -22,6 +22,7 @@ RSpec.describe CustomWebhooksController, type: :controller do
         expect(CcMoney.last.cc).to eq(20)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
       end
+
     end
   end
 end
