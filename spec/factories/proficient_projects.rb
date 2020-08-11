@@ -46,5 +46,14 @@ FactoryBot.define do
       end
     end
 
+    factory :proficient_project_with_project_kits do
+      transient do
+        project_kit_count { 3 }
+      end
+      after(:create) do |proficient_project, evaluator|
+        create_list(:project_kit, evaluator.project_kit_count, proficient_project: proficient_project)
+      end
+    end
+
   end
 end

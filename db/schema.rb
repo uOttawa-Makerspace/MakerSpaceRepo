@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_08_10_190545) do
+ActiveRecord::Schema.define(version: 2020_08_11_180813) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -369,6 +369,17 @@ ActiveRecord::Schema.define(version: 2020_08_10_190545) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "project_kits", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "proficient_project_id"
+    t.string "name"
+    t.boolean "delivered", default: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["proficient_project_id"], name: "index_project_kits_on_proficient_project_id"
+    t.index ["user_id"], name: "index_project_kits_on_user_id"
+  end
+
   create_table "project_proposals", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.integer "admin_id"
@@ -662,6 +673,8 @@ ActiveRecord::Schema.define(version: 2020_08_10_190545) do
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
   add_foreign_key "proficient_projects", "badge_templates"
+  add_foreign_key "project_kits", "proficient_projects"
+  add_foreign_key "project_kits", "users"
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"
