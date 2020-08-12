@@ -27,7 +27,7 @@ class ProjectKitsController < DevelopmentProgramsController
   def destroy
     if params[:id].present? and ProjectKit.find(params[:id]).present?
       ProjectKit.find(params[:id]).destroy
-      flash[:notice] = "The kit has deleted"
+      flash[:notice] = "The kit has been deleted"
     else
       flash[:alert] = "There was an error, try again later"
     end
