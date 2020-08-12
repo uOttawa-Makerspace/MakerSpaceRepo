@@ -35,6 +35,7 @@ class User < ApplicationRecord
   has_many :order_items, through: :orders
   has_many :discount_codes, dependent: :destroy
   has_one_attached :avatar
+  has_many :project_kits, dependent: :destroy
 
   validates :avatar, file_content_type: {
       allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],

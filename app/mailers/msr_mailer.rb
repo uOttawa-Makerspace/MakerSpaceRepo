@@ -22,6 +22,12 @@ class MsrMailer < ApplicationMailer
     mail(to: email, subject: "Your CC Money order")
   end
 
+  def send_kit_email(user, pp)
+    @user = user
+    @pp = pp
+    mail(to: @user.email, subject: "Your proficient project kit order")
+  end
+
   def send_print_user_approval_to_makerspace(id)
     @print_id = id
     mail(to: 'makerspace@uottawa.ca', subject: 'A user has approved a print order')

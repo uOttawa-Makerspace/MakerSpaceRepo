@@ -111,7 +111,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def proficient_project_params
-    params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id)
+    params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id, :has_project_kit)
   end
 
   def create_photos

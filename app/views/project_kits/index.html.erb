@@ -1,0 +1,98 @@
+<% provide(:title, "Project Kits") %>
+
+<section class="p-5">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12 text-center mb-4">
+        <h2>Your Kits</h2>
+      </div>
+    </div>
+    <div class="text-center">
+      <% if @kits.blank? %>
+        <p class="text-center">
+          Some Proficient Projects might include kits that will be used to complete it. <br />
+          You have no kits. <br />
+          Please check our <%= link_to "projects", proficient_projects_path(proficiency: true), class: "text-info" %> and add some items to your cart.
+        </p>
+      <% else %>
+        <div class="apple_pagination">
+          <%= page_entries_info @kits, :model => 'project_kits' %>
+          <%= will_paginate @kits, :container => false %>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped">
+
+            <tr>
+              <th>Kit</th>
+              <th>Date</th>
+              <th>Delivery Status</th>
+            </tr>
+
+            <tbody>
+            <% @kits.each do |kit| %>
+              <tr>
+                <td><p><%= kit.proficient_project.title %></p></td>
+                <td><p><%= kit.created_at.strftime("%Y/%m/%d") %></p></td>
+                <td><p><%= kit.delivered? ? "Delivered": "Not yet delivered"  %></p></td>
+              </tr>
+            <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </div>
+    <% if current_user.staff? %>
+      <hr>
+      <div class="row">
+        <div class="col-lg-12 text-center mb-4">
+          <h2>All Kits</h2>
+        </div>
+      </div>
+      <div class="text-center">
+        <% if @all_kits.blank? %>
+          <p class="text-center">
+            No kits were bought.
+          </p>
+        <% else %>
+          <div class="apple_pagination">
+            <%= page_entries_info @all_kits, :model => 'project_kits' %>
+            <%= will_paginate @all_kits, :container => false %>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-striped">
+
+              <tr>
+                <th>User</th>
+                <th>Kit</th>
+                <th>Date</th>
+                <th>Delivery Status</th>
+                <th>Mark delivered</th>
+              </tr>
+
+              <tbody>
+              <% @all_kits.each do |kit| %>
+                <tr>
+                  <td class="username"><p> <%= link_to kit.user.username, kit.user.username %></p></td>
+                  <td><p><%= kit.proficient_project.title %></p></td>
+                  <td><p><%= kit.created_at.strftime("%Y/%m/%d") %></p></td>
+                  <td><p><%= kit.delivered? ? "Delivered" : "Not yet delivered" %></p></td>
+                  <td>
+                    <% if !kit.delivered? %>
+                      <%= link_to "Mark as Delivered", project_kit_mark_delivered_path(kit.id), method: :get, data: {confirm: "Are you sure? This show the kit as delivered"}, class: "btn btn-primary" %>
+                    <% else %>
+                     <p>Marked</p>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</section>
+
+
