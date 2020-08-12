@@ -27,7 +27,7 @@ class PaperclipToActiveStorage < ActiveRecord::Migration[5.2]
     transaction do
       models.each do |model|
 
-        begin
+        if table_exists?(model)
           attachments = model.column_names.map do |c|
             if c =~ /(.+)_file_name$/
               $1
