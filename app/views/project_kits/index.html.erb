@@ -8,9 +8,11 @@
       </div>
     </div>
     <div class="text-center">
-      <% if !@kits.present? %>
+      <% if @kits.blank? %>
         <p class="text-center">
-          You have no kits. Please check our <%= link_to "projects", proficient_projects_path(proficiency: true), class: "text-info" %> and add some items to your cart.
+          Some Proficient Projects might include kits that will be used to complete it. <br />
+          You have no kits. <br />
+          Please check our <%= link_to "projects", proficient_projects_path(proficiency: true), class: "text-info" %> and add some items to your cart.
         </p>
       <% else %>
         <div class="apple_pagination">
@@ -47,7 +49,7 @@
         </div>
       </div>
       <div class="text-center">
-        <% if !@all_kits.present? %>
+        <% if @all_kits.blank? %>
           <p class="text-center">
             No kits were bought.
           </p>
@@ -77,9 +79,9 @@
                   <td><p><%= kit.delivered? ? "Delivered" : "Not yet delivered" %></p></td>
                   <td>
                     <% if !kit.delivered? %>
-                      <%= link_to "Mark Delivered", project_kit_mark_delivered_path(kit.id), method: :get, data: {confirm: "Are you sure? This show the kit as delivered"}, class: "btn btn-primary" %>
+                      <%= link_to "Mark as Delivered", project_kit_mark_delivered_path(kit.id), method: :get, data: {confirm: "Are you sure? This show the kit as delivered"}, class: "btn btn-primary" %>
                     <% else %>
-                     <p>Already marked delivered</p>
+                     <p>Marked</p>
                     <% end %>
                   </td>
                 </tr>

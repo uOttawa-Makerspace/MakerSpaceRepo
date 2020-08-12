@@ -4,7 +4,7 @@ class ProjectKitsController < DevelopmentProgramsController
 
   def index
     @kits = current_user.project_kits.order('delivered ASC').paginate(page: params[:page], per_page: 20)
-    @all_kits = ProjectKit.all.order('created_at DESC').paginate(page: params[:page], per_page: 20) if current_user.admin?
+    @all_kits = ProjectKit.all.order('created_at DESC').paginate(page: params[:page], per_page: 20) if current_user.admin? || current_user.staff?
   end
 
   def mark_delivered
