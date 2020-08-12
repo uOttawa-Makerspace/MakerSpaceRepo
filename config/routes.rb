@@ -66,6 +66,7 @@ Rails.application.routes.draw do
     get 'contact'
     get 'calendar'
     get "report_repository/:repository_id", :as => "report_repository", :action => "report_repository"
+    get 'development_program_info'
   end
 
   # RFID
