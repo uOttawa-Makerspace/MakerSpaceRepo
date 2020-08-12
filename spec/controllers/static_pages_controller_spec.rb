@@ -117,5 +117,14 @@ RSpec.describe StaticPagesController, type: :controller do
       end
     end
   end
+
+  describe "GET /volunteer_program_info" do
+    context 'logged as regular user' do
+      it 'should get 200' do
+        get :volunteer_program_info
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
 end
 
