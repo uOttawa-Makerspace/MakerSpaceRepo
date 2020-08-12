@@ -1,7 +1,7 @@
 class ProjectKitsController < DevelopmentProgramsController
   before_action :current_user
   before_action :signed_in
-  before_action :admin_staff_access, only: %i[new create destroy mark_delivered]
+  before_action :staff_admin_access, only: %i[new create destroy mark_delivered]
 
   def index
     @kits = current_user.project_kits.order('delivered ASC').paginate(page: params[:page], per_page: 20)
@@ -55,7 +55,7 @@ class ProjectKitsController < DevelopmentProgramsController
       params.require(:project_kit).permit(:user_id, :proficient_project_id)
     end
 
-    def admin_staff_access
+    def staff_admin_access
       unless current_user.admin? || current_user.staff?
         redirect_to root_path
         flash[:alert] = 'You cannot access this area.'
