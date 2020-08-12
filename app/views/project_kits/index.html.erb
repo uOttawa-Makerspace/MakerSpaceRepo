@@ -68,6 +68,7 @@
                 <th>Date</th>
                 <th>Delivery Status</th>
                 <th>Mark delivered</th>
+                <th>Delete</th>
               </tr>
 
               <tbody>
@@ -77,13 +78,19 @@
                   <td><p><%= kit.proficient_project.title %></p></td>
                   <td><p><%= kit.created_at.strftime("%Y/%m/%d") %></p></td>
                   <td><p><%= kit.delivered? ? "Delivered" : "Not yet delivered" %></p></td>
-                  <td>
                     <% if !kit.delivered? %>
-                      <%= link_to "Mark as Delivered", project_kit_mark_delivered_path(kit.id), method: :get, data: {confirm: "Are you sure? This show the kit as delivered"}, class: "btn btn-primary" %>
+                      <td>
+                        <%= link_to "Mark Delivered", project_kit_mark_delivered_path(kit.id), method: :get, data: {confirm: "Are you sure? This show the kit as delivered"}, class: "btn btn-primary" %>
+                      </td>
+                    <td>
+                      <%= link_to "Delete", project_kit_path(kit.id), method: :delete, data: {confirm: "Are you sure? This will delete the kit"}, class: "btn btn-danger" %>
+                    </td>
                     <% else %>
-                     <p>Marked</p>
+                     <td>
+                       <p>Marked</p>
+                     </td>
+                    <td>Kit has already been delivered</td>
                     <% end %>
-                  </td>
                 </tr>
               <% end %>
               </tbody>

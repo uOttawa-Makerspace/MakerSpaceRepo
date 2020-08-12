@@ -41,9 +41,21 @@
       <li class="nav-item">
         <%= link_to "Orders", orders_path, class: "nav-link"%>
       </li>
-      <li class="nav-item">
-        <%= link_to "Kits", project_kits_path, class: "nav-link"%>
-      </li>
+      <% if current_user.admin? %>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Kits
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+            <%= link_to "Kits", project_kits_path, class: "dropdown-item" %>
+            <%= link_to "Create kit", new_project_kit_path, class: "dropdown-item" %>
+          </div>
+        </li>
+      <% else %>
+        <li class="nav-item">
+          <%= link_to "Kits", project_kits_path, class: "nav-link"%>
+        </li>
+      <% end %>
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Coupons
