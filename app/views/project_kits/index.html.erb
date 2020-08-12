@@ -74,7 +74,7 @@
               <tbody>
               <% @all_kits.each do |kit| %>
                 <tr>
-                  <td class="username"><p> <%= link_to kit.user.username, kit.user.username %></p></td>
+                  <td class="username"><p> <%= link_to kit.user.name, kit.user.username %></p></td>
                   <td><p><%= kit.proficient_project.title %></p></td>
                   <td><p><%= kit.created_at.strftime("%Y/%m/%d") %></p></td>
                   <td><p><%= kit.delivered? ? "Delivered" : "Not yet delivered" %></p></td>
