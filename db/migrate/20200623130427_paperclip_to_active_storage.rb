@@ -26,41 +26,45 @@ class PaperclipToActiveStorage < ActiveRecord::Migration[5.2]
 
     transaction do
       models.each do |model|
-        attachments = model.column_names.map do |c|
-          if c =~ /(.+)_file_name$/
-            $1
-          end
-        end.compact
 
-        if attachments.blank?
-          next
-        end
-
-        model.find_each.each do |instance|
-          attachments.each do |attachment|
-            if instance.send(attachment).path.blank?
-              next
+        if table_exists?(model)
+          attachments = model.column_names.map do |c|
+            if c =~ /(.+)_file_name$/
+              $1
             end
+          end.compact
 
-            ActiveRecord::Base.connection.raw_connection.exec_prepared(
-                'active_storage_blob_statement', [
-                key(instance, attachment),
-                instance.send("#{attachment}_file_name"),
-                instance.send("#{attachment}_content_type"),
-                instance.send("#{attachment}_file_size"),
-                checksum(instance.send(attachment)),
-                instance.updated_at.iso8601
-            ])
+          if attachments.blank?
+            next
+          end
 
-            ActiveRecord::Base.connection.raw_connection.exec_prepared(
-                'active_storage_attachment_statement', [
-                attachment,
-                model.name,
-                instance.id,
-                instance.updated_at.iso8601,
-            ])
+          model.find_each.each do |instance|
+            attachments.each do |attachment|
+              if instance.send(attachment).path.blank?
+                next
+              end
+
+              ActiveRecord::Base.connection.raw_connection.exec_prepared(
+                  'active_storage_blob_statement', [
+                  key(instance, attachment),
+                  instance.send("#{attachment}_file_name"),
+                  instance.send("#{attachment}_content_type"),
+                  instance.send("#{attachment}_file_size"),
+                  checksum(instance.send(attachment)),
+                  instance.updated_at.iso8601
+              ])
+
+              ActiveRecord::Base.connection.raw_connection.exec_prepared(
+                  'active_storage_attachment_statement', [
+                  attachment,
+                  model.name,
+                  instance.id,
+                  instance.updated_at.iso8601,
+              ])
+            end
           end
         end
+
       end
     end
   end

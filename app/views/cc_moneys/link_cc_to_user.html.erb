@@ -1,0 +1,15 @@
+<div class="container text-center">
+  <h4>Link CC to an user</h4>
+  <p>You can only link this CC points once. Make sure that you are sending it to the correct email.</p>
+  <%= form_for(:user, url: redeem_cc_moneys_path, method: "get") do |f| %>
+    <%= hidden_field_tag :token,  @cc_token %>
+    <div class="form-group">
+      <%= f.label :email %>
+      <%= f.email_field :email, placeholder: "example@gmail.com", class: "form-control" %>
+    </div>
+    <%= f.submit 'Send CC', class: "btn btn-primary" %>
+    <br />
+    <br>
+    <%= link_to 'Cancel', root_url %>
+  <% end %>
+</div>

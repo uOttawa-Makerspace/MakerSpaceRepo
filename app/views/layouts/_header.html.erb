@@ -55,6 +55,9 @@
         <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
       <% else %>
         <li class="nav-item">
+          <%= link_to(t('navbar.buy_cc_money'), cc_moneys_path, class: "nav-link") %>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
         </li>
 

@@ -13,6 +13,10 @@ FactoryBot.define do
       association :order
     end
 
+    trait :order_in_progress_with_kit do
+      association :proficient_project, :with_kit
+    end
+
     trait :awarded do
       status { "Awarded" }
     end

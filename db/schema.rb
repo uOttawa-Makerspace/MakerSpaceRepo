@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_08_04_153312) do
+ActiveRecord::Schema.define(version: 2020_08_11_183953) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -124,6 +124,7 @@ ActiveRecord::Schema.define(version: 2020_08_04_153312) do
     t.integer "proficient_project_id"
     t.integer "order_id"
     t.integer "discount_code_id"
+    t.boolean "linked", default: true
     t.index ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id"
     t.index ["order_id"], name: "index_cc_moneys_on_order_id"
     t.index ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id"
@@ -349,6 +350,7 @@ ActiveRecord::Schema.define(version: 2020_08_04_153312) do
     t.integer "cc", default: 0
     t.boolean "proficient", default: true
     t.integer "badge_template_id"
+    t.boolean "has_project_kit"
     t.index ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id"
   end
 
@@ -369,6 +371,17 @@ ActiveRecord::Schema.define(version: 2020_08_04_153312) do
     t.integer "project_proposal_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "project_kits", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "proficient_project_id"
+    t.string "name"
+    t.boolean "delivered", default: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["proficient_project_id"], name: "index_project_kits_on_proficient_project_id"
+    t.index ["user_id"], name: "index_project_kits_on_user_id"
   end
 
   create_table "project_proposals", id: :serial, force: :cascade do |t|
@@ -664,6 +677,8 @@ ActiveRecord::Schema.define(version: 2020_08_04_153312) do
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
   add_foreign_key "proficient_projects", "badge_templates"
+  add_foreign_key "project_kits", "proficient_projects"
+  add_foreign_key "project_kits", "users"
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"

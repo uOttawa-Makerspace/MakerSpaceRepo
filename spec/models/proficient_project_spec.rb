@@ -15,6 +15,11 @@ RSpec.describe ProficientProject, type: :model do
       it { should have_many(:cc_moneys) }
       it { should have_many(:order_items) }
       it { should have_many(:badge_requirements) }
+      it { should have_many(:project_kits) }
+      it 'dependent destroy: should destroy project kits if destroyed' do
+        proficient_project = create(:proficient_project_with_project_kits)
+        expect { proficient_project.destroy }.to change { ProjectKit.count }.by(-proficient_project.project_kits.count)
+      end
     end
 
     context 'belongs_to' do

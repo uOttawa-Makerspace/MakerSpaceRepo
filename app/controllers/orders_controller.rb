@@ -20,6 +20,10 @@ class OrdersController < DevelopmentProgramsController
         cc = order_item.total_price.to_i
         cc *= -1 if cc >= 0
         @order.cc_moneys.create(proficient_project: order_item.proficient_project, user: user, cc: cc)
+        if order_item.proficient_project.has_project_kit?
+          ProjectKit.create(user_id: @order.user_id, proficient_project_id: order_item.proficient_project_id, delivered: false)
+          MsrMailer.send_kit_email(@order.user, order_item.proficient_project_id).deliver_now
+        end
       end
       current_user.update_wallet
       session[:order_id] = nil

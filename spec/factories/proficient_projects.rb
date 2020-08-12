@@ -17,6 +17,10 @@ FactoryBot.define do
       end
     end
 
+    trait :with_kit do
+      has_project_kit { true }
+    end
+
     trait :broken do
       title { "" }
     end
@@ -43,6 +47,15 @@ FactoryBot.define do
         create(:badge_template, :laser_cutting_no_id)
         BadgeRequirement.create(proficient_project_id: pp.id, badge_template_id: BadgeTemplate.find_by_badge_name('Beginner - 3D printing || Débutant - Impression 3D').id)
         BadgeRequirement.create(proficient_project_id: pp.id, badge_template_id: BadgeTemplate.find_by_badge_name('Beginner Laser cutting || Beginner - Laser cutting').id)
+      end
+    end
+
+    factory :proficient_project_with_project_kits do
+      transient do
+        project_kit_count { 3 }
+      end
+      after(:create) do |proficient_project, evaluator|
+        create_list(:project_kit, evaluator.project_kit_count, proficient_project: proficient_project)
       end
     end
 
