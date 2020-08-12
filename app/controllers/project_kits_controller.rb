@@ -7,6 +7,47 @@ class ProjectKitsController < DevelopmentProgramsController
     @all_kits = ProjectKit.all.order('created_at DESC').paginate(page: params[:page], per_page: 20) if current_user.admin? || current_user.staff?
   end
 
+  def new
+    if current_user.admin? || current_user.staff?
+      @kit = ProjectKit.new
+      @proficient_projects = ProficientProject.all.where(has_project_kit: true).order(created_at: :asc).pluck(:title, :id)
+    else
+      redirect_to root_path
+      flash[:alert] = 'You cannot access this area.'
+    end
+  end
+
+  def create
+    @kit = ProjectKit.new(project_kits_params)
+    if @kit.save
+      MsrMailer.send_kit_email(@kit.user, @kit.proficient_project_id).deliver_now
+      flash[:notice] = "The kit for #{@kit.user.name} has been created !"
+    else
+      flash[:alert] = "There was an error creating the kit"
+    end
+    redirect_to project_kits_path
+  end
+
+  def destroy
+    if current_user.admin? || current_user.staff?
+      if params[:id].present? and ProjectKit.find(params[:id]).present?
+        ProjectKit.find(params[:id]).destroy
+        flash[:notice] = "The kit has deleted"
+      else
+        flash[:alert] = "There was an error, try again later"
+      end
+      redirect_to project_kits_path
+    else
+      redirect_to root_path
+      flash[:alert] = 'You cannot access this area.'
+    end
+  end
+
+  def populate_kit_users
+    json_data = User.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
+    render json: { users: json_data }
+  end
+
   def mark_delivered
     if current_user.admin? || current_user.staff?
       if params[:project_kit_id].present? and ProjectKit.find(params[:project_kit_id]).present?
@@ -20,6 +61,10 @@ class ProjectKitsController < DevelopmentProgramsController
       redirect_to root_path
       flash[:alert] = 'You cannot access this area.'
     end
+  end
+
+  def project_kits_params
+    params.require(:project_kit).permit(:user_id, :proficient_project_id)
   end
 
 end
