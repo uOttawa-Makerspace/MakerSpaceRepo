@@ -1,6 +1,7 @@
 class ProjectKitsController < DevelopmentProgramsController
   before_action :current_user
   before_action :signed_in
+  before_action :grant_access, only: %i[new create destroy mark_delivered]
 
   def index
     @kits = current_user.project_kits.order('delivered ASC').paginate(page: params[:page], per_page: 20)
@@ -8,13 +9,8 @@ class ProjectKitsController < DevelopmentProgramsController
   end
 
   def new
-    if current_user.admin? || current_user.staff?
-      @kit = ProjectKit.new
-      @proficient_projects = ProficientProject.all.where(has_project_kit: true).order(created_at: :asc).pluck(:title, :id)
-    else
-      redirect_to root_path
-      flash[:alert] = 'You cannot access this area.'
-    end
+    @kit = ProjectKit.new
+    @proficient_projects = ProficientProject.all.where(has_project_kit: true).order(created_at: :asc).pluck(:title, :id)
   end
 
   def create
@@ -29,18 +25,13 @@ class ProjectKitsController < DevelopmentProgramsController
   end
 
   def destroy
-    if current_user.admin? || current_user.staff?
-      if params[:id].present? and ProjectKit.find(params[:id]).present?
-        ProjectKit.find(params[:id]).destroy
-        flash[:notice] = "The kit has deleted"
-      else
-        flash[:alert] = "There was an error, try again later"
-      end
-      redirect_to project_kits_path
+    if params[:id].present? and ProjectKit.find(params[:id]).present?
+      ProjectKit.find(params[:id]).destroy
+      flash[:notice] = "The kit has deleted"
     else
-      redirect_to root_path
-      flash[:alert] = 'You cannot access this area.'
+      flash[:alert] = "There was an error, try again later"
     end
+    redirect_to project_kits_path
   end
 
   def populate_kit_users
@@ -49,24 +40,25 @@ class ProjectKitsController < DevelopmentProgramsController
   end
 
   def mark_delivered
-    if current_user.admin? || current_user.staff?
-      if params[:project_kit_id].present? and ProjectKit.find(params[:project_kit_id]).present?
-        ProjectKit.find(params[:project_kit_id]).update(delivered: true)
-        flash[:notice] = "The kit has been marked as delivered"
-      else
-        flash[:alert] = "There was an error, try again later"
-      end
-      redirect_to project_kits_path
+    if params[:project_kit_id].present? and ProjectKit.find(params[:project_kit_id]).present?
+      ProjectKit.find(params[:project_kit_id]).update(delivered: true)
+      flash[:notice] = "The kit has been marked as delivered"
     else
-      redirect_to root_path
-      flash[:alert] = 'You cannot access this area.'
+      flash[:alert] = "There was an error, try again later"
     end
+    redirect_to project_kits_path
   end
 
   private
 
-  def project_kits_params
-    params.require(:project_kit).permit(:user_id, :proficient_project_id)
-  end
+    def project_kits_params
+      params.require(:project_kit).permit(:user_id, :proficient_project_id)
+    end
 
+    def grant_access
+      unless current_user.admin? || current_user.staff?
+        redirect_to root_path
+        flash[:alert] = 'You cannot access this area.'
+      end
+    end
 end
