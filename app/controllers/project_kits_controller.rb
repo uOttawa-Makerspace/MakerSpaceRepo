@@ -63,6 +63,8 @@ class ProjectKitsController < DevelopmentProgramsController
     end
   end
 
+  private
+
   def project_kits_params
     params.require(:project_kit).permit(:user_id, :proficient_project_id)
   end
