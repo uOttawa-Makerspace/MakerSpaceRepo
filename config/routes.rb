@@ -20,6 +20,20 @@ Rails.application.routes.draw do
   end
   mount Sidekiq::Web => '/sidekiq'
 
+  resources :project_kits, only: [:index, :new, :create, :destroy] do
+    get :mark_delivered
+    collection do
+      get :populate_kit_users
+    end
+  end
+
+  resources :cc_moneys, only: [:index] do
+    collection do
+      get :redeem
+      get :link_cc_to_user
+    end
+  end
+
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
     get :revoke, path: 'revoke'
@@ -66,6 +80,8 @@ Rails.application.routes.draw do
     get 'contact'
     get 'calendar'
     get "report_repository/:repository_id", :as => "report_repository", :action => "report_repository"
+    get 'volunteer_program_info'
+    get 'development_program_info'
   end
 
   # RFID
@@ -355,4 +371,5 @@ Rails.application.routes.draw do
     post :create, path: '/:slug'
     delete :destroy, path: '/:id/destroy'
   end
+
 end

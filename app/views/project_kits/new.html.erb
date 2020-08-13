@@ -1,0 +1,21 @@
+<div class="container">
+  <div class="col-lg-12 text-center mb-4">
+    <br>
+    <h2>Get a free kit to a user</h2>
+  </div>
+  <%= form_for(@kit) do |f| %>
+    <div class="form-group">
+      <%= f.label :user_id, "User" %>
+      <%= f.select(:user_id, "", {prompt: "Choose User..."}, {:class => "kit_user_select form-control", :id => "kit_user_select"}) %>
+      <br>
+      <%= f.label :proficient_project_id, "Related Proficient Project" %>
+      <%= f.select(:proficient_project_id, options_for_select(@proficient_projects), {:include_blank => true}, class: "form-control") %>
+    </div>
+    <div class="text-center">
+      <%= f.submit "Create Kit request", class: "btn btn-primary" %>
+      <br/>
+    </div>
+  <% end %>
+</div>
+<br><br>
+  <%= javascript_pack_tag 'project_kits', 'data-turbolinks-track': 'reload' %>

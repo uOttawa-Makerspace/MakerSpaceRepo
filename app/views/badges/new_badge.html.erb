@@ -9,7 +9,7 @@
       <%= f.label :user_id, "User" %>
       <%= f.select(:user_id, "" , {prompt: "Choose User..."} , {:class => "grant_user_select form-control", :id => "grant_user_select"}) %>
       <br>
-      <%= f.label :badge_template_id, "Badge that will be acquired" %>
+      <%= f.label :badge_template_id, "Kit that will be acquired" %>
       <%= f.select(:badge_template_id, options_for_select(@badge_templates), {:include_blank => true}, {:class => "form-control"}) %>
       <br>
       <br>

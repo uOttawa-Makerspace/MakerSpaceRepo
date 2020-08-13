@@ -16,6 +16,7 @@ fr:
     sign_in: "Connexion"
     create_account: "Créer un compte"
     search: "Rechercher"
+    buy_cc_money: "Acheter des CC"
     create_project: "Créer un projet"
     user:
       profile: "Profil"

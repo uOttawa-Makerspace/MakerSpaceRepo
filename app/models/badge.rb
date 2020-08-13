@@ -40,7 +40,7 @@ class Badge < ApplicationRecord
               user: Rails.application.credentials[Rails.env.to_sym][:acclaim_api],
               password: '',
               headers: { 'Content-type' => 'application/json' },
-              query: { reason: 'Admin revoked badge', suppress_revoke_notification_email: false })
+              query: { reason: 'Admin revoked badge', suppress_revoke_notification_email: Rails.env.test? ? true : false })
   end
 
   def self.acclaim_api_create_badge(user, acclaim_template_id)
@@ -52,6 +52,7 @@ class Badge < ApplicationRecord
                         badge_template_id: acclaim_template_id,
                         issued_to_first_name: user.name.split(' ', 2)[0],
                         issued_to_last_name: user.name.split(' ', 2)[1],
-                        issued_at: Time.zone.now })
+                        issued_at: Time.zone.now,
+                        suppress_revoke_notification_email: Rails.env.test? ? true : false })
   end
 end

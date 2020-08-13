@@ -69,7 +69,27 @@ RSpec.describe OrdersController, type: :controller do
 
     end
 
+    context "create with kit" do
+
+      it 'should create an order with a kit' do
+        OrderStatus.create(name: "In progress")
+        OrderStatus.create(name: "Completed")
+        user = create(:user, :volunteer_with_dev_program)
+        create(:order_item, :order_in_progress_with_kit)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        session[:order_id] = Order.last.id
+        CcMoney.create(user_id: User.last.id, cc: 50)
+        expect{ post :create }.to change(ProjectKit, :count).by(1)
+        expect(flash[:notice]).to eq('Your Order was successfully processed.')
+        expect(session[:order_id]).to be_nil
+        expect(response).to redirect_to orders_path
+      end
+
+    end
+
   end
+
 
   describe "#destroy" do
 

@@ -90,7 +90,7 @@ Rails.application.configure do
   end
 
   # SMTP GMail Settings
-  config.action_mailer.default_url_options = { host: 'makerepo.com' }
+  config.action_mailer.default_url_options = { host: 'staging.makerepo.com' }
 
   config.action_mailer.delivery_method = :smtp
 
