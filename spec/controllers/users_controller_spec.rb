@@ -23,6 +23,44 @@ RSpec.describe UsersController, type: :controller do
 
   end
 
+  describe "GET /resend_confirmation" do
+
+    context "send confirmation" do
+      it 'should send confirmation' do
+        user = create(:user, :regular_user_not_confirmed)
+        get :resend_confirmation, params: {user_id: user.id}
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq(user.email)
+      end
+    end
+
+  end
+
+  describe "GET /confirm" do
+
+    context "confirm" do
+      it 'should confirm the user' do
+        user = create(:user, :regular_user_not_confirmed)
+        @hash = Rails.application.message_verifier(:user).generate(user.id)
+        get :confirm, params: {token: @hash}
+        expect(response).to redirect_to root_path
+        expect(flash[:notice]).to eq("The email has been confirmed, you can now fully use your Makerepo Account !")
+        expect(User.find(user.id).confirmed?).to be_truthy
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq(user.email)
+      end
+
+      it 'should not confirm the user' do
+        user = create(:user, :regular_user_not_confirmed)
+        get :confirm, params: {token: "abc"}
+        expect(response).to redirect_to root_path
+        expect(flash[:alert]).to eq("Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com")
+        expect(User.find(user.id).confirmed?).to be_falsey
+      end
+    end
+
+  end
+
   describe "POST /flag" do
 
     context 'flag' do

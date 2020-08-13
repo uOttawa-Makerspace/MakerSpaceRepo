@@ -16,6 +16,13 @@ RSpec.describe SessionsController, type: :controller do
         expect(response).to redirect_to root_path
       end
 
+      it 'should not login the user that isn\'t confirmed' do
+        @user = create(:user, :regular_user_not_confirmed)
+        post :login_authentication, params: {username_email: @user.username, password: 'asa32A353#'}
+        expect(response).to have_http_status(200)
+        expect(flash[:alert]).to eq("Please confirm your account before logging in, you can resend the email <a href='#{resend_confirmation_users_url(user_id: @user.id)}'>here</a>.".html_safe)
+      end
+
       it 'should not login the user with a wrong password' do
         post :login_authentication, params: {username_email: @user.username, password: 'abc123'}
         expect(response).to have_http_status(200)
