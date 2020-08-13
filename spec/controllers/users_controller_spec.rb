@@ -111,15 +111,15 @@ RSpec.describe UsersController, type: :controller do
       it 'should create the user' do
         user_params = FactoryBot.attributes_for(:user, :regular_user, password: "asa32A353#")
         expect { post :create, params: {user: user_params} }.to change(User, :count).by(1)
-        expect(response).to redirect_to settings_profile_path(User.last.username)
-        expect(flash[:notice]).to eq('Profile created successfully.')
+        expect(response).to redirect_to root_path
+        expect(flash[:notice]).to eq('Account has been created, please look in your emails to confirm your email address.')
       end
 
       it 'should create the user with avatar' do
         user_params = FactoryBot.attributes_for(:user, :regular_user_with_avatar, password: "asa32A353#")
         expect { post :create, params: {user: user_params} }.to change(User, :count).by(1)
-        expect(response).to redirect_to settings_profile_path(User.last.username)
-        expect(flash[:notice]).to eq('Profile created successfully.')
+        expect(response).to redirect_to root_path
+        expect(flash[:notice]).to eq('Account has been created, please look in your emails to confirm your email address.')
       end
 
       it 'should create the user with avatar' do
