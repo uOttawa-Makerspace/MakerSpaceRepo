@@ -337,6 +337,8 @@ Rails.application.routes.draw do
   # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
     collection do
+      get :resend_confirmation
+      get :confirm
       post :create, path: '/new'
       get :remove_avatar
       post :flag

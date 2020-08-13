@@ -11,10 +11,19 @@ class SessionsController < ApplicationController
 
     respond_to do |format|
       if @user
-        if request.env['HTTP_REFERER'] == login_authentication_url
-          format.html { redirect_to root_path }
+        if @user.confirmed?
+          if request.env['HTTP_REFERER'] == login_authentication_url
+            format.html { redirect_to root_path }
+          else
+            format.html { redirect_back(fallback_location: root_path) }
+          end
         else
-          format.html { redirect_back(fallback_location: root_path) }
+          @placeholder = params[:username_email]
+          flash[:alert] = "Please confirm your account before logging in, you can resend the email <a href='#{resend_confirmation_users_url(user_id: @user.id)}'>here</a>.".html_safe
+          @user = User.new
+          session[:user_id] = ""
+          format.html { render :login }
+          format.json { render json: "Account not confirmed", status: :unprocessable_entity }
         end
         format.json { render json: { role: :guest }, status: :ok }
       else
