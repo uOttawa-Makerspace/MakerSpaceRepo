@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_08_11_183953) do
+ActiveRecord::Schema.define(version: 2020_08_13_171132) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -300,8 +300,6 @@ ActiveRecord::Schema.define(version: 2020_08_11_183953) do
     t.text "staff_comments"
     t.boolean "expedited"
     t.integer "order_type", default: 0
-    t.text "email"
-    t.text "name"
     t.datetime "timestamp_approved"
     t.string "final_file_file_name"
     t.string "final_file_content_type"
@@ -337,7 +335,6 @@ ActiveRecord::Schema.define(version: 2020_08_11_183953) do
     t.string "status", default: "true"
     t.string "availability", default: "true"
     t.string "color", default: "FF0000"
-    t.string "rfid"
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
@@ -582,6 +579,7 @@ ActiveRecord::Schema.define(version: 2020_08_11_183953) do
     t.integer "wallet", default: 0
     t.boolean "flagged"
     t.string "flag_message"
+    t.boolean "confirmed", default: false
   end
 
   create_table "videos", id: :serial, force: :cascade do |t|

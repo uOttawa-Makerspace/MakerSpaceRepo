@@ -2,8 +2,8 @@
 
 class UsersController < SessionsController
   skip_before_action :session_expiry, only: [:create]
-  before_action :current_user, except: %i[create new]
-  before_action :signed_in, except: %i[new create show]
+  before_action :current_user, except: %i[create new resend_confirmation]
+  before_action :signed_in, except: %i[new create show resend_confirmation confirm]
 
   def create
     @new_user = User.new(user_params)
@@ -11,16 +11,47 @@ class UsersController < SessionsController
 
     respond_to do |format|
       if @new_user.save
-        flash[:notice] = 'Profile created successfully.'
-        MsrMailer.welcome_email(@new_user).deliver_now
-        session[:user_id] = @new_user.id
-        format.html { redirect_to settings_profile_path(@new_user.username) }
-        format.json { render json: { success: @new_user.id }, status: :ok }
+        hash = Rails.application.message_verifier(:user).generate(@new_user.id)
+        MsrMailer.confirmation_email(@new_user, hash).deliver_now
+        format.html { redirect_to root_path, notice: "Account has been created, please look in your emails to confirm your email address." }
+        format.json { render json: "Account has been created, please look in your emails to confirm your email address.", status: :unprocessable_entity }
       else
         format.html { render 'new', status: :unprocessable_entity }
         format.json { render json: @new_user.errors, status: :unprocessable_entity }
       end
     end
+  end
+
+  def resend_confirmation
+    email = params[:user][:email]
+    user = User.find_by(email: email)
+    if user.present?
+      hash = Rails.application.message_verifier(:user).generate(user.id)
+      MsrMailer.confirmation_email(user, hash).deliver_now
+      flash[:notice] = "A new confirmation email has been sent"
+    else
+      flash[:alert] = "No users with that email were found. Please select a valid email."
+    end
+    redirect_back(fallback_location: root_path)
+  end
+
+  def confirm
+    @cc_token = params[:token]
+    @verifier = Rails.application.message_verifier(:user)
+    if @verifier.valid_message?(@cc_token)
+      user_id = @verifier.verify(@cc_token)
+      if User.find(user_id).present?
+        user = User.find(user_id)
+        user.update(confirmed: true)
+        MsrMailer.welcome_email(user).deliver_now
+        flash[:notice] = "The email has been confirmed, you can now fully use your Makerepo Account !"
+      else
+        flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+      end
+    else
+      flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+    end
+    redirect_to root_path
   end
 
   def new

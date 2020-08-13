@@ -1,6 +1,13 @@
 # frozen_string_literal: true
 
 class MsrMailer < ApplicationMailer
+
+  def confirmation_email(user, hash)
+    @user = user
+    @hash = hash
+    mail(to: @user.email, subject: 'Makerepo | Please confirm your email')
+  end
+
   def welcome_email(user)
     @user = user
     @url  = 'http://makerepo.com/login'

@@ -112,6 +112,7 @@ Rails.application.routes.draw do
     post 'login_authentication'
     get 'logout'
     get 'login'
+    get 'resend_email_confirmation'
   end
 
   # GITHUB
@@ -337,6 +338,8 @@ Rails.application.routes.draw do
   # USER RESOURCES
   resources :users, path: '/', param: :username, except: :edit do
     collection do
+      get :resend_confirmation
+      get :confirm
       post :create, path: '/new'
       get :remove_avatar
       post :flag

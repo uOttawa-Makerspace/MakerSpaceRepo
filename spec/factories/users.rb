@@ -6,12 +6,21 @@ FactoryBot.define do
     name { Faker::Name.name }
     username { Faker::Name.unique.first_name }
     wallet { 1000 }
+    confirmed { true }
 
     trait :regular_user do
       password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "regular_user" }
       identity { "community_member" }
       gender { "Male" }
+    end
+
+    trait :regular_user_not_confirmed do
+      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+      role { "regular_user" }
+      identity { "community_member" }
+      gender { "Male" }
+      confirmed { false }
     end
 
     trait :regular_user_with_certifications do
