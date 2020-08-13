@@ -29,6 +29,10 @@ every 1.month do
   runner "MsrMailer.send_monthly_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com']).deliver_now"
 end
 
+every 1.month do
+  rake 'confirmed_users:remind'
+end
+
 # At 7am of First day of every week
 every :monday, at: '7am' do
   runner "MsrMailer.send_weekly_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com']).deliver_now"
