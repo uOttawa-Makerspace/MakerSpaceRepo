@@ -23,11 +23,16 @@ class UsersController < SessionsController
   end
 
   def resend_confirmation
-    user_id = params[:user_id]
-    hash = Rails.application.message_verifier(:user).generate(user_id)
-    MsrMailer.confirmation_email(User.find(user_id), hash).deliver_now
-    flash[:notice] = "A new confirmation email as been sent"
-    redirect_to root_path
+    email = params[:user][:email]
+    user = User.find_by(email: email)
+    if user.present?
+      hash = Rails.application.message_verifier(:user).generate(user.id)
+      MsrMailer.confirmation_email(user, hash).deliver_now
+      flash[:notice] = "A new confirmation email has been sent"
+    else
+      flash[:alert] = "No users with that email were found. Please select a valid email."
+    end
+    redirect_back(fallback_location: root_path)
   end
 
   def confirm

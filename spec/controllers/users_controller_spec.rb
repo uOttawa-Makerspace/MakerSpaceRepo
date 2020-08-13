@@ -28,7 +28,7 @@ RSpec.describe UsersController, type: :controller do
     context "send confirmation" do
       it 'should send confirmation' do
         user = create(:user, :regular_user_not_confirmed)
-        get :resend_confirmation, params: {user_id: user.id}
+        get :resend_confirmation, params: {user: { email: user.email} }
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(user.email)
       end

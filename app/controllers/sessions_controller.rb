@@ -18,7 +18,7 @@ class SessionsController < ApplicationController
             format.html { redirect_back(fallback_location: root_path) }
           end
         else
-          flash[:alert] = "Please confirm your account before logging in, you can resend the email <a class ='text-primary' href='#{resend_confirmation_users_url(user_id: @user.id)}'>here</a>.".html_safe
+          flash.now[:alert] = "Please confirm your account before logging in, you can resend the email #{view_context.link_to 'here', resend_email_confirmation_path(email: params[:username_email]), class: 'text-primary'}".html_safe
           @user = User.new
           session[:user_id] = nil
           format.html { render :login }
@@ -74,6 +74,10 @@ class SessionsController < ApplicationController
 
   def selected_dates
     session[:selected_dates] ||= []
+  end
+
+  def resend_email_confirmation
+    @email = params[:email]
   end
 
   private

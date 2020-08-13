@@ -112,6 +112,7 @@ Rails.application.routes.draw do
     post 'login_authentication'
     get 'logout'
     get 'login'
+    get 'resend_email_confirmation'
   end
 
   # GITHUB

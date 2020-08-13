@@ -1,0 +1,14 @@
+<div class="container text-center">
+  <h4>You didn;t receive an email confirmation after registering?</h4>
+  <p>Check your email below and resend the confirmation email.</p>
+  <%= form_for(:user, url: resend_confirmation_users_path, method: "get") do |f| %>
+    <div class="form-group">
+      <%= f.label :email %>
+      <%= f.email_field :email, value: @email, placeholder: "example@gmail.com", class: "form-control" %>
+    </div>
+    <%= f.submit 'Resend Confirmation', class: "btn btn-primary" %>
+    <br />
+    <br>
+    <%= link_to 'Cancel', root_url %>
+  <% end %>
+</div>
