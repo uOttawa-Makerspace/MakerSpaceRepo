@@ -18,17 +18,15 @@ class SessionsController < ApplicationController
             format.html { redirect_back(fallback_location: root_path) }
           end
         else
-          @placeholder = params[:username_email]
-          flash[:alert] = "Please confirm your account before logging in, you can resend the email <a href='#{resend_confirmation_users_url(user_id: @user.id)}'>here</a>.".html_safe
+          flash[:alert] = "Please confirm your account before logging in, you can resend the email <a class ='text-primary' href='#{resend_confirmation_users_url(user_id: @user.id)}'>here</a>.".html_safe
           @user = User.new
-          session[:user_id] = ""
+          session[:user_id] = nil
           format.html { render :login }
           format.json { render json: "Account not confirmed", status: :unprocessable_entity }
         end
         format.json { render json: { role: :guest }, status: :ok }
       else
         @user = User.new
-        @placeholder = params[:username_email]
         flash.now[:alert] = 'Incorrect username or password.'
         format.html { render :login }
         format.json { render json: @user.errors, status: :unprocessable_entity }
@@ -80,8 +78,8 @@ class SessionsController < ApplicationController
 
   private
 
-  def get_session_time_left
-    expire_time = session[:expires_at] || Time.zone.now
-    @session_time_left = (expire_time.to_time - Time.zone.now).to_i
-  end
+    def get_session_time_left
+      expire_time = session[:expires_at] || Time.zone.now
+      @session_time_left = (expire_time.to_time - Time.zone.now).to_i
+    end
 end

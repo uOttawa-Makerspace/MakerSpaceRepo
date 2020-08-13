@@ -15,10 +15,6 @@ class UsersController < SessionsController
         MsrMailer.confirmation_email(@new_user, hash).deliver_now
         format.html { redirect_to root_path, notice: "Account has been created, please look in your emails to confirm your email address." }
         format.json { render json: "Account has been created, please look in your emails to confirm your email address.", status: :unprocessable_entity }
-        # flash[:notice] = 'Profile created successfully.'
-        # session[:user_id] = @new_user.id
-        # format.html { redirect_to settings_profile_path(@new_user.username) }
-        # format.json { render json: { success: @new_user.id }, status: :ok }
       else
         format.html { render 'new', status: :unprocessable_entity }
         format.json { render json: @new_user.errors, status: :unprocessable_entity }
