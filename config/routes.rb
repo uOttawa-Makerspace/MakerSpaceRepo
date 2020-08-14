@@ -230,6 +230,7 @@ Rails.application.routes.draw do
     put 'link_rfid'
     put 'unlink_rfid'
     get 'sign_out_all_users'
+    get :populate_users
   end
 
   resources :development_programs, only: [:index] do

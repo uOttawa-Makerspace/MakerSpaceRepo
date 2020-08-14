@@ -103,4 +103,10 @@ class StaffDashboardController < StaffAreaController
       format.xlsx { send_data ReportGenerator.generate_space_present_users_report(@space.id).to_stream.read, filename: "#{@space.name}_#{Time.new.strftime("%Y-%m-%d_%Hh%M")}_present_users_report.xlsx" }
     end
   end
+
+  def populate_users
+    json_data = User.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
+    render json: { users: json_data }
+  end
+
  end

@@ -10,6 +10,17 @@
           action: :training_report,
           class:"btn btn-secondary" %>
     </div>
+    <br /> <br />
+    <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
+      <div class="form-group">
+        <%= label_tag :user_id, "User" %>
+        <%= select_tag(:user_id, "", prompt: "Choose User...", :class => "user_select form-control", :id => "user_select") %>
+      </div>
+      <div class="text-center">
+        <%= submit_tag "Search", class: 'btn btn-primary' %>
+        <br/>
+      </div>
+    <% end %>
 
     <div class="search-form" style="display:inline"> Search for users to sign them in or out of <%=@space.name.capitalize%>:
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
@@ -175,3 +186,5 @@
     <br>
   </div>
 </section>
+
+<%= javascript_pack_tag 'staff_dashboard', 'data-turbolinks-track': 'reload' %>
