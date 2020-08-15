@@ -41,7 +41,7 @@ module MakerSpaceRepo
 
       service_providers = {
         'wiki.makerepo.com' => {
-          response_hosts: ['wiki.makerepo.com', 'staff.makerepo.com']
+          response_hosts: ['wiki.makerepo.com', 'staff.makerepo.com', 'en.wiki.makerepo.com']
         }
       }
 
