@@ -8,11 +8,12 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: 'Makerepo | Please confirm your email')
   end
 
-  def email_confirmation_email(user, user_hash, email_hash)
+  def email_confirmation_email(new_email, user, user_hash, email_hash)
+    @new_email = new_email
     @user = user
     @email_hash = email_hash
     @user_hash = user_hash
-    mail(to: @user.email, subject: 'Makerepo | Please confirm your new email')
+    mail(to: new_email, subject: 'Makerepo | Please confirm your new email')
   end
 
   def email_changed_email(user, old_email)

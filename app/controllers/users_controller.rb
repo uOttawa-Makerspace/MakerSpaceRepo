@@ -138,7 +138,8 @@ class UsersController < SessionsController
         if !User.find_by_email(params[:new_email]).present?
           user_hash = Rails.application.message_verifier(:user).generate(@user.id)
           email_hash = Rails.application.message_verifier(:email).generate(params[:new_email])
-          MsrMailer.email_confirmation_email(@user, user_hash, email_hash).deliver_now
+          MsrMailer.email_confirmation_email(params[:new_email], @user, user_hash, email_hash).deliver_now
+          flash[:notice] = "A confirmation email has been sent to the new email"
         else
           flash[:alert] = "This email is already used by a MakerRepo Account."
         end
