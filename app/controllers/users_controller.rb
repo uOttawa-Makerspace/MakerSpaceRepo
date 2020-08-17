@@ -54,6 +54,29 @@ class UsersController < SessionsController
     redirect_to root_path
   end
 
+  def confirm_edited_email
+    @user_token = params[:user_token]
+    @user_verifier = Rails.application.message_verifier(:user)
+    @email_token = params[:email_token]
+    @email_verifier = Rails.application.message_verifier(:email)
+    if @user_verifier.valid_message?(@user_token) and @email_verifier.valid_message?(@email_token)
+      user_id = @user_verifier.verify(@user_token)
+      new_email = @email_verifier.verify(@email_token)
+      if User.find(user_id).present?
+        user = User.find(user_id)
+        old_email = user.email
+        user.update(email: new_email)
+        MsrMailer.email_changed_email(user, old_email).deliver_now
+        flash[:notice] = "The email has been updated to #{user.email} !"
+      else
+        flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+      end
+    else
+      flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+    end
+    redirect_to root_path
+  end
+
   def new
     redirect_to root_path if signed_in?
 
@@ -107,6 +130,25 @@ class UsersController < SessionsController
     else
       render 'settings/admin', layout: 'setting'
     end
+  end
+
+  def change_email
+    if params[:new_email].present? and params[:confirm_new_email].present?
+      if params[:new_email] == params[:confirm_new_email]
+        if !User.find_by_email(params[:new_email]).present?
+          user_hash = Rails.application.message_verifier(:user).generate(@user.id)
+          email_hash = Rails.application.message_verifier(:email).generate(params[:new_email])
+          MsrMailer.email_confirmation_email(@user, user_hash, email_hash).deliver_now
+        else
+          flash[:alert] = "This email is already used by a MakerRepo Account."
+        end
+      else
+        flash[:alert] = "This confirmation email isn't matching the new email"
+      end
+    else
+      flash[:alert] = "There was a problem with the email, please try sending the email again."
+    end
+    redirect_to settings_admin_path
   end
 
   def show
