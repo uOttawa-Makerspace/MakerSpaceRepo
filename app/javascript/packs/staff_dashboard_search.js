@@ -2,7 +2,7 @@ require("select2");
 
 $(".user_dashboard_select").select2({
     ajax: {
-        url: "staff_dashboard/populate_users",
+        url: "populate_users",
         type: "GET",
         dataType: 'json',
         delay: 250,

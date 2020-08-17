@@ -3,15 +3,9 @@
 
     <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path%></h2>
 
-    <div class="search-form" style="display:inline"> Search for users to sign them in or out of <%=@space.name.capitalize%>:
-    <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
-        <div class="form-group">
-      <%= text_field_tag 'query', nil, placeholder: 'Search users by name, username, email...', class:'form-control' %><br>
-        </div>
-      <%= submit_tag "Search", class: 'btn btn-primary' %>
-    <% end %>
-    </div>
+    <%= render 'search' %>
 
+    <br>
     <% if @users.any? %>
     <table class="staff-search-results">
         Search results
@@ -181,3 +175,4 @@
     <br>
   </div>
 </section>
+<%= javascript_pack_tag 'staff_dashboard_search', 'data-turbolinks-track': 'reload' %>

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class StaffDashboardController < StaffAreaController
+
   def index
     @users = User.order(id: :desc).limit(10)
   end
@@ -83,9 +84,11 @@ class StaffDashboardController < StaffAreaController
   end
 
   def search
-    if params[:query].blank?
+    if params[:query].blank? and params[:username].blank?
       redirect_back(fallback_location: root_path)
       flash[:alert] = 'Invalid parameters!'
+    elsif params[:username].present?
+      @users = User.where(username: params[:username])
     else
       @query = params[:query]
       @users = User.where('LOWER(name) like LOWER(?) OR

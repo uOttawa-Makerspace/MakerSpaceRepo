@@ -1,0 +1,19 @@
+<p>Search for users to sign them in or out of <%=@space.name.capitalize%>:</p>
+<div class="row" style="flex-direction: row; flex-wrap: nowrap">
+  <div style="flex-grow: 1">
+    <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
+      <div class="form-group">
+        <%= select_tag(:username, "", prompt: "Choose User...", :class => "user_dashboard_select form-control w-100", :id => "user_dashboard_select") %>
+      </div>
+      </div>
+      <div class="text-center">
+        <%= submit_tag "Search", class: 'btn btn-primary btn-sm btn-block', style: "margin-left: 4px;" %>
+      </div>
+      <div>
+    <% end %>
+    <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: "sign_in_user_fastsearch" do %>
+      <%= hidden_field_tag :added_users, "", {:id => "sign_in_user_fastsearch_username"} %>
+      <%= submit_tag "Sign In", class: 'btn btn-info btn-sm btn-block', style: "margin-left: 8px;" %>
+    <% end %>
+    </div>
+    </div>
