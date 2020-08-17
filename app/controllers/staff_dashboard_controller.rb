@@ -121,7 +121,7 @@ class StaffDashboardController < StaffAreaController
       redirect_back(fallback_location: root_path)
       flash[:alert] = 'Invalid parameters!'
     elsif params[:username].present?
-      @users = User.where(username: params[:username])
+      @users = User.where("username = ?", params[:username])
     else
       @query = params[:query]
       @users = User.where('LOWER(name) like LOWER(?) OR
