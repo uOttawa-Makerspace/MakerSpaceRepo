@@ -231,6 +231,7 @@ Rails.application.routes.draw do
     put 'unlink_rfid'
     get 'sign_out_all_users'
     get :populate_users
+    post :import_excel
   end
 
   resources :development_programs, only: [:index] do

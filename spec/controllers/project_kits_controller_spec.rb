@@ -107,7 +107,7 @@ RSpec.describe ProjectKitsController, type: :controller do
 
     context "populate_kit_users" do
 
-      it 'should get the users that have badges' do
+      it 'should get the users that has been searched' do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000

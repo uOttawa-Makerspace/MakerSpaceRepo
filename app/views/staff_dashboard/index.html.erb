@@ -13,6 +13,11 @@
     <br /> <br />
     <%= render 'search' %>
 
+    <%= form_tag staff_dashboard_import_excel_path, method: :post, :multipart => true do %>
+      <%= file_field_tag :file, style: "display: block;" %>
+      <%= submit_tag "Import File", class: "btn btn-primary" %>
+    <% end %>
+
     <% if @space.name == "Makerspace" %>
       <div class="container" id="printer-div">
         <div id="printer-div-2"><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'btn btn-secondary'%></div>
