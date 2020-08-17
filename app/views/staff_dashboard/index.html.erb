@@ -13,6 +13,22 @@
     <br /> <br />
     <%= render 'search' %>
 
+    <div class="row">
+      <%= form_tag staff_dashboard_import_excel_path, method: :post, :multipart => true, class: "w-100" do %>
+        <p>Upload Excel File to log in users (Emails, names and usernames, first column only)</p>
+        <div class="input-group mb-3">
+          <div class="custom-file">
+            <%= file_field_tag :file, style: "display: inline;", class: "custom-file-input" %>
+            <%= label_tag(:file, "Choose Excel file", class: "custom-file-label") %>
+          </div>
+          <div class="input-group-append">
+            <%= submit_tag "Import File", class: "btn btn-primary" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <br>
+
     <% if @space.name == "Makerspace" %>
       <div class="container" id="printer-div">
         <div id="printer-div-2"><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'btn btn-secondary'%></div>
