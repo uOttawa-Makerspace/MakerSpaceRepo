@@ -250,7 +250,7 @@
       <td></td>
 
       <td>
-        Total: $<%= @print_order.quote %>
+        Total: <%= number_to_currency(@print_order.quote) %>
       </td>
     </tr>
   </table>
