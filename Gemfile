@@ -58,6 +58,8 @@ gem 'trix-rails', require: 'trix'
 gem 'zip-zip'
 gem 'concurrent-ruby', '~> 1.1', '>= 1.1.6'
 gem 'net-ssh'
+gem "roo", "~> 2.8.3"
+gem 'roo-xls'
 
 group :development, :test do
   gem 'byebug', platform: :mri
