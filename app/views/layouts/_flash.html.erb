@@ -2,7 +2,7 @@
   <% if key == "notice" %>
     <div class="alert alert-success alert-dismissible fade show col-md-12 text-center">
       <button type="button" class="close" data-dismiss="alert">&times;</button>
-      <%= msg %>
+      <%= msg.try(:html_safe) %>
     </div>
   <% elsif key == "alert_blue" %>
     <div class="alert alert-info alert-dismissible fade show col-md-12 text-center">
@@ -17,7 +17,7 @@
   <% elsif key == "alert" %>
     <div class="alert alert-danger alert-dismissible fade show col-md-12 text-center">
       <button type="button" class="close" data-dismiss="alert">&times;</button>
-      <%= msg %>
+      <%= msg.try(:html_safe) %>
     </div>
   <% elsif key == "alert_darkblue" %>
     <div class="alert alert-primary alert-dismissible fade show col-md-12 text-center">

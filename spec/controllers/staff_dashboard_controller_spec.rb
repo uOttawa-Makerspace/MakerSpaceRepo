@@ -30,15 +30,35 @@ RSpec.describe StaffDashboardController, type: :controller do
     end
   end
 
-  describe "PUT /sign_out_users" do
+  describe "POST /import_excel" do
 
-    context "sign out" do
+    context "import excel" do
 
-      it 'should sign out users' do
-        LabSession.create(user_id: @admin.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
-        put :sign_out_users, params: {dropped_users: @admin.username}
+      it 'should sign in users using the excel file' do
+        create(:user, :regular_user, username: "Bob1")
+        create(:user, :regular_user, email: "bob@bob.com")
+        create(:user, :regular_user, name: "Bob Bob Bob")
+        expect{ post :import_excel, params: {file: fixture_file_upload(Rails.root.join('spec/support/assets', 'excel-login.xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')} }.to change(LabSession, :count).by(3)
+        expect(response).to redirect_to staff_dashboard_index_path
+        expect(flash[:notice]).to eq("The file has been processed and users have been signed in ! <b>Please note that 3 user(s) did not get signed in because they were not found in the system.</b>".html_safe)
+      end
+
+    end
+
+  end
+
+  describe "PUT /sign_out_all_users" do
+
+    context "sign out all users" do
+
+      it 'should sign out all users' do
+        user = create(:user, :regular_user)
+        lab1 = LabSession.create(user_id: @admin.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
+        lab2 = LabSession.create(user_id: user.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
+        put :sign_out_all_users
         expect(response).to redirect_to staff_dashboard_index_path(space_id: @space.id)
-        expect(LabSession.last.sign_out_time < DateTime.now)
+        expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
+        expect(LabSession.find(lab2.id).sign_out_time < DateTime.now)
       end
 
     end
@@ -150,6 +170,20 @@ RSpec.describe StaffDashboardController, type: :controller do
         get :search, params: {query: user.name}
         expect(response).to have_http_status(:success)
         expect(@controller.instance_variable_get(:@users).first).to eq(User.find(user.id))
+      end
+
+    end
+
+  end
+
+  describe "GET /populate_users" do
+
+    context "populate_users" do
+
+      it 'should get the users that has been searched' do
+        user = create(:user, :regular_user)
+        get :populate_users, params: {search: user.name}
+        expect(JSON.parse(response.body)['users'][0]['id']).to eq(user.id)
       end
 
     end
