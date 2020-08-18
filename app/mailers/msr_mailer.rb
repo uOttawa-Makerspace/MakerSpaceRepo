@@ -83,16 +83,10 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', cc: 'uottawa.makerepo@gmail.com', subject: 'Your print is available for pickup')
   end
 
-  def send_invoice(name, quote, number, order_type)
+  def send_invoice(name, print_order)
     @name = name
-    @quote = quote
-    @number = number
-    @order_type = if order_type != 1
-                    '3D Printed Part'
-                  else
-                    'Laser Cut/Engraving'
-                  end
-    mail(to: 'uomakerspaceprintinvoices@gmail.com', subject: 'Invoice for Order #' + @number.to_s + ' ')
+    @print_order = print_order
+    mail(to: 'uomakerspaceprintinvoices@gmail.com', subject: 'Invoice for Order #' + @print_order.id.to_s + ' ')
   end
 
   def send_ommic

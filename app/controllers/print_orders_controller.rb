@@ -111,8 +111,10 @@ class PrintOrdersController < ApplicationController
     elsif params[:print_order][:user_approval] == 'true'
       MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
     elsif params[:print_order][:printed] == 'true'
-      MsrMailer.send_print_finished(@user, @print_order.id, @print_order.quote).deliver_now
-      MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
+      unless params[:email_false].present?
+        MsrMailer.send_print_finished(@user, @print_order.id, @print_order.quote).deliver_now
+      end
+      MsrMailer.send_invoice(@user.name, @print_order).deliver_now
     end
 
     redirect_to print_orders_path
@@ -130,6 +132,7 @@ class PrintOrdersController < ApplicationController
 
   def invoice
     @print_order = PrintOrder.find(params[:print_order_id])
+    @expedited_price = 20
     render pdf: 'file_name', template: 'print_orders/pdf.html.erb' if @print_order.printed == true
   end
 
