@@ -1,27 +1,43 @@
 <section class="page-contents">
-  <div class="edit-column">
+  <div class="">
 
     <h2 class="text-center">Welcome to the Volunteer Area</h2>
     <br>
-    <div id="staff-buttons">
+    <div class="links">
       <% if current_user.volunteer? %>
-        <%= link_to 'Getting Started', getting_started_volunteers_path, class: "staff-button" %> <br /> <br />
-        <%= link_to 'My Stats', my_stats_volunteers_path, class: "staff-button" %> <br /> <br />
-        <%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "staff-button" %> <br /> <br />
-        <%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "staff-button" %> <br /> <br />
-        <%= link_to 'Requests', volunteer_task_requests_path, class: "staff-button" %> <br /> <br />
+        <%= link_to 'Getting Started', getting_started_volunteers_path, class: "btn btn-outline-primary btn-block border" %>
+        <%= link_to 'My Stats', my_stats_volunteers_path, class: "btn btn-outline-primary btn-block border" %>
+        <%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "btn btn-outline-primary btn-block border" %>
+        <%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "btn btn-outline-primary btn-block border" %>
+        <%= link_to 'Requests', volunteer_task_requests_path, class: "btn btn-outline-primary btn-block border" %>
       <% else %>
-<!--        <%#= link_to 'Requests', volunteer_requests_path, class: "staff-button" %><br></br>-->
-        <%= link_to 'New Announcement', new_announcement_path, class: "staff-button" %><br></br>
-        <%= link_to 'Announcements', announcements_path, class: "staff-button" %><br></br>
-<!--        <%#= link_to 'Hour Requests', volunteer_hour_requests_volunteer_hours_path, class: "staff-button" %><br></br>-->
-<!--        <%#= link_to 'Hour Per User', volunteer_hour_per_user_volunteer_hours_path, class: "staff-button" %><br></br>-->
-        <%= link_to 'New Task', new_volunteer_task_path, class: "staff-button" %><br></br>
-        <%= link_to 'Tasks', volunteer_tasks_path, class: "staff-button" %><br></br>
-        <%= link_to 'List of Emails', emails_volunteers_path, class: "staff-button" %><br></br>
-        <%= link_to 'List of Users in Program', volunteer_list_volunteers_path, class: "staff-button" %><br></br>
+        <%= link_to 'New Announcement', new_announcement_path, class: "btn btn-outline-primary btn-block border" %>
+        <%= link_to 'Announcements', announcements_path, class: "btn btn-outline-primary btn-block border" %>
+        <%= link_to 'New Task', new_volunteer_task_path, class: "btn btn-outline-primary btn-block border" %>
+        <%= link_to 'Tasks', volunteer_tasks_path, class: "btn btn-outline-primary btn-block border" %>
+        <%= link_to 'List of Emails', emails_volunteers_path, class: "btn btn-outline-primary btn-block border" %>
+        <%= link_to 'List of Users in Program', volunteer_list_volunteers_path, class: "btn btn-outline-primary btn-block border" %>
       <% end %>
     </div>
+<!--    <div id="staff-buttons">-->
+      <%# if current_user.volunteer? %>
+<!--        <%#= link_to 'Getting Started', getting_started_volunteers_path, class: "staff-button" %> <br /> <br />-->
+<!--        <%#= link_to 'My Stats', my_stats_volunteers_path, class: "staff-button" %> <br /> <br />-->
+<!--        <%#= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "staff-button" %> <br /> <br />-->
+<!--        <%#= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "staff-button" %> <br /> <br />-->
+<!--        <%#= link_to 'Requests', volunteer_task_requests_path, class: "staff-button" %> <br /> <br />-->
+      <%# else %>
+<!--        <%#= link_to 'Requests', volunteer_requests_path, class: "staff-button" %><br></br>-->
+<!--        <%#= link_to 'New Announcement', new_announcement_path, class: "staff-button" %><br></br>-->
+<!--        <%#= link_to 'Announcements', announcements_path, class: "staff-button" %><br></br>-->
+<!--        <%#= link_to 'Hour Requests', volunteer_hour_requests_volunteer_hours_path, class: "staff-button" %><br></br>-->
+<!--        <%#= link_to 'Hour Per User', volunteer_hour_per_user_volunteer_hours_path, class: "staff-button" %><br></br>-->
+<!--        <%#= link_to 'New Task', new_volunteer_task_path, class: "staff-button" %><br></br>-->
+<!--        <%#= link_to 'Tasks', volunteer_tasks_path, class: "staff-button" %><br></br>-->
+<!--        <%#= link_to 'List of Emails', emails_volunteers_path, class: "staff-button" %><br></br>-->
+<!--        <%#= link_to 'List of Users in Program', volunteer_list_volunteers_path, class: "staff-button" %><br></br>-->
+      <%# end %>
+<!--    </div>-->
 
 
   </div>

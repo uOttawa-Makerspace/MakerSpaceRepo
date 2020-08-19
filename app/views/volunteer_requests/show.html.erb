@@ -3,7 +3,7 @@
     Reject: <%= link_to (fa_icon('times')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: false}, method: :put, class: 'x-button' %>
     Approve: <%= link_to (fa_icon('check')), {controller: :volunteer_requests, action: :update_approval, id: @volunteer_request.id,  approval: true}, method: :put, class: 'check-button' %>
   </div>
-  <div class="edit-column text-center">
+  <div class="text-center">
 
     <h2>Volunteer Request</h2>
 
