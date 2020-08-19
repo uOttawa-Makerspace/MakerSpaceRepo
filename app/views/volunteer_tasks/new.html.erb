@@ -88,6 +88,11 @@
                   <br />
                 </div>
               </div>
+              <div class="col-md-12 text-center">
+                <%= label :certifications_id, "Certifications" %>
+                <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name'), {:multiple => true, :id => "task_certifications", :class => "form-control task_certifications select2"} %>
+                <br><br>
+              </div>
               <div class="col-lg-12 text-center">
                 <%= f.submit "Create task", class: "btn btn-secondary btn-xl text-uppercase" %>
               </div>
