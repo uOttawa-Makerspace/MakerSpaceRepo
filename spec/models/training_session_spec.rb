@@ -32,12 +32,12 @@ RSpec.describe TrainingSession, type: :model do
       3.times { create(:training_session, created_at: DateTime.now.end_of_day) }
     end
 
-    context '#courses' do
-      it 'should return list of courses' do
-        courses = ['GNG2101', 'GNG2501', 'GNG1103', 'GNG1503', 'MCG4143', 'no course']
-        expect(@training_session.courses).to eq(courses)
-      end
-    end
+    # context '#courses' do
+    #   it 'should return list of courses' do
+    #     courses = ['GNG2101', 'GNG2501', 'GNG1103', 'GNG1503', 'MCG4143', 'no course']
+    #     expect(@training_session.courses).to eq(courses)
+    #   end
+    # end
 
     context '#completed?' do
       it 'should return false' do
