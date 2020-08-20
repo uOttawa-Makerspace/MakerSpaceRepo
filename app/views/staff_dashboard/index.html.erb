@@ -2,15 +2,15 @@
 
   <div class="edit-column">
 
-    <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path%></h2>
+    <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path %></h2>
 
     <div style="float:right;">
-      <%=link_to "Download Summary",
-          staff_dashboard_present_users_report_path(format: "xlsx" ),
-          action: :training_report,
-          class:"btn btn-secondary" %>
+      <%= link_to "Download Summary",
+                  staff_dashboard_present_users_report_path(format: "xlsx"),
+                  action: :training_report,
+                  class: "btn btn-secondary" %>
     </div>
-    <br /> <br />
+    <br/> <br/>
     <%= render 'search' %>
 
     <div class="row">
@@ -18,8 +18,8 @@
         <p>Upload Excel File to log in users (Emails, names and usernames, first column only)</p>
         <div class="input-group mb-3">
           <div class="custom-file">
-            <%= file_field_tag :file, style: "display: inline;", class: "custom-file-input" %>
-            <%= label_tag(:file, "Choose Excel file", class: "custom-file-label") %>
+            <%= file_field_tag :file, style: "display: inline;", class: "custom-file-input custom-file-input-excel", id: "excel-input" %>
+            <%= label_tag(:file, "Choose Excel file", class: "custom-file-label custom-file-label-excel") %>
           </div>
           <div class="input-group-append">
             <%= submit_tag "Import File", class: "btn btn-primary" %>
@@ -31,101 +31,109 @@
 
     <% if @space.name == "Makerspace" %>
       <div class="container" id="printer-div">
-        <div id="printer-div-2"><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'btn btn-secondary'%></div>
+        <div id="printer-div-2"><%= link_to "Manage 3D-printers", staff_printers_printers_path, class: 'btn btn-secondary' %></div>
       </div>
     <% end %>
     <br>
     <table class="staff-users-table text-center mb-5">
-        <p class="text-center">Users inside <%=@space.name%>:  <%=@space.signed_in_users.count%></p>
-        <% if @space.signed_in_users.present? %>
-          <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary' %>
-        <%end%>
-        <tr>
-          <th class="name-header">Name <span onclick="sortTable('staff-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-          <th class="email-header">Email <span onclick="sortTable('staff-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th class="certifications-header">Certifications <span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th class="email-header"> # of visits <br> (Past 2 months)<span onclick="sortTable('staff-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th class="action-header">Sign Out of <%=@space.name.capitalize%></th>
-        </tr>
-        <% @space.signed_in_users.each do |user| %>
+      <p class="text-center">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>
+      <% if @space.signed_in_users.present? %>
+        <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary' %>
+      <% end %>
+      <tr>
+        <th class="name-header">Name
+          <span onclick="sortTable('staff-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+        <th class="email-header">Email
+          <span onclick="sortTable('staff-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+        <th class="certifications-header">Certifications
+          <span onclick="sortTable('staff-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+        <th class="email-header"> # of visits <br> (Past 2
+          months)<span onclick="sortTable('staff-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+        <th class="action-header">Sign Out of <%= @space.name.capitalize %></th>
+      </tr>
+      <% @space.signed_in_users.each do |user| %>
 
-        <%if user.read_and_accepted_waiver_form%>
+        <% if user.read_and_accepted_waiver_form %>
           <tr class="drop-rows">
-        <%else%>
+        <% else %>
           <tr class="drop-rows" id="no-waiver">
-        <%end%>
-            <td class="drop-username-cell"><%=
-              link_to(content_tag(:drop_username, user.name), user_url(user.username))
-            %></td>
+        <% end %>
+        <td class="drop-username-cell"><%=
+          link_to(content_tag(:drop_username, user.name), user_url(user.username))
+        %></td>
 
-            <td class="email-cell"><%=
-              user.email
-            %></td>
+        <td class="email-cell"><%=
+          user.email
+        %></td>
 
-            <td class="certifications-cell"><%
-              if user.certifications.first.present?
-                user.certifications.each do |certification|
-                %><%
-                  unless certification.out_of_date? %>
-                  <div
-                   class="cert-name"
-                   style="display:inline" >
-                   <div class="cert-holder" style="display:inline">
+        <td class="certifications-cell">
+          <%
+            if user.certifications.first.present?
+              user.certifications.each do |certification|
+          %>
+              <%
+                unless certification.out_of_date? %>
+                <div
+                  class="cert-name"
+                  style="display:inline">
+                  <div class="cert-holder" style="display:inline">
                     <%= certification.training.name %>
                     <div id="cert-details" style="display:inline">
                       <%= certification.training.name %> <br>
                       <%= certification.trainer %> <br>
-                      <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                      <%= certification.updated_at.strftime("%B %d, %Y") %>
                     </div>
                     <br>
                   </div>
                 </div>
-                <% else %>
+              <% else %>
                 <div
-                 class="cert-name-red"
-                 style="display:inline" >
-                 <div class="cert-holder" style="display:inline">
-                  <%= certification.training.name %>
-                  <div id="cert-details" style="display:inline">
-                    <%= certification.training.name %> <br>
-                    <%= certification.trainer %> <br>
-                    <%= certification.updated_at.strftime("%B %d, %Y")  %>
+                  class="cert-name-red"
+                  style="display:inline">
+                  <div class="cert-holder" style="display:inline">
+                    <%= certification.training.name %>
+                    <div id="cert-details" style="display:inline">
+                      <%= certification.training.name %> <br>
+                      <%= certification.trainer %> <br>
+                      <%= certification.updated_at.strftime("%B %d, %Y") %>
+                    </div>
+                    <br>
                   </div>
-                  <br>
                 </div>
-              </div>
               <% end
-                end
-              end
+                 end
+                 end
               %>
 
-              <td class="email-cell" >
-                <%= user.lab_sessions.where('space_id' => @space.id ).where('created_at BETWEEN ? AND ? ', 2.month.ago, DateTime.now).count %>
-              </td>
-            </td>
-            <td class="action-cell" >
-              <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
-            </td>
+          <td class="email-cell">
+            <%= user.lab_sessions.where('space_id' => @space.id).where('created_at BETWEEN ? AND ? ', 2.month.ago, DateTime.now).count %>
+          </td>
+          </td>
+          <td class="action-cell">
+            <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]}, method: :put, class: 'x-button' %>
+          </td>
 
           </tr>
-        <% end %>
-        <br></br>
-      </table>
+      <% end %>
+      <br></br>
+    </table>
 
     <table class="text-center table-striped staff-newly-signed-up-users-table mb-5">
       <p class="text-center">Newly signed up users on Maker<strong>Repo</strong></p>
       <tr>
-        <th class="name-header">Name <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-        <th class="email-header">Email <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-        <th class="action-header">Sign In To <%=@space.name.capitalize%></span></th>
+        <th class="name-header">Name
+          <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+        <th class="email-header">Email
+          <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+        <th class="action-header">Sign In To <%= @space.name.capitalize %></span></th>
       </tr>
 
       <% @users.each do |user| %>
-        <%if user.read_and_accepted_waiver_form%>
+        <% if user.read_and_accepted_waiver_form %>
           <tr class="add-rows">
-        <%else%>
+        <% else %>
           <tr class="add-rows" id="no-waiver">
-        <%end%>
+        <% end %>
         <td class="add-username-cell"><%=
           link_to(content_tag(:add_username, user.name), user_url(user.username))
         %></td>
@@ -134,8 +142,8 @@
           user.email
         %></td>
 
-        <td class="action-cell" >
-          <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
+        <td class="action-cell">
+          <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]}, method: :put, class: 'check-button' %>
         </td>
 
         </tr>
@@ -145,37 +153,40 @@
 
     <br>
     <table class="staff-recent-users-table text-center mb-5">
-      <p class="text-center">Users recently signed out of <%=@space.name%></p>
+      <p class="text-center">Users recently signed out of <%= @space.name %></p>
       <tr>
-        <th class="name-header">Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-        <th class="email-header">Email <span onclick="sortTable('staff-recent-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-        <th class="last-seen-header">Last Seen <span onclick="sortTable('staff-recent-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-        <th class="action-header">Sign In To <%=@space.name.capitalize%></span></th>
+        <th class="name-header">Name
+          <span onclick="sortTable('staff-recent-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+        <th class="email-header">Email
+          <span onclick="sortTable('staff-recent-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+        <th class="last-seen-header">Last Seen
+          <span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+        <th class="action-header">Sign In To <%= @space.name.capitalize %></span></th>
       </tr>
 
       <% @space.recently_signed_out_users.each do |user| %>
-        <%if user.read_and_accepted_waiver_form%>
+        <% if user.read_and_accepted_waiver_form %>
           <tr class="add-rows">
-        <%else%>
+        <% else %>
           <tr class="add-rows" id="no-waiver">
-        <%end%>
-          <td class="add-username-cell"><%=
-            link_to(content_tag(:add_username, user.name), user_url(user.username))
-          %></td>
+        <% end %>
+        <td class="add-username-cell"><%=
+          link_to(content_tag(:add_username, user.name), user_url(user.username))
+        %></td>
 
-          <td class="email-cell"><%=
-            user.email
-          %></td>
+        <td class="email-cell"><%=
+          user.email
+        %></td>
 
-          <td class="sign_out_time-cell" style="horizontal-alginment:center;"><%=
-            if user.lab_sessions.present?
-              time_ago_in_words(user.lab_sessions.sort_by(&:sign_out_time).last.sign_out_time) + " ago at #{user.lab_sessions.last.space.name}"
-            end
-          %></td>
+        <td class="sign_out_time-cell" style="horizontal-alginment:center;"><%=
+          if user.lab_sessions.present?
+            time_ago_in_words(user.lab_sessions.sort_by(&:sign_out_time).last.sign_out_time) + " ago at #{user.lab_sessions.last.space.name}"
+          end
+        %></td>
 
-          <td class="action-cell" >
-            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
-          </td>
+        <td class="action-cell">
+          <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]}, method: :put, class: 'check-button' %>
+        </td>
 
         </tr>
       <% end %>

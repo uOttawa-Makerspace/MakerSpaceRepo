@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class ReportGenerator
+  require 'axlsx'
   # region Date Range Reports
 
   # @param [DateTime] start_date
@@ -8,45 +9,46 @@ class ReportGenerator
   def self.generate_visitors_report(start_date, end_date)
     spreadsheet = Axlsx::Package.new
 
+    space_details = get_visitors(start_date, end_date)
+
     spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
+
       merge_cell = sheet.styles.add_style alignment: { vertical: :center }
 
       header(sheet, 'Visitors', start_date, end_date)
 
-      space_details = get_visitors(start_date, end_date)
-
       # region Overview
       title(sheet, 'Overview')
-      table_header(sheet, ['Space', 'Distinct Users', 'Total Visits'])
+      table_header(sheet, ['Space', 'Distinct Users', '', 'Total Visits'])
 
       space_details[:spaces].each do |space_name, space|
-        sheet.add_row [space_name, space[:unique], space[:total]]
+        sheet.add_row [space_name, space[:unique], '', space[:total]]
       end
 
       sheet.add_row # spacing
 
-      table_header(sheet, ['Identity', 'Distinct Users', 'Total Visits'])
+      table_header(sheet, ['Identity', 'Distinct Users', '', 'Total Visits'])
 
       space_details[:identities].each do |identity_name, space|
-        sheet.add_row [identity_name, space[:unique], space[:total]]
+        sheet.add_row [identity_name, space[:unique], '', space[:total]]
       end
 
       sheet.add_row # spacing
 
-      table_header(sheet, ['Faculty', 'Distinct Users', 'Total Visits'])
+      table_header(sheet, ['Faculty', 'Distinct Users', '', 'Total Visits'])
 
       space_details[:faculties].each do |faculty_name, space|
-        sheet.add_row [faculty_name, space[:unique], space[:total]]
+        sheet.add_row [faculty_name, space[:unique], '', space[:total]]
       end
 
       sheet.add_row # spacing
 
-      table_header(sheet, ['Identity', 'Faculty', 'Distinct Users', 'Total Visits'])
+      table_header(sheet, ['Identity', 'Distinct Users', '', 'Total Visits', '', 'Faculty'])
       space_details[:identities].each do |identity_name, identity|
         start_index = sheet.rows.last.row_index + 1
 
         identity[:faculties].each do |faculty_name, faculty|
-          sheet.add_row [identity_name, faculty_name, faculty[:unique], faculty[:total]], style: [merge_cell]
+          sheet.add_row [identity_name, faculty[:unique], '', faculty[:total], '', faculty_name ], style: [merge_cell]
         end
 
         end_index = sheet.rows.last.row_index
@@ -56,31 +58,37 @@ class ReportGenerator
 
       sheet.add_row # spacing
       # endregion
+    end
 
-      # region Per-space details
-      space_details[:spaces].each do |space_name, space_detail|
+    # region Per-space details
+    space_details[:spaces].each do |space_name, space_detail|
+      spreadsheet.workbook.add_worksheet(name: space_name) do |sheet|
         title(sheet, space_name)
 
-        table_header(sheet, ['Identity', 'Distinct Users', 'Total Visits'])
+        faculty_array = {}
+        merge_cell = sheet.styles.add_style alignment: { vertical: :center }
+
+        table_header(sheet, ['Identity', 'Distinct Users', '', 'Total Visits'])
         space_detail[:identities].each do |identity_name, identity|
-          sheet.add_row [identity_name, identity[:unique], identity[:total]]
+          sheet.add_row [identity_name, identity[:unique], '', identity[:total]]
         end
 
         sheet.add_row # spacing
 
-        table_header(sheet, ['Faculty', 'Distinct Users', 'Total Visits'])
+        table_header(sheet, ['Faculty', 'Distinct Users', '', 'Total Visits'])
         space_detail[:faculties].each do |faculty_name, faculty|
-          sheet.add_row [faculty_name, faculty[:unique], faculty[:total]]
+          sheet.add_row [faculty_name, faculty[:unique], '', faculty[:total]]
         end
 
         sheet.add_row # spacing
 
-        table_header(sheet, ['Identity', 'Faculty', 'Distinct Users', 'Total Visits'])
+        table_header(sheet, ['Identity', 'Distinct Users', '', 'Total Visits', '', 'Faculty', ])
         space_detail[:identities].each do |identity_name, identity|
           start_index = sheet.rows.last.row_index + 1
 
           identity[:faculties].each do |faculty_name, faculty|
-            sheet.add_row [identity_name, faculty_name, faculty[:unique], faculty[:total]], style: [merge_cell]
+            sheet.add_row [identity_name, faculty[:unique], '', faculty[:total], '', faculty_name], style: [merge_cell]
+            faculty_array[faculty_name] = faculty[:unique]
           end
 
           end_index = sheet.rows.last.row_index
@@ -90,17 +98,39 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        table_header(sheet, ['Gender', 'Distinct Users', 'Total Visits'])
+        table_header(sheet, ['Gender', 'Distinct Users', '', 'Total Visits'])
         space_detail[:genders].each do |gender_name, gender|
-          sheet.add_row [gender_name, gender[:unique], gender[:total]]
+          sheet.add_row [gender_name, gender[:unique], '', gender[:total]]
         end
 
-        sheet.add_row # spacing
+        space = sheet.add_row # spacing
+
+        male = space_detail[:genders]['Male'].present? ? space_detail[:genders]['Male'][:unique] : 0
+        female = space_detail[:genders]['Female'].present? ? space_detail[:genders]['Female'][:unique] : 0
+        other = space_detail[:genders]['Other'].present? ? space_detail[:genders]['Other'][:unique] : 0
+        prefer_not = space_detail[:genders]['Prefer not to specify'].present? ? space_detail[:genders]['Prefer not to specify'][:unique] : 0
+        final_other = other + prefer_not
+
+        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "A#{space.row_index + 2}", :end_at => "C#{space.row_index + 10}", :grouping => :stacked, :show_legend => true, :title=>"Gender of unique users") do |chart|
+          chart.add_series :data => [male, female, final_other], :labels => ["Male", "Female", "Other/Prefer not to specify"], :colors => ['1FC3AA', '8624F5', 'A8A8A8', 'A8A8A8']
+          chart.add_series :data => [male, female, final_other], :labels => ["Male", "Female", "Other/Prefer not to specify"], :colors => ['FFFF00', 'FFFF00','FFFF00']
+          chart.d_lbls.show_percent = true
+          chart.d_lbls.d_lbl_pos = :bestFit
+        end
+
+        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "D#{space.row_index + 2}", :end_at => "H#{space.row_index + 10}", :grouping => :stacked, :show_legend => true, :title=>"Faculty of unique users") do |chart2|
+          chart2.add_series :data => faculty_array.values, :labels => faculty_array.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
+          chart2.add_series :data => faculty_array.values, :labels => faculty_array.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
+          chart2.d_lbls.show_percent = true
+          chart2.d_lbls.d_lbl_pos = :bestFit
+        end
+
       end
-      # endregion
     end
+    # endregion
 
     spreadsheet
+
   end
 
   # @param [DateTime] start_date
@@ -184,6 +214,12 @@ class ReportGenerator
 
       sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
       sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
+      sheet.add_row # spacing
+
+      sheet.add_row ["This is a chart with no data in the sheet"]
+      chart = sheet.add_chart(Axlsx::Pie3DChart, :start_at => [1, 10], :end_at => [6, 19], :title=>"Users")
+      chart.add_series :data => [1, 2, 10], :labels => ["1", "2", "10"],  :colors => ['FF0000', '00FF00', '0000FF']
+
       sheet.add_row # spacing
 
       title(sheet, 'Overview')
