@@ -17,8 +17,9 @@
     <% elsif file == "white" %>
       <span class="square square-white">Can't Delete</span>
     <% else %>
-      <% if file == "arrow-3-blue.svg" %>
-        <%= image_tag("print_orders/arrow-3-blue.svg", class: "arrow active-status", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}") %>
+      <% if file == "arrow-3-orange.svg" %>
+        <%= image_tag("print_orders/arrow-3-orange.svg", class: "arrow active-status", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}") %>
+        <%= image_tag("print_orders/#{file.gsub(/\d+/) { |n| n.to_i + 1 }}", class: "arrow unactive-status next") %>
         <div class="modal fade" id="modal-approve-<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -50,7 +51,9 @@
         </div>
       <% else %>
         <%= image_tag("print_orders/#{file}", class: "arrow #{file.to_s.include?("red") || file.to_s.include?("orange") || file.to_s.include?("5-green") ? "active-status" : "unactive-status"}") %>
-
+        <% if file.to_s.include?("orange") %>
+          <%= image_tag("print_orders/#{file.gsub(/\d+/) { |n| n.to_i + 1 }}", class: "arrow unactive-status next") %>
+      <% end %>
       <% end %>
     <% end %>
   <% end %>
