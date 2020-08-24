@@ -22,6 +22,7 @@ require("@rails/activestorage").start();
 require("jquery");
 require("select2");
 global.toastr = require("toastr");
+global.Chart = require("chart.js");
 require("trix");
 require("@shopify/buy-button-js");
 require("jquery-ui");
