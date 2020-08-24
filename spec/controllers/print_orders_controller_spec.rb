@@ -58,7 +58,7 @@ RSpec.describe PrintOrdersController, type: :controller do
       it 'should create a print order with notice' do
         print_order_params = FactoryBot.attributes_for(:print_order)
         post :create, params: {print_order: print_order_params}
-        expect(response).to redirect_to print_orders_path
+        expect(response).to redirect_to index_new_print_orders_path
         expect(flash[:notice]).to eq('The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision.')
         expect { post :create, params: {print_order: print_order_params} }.to change(PrintOrder, :count).by(1)
       end
@@ -73,7 +73,7 @@ RSpec.describe PrintOrdersController, type: :controller do
       it 'should fail creating the print order' do
         print_order_params = FactoryBot.attributes_for(:print_order, :with_invalid_file)
         post :create, params: {print_order: print_order_params}
-        expect(response).to redirect_to print_orders_path
+        expect(response).to redirect_to index_new_print_orders_path
         expect(flash[:alert]).to eq('The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !')
         expect { post :create, params: {print_order: print_order_params} }.to change(PrintOrder, :count).by(0)
       end
@@ -86,7 +86,7 @@ RSpec.describe PrintOrdersController, type: :controller do
         print_order = create(:print_order, :with_file)
         print_order_params = FactoryBot.attributes_for(:print_order, :approved)
         patch :update, params: {id: print_order.id, print_order: print_order_params}
-        expect(response).to redirect_to print_orders_path
+        expect(response).to redirect_to index_new_print_orders_path
         expect(PrintOrder.find(print_order.id).quote).to eq(70)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(print_order.user.email)
@@ -98,7 +98,7 @@ RSpec.describe PrintOrdersController, type: :controller do
         print_order = create(:print_order, :with_file)
         print_order_params = FactoryBot.attributes_for(:print_order, :disapproved)
         patch :update, params: {id: print_order.id, print_order: print_order_params}
-        expect(response).to redirect_to print_orders_path
+        expect(response).to redirect_to index_new_print_orders_path
         expect(PrintOrder.find(print_order.id).approved?).to eq(false)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(print_order.user.email)
@@ -110,7 +110,7 @@ RSpec.describe PrintOrdersController, type: :controller do
         print_order = create(:print_order, :with_file)
         print_order_params = { user_approval: true }
         patch :update, params: {id: print_order.id, print_order: print_order_params}
-        expect(response).to redirect_to print_orders_path
+        expect(response).to redirect_to index_new_print_orders_path
         expect(PrintOrder.find(print_order.id).user_approval?).to eq(true)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq("makerspace@uottawa.ca")
@@ -122,7 +122,7 @@ RSpec.describe PrintOrdersController, type: :controller do
         print_order = create(:print_order, :with_file, :user_approved)
         print_order_params = { printed: true }
         patch :update, params: {id: print_order.id, print_order: print_order_params}
-        expect(response).to redirect_to print_orders_path
+        expect(response).to redirect_to index_new_print_orders_path
         expect(PrintOrder.find(print_order.id).printed?).to eq(true)
         expect(ActionMailer::Base.deliveries.count).to eq(2)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(print_order.user.email)
