@@ -6,7 +6,7 @@
     <ul class="nav nav-tabs">
       <% Space.all.each do |space| %>
         <li class="nav-item">
-          <a class="nav-link" data-toggle="tab" href="#<%= space.name.gsub(" ", "-") %>"><%= space.name %></a>
+          <a class="nav-link  <%= @space.name == space.name ? "active" : "" %>" data-toggle="tab" href="#<%= space.name.gsub(" ", "-") %>"><%= space.name %></a>
         </li>
       <% end %>
     </ul>
