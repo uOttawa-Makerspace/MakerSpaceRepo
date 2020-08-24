@@ -31,6 +31,23 @@ RSpec.describe PrintOrdersController, type: :controller do
     end
   end
 
+  describe 'GET /index_new' do
+    context 'logged as regular user' do
+      it 'should return 200' do
+        get :index_new
+        expect(response).to have_http_status(:success)
+      end
+    end
+
+    context 'logged as admin' do
+      it 'should return 200' do
+        session[:user_id] = @admin.id
+        get :index_new
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
   describe 'GET /new' do
     context 'logged as regular user' do
       it 'should return a 200' do
