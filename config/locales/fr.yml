@@ -28,7 +28,6 @@ fr:
       development_program: "Programme de Développement"
       exams: "Examens"
       printorder: "Commander une impression/découpe laser"
-      printorder_admin: "Administrateurs commander une impression"
       help: "Aide"
       sign_out: "Déconnexion"
   home:

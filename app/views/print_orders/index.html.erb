@@ -1,5 +1,6 @@
 <h1>List of prints / Laser
-  Cuts    <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %>  <%= link_to "User page", index_new_print_orders_path, {class: 'btn btn-primary'} %></h1>
+  Cuts    <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %></h1>
+
 <% @order.each do |order, order_string| %>
   <% if @print_order.where(order).present? %>
     <h2><%= order_string %></h2>

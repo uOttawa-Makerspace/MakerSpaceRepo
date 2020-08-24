@@ -47,9 +47,6 @@ Rails.application.routes.draw do
 
   resources :print_orders, only: %i[index create update new destroy] do
     get :invoice
-    collection do
-      get :index_new
-    end
   end
 
   resources :project_proposals do

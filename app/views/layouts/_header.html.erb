@@ -75,8 +75,7 @@
             <%= link_to(t('navbar.user.volunteer_area'), volunteers_path, class: "dropdown-item") if (@user.volunteer? || @user.staff? || @user.admin?) %>
             <%= link_to(t('navbar.user.development_program'), development_programs_path, class: "dropdown-item") if (@user.dev_program? || @user.staff? || @user.admin?) %>
             <%= link_to(t('navbar.user.exams'), exams_path, class: "dropdown-item") if (!@user.exams.blank?) %>
-            <a class="dropdown-item" href="<%= index_new_print_orders_path %>"><%= t('navbar.user.printorder') %></a>
-            <%= link_to(t('navbar.user.printorder_admin'), print_orders_path, class: "dropdown-item") if @user.admin? %>
+            <a class="dropdown-item" href="<%= print_orders_path %>"><%= t('navbar.user.printorder') %></a>
             <a class="dropdown-item" href="<%= help_path %>"><%= t('navbar.user.help') %></a>
             <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
           </div>
