@@ -23,9 +23,9 @@ class PrintOrdersController < ApplicationController
 
   def index_new
     @order = {
-        'approved is NULL' => ["arrow-2-orange.svg", 2, "delete"],
-        'user_approval is NULL and approved is TRUE' => ["arrow-2-green.svg", "arrow-3-orange.svg", 1, "white"],
-        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-orange.svg", "white"],
+        'approved is NULL' => ["arrow-2-orange.svg", 3, "delete"],
+        'user_approval is NULL and approved is TRUE' => ["arrow-2-green.svg", "arrow-3-blue.svg", 2, "white"],
+        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-orange.svg", 1, "white"],
         'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-green.svg", "arrow-5-orange.svg", "white"],
         "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-green.svg", "arrow-5-green.svg", "delete"],
         "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["arrow-2-red.svg", 3, "delete"],
