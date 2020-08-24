@@ -71,12 +71,23 @@
             </div>
           </li>
         <% elsif index == array_size %>
-          <li class="progress-step">
-            <div class="progress-marker"></div>
-            <div class="progress-text">
-              <h5 class="progress-title">Next :<br> <%= file %></h5>
-            </div>
-          </li>
+          <% if file.kind_of?(Array) %>
+            <% file.each do |next_steps| %>
+              <li class="progress-step">
+                <div class="progress-marker"></div>
+                <div class="progress-text">
+                  <h5 class="progress-title">Next :<br> <%= next_steps %></h5>
+                </div>
+              </li>
+            <% end %>
+          <% else %>
+            <li class="progress-step">
+              <div class="progress-marker"></div>
+              <div class="progress-text">
+                <h5 class="progress-title">Next :<br> <%= file %></h5>
+              </div>
+            </li>
+          <% end %>
         <% else %>
           <li class="progress-step is-complete">
             <div class="progress-marker"></div>

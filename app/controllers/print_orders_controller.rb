@@ -23,9 +23,10 @@ class PrintOrdersController < ApplicationController
 
   def index_new
     @order = {
-        'approved is NULL' => ["Waiting on Admin approval", "Waiting on your approval"],
-        'user_approval is NULL and approved is TRUE' => ["Approved by Admins", "Waiting on your approval", "Queued to be printed"],
-        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ["Approved by Admins", "Approved by you", "Queue to be printed", "Currently being printed"],
+        # Postgresql request => [Completed steps, current step, [next steps ("" if none)]]
+        'approved is NULL' => ["Waiting on Admin's approval", ["Waiting on your approval", "Queued to be printed", "Printed"]],
+        'user_approval is NULL and approved is TRUE' => ["Approved by Admins", "Waiting on your approval", ["Queued to be printed", "Printed"]],
+        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ["Approved by Admins", "Approved by you", "Queued to be printed", "Currently being printed"],
         'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ["Approved by Admins", "Approved by you", "Queue is done", "Currently being printed", ""],
         "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ["Approved by Admins", "Approved by you", "Queue is done", "Printed", ""],
         "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["Disapproved by admins", ""],
