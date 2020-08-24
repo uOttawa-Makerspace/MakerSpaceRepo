@@ -16,6 +16,26 @@ class Admin::ReportGeneratorController < AdminAreaController
     ]
   end
 
+  def popular_hours
+    @space = @user.lab_sessions&.last&.space || Space.first
+    @weekdays = %w(Sunday Monday Tuesday Wednesday Thursday Friday Saturday)
+    @data = Hash.new()
+    Space.all.each do |space|
+      @data[space.name] = Hash.new()
+      (0..6).each do |weekday|
+        @data[space.name][weekday] = []
+        (0..23).each do |hour|
+          if PopularHour.where(space_id: space.id, hour: hour, day: weekday).present?
+            @data[space.name][weekday].push(PopularHour.where(space_id: space.id, hour: hour, day: weekday).first.mean)
+          else
+            @data[space.name][weekday].push(PopularHour.create(space_id: space.id, hour: hour, day: weekday, count: 0, mean: 0).mean)
+          end
+        end
+      end
+    end
+    puts(@data)
+  end
+
   def generate
     range_type = params[:range_type]
     term = params[:term]

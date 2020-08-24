@@ -1,0 +1,3 @@
+class PopularHour < ApplicationRecord
+
+end

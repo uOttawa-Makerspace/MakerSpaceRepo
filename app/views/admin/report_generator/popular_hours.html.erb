@@ -1,0 +1,67 @@
+<% provide(:title, "Reports") %>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+<section id="report">
+  <div class="edit-column">
+    <h1>Popular Hours</h1>
+
+    <ul class="nav nav-tabs">
+      <% Space.all.each do |space| %>
+        <li class="nav-item">
+          <a class="nav-link" data-toggle="tab" href="#<%= space.name.gsub(" ", "-") %>"><%= space.name %></a>
+        </li>
+      <% end %>
+    </ul>
+
+
+    <div class="tab-content">
+      <br>
+      <% Space.all.each do |space| %>
+        <div class="tab-pane container <%= @space.name == space.name ? "active" : "" %>" id="<%= space.name.gsub(" ", "-") %>">
+          <% (0..6).each do |weekday| %>
+            <h3 class="text-center"><%= @weekdays[weekday] %></h3>
+            <canvas id="<%= space.name.gsub(" ", "-") %>-<%= weekday %>" width="450" height="300"></canvas>
+            <script>
+                var ctx = document.getElementById('<%= space.name.gsub(" ", "-") %>-<%= weekday %>').getContext('2d');
+                var myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['0h', '1h', '2h', '3h', '4h', '5h', '6h', '7h', '8h', '9h', '10h', '11h', '12h', '13h', '14h', '15h', '16h', '17h', '18h', '19h', '20h', '21h', '22h', '23h'],
+                        datasets: [{
+                            label: '# of people',
+                            data: <%= @data[space.name][weekday] %>,
+                            //data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 10, 9, 12, 14, 17, 13, 22, 0, 0, 0, 0, 0, 0],
+                            //backgroundColor: bgcolor,
+                            backgroundColor: '#9ad0f5',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }]
+                        }
+                    }
+                });
+                // var bgcolor = [];
+                // for(let i= 0; i < 24; i++) {
+                //     var randomR = Math.floor((Math.random() * 130) + 100);
+                //     var randomG = Math.floor((Math.random() * 130) + 100);
+                //     var randomB = Math.floor((Math.random() * 130) + 100);
+                //
+                //     var graphBackground = "rgb("
+                //         + randomR + ", "
+                //         + randomG + ", "
+                //         + randomB + ")";
+                //     bgcolor.push(graphBackground);
+                // }
+            </script>
+          <% end %>
+        </div>
+    <% end %>
+    </div>
+  </div>
+
+</section>
