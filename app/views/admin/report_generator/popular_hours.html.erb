@@ -12,10 +12,12 @@
     </ul>
 
     <div class="tab-content">
-      <br>
       <% Space.all.each do |space| %>
         <div class="tab-pane container <%= @space.name == space.name ? "active" : "" %>" id="<%= space.name.gsub(" ", "-") %>">
+          <br>
+          <span style="text-align: center!important; display: block;">The following stats are being updated automatically over time. It takes the average per hour for every day of the week and every spaces.</span>
           <% (0..6).each do |weekday| %>
+            <br>
             <h3 class="text-center"><%= @weekdays[weekday] %></h3>
             <canvas id="<%= space.name.gsub(" ", "-") %>-<%= weekday %>" width="450" height="300"></canvas>
             <script type="text/javascript" charset="utf-8">
@@ -27,7 +29,7 @@
                         datasets: [{
                             label: '# of people',
                             data: <%= @data[space.name][weekday] %>,
-                            backgroundColor: '#9ad0f5',
+                            backgroundColor: '#6db1f5',
                             borderWidth: 1
                         }]
                     },
@@ -44,7 +46,8 @@
             </script>
           <% end %>
         </div>
-    <% end %>
+      <% end %>
+      <br>
     </div>
   </div>
 
