@@ -21,26 +21,6 @@ class PrintOrdersController < ApplicationController
                    end
   end
 
-  def index_new
-    @order = {
-        'approved is NULL' => ["arrow-2-orange.svg", 3, "delete"],
-        'user_approval is NULL and approved is TRUE' => ["arrow-2-green.svg", "arrow-3-blue.svg", 2, "white"],
-        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-orange.svg", 1, "white"],
-        'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-green.svg", "arrow-5-orange.svg", "white"],
-        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-green.svg", "arrow-5-green.svg", "delete"],
-        "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["arrow-2-red.svg", 3, "delete"],
-        "user_approval is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["arrow-2-green.svg", "arrow-3-red.svg", 2, "delete"]
-    }
-
-    @order_old = {
-        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at < NOW() - INTERVAL '7 days'" => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-green.svg", "arrow-5-green.svg", "delete"],
-        "approved is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ["arrow-2-red.svg", 3, "delete"],
-        "user_approval is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ["arrow-2-green.svg", "arrow-3-red.svg", 2, "delete"]
-    }
-
-    @print_order = @user.print_orders.order(expedited: :desc, created_at: :desc)
-  end
-
   def new
     @print_order = PrintOrder.new
     prices = if (@user.identity == 'undergrad') || (@user.identity == 'grad') || (@user.identity == 'faculty_member')
@@ -84,10 +64,10 @@ class PrintOrdersController < ApplicationController
 
     @print_order = PrintOrder.create(print_order_params)
     if @print_order.id.nil? || @print_order.id == 0
-      redirect_to index_new_print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !'
+      redirect_to print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !'
     else
       MsrMailer.send_print_to_makerspace(@print_order.id).deliver_now
-      redirect_to index_new_print_orders_path, notice: 'The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision.'
+      redirect_to print_orders_path, notice: 'The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision.'
     end
   end
 
@@ -135,22 +115,13 @@ class PrintOrdersController < ApplicationController
       MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
     end
 
-    if @user.id == @print_order.user_id
-      redirect_to index_new_print_orders_path
-    else
-      redirect_to print_orders_path
-    end
+    redirect_to print_orders_path
   end
 
   def destroy
     @print_order = PrintOrder.find(params[:id])
-    user_id = @print_order.user_id
     @print_order.destroy
-    if @user.id == user_id
-      redirect_to index_new_print_orders_path
-    else
-      redirect_to print_orders_path
-    end
+    redirect_to print_orders_path
   end
 
   def edit
