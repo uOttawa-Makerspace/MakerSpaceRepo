@@ -23,19 +23,19 @@ class PrintOrdersController < ApplicationController
 
   def index_new
     @order = {
-        'approved is NULL' => ["arrow-2-orange.svg", 2, "delete"],
-        'user_approval is NULL and approved is TRUE' => ["arrow-2-green.svg", "arrow-3-orange.svg", 1, "white"],
-        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-orange.svg", "white"],
-        'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-green.svg", "arrow-5-orange.svg", "white"],
-        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-green.svg", "arrow-5-green.svg", "delete"],
-        "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["arrow-2-red.svg", 3, "delete"],
-        "user_approval is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["arrow-2-green.svg", "arrow-3-red.svg", 2, "delete"]
+        'approved is NULL' => ["Waiting on Admin approval", "Waiting on your approval"],
+        'user_approval is NULL and approved is TRUE' => ["Approved by Admins", "Waiting on your approval", "Queued to be printed"],
+        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ["Approved by Admins", "Approved by you", "Queue to be printed", "Currently being printed"],
+        'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ["Approved by Admins", "Approved by you", "Queue is done", "Currently being printed", ""],
+        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ["Approved by Admins", "Approved by you", "Queue is done", "Printed", ""],
+        "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["Disapproved by admins", ""],
+        "user_approval is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["Approved by admins", "Disapproved by you", ""]
     }
 
     @order_old = {
-        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at < NOW() - INTERVAL '7 days'" => ["arrow-2-green.svg", "arrow-3-green.svg", "arrow-4-green.svg", "arrow-5-green.svg", "delete"],
-        "approved is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ["arrow-2-red.svg", 3, "delete"],
-        "user_approval is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ["arrow-2-green.svg", "arrow-3-red.svg", 2, "delete"]
+        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at < NOW() - INTERVAL '7 days'" => ["Approved by Admins", "Approved by you", "Queue is done", "Printed", ""],
+        "approved is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ["Disapproved by admins", ""],
+        "user_approval is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ["Approved by admins", "Disapproved by you", ""]
     }
 
     @print_order = @user.print_orders.order(expedited: :desc, created_at: :desc)

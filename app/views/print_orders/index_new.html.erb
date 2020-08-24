@@ -5,6 +5,7 @@
   <br><br>
 </div>
 
+<div class="padding-10">
 <% @order.each do |order, files| %>
 
   <% if @print_order.where(order).present? %>
@@ -44,4 +45,4 @@
   <% end %>
 </div>
 
-
+</div>

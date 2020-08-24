@@ -1,25 +1,29 @@
 <div class="content">
 
-  <p>File : <%= prints.file.filename if prints.file.attached? %>
-    <%= link_to "-  <b>**Action Required**</b>".html_safe, "", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}" if prints.approved and prints.user_approval == nil %></p>
+  <p style="font-size: 18px">ID #<%= prints.id %> | File : <%= prints.file.filename if prints.file.attached? %>
+    <%= link_to "-  <b>Action Required</b>".html_safe, "", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}" if prints.approved and prints.user_approval == nil %></p>
 
-  <div class="square square-id">ID #<%= prints.id %></div>
 
-  <%= image_tag("print_orders/arrow-1-green.svg", class: "arrow first-status") %>
+  <ul class="progress-tracker progress-tracker--text progress-tracker--center">
+    <li class="progress-step is-complete">
+      <div class="progress-marker"></div>
+      <div class="progress-text">
+        <h4 class="progress-title">Submitted to Admins</h4>
+      </div>
+    </li>
 
-  <% files.each do |file| %>
-    <% if file.to_i != 0 %>
-      <% file.times do %>
-        <%= image_tag("print_orders/arrow-white.svg", class: "arrow unactive-status") %>
-      <% end %>
-    <% elsif file == "delete" %>
-      <%= link_to 'Delete', print_order_path(prints), method: :delete, data: {confirm: 'Are you sure?'}, class: "square square-delete" %>
-    <% elsif file == "white" %>
-      <span class="square square-white">Can't Delete</span>
-    <% else %>
-      <% if file == "arrow-3-orange.svg" %>
-        <%= image_tag("print_orders/arrow-3-orange.svg", class: "arrow active-status", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}") %>
-        <%= image_tag("print_orders/#{file.gsub(/\d+/) { |n| n.to_i + 1 }}", class: "arrow unactive-status next") %>
+    <% array_size = files.length - 1 %>
+    <% files.each_with_index do |file, index| %>
+      <% if file == "Waiting on your approval" and prints.approved == true %>
+        <li class="progress-step is-active">
+          <a data-toggle="modal" data-target="#modal-approve-<%= prints.id %>">
+            <div class="progress-marker"></div>
+            <div class="progress-text" style="background-color: #e7e7e7; border-radius: 10px; margin-top: 2px;">
+              <h4 class="progress-title">Waiting on your approval</h4>
+              <b style="font-size: 17px">Action Required</b>
+            </div>
+          </a>
+        </li>
         <div class="modal fade" id="modal-approve-<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -50,12 +54,39 @@
           </div>
         </div>
       <% else %>
-        <%= image_tag("print_orders/#{file}", class: "arrow #{file.to_s.include?("red") || file.to_s.include?("orange") || file.to_s.include?("5-green") ? "active-status" : "unactive-status"}") %>
-        <% if file.to_s.include?("orange") %>
-          <%= image_tag("print_orders/#{file.gsub(/\d+/) { |n| n.to_i + 1 }}", class: "arrow unactive-status next") %>
-      <% end %>
+        <% if file == "" %>
+
+        <% elsif index == array_size - 1 and file.include?("Disapproved") %>
+          <li class="progress-step is-disapproved">
+            <div class="progress-marker"></div>
+            <div class="progress-text">
+              <h4 class="progress-title"><%= file %></h4>
+            </div>
+          </li>
+        <% elsif index == array_size - 1 and file != "Printed" %>
+          <li class="progress-step is-active">
+            <div class="progress-marker"></div>
+            <div class="progress-text">
+              <h4 class="progress-title"><%= file %></h4>
+            </div>
+          </li>
+        <% elsif index == array_size %>
+          <li class="progress-step">
+            <div class="progress-marker"></div>
+            <div class="progress-text">
+              <h5 class="progress-title">Next :<br> <%= file %></h5>
+            </div>
+          </li>
+        <% else %>
+          <li class="progress-step is-complete">
+            <div class="progress-marker"></div>
+            <div class="progress-text">
+              <h4 class="progress-title"><%= file %></h4>
+            </div>
+          </li>
+        <% end %>
       <% end %>
     <% end %>
-  <% end %>
+  </ul>
 
 </div>
