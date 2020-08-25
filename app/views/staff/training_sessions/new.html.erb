@@ -15,7 +15,7 @@
       </div>
       <div class="form-group">
         <% label_tag 'course' %>
-        <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'Select course', class: "form-control" %><br>
+        <%= select_tag 'course', options_for_select(Course.all.pluck(:name)), prompt: 'Select course', class: "form-control" %><br>
       </div>
       <% if @user.admin? %>
         <% label_tag 'user_id' %>
