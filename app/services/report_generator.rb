@@ -216,11 +216,22 @@ class ReportGenerator
       sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
       sheet.add_row # spacing
 
-      sheet.add_row ["This is a chart with no data in the sheet"]
-      chart = sheet.add_chart(Axlsx::Pie3DChart, :start_at => [1, 10], :end_at => [6, 19], :title=>"Users")
-      chart.add_series :data => [1, 2, 10], :labels => ["1", "2", "10"],  :colors => ['FF0000', '00FF00', '0000FF']
-
       sheet.add_row # spacing
+      sheet.add_row # spacing
+
+      male = users.where(gender: "Male").count
+      female = users.where(gender: "Female").count
+      other = users.where(gender: "Other").count
+      prefer_not = users.where(gender: "Prefer not to specify").count
+      final_other = other + prefer_not
+
+      sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "D1", :end_at => "G8", :grouping => :stacked, :show_legend => true, :title=>"Gender of new users") do |chart|
+        chart.add_series :data => [male, female, final_other], :labels => ["Male", "Female", "Other/Prefer not to specify"], :colors => ['1FC3AA', '8624F5', 'A8A8A8', 'A8A8A8']
+        chart.add_series :data => [male, female, final_other], :labels => ["Male", "Female", "Other/Prefer not to specify"], :colors => ['FFFF00', 'FFFF00','FFFF00']
+        chart.d_lbls.show_percent = true
+        chart.d_lbls.d_lbl_pos = :bestFit
+      end
+
 
       title(sheet, 'Overview')
 
