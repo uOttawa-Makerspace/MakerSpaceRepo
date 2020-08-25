@@ -253,6 +253,10 @@ class ReportGenerator
         end
         sheet.add_row final_s
         sheet.add_row final_c
+
+        sheet.add_row # spacing
+
+        sheet.add_row ['Average attendees per session', final_total_certifications['total']/final_total_sessions['total']]
       end
 
     end
