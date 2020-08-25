@@ -14,6 +14,7 @@ $color-marker-complete: #00A407 !default;
 $color-marker-active: #FF9900 !default;
 $color-marker: #aaa !default;
 $marker-size: 32px !default;
+$color-marker-hover: #6e6e6e;
 
 @import "~bootstrap/scss/bootstrap";
 @import '~bootstrap/scss/_functions';

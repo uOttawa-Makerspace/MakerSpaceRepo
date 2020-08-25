@@ -4,7 +4,7 @@
     <%= link_to "-  <b>Action Required</b>".html_safe, "", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}" if prints.approved and prints.user_approval == nil %></p>
 
 
-  <ul class="progress-tracker progress-tracker--text progress-tracker--center">
+  <ul class="progress-tracker progress-tracker--text progress-tracker--center progress-row">
     <li class="progress-step is-complete">
       <div class="progress-marker"></div>
       <div class="progress-text">
@@ -15,14 +15,12 @@
     <% array_size = files.length - 1 %>
     <% files.each_with_index do |file, index| %>
       <% if file == "Waiting on your approval" and prints.approved == true %>
-        <li class="progress-step is-active">
-          <a data-toggle="modal" data-target="#modal-approve-<%= prints.id %>">
-            <div class="progress-marker"></div>
-            <div class="progress-text" style="background-color: #e7e7e7; border-radius: 10px; margin-top: 2px;">
-              <h4 class="progress-title">Waiting on your approval</h4>
-              <b style="font-size: 17px">Action Required</b>
-            </div>
-          </a>
+        <li class="progress-step is-active" data-toggle="modal" data-target="#modal-approve-<%= prints.id %>">
+          <div class="progress-marker"></div>
+          <div class="progress-text" style="background-color: #e7e7e7; border-radius: 10px; margin-top: 2px; padding: 8px 12px 12px 8px!important;">
+            <h4 class="progress-title">Waiting on your approval</h4>
+            <b style="font-size: 17px">Action Required</b>
+          </div>
         </li>
         <div class="modal fade" id="modal-approve-<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
           <div class="modal-dialog" role="document">
@@ -76,7 +74,7 @@
               <li class="progress-step">
                 <div class="progress-marker"></div>
                 <div class="progress-text">
-                  <h5 class="progress-title">Next :<br> <%= next_steps %></h5>
+                  <h5 class="progress-title">Next :<br class="br-next"> <%= next_steps %></h5>
                 </div>
               </li>
             <% end %>
@@ -84,7 +82,7 @@
             <li class="progress-step">
               <div class="progress-marker"></div>
               <div class="progress-text">
-                <h5 class="progress-title">Next :<br> <%= file %></h5>
+                <h5 class="progress-title">Next :<br class="br-next"> <%= file %></h5>
               </div>
             </li>
           <% end %>

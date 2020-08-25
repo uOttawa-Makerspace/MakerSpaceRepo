@@ -1,6 +1,7 @@
 // Place all the styles related to the PrintOrder controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+
 .padding {
   padding-left: 20%;
   padding-right: 20%;
@@ -20,12 +21,6 @@
 .content {
   text-align: center;
 }
-
-.arrow {
-  display: inline;
-  padding-right: 30px;
-  width: 240px;
-}
 .square {
   height: 100px;
   width: 100px;
@@ -38,79 +33,15 @@
   font-size: 22px;
   font-weight: bold;
 }
-.square-id {
-  background-color: #59595e91;
-}
 
-.square-white {
-  background-color: #fff;
-  font-size: 15px;
-  color: #000000d4!important;
-}
-
-.square-delete {
-  background-color: #dc3545;
-}
-
-.square ,.square-delete:hover {
-  text-decoration: none!important;
-  color: #fff;
-}
-
-.next {
-  opacity: 30%;
-}
-
-@media screen and (max-width: 1486px) {
-  .first-status {
+@media screen and (max-width: 720px) {
+  .br-next {
     display: none;
   }
 }
 
-@media screen and (min-width: 1486px) {
-  .first-status {
-    display: inline-flex;
-  }
-}
-
-@media screen and (max-width: 1270px) {
-  .active-status {
-    display: inline-flex;
-  }
-  .unactive-status {
-    display: none;
-  }
-}
-
-@media screen and (min-width: 1270px) {
-  .active-status {
-    display: inline-flex;
-  }
-  .unactive-status {
-    display: inline-flex;
-  }
-}
-
-@media screen and (max-width: 510px) {
-  .square {
-    width: 50px;
-    height: 50px;
-    border-radius: 5px;
-    font-size: 14px;
-  }
-  .arrow {
-    width: 120px;
-  }
-}
-
-@media screen and (min-width: 510px) {
-  .square {
-    width: 100px;
-    height: 100px;
-    border-radius: 25px;
-    font-size: 22px;
-  }
-  .arrow {
-
+@media screen and (min-width: 720px) {
+  .br-next {
+    display: block;
   }
 }
