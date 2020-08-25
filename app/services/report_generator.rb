@@ -184,18 +184,48 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
-      header(sheet, 'Certifications', start_date, end_date)
+    spreadsheet.workbook.add_worksheet(name: 'MTC') do |sheet|
 
-      table_header(sheet, ['Certification', 'Level', 'Facility', 'Certified Users'])
+      mtc = Space.find_by_name("MTC").id
+
+      header(sheet, 'Certifications in MTC', start_date, end_date)
+
+      table_header(sheet, ['Certification', 'Course', 'Facility', 'Certified Users'])
+
+      Training.each do |training|
+
+        training_sessions = TrainingSession.where(training_id: training.id)
+        training_row = [training.name, training_sessions.count]
+
+
+
+        sheet.add_row training_row
+      end
+
+      # certifications.each do |row|
+      #   sheet.add_row [
+      #                     row['name'],
+      #                     row['course'],
+      #                     row['space_name'],
+      #                     row['total_certifications']
+      #                 ]
+      # end
+    end
+
+    spreadsheet.workbook.add_worksheet(name: 'Makerspace') do |sheet|
+
+      makerspace = Space.find_by_name("Makerspace").id
+      header(sheet, 'Certifications in Makerspace', start_date, end_date)
+
+      table_header(sheet, ['Certification', 'Course', 'Facility', 'Certified Users'])
 
       certifications.each do |row|
         sheet.add_row [
-          row['name'],
-          row['level'],
-          row['space_name'],
-          row['total_certifications']
-        ]
+                          row['name'],
+                          row['course'],
+                          row['space_name'],
+                          row['total_certifications']
+                      ]
       end
     end
 
@@ -674,15 +704,15 @@ class ReportGenerator
     ActiveRecord::Base.connection.exec_query(Certification.select([
                                                                     t['name'].minimum.as('name'),
                                                                     s['name'].minimum.as('space_name'),
-                                                                    ts['level'],
+                                                                    ts['course'],
                                                                     Arel.star.count.as('total_certifications')
                                                                   ])
                                                .joins(c.join(ts).on(c['training_session_id'].eq(ts['id'])).join_sources)
                                                .joins(ts.join(t).on(ts['training_id'].eq(t['id'])).join_sources)
                                                .joins(ts.join(s).on(ts['space_id'].eq(s['id'])).join_sources)
                                                .where(ts['created_at'].between(start_date..end_date))
-                                               .group(t['id'], s['id'], ts['level'])
-                                               .order('name', 'level', 'space_name')
+                                               .group(t['id'], s['id'], ts['course'])
+                                               .order('name', 'course', 'space_name')
                                                .to_sql)
   end
 
