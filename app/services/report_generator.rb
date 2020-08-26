@@ -256,7 +256,13 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        sheet.add_row ['Average attendees per session', final_total_certifications['total']/final_total_sessions['total']]
+        if final_total_sessions['total'].zero? || (final_total_sessions['total'] == nil?) || final_total_certifications['total'].nil?
+          average = 0
+        else
+          average = (final_total_certifications['total'] / final_total_sessions['total'])
+        end
+        sheet.add_row ['Average attendees per session', average]
+
       end
 
     end
