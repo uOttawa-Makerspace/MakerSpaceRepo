@@ -30,6 +30,21 @@
 
   <div class="seperator"></div>
 
+  <div class="section-desc">Changing Email</div>
+  <%= form_tag change_email_users_path, method: :get do %>
+
+    <div class="form-group">
+      <%= label_tag :new_email, "New Email", class: "profile-label" %>
+      <%= email_field_tag :new_email, "", {:class => "profile-text form-control", :autofocus => true} %>
+      <%= label_tag :confirm_new_email, "Confirm the New Email", class: "profile-label" %>
+      <%= email_field_tag :confirm_new_email, "", {:class => "profile-text form-control", :autofocus => true} %>
+    </div>
+    <%= submit_tag "Update Email", class: "btn btn-secondary" %>
+
+  <% end %>
+
+  <div class="seperator"></div>
+
   <div class="section-desc">
     Github Account<br>
     <span>Link your Github account to MakerRepo for additional functionality.</span>
