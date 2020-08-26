@@ -21,14 +21,18 @@
       Volume: <%= @print_order.grams %> cm3<br>
       Price: <%= number_to_currency(@print_order.price_per_gram) %>/g
       <br>
-      Carbon fiber: <br>
-      Volume: <%= @print_order.grams_carbonfiber %> cm3<br>
-      Price: <%= number_to_currency(@print_order.price_per_gram_carbonfiber) %>/g
-      <br>
-      Fiber glass: <br>
-      Volume: <%= @print_order.grams_fiberglass %> cm3<br>
-      Price: <%= number_to_currency(@print_order.price_per_gram_fiberglass) %>/g
-      <br>
+      <% if @print_order.grams_carbonfiber.present? && @print_order.price_per_gram_carbonfiber %>
+        Carbon fiber: <br>
+        Volume: <%= @print_order.grams_carbonfiber %> cm3<br>
+        Price: <%= number_to_currency(@print_order.price_per_gram_carbonfiber) %>/g
+        <br>
+      <% end %>
+      <% if @print_order.grams_fiberglass.present? && @print_order.price_per_gram_fiberglass %>
+        Fiber glass: <br>
+        Volume: <%= @print_order.grams_fiberglass %> cm3<br>
+        Price: <%= number_to_currency(@print_order.price_per_gram_fiberglass) %>/g
+        <br>
+      <% end %>
     <% else %>
       Weight: <%= @print_order.grams %> grams<br>
       Price: <%= number_to_currency(@print_order.price_per_gram) %>/g
