@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-class AnnouncementsController < ApplicationController
-  layout 'staff_area'
-  before_action :grant_access
+class Admin::AnnouncementsController < AdminAreaController
+  layout 'admin_area'
+
   def index
-    @announcements = Announcement.all.where(public_goal: %w[volunteer staff]).order(created_at: :asc)
+    @announcements = Announcement.all.order(created_at: :asc)
   end
 
   def new
@@ -23,7 +23,7 @@ class AnnouncementsController < ApplicationController
     announcement = Announcement.new(announcement_params)
     announcement.user_id = current_user.id
     if announcement.save!
-      redirect_to announcements_path
+      redirect_to admin_announcements_path
       flash[:notice] = "You've successfully created an announcement for #{announcement.public_goal.capitalize}"
     end
   end
@@ -35,7 +35,7 @@ class AnnouncementsController < ApplicationController
     else
       flash[:alert] = 'Something went wrong'
     end
-    redirect_to announcements_path
+    redirect_to admin_announcements_path
   end
 
   def destroy
@@ -45,7 +45,7 @@ class AnnouncementsController < ApplicationController
     else
       flash[:alert] = 'Something went wrong'
     end
-    redirect_to announcements_path
+    redirect_to admin_announcements_path
   end
 
   private
@@ -54,10 +54,5 @@ class AnnouncementsController < ApplicationController
     params.require(:announcement).permit(:description, :public_goal, :active)
   end
 
-  def grant_access
-    unless current_user.admin? || current_user.staff?
-      redirect_to root_path
-      flash[:alert] = 'You cannot access this area.'
-    end
-  end
 end
+

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe AnnouncementsController, type: :controller do
+RSpec.describe Admin::AnnouncementsController, type: :controller do
   before(:all) do
     @admin = create(:user, :admin)
     @announcement_admin = create(:announcement, :admin)
@@ -14,7 +14,7 @@ RSpec.describe AnnouncementsController, type: :controller do
         session[:user_id] = @admin.id
         get :index
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@announcements).count).to eq(1)
+        expect(@controller.instance_variable_get(:@announcements).count).to eq(3)
       end
     end
 
@@ -24,7 +24,6 @@ RSpec.describe AnnouncementsController, type: :controller do
         session[:user_id] = user.id
         get :index
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq('You cannot access this area.')
       end
     end
   end
@@ -66,7 +65,7 @@ RSpec.describe AnnouncementsController, type: :controller do
         announcement_params =  FactoryBot.attributes_for(:announcement, :all)
         expect { post :create, params: {announcement: announcement_params} }.to change(Announcement, :count).by(1)
         expect(flash[:notice]).to eq("You've successfully created an announcement for All")
-        expect(response).to redirect_to announcements_path
+        expect(response).to redirect_to admin_announcements_path
       end
     end
   end
@@ -76,7 +75,7 @@ RSpec.describe AnnouncementsController, type: :controller do
       it 'should update the announcement' do
         session[:user_id] = @admin.id
         patch :update, params: {id: @announcement_all.id, announcement: {public_goal: "volunteer"} }
-        expect(response).to redirect_to announcements_path
+        expect(response).to redirect_to admin_announcements_path
         expect(Announcement.find(@announcement_all.id).public_goal).to eq("volunteer")
         expect(flash[:notice]).to eq("Announcement updated")
       end
@@ -88,7 +87,7 @@ RSpec.describe AnnouncementsController, type: :controller do
       it 'should destroy the announcement' do
         session[:user_id] = @admin.id
         expect {  delete :destroy, params: {id: @announcement_all.id} }.to change(Announcement, :count).by(-1)
-        expect(response).to redirect_to announcements_path
+        expect(response).to redirect_to admin_announcements_path
         expect(flash[:notice]).to eq("Announcement Deleted")
       end
     end
@@ -98,4 +97,5 @@ RSpec.describe AnnouncementsController, type: :controller do
     Announcement.destroy_all
   end
 end
+
 
