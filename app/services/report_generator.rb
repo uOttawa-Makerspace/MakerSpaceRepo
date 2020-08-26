@@ -382,7 +382,7 @@ class ReportGenerator
         month_average = ['Month average of attendees per sessions']
         month_header = ['Month']
 
-        (start_date..end_date).select { |date| date.day == 1 }.map do |date|
+        (start_date.to_datetime..end_date.to_datetime).select { |date| date.day == 1 }.map do |date|
           month_header << date.strftime("%B")
           month_certifications = space_certifications.select { |cert| cert.created_at.between?(date.beginning_of_month, date.end_of_month) }
           average = if month_certifications.count.zero? || month_certifications.pluck(:training_session_id).uniq.count.zero?
