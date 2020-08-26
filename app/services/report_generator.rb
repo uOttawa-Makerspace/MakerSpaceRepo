@@ -256,7 +256,7 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        if final_total_sessions['total'] == nil? || final_total_certifications['total'].nil? || final_total_sessions['total'].zero? 
+        if final_total_sessions['total'] == nil? || final_total_certifications['total'].nil? || final_total_sessions['total'].zero?
           average = 0
         else
           average = (final_total_certifications['total'] / final_total_sessions['total'])
@@ -349,12 +349,13 @@ class ReportGenerator
 
       certifications.each do |_space, space_certifications|
         title(sheet, space_certifications[0].training_session.space.name)
-        table_header(sheet, ['Certification Type', 'Certification Date', 'Instructor', 'Course', 'Facility', 'Student ID', 'Name', 'Email Address'])
+        table_header(sheet, ['Student ID', 'Name', 'Email Address', 'Certification Type', 'Certification Date', 'Instructor', 'Course', 'Facility'])
 
         start_index = sheet.rows.last.row_index + 2
         last_training_session_id = nil
 
         space_certifications.each do |certification|
+
           if (last_training_session_id != certification.training_session.id) && !last_training_session_id.nil?
             end_index = sheet.rows.last.row_index + 1
 
@@ -370,20 +371,57 @@ class ReportGenerator
           end
 
           sheet.add_row [
+                            certification.user.student_id,
+                            certification.user.name,
+                            certification.user.email,
                             certification.training_session.training.name,
                             certification.training_session.created_at.strftime('%Y-%m-%d %H:%M'),
                             certification.training_session.user.name,
                             certification.training_session.course,
                             certification.training_session.space.name,
-                            certification.user.student_id,
-                            certification.user.name,
-                            certification.user.email
                         ], style: [merge_cell, merge_cell, merge_cell, merge_cell, merge_cell]
 
           last_training_session_id = certification.training_session.id
         end
 
-        sheet.add_row # spacing
+        sheet.add_row #spacing
+
+        month_average = ['Month average of attendees per sessions']
+        month_header = ['Month']
+
+        (start_date..end_date).select { |date| date.day == 1 }.map do |date|
+          month_header << date.strftime("%B")
+          month_certifications = space_certifications.select { |cert| cert.created_at.between?(date.beginning_of_month, date.end_of_month) }
+          average = if month_certifications.count.zero? || month_certifications.pluck(:training_session_id).uniq.count.zero?
+                      0
+                    else
+                      month_certifications.count / month_certifications.pluck(:training_session_id).uniq.count
+                    end
+          month_average << average
+        end
+
+        table_header(sheet, month_header)
+        sheet.add_row month_average
+        sheet.add_row #spacing
+
+        week_average = ['Week average of attendees per sessions']
+        week_header = ['Week']
+
+        (start_date.to_datetime.to_i..end_date.to_datetime.to_i).step(1.week) do |date|
+          week_header << "#{Time.at(date).beginning_of_week.strftime("%Y-%m-%d")} to #{Time.at(date).end_of_week.strftime("%Y-%m-%d")}"
+          week_certifications = space_certifications.select { |cert| cert.created_at.between?(Time.at(date).beginning_of_week, Time.at(date).end_of_week) }
+          average = if week_certifications.count.zero? || week_certifications.pluck(:training_session_id).uniq.count.zero?
+                      0
+                    else
+                      week_certifications.count / week_certifications.pluck(:training_session_id).uniq.count
+                    end
+          week_average << average
+        end
+
+        table_header(sheet, week_header)
+        sheet.add_row week_average
+        sheet.add_row #spacing
+
       end
     end
 
