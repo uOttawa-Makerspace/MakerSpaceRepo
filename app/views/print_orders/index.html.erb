@@ -178,11 +178,11 @@
               <td>Not Printed</td>
             <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>
               <td>
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-printed-it<%= prints.id %>">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-printed-it-<%= prints.id %>">
                   I printed it
                 </button>
               </td>
-              <div class="modal fade" id="modal-printed-it<%= prints.id %>" tabindex="-1" aria-labelledby="modal-printed-it<%= prints.id %>" aria-hidden="true">
+              <div class="modal fade" id="modal-printed-it-<%= prints.id %>" tabindex="-1" aria-labelledby="modal-printed-it-<%= prints.id %>" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
                   <div class="modal-content">
                     <div class="modal-header">
@@ -200,8 +200,8 @@
                         <br>
                         <%= form_for prints, url: print_order_path(prints) do |f| %>
                         <div class="pr-5 pl-5">
-                          <input id="x" value="<div>Hi <%= prints.user.name %>, <br>Your print has completed and is now available for pickup! Your order ID is <%= prints.id %> and your quoted balance is <%= number_to_currency(prints.quote) %>. Please visit <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a> for information on how to pay for your job and email makerspace@uottawa.ca to arrange for the pick up of your part during weekdays between 9h-17h.<br><br></div><div>Best regards,<br>The Makerspace Team<br></div>" type="hidden" name="email_message">
-                          <trix-editor input="x"></trix-editor>
+                          <input id="x-<%= prints.id %>" value="<div>Hi <%= prints.user.name %>, <br>Your print has completed and is now available for pickup! Your order ID is <%= prints.id %> and your quoted balance is <%= number_to_currency(prints.quote) %>. Please visit <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a> for information on how to pay for your job and email makerspace@uottawa.ca to arrange for the pick up of your part during weekdays between 9h-17h.<br><br></div><div>Best regards,<br>The Makerspace Team<br></div>" type="hidden" name="email_message">
+                          <trix-editor input="x-<%= prints.id %>"></trix-editor>
                         </div>
                         <br>
                         <div class="col-md-6 text-center">
