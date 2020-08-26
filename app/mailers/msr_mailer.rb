@@ -8,6 +8,19 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: 'Makerepo | Please confirm your email')
   end
 
+  def email_confirmation_email(new_email, user, user_hash, email_hash)
+    @new_email = new_email
+    @user = user
+    @email_hash = email_hash
+    @user_hash = user_hash
+    mail(to: new_email, subject: 'Makerepo | Please confirm your new email')
+  end
+
+  def email_changed_email(user, old_email)
+    @user = user
+    mail(to: old_email, subject: 'Makerepo | Email has changed')
+  end
+
   def welcome_email(user)
     @user = user
     @url  = 'http://makerepo.com/login'
@@ -63,23 +76,18 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', cc: 'uottawa.makerepo@gmail.com', subject: "Your print \"#{filename}\" has been denied")
   end
 
-  def send_print_finished(user, pickup_id, quote)
+  def send_print_finished(user, pickup_id, quote, message)
     @quote = quote
     @user = user
     @pickup_id = pickup_id
+    @message = message.html_safe
     mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', cc: 'uottawa.makerepo@gmail.com', subject: 'Your print is available for pickup')
   end
 
-  def send_invoice(name, quote, number, order_type)
+  def send_invoice(name, print_order)
     @name = name
-    @quote = quote
-    @number = number
-    @order_type = if order_type != 1
-                    '3D Printed Part'
-                  else
-                    'Laser Cut/Engraving'
-                  end
-    mail(to: 'uomakerspaceprintinvoices@gmail.com', subject: 'Invoice for Order #' + @number.to_s + ' ')
+    @print_order = print_order
+    mail(to: 'uomakerspaceprintinvoices@gmail.com', subject: 'Invoice for Order #' + @print_order.id.to_s + ' ')
   end
 
   def send_ommic

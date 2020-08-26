@@ -160,28 +160,97 @@
         Price
       </td>
     </tr>
-    <%
-      if @print_order.order_type != 1
-        @order_type = "3D Printed Part"
-      else
-        @order_type = "Laser Cut/Engraving"
-      end
-    %>
+
     <tr class="item last">
       <td>
-        <%= @order_type %>
+        Service charges
       </td>
 
       <td>
-        $<%= @print_order.quote %>
+        <%= number_to_currency(@print_order.service_charge) %>
       </td>
     </tr>
+    <% if @print_order.expedited == true %>
+      <tr class="item last">
+        <td>
+          Expedited service charge
+        </td>
+        <td>
+          <%= number_to_currency(@expedited_price) %>
+        </td>
+      </tr>
+    <% end %>
+
+
+    <% if @print_order.order_type == 1 %>
+      <tr class="item last">
+        <td>
+          Material cost
+        </td>
+        <td>
+          <%= number_to_currency(@print_order.material_cost) %>
+        </td>
+      </tr>
+      <tr class="item last">
+        <td>
+          Price for hours
+        </td>
+        <td>
+          <%= number_to_currency(@print_order.price_per_hour) %>
+        </td>
+      </tr>
+    <% elsif @print_order.order_type == 0 and (@print_order.sst == true) %>
+      <tr class="item last">
+        <td>
+          Time (<%= @print_order.hours %> hours) (<%= number_to_currency(@print_order.price_per_hour) %>/h)
+        </td>
+        <td>
+          <%= number_to_currency(@print_order.hours*@print_order.price_per_hour) %>
+        </td>
+      </tr>
+    <% else %>
+      <% if @print_order.material == "M2 Onyx" %>
+        <tr class="item last">
+          <td>
+            Onyx Filament (<%= @print_order.grams %> cm3) (<%= number_to_currency(@print_order.price_per_gram) %>/cm3)
+          </td>
+          <td>
+            <%= number_to_currency(@print_order.grams*@print_order.price_per_gram) %>
+          </td>
+        </tr>
+        <tr class="item last">
+          <td>
+            Carbon Fiber Filament (<%= @print_order.grams_carbonfiber %> cm3) (<%= number_to_currency(@print_order.price_per_gram_carbonfiber) %>/cm3)
+          </td>
+          <td>
+            <%= number_to_currency(@print_order.grams_carbonfiber*@print_order.price_per_gram_carbonfiber) %>
+          </td>
+        </tr>
+        <tr class="item last">
+          <td>
+            Fiber glass Filament (<%= @print_order.grams_fiberglass %> cm3) (<%= number_to_currency(@print_order.price_per_gram_fiberglass) %>/cm3)
+          </td>
+          <td>
+            <%= number_to_currency(@print_order.grams_fiberglass*@print_order.price_per_gram_fiberglass) %>
+          </td>
+        </tr>
+      <% else %>
+        <tr class="item last">
+          <td>
+            Filament (<%= @print_order.grams %> grams) (<%= number_to_currency(@print_order.price_per_gram) %>/g)
+          </td>
+          <td>
+            <%= number_to_currency(@print_order.grams*@print_order.price_per_gram) %>
+          </td>
+        </tr>
+      <% end %>
+    <% end %>
 
     <tr class="total">
       <td></td>
 
       <td>
-        Total: $<%= @print_order.quote %>
+        Total: <%= number_to_currency(@print_order.quote) %>
       </td>
     </tr>
   </table>
