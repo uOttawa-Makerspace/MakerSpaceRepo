@@ -218,7 +218,7 @@
             <%= number_to_currency(@print_order.grams * @print_order.price_per_gram) %>
           </td>
         </tr>
-        <% if @print_order.grams_carbonfiber.present? && @print_order.price_per_gram_carbonfiber %>
+        <% if @print_order.grams_carbonfiber.present? && @print_order.price_per_gram_carbonfiber.present? %>
           <tr class="item last">
             <td>
               Carbon Fiber Filament (<%= @print_order.grams_carbonfiber %> cm3)
@@ -229,7 +229,7 @@
             </td>
           </tr>
         <% end %>
-        <% if @print_order.grams_fiberglass.present? && @print_order.price_per_gram_fiberglass %>
+        <% if @print_order.grams_fiberglass.present? && @print_order.price_per_gram_fiberglass.present? %>
           <tr class="item last">
             <td>
               Fiber glass Filament (<%= @print_order.grams_fiberglass %> cm3)
