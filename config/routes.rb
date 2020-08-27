@@ -344,10 +344,12 @@ Rails.application.routes.draw do
   resources :users, path: '/', param: :username, except: :edit do
     collection do
       get :resend_confirmation
+      get :confirm_edited_email
       get :confirm
       post :create, path: '/new'
       get :remove_avatar
       post :flag
+      get :change_email
     end
 
     get 'likes', on: :member

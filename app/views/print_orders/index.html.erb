@@ -76,6 +76,8 @@
           <td>
             <% if prints.file.attached? %>
               <%= link_to "Download", rails_blob_path(prints.file, disposition: 'attachment'), class: "btn btn-primary" %>
+              <br>
+              <span style="word-break: break-all;"><%= prints.file.filename %></span>
             <% else %>
               Not Available
             <% end %>
@@ -85,6 +87,8 @@
             <td>
               <% if prints.final_file.attached? %>
                 <%= link_to "Download", rails_blob_path(prints.final_file, disposition: 'attachment'), class: "btn btn-primary" %>
+                <br>
+                <span style="word-break: break-all;"><%= prints.final_file.filename %></span>
               <% else %>
                 Not Available
               <% end %>
@@ -164,7 +168,7 @@
               <td>
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <%= f.hidden_field :staff_id, :value => @user.id %>
-                  <%= f.submit 'I will print it', class: "btn btn-primary", data: {confirm: "Please read the following instructions : #{prints.comments_for_staff}"} %>
+                  <%= f.submit 'I will print it', class: "btn btn-primary", data: {confirm: "Please read the following instructions : #{prints.comments_for_staff.present? ? prints.comments_for_staff : "No instructions given"}"} %>
                 <% end %>
               </td>
             <% else %>
@@ -183,10 +187,60 @@
               <td>Not Printed</td>
             <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>
               <td>
-                <%= form_for prints, url: print_order_path(prints) do |f| %>
-                  <%= f.hidden_field :printed, :value => true %>
-                  <button class="btn btn-primary" type="submit">I Printed it</button>
-                <% end %>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-printed-it-<%= prints.id %>">
+                  I printed it
+                </button>
+                <div class="modal fade" id="modal-printed-it-<%= prints.id %>" tabindex="-1" aria-labelledby="modal-printed-it-<%= prints.id %>" aria-hidden="true">
+                  <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">I printed it options</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="row">
+                          <div class="text-center w-100">
+                            <p class="text-center ml-3 mr-3">Until you click one of the buttons, the print order will
+                              appear as
+                              <br> NOT Printed</p>
+                          </div>
+                          <br>
+                          <div class="col-md-12">
+                            <%= form_for prints, url: print_order_path(prints), html: {id: "email-true-#{prints.id}"} do |f| %>
+
+                              <div class="pr-5 pl-5 text-center">
+                                <div class="text-left">
+                                  <input id="x-<%= prints.id %>" value="<div>Hi <%= prints.user.name %>, <br>Your print has completed and is now available for pickup! Your order ID is <%= prints.id %> and your quoted balance is <%= number_to_currency(prints.quote) %>. Please visit <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a> for information on how to pay for your job and email makerspace@uottawa.ca to arrange for the pick up of your part during weekdays between 9h-17h.<br><br></div><div>Best regards,<br>The Makerspace Team<br></div>" type="hidden" name="email_message">
+                                  <trix-editor input="x-<%= prints.id %>"></trix-editor>
+                                </div>
+                                <br>
+                                <p>Send email to user</p>
+                                <%= f.hidden_field :printed, :value => true, id: "printed-email-true-#{prints.id}" %>
+                                <%= f.submit "I Printed it", class: "btn btn-primary" %>
+                              </div>
+
+                            <% end %>
+                          </div>
+                          <div class="col-md-12 text-center">
+                            <p>Do not send email to user</p>
+                            <%= form_for prints, url: print_order_path(prints), html: {id: "email-false-#{prints.id}"} do |f| %>
+                              <%= f.hidden_field :printed, :value => true, id: "printed-email-false-#{prints.id}" %>
+                              <%= hidden_field_tag :email_false, true %>
+                              <%= f.submit "I Printed it", class: "btn btn-danger" %>
+                            <% end %>
+                          </div>
+                        </div>
+                        <br>
+                        <p class="text-center">In both cases, the invoice will be printed.</p>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </td>
             <% else %>
               <td>Not Yet</td>

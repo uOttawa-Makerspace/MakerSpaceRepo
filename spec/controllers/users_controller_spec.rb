@@ -58,7 +58,38 @@ RSpec.describe UsersController, type: :controller do
         expect(User.find(user.id).confirmed?).to be_falsey
       end
     end
+  end
 
+  describe "GET /confirm_edited_email" do
+
+    context "confirm_edited_email" do
+      it 'should confirm the email' do
+        user = create(:user, :regular_user)
+        old_email = user.email
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        @user_hash = Rails.application.message_verifier(:user).generate(user.id)
+        @email_hash = Rails.application.message_verifier(:email).generate("bob@bob.ca")
+        get :confirm_edited_email, params: {email_token: @email_hash, user_token: @user_hash}
+        expect(response).to redirect_to root_path
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq(old_email)
+        expect(User.last.email).to eq("bob@bob.ca")
+        expect(flash[:notice]).to eq("The email has been updated to bob@bob.ca !")
+      end
+
+      it 'should not confirm the user' do
+        user = create(:user, :regular_user_not_confirmed)
+        old_email = user.email
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        @email_hash = Rails.application.message_verifier(:email).generate("bob@bob.ca")
+        get :confirm_edited_email, params: {email_token: @email_hash, user_token: ""}
+        expect(response).to redirect_to root_path
+        expect(flash[:alert]).to eq("Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com")
+        expect(User.last.email).to eq(old_email)
+      end
+    end
   end
 
   describe "POST /flag" do
@@ -214,6 +245,39 @@ RSpec.describe UsersController, type: :controller do
         @newpass = User.find(User.last.id).password
         expect(@oldpass).not_to be(@newpass)
         expect(response).to have_http_status(:success)
+      end
+
+    end
+  end
+
+  describe 'GET /change_email' do
+
+    context 'change user\'s email' do
+
+      before(:each) do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+      end
+
+      it 'should send confirmation email' do
+        get :change_email, params: {new_email: "bobbb@bobbb.ca", confirm_new_email: "bobbb@bobbb.ca"}
+        expect(response).to redirect_to settings_admin_path
+        expect(flash[:notice]).to eq("A confirmation email has been sent to the new email")
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq("bobbb@bobbb.ca")
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+      end
+
+      it 'shouldn\'t change password (email already used)' do
+        get :change_email, params: {new_email: User.last.email, confirm_new_email: User.last.email}
+        expect(response).to redirect_to settings_admin_path
+        expect(flash[:alert]).to eq("This email is already used by a MakerRepo Account.")
+      end
+
+      it 'shouldn\'t change password (Confirmation doesn\'t match)' do
+        get :change_email, params: {new_email: "bobbb@bobbb.ca", confirm_new_email: "bobbb1@bobbb.ca"}
+        expect(response).to redirect_to settings_admin_path
+        expect(flash[:alert]).to eq("This confirmation email isn't matching the new email")
       end
 
     end
