@@ -2,13 +2,14 @@
   <div class="row">
     <div class="col-md-8">
 
+      <p><%= link_to "Back to Print Order Home", index_new_print_orders_path, class: "btn btn-primary" %></p>
+
+      <br>
       <% if params['type'] != "laser" %>
         <h2>New Print Order</h2>
       <% else %>
         <h2>New Laser Engraving/Cut Order</h2>
       <% end %>
-      <p><%= link_to "Back to Print Order Home", index_new_print_orders_path %></p>
-      <br>
 
       <p>*** All prints/laser cuts must be picked up at UOttawa Makerspace in Ottawa, ON, you will be contacted by email
         at each
