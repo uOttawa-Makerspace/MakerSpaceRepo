@@ -24,19 +24,19 @@ class PrintOrdersController < ApplicationController
   def index_new
     @order = {
         # Postgresql request => [Completed steps, current step, [next steps ("" if none)]]
-        'approved is NULL' => ["Waiting on Admin's approval", ["Waiting on your approval", "Queued to be printed", "Printed"]],
-        'user_approval is NULL and approved is TRUE' => ["Approved by Admins", "Waiting on your approval", ["Queued to be printed", "Printed"]],
-        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ["Approved by Admins", "Approved by you", "Queued to be printed", "Currently being printed"],
-        'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ["Approved by Admins", "Approved by you", "Queue is done", "Currently being printed", ""],
-        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ["Approved by Admins", "Approved by you", "Queue is done", "Printed", ""],
-        "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["Disapproved by admins", ""],
-        "user_approval is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ["Approved by admins", "Disapproved by you", ""]
+        'approved is NULL' => ["Waiting on Admin's approval", ['Waiting on your approval', 'Queued to be printed', 'Printed']],
+        'user_approval is NULL and approved is TRUE' => ['Approved by Admins', 'Waiting on your approval', ['Queued to be printed', 'Printed']],
+        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ['Approved by Admins', 'Approved by you', 'Queued to be printed', 'Currently being printed'],
+        'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Currently being printed', ''],
+        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Printed', ''],
+        "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Disapproved by admins', ''],
+        "user_approval is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Disapproved by you', '']
     }
 
     @order_old = {
-        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at < NOW() - INTERVAL '7 days'" => ["Approved by Admins", "Approved by you", "Queue is done", "Printed", ""],
-        "approved is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ["Disapproved by admins", ""],
-        "user_approval is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ["Approved by admins", "Disapproved by you", ""]
+        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at < NOW() - INTERVAL '7 days'" => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Printed', ''],
+        "approved is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Disapproved by admins', ''],
+        "user_approval is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Disapproved by you', '']
     }
 
     @print_order = @user.print_orders.order(expedited: :desc, created_at: :desc)
@@ -112,7 +112,7 @@ class PrintOrdersController < ApplicationController
       end
 
     elsif params[:print_order][:price_per_gram] && params[:print_order][:grams] && params[:print_order][:service_charge]
-      if @print_order.material == "M2 Onyx"
+      if @print_order.material == 'M2 Onyx'
         params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f) + (params[:print_order][:grams_fiberglass].to_f * params[:print_order][:price_per_gram_fiberglass].to_f) + (params[:print_order][:grams_carbonfiber].to_f * params[:print_order][:price_per_gram_carbonfiber].to_f)
       else
         params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
@@ -123,24 +123,29 @@ class PrintOrdersController < ApplicationController
     end
 
     @user = @print_order.user
-    @print_order.update(print_order_params)
-
-    if params[:print_order][:approved] == 'true'
-      MsrMailer.send_print_quote(expedited_price, @user, @print_order, params[:print_order][:staff_comments]).deliver_now
-    elsif params[:print_order][:approved] == 'false'
-      MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
-    elsif params[:print_order][:user_approval] == 'true'
-      MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
-    elsif params[:print_order][:printed] == 'true'
-      MsrMailer.send_print_finished(@user, @print_order.id, @print_order.quote).deliver_now
-      MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
+    if @print_order.update(print_order_params)
+      if params[:print_order][:approved] == 'true'
+        MsrMailer.send_print_quote(expedited_price, @user, @print_order, params[:print_order][:staff_comments]).deliver_now
+      elsif params[:print_order][:approved] == 'false'
+        MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
+      elsif params[:print_order][:user_approval] == 'true'
+        MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
+      elsif params[:print_order][:printed] == 'true'
+        MsrMailer.send_print_finished(@user, @print_order.id, @print_order.quote).deliver_now
+        MsrMailer.send_invoice(@user.name, @print_order.quote, @print_order.id, @print_order.order_type).deliver_now
+      end
+      flash[:notice] = 'Update has been completed !'
+    else
+      flash[:alert] = 'There has been an error, please make sure the file type is one that is accepted. You can try again later or contact: uottawa.makerepo@gmail.com'
     end
-
     if @user.id == @print_order.user_id
       redirect_to index_new_print_orders_path
     else
       redirect_to print_orders_path
     end
+    puts(@print_order.errors.full_messages.first) if @print_order.errors.any?
+
+
   end
 
   def destroy
