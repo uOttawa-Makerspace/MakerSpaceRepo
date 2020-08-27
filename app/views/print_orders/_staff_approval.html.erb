@@ -5,7 +5,7 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Quote</h5>
+        <h5 class="modal-title" id="exampleModalLabel">Quote for ID#<%= prints.id %></h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -105,11 +105,12 @@
             <%= f.text_field :comments_for_staff, placeholder: "Use the Raise 3D", class: "form-control" %>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button class="btn btn-primary" onClick="checkFile(this.form)" type="button">Approve</button>
-        </div>
+        <button class="btn btn-primary" onClick="checkFile(this.form)" type="button">Approve</button>
+        <br><br>
       <% end %>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -127,7 +128,7 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <%= form_for prints, url: print_order_path(prints) do |f| %>
+      <%= form_for prints, url: print_order_path(prints), html: {id: "approve-#{prints.id}"} do |f| %>
         <div class="modal-body">
           <%= f.hidden_field :approved, :value => false %>
           <%= f.label :staff_comments, "Comments (Why is it not approved ?)" %>
@@ -135,11 +136,12 @@
             <%= f.text_field :staff_comments, placeholder: "The size won't fit", class: "form-control" %>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button class="btn btn-danger" type="submit">Disapprove</button>
-        </div>
+        <button class="btn btn-danger" type="submit">Disapprove</button>
+        <br><br>
       <% end %>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
     </div>
   </div>
 </div>
