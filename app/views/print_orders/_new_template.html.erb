@@ -34,6 +34,7 @@
               </div>
               <div class="modal-body">
                 <b>Quoted price : <%= prints.quote %>$</b>
+                <%= "<p>Staff comments: #{prints.staff_comments}</p>".html_safe unless prints.staff_comments.empty? %>
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <%= f.hidden_field :user_approval, :value => true %>
                   <%= f.hidden_field :timestamp_approved, :value => DateTime.now %>

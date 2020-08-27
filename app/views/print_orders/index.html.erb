@@ -120,12 +120,12 @@
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <%= f.hidden_field :user_approval, :value => true %>
                   <%= f.hidden_field :timestamp_approved, :value => DateTime.now %>
-                  <%= f.submit "I accept the quote", class: 'btn btn-primary', data: {confirm: 'Are you sure?'} %>
+                  <%= f.submit "I accept the quote", class: 'btn btn-primary', data: {confirm: "#{"Here are the comments from the staff: " + prints.staff_comments + "." unless prints.staff_comments.empty? } Are you sure?"} %>
                 <% end %>
                 <br>
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <%= f.hidden_field :user_approval, :value => false %>
-                  <%= f.submit "I don't accept it", class: 'btn btn-danger', data: {confirm: 'Are you sure?'} %>
+                  <%= f.submit "I don't accept it", class: 'btn btn-danger', data: {confirm: "#{"Here are the comments from the staff: "+prints.staff_comments+"." unless prints.staff_comments.empty? } Are you sure?"} %>
                 <% end %>
               <% end %>
             </td>
