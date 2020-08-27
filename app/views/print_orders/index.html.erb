@@ -4,7 +4,7 @@
 <div>
   <%= form_with(url: print_orders_path, method: "get", class: "form-inline") do %>
     <label class="my-1 mr-2" for="start_date">Filter by date</label>
-    <%= select_tag(:start_date, options_for_select([['1 Month', "1m"], ['3 Months', "3m"], ['6 Months', "6m"], ['12 Months', "12m"]], :selected => params[:start_date]), {:class => 'form-control'}) %>
+    <%= select_tag(:start_date, options_for_select([['All', ''], ['1 Month', "1m"], ['3 Months', "3m"], ['6 Months', "6m"], ['12 Months', "12m"]], :selected => params[:start_date]), {:class => 'form-control'}) %>
     <%= submit_tag("Search", class: "btn btn-primary") %>
   <% end %>
 </div>
