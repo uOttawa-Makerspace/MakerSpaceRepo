@@ -15,9 +15,9 @@ class PrintOrdersController < ApplicationController
     }
 
     @print_order = if @user.staff? || @user.admin?
-                     PrintOrder.all.order(expedited: :desc, created_at: :asc)
+                     PrintOrder.all.filter_by_date(params[:start_date], params[:end_date]).order(expedited: :desc, created_at: :asc)
                    else
-                     @user.print_orders.order(expedited: :desc, created_at: :desc)
+                     @user.print_orders.filter_by_date(params[:start_date], params[:end_date]).order(expedited: :desc, created_at: :desc)
                    end
   end
 
