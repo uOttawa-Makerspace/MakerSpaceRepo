@@ -123,6 +123,7 @@ class PrintOrdersController < ApplicationController
     end
 
     @user = @print_order.user
+
     if @print_order.update(print_order_params)
 
       if params[:print_order][:approved] == 'true'
