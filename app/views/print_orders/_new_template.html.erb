@@ -8,7 +8,7 @@
     <li class="progress-step is-complete">
       <div class="progress-marker"></div>
       <div class="progress-text">
-        <h4 class="progress-title">Submitted to Admins</h4>
+        <h4 class="progress-title mb-0">Submitted to Admins</h4><p>Submitted on <%= prints.created_at.to_formatted_s(:short) %></p>
       </div>
     </li>
 
@@ -58,14 +58,14 @@
           <li class="progress-step is-disapproved">
             <div class="progress-marker"></div>
             <div class="progress-text">
-              <h4 class="progress-title"><%= file %></h4>
+              <h4 class="progress-title m-0"><%= file %></h4><p><%= prints.updated_at.to_formatted_s(:short) if prints.updated_at.present? %></p>
             </div>
           </li>
         <% elsif index == array_size - 1 and file != "Printed" %>
           <li class="progress-step is-active">
             <div class="progress-marker"></div>
             <div class="progress-text">
-              <h4 class="progress-title"><%= file %></h4>
+              <h4 class="progress-title mb-0"><%= file %></h4><p><%= prints.updated_at.to_formatted_s(:short) if prints.updated_at.present? %></p>
             </div>
           </li>
         <% elsif index == array_size %>
@@ -90,7 +90,7 @@
           <li class="progress-step is-complete">
             <div class="progress-marker"></div>
             <div class="progress-text">
-              <h4 class="progress-title"><%= file %></h4>
+              <h4 class="progress-title m-0"><%= file %></h4><%= prints.updated_at.to_formatted_s(:short) if file == "Printed" && prints.updated_at.present? %><%= prints.timestamp_approved.to_formatted_s(:short) if file == "Approved by you" && prints.timestamp_approved.present? %>
             </div>
           </li>
         <% end %>
