@@ -5,26 +5,31 @@
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navbarSupportedContent2">
-    <ul class="navbar-nav mx-auto">
-      <% if current_user.volunteer? %>
-        <li class="nav-item">
-          <%= link_to 'Getting Started', getting_started_volunteers_path, class: "nav-link" %>
-        </li>
-        <li class="nav-item">
-          <%= link_to 'My Stats', my_stats_volunteers_path, class: "nav-link" %>
-        </li>
-        <li class="nav-item">
-          <%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "nav-link" %>
-        </li>
-        <li class="nav-item">
-          <%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "nav-link" %>
-        </li>
-        <li class="nav-item">
-          <%= link_to 'Requests', volunteer_task_requests_path, class: "nav-link" %>
-        </li>
-      <% elsif current_user.staff? %>
-        <li class="nav-item">
-          <%= link_to 'Requests', volunteer_task_requests_path, class: "nav-link" %>
+
+    <% if current_user.volunteer? %>
+      <ul class="navbar-nav mx-auto">
+        <li class="nav-item"><%= link_to 'Getting Started', volunteers_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'My Stats', my_stats_volunteers_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Requests', volunteer_task_requests_path, class: "nav-link" %></li>
+      </ul>
+    <% elsif current_user.staff? %>
+      <ul class="navbar-nav mx-auto">
+        <li class="nav-item"><%= link_to 'Getting Started', volunteers_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'My Stats', my_stats_volunteers_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "nav-link" %></li>
+      </ul>
+      <ul class="navbar-nav mx-auto">
+        <li class="nav-item"><%= link_to 'Requests', volunteer_task_requests_path, class: "nav-link" %></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Tasks
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+            <%= link_to 'New', new_volunteer_task_path, class: "dropdown-item" %>
+            <%= link_to 'Tasks', volunteer_tasks_path, class: "dropdown-item" %>
+          </div>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -37,15 +42,6 @@
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Tasks
-          </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-            <%= link_to 'New', new_volunteer_task_path, class: "dropdown-item" %>
-            <%= link_to 'Tasks', volunteer_tasks_path, class: "dropdown-item" %>
-          </div>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Lists
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -53,18 +49,7 @@
             <%= link_to 'List of Users in Program', volunteer_list_volunteers_path, class: "dropdown-item" %>
           </div>
         </li>
-        <hr>
-        <li class="nav-item">
-          <%= link_to 'Getting Started', getting_started_volunteers_path, class: "nav-link" %>
-        </li>
-        <li class="nav-item">
-          <%= link_to 'My Stats', my_stats_volunteers_path, class: "nav-link" %>
-        </li>
-        <li class="nav-item">
-          <%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "nav-link" %>
-        </li>
-      <% end %>
-    </ul>
+      </ul>
+    <% end %>
   </div>
-
 </nav>
