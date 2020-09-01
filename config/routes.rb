@@ -273,7 +273,6 @@ Rails.application.routes.draw do
     collection do
       get :emails
       get :volunteer_list
-      get :getting_started
       get :join_volunteer_program
       get :my_stats
     end
