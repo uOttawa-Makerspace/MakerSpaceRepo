@@ -32,7 +32,7 @@ gem 'pry', '~> 0.10.4'
 gem 'pry-rails', '~> 0.3.9', group: :development
 gem 'quick_random_records', '~> 0.3.2'
 gem 'rubyzip', '~> 2.1', require: 'zip'
-gem 'saml_idp', '~> 0.8.0'
+gem 'saml_idp', '~> 0.9.0'
 gem 'sass-rails', '~> 5.0.7'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem 'select2-rails'

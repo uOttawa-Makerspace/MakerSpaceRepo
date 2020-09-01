@@ -1279,7 +1279,7 @@ GEM
     ruby-vips (2.0.17)
       ffi (~> 1.9)
     rubyzip (2.3.0)
-    saml_idp (0.8.1)
+    saml_idp (0.9.0)
       activesupport (>= 3.2)
       builder (>= 3.0)
       nokogiri (>= 1.6.2)
@@ -1455,7 +1455,7 @@ DEPENDENCIES
   rspec-rails
   rubocop-rails
   rubyzip (~> 2.1)
-  saml_idp (~> 0.8.0)
+  saml_idp (~> 0.9.0)
   sass-rails (~> 5.0.7)
   sdoc (~> 0.4.0)
   select2-rails
