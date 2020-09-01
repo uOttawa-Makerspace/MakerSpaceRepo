@@ -7,27 +7,19 @@ FactoryBot.define do
     username { Faker::Name.unique.first_name }
     wallet { 1000 }
     confirmed { true }
+    password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+    role { "regular_user" }
+    identity { "community_member" }
+    gender { "Male" }
 
     trait :regular_user do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
-      role { "regular_user" }
-      identity { "community_member" }
-      gender { "Male" }
     end
 
     trait :regular_user_not_confirmed do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
-      role { "regular_user" }
-      identity { "community_member" }
-      gender { "Male" }
       confirmed { false }
     end
 
     trait :regular_user_with_certifications do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
-      role { "regular_user" }
-      identity { "community_member" }
-      gender { "Male" }
       after(:create) do |user|
         create(:certification, :'3d_printing', user_id: user.id)
         create(:certification, :basic_training, user_id: user.id)
@@ -35,72 +27,50 @@ FactoryBot.define do
     end
 
     trait :regular_user_with_avatar do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
-      role { "regular_user" }
-      identity { "community_member" }
-      gender { "Male" }
       after(:build) do |avatar|
         avatar.avatar.attach(io: File.open(Rails.root.join('spec', 'support', 'assets', 'avatar.png')), filename: 'avatar.png', content_type: 'image/png')
       end
     end
 
     trait :regular_user_with_broken_avatar do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
-      role { "regular_user" }
-      identity { "community_member" }
-      gender { "Male" }
       avatar { AvatarTestHelper.stl }
     end
 
     trait :admin do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "admin" }
-      identity { "community_member" }
-      gender { "Male" }
     end
 
     trait :staff do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "staff" }
-      identity { "community_member" }
-      gender { "Male" }
     end
 
     trait :volunteer do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "volunteer" }
-      identity { "community_member" }
-      gender { "Male" }
+
       after(:create) do |volunteer|
         Skill.create(user_id: volunteer.id, active: true)
       end
     end
 
     trait :unactive_volunteer do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "volunteer" }
-      identity { "community_member" }
-      gender { "Male" }
+
       after(:create) do |volunteer|
         Skill.create(user_id: volunteer.id, active: false)
       end
     end
 
     trait :volunteer_with_volunteer_program do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "volunteer" }
-      identity { "community_member" }
-      gender { "Male" }
+
       after(:create) do |volunteer|
         Program.create(user_id: volunteer.id, program_type: Program::VOLUNTEER)
       end
     end
 
     trait :volunteer_with_dev_program do
-      password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
       role { "volunteer" }
-      identity { "community_member" }
-      gender { "Male" }
+
       after(:create) do |volunteer|
         Program.create(user_id: volunteer.id, program_type: Program::DEV_PROGRAM)
       end
@@ -108,7 +78,6 @@ FactoryBot.define do
 
     trait :student do
       password { "fda3A353$" }
-      role { "regular_user" }
       identity { "undergrad" }
       program { "BASc in Software Engineering" }
       faculty { "Engineering" }
