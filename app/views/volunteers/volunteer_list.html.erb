@@ -5,7 +5,7 @@
     <h5>Total active volunteers: <b><%= @active_volunteers.count%></b></h5>
     <h5>Total unactive volunteers: <b><%= @unactive_volunteers.count%></b></h5>
 
-    <% if !@active_volunteers.blank? %>
+    <% if @active_volunteers.present? %>
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
 
       <br />
@@ -64,7 +64,7 @@
       </div>
     <% end %>
 
-    <% if !@unactive_volunteers.blank? %>
+    <% if @unactive_volunteers.present? %>
       <input type="text" id="query-2" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
 
       <br />
