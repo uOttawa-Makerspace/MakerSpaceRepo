@@ -12,30 +12,30 @@ SamlIdp.configure do |config|
 
   # principal is passed in when `encode_response` is called
   config.name_id.formats = {
-    email_address: ->(principal) { principal.email },
-    transient: ->(principal) { principal.username },
-    persistent: ->(principal) { principal.id }
+    email_address: -> (principal) { principal.email },
+    transient: -> (principal) { principal.username },
+    persistent: -> (principal) { principal.id }
   }
 
   # extra attributes sent along with SAML response
   config.attributes = {
-    "email_address": {
-      getter: ->(principal) { principal.email }
+    email_address: {
+      getter: -> (principal) { principal.email }
     },
-    "username": {
-      getter: ->(principal) { principal.username }
+    username: {
+      getter: -> (principal) { principal.username }
     },
-    "name": {
-      getter: ->(principal) { principal.name }
+    name: {
+      getter: -> (principal) { principal.name }
     },
-    "is_staff": {
-      getter: ->(principal) { principal.staff? }
+    is_staff: {
+      getter: -> (principal) { principal.staff? }
     },
-    "is_admin": {
-      getter: ->(principal) { principal.admin? }
+    is_admin: {
+      getter: -> (principal) { principal.admin? }
     },
-    "is_volunteer": {
-      getter: ->(principal) { principal.volunteer? }
+    is_volunteer: {
+      getter: -> (principal) { principal.volunteer? }
     }
   }
 
