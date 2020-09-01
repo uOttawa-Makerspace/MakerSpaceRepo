@@ -14,7 +14,7 @@ SamlIdp.configure do |config|
   config.name_id.formats = {
     email_address: ->(principal) { principal.email },
     transient: ->(principal) { principal.username },
-    persistent: ->(principal) { principal.username }
+    persistent: ->(principal) { principal.id }
   }
 
   # extra attributes sent along with SAML response
@@ -39,7 +39,5 @@ SamlIdp.configure do |config|
     }
   }
 
-  config.service_provider.finder = lambda { |issuer_or_entity_id|
-    service_providers[issuer_or_entity_id]
-  }
+  config.service_provider.finder = -> (issuer_or_entity_id) { service_providers[issuer_or_entity_id] }
 end
