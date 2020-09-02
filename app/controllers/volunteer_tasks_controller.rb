@@ -13,8 +13,9 @@ class VolunteerTasksController < ApplicationController
   def new
     @user = current_user
     @new_volunteer_task = VolunteerTask.new
-    @tasks_categories = %w[Events Projects Supervising Workshops Other]
+    @tasks_categories ||= %w[Events Projects Supervising Workshops Other]
     @certifications = Training.all
+    @spaces = Space.all.order(name: :asc)
   end
 
   def create

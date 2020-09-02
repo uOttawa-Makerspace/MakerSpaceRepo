@@ -43,7 +43,7 @@
               <div class="mx-auto col-md-4 text-center">
                 <b>Space:</b> <br />
                 <div class="d-inline-block text-left">
-                  <% Space.all.order(name: :asc).each do |s| %>
+                  <% @spaces.each do |s| %>
                     <%= f.radio_button :space_id, s.id, checked: true, :style => 'display:inline' %>
                     <%= f.label :space_id, s.name.capitalize, :style => 'display:inline' %>
                     <br />
@@ -89,7 +89,7 @@
                 </div>
               </div>
               <div class="col-md-12 text-center">
-                <%= label :certifications_id, "Certifications" %>
+                <%= label :certifications_id, "Certifications Required for this Task", class: 'font-weight-bold' %>
                 <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name'), {:multiple => true, :id => "task_certifications", :class => "form-control task_certifications select2"} %>
                 <br><br>
               </div>
