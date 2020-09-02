@@ -32,3 +32,14 @@ window.checkFile = function(yourForm) {
         }
     }
 };
+
+window.addEventListener('resize', function() {
+    var progresses = document.querySelectorAll('.progress-row');
+    [].forEach.call(progresses, function(progress) {
+        if (window.innerWidth <= 720) {
+            progress.classList.add('progress-tracker--vertical');
+        } else {
+            progress.classList.remove('progress-tracker--vertical');
+        }
+    });
+}, false);
