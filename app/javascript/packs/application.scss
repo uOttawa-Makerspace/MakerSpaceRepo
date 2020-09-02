@@ -1,13 +1,3 @@
-/* Theming stuff */
-$theme-colors: (
-        "primary": rgb(95, 158, 160) // "MakerRepo Green"
-);
-
-$navbar-light-color: rgba(0, 0, 0, 0.7);
-$navbar-light-hover-color: rgba(0, 0, 0, 1.0);
-$navbar-dark-color: rgba(255, 255, 255, 0.7);
-$navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
-
 $pswp__assets-path: "~photoswipe/src/css/default-skin/";
 
 $color-marker-complete: #00A407 !default;
@@ -16,6 +6,7 @@ $color-marker: #aaa !default;
 $marker-size: 32px !default;
 $color-marker-hover: #6e6e6e;
 
+@import "shared/variables";
 @import "~bootstrap/scss/bootstrap";
 @import '~bootstrap/scss/_functions';
 @import '~bootstrap/scss/_variables';

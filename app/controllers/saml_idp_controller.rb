@@ -10,6 +10,8 @@ class SamlIdpController < ApplicationController
 
   before_action :validate_saml_request, only: %i[login auth]
 
+  layout false # this is technically outside the "standard" website
+
   def login
     @current_user = current_user if signed_in?
 
@@ -42,7 +44,7 @@ class SamlIdpController < ApplicationController
       render template: 'saml/login'
     else
       @saml_response = encode_response @current_user
-      render template: 'saml/saml_post', layout: false
+      render template: 'saml/saml_post'
     end
   end
 end

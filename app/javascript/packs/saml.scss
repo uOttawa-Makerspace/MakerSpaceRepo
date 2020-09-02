@@ -1,4 +1,5 @@
-@import './shared/variables';
+@import "shared/variables";
+@import "~bootstrap";
 
 html.saml-login {
   height: 100%;
@@ -22,9 +23,9 @@ html.saml-login {
       height: auto;
     }
 
-    //@include media-breakpoint-down(xs) {
-    //  height: auto;
-    //}
+    @include media-breakpoint-down(xs) {
+      height: auto;
+    }
 
     .break {
       &::before {
@@ -39,13 +40,13 @@ html.saml-login {
         }
       }
 
-      //@include media-breakpoint-down(xs) {
-      //  display: block;
-      //
-      //  &::before {
-      //    content: '';
-      //  }
-      //}
+      @include media-breakpoint-down(xs) {
+        display: block;
+
+        &::before {
+          content: '';
+        }
+      }
     }
   }
 
@@ -70,9 +71,9 @@ html.saml-login {
       font-size: 3rem;
     }
 
-    //@include media-breakpoint-down(xs) {
-    //  font-size: 3rem;
-    //}
+    @include media-breakpoint-down(xs) {
+      font-size: 3rem;
+    }
   }
 
   .middle-content {
