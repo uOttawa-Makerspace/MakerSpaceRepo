@@ -1,11 +1,11 @@
 <%= render "saml/header" %>
 
-<p class="text-center" style="font-size: 2rem;">Redirecting&hellip;<br/>Redirection en cours&hellip;</p>
+<p class="text-center" style="font-size: 2rem;"><%= t('saml.post.redirecting') %></p>
 
-<%= form_tag(saml_acs_url, :class => "d-none") do %>
+<%= form_tag saml_acs_url do %>
   <%= hidden_field_tag("SAMLResponse", @saml_response) %>
   <%= hidden_field_tag("RelayState", params[:RelayState]) %>
-  <%= submit_tag "Submit" %>
+  <%= submit_tag t('saml.post.redirect'), class: 'btn btn-primary btn-sm' %>
 <% end %>
 
 <script>

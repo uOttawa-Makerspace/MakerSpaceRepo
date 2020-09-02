@@ -141,3 +141,18 @@ en:
       messages:
         blank: "This field is required."
         inclusion: "Selection is not valid."
+  saml:
+    login:
+      sign_in: "Sign In"
+      username_or_email: "Username or Email Address"
+      password: "Password"
+      forgot_password: "I forgot my password"
+      create_account: "Register"
+      use_this_account: "Use this account"
+      use_another_account: "Use another account"
+      this_will_sign_you_out: "This will sign you out of MakerRepo"
+      currently_signed_in_as: "You are current signed in as"
+      please_sign_in: "Please sign in using your MakerRepo account."
+    post:
+      redirecting: "Redirecting\u2026"
+      redirect: "Click here if you are not redirected within 5 seconds"

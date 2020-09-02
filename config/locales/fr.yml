@@ -141,3 +141,18 @@ fr:
       messages:
         blank: "Ce champ est requis."
         inclusion: "Sélection non valide."
+  saml:
+    login:
+      sign_in: "Connexion"
+      username_or_email: "Nom d'utilisateur ou adresse courriel"
+      password: "Mot de passe"
+      forgot_password: "J'ai oublié mon mot de passe"
+      create_account: "Créer un compte"
+      use_this_account: "Utiliser ce compte"
+      use_another_account: "Utiliser un autre compte"
+      this_will_sign_you_out: "Ceci vous déconnectera de MakerRepo"
+      currently_signed_in_as: "Vous êtes connecté en tant que"
+      please_sign_in: "Veuillez vous connecter avec votre compte MakerRepo."
+    post:
+      redirecting: "Redirection en cours\u2026"
+      redirect: "Cliquez ici si vous n'êtes pas redirigé d'ici 5 secondes"
