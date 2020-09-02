@@ -13,13 +13,18 @@ class VolunteerTasksController < ApplicationController
   def new
     @user = current_user
     @new_volunteer_task = VolunteerTask.new
-    @tasks_categories = %w[Events Projects Supervising Workshops Other]
+    @tasks_categories ||= %w[Events Projects Supervising Workshops Other]
+    @certifications = Training.all
+    @spaces = Space.all.order(name: :asc)
   end
 
   def create
     @volunteer_task = VolunteerTask.new(volunteer_task_params)
     @volunteer_task.user_id = @user.try(:id)
     if @volunteer_task.save!
+      if params[:certifications_id].present?
+        @volunteer_task.create_certifications(params[:certifications_id])
+      end
       redirect_to new_volunteer_task_path
       flash[:notice] = "You've successfully created a new Volunteer Task"
     end
@@ -57,10 +62,15 @@ class VolunteerTasksController < ApplicationController
   def edit
     @volunteer_task = VolunteerTask.find(params[:id])
     @tasks_categories = %w[Events Projects Supervising Workshops Other]
+    @certifications = Training.all
   end
 
   def update
     volunteer_task = VolunteerTask.find(params[:id])
+    volunteer_task.delete_all_certifications
+    if params[:certifications_id].present?
+      volunteer_task.create_certifications(params[:certifications_id])
+    end
     if volunteer_task.update(volunteer_task_params)
       flash[:notice] = 'Volunteer task updated'
     else
@@ -71,6 +81,7 @@ class VolunteerTasksController < ApplicationController
 
   def destroy
     volunteer_task = VolunteerTask.find(params[:id])
+    volunteer_task.delete_all_certifications
     if volunteer_task.destroy
       flash[:notice] = 'Volunteer Task Deleted'
     else
