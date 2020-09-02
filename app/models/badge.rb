@@ -21,31 +21,31 @@ class Badge < ApplicationRecord
   end
 
   def self.acclaim_api_get_all_badges
-    response = Excon.get('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/high_volume_issued_badge_search',
-                         user: Rails.application.credentials[Rails.env.to_sym][:acclaim_api],
+    response = Excon.get("#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/high_volume_issued_badge_search",
+                         user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
                          password: '',
                          headers: { 'Content-type' => 'application/json' })
     JSON.parse(response.body)
   end
 
   def acclaim_api_delete_badge
-    Excon.delete('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/' + acclaim_badge_id,
-                 user: Rails.application.credentials[Rails.env.to_sym][:acclaim_api],
+    Excon.delete("#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/badges/" + acclaim_badge_id,
+                 user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
                  password: '',
                  headers: { 'Content-type' => 'application/json' })
   end
 
   def acclaim_api_revoke_badge
-    Excon.put('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges/' + acclaim_badge_id + '/revoke',
-              user: Rails.application.credentials[Rails.env.to_sym][:acclaim_api],
+    Excon.put("#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/badges/" + acclaim_badge_id + '/revoke',
+              user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
               password: '',
               headers: { 'Content-type' => 'application/json' },
               query: { reason: 'Admin revoked badge', suppress_revoke_notification_email: Rails.env.test? ? true : false })
   end
 
   def self.acclaim_api_create_badge(user, acclaim_template_id)
-    Excon.post('https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/badges',
-               user: Rails.application.credentials[Rails.env.to_sym][:acclaim_api],
+    Excon.post("#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/badges",
+               user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
                password: '',
                headers: { 'Content-type' => 'application/json' },
                query: { recipient_email: user.email,
