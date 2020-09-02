@@ -129,7 +129,7 @@
               <% elsif prints.user_approval == false %>
                 Disapproved
               <% else %>
-                <b>Quoted price : <%= prints.quote %>$</b>
+                <b>Quoted price : <%= number_to_currency(prints.quote) %>$</b>
                 <br>
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <%= f.hidden_field :user_approval, :value => true %>
