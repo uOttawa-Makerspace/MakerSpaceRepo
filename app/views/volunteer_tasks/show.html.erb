@@ -122,7 +122,7 @@
       <% if current_user.staff? %>
 
         <div class="col-12">
-          <p>Add Required Training to Volunteer Task:</p>
+          <p>Add Required Certifications for this Task:</p>
           <%= form_for @new_required_training, url: {controller: "require_trainings", action: "create"} do |f| %>
             <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
             <%= f.select :training_id, @trainings, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
@@ -133,7 +133,7 @@
         </div>
 
         <div class="col-12">
-          <p>Remove Required Training from Volunteer Task:</p>
+          <p>Remove Required Certifications for this Task:</p>
           <%= form_for @new_required_training, url: {controller: "require_trainings", action: "remove_trainings"} do |f| %>
             <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
             <%= f.select :training_id, @trainings_already_added, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
