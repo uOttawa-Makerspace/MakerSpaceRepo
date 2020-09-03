@@ -76,17 +76,6 @@ RSpec.describe UsersController, type: :controller do
         expect(User.last.flag_message).to eq("abc")
       end
 
-      it 'should flag user and redirect to staff dashboard' do
-        admin = create(:user, :admin)
-        session[:user_id] = admin.id
-        session[:expires_at] = Time.zone.now + 10000
-        user = create(:user, :regular_user)
-        post :flag, params: {flagged_user: user.id, flag: "flag", flag_message: "abc", coming_from: "staff"}
-        expect(response).to redirect_to staff_dashboard_index_path
-        expect(User.last.flagged?).to be_truthy
-        expect(User.last.flag_message).to eq("abc")
-      end
-
       it 'should unflag user' do
         admin = create(:user, :admin)
         session[:user_id] = admin.id

@@ -68,11 +68,7 @@ class UsersController < SessionsController
       elsif params[:flag] == "unflag"
         @flagged_user.update(flagged: false, flag_message: "")
       end
-      if params[:coming_from].present? and params[:coming_from] == "staff"
-        redirect_to staff_dashboard_index_path and return
-      else
-        redirect_to user_path(@flagged_user.username) and return
-      end
+      redirect_to user_path(@flagged_user.username) and return
     else
       redirect_to user_path(@user.username) and return
     end
