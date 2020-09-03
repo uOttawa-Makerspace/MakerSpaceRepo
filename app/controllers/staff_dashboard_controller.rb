@@ -11,12 +11,13 @@ class StaffDashboardController < StaffAreaController
       file = params[:file]
       file_ext = File.extname(file.original_filename)
       faulty_users = 0
+      faulty_user_data = []
       raise "Unknown file type: #{file.original_filename}" unless [".xls", ".xlsx"].include?(file_ext)
       spreadsheet = (file_ext == ".xls") ? Roo::Excel.new(file.path) : Roo::Excelx.new(file.path)
       (1..spreadsheet.last_row).each do |i|
         user_data = spreadsheet.row(i)[0].downcase
         user = User.where("lower(email) = ? OR lower(name) = ? OR lower(username) = ?", user_data, user_data, user_data)
-        faulty_users += 1 and next if user.blank?
+        faulty_users += 1 and faulty_user_data << user_data and next if user.blank?
         LabSession.create(
             user: user.last,
             space_id: @space.id,
@@ -26,10 +27,11 @@ class StaffDashboardController < StaffAreaController
       end
       flash[:notice] = "The file has been processed and users have been signed in ! "
       if faulty_users > 0
-        flash[:notice] += "<b>Please note that #{faulty_users} user(s) did not get signed in because they were not found in the system.</b>".html_safe
+        flash[:alert_yellow] = "Please note that #{faulty_users} user(s) did not get signed in because they were not found in the system."
+        flash[:alert] = "Users with error: #{faulty_user_data.join(", ")}"
       end
-    rescue Exception => e
-      flash[:alert] = "An error occured while uploading the log in file, please try again later"
+    rescue StandardError => e
+      flash[:alert] = "An error occured while uploading the log in file, please try again later: #{e}"
     end
     redirect_to staff_dashboard_index_path
   end
