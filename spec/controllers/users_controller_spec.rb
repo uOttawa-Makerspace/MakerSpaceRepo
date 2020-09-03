@@ -126,16 +126,22 @@ RSpec.describe UsersController, type: :controller do
         expect(response).to redirect_to user_path(user.username)
       end
 
-      it 'should give a 200' do
-        get :new
-        expect(response).to have_http_status(:success)
-      end
-
     end
 
   end
 
-  describe 'create' do
+  describe "GET /new" do
+
+    context "new" do
+      it 'should give a 200' do
+        get :new
+        expect(response).to have_http_status(:success)
+      end
+    end
+
+  end
+
+  describe 'POST /create' do
 
     context 'create user' do
 
