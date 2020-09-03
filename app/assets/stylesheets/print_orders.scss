@@ -1,6 +1,7 @@
 // Place all the styles related to the PrintOrder controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+
 .padding {
   padding-left: 20%;
   padding-right: 20%;
@@ -9,6 +10,38 @@
   padding-left: 10%;
   padding-right: 10%;
 }
+
+.progress-tracker {
+  margin: 30px auto;
+}
+
 .label-size {
   font-size: 13.5px;
+}
+.content {
+  text-align: center;
+}
+.square {
+  height: 100px;
+  width: 100px;
+  color: #fff;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 30px;
+  border-radius: 25px;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+@media screen and (max-width: 720px) {
+  .br-next {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 720px) {
+  .br-next {
+    display: block;
+  }
 }
