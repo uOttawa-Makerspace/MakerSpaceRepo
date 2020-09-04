@@ -65,7 +65,7 @@ class ReportGenerator
       spreadsheet.workbook.add_worksheet(name: space_name) do |sheet|
         title(sheet, space_name)
 
-        faculty_array = {}
+        faculty_hash = {}
         merge_cell = sheet.styles.add_style alignment: {vertical: :center}
 
         table_header(sheet, ['Identity', 'Distinct Users', '', 'Total Visits'])
@@ -88,7 +88,7 @@ class ReportGenerator
 
           identity[:faculties].each do |faculty_name, faculty|
             sheet.add_row [identity_name, faculty[:unique], '', faculty[:total], '', faculty_name], style: [merge_cell]
-            faculty_array[faculty_name] = faculty[:unique]
+            faculty_hash[faculty_name] = faculty[:unique]
           end
 
           end_index = sheet.rows.last.row_index
@@ -119,8 +119,8 @@ class ReportGenerator
         end
 
         sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "D#{space.row_index + 2}", :end_at => "H#{space.row_index + 10}", :grouping => :stacked, :show_legend => true, :title => 'Faculty of unique users') do |chart2|
-          chart2.add_series :data => faculty_array.values, :labels => faculty_array.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
-          chart2.add_series :data => faculty_array.values, :labels => faculty_array.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
+          chart2.add_series :data => faculty_hash.values, :labels => faculty_hash.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
+          chart2.add_series :data => faculty_hash.values, :labels => faculty_hash.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
           chart2.d_lbls.show_percent = true
           chart2.d_lbls.d_lbl_pos = :bestFit
         end
@@ -151,10 +151,10 @@ class ReportGenerator
 
       trainings[:training_types].each do |_, training_type|
         sheet.add_row [
-                          training_type[:name],
-                          training_type[:count],
-                          training_type[:total_attendees]
-                      ]
+            training_type[:name],
+            training_type[:count],
+            training_type[:total_attendees]
+        ]
       end
 
       sheet.add_row # spacing
@@ -163,14 +163,14 @@ class ReportGenerator
 
       trainings[:training_sessions].each do |row|
         sheet.add_row [
-                          row[:training_name],
-                          row[:training_level],
-                          row[:course_name],
-                          row[:instructor_name],
-                          row[:date].localtime.strftime('%Y-%m-%d %H:%M'),
-                          row[:facility],
-                          row[:attendee_count]
-                      ]
+            row[:training_name],
+            row[:training_level],
+            row[:course_name],
+            row[:instructor_name],
+            row[:date].localtime.strftime('%Y-%m-%d %H:%M'),
+            row[:facility],
+            row[:attendee_count]
+        ]
       end
     end
 
@@ -308,16 +308,16 @@ class ReportGenerator
 
       users.each do |user|
         sheet.add_row [
-                          user.name,
-                          user.username,
-                          user.email,
-                          user.gender,
-                          user.identity,
-                          user.faculty,
-                          user.year_of_study,
-                          user.student_id,
-                          user.created_at.localtime.strftime('%Y-%m-%d %H:%M')
-                      ]
+            user.name,
+            user.username,
+            user.email,
+            user.gender,
+            user.identity,
+            user.faculty,
+            user.year_of_study,
+            user.student_id,
+            user.created_at.localtime.strftime('%Y-%m-%d %H:%M')
+        ]
       end
     end
 
@@ -364,15 +364,15 @@ class ReportGenerator
           end
 
           sheet.add_row [
-                            certification.user.student_id,
-                            certification.user.name,
-                            certification.user.email,
-                            certification.training_session.training.name,
-                            certification.training_session.created_at.strftime('%Y-%m-%d %H:%M'),
-                            certification.training_session.user.name,
-                            certification.training_session.course,
-                            certification.training_session.space.name,
-                        ], style: [merge_cell, merge_cell, merge_cell, merge_cell, merge_cell]
+              certification.user.student_id,
+              certification.user.name,
+              certification.user.email,
+              certification.training_session.training.name,
+              certification.training_session.created_at.strftime('%Y-%m-%d %H:%M'),
+              certification.training_session.user.name,
+              certification.training_session.course,
+              certification.training_session.space.name,
+          ], style: [merge_cell, merge_cell, merge_cell, merge_cell, merge_cell]
 
           last_training_session_id = certification.training_session.id
         end
@@ -439,11 +439,11 @@ class ReportGenerator
 
       repositories.each do |repository|
         sheet.add_row [
-                          repository.title,
-                          repository.users.map(&:name).join(', '),
-                          Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username),
-                          repository.categories.map(&:name).join(', ')
-                      ]
+            repository.title,
+            repository.users.map(&:name).join(', '),
+            Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username),
+            repository.categories.map(&:name).join(', ')
+        ]
       end
     end
 
