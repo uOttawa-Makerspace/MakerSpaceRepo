@@ -192,7 +192,7 @@ class ReportGenerator
 
         header = ['Certification']
         header2 = ['']
-        Course.all.each do |course|
+        CourseName.all.each do |course|
           header << if course.name == 'no course'
                       'Open'
                     else
@@ -215,7 +215,7 @@ class ReportGenerator
           training_row = [training.name]
           total_certifications = 0
 
-          Course.all.each do |course|
+          CourseName.all.each do |course|
             if final_total_sessions[course.name].nil?
               final_total_sessions[course.name] = 0
               final_total_certifications[course.name] = 0

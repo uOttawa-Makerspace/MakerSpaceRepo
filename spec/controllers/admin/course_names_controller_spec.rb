@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Admin::CourseNamesController, type: :controller do
   before(:all) do
-    4.times { create(:course) }
+    4.times { create(:course_name) }
     @admin = create(:user, :admin)
     @course = CourseName.last
   end
@@ -51,8 +51,8 @@ RSpec.describe Admin::CourseNamesController, type: :controller do
   describe 'POST /create' do
     context 'logged as admin' do
       it 'should create a course and redirect' do
-        course_params = FactoryBot.attributes_for(:course)
-        expect { post :create, params: {course: course_params} }.to change(Course, :count).by(1)
+        course_params = FactoryBot.attributes_for(:course_name)
+        expect { post :create, params: {course_name: course_params} }.to change(CourseName, :count).by(1)
         expect(flash[:notice]).to eq('Course added successfully!')
         expect(response).to redirect_to admin_course_names_path
       end
@@ -63,14 +63,14 @@ RSpec.describe Admin::CourseNamesController, type: :controller do
     context 'logged as admin' do
       it 'should not update invalid input for course' do
         first_course = CourseName.first
-        patch :update, params: {id: @course.id, course: {name: first_course.name} }
+        patch :update, params: {id: @course.id, course_name: {name: first_course.name} }
         expect(response).to redirect_to admin_course_names_path
         expect(CourseName.find(@course.id).name).to eq(@course.name)
         expect(flash[:alert]).to eq('Input is invalid')
       end
 
       it 'should update the course' do
-        patch :update, params: {id: @course.id, course: {name: "New Random Name"} }
+        patch :update, params: {id: @course.id, course_name: {name: "New Random Name"} }
         expect(response).to redirect_to admin_course_names_path
         expect(CourseName.find(@course.id).name).to eq("New Random Name")
         expect(flash[:notice]).to eq('Course renamed successfully')
@@ -81,7 +81,7 @@ RSpec.describe Admin::CourseNamesController, type: :controller do
   describe "DELETE /destroy" do
     context 'logged as admin' do
       it 'should destroy the course' do
-        expect { delete :destroy, params: {id: @course.id} }.to change(Course, :count).by(-1)
+        expect { delete :destroy, params: {id: @course.id} }.to change(CourseName, :count).by(-1)
         expect(@controller.instance_variable_get(:@changed_course)).to eq(@course)
         expect(response).to redirect_to admin_course_names_path
         expect(flash[:notice]).to eq('Course removed successfully')
