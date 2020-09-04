@@ -10,6 +10,7 @@ RSpec.describe TrainingSession, type: :model do
       it { expect(TrainingSession.reflect_on_association(:training).macro).to eq(:belongs_to) }
       it { expect(TrainingSession.reflect_on_association(:user).macro).to eq(:belongs_to) }
       it { expect(TrainingSession.reflect_on_association(:space).macro).to eq(:belongs_to) }
+      it { expect(TrainingSession.reflect_on_association(:course_name).macro).to eq(:belongs_to) }
     end
 
     context 'has_many' do
