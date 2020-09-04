@@ -10,6 +10,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def new
     @new_training_session = TrainingSession.new
+    @course_names = CourseName.pluck(:name)
   end
 
   def create

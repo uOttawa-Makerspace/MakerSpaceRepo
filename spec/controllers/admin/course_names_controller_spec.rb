@@ -1,10 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe Admin::CoursesController, type: :controller do
+RSpec.describe Admin::CourseNamesController, type: :controller do
   before(:all) do
     4.times { create(:course) }
     @admin = create(:user, :admin)
-    @course = Course.last
+    @course = CourseName.last
   end
 
   before(:each) do
@@ -16,7 +16,7 @@ RSpec.describe Admin::CoursesController, type: :controller do
       it 'should return 200 response' do
         get :index
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@courses).count).to eq(Course.count)
+        expect(@controller.instance_variable_get(:@courses).count).to eq(CourseName.count)
       end
     end
 
@@ -54,7 +54,7 @@ RSpec.describe Admin::CoursesController, type: :controller do
         course_params = FactoryBot.attributes_for(:course)
         expect { post :create, params: {course: course_params} }.to change(Course, :count).by(1)
         expect(flash[:notice]).to eq('Course added successfully!')
-        expect(response).to redirect_to admin_courses_path
+        expect(response).to redirect_to admin_course_names_path
       end
     end
   end
@@ -62,17 +62,17 @@ RSpec.describe Admin::CoursesController, type: :controller do
   describe 'PATCH /update' do
     context 'logged as admin' do
       it 'should not update invalid input for course' do
-        first_course = Course.first
+        first_course = CourseName.first
         patch :update, params: {id: @course.id, course: {name: first_course.name} }
-        expect(response).to redirect_to admin_courses_path
-        expect(Course.find(@course.id).name).to eq(@course.name)
+        expect(response).to redirect_to admin_course_names_path
+        expect(CourseName.find(@course.id).name).to eq(@course.name)
         expect(flash[:alert]).to eq('Input is invalid')
       end
 
       it 'should update the course' do
         patch :update, params: {id: @course.id, course: {name: "New Random Name"} }
-        expect(response).to redirect_to admin_courses_path
-        expect(Course.find(@course.id).name).to eq("New Random Name")
+        expect(response).to redirect_to admin_course_names_path
+        expect(CourseName.find(@course.id).name).to eq("New Random Name")
         expect(flash[:notice]).to eq('Course renamed successfully')
       end
     end
@@ -83,7 +83,7 @@ RSpec.describe Admin::CoursesController, type: :controller do
       it 'should destroy the course' do
         expect { delete :destroy, params: {id: @course.id} }.to change(Course, :count).by(-1)
         expect(@controller.instance_variable_get(:@changed_course)).to eq(@course)
-        expect(response).to redirect_to admin_courses_path
+        expect(response).to redirect_to admin_course_names_path
         expect(flash[:notice]).to eq('Course removed successfully')
       end
     end

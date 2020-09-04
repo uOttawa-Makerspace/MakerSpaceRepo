@@ -17,11 +17,6 @@ class TrainingSession < ApplicationRecord
     errors.add(:string, 'user must be staff') unless user.staff?
   end
 
-  # def courses
-  #   ['GNG2101', 'GNG2501', 'GNG1103', 'GNG1503', 'MCG4143', 'no course']
-  #   Course.all.pluck(:name)
-  # end
-
   def completed?
     certifications.any?
   end

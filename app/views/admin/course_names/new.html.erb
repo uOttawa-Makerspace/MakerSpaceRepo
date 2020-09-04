@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="edit-column">
     <h2 class="text-center">New Course</h2>
-    <%= form_for @new_course, url: {controller: "admin/courses", action: "create"} do |f| %>
+    <%= form_for @new_course, url: {controller: "admin/course_names", action: "create"} do |f| %>
       <div class="container">
         <div class="row text-center">
           <div class="col-md-12 form-group">
@@ -13,5 +13,9 @@
         </div>
       </div>
     <% end %>
+  </div>
+
+  <div class="float-right">
+    <%= link_to "Back", admin_course_names_path %>
   </div>
 </section>

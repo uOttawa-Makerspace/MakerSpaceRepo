@@ -2,7 +2,7 @@
   <div class="edit-column">
     <div class="title">Admin Course Manager</div>
 
-    <p class="text-center"><%= link_to "New Course", new_admin_course_path, class: "btn btn-secondary" %></p>
+    <p class="text-center"><%= link_to "New Course", new_admin_course_name_path, class: "btn btn-secondary" %></p>
     <br />
 
     <br />
@@ -15,7 +15,7 @@
       <% @courses.each do |t| %>
         <tr>
           <td><%= t.name %></td>
-          <td><%= link_to "Edit", edit_admin_course_path(t.id), class:"btn btn-primary" %></td>
+          <td><%= link_to "Edit", edit_admin_course_name_path(t.id), class:"btn btn-primary" %></td>
         </tr>
       <% end %>
 
