@@ -32,13 +32,13 @@
           Level: <%= @current_training_session.level %>
           <br />
           <% label_tag 'changed_params[level]' %>
-          <%= select_tag 'changed_params[level]', options_for_select(TrainingSession.new.levels), prompt: 'Change level', class: "form-control" %>
+          <%= select_tag 'changed_params[level]', options_for_select(@levels), prompt: 'Change level', class: "form-control" %>
           <br />
           <div>
             Course: <%= @current_training_session.course %>
           </div>
           <% label_tag 'changed_params[course]' %>
-          <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'Change course', class: "form-control" %>
+          <%= select_tag 'changed_params[course]',  options_for_select(@course_names), prompt: 'Change course', class: "form-control" %>
           <br />
         </div>
         <br />
