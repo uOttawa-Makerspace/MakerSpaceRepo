@@ -45,7 +45,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         repo = create(:repository, :with_repo_files)
         get :download_files, params: {slug: Repository.last.slug, user_username: Repository.last.user_username}
-        expect { File.open("#{Rails.root}/public/tmp/makerepo_file_#{repo.id.to_s}.zip") }.to_not raise_error(Errno::ENOENT)
+        expect { File.open("#{Rails.root}/public/tmp/makerepo_file_#{repo.id.to_s}.zip") }.to_not raise_error
       end
 
     end
