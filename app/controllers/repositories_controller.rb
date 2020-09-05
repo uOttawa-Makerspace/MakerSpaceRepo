@@ -21,23 +21,15 @@ class RepositoriesController < SessionsController
     @all_users = User.where.not(id: @owners.pluck(:id)).pluck(:name, :id)
   end
 
-  # Not used anymore
-  # def download
-  #  url = "http://s3-us-west-2.amazonaws.com/uottawa-makerspace#{params[:file]}"
-  #  data = open(url)
-  #  send_data data.read, type: data.content_type, filename: File.basename(url), x_sendfile: true
-  # end
-
   def download_files
 
     @files = @repository.repo_files
 
     file_location = "#{Rails.root}/public/tmp/makerepo_file_#{@repository.id.to_s}.zip"
+    directory = File.dirname(file_location)
 
-    begin
-      File.delete(file_location)
-    rescue Errno::ENOENT => e
-    end
+    FileUtils.mkdir_p(directory) unless File.directory?(directory)
+    File.delete(file_location) if File.file?(file_location)
 
     Zip::ZipFile.open(file_location, Zip::File::CREATE) do |zip|
 
