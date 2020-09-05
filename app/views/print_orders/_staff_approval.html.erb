@@ -116,10 +116,10 @@
 </div>
 <br><br>
 
-<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#disapprove_<%= prints.id %>">
-  Disapprove
+<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#decline_<%= prints.id %>">
+  Decline
 </button>
-<div class="modal fade" id="disapprove_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="disapprove_<%= prints.id %>" aria-hidden="true">
+<div class="modal fade" id="decline_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="decline_<%= prints.id %>" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -136,7 +136,7 @@
             <%= f.text_field :staff_comments, placeholder: "The size won't fit", class: "form-control" %>
           </div>
         </div>
-        <button class="btn btn-danger" type="submit">Disapprove</button>
+        <button class="btn btn-danger" type="submit">Decline</button>
         <br><br>
       <% end %>
       <div class="modal-footer">

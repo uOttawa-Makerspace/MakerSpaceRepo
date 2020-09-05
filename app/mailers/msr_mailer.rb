@@ -70,7 +70,7 @@ class MsrMailer < ApplicationMailer
     mail(to: email, subject: "Reminder for your print order ##{id}")
   end
 
-  def send_print_disapproval(user, comments, filename)
+  def send_print_declined(user, comments, filename)
     @user = user
     @comments = comments
     mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', cc: 'uottawa.makerepo@gmail.com', subject: "Your print \"#{filename}\" has been denied")

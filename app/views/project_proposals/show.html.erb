@@ -13,10 +13,10 @@
     <% end%>
     <br></br>
     <% if @user.admin?%>
-        <%= link_to "Approve", approval_project_proposals_path(:id => @project_proposal.id), method: :post,
+        <%= link_to "Approve", approve_project_proposals_path(:id => @project_proposal.id), method: :post,
                     class: "btn btn-success", data: {confirm: 'Are you sure? This will approve the project.'} %>
-        <%= link_to "Disapprove", disapproval_project_proposals_path(id: @project_proposal.id), method: :post,
-                    class: "btn btn-danger", data: {confirm: 'Are you sure? This will disapprove the project.'} %>
+        <%= link_to "Decline", decline_project_proposals_path(id: @project_proposal.id), method: :post,
+                    class: "btn btn-danger", data: {confirm: 'Are you sure? This will decline the project.'} %>
     <% end %>
     <% if @project_proposal.description.present? %>
         <div class="repo-desc">
@@ -123,7 +123,7 @@
         <div class="repo-info-item">
           <div class="title">VALIDATION</div>
             <% case @project_proposal.approved
-                 when 0 %><div class="disapproved"><%= "Disapproved" %></div>
+                 when 0 %><div class="declined"><%= "Declined" %></div>
                 <% when 1 %><div class="approved"><%= "Approved" %></div>
             <% when nil %><div><%= "Not Validated" %></div>
             <% end %>

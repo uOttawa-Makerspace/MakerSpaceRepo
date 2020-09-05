@@ -13979,12 +13979,12 @@ div.approved i {
 }
 
 /* line 109, /home/arthur/Bureau/sites/MakerSpaceRepo/app/assets/stylesheets/project_proposals.scss */
-div.disapproved {
+div.declined {
   color: #FF0000;
   font-weight: 500;
 }
 /* line 112, /home/arthur/Bureau/sites/MakerSpaceRepo/app/assets/stylesheets/project_proposals.scss */
-div.disapproved i {
+div.declined i {
   padding-right: 5px;
   color: #777;
 }

@@ -110,10 +110,10 @@ RSpec.describe PrintOrdersController, type: :controller do
       end
     end
 
-    context 'Update print order to disapproved' do
-      it 'should update the print order to disapproved and send an email' do
+    context 'Update print order to declined' do
+      it 'should update the print order to declined and send an email' do
         print_order = create(:print_order, :with_file)
-        print_order_params = FactoryBot.attributes_for(:print_order, :disapproved)
+        print_order_params = FactoryBot.attributes_for(:print_order, :declined)
         patch :update, params: {id: print_order.id, print_order: print_order_params}
         expect(response).to redirect_to index_new_print_orders_path
         expect(PrintOrder.find(print_order.id).approved?).to eq(false)
