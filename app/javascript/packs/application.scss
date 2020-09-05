@@ -22,5 +22,6 @@ $color-marker-hover: #6e6e6e;
   }
 }
 
-
-
+.turbolinks-progress-bar {
+  background-color: theme-color("primary");
+}
