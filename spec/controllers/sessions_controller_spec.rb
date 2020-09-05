@@ -2,7 +2,6 @@ require 'rails_helper'
 include FilesTestHelper
 
 RSpec.describe SessionsController, type: :controller do
-  let(:view_context) { ActionView::Base.new }
   describe "POST /login_authentication" do
 
     context "login_authentication" do
@@ -20,7 +19,7 @@ RSpec.describe SessionsController, type: :controller do
         @user = create(:user, :regular_user_not_confirmed)
         post :login_authentication, params: {username_email: @user.email, password: 'asa32A353#'}
         expect(response).to have_http_status(200)
-        expect(flash[:alert]).to eq("Please confirm your account before logging in, you can resend the email #{view_context.link_to 'here', resend_email_confirmation_path(email: @user.email), class: 'text-primary'}".html_safe)
+        expect(flash[:alert]).to eq("Please confirm your account before logging in, you can resend the email <a class=\"text-primary\" href=\"#{resend_email_confirmation_path(email: @user.email)}\">here</a>".html_safe)
       end
 
       it 'should not login the user with a wrong password' do
