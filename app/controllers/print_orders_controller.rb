@@ -11,7 +11,7 @@ class PrintOrdersController < ApplicationController
         'user_approval is NULL and approved is TRUE' => 'Waiting for user Approval',
         'user_approval is TRUE and approved is TRUE and printed is NULL' => 'Waiting to be printed',
         'user_approval is TRUE and approved is TRUE and printed is TRUE' => 'Printed',
-        'user_approval is FALSE or approved is FALSE' => 'Disapproved'
+        'user_approval is FALSE or approved is FALSE' => 'Declined'
     }
 
     @print_order = if @user.staff? || @user.admin?
@@ -29,14 +29,14 @@ class PrintOrdersController < ApplicationController
         'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ['Approved by Admins', 'Approved by you', 'Queued to be printed', 'Currently being printed'],
         'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Currently being printed', ''],
         "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Printed', ''],
-        "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Disapproved by admins', ''],
-        "user_approval is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Disapproved by you', '']
+        "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Declined by admins', ''],
+        "user_approval is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Declined by you', '']
     }
 
     @order_old = {
         "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at < NOW() - INTERVAL '7 days'" => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Printed', ''],
-        "approved is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Disapproved by admins', ''],
-        "user_approval is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Disapproved by you', '']
+        "approved is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Declined by admins', ''],
+        "user_approval is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Declined by you', '']
     }
 
     @print_order = @user.print_orders.order(expedited: :desc, created_at: :desc)
@@ -129,7 +129,7 @@ class PrintOrdersController < ApplicationController
       if params[:print_order][:approved] == 'true'
         MsrMailer.send_print_quote(expedited_price, @user, @print_order, params[:print_order][:staff_comments]).deliver_now
       elsif params[:print_order][:approved] == 'false'
-        MsrMailer.send_print_disapproval(@user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
+        MsrMailer.send_print_declined(@user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
       elsif params[:print_order][:user_approval] == 'true'
         MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
       elsif params[:print_order][:printed] == 'true'

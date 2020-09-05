@@ -196,7 +196,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
 
   end
 
-  describe 'POST #approval' do
+  describe 'POST #approve' do
 
     context 'Approve project proposal' do
       it 'should approve the project proposal' do
@@ -204,7 +204,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = admin.id
         project_proposal = create(:project_proposal, :normal)
-        post :approval, params: {id: project_proposal.id}
+        post :approve, params: {id: project_proposal.id}
         expect(response).to redirect_to project_proposal_path(ProjectProposal.last.id)
         expect(flash[:notice]).to eq('Project Proposal Approved')
         expect(ProjectProposal.last.approved?).to be_truthy
@@ -214,17 +214,17 @@ RSpec.describe ProjectProposalsController, type: :controller do
 
   end
 
-  describe 'POST #disapproval' do
+  describe 'POST #decline' do
 
-    context 'Disapprove project proposal' do
-      it 'should disapprove the project proposal' do
+    context 'Decline project proposal' do
+      it 'should decline the project proposal' do
         admin = create :user, :admin
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = admin.id
         project_proposal = create(:project_proposal, :normal)
-        post :disapproval, params: {id: project_proposal.id}
+        post :decline, params: {id: project_proposal.id}
         expect(response).to redirect_to project_proposal_path(ProjectProposal.last.id)
-        expect(flash[:notice]).to eq('Project Proposal Disapproved')
+        expect(flash[:notice]).to eq('Project Proposal Declined')
         expect(ProjectProposal.last.approved?).to be_falsey
       end
 

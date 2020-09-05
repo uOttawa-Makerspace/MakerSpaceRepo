@@ -17,7 +17,7 @@ $color-marker-hover: #6e6e6e;
 @import 'toastr/build/toastr.min';
 
 .progress-step {
-  &.is-disapproved {
+  &.is-declined {
     @include progress-state(#FF4F37);
   }
 }

@@ -110,7 +110,7 @@
                 <%= render 'comments_for_staff', prints: prints %>
               <% end %>
             <% elsif prints.approved == false %>
-              Disapproved
+              Declined
             <% else %>
               <% if @user.admin? %>
                 <%= render 'staff_approval', prints: prints %>
@@ -127,7 +127,7 @@
                   Approved
                 <% end %>
               <% elsif prints.user_approval == false %>
-                Disapproved
+                Declined
               <% else %>
                 <b>Quoted price : <%= number_to_currency(prints.quote) %>$</b>
                 <br>
@@ -151,7 +151,7 @@
                 <td>Approved</td>
               <% end %>
             <% elsif prints.user_approval == false %>
-              <td>Disapproved</td>
+              <td>Declined</td>
             <% else %>
               <td>Not Yet/Can't be</td>
             <% end %>
