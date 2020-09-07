@@ -7,7 +7,7 @@ class MsrMailerTest < ActionMailer::TestCase
     user = users(:bob)
     email = MsrMailer.welcome_email(user)
 
-    assert_equal ['uottawa.makerepo@gmail.com'], email.from
+    assert_equal ['ceedinfo@makerepo.com'], email.from
     assert_equal ['bob@gmail.com'], email.to
     assert_equal 'Welcome to MakerRepo', email.subject
     assert email.body.to_s.include? 'Bob'
@@ -30,7 +30,7 @@ class MsrMailerTest < ActionMailer::TestCase
     newpassword = 'Password2'
     email = MsrMailer.reset_password_email user.email, newpassword
 
-    assert_equal ['uottawa.makerepo@gmail.com'], email.from
+    assert_equal ['ceedinfo@makerepo.com'], email.from
     assert_equal ['bob@gmail.com'], email.to
     assert_equal 'New password for MakerRepo', email.subject
     assert email.body.to_s.include? 'bob'
@@ -45,7 +45,7 @@ class MsrMailerTest < ActionMailer::TestCase
     email = MsrMailer.send_training_report(to)
 
     # assert
-    assert_equal ['uottawa.makerepo@gmail.com'], email.from
+    assert_equal ['ceedinfo@makerepo.com'], email.from
     assert_equal ['makerspace@uottawa.ca'], email.to
     assert_equal to, email.bcc
     assert_not_nil(email.attachments, 'No attachments found')
@@ -59,7 +59,7 @@ class MsrMailerTest < ActionMailer::TestCase
     email = MsrMailer.send_monthly_report(to)
 
     # assert
-    assert_equal ['uottawa.makerepo@gmail.com'], email.from
+    assert_equal ['ceedinfo@makerepo.com'], email.from
     assert_equal ['makerspace@uottawa.ca'], email.to
     assert_equal to, email.bcc
 
@@ -75,7 +75,7 @@ class MsrMailerTest < ActionMailer::TestCase
     email = MsrMailer.send_weekly_report(to)
 
     # assert
-    assert_equal ['uottawa.makerepo@gmail.com'], email.from
+    assert_equal ['ceedinfo@makerepo.com'], email.from
     assert_equal ['makerspace@uottawa.ca'], email.to
     assert_equal to, email.bcc
 
@@ -85,7 +85,7 @@ class MsrMailerTest < ActionMailer::TestCase
 
   test 'Send waiver reminder email' do
     email = MsrMailer.waiver_reminder_email('abc@123.com')
-    assert_equal ['uottawa.makerepo@gmail.com'], email.from
+    assert_equal ['ceedinfo@makerepo.com'], email.from
     assert_equal ['abc@123.com'], email.to
     assert_equal 'Please Sign The Release Agreement!', email.subject
   end
