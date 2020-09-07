@@ -55,7 +55,6 @@ require("packs/volunteer_requests");
 require("packs/volunteer_tasks");
 
 import "bootstrap";
-import "../stylesheets/application"
 require("packs/toastr");
 
 document.addEventListener("turbolinks:load", () => {
