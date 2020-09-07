@@ -182,6 +182,8 @@ Rails.application.routes.draw do
 
     resources :trainings
 
+    resources :course_names
+
     resources :training_sessions do
       get "/", :as => "index", :action => "index"
 
