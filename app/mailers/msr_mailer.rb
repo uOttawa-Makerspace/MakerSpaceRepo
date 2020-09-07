@@ -63,7 +63,7 @@ class MsrMailer < ApplicationMailer
     @user = user
     @print_order = print_order
     @comments = comments
-    mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', cc: 'uottawa.makerepo@gmail.com', subject: "Your print \"#{@print_order.file.filename}\" has been approved!")
+    mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', bcc: 'uottawa.makerepo@gmail.com', subject: "Your print \"#{@print_order.file.filename}\" has been approved!")
   end
 
   def send_print_reminder(email, id)
@@ -73,7 +73,7 @@ class MsrMailer < ApplicationMailer
   def send_print_declined(user, comments, filename)
     @user = user
     @comments = comments
-    mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', cc: 'uottawa.makerepo@gmail.com', subject: "Your print \"#{filename}\" has been denied")
+    mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', bcc: 'uottawa.makerepo@gmail.com', subject: "Your print \"#{filename}\" has been denied")
   end
 
   def send_print_finished(user, pickup_id, quote, message)
@@ -81,7 +81,7 @@ class MsrMailer < ApplicationMailer
     @user = user
     @pickup_id = pickup_id
     @message = message.html_safe
-    mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', cc: 'uottawa.makerepo@gmail.com', subject: 'Your print is available for pickup')
+    mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', bcc: 'uottawa.makerepo@gmail.com', subject: 'Your print is available for pickup')
   end
 
   def send_invoice(name, print_order)
@@ -158,7 +158,7 @@ class MsrMailer < ApplicationMailer
     @subject = subject
     @comments = comments
 
-    mail(to: @email, cc: 'uottawa.makerepo@gmail.com', subject: "Issue Report | #{@subject}")
+    mail(to: @email, bcc: 'uottawa.makerepo@gmail.com', subject: "Issue Report | #{@subject}")
   end
 
   def send_exam(user, training_session)
