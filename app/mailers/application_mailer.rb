@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
 class ApplicationMailer < ActionMailer::Base
-  default from: 'uottawa.makerepo@gmail.com'
+  default from: 'ceedinfo@makerepo.com'
   layout 'mailer'
 end
