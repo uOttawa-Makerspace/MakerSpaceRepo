@@ -54,8 +54,8 @@ Rails.application.routes.draw do
 
   resources :project_proposals do
     collection do
-      post :approval
-      post :disapproval
+      post :approve
+      post :decline
       get :join_project_proposal
       get :unjoin_project_proposal
       get :projects_assigned
@@ -181,6 +181,8 @@ Rails.application.routes.draw do
     resources :pi_readers, only: [:update]
 
     resources :trainings
+
+    resources :course_names
 
     resources :training_sessions do
       get "/", :as => "index", :action => "index"

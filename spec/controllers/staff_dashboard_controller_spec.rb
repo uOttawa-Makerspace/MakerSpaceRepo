@@ -40,7 +40,9 @@ RSpec.describe StaffDashboardController, type: :controller do
         create(:user, :regular_user, name: "Bob Bob Bob")
         expect{ post :import_excel, params: {file: fixture_file_upload(Rails.root.join('spec/support/assets', 'excel-login.xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')} }.to change(LabSession, :count).by(3)
         expect(response).to redirect_to staff_dashboard_index_path
-        expect(flash[:notice]).to eq("The file has been processed and users have been signed in ! <b>Please note that 3 user(s) did not get signed in because they were not found in the system.</b>".html_safe)
+        expect(flash[:notice]).to eq("The file has been processed and users have been signed in ! ")
+        expect(flash[:alert_yellow]).to eq("Please note that 3 user(s) did not get signed in because they were not found in the system.")
+        expect(flash[:alert]).to eq("Users with error: john doe 123, johnnnnnn, joeeee@joeeee.com")
       end
 
     end

@@ -34,8 +34,8 @@ class MsrMailerPreview < ActionMailer::Preview
     MsrMailer.issue_email('Julia', 'julia@gmail.com', 'issue', 'photo upload not working')
   end
 
-  def send_print_disapproval
-    MsrMailer.send_print_disapproval(User.new({ name: 'Test Name', email: 'test@makerepo.com' }), 'Staff comments', 'file_name.stl')
+  def send_print_declined
+    MsrMailer.send_print_declined(User.new({name: 'Test Name', email: 'test@makerepo.com' }), 'Staff comments', 'file_name.stl')
   end
 
   def send_print_finished

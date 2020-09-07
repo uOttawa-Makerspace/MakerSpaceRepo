@@ -34,7 +34,7 @@ gem 'quick_random_records', '~> 0.3.2'
 gem 'rubyzip', '~> 2.1', require: 'zip'
 gem 'saml_idp', '~> 0.9.0'
 gem 'sass-rails', '~> 5.0.7'
-gem 'sdoc', '~> 0.4.0', group: :doc
+gem 'sdoc', '~> 1.1.0', group: :doc
 gem 'select2-rails'
 gem 'shopify_app', '9.0.4'
 gem 'sidekiq', '~> 6.1.1'

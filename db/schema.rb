@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_08_13_171132) do
+ActiveRecord::Schema.define(version: 2020_09_04_151628) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -148,6 +148,12 @@ ActiveRecord::Schema.define(version: 2020_08_13_171132) do
     t.string "username"
     t.index ["repository_id"], name: "index_comments_on_repository_id"
     t.index ["user_id"], name: "index_comments_on_user_id"
+  end
+
+  create_table "course_names", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "discount_codes", id: :serial, force: :cascade do |t|
@@ -522,6 +528,7 @@ ActiveRecord::Schema.define(version: 2020_08_13_171132) do
     t.string "course"
     t.integer "space_id"
     t.string "level", default: "Beginner"
+    t.integer "course_name_id"
     t.index ["training_id"], name: "index_training_sessions_on_training_id"
     t.index ["user_id"], name: "index_training_sessions_on_user_id"
   end

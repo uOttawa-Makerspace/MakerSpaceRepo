@@ -55,8 +55,8 @@
       <% else %>
         <% if file == "" %>
 
-        <% elsif index == array_size - 1 and file.include?("Disapproved") %>
-          <li class="progress-step is-disapproved">
+        <% elsif index == array_size - 1 and file.include?("Declined") %>
+          <li class="progress-step is-declined">
             <div class="progress-marker"></div>
             <div class="progress-text">
               <h4 class="progress-title m-0"><%= file %></h4><p><%= prints.updated_at.to_formatted_s(:short) if prints.updated_at.present? %></p>
