@@ -102,11 +102,11 @@
       <% end %>
 
       <div class="repo-info-item">
-        <span class="like">
+        <span class="like" style="color: white;">
           <%= link_to(fa_icon('heart', text: 'Like'),
             add_like_repository_path, class: 'like', remote: true, method: :post) %>
         </span>
-        <span class="make">
+        <span class="make" style="color: white;">
           <%= link_to(fa_icon('code-fork', text: 'Make'),
             makes_new_path(@repository.user_username, @repository.slug)) %>
         </span>
