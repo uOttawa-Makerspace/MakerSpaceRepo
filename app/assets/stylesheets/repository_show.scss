@@ -146,6 +146,11 @@ div.repo-info-item{
     i {
       font-size: 0.95rem;
     }
+
+    a {
+      color: inherit;
+    }
+
   }
 
   .no-bg-download{
@@ -158,6 +163,10 @@ div.repo-info-item{
     color: #f9f9f9;
     cursor: pointer;
     border-radius: 6px;
+
+    a {
+      color: inherit;
+    }
 
     &:hover{
       background-color: #366;
@@ -210,6 +219,7 @@ div.repo-info-item{
 		a{
 			display: block;
 			padding: 0.25rem 0.7rem;
+            color: inherit;
 		}
 	}
 
@@ -226,6 +236,7 @@ div.repo-info-item{
 		a{
 			display: block;
 			padding: 0.5rem 1.25rem;
+            color: inherit;
 		}
 
 		i{
