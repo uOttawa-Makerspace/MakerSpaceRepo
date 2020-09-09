@@ -85,7 +85,17 @@
 
     <%= f.select :license, @repository.class.license_options, class: "form-control" %>
     </div>
-    <br>
+
+    <div class="form-group">
+      <% if params[:project_proposal_id].present? %>
+        <%= f.hidden_field :project_proposal_id, value: params[:project_proposal_id] %>
+      <% else %>
+        <br>
+        <%= f.label :license, "Project Proposal / Proposition de projet" %>
+        <%= f.select(:project_proposal_id, options_for_select(ProjectProposal.all.where(approved: 1).pluck(:title, :id)), {:include_blank => true}, {:class => "form-control"}) %>
+      <% end %>
+    </div>
+
     <br>
 
     <div id="share_option">
@@ -103,9 +113,6 @@
 
     </div>
 
-    <%= f.hidden_field :project_proposal_id, value: params[:project_proposal_id] %>
-
-    <br>
     <br>
     <br>
     <%= f.submit "Create Project/Créer ton Projet", class: "btn btn-primary", id: "waiting-save-button" %>
