@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
 
-  <a class="navbar-brand" href="<%= staff_index_path %>">Staff <strong>Area</strong></a>
+  <a class="navbar-brand" href="<%= staff_index_path %>"> <strong><%= @space.name %></strong> Staff <strong>Area</strong></a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -11,7 +11,7 @@
         <li class="nav-item"><%= link_to 'New Training Session', new_staff_training_session_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'My Training Sessions', staff_training_sessions_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'Questions', questions_path, class: "nav-link" %></li>
-        <li class="nav-item"><%= link_to 'Annoucements', announcements_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Announcements', announcements_path, class: "nav-link" %></li>
       </ul>
   </div>
 </nav>
