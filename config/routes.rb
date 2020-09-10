@@ -229,6 +229,7 @@ Rails.application.routes.draw do
     get "/", :as => "index", :action => "index"
     get 'search'
     get 'present_users_report'
+    get 'download_template'
     put "/change_space", :as => "change_space", :action => "change_space"
     put "/add_users", :as => "sign_in_users", :action => "sign_in_users"
     put "/remove_users", :as => "sign_out_users", :action => "sign_out_users"

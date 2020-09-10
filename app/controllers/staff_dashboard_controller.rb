@@ -6,6 +6,11 @@ class StaffDashboardController < StaffAreaController
     @users = User.order(id: :desc).limit(10)
   end
 
+  def download_template
+    send_file("#{Rails.root}/public/assets/excel/ImportUsersTemplate.xlsx")
+
+  end
+
   def import_excel
     begin
       file = params[:file]
