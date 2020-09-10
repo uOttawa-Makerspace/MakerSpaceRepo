@@ -1,10 +1,10 @@
 <section class="page-contents">
-  <div class="edit-column">
+  <div>
 
     <h2>Viewing <%=@user.name.capitalize + "'s"%> Training Sessions</h2>
-    <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
+    <input type="text" class="form-control" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
 
-    <br></br>
+    <br>
     <table class="sessions-table">
     <tr>
       <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
@@ -72,12 +72,12 @@
 
         <td class="action-cell">
         <br>
-          <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %>
+          <%=link_to "Visit", staff_training_session_url(sesh), class:"btn btn-success btn-sm btn-block" %>
           <%=link_to "Download",
                     training_report_staff_training_session_path(id:sesh.id, format: "xlsx" ),
                     action: :training_report,
-                    class:"download-button" %>
-          <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
+                    class:"btn btn-info btn-sm btn-block" %>
+          <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"btn btn-sm btn-danger btn-block"%>
         <br></br>
         </td>
 
