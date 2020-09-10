@@ -5,7 +5,7 @@
     <h2>Welcome to <%= link_to "#{@space.name.capitalize}", staff_dashboard_index_path %></h2>
 
     <div style="float:right;">
-      <%= link_to 'Download Excel Template', staff_dashboard_download_template_path, class: "btn btn-secondary", target: '_self' %>
+      <%= link_to 'Download Excel Template', asset_path('excel/ImportUsersTemplate.xlsx'), download: 'ImportUsersTemplate.xlsx', class: "btn btn-secondary" %>
       <%= link_to "Download Summary",
                   staff_dashboard_present_users_report_path(format: "xlsx"),
                   action: :training_report,
