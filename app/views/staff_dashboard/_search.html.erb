@@ -20,9 +20,6 @@
         <%= select_tag(:username, "", prompt: "Choose User...", :class => "user_dashboard_select form-control w-100", :id => "user_dashboard_select") %>
       </div>
       </div>
-      <div class="text-center">
-        <%= submit_tag "Search", class: 'btn btn-primary btn-sm btn-block', style: "margin-left: 4px;" %>
-      </div>
       <div>
     <% end %>
     <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: "sign_in_user_fastsearch" do %>

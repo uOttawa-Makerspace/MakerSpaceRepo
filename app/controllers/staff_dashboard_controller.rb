@@ -15,6 +15,7 @@ class StaffDashboardController < StaffAreaController
       raise "Unknown file type: #{file.original_filename}" unless [".xls", ".xlsx"].include?(file_ext)
       spreadsheet = (file_ext == ".xls") ? Roo::Excel.new(file.path) : Roo::Excelx.new(file.path)
       (1..spreadsheet.last_row).each do |i|
+        next if spreadsheet.row(i)[0].blank?
         user_data = spreadsheet.row(i)[0].downcase
         user = User.where("lower(email) = ? OR lower(name) = ? OR lower(username) = ?", user_data, user_data, user_data)
         faulty_users += 1 and faulty_user_data << user_data and next if user.blank?

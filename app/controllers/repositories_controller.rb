@@ -55,6 +55,7 @@ class RepositoriesController < SessionsController
 
   def new
     @repository = Repository.new
+    @project_proposals = ProjectProposal.approved.pluck(:title, :id) unless params[:project_proposal_id].present?
   end
 
   def edit

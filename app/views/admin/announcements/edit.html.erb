@@ -1,5 +1,5 @@
 <section class="page-contents">
-  <div class="padding-10">
+  <div class="edit-column">
 
     <h2 class="text-center">Edit Announcement</h2>
 
@@ -23,8 +23,18 @@
                   <%= f.radio_button :public_goal, 'volunteer', :style => 'display:inline' %>
                   <%= f.label :public_goal, 'Volunteers', :style => 'display:inline' %>
                   <br />
+                  <%= f.radio_button :public_goal, 'regular_user', :style => 'display:inline' %>
+                  <%= f.label :public_goal, 'Regular Users', :style => 'display:inline' %>
+                  <br />
                   <%= f.radio_button :public_goal, 'staff', :style => 'display:inline' %>
                   <%= f.label :public_goal, 'Staff', :style => 'display:inline' %>
+                  <br />
+                  <%= f.radio_button :public_goal, 'admin', :style => 'display:inline' %>
+                  <%= f.label :public_goal, 'Admins', :style => 'display:inline' %>
+                  <br />
+                  <%= f.radio_button :public_goal, 'all', :style => 'display:inline' %>
+                  <%= f.label :public_goal, 'All Users', :style => 'display:inline' %>
+                  <br />
                   <br />
                 </div>
               </div>

@@ -1,8 +1,8 @@
 <section class="page-contents">
 
-  <div class="edit-column">
+  <div class="padding-10">
 
-    <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path %></h2>
+    <h2>Welcome to <%= link_to "#{@space.name.capitalize}", staff_dashboard_index_path %></h2>
 
     <div style="float:right;">
       <%= link_to 'Download Excel Template', asset_path('assets/excel/ImportUsersTemplate.xlsx'), download: 'ImportUsersTemplate.xlsx', class: "btn btn-secondary" %>

@@ -2,13 +2,10 @@
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
 
-.padding {
-  padding-left: 20%;
-  padding-right: 20%;
-}
-.padding-10 {
-  padding-left: 10%;
-  padding-right: 10%;
+.printorder-padding {
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 20px;
 }
 
 .progress-tracker {
