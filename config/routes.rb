@@ -154,6 +154,8 @@ Rails.application.routes.draw do
   namespace :admin do
     get "/", :as => "index", :action => "index"
 
+    resources :announcements
+
     get 'manage_badges'
 
     namespace :report_generator do
