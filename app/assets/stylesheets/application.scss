@@ -146,4 +146,33 @@ trix-toolbar .trix-button-group--file-tools {
   height: auto;
 }
 
+.button-color {
+  .btn-primary {
+    color: #fff;
+  }
 
+  .btn-success {
+    color: #fff;
+  }
+
+  .btn-info {
+    color: #fff;
+  }
+
+  .btn-danger {
+    color: #fff;
+  }
+}
+
+.padding {
+  padding-left: 20%;
+  padding-right: 20%;
+
+  @extend .button-color;
+}
+.padding-10 {
+  padding-left: 10%;
+  padding-right: 10%;
+
+  @extend .button-color;
+}
