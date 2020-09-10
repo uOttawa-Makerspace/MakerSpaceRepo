@@ -13,3 +13,7 @@ $(document).on('turbolinks:load', function () {
         });
     }, false);
 });
+
+$(document).on("turbolinks:load", function() {
+    $(".task_certifications").select2({});
+});

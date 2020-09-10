@@ -1,0 +1,87 @@
+@import "shared/variables";
+@import "~bootstrap";
+
+html.saml-login {
+  height: 100%;
+
+  body {
+    height: 100%;
+    background-color: #fff;
+  }
+
+  .btn {
+    width: auto;
+    height: auto;
+    float: none;
+
+    &:hover {
+      cursor: pointer;
+      opacity: 1;
+    }
+
+    @media (max-width: 575.98px) {
+      height: auto;
+    }
+
+    @include media-breakpoint-down(xs) {
+      height: auto;
+    }
+
+    .break {
+      &::before {
+        content: ' – ';
+      }
+
+      @media (max-width: 575.98px) {
+        display: block;
+
+        &::before {
+          content: '';
+        }
+      }
+
+      @include media-breakpoint-down(xs) {
+        display: block;
+
+        &::before {
+          content: '';
+        }
+      }
+    }
+  }
+
+  .main-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  input, textarea, .btn {
+    box-shadow: none;
+  }
+
+  .brand {
+    text-align: center;
+    font-size: 4rem;
+    margin: 0;
+
+    @media (max-width: 575.98px) {
+      font-size: 3rem;
+    }
+
+    @include media-breakpoint-down(xs) {
+      font-size: 3rem;
+    }
+  }
+
+  .middle-content {
+    max-width: 100%;
+
+    .help {
+      text-align: center;
+      margin: 1rem 0;
+    }
+  }
+}

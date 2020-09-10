@@ -1,4 +1,4 @@
-function findSession(table_class, id = 'query') {
+window.findSession = function(table_class, id = 'query') {
   var input, filter, table, tr, i;
   input = document.getElementById(id);
   filter = input.value.toUpperCase();

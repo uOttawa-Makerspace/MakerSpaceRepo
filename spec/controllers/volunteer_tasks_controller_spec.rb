@@ -49,13 +49,25 @@ RSpec.describe VolunteerTasksController, type: :controller do
 
     context "create" do
 
-      it 'should create a volunteer task' do
+      before(:each) do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
-        Space.create(name: "Brunsfield")
-        volunteer_task_params = FactoryBot.attributes_for(:volunteer_request, space_id: Space.last.id)
-        expect{ post :create, params: {volunteer_task: volunteer_task_params} }.to change(VolunteerTask, :count).by(1)
+      end
+
+      it 'should create a volunteer task' do
+        volunteer_task_params = FactoryBot.attributes_for(:volunteer_task)
+        expect { post :create, params: {volunteer_task: volunteer_task_params} }.to change(VolunteerTask, :count).by(1)
+        expect(flash[:notice]).to eq("You've successfully created a new Volunteer Task")
+        expect(response).to redirect_to new_volunteer_task_path
+      end
+
+      it 'should create a volunteer task with certifications' do
+        volunteer_task_params = FactoryBot.attributes_for(:volunteer_task)
+        t1 = create(:training)
+        t2 = create(:training)
+        expect { post :create, params: {volunteer_task: volunteer_task_params, certifications_id: [t1.id, t2.id]} }.to change(VolunteerTask, :count).by(1)
+        expect(RequireTraining.where(volunteer_task_id: VolunteerTask.last.id).count).to eq(2)
         expect(flash[:notice]).to eq("You've successfully created a new Volunteer Task")
         expect(response).to redirect_to new_volunteer_task_path
       end

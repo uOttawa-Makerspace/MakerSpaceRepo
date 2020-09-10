@@ -68,24 +68,11 @@ Rails.application.configure do
     c.client_secret    = Rails.application.credentials[Rails.env.to_sym][:github][:app_key_secret]
   end
 
-  # SMTP GMail Settings
-  config.action_mailer.perform_caching = false
-  config.action_mailer.default_url_options = { host: 'localhost:3000' }
-
-  # Use letter opener to open emails i development mode
-  # config.action_mailer.delivery_method = :smtp
+  # Use letter opener to open emails in development mode
   config.action_mailer.delivery_method = :letter_opener
+  config.action_mailer.default_url_options = { host: 'staging.makerepo.com' }
   config.action_mailer.perform_deliveries = true
-
-  # GMAIL SETUP
-  config.action_mailer.smtp_settings = {
-    address: 'smtp.sendgrid.net',
-    port: 587,
-    user_name: Rails.application.credentials[Rails.env.to_sym][:smtp_user],
-    password: Rails.application.credentials[Rails.env.to_sym][:smtp_password],
-    authentication: 'plain',
-    enable_starttls_auto: true
-  }
+  config.action_mailer.perform_caching = false
 
   # config.force_ssl = true
 

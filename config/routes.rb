@@ -47,12 +47,15 @@ Rails.application.routes.draw do
 
   resources :print_orders, only: %i[index create update new destroy] do
     get :invoice
+    collection do
+      get :index_new
+    end
   end
 
   resources :project_proposals do
     collection do
-      post :approval
-      post :disapproval
+      post :approve
+      post :decline
       get :join_project_proposal
       get :unjoin_project_proposal
       get :projects_assigned
@@ -181,6 +184,8 @@ Rails.application.routes.draw do
 
     resources :trainings
 
+    resources :course_names
+
     resources :training_sessions do
       get "/", :as => "index", :action => "index"
 
@@ -272,7 +277,6 @@ Rails.application.routes.draw do
     collection do
       get :emails
       get :volunteer_list
-      get :getting_started
       get :join_volunteer_program
       get :my_stats
     end
@@ -343,10 +347,12 @@ Rails.application.routes.draw do
   resources :users, path: '/', param: :username, except: :edit do
     collection do
       get :resend_confirmation
+      get :confirm_edited_email
       get :confirm
       post :create, path: '/new'
       get :remove_avatar
       post :flag
+      get :change_email
     end
 
     get 'likes', on: :member

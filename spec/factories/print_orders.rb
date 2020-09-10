@@ -32,7 +32,7 @@ FactoryBot.define do
       price_per_gram { 0.5 }
     end
 
-    trait :disapproved do
+    trait :declined do
       approved { false }
       staff_comments { Faker::Lorem.paragraph }
     end
