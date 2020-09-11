@@ -2,7 +2,7 @@ FactoryBot.define do
   factory :user do
     read_and_accepted_waiver_form { true }
     active { true }
-    email { Faker::Internet.email }
+    email { Faker::Internet.unique.email }
     name { Faker::Name.name }
     username { Faker::Name.unique.first_name }
     wallet { 1000 }

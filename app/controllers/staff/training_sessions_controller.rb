@@ -69,7 +69,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
       flash[:alert] = "#{graduate.username}'s certification not saved properly!" unless certification.save
     end
     flash[:notice] = 'Training Session Completed Successfully'
-    redirect_to staff_index_url
+    redirect_to staff_dashboard_index_path
   end
 
   def renew_certification
@@ -95,7 +95,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
   def destroy
     if @current_training_session.destroy
       flash[:notice] = 'Deleted Successfully'
-      redirect_to staff_index_url
+      redirect_to staff_dashboard_index_path
     else
       flash[:alert] = 'Something went wrong'
       redirect_back(fallback_location: root_path)
