@@ -214,8 +214,6 @@ Rails.application.routes.draw do
   end
 
   namespace :staff do
-    get "/", :as => "index", :action => "index"
-
     resources :training_sessions do
       get "/", :as => "index", :action => "index", on: :collection
       member do
