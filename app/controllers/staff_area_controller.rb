@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 class StaffAreaController < SessionsController
-  before_action :current_user, :ensure_staff
-  before_action :default_space
-  before_action :define_spaces
+  before_action :current_user, :ensure_staff, :default_space, :define_spaces
 
   private
 
