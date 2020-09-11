@@ -1,64 +1,59 @@
-<section class="page-contents">
-  <div class="edit-column">
+<h2 class="text-center pt-2">Edit Question</h2>
 
-    <h2 class="text-center">Edit Question</h2>
-
-    <div class="container my-5">
-      <div class="row">
-        <div class="col-lg-12">
-          <%= form_for @question, url: {controller: "questions", action: "update"}, :html => {  class:"needs-validation", novalidate: 'novalidate' } do |f| %>
-            <div class="row">
-              <div class="col-md-12">
-                <div class="form-group text-center">
-                  <%= f.text_area :description, placeholder: "Write your question here...", class: 'form-control', required: true %>
-                  <div class="invalid-feedback">
-                    Please provide the question description.
-                  </div>
-                  <br />
-                  Categories:
-                  <br />
-                  <div class="mt-3">
-                    <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', :selected => (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
-                  </div>
-                </div>
-                <br />
-
-                <label class="image-upload">
-                  <%= f.file_field :image, id: "pictureInput"%>
-                  Change image...
-                </label>
-
-                <br />
-                <br />
-
-                <div id="image-target" class="mx-auto text-center"></div>
-
-                <div class="text-center" id="edit-image">
-                  <%= image_tag @question.image.variant(resize: "300x300") if @question.image.attached? %>
-                </div>
-
+<div class="container my-5">
+  <div class="row">
+    <div class="col-lg-12">
+      <%= form_for @question, url: {controller: "questions", action: "update"}, :html => {  class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group text-center">
+              <%= f.text_area :description, placeholder: "Write your question here...", class: 'form-control', required: true %>
+              <div class="invalid-feedback">
+                Please provide the question description.
               </div>
-
-              <div class="col-md-12">
-                <div class="form-group text-center">
-                  <p class="text-success"><b>First answer</b> is the correct answer:</p>
-                  <%= f.fields_for :answers do |af| %>
-                    <%= af.text_area :description, placeholder: "Write the answers here...", class: 'form-control', required: true %>
-                    <div class="invalid-feedback">
-                      Please provide Answers
-                    </div>
-                    <br />
-                  <% end %>
-                </div>
-              </div>
-
-              <div class="col-lg-12 text-center">
-                <%= f.submit "Update Question", class: "btn btn-secondary btn-xl text-uppercase" %>
+              <br />
+              Categories:
+              <br />
+              <div class="mt-3">
+                <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', :selected => (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
               </div>
             </div>
-          <% end %>
+            <br />
+
+            <label class="image-upload">
+              <%= f.file_field :image, id: "pictureInput"%>
+              Change image...
+            </label>
+
+            <br />
+            <br />
+
+            <div id="image-target" class="mx-auto text-center"></div>
+
+            <div class="text-center" id="edit-image">
+              <%= image_tag @question.image.variant(resize: "300x300") if @question.image.attached? %>
+            </div>
+
+          </div>
+
+          <div class="col-md-12">
+            <div class="form-group text-center">
+              <p class="text-success"><b>First answer</b> is the correct answer:</p>
+              <%= f.fields_for :answers do |af| %>
+                <%= af.text_area :description, placeholder: "Write the answers here...", class: 'form-control', required: true %>
+                <div class="invalid-feedback">
+                  Please provide Answers
+                </div>
+                <br />
+              <% end %>
+            </div>
+          </div>
+
+          <div class="col-lg-12 text-center">
+            <%= f.submit "Update Question", class: "btn btn-secondary btn-xl text-uppercase" %>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
   </div>
-</section>
+</div>
