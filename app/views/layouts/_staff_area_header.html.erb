@@ -15,3 +15,7 @@
       </ul>
   </div>
 </nav>
+
+<div class="pl-3 pr-3 pt-1 pb-3">
+  <%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: 'Change Space...', class: "form-control", id: "set_space_id", :onchange => 'setSpace()' %>
+</div>

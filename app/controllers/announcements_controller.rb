@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-class AnnouncementsController < ApplicationController
+class AnnouncementsController < StaffAreaController
   layout 'staff_area'
-  before_action :grant_access
   before_action :set_announcement, only: %i[show edit]
   before_action :check_announcement, only: %i[create update destroy]
 
@@ -48,13 +47,6 @@ class AnnouncementsController < ApplicationController
 
     def announcement_params
       params.require(:announcement).permit(:description, :public_goal, :active)
-    end
-
-    def grant_access
-      unless current_user.admin? || current_user.staff?
-        redirect_to root_path
-        flash[:alert] = 'You cannot access this area.'
-      end
     end
 
     def set_announcement

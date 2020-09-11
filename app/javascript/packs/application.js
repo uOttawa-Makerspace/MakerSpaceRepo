@@ -47,6 +47,7 @@ require("packs/repositories");
 require("packs/requests");
 require("packs/settings");
 require("packs/sorting");
+require("packs/staff_area");
 require("packs/users");
 require("packs/vendor");
 require("packs/videos");

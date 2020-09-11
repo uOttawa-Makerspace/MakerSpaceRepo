@@ -72,11 +72,9 @@ class StaffDashboardController < StaffAreaController
   end
 
   def change_space
-    if new_space = Space.find_by(name: params[:space_name])
-      if current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
-        current_sesh.sign_out_time = Time.zone.now
-        current_sesh.save
-      end
+    new_space = Space.find_by(id: params[:space_id])
+    if new_space.present?
+      update_lab_session
       new_sesh = LabSession.new(
         user_id: current_user.id,
         sign_in_time: Time.zone.now,
@@ -142,5 +140,15 @@ class StaffDashboardController < StaffAreaController
     json_data = User.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
     render json: { users: json_data }
   end
+
+  private
+
+    def update_lab_session
+      current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
+      if current_sesh.present?
+        current_sesh.sign_out_time = Time.zone.now
+        current_sesh.save
+      end
+    end
 
  end

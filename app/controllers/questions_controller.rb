@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
-class QuestionsController < ApplicationController
+class QuestionsController < StaffAreaController
   layout 'staff_area'
-  before_action :current_user
-  before_action :grant_access
 
   def index
     @questions = Question.all.order(created_at: :desc).paginate(page: params[:page], per_page: 50)
@@ -55,14 +53,7 @@ class QuestionsController < ApplicationController
 
   private
 
-  def grant_access
-    unless current_user.staff? || current_user.admin?
-      flash[:alert] = 'You cannot access this area.'
-      redirect_to root_path
+    def question_params
+      params.require(:question).permit(:description, :image, training_ids: [], answers_attributes: %i[id description correct])
     end
-  end
-
-  def question_params
-    params.require(:question).permit(:description, :image, training_ids: [], answers_attributes: %i[id description correct])
-  end
 end

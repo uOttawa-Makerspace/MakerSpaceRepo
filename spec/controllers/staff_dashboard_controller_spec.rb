@@ -107,7 +107,7 @@ RSpec.describe StaffDashboardController, type: :controller do
       it 'should change space' do
         lab1 = LabSession.create(user_id: @admin.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
         new_space = create(:space)
-        expect{ put :change_space, params: {space_name: new_space.name} }.to change(LabSession, :count).by(1)
+        expect{ put :change_space, params: {space_id: new_space.id} }.to change(LabSession, :count).by(1)
         expect(response).to redirect_to staff_index_url
         expect(LabSession.last.sign_out_time > DateTime.now)
         expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
