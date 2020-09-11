@@ -1,82 +1,14 @@
 <section class="page-contents">
   <div class="edit-column">
-      <div class="setting-title">Admin Training Sessions Manager</div>
-      <br>
-      <div class="form-group">
-        <input type="text" style="width: 100%" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username" class="form-control">
-      </div>
-     <table class="sessions-table">
-        <tr>
-          <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Course <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Status <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Users <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-          <th class="action-header">Action</th>
-        </tr>
-        <tbody>
-        <% @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20) %>
-        <%= will_paginate @sessions, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-        <br>
-        <% @sessions.each do |sesh| %>
-          <tr>
-            <td class="date-cell">
-              <%= sesh.created_at.strftime("%I:%M %p").downcase() %>
-              <br>
-              <%= sesh.created_at.strftime("%b %e %Y").downcase() %>
-            </td>
-
-            <td class="training-cell">
-              <%= sesh.training.name %>
-            </td>
-
-            <td class="trainer-cell" style="horizontal-alginment:center;">
-              <%= link_to sesh.user.name, user_url(sesh.user.username) %>
-            </td>
-
-            <td class="course-cell">
-              <%= sesh.course %>
-            </td>
-
-            <td class="status-cell">
-              <% if sesh.completed? %>
-                COMPLETED
-              <% else %>
-                NOT COMPLETED
-              <% end %>
-            </td>
-
-            <td class="users-cell">
-                <div
-                 class="users-count"
-                 style="display:inline" >
-                 <div class="count-holder" style="display:inline">
-                  <%= sesh.users.length %>
-                  <div id="sesh-users" style="display:inline">
-                    <% sesh.users.each do |user| %>
-                      <div class="clickable-username">
-                        <%=link_to user.name, user_url(user.username), class: "user-link" %> <br>
-                      </div>
-                    <% end %>
-                  </div>
-                </div>
-              </div>
-            </td>
-
-            <td class="action-cell">
-              <%=link_to "Visit", staff_training_session_url(sesh), class:"btn btn-primary btn-block btn-sm" %>
-              <%=link_to "Download",
-                    training_report_staff_training_session_path(id:sesh.id, format: "xlsx" ),
-                    action: :training_report,
-                    class:"btn btn-info btn-block btn-sm" %>
-              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"btn btn-danger btn-block btn-sm"%>
-            <br></br>
-          </td>
-
-          </tr>
-        <% end %>
-        </tbody>
-      </table>
+    <div class="setting-title">Admin Training Sessions Manager</div>
+    <br>
+    <div class="form-group">
+      <input type="text" style="width: 100%" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username" class="form-control">
     </div>
+
+    <div class="table-training-sessions">
+      <%= render 'admin/training_sessions/training_session_table' %>
+    </div>
+
+  </div>
 </section>
