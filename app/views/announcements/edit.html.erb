@@ -1,51 +1,49 @@
-<section class="page-contents">
-  <div class="padding-10">
+<%= link_to 'Back', announcements_path, class: "float-right" %>
 
-    <h2 class="text-center">Edit Announcement</h2>
-
-    <div class="container my-5">
-      <div class="row">
-        <div class="col-lg-12">
-          <%= form_for @announcement, url: {controller: "announcements", action: "update"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
-            <div class="row">
-              <div class="col-md-12">
-                <div class="form-group text-center">
-                  <%= f.label :description, "Announcement" %>
-                  <%= f.text_field :description, placeholder: "Write your announcement here", class: 'form-control', required: true %>
-                  <div class="invalid-feedback">
-                    Please provide a title.
-                  </div>
+<div class="padding-10">
+  <h2 class="text-center pt-2 mb-5">Edit Announcement</h2>
+  <div class="container my-5">
+    <div class="row">
+      <div class="col-lg-12">
+        <%= form_for @announcement, url: {controller: "announcements", action: "update"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group text-center">
+                <%= f.label :description, "Announcement" %>
+                <%= f.text_field :description, placeholder: "Write your announcement here", class: 'form-control', required: true %>
+                <div class="invalid-feedback">
+                  Please provide a title.
                 </div>
-              </div>
-              <div class="mx-auto col-md-6 text-center">
-                <b>Select to what public you want this to appear</b> <br />
-                <div class="d-inline-block text-left">
-                  <%= f.radio_button :public_goal, 'volunteer', :style => 'display:inline' %>
-                  <%= f.label :public_goal, 'Volunteers', :style => 'display:inline' %>
-                  <br />
-                  <%= f.radio_button :public_goal, 'staff', :style => 'display:inline' %>
-                  <%= f.label :public_goal, 'Staff', :style => 'display:inline' %>
-                  <br />
-                </div>
-              </div>
-              <div class="mx-auto col-md-6 text-center">
-                <b>Select if this announcements is active</b> <br />
-                <div class="d-inline-block text-left">
-                  <%= f.radio_button :active, true, :style => 'display:inline' %>
-                  <%= f.label :active, 'Yes', :style => 'display:inline' %>
-                  <br />
-                  <%= f.radio_button :active, false, :style => 'display:inline' %>
-                  <%= f.label :active, 'No', :style => 'display:inline' %>
-                  <br />
-                </div>
-              </div>
-              <div class="col-lg-12 text-center">
-                <%= f.submit "Update Announcement", class: "btn btn-secondary btn-xl text-uppercase" %>
               </div>
             </div>
-          <% end %>
-        </div>
+            <div class="mx-auto col-md-6 text-center">
+              <b>Select to what public you want this to appear</b> <br />
+              <div class="d-inline-block text-left">
+                <%= f.radio_button :public_goal, 'volunteer', :style => 'display:inline' %>
+                <%= f.label :public_goal, 'Volunteers', :style => 'display:inline' %>
+                <br />
+                <%= f.radio_button :public_goal, 'staff', :style => 'display:inline' %>
+                <%= f.label :public_goal, 'Staff', :style => 'display:inline' %>
+                <br />
+              </div>
+            </div>
+            <div class="mx-auto col-md-6 text-center">
+              <b>Select if this announcements is active</b> <br />
+              <div class="d-inline-block text-left">
+                <%= f.radio_button :active, true, :style => 'display:inline' %>
+                <%= f.label :active, 'Yes', :style => 'display:inline' %>
+                <br />
+                <%= f.radio_button :active, false, :style => 'display:inline' %>
+                <%= f.label :active, 'No', :style => 'display:inline' %>
+                <br />
+              </div>
+            </div>
+            <div class="col-lg-12 text-center">
+              <%= f.submit "Update Announcement", class: "btn btn-secondary btn-xl text-uppercase" %>
+            </div>
+          </div>
+        <% end %>
       </div>
     </div>
   </div>
-</section>
+</div>
