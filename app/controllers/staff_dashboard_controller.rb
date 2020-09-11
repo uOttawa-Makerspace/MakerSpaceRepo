@@ -87,7 +87,7 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = 'Something went wrong'
       end
     end
-    redirect_to staff_index_url
+    redirect_to staff_dashboard_index_path
   end
 
   def link_rfid
