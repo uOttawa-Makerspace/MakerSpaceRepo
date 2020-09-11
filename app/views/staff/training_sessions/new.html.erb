@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="text-center padding">
 
-    <h2>New <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> Training Session</h2>
+    <h2 class="pt-2 mb-5">New <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> Training Session</h2>
 
     <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
