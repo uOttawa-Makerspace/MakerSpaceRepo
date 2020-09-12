@@ -8,13 +8,18 @@ class Admin::TrainingSessionsController < AdminAreaController
   def index
 
     # Preventing SQL Injection
-    sort_array = ["created_at", "trainings.name", "users.name", "course", "count(training_sessions.id)", "count(users)"]
+    sort_array = %w(training_sessions.created_at trainings.name users.name training_sessions.course count(certifications.id) count(users.id))
 
+    # Checking if the params are in range of the array
     if params[:sort_name].present? && params[:sort_name].to_i.between?(1, 6)
+
+      # Check if it's ASC or DESC
       if params[:sort_last].present? && params[:sort_last] == params[:sort_name]
-        @sessions = TrainingSession.all.joins(:training, :user, "left join certifications on certifications.training_session_id = training_sessions.id").group('trainings.name', 'users.name', 'training_sessions.id').order("#{sort_array[params[:sort_name].to_i - 1]} ASC").paginate(:page => params[:page], :per_page => 20)
+        @sessions = TrainingSession.includes(:certifications, :users).joins(:training).group('trainings.name', 'users.name', ['training_sessions.id', 'certifications.id'], ['training_sessions.id', 'users.id']).order("#{sort_array[params[:sort_name].to_i  - 1]} ASC").references(:certifications, :users).paginate(:page => params[:page], :per_page => 20)
       else
-        @sessions = TrainingSession.all.joins(:training, :user, "left join certifications on certifications.training_session_id = training_sessions.id").group('trainings.name', 'users.name', 'training_sessions.id').order("#{sort_array[params[:sort_name].to_i  - 1]} DESC").paginate(:page => params[:page], :per_page => 20)
+        @sessions = TrainingSession.includes(:certifications, :users).joins(:training).group('trainings.name', 'users.name', ['training_sessions.id', 'certifications.id'], ['training_sessions.id', 'users.id']).order("#{sort_array[params[:sort_name].to_i  - 1]} DESC").references(:certifications, :users).paginate(:page => params[:page], :per_page => 20)
+
+        # @last tells the view if the param DESC to switch it next time
         @last = params[:sort_name]
       end
     else
