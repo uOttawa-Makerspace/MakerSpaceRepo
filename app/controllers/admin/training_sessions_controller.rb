@@ -12,9 +12,9 @@ class Admin::TrainingSessionsController < AdminAreaController
 
     if params[:sort_name].present? && params[:sort_name].to_i.between?(1, 6)
       if params[:sort_last].present? && params[:sort_last] == params[:sort_name]
-        @sessions = TrainingSession.joins(:training, :user, "left join certifications on certifications.training_session_id = training_sessions.id").group('training_sessions.id', 'trainings.name', 'users.name').order("#{sort_array[params[:sort_name].to_i - 1]} ASC").paginate(:page => params[:page], :per_page => 20)
+        @sessions = TrainingSession.all.joins(:training, :user, "left join certifications on certifications.training_session_id = training_sessions.id").group('trainings.name', 'users.name', 'training_sessions.id').order("#{sort_array[params[:sort_name].to_i - 1]} ASC").paginate(:page => params[:page], :per_page => 20)
       else
-        @sessions = TrainingSession.joins(:training, :user, "left join certifications on certifications.training_session_id = training_sessions.id").group('training_sessions.id', 'trainings.name', 'users.name').order("#{sort_array[params[:sort_name].to_i  - 1]} DESC").paginate(:page => params[:page], :per_page => 20)
+        @sessions = TrainingSession.all.joins(:training, :user, "left join certifications on certifications.training_session_id = training_sessions.id").group('trainings.name', 'users.name', 'training_sessions.id').order("#{sort_array[params[:sort_name].to_i  - 1]} DESC").paginate(:page => params[:page], :per_page => 20)
         @last = params[:sort_name]
       end
     else
