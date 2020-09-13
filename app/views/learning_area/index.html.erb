@@ -1,0 +1,77 @@
+<section>
+  <br />
+  <div class="by-5">
+    <%= form_tag(learning_area_index_path, method: :get) do %>
+      <div class="form-inline">
+        <%= text_field_tag(:search, "", placeholder: "Title, description, level or category", class: 'form-control col-md-4') %>
+        <%= submit_tag("Search", class: 'btn btn-secondary form-inline') %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="mt-2">
+    <%= form_tag(learning_area_index_path, method: :get) do %>
+      <div class="form-inline">
+        <%= select_tag :category, options_for_select(@training_categories_names, :selected=>params[:category]), prompt: 'Select category', class: "form-control" %><br />
+        <%= select_tag :level, options_for_select(@training_levels, :selected=>params[:level]), prompt: 'Select level', class: "form-control" %><br />
+        <%= submit_tag("Filter", class:'btn btn-secondary form-control') %>
+      </div>
+    <% end %>
+  </div>
+
+  <br />
+  <div class="apple_pagination">
+    <%= page_entries_info @learning_modules, :model => 'learning_module' %>
+    <%= will_paginate @learning_modules, :container => false %>
+  </div>
+
+  <div class="row text-center">
+
+    <% @learning_modules.each do |learning_module| %>
+      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %>" style="border-width:2px !important;">
+        <form class="form-inline">
+          <div class="form-group">
+            <%=link_to "-Edit-", edit_learning_area_path(learning_module.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
+          </div>
+          <div class="form-group mx-auto">
+            <p><h6 class="text-center py-3"><strong><%= learning_module.training.name %></strong></h6></p>
+          </div>
+          <div class="form-group">
+            <%=link_to 'Delete', learning_area_path(learning_module.id), method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Learning Module.'} if current_user.admin?%>
+          </div>
+        </form>
+        <% if learning_module.photos.present? %>
+            <a href="<%= learning_area_path(learning_module.id) %>">
+              <div class="card card-image projects-image" style="background-image: url(<%= url_for(learning_module.photos.first.image) %>);">
+              </div>
+            </a>
+          <% else %>
+            <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_learning_areas_path(id: learning_module.id) %>">
+              <div class="card card-image projects-image" style="background-image: url(<%= url_for(learning_module.photos.first.image) %>);">
+              </div>
+            </a>
+        <% end %>
+        <div>
+          <br />
+          <h6 class="font-weight-bold text-center"><strong><%= learning_module.title %></strong></h6>
+          <p><%= learning_module.level %></p>
+        </div>
+      </div>
+
+    <% end %>
+  </div>
+
+  <div class="apple_pagination">
+    <%= will_paginate @learning_modules, :container => false %>
+    <%= page_entries_info @learning_modules, :model => 'learning_module' %>
+  </div>
+  <br />
+</section>
+
+<div id="modal-window" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content"></div>
+  </div>
+</div>
+
+

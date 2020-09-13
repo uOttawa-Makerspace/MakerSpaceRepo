@@ -1,0 +1,134 @@
+<% provide(:title, "Proficient Project") %>
+<section class="card w3-card-2 <%= return_border_color(@learning_modules.level) %>">
+  <div>
+    <%=link_to 'Delete', learning_area_path, method: :delete, class: "btn btn-danger float-left ml-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
+    <%=link_to "Edit", edit_learning_area_path(@learning_modules.id), class:"btn btn-primary float-right mr-5 mt-5", style: "opacity: 0.5" if current_user.admin?%>
+  </div>
+<!--  <div class="text-center">-->
+<!--    Badge that will be Awarded:-->
+<!--    <br />-->
+    <%# badge_template = @proficient_project.badge_template %>
+    <%# if badge_template.present? %>
+      <%#= image_tag(badge_template.image_url, :style => "width: 100px;") %>
+    <%# else %>
+<!--      None-->
+    <%# end %>
+<!--  </div>-->
+  <div class="col-lg-7 mx-auto">
+    <br />
+    <h2 class="text-center title"><%= @learning_modules.title.html_safe %></h2>
+    <%# if current_user.admin? %>
+      <%#= form_tag project_requirements_path, method: :post do %>
+<!--        <div class="form-inline">-->
+          <%#= hidden_field_tag(:id, @proficient_project.id) %>
+          <%# label_tag 'required_project_id' %>
+<!--          <%#= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects_selected, 'id', 'title'), prompt: 'Select required project' %><br>-->
+          <%#= submit_tag 'Add Required Project', class: "btn btn-primary" %>
+<!--        </div>-->
+      <%# end %>
+    <%# end %>
+    <div class="container my-4">
+      <div class="text-center">
+        <%= @learning_modules.training.name %>
+        -
+        <%= @learning_modules.level %>
+      </div>
+      <br />
+      <div class="row">
+        <div class="col-lg-12">
+          <% if valid_url?(@learning_modules.description.html_safe) %>
+            <div class="p-3 jumbotron text-center text-wrap">
+              <iframe width="100%" height="400px" src="<%= strip_tags(@learning_modules.description.html_safe) %>"></iframe>
+              <p>You can access the same page <a href="<%= strip_tags(@learning_modules.description.html_safe) %>" target="_blank">here</a>.</p>
+            </div>
+          <% else %>
+            <div class="jumbotron text-center text-wrap">
+              <%= @learning_modules.description.html_safe %>
+            </div>
+          <% end %>
+          <div id="show-photo">
+            <%= image_tag @photos.first.image, data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+          </div>
+          <div id="photo-slide">
+            <% @photos.each do |p| %>
+              <%= image_tag p.image, data: { width: p.width, height: p.height} %>
+            <% end %>
+          </div>
+          <br />
+          <br />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<% @videos.each do |f| %>
+  <div class="imgbox">
+    <%= video_tag url_for(f.video), controls: true, controlslist: "nodownload", class: "center-fit" if f.video.attached? %>
+  </div>
+  <br />
+<% end %>
+
+<% @files.each do |f| %>
+  <div class="embed-responsive embed-responsive-16by9">
+    <iframe class="embed-responsive-item" src="<%= url_for(f.file) %>" allowfullscreen></iframe>
+    <br />
+  </div>
+<% end %>
+
+<%# if !@project_requirements.blank? %>
+<!--  <br />-->
+<!--  <br />-->
+<!--  <h2 class="text-center title my-3"> Some projects that are pre-requisite for this project:</h2>-->
+<!--  <div class="row text-center">-->
+    <%# @project_requirements.each do |project_requirement| %>
+      <%# project_required = project_requirement.required_project %>
+<!--      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%#= return_hover_and_text_colors(project_required.level) %>" style="border-width:2px !important;">-->
+<!--        <form class="form-inline">-->
+<!--          <div class="form-group">-->
+            <%#=link_to "-Edit-", edit_proficient_project_path(project_required.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin?%>
+<!--          </div>-->
+<!--          <div class="form-group mx-auto">-->
+<!--            <p><h6 class="text-center py-3"><strong><%#= project_required.training.name %></strong></h6></p>-->
+<!--          </div>-->
+<!--          <div class="form-group">-->
+            <%#=link_to 'Unfollow', project_requirement, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Project Requirement, but not the Project itself.'} if current_user.admin?%>
+<!--          </div>-->
+<!--        </form>-->
+<!--        <a href="<%#= proficient_project_path(project_required.id) %>">-->
+<!--          <div class="card card-image projects-image" style="background-image: url(<%#= url_for(project_required.photos.first.image) %>);">-->
+<!--          </div>-->
+<!--        </a>-->
+<!--        <div>-->
+<!--          <a href="<%#= proficient_project_path(project_required.id) %>"><h6 class="pt-3 font-weight-bold text-center"><strong><%#= project_required.title %></strong></h6></a>-->
+<!--          <p><%#= project_required.level %></p>-->
+<!--        </div>-->
+<!--      </div>-->
+    <%# end %>
+<!--  </div>-->
+<%# end %>
+
+<%# if !@inverse_required_projects.blank? %>
+
+<!--  <h2 class="text-center title"> Some projects that could be done after this project:</h2>-->
+<!--  <div class="row text-center">-->
+    <%# @inverse_required_projects.each do |inverse_required_project| %>
+<!--      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%#= return_hover_and_text_colors(inverse_required_project.level) %>" style="border-width:2px !important;">-->
+<!--        <form class="form-inline">-->
+<!--          <div class="form-group mx-auto">-->
+<!--            <p><h6 class="text-center py-3"><strong><%#= inverse_required_project.training.name %></strong></h6></p>-->
+<!--          </div>-->
+<!--        </form>-->
+<!--        <a href="<%#= proficient_project_path(inverse_required_project.id) %>">-->
+<!--          <div class="card card-image projects-image" style="background-image: url(<%#= url_for(inverse_required_project.photos.first.image) %>);">-->
+<!--          </div>-->
+<!--        </a>-->
+<!--        <div>-->
+<!--          <a href="<%#= proficient_project_path(inverse_required_project.id) %>"><h6 class="pt-3 font-weight-bold text-center"><strong><%#= inverse_required_project.title %></strong></h6></a>-->
+<!--          <p><%#= inverse_required_project.level %></p>-->
+<!--        </div>-->
+<!--      </div>-->
+    <%# end %>
+<!--  </div>-->
+<%# end %>
+<%= render 'layouts/photoswipe' %>

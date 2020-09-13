@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_09_04_151628) do
+ActiveRecord::Schema.define(version: 2020_09_13_170215) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -156,6 +156,12 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.datetime "updated_at", precision: 6, null: false
   end
 
+  create_table "courses", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
   create_table "discount_codes", id: :serial, force: :cascade do |t|
     t.integer "price_rule_id"
     t.integer "user_id"
@@ -220,6 +226,16 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.index ["user_id"], name: "index_lab_sessions_on_user_id"
   end
 
+  create_table "learning_modules", force: :cascade do |t|
+    t.integer "training_id"
+    t.string "title"
+    t.text "description"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.string "level", default: "Beginner"
+    t.boolean "has_project_kit"
+  end
+
   create_table "likes", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.integer "repository_id"
@@ -266,6 +282,7 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.integer "height"
     t.integer "width"
     t.integer "proficient_project_id"
+    t.integer "learning_module_id"
     t.index ["repository_id"], name: "index_photos_on_repository_id"
   end
 
@@ -276,6 +293,16 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.datetime "updated_at", null: false
     t.integer "space_id"
     t.index ["space_id"], name: "index_pi_readers_on_space_id"
+  end
+
+  create_table "popular_hours", force: :cascade do |t|
+    t.integer "mean"
+    t.integer "space_id"
+    t.integer "hour"
+    t.integer "day"
+    t.integer "count"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "price_rules", id: :serial, force: :cascade do |t|
@@ -386,6 +413,8 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.boolean "delivered", default: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.bigint "learning_module_id"
+    t.index ["learning_module_id"], name: "index_project_kits_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_project_kits_on_proficient_project_id"
     t.index ["user_id"], name: "index_project_kits_on_user_id"
   end
@@ -443,6 +472,7 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.integer "file_file_size"
     t.datetime "file_updated_at"
     t.integer "proficient_project_id"
+    t.integer "learning_module_id"
     t.index ["repository_id"], name: "index_repo_files_on_repository_id"
   end
 
@@ -602,6 +632,8 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.datetime "video_updated_at"
     t.string "direct_upload_url", null: false
     t.boolean "processed", default: false, null: false
+    t.bigint "learning_module_id"
+    t.index ["learning_module_id"], name: "index_videos_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_videos_on_proficient_project_id"
   end
 
@@ -685,6 +717,7 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
   add_foreign_key "proficient_projects", "badge_templates"
+  add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
   add_foreign_key "project_kits", "users"
   add_foreign_key "repo_files", "repositories"
@@ -695,5 +728,6 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
+  add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
 end

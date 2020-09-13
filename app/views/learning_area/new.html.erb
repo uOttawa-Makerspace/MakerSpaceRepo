@@ -1,0 +1,75 @@
+<% provide(:title, "New Learning Module") %>
+<section class="card">
+  <div class="col-lg-7 mx-auto">
+    <br />
+    <h2 class="text-center">New Learning Module</h2>
+    <div class="row">
+      <div class="col-lg-12">
+        <%= form_for @learning_module, url: {controller: "learning_area", action: "create"}, html: {multipart: true} do |f| %>
+          <div class="form-group">
+            <%= f.label :title, "Title*" %>
+            <%= f.text_field :title, id:"repository_title", placeholder: "Title of the learning module...", class: 'form-control', required: true %>
+            <br />
+            <%= f.label :description, "Description (You can now input a wiki.makerepo.com link and the page will be displayed)" %>
+            <%= f.trix_editor :description, placeholder: "Description of the learning module...", class: 'form-control', required: true, id: 'redactor' %>
+            <br />
+            <%= f.label :training_id, "Category*" %>
+            <%= f.select(:training_id, @training_categories , {} , {:class => "form-control"}) %>
+            <br />
+            <%= f.label :level, "Level*" %>
+            <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
+            <br />
+            <br />
+            <%= f.label :has_project_kit, "Physical kit:" %>
+            <br />
+            <%= f.radio_button(:has_project_kit, false, checked: true, :style => 'display:inline') %>
+            <%= f.label :has_project_kit, "No" %>
+            <br />
+            <%= f.radio_button(:has_project_kit, true, :style => 'display:inline') %>
+            <%= f.label :has_project_kit, "Yes" %>
+            <br />
+            <br />
+            <%#= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)" %>
+            <%#= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name'), {:multiple => true, :id => "badge_requirements", :class => "form-control select2"} %>
+<!--            <br>-->
+            <%#= f.label :badge_template_id, "Badge that will be acquired" %>
+            <%#= f.select(:badge_template_id, options_for_select(@badge_templates.pluck(:badge_name, :id)), {:include_blank => "No badge"}, {:class => "form-control"}) %>
+<!--            <br>-->
+<!--            <br>-->
+            <%= label_tag :file, "Project files"%>
+            <label class="custom-instructable-upload">
+              <%= file_field_tag 'files[]', type: :files, multiple: true %>
+              Choose files...
+            </label>
+            <div id="file-container"></div>
+            <br />
+            <%= label_tag :photo, "Gallery*" %>
+            <div class="repo-image mx-auto">
+              <div id="dragndrop">
+                <%= fa_icon 'cloud-upload' %>
+                <p>Drag &amp; Drop</p>
+              </div>
+              <label class="custom-image-upload">
+                <%= file_field_tag 'images[]', type: :files, multiple: true %>
+                or choose an image...
+              </label>
+            </div>
+            <div id="image-container" class="mx-auto"></div>
+
+            <br />
+
+            <div class="text-center">
+              <%= f.submit "Create Learning Module", class: "btn btn-primary", id: "waiting-save-button" %>
+              <br />
+              <br />
+              This could take several minutes. Do not refresh this page.
+              <br />
+              <span id="status-save"> </span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</section>
+

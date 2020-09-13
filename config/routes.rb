@@ -269,6 +269,12 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :learning_area do
+    collection do
+      get :open_modal
+    end
+  end
+
   resources :project_requirements, only: %i[create destroy]
 
   resources :volunteers, only: [:index] do
