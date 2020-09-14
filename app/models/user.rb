@@ -93,6 +93,7 @@ class User < ApplicationRecord
   scope :frequency_between_dates, ->(start_date, end_date) { joins(lab_sessions: :space).where('lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?', start_date, end_date, 'Makerspace') }
   scope :active, -> { where(active: true) }
   scope :unknown_identity, -> { where(identity: 'unknown') }
+  scope :created_this_month, -> { where(created_at: DateTime.now.beginning_of_month..DateTime.now.end_of_month) }
 
   def self.display_avatar(user)
     if user.avatar.attached?

@@ -3,21 +3,15 @@
 namespace :increment_year do
   desc 'increment year to students'
   task increment_one_year: :environment do
-    # Get students only
-    User.active.where.not(student_id: nil).find_each do |u|
-      # Check if the month is the same
-      if u.created_at.strftime("%m") == Date.today.strftime("%m")
-        # Check if the year is between 1-5
-        if 0 < u.year_of_study.to_i and u.year_of_study.to_i < 6
-          # Check if the account was created this year
-          if u.created_at.strftime("%y") != Date.today.strftime("%y")
-            # If it wasn't, it will update by 1
-            u.update(year_of_study: u.year_of_study.to_i + 1)
-          end
-        else
-          # If the year is more than 5 it will change to Alumni
-          u.update(year_of_study: "Alumni")
-        end
+    # Get students, created this month and are not alumni only
+    User.active.created_this_month.where.not(year_of_study: [nil, 'Alumni']).find_each do |u|
+      # Check if the year is between 0-8 (inclusive)
+      if u.year_of_study.to_i.between?(0, 7)
+        # Check if the account was created this year. f it wasn't, it will update by 1.
+        u.update(year_of_study: u.year_of_study.next) #if u.created_at.year != Date.today.year
+      else
+        # If the year is more than 8 it will change to Alumni
+        u.update(year_of_study: "Alumni")
       end
     end
   end
@@ -29,7 +23,7 @@ namespace :increment_year do
       if 0 < u.year_of_study.to_i
         year_difference = Date.today.strftime("%y").to_i - u.created_at.strftime("%y").to_i
         # Check if it's a the year they were on
-        if u.year_of_study.between?(1, 5)
+        if u.year_of_study.between?(0, 7)
           # Check if account was created this year
           unless u.created_at.strftime("%y") == Date.today.strftime("%y")
             # If the month of creation has passed it will be the year of study + year_difference
