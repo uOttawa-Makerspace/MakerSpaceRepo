@@ -27,15 +27,8 @@
             <br />
             <%= f.radio_button(:has_project_kit, true, :style => 'display:inline') %>
             <%= f.label :has_project_kit, "Yes" %>
-            <br />
-            <br />
-            <%#= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)" %>
-            <%#= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name'), {:multiple => true, :id => "badge_requirements", :class => "form-control select2"} %>
-<!--            <br>-->
-            <%#= f.label :badge_template_id, "Badge that will be acquired" %>
-            <%#= f.select(:badge_template_id, options_for_select(@badge_templates.pluck(:badge_name, :id)), {:include_blank => "No badge"}, {:class => "form-control"}) %>
-<!--            <br>-->
-<!--            <br>-->
+            <br>
+            <br>
             <%= label_tag :file, "Project files"%>
             <label class="custom-instructable-upload">
               <%= file_field_tag 'files[]', type: :files, multiple: true %>

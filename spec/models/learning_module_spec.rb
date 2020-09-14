@@ -8,13 +8,6 @@ RSpec.describe LearningModule, type: :model do
       it { should have_many(:photos) }
       it { should have_many(:repo_files) }
       it { should have_many(:videos) }
-      # it { should have_many(:project_requirements) }
-      # it { should have_many(:required_projects) }
-      # it { should have_many(:inverse_project_requirements) }
-      # it { should have_many(:inverse_required_projects) }
-      # it { should have_many(:cc_moneys) }
-      # it { should have_many(:order_items) }
-      # it { should have_many(:badge_requirements) }
       it { should have_many(:project_kits) }
       it 'dependent destroy: should destroy project kits if destroyed' do
         learning_module = create(:learning_module_with_project_kits)
@@ -24,11 +17,6 @@ RSpec.describe LearningModule, type: :model do
 
     context 'belongs_to' do
       it { should belong_to(:training) }
-      # it { should belong_to(:badge_template) }
-    end
-
-    context 'has_and_belongs_to_many' do
-      # it { should have_and_belong_to_many(:users) }
     end
 
   end
@@ -97,29 +85,6 @@ RSpec.describe LearningModule, type: :model do
       end
 
     end
-
-    # describe "#delete_all_badge_requirements" do
-    #
-    #   it 'should delete all badge requirements' do
-    #     pp = create(:learning_module, :with_badge_requirements)
-    #     expect(BadgeRequirement.where(proficient_project_id: pp.id).count).to eq(2)
-    #     LearningModule.find(pp.id).delete_all_badge_requirements
-    #     expect(BadgeRequirement.where(proficient_project_id: pp.id).count).to eq(0)
-    #   end
-    #
-    # end
-    #
-    # describe "#create_badge_requirements" do
-    #
-    #   it 'should create badge requirements' do
-    #     pp = create(:learning_module)
-    #     create(:badge_template, :laser_cutting)
-    #     create(:badge_template, :arduino)
-    #     LearningModule.find(pp.id).create_badge_requirements([2, BadgeTemplate.last.id])
-    #     expect(BadgeRequirement.where(proficient_project_id: pp.id).count).to eq(2)
-    #   end
-    #
-    # end
 
   end
 

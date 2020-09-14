@@ -6,7 +6,6 @@ class LearningAreaController < DevelopmentProgramsController
 
   def index
     @learning_modules = LearningModule.filter_attributes(get_filter_params).order(created_at: :desc).paginate(page: params[:page], per_page: 30)
-    # TODO: Fix this mess
     @training_levels ||= TrainingSession.return_levels
     @training_categories_names = Training.all.order('name ASC').pluck(:name)
     flash.now[:alert_yellow] = "Please visit #{view_context.link_to "My Projects", learning_area_index_path, class: "text-primary"} to access the proficient projects purchased (including Free Proficient Projects)".html_safe
@@ -17,20 +16,11 @@ class LearningAreaController < DevelopmentProgramsController
     @training_levels ||= TrainingSession.return_levels
   end
 
-  def show
-    # @project_requirements = @learning_modules.project_requirements
-    # @inverse_required_projects = @learning_modules.inverse_required_projects
-    # @proficient_projects_selected = LearningModule
-    #                                     .where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id)
-    #                                     .order(title: :asc)
-  end
+  def show ;end
 
   def create
     @learning_modules = LearningModule.new(learning_modules_params)
     if @learning_modules.save
-      # if params[:badge_requirements_id].present?
-      #   @proficient_project.create_badge_requirements(params[:badge_requirements_id])
-      # end
       create_photos
       create_files
       flash[:notice] = 'Learning Module has been successfully created.'
@@ -54,11 +44,6 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def update
-    # @learning_modules.delete_all_badge_requirements
-    # if params[:badge_requirements_id].present?
-    #   @learning_modules.create_badge_requirements(params[:badge_requirements_id])
-    # end
-
     if @learning_modules.update(learning_modules_params)
       update_photos
       update_files
@@ -68,13 +53,6 @@ class LearningAreaController < DevelopmentProgramsController
     else
       flash[:alert] = 'Unable to apply the changes.'
       render json: @learning_modules.errors['title'].first, status: :unprocessable_entity
-    end
-  end
-
-  def open_modal
-    @learning_modules_modal = LearningModule.find(params[:id])
-    respond_to do |format|
-      format.js
     end
   end
 
@@ -177,6 +155,6 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def get_filter_params
-    params.permit(:search, :level, :category, :my_projects, :price)
+    params.permit(:search, :level, :category, :my_projects)
   end
 end
