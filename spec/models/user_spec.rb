@@ -4,6 +4,10 @@ include ActiveModel::Serialization
 
 RSpec.describe User, type: :model do
 
+  before :all do
+    User.destroy_all
+  end
+
   describe 'Association' do
 
     context 'has_one' do
@@ -189,43 +193,55 @@ RSpec.describe User, type: :model do
   end
 
   describe "scopes" do
-
     before :all do
-      create(:user, :regular_user)
-      create(:user, :regular_user)
+      2.times{ create(:user, :regular_user) }
       create(:user, :admin)
       create(:user, :staff)
       create(:user, :volunteer)
+      4.times{ create(:user, :regular_user, created_at: 3.months.ago) }
+      5.times{ create(:user, :student) }
+      2.times{ create(:user, :regular_user, created_at: 3.years.ago) }
+    end
+
+    context '#created_at_month' do
+      it 'should return 12' do
+        expect(User.created_at_month(Date.today.month).count).to eq(12)
+      end
+    end
+
+    context '#not_created_this_year' do
+      it 'should return 2' do
+        expect(User.not_created_this_year.count).to eq(2)
+      end
+    end
+
+    context '#students' do
+      it 'should return 5' do
+        expect(User.students.count).to eq(5)
+      end
     end
 
     context '#no_waiver_users' do
-
       it 'should return nothing' do
         expect(User.no_waiver_users.count).to eq(0)
       end
-
     end
 
     context '#between_dates_picked' do
-
       it 'should return one' do
-        create(:user, :regular_user, created_at: '2017-07-07 19:15:39.406247')
-        start_date = DateTime.new(2016,2,3,4,5,6)
-        end_date = DateTime.new(2018,2,3,4,5,6)
-        expect(User.between_dates_picked(start_date, end_date).count).to eq(1)
+        start_date = 4.months.ago
+        end_date = 2.months.ago
+        expect(User.between_dates_picked(start_date, end_date).count).to eq(4)
       end
 
-      it 'should return one' do
-        create(:user, :regular_user, created_at: '2020-07-07 19:15:39.406247')
-        start_date = DateTime.new(2019,2,3,4,5,6)
-        end_date = DateTime.new(2020,2,3,4,5,6)
+      it 'should return none' do
+        start_date = 2.years.ago
+        end_date = 1.year.ago
         expect(User.between_dates_picked(start_date, end_date).count).to eq(0)
       end
-
     end
 
     context '#active' do
-
       it 'should return 5 active users' do
         expect(User.active.count).to eq(User.all.count)
       end
@@ -234,11 +250,9 @@ RSpec.describe User, type: :model do
         create(:user, :admin, active: false)
         expect(User.active.count).to eq(User.all.count - 1)
       end
-
     end
 
     context '#unknown_identity' do
-
       it 'should return 0 users' do
         expect(User.unknown_identity.count).to eq(0)
       end
@@ -247,9 +261,7 @@ RSpec.describe User, type: :model do
         create(:user, :admin, identity: "unknown")
         expect(User.unknown_identity.count).to eq(1)
       end
-
     end
-
   end
 
   describe 'model methods' do
