@@ -7,6 +7,8 @@ class TrainingSession < ApplicationRecord
   has_many :certifications, dependent: :destroy
   has_many :exams, dependent: :destroy
   has_and_belongs_to_many :users, uniq: true
+  belongs_to :course_name
+
   validates :training, presence: { message: 'A training subject is required' }
   validates :user, presence: { message: 'A trainer is required' }
   validate :is_staff
@@ -15,10 +17,6 @@ class TrainingSession < ApplicationRecord
 
   def is_staff
     errors.add(:string, 'user must be staff') unless user.staff?
-  end
-
-  def courses
-    ['GNG2101', 'GNG2501', 'GNG1103', 'GNG1503', 'MCG4143', 'no course']
   end
 
   def completed?

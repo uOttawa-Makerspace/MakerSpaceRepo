@@ -41,7 +41,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     training_session.save
     assert training_session.users.include? User.find_by(username: 'adam')
     post :certify_trainees, params: { id: training_session }
-    assert_redirected_to staff_index_url
+    assert_redirected_to staff_dashboard_index_path
     assert Certification.find_by(user_id: users(:adam).id, training_session_id: training_sessions(:lathe_1_session).id).present?
   end
 
@@ -67,7 +67,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     delete :destroy, params: { id: training_sessions(:lathe_1_session) }
     assert_not TrainingSession.find_by(training_id: Training.find_by(name: 'lathe_1'),
                                        user_id: @user.id).present?
-    assert_redirected_to staff_index_url
+    assert_redirected_to staff_dashboard_index_path
     assert_equal flash[:notice], 'Deleted Successfully'
   end
 

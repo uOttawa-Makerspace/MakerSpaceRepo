@@ -47,6 +47,7 @@ require("packs/repositories");
 require("packs/requests");
 require("packs/settings");
 require("packs/sorting");
+require("packs/staff_area");
 require("packs/users");
 require("packs/vendor");
 require("packs/videos");
@@ -55,7 +56,6 @@ require("packs/volunteer_requests");
 require("packs/volunteer_tasks");
 
 import "bootstrap";
-import "../stylesheets/application"
 require("packs/toastr");
 
 document.addEventListener("turbolinks:load", () => {

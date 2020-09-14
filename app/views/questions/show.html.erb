@@ -1,25 +1,21 @@
-<section class="page-contents">
-  <div class="edit-column text-center">
+<h2 class="text-center pt-2 mb-5">Question in <strong>"<%= @question.trainings.map(&:name).join(", ").html_safe if @question.trainings.present? %>"</strong></h2>
 
-    <h2>Question in "<%= @question.trainings.map(&:name).join(", ").html_safe if @question.trainings.present? %>"</h2>
-    <br />
+<div class="text-left word-break">
+  <h2><b><%= @question.description %></b></h2>
+</div>
 
-    <div class=" text-left word-break">
-      <h2><b><%= @question.description %></b></h2>
-    </div>
-    <%= image_tag(@question.image.variant(resize: "300x300")) if @question.image.attached? %>
+<div class="text-center">
+  <%= image_tag(@question.image.variant(resize: "300x300")) if @question.image.attached? %>
+</div>
 
-    <hr>
+<hr>
 
-    <div class="text-left">
-      <% @question.answers.randomize_answers.each do |a| %>
-        <% if a.correct %>
-          <p class="correct-answers"><%= a.description %></p>
-        <% else %>
-          <p class="answers"><%= a.description %></p>
-        <% end  %>
-      <% end %>
-
-    </div>
-  </div>
-</section>
+<div class="text-left">
+  <% @question.answers.randomize_answers.each do |a| %>
+    <% if a.correct %>
+      <p class="correct-answers"><%= a.description %></p>
+    <% else %>
+      <p class="answers"><%= a.description %></p>
+    <% end  %>
+  <% end %>
+</div>

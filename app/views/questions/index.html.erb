@@ -1,5 +1,5 @@
 <section class="page-contents">
-  <div class="edit-column text-center">
+  <div class="padding-10 text-center">
 
     <h2>Questions</h2>
 
@@ -48,11 +48,11 @@
               </td>
 
               <td class="action-cell">
-                <%=link_to "Edit", edit_question_path(q.id), class:"btn-block visit-button mb-1 mt-0" %>
-                <%=link_to "Show", question_path(q.id), class:"btn-block show-button mt-0 mb-1" %>
+                <%=link_to "Edit", edit_question_path(q.id), class:"btn-block btn btn-primary btn-sm" %>
+                <%=link_to "Show", question_path(q.id), class:"btn-block btn btn-info btn-sm" %>
                 <%=link_to "Delete", { controller: :questions ,action: :destroy, id: q.id }, method: :delete,
                            data: { confirm: 'Are you sure that you want to delete this question?' },
-                           class:"btn-block destroy-button mb-1 mr-0"%>
+                           class:"btn-block btn-sm btn btn-danger"%>
               </td>
 
             </tr>

@@ -1,7 +1,7 @@
 <section class="page-contents">
-  <div class="edit-column text-center">
+  <div class="text-center padding">
 
-    <h2>New <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> Training Session</h2>
+    <h2 class="pt-2 mb-5">New <spacetag style="font-weight:bold"><%=@space.name.capitalize %></spacetag> Training Session</h2>
 
     <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
@@ -11,11 +11,11 @@
       </div>
       <div class="form-group">
         <% label_tag 'level' %>
-        <%= select_tag 'level', options_for_select(TrainingSession.new.levels), prompt: 'Select level', class: "form-control" %><br>
+        <%= select_tag 'level', options_for_select(@levels), prompt: 'Select level', class: "form-control" %><br>
       </div>
       <div class="form-group">
         <% label_tag 'course' %>
-        <%= select_tag 'course', options_for_select(TrainingSession.new.courses), prompt: 'Select course', class: "form-control" %><br>
+        <%= select_tag 'course', options_for_select(@course_names), prompt: 'Select course', class: "form-control" %><br>
       </div>
       <% if @user.admin? %>
         <% label_tag 'user_id' %>

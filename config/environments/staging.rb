@@ -89,20 +89,8 @@ Rails.application.configure do
     c.client_secret    = Rails.application.credentials[Rails.env.to_sym][:github][:app_key_secret]
   end
 
-  # SMTP GMail Settings
+  # SMTP settings
   config.action_mailer.default_url_options = { host: 'staging.makerepo.com' }
-
-  config.action_mailer.delivery_method = :smtp
-
-  # GMAIL SETUP
-  config.action_mailer.smtp_settings = {
-    address: 'smtp.sendgrid.net',
-    port: 587,
-    user_name: Rails.application.credentials[Rails.env.to_sym][:smtp_user],
-    password: Rails.application.credentials[Rails.env.to_sym][:smtp_password],
-    authentication: 'plain',
-    enable_starttls_auto: true
-  }
 
   config.paperclip_defaults = {
     storage: :s3,

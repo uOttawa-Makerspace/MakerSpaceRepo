@@ -18,23 +18,11 @@
 
   <%= render :partial => 'partials/announcements' %>
 
+  <%= render 'layouts/staff_area_header' %>
+
 	<section id="setting" style="width:100%">
 		<div class="setting-grid">
-			<div class="setting-side-panel">
-        <div class="panel-title"><%= link_to 'Staff Area', staff_index_path %></div>
-				<ul>
-		      <li class="setting-menu-item">
-            <%= link_to 'Go To Kiosk', staff_dashboard_index_path, class: 'kiosk-button' %><br></br>
-            <%= link_to 'New Training Session', new_staff_training_session_path, class: 'new-session' %><br></br>
-            <%= link_to 'My Training Sessions', staff_training_sessions_path, class: 'my-sessions' %><br></br>
-            <%= link_to 'Questions', questions_path, class: 'my-sessions' %><br></br>
-            <%= link_to 'Announcements', announcements_path, class: 'my-sessions' %><br></br>
-		      </li>
-				</ul>
-			</div>
-
 			<%= yield %>
-
 		</div>
 	</section>
   <%= render 'layouts/footer' %>

@@ -126,6 +126,10 @@ class User < ApplicationRecord
     self.password_confirmation = @pword
   end
 
+  def has_avatar?
+    avatar.attached?
+  end
+
   def student?
     identity == 'grad' || identity == 'undergrad'
   end
