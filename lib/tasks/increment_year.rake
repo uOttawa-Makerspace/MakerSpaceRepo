@@ -3,14 +3,12 @@
 namespace :increment_year do
   desc 'increment year to students'
   task increment_one_year: :environment do
-    # Get students, created this month and are not alumni only
-    User.active.created_this_month.where.not(year_of_study: [nil, 'Alumni']).find_each do |u|
-      # Check if the year is between 0-8 (inclusive)
-      if u.year_of_study.to_i.between?(0, 7)
-        # Check if the account was created this year. f it wasn't, it will update by 1.
-        u.update(year_of_study: u.year_of_study.next) #if u.created_at.year != Date.today.year
+    # Get students, created this month and are not alumni and not created this year
+    this_month = Date.today.month
+    User.active.students.not_created_this_year.created_at_month(this_month).where.not(year_of_study: 'Alumni').find_each do |u|
+      if u.year_of_study.to_i.between?(1, 7)
+        u.update(year_of_study: u.year_of_study.next)
       else
-        # If the year is more than 8 it will change to Alumni
         u.update(year_of_study: "Alumni")
       end
     end
@@ -18,37 +16,30 @@ namespace :increment_year do
 
   desc 'fix year for students'
   task fix: :environment do
-    User.active.where.not(student_id: nil).find_each do |u|
-      # Make sure that it is a number
-      if 0 < u.year_of_study.to_i
-        year_difference = Date.today.strftime("%y").to_i - u.created_at.strftime("%y").to_i
-        # Check if it's a the year they were on
-        if u.year_of_study.between?(0, 7)
-          # Check if account was created this year
-          unless u.created_at.strftime("%y") == Date.today.strftime("%y")
-            # If the month of creation has passed it will be the year of study + year_difference
-            if u.created_at.strftime("%m").to_i < Date.today.strftime("%m").to_i
-              u.update(year_of_study: u.year_of_study + year_difference)
-            # Otherwise, it will be the year of study + year_difference - 1 to compensate for the fact that it will get updated once again with the monthly rake
-            else
-              u.update(year_of_study: u.year_of_study + year_difference - 1)
-            end
-          end
-        elsif u.year_of_study.between?(6, 15)
-          u.update(year_of_study: "Alumni")
+    User.active.students.not_created_this_year.find_each do |u|
+      this_year = Date.today.year
+      this_month = Date.today.month
+      year_of_study = u.year_of_study.to_i
+      year_difference = this_year - u.created_at.year
+      if year_of_study.between?(1, 7)
+        # If the month of creation has passed it will be the year of study + year_difference
+        if u.created_at.month < this_month
+          u.update(year_of_study: year_of_study + year_difference)
         else
-          unless u.created_at.strftime("%y") == Date.today.strftime("%y")
-            # If the month of creation has passed it will be the year_difference + 1
-            if u.created_at.strftime("%m").to_i < Date.today.strftime("%m").to_i
-              u.update(year_of_study: 1 + year_difference)
-            # Otherwise, it will be the year_difference
-            else
-              u.update(year_of_study: year_difference)
-            end
-          end
+          # Otherwise, it will be the year of study + year_difference - 1 to compensate for the fact that
+          # it will get updated once again with the monthly rake
+          u.update(year_of_study: year_of_study + year_difference - 1)
         end
-      else
+      elsif year_of_study.between?(8, 15)
         u.update(year_of_study: "Alumni")
+      else
+        # If the month of creation has passed it will be the year_difference + 1
+        if u.created_at.month < this_month
+          u.update(year_of_study: 1 + year_difference)
+        else
+          # Otherwise, it will be the year_difference
+          u.update(year_of_study: year_difference)
+        end
       end
     end
   end

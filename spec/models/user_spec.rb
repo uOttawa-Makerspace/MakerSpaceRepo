@@ -199,11 +199,25 @@ RSpec.describe User, type: :model do
       create(:user, :staff)
       create(:user, :volunteer)
       4.times{ create(:user, :regular_user, created_at: 3.months.ago) }
+      5.times{ create(:user, :student) }
+      2.times{ create(:user, :regular_user, created_at: 3.years.ago) }
     end
 
-    context '#created_this_month' do
+    context '#created_at_month' do
+      it 'should return 12' do
+        expect(User.created_at_month(Date.today.month).count).to eq(12)
+      end
+    end
+
+    context '#not_created_this_year' do
+      it 'should return 2' do
+        expect(User.not_created_this_year.count).to eq(2)
+      end
+    end
+
+    context '#students' do
       it 'should return 5' do
-        expect(User.created_this_month.count).to eq(5)
+        expect(User.students.count).to eq(5)
       end
     end
 
