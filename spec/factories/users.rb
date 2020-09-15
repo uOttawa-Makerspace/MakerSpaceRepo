@@ -46,18 +46,10 @@ FactoryBot.define do
 
     trait :volunteer do
       role { "volunteer" }
-
-      after(:create) do |volunteer|
-        Skill.create(user_id: volunteer.id, active: true)
-      end
     end
 
     trait :unactive_volunteer do
       role { "volunteer" }
-
-      after(:create) do |volunteer|
-        Skill.create(user_id: volunteer.id, active: false)
-      end
     end
 
     trait :volunteer_with_volunteer_program do
