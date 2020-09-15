@@ -79,7 +79,7 @@ RSpec.describe VolunteerTasksController, type: :controller do
       session[:user_id] = user.id
       session[:expires_at] = Time.zone.now + 10000
       Space.create(name: "Brunsfield")
-      volunteer_task_params = FactoryBot.attributes_for(:volunteer_request, space_id: Space.last.id)
+      volunteer_task_params = FactoryBot.attributes_for(:volunteer_task_request, space_id: Space.last.id)
       expect{ post :create, params: {volunteer_task: volunteer_task_params} }.to change(VolunteerTask, :count).by(0)
       expect(response).to redirect_to root_path
       expect(flash[:alert]).to eq('You cannot access this area.')

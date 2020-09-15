@@ -11,20 +11,20 @@ class VolunteersController < ApplicationController
 
   def emails
     @all_emails = User.where(role: 'volunteer').pluck(:email)
-    @active_emails = User.where(role: 'volunteer').joins(:skill).where('skills.active =?', true).pluck(:email)
-    @unactive_emails = User.where(role: 'volunteer').joins(:skill).where('skills.active =?', false).pluck(:email)
+    @active_emails = User.joins(:programs).where(role: 'volunteer').where(programs: {active: true, program_type: Program::VOLUNTEER}).pluck(:email)
+    @unactive_emails = User.joins(:programs).where(role: 'volunteer').where(programs: {active: false, program_type: Program::VOLUNTEER}).pluck(:email)
   end
 
   def volunteer_list
-    @active_volunteers = User.where(role: 'volunteer').joins(:skill).where('skills.active = ?', true)
-    @unactive_volunteers = User.where(role: 'volunteer').joins(:skill).where('skills.active = ?', false)
+    @active_volunteers = User.joins(:programs).where(role: 'volunteer').where(programs: {active: true, program_type: Program::VOLUNTEER})
+    @unactive_volunteers = User.joins(:programs).where(role: 'volunteer').where(programs: {active: false, program_type: Program::VOLUNTEER})
   end
 
   def join_volunteer_program
     if current_user.staff?
       flash[:notice] = 'You already have access to the Volunteer Area.'
     else
-      Program.create(user_id: current_user.id, program_type: Program::VOLUNTEER)
+      Program.create(user_id: current_user.id, program_type: Program::VOLUNTEER, active: true)
       current_user.update(role: 'volunteer')
       flash[:notice] = "You've joined the Volunteer Program"
     end

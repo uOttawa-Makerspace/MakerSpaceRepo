@@ -35,9 +35,9 @@ RSpec.describe VolunteersController, type: :controller do
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
         total_volunteer = User.where(role: 'volunteer').count
-        create(:user, :volunteer)
-        create(:user, :volunteer)
-        create(:user, :unactive_volunteer)
+        create(:user, :volunteer_with_volunteer_program)
+        create(:user, :volunteer_with_volunteer_program)
+        create(:user, :unactive_volunteer_with_volunteer_program)
         get :emails
         expect(@controller.instance_variable_get(:@all_emails).count).to eq(total_volunteer + 3)
         expect(@controller.instance_variable_get(:@active_emails).count).to eq(2)
@@ -57,9 +57,9 @@ RSpec.describe VolunteersController, type: :controller do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
-        create(:user, :volunteer)
-        create(:user, :volunteer)
-        create(:user, :unactive_volunteer)
+        create(:user, :volunteer_with_volunteer_program)
+        create(:user, :volunteer_with_volunteer_program)
+        create(:user, :unactive_volunteer_with_volunteer_program)
         get :volunteer_list
         expect(@controller.instance_variable_get(:@active_volunteers).count).to eq(2)
         expect(@controller.instance_variable_get(:@unactive_volunteers).count).to eq(1)

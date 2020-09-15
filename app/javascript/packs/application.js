@@ -52,7 +52,6 @@ require("packs/users");
 require("packs/vendor");
 require("packs/videos");
 require("packs/volunteer_hours");
-require("packs/volunteer_requests");
 require("packs/volunteer_tasks");
 
 import "bootstrap";

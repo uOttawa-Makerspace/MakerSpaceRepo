@@ -3,30 +3,29 @@
 namespace :active_volunteers do
   desc 'Check if volunteers are active or not'
   task check_volunteers_status: :environment do
-    User.where(role: 'volunteer').joins(:skill).find_each do |user|
-      if (user.last_seen_at.nil? || user.last_seen_at < 2.months.ago) && user.skill.active == true
-        skill = user.skill
-        skill.update(active: false)
-      elsif !user.last_seen_at.nil? && user.last_seen_at > 2.months.ago && user.skill.active == false
-        skill = user.skill
-        skill.update(active: true)
+    User.joins(:programs).where(role: 'volunteer', programs: {program_type: 'Volunteer Program'}).find_each do |user|
+      program = user.programs.find_by_program_type("Volunteer Program")
+      if (user.last_seen_at.nil? || user.last_seen_at < 2.months.ago) && program.active == true
+        program.update(active: false)
+      elsif !user.last_seen_at.nil? && user.last_seen_at > 2.months.ago && program.active == false
+        program.update(active: true)
       end
     end
   end
 
   desc 'Check if volunteers had at least one task completed'
   task check_volunteers_tasks_performance: :environment do
-    User.where(role: 'volunteer').joins(:skill).find_each do |user|
+    User.joins(:programs).where(role: 'volunteer', programs: {program_type: 'Volunteer Program'}).find_each do |user|
       status = []
-      skill = user.skill
+      program = user.programs.find_by_program_type("Volunteer Program")
       user.volunteer_task_joins.each do |vtj|
         status << vtj.volunteer_task.status
       end
 
       if status.include?('completed')
-        skill.update(active: true) if skill.active != true
+        program.update(active: true) if program.active != true
       else
-        skill.update(active: false) if skill.active != false
+        program.update(active: false) if program.active != false
       end
     end
   end

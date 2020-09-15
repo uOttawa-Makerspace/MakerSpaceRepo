@@ -60,6 +60,15 @@ FactoryBot.define do
       end
     end
 
+    trait :unactive_volunteer_with_volunteer_program do
+      role { "volunteer" }
+
+      after(:create) do |volunteer|
+        Program.create(user_id: volunteer.id, program_type: Program::VOLUNTEER, active: false)
+        puts(Program.last.active)
+      end
+    end
+
     trait :volunteer_with_dev_program do
       role { "volunteer" }
 
