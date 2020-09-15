@@ -3,7 +3,7 @@ require 'faker'
 FactoryBot.define do
 
   factory :volunteer_hour do
-    association :user, :regular_user
+    association :user, :volunteer_with_volunteer_program
     association :volunteer_task
 
     trait :approved1 do

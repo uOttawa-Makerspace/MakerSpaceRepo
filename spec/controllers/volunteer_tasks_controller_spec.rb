@@ -16,7 +16,7 @@ RSpec.describe VolunteerTasksController, type: :controller do
       end
 
       it 'should show the index page' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task)
@@ -92,7 +92,7 @@ RSpec.describe VolunteerTasksController, type: :controller do
     context "show" do
 
       it 'should show the volunteer task' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task)
@@ -118,7 +118,7 @@ RSpec.describe VolunteerTasksController, type: :controller do
     context "my_tasks" do
 
       it 'should show the volunteer task' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task_join, :active, user_id: volunteer.id)

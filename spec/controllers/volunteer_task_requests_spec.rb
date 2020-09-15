@@ -14,7 +14,7 @@ RSpec.describe VolunteerTaskRequestsController, type: :controller do
       end
 
       it 'should show the index page (volunteer)' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task_request, :not_processed, user_id: volunteer.id)
@@ -46,7 +46,7 @@ RSpec.describe VolunteerTaskRequestsController, type: :controller do
     context "create_request" do
 
       it 'should create a task request' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task)
@@ -65,7 +65,7 @@ RSpec.describe VolunteerTaskRequestsController, type: :controller do
     context "update_approval" do
 
       it 'should update the task request to approval : true' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task_request, :not_processed)

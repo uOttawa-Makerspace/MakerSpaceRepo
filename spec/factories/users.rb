@@ -65,7 +65,6 @@ FactoryBot.define do
 
       after(:create) do |volunteer|
         Program.create(user_id: volunteer.id, program_type: Program::VOLUNTEER, active: false)
-        puts(Program.last.active)
       end
     end
 

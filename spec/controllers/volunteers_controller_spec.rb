@@ -7,7 +7,7 @@ RSpec.describe VolunteersController, type: :controller do
     context 'index' do
 
       it 'should show the index page (volunteer)' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         get :index
@@ -103,7 +103,7 @@ RSpec.describe VolunteersController, type: :controller do
     context "my_stats" do
 
       it 'should get the task for user' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task_request, :approved, user_id: volunteer.id)
