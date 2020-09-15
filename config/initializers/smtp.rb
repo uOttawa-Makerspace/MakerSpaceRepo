@@ -1,5 +1,5 @@
 Rails.application.configure do
-  smtp_provider = :mailjet # :sendgrid or :mailjet (fallback)
+  smtp_provider = :sendinblue # :sendinblue or :sendgrid
   smtp_credentials = Rails.application.credentials[Rails.env.to_sym][:smtp][smtp_provider]
 
   break if smtp_credentials.nil?
