@@ -17,8 +17,6 @@ class User < ApplicationRecord
   has_many :printer_sessions, dependent: :destroy
   has_many :volunteer_hours
   has_many :volunteer_tasks
-  has_one :skill
-  has_one :volunteer_request, dependent: :destroy
   has_many :volunteer_task_joins
   has_many :training_sessions
   has_many :announcements

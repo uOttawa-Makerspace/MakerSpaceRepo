@@ -7,7 +7,6 @@ class Space < ApplicationRecord
   has_and_belongs_to_many :trainings
   has_many :training_sessions, dependent: :destroy
   has_many :certifications, through: :training_sessions
-  has_many :volunteer_requests, dependent: :destroy
   has_many :volunteer_tasks, dependent: :destroy
 
   validates :name, presence: { message: 'A name is required for the space' }, uniqueness: { message: 'Space already exists' }

@@ -91,7 +91,6 @@ RSpec.describe VolunteersController, type: :controller do
         expect(flash[:notice]).to eq("You've joined the Volunteer Program")
         expect(User.last.role).to eq('volunteer')
         expect(Program.last.user_id).to eq(user.id)
-        expect(Skill.last.user_id).to eq(user.id)
         expect(response).to redirect_to volunteers_path
       end
 

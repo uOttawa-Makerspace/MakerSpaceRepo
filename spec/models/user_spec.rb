@@ -12,8 +12,6 @@ RSpec.describe User, type: :model do
 
     context 'has_one' do
       it { should have_one(:rfid) }
-      it { should have_one(:skill) }
-      it { should have_one(:volunteer_request) }
     end
 
     context 'accepts_nested_attributes_for' do

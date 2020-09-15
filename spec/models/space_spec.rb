@@ -14,7 +14,6 @@ RSpec.describe Space, type: :model do
       it { should have_many(:users) }
       it { should have_many(:training_sessions) }
       it { should have_many(:certifications) }
-      it { should have_many(:volunteer_requests) }
       it { should have_many(:volunteer_tasks) }
     end
   end
