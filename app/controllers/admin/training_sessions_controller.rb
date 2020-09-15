@@ -6,7 +6,6 @@ class Admin::TrainingSessionsController < AdminAreaController
   before_action :training_session, only: %i[update destroy]
 
   def index
-
     # Preventing SQL Injection
     sort_array = %w(training_sessions.created_at trainings.name users.name training_sessions.course count(certifications.id) count(users.id))
 
@@ -15,9 +14,23 @@ class Admin::TrainingSessionsController < AdminAreaController
 
       # Check if it's ASC or DESC
       if params[:sort_last].present? && params[:sort_last] == params[:sort_name]
-        @sessions = TrainingSession.includes(:certifications, :users).joins(:training).group('trainings.name', 'users.name', ['training_sessions.id', 'certifications.id'], ['training_sessions.id', 'users.id']).order("#{sort_array[params[:sort_name].to_i  - 1]} ASC").references(:certifications, :users).paginate(:page => params[:page], :per_page => 20)
+        @sessions = TrainingSession.includes(:certifications, :users).joins(:training).
+            group('trainings.name',
+                  'users.name',
+                  ['training_sessions.id', 'certifications.id'],
+                  ['training_sessions.id', 'users.id']).
+            order("#{sort_array[params[:sort_name].to_i  - 1]} ASC").
+            references(:certifications, :users).
+            paginate(:page => params[:page], :per_page => 20)
       else
-        @sessions = TrainingSession.includes(:certifications, :users).joins(:training).group('trainings.name', 'users.name', ['training_sessions.id', 'certifications.id'], ['training_sessions.id', 'users.id']).order("#{sort_array[params[:sort_name].to_i  - 1]} DESC").references(:certifications, :users).paginate(:page => params[:page], :per_page => 20)
+        @sessions = TrainingSession.includes(:certifications, :users).joins(:training).
+            group('trainings.name',
+                  'users.name',
+                  ['training_sessions.id', 'certifications.id'],
+                  ['training_sessions.id', 'users.id']).
+            order("#{sort_array[params[:sort_name].to_i  - 1]} DESC").
+            references(:certifications, :users).
+            paginate(:page => params[:page], :per_page => 20)
 
         # @last tells the view if the param DESC to switch it next time
         @last = params[:sort_name]
