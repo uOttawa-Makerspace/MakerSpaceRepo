@@ -28,7 +28,7 @@ class Repository < ApplicationRecord
   end
 
   validates :title,
-            format: { with: /\A[-a-zA-Z\d\s]*\z/, message: 'Invalid project title' },
+            format: { with: /\A[-a-zA-ZÀ-ÿ\d\s]*\z/, message: 'Invalid project title' },
             presence: { message: 'Project title is required.' },
             uniqueness: { message: 'Project title is already in use.', scope: :user_username }
 
