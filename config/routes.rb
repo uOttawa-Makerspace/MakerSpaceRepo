@@ -132,8 +132,6 @@ Rails.application.routes.draw do
     get 'admin'
   end
 
-  resources :skills, only: %i[edit update]
-
   get 'help', to: 'help#main'
   put 'send_email', to: 'help#send_email'
 
