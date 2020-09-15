@@ -4,7 +4,6 @@ class VolunteersController < ApplicationController
   layout 'volunteer'
   before_action :current_user
   before_action :grant_access, except: [:join_volunteer_program]
-  before_action :check_skills
   before_action :grant_access_list, only: [:volunteer_list]
   def index
     @user = current_user
@@ -27,7 +26,6 @@ class VolunteersController < ApplicationController
     else
       Program.create(user_id: current_user.id, program_type: Program::VOLUNTEER)
       current_user.update(role: 'volunteer')
-      Skill.create(user_id: current_user.id)
       flash[:notice] = "You've joined the Volunteer Program"
     end
     redirect_to volunteers_path
@@ -47,10 +45,6 @@ class VolunteersController < ApplicationController
       redirect_to root_path
       flash[:alert] = 'You cannot access this area.'
     end
-  end
-
-  def check_skills
-    Skill.create(user_id: current_user.id) unless current_user.skill
   end
 
   def grant_access_list

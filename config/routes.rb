@@ -312,12 +312,6 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :volunteer_requests, only: %i[index create show] do
-    collection do
-      put :update_approval
-    end
-  end
-
   resources :volunteer_hours, only: %i[index create new edit destroy update] do
     collection do
       get :volunteer_hour_requests
