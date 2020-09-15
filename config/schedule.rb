@@ -26,6 +26,10 @@ set :output, 'log/cron_log.log'
 env :PATH, ENV['PATH']
 
 every 1.month do
+  rake 'increment_year:increment_one_year'
+end
+
+every 1.month do
   runner "MsrMailer.send_monthly_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com']).deliver_now"
 end
 
