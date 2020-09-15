@@ -11,12 +11,14 @@ class StaffDashboardController < StaffAreaController
       file = params[:file]
       file_ext = File.extname(file.original_filename)
       faulty_users = 0
+      faulty_user_data = []
       raise "Unknown file type: #{file.original_filename}" unless [".xls", ".xlsx"].include?(file_ext)
       spreadsheet = (file_ext == ".xls") ? Roo::Excel.new(file.path) : Roo::Excelx.new(file.path)
       (1..spreadsheet.last_row).each do |i|
-        user_data = spreadsheet.row(i)[0]
-        user = User.where("email = ? OR name =? OR username = ?", user_data, user_data, user_data)
-        faulty_users += 1 and next if user.blank?
+        next if spreadsheet.row(i)[0].blank?
+        user_data = spreadsheet.row(i)[0].downcase
+        user = User.where("lower(email) = ? OR lower(name) = ? OR lower(username) = ?", user_data, user_data, user_data)
+        faulty_users += 1 and faulty_user_data << user_data and next if user.blank?
         LabSession.create(
             user: user.last,
             space_id: @space.id,
@@ -24,9 +26,13 @@ class StaffDashboardController < StaffAreaController
             sign_out_time: Time.zone.now + 8.hours
         )
       end
-      flash[:notice] = "The file has been processed and users have been signed in ! <b>Please note that #{faulty_users} user(s) did not get signed in because they were not found in the system.</b>".html_safe
-    rescue Exception => e
-      flash[:alert] = "An error occured while uploading the log in file, please try again later"
+      flash[:notice] = "The file has been processed and users have been signed in ! "
+      if faulty_users > 0
+        flash[:alert_yellow] = "Please note that #{faulty_users} user(s) did not get signed in because they were not found in the system."
+        flash[:alert] = "Users with error: #{faulty_user_data.join(", ")}"
+      end
+    rescue StandardError => e
+      flash[:alert] = "An error occured while uploading the log in file, please try again later: #{e}"
     end
     redirect_to staff_dashboard_index_path
   end
@@ -66,11 +72,9 @@ class StaffDashboardController < StaffAreaController
   end
 
   def change_space
-    if new_space = Space.find_by(name: params[:space_name])
-      if current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
-        current_sesh.sign_out_time = Time.zone.now
-        current_sesh.save
-      end
+    new_space = Space.find_by(id: params[:space_id])
+    if new_space.present?
+      update_lab_session
       new_sesh = LabSession.new(
         user_id: current_user.id,
         sign_in_time: Time.zone.now,
@@ -83,7 +87,7 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = 'Something went wrong'
       end
     end
-    redirect_to staff_index_url
+    redirect_to staff_dashboard_index_path
   end
 
   def link_rfid
@@ -136,5 +140,15 @@ class StaffDashboardController < StaffAreaController
     json_data = User.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
     render json: { users: json_data }
   end
+
+  private
+
+    def update_lab_session
+      current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
+      if current_sesh.present?
+        current_sesh.sign_out_time = Time.zone.now
+        current_sesh.save
+      end
+    end
 
  end

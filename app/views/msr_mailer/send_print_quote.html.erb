@@ -21,14 +21,18 @@
       Volume: <%= @print_order.grams %> cm3<br>
       Price: <%= number_to_currency(@print_order.price_per_gram) %>/g
       <br>
-      Carbon fiber: <br>
-      Volume: <%= @print_order.grams_carbonfiber %> cm3<br>
-      Price: <%= number_to_currency(@print_order.price_per_gram_carbonfiber) %>/g
-      <br>
-      Fiber glass: <br>
-      Volume: <%= @print_order.grams_fiberglass %> cm3<br>
-      Price: <%= number_to_currency(@print_order.price_per_gram_fiberglass) %>/g
-      <br>
+      <% if @print_order.grams_carbonfiber.present? && @print_order.price_per_gram_carbonfiber.present? %>
+        Carbon fiber: <br>
+        Volume: <%= @print_order.grams_carbonfiber %> cm3<br>
+        Price: <%= number_to_currency(@print_order.price_per_gram_carbonfiber) %>/g
+        <br>
+      <% end %>
+      <% if @print_order.grams_fiberglass.present? && @print_order.price_per_gram_fiberglass.present? %>
+        Fiber glass: <br>
+        Volume: <%= @print_order.grams_fiberglass %> cm3<br>
+        Price: <%= number_to_currency(@print_order.price_per_gram_fiberglass) %>/g
+        <br>
+      <% end %>
     <% else %>
       Weight: <%= @print_order.grams %> grams<br>
       Price: <%= number_to_currency(@print_order.price_per_gram) %>/g
@@ -49,7 +53,9 @@
 <% end %>
 
 <p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
-  You can accept or decline the quote by visiting the <a href="https://makerepo.com/print_orders">print orders page</a>.
+  You can accept or decline the quote by visiting the <a href="https://makerepo.com/print_orders/index_new">print orders page</a>.
+  <br>
+  If the link doesn't work, you can copy the following link : https://makerepo.com/print_orders/index_new
 </p>
 
 <p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">

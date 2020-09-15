@@ -1,0 +1,28 @@
+<section class="page-contents">
+  <div class="edit-column text-center">
+
+    <h2>Annoucement</h2>
+    <br />
+
+    <div class="jumbotron text-center">
+      <%= @announcement.description %>
+    </div>
+
+    <div class="row">
+
+      <div class="col-6">
+        <b>Public:</b> <%= return_public(@announcement.public_goal) %>
+        <br />
+        <br />
+      </div>
+
+      <div class="col-6">
+        <b>Created By:</b> <%= link_to @announcement.user.name.capitalize, user_path(@announcement.user.username), class: "username" %>
+        <br />
+        <br />
+      </div>
+
+    </div>
+
+  </div>
+</section>

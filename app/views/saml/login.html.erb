@@ -2,9 +2,9 @@
 
 <div class="help">
   <% if not @current_user.nil? %>
-    You are current signed in as<br/>Vous êtes connecté en tant que<br/><strong><%= @current_user.name %> (<%= @current_user.username %>)</strong>
+    <%= t('saml.login.currently_signed_in_as') %><br/><strong><%= @current_user.name %> (<%= @current_user.username %>)</strong>
   <% else %>
-    Please sign in using your MakerRepo account.<br/>Veuillez vous connecter avec votre compte MakerRepo.
+    <%= t('saml.login.please_sign_in') %>
   <% end %>
 </div>
 
@@ -12,37 +12,34 @@
   <div class="alert alert-danger"><%= @error_message %></div>
 <% end %>
 
-<%= form_tag do %>
-  <%= hidden_field_tag("SAMLRequest", params[:SAMLRequest]) %>
-  <%= hidden_field_tag("RelayState", params[:RelayState]) %>
-
+<%= form_tag params: { SAMLRequest: params[:SAMLRequest], RelayState: params[:RelayState] } do %>
   <% if not @current_user.nil? %>
     <div class="form-group">
-      <button class="btn btn-primary w-100" type="submit" name="submit" value="current_user">Use this account &ndash; Utiliser ce compte</button>
+      <button class="btn btn-primary w-100" type="submit" name="submit" value="current_user"><%= t('saml.login.use_this_account') %></button>
     </div>
 
     <div class="form-group">
-      <button class="btn btn-light w-100" type="submit" name="submit" value="logout">Use another account &ndash; Utiliser un autre compte</button>
-      <p class="small text-muted text-center">This will sign you out of MakerRepo<br/>Ceci vous déconnectera de MakerRepo</p>
+      <button class="btn btn-light w-100" type="submit" name="submit" value="logout"><%= t('saml.login.use_another_account') %></button>
+      <p class="small text-muted text-center"><%= t('saml.login.this_will_sign_you_out') %></p>
     </div>
   <% else %>
     <div class="form-group">
-      <%= email_field_tag :username, params[:username], :autocapitalize => "off", :autocorrect => "off", :autofocus => "autofocus", :spellcheck => "false", :class => "form-control", :placeholder => "Email address – Adresse courriel" %>
+      <%= text_field_tag :username, params[:username], :autocapitalize => "off", :autocorrect => "off", :autofocus => "autofocus", :spellcheck => "false", :class => "form-control", :placeholder => t("saml.login.username_or_email") %>
     </div>
 
     <div class="form-group">
-      <%= password_field_tag :password, params[:password], :autocapitalize => "off", :autocorrect => "off", :spellcheck => "false", :class => "form-control", :placeholder => "Password – Mot de passe" %>
+      <%= password_field_tag :password, params[:password], :class => "form-control", :placeholder => t("saml.login.password") %>
     </div>
 
     <div class="form-group">
-      <button class="btn btn-primary w-100" type="submit" name="submit" value="sign_in">Sign in &ndash; Connexion</button>
+      <button class="btn btn-primary w-100" type="submit" name="submit" value="sign_in"><%= t('saml.login.sign_in') %></button>
     </div>
 
-    <a class="btn btn-link w-100" href="<%= user_path 'forgot_password' %>">I forgot my password<span class="break"></span>J'ai oublié mon mot de passe</a>
+    <a class="btn btn-link w-100" href="<%= user_path 'forgot_password' %>"><%= t("saml.login.forgot_password") %></a>
 
     <hr/>
 
-    <a class="btn btn-light w-100" href="<%= user_path 'new' %>">Create an account<span class="break"></span>Créer un compte</a>
+    <a class="btn btn-light w-100" href="<%= user_path 'new' %>"><%= t("saml.login.create_account") %></a>
   <% end %>
 <% end %>
 

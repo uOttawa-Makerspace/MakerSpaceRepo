@@ -1,0 +1,27 @@
+$pswp__assets-path: "~photoswipe/src/css/default-skin/";
+
+$color-marker-complete: #00A407 !default;
+$color-marker-active: #FF9900 !default;
+$color-marker: #aaa !default;
+$marker-size: 32px !default;
+$color-marker-hover: #6e6e6e;
+
+@import "shared/variables";
+@import "~bootstrap/scss/bootstrap";
+//@import '~bootstrap/scss/_functions';
+//@import '~bootstrap/scss/_variables';
+//@import '~bootstrap/scss/mixins/_breakpoints';
+@import "~photoswipe/src/css/main";
+@import "~photoswipe/src/css/default-skin/default-skin";
+@import "~progress-tracker/src/styles/progress-tracker";
+@import 'toastr/build/toastr.min';
+
+.progress-step {
+  &.is-declined {
+    @include progress-state(#FF4F37);
+  }
+}
+
+.turbolinks-progress-bar {
+  background-color: theme-color("primary");
+}

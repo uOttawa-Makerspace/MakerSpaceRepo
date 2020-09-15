@@ -1,13 +1,24 @@
-<p>Search for users to sign them in or out of <%=@space.name.capitalize%>:</p>
+<p>Search for users:</p>
+<div class="row" style="flex-direction: row; flex-wrap: nowrap">
+  <div style="flex-grow: 1">
+    <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
+      <div class="input-group mb-3">
+        <%= text_field_tag(:query, "", placeholder: "Name, email, username", :class => "form-control", 'aria-describedby':"button-addon2", style: "font-size: inherit;") %>
+        <div class="input-group-append">
+          <button class="btn btn-primary" type="submit" id="button-addon2">Search</button>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<p>Search for users to sign them in or out of <%= @space.name.capitalize %>:</p>
 <div class="row" style="flex-direction: row; flex-wrap: nowrap">
   <div style="flex-grow: 1">
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
       <div class="form-group">
         <%= select_tag(:username, "", prompt: "Choose User...", :class => "user_dashboard_select form-control w-100", :id => "user_dashboard_select") %>
       </div>
-      </div>
-      <div class="text-center">
-        <%= submit_tag "Search", class: 'btn btn-primary btn-sm btn-block', style: "margin-left: 4px;" %>
       </div>
       <div>
     <% end %>

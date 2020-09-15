@@ -5,6 +5,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
   before_action :current_training_session, except: %i[new create index]
   before_action :changed_params, only: [:update]
   before_action :verify_ownership, except: %i[new create index renew_certification]
+  before_action :set_courses_and_levels, only: %i[new show]
 
   def index; end
 
@@ -14,6 +15,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def create
     @new_training_session = TrainingSession.new(default_params)
+    course_name = CourseName.find_by(name: @new_training_session.course)
+    @new_training_session.course_name = course_name if course_name.present?
     if @new_training_session.save
       redirect_to staff_training_session_path(@new_training_session.id)
     else
@@ -21,6 +24,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
       redirect_back(fallback_location: root_path)
     end
   end
+
+  def show; end
 
   def update
     if changed_params['user_id'].present?
@@ -47,6 +52,9 @@ class Staff::TrainingSessionsController < StaffDashboardController
     @current_training_session.users += User.where(username: params['added_users']) if params['added_users'].present?
     @current_training_session.users = @current_training_session.users.uniq
 
+    course_name = CourseName.find_by(name: @current_training_session.course)
+    @current_training_session.course_name = course_name if course_name.present?
+
     if @current_training_session.save
       flash[:notice] = 'Training session updated succesfully'
     else
@@ -61,7 +69,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
       flash[:alert] = "#{graduate.username}'s certification not saved properly!" unless certification.save
     end
     flash[:notice] = 'Training Session Completed Successfully'
-    redirect_to staff_index_url
+    redirect_to staff_dashboard_index_path
   end
 
   def renew_certification
@@ -87,7 +95,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
   def destroy
     if @current_training_session.destroy
       flash[:notice] = 'Deleted Successfully'
-      redirect_to staff_index_url
+      redirect_to staff_dashboard_index_path
     else
       flash[:alert] = 'Something went wrong'
       redirect_back(fallback_location: root_path)
@@ -131,5 +139,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
         flash[:alert] = "Can't access training session"
         redirect_to new_staff_training_session_path
       end
+    end
+
+    def set_courses_and_levels
+      @course_names = CourseName.pluck(:name)
+      @levels ||= TrainingSession.new.levels
     end
 end

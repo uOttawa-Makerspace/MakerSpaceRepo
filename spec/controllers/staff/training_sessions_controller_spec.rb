@@ -93,7 +93,7 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
         training_session.users.each do |user|
           expect(Certification.find_by(user_id: user.id, training_session_id: training_session.id).present?).to eq(true)
         end
-        expect(response).to redirect_to staff_index_path
+        expect(response).to redirect_to staff_dashboard_index_path
         expect(flash[:notice]).to eq('Training Session Completed Successfully')
       end
     end
@@ -128,7 +128,7 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
       it 'should destroy the training session' do
         expect { delete :destroy, params: {id: @training_session.id} }.to change(TrainingSession, :count).by(-1)
         expect(flash[:notice]).to eq('Deleted Successfully')
-        expect(response).to redirect_to staff_index_path
+        expect(response).to redirect_to staff_dashboard_index_path
       end
     end
   end

@@ -18,4 +18,6 @@ class ProjectProposal < ApplicationRecord
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)
   end
 
+  scope :approved, -> { where(approved: 1) }
+
 end

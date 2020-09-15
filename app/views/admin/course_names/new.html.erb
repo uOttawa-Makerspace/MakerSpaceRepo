@@ -1,0 +1,21 @@
+<section class="page-contents">
+  <div class="edit-column">
+    <h2 class="text-center">New Course</h2>
+    <%= form_for @new_course, url: {controller: "admin/course_names", action: "create"} do |f| %>
+      <div class="container">
+        <div class="row text-center">
+          <div class="col-md-12 form-group">
+            Name: <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
+          </div>
+          <div class="col-md-12 form-group my-1">
+            <%= f.submit "Create Course", class: "btn btn-secondary btn-xl text-uppercase" %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="float-right">
+    <%= link_to "Back", admin_course_names_path %>
+  </div>
+</section>

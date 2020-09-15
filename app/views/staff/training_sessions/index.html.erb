@@ -1,90 +1,85 @@
 <section class="page-contents">
-  <div class="edit-column">
-
-    <h2>Viewing <%=@user.name.capitalize + "'s"%> Training Sessions</h2>
-    <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
-
-    <br></br>
-    <table class="sessions-table">
-    <tr>
-      <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Space <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Course <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Status <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-      <th>Users <span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
-      <th class="action-header">Action</th>
-
-    </tr>
-
-    <tbody>
-    <% @sessions = TrainingSession.where(user_id: @user.id).paginate(:page => params[:page], :per_page => 50) %>
-    <%= will_paginate @sessions, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-    <% @sessions.each do |sesh| %>
+  <div>
+    <h2 class="text-center pt-2 mb-5">Viewing <strong><%=@user.name.capitalize + "'s"%></strong> Training Sessions</h2>
+    <input type="text" class="form-control mx-auto" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
+    <br />
+    <table class="sessions-table text-center mx-auto mb-3">
       <tr>
-        <td class="date-cell">
-          <%= sesh.created_at.strftime("%I:%M %p").downcase() %>
-          <br>
-          <%= sesh.created_at.strftime("%b %e %Y").downcase() %>
-        </td>
-
-        <td class="training-cell">
-          <%= sesh.training.name %>
-        </td>
-
-        <td class="trainer-cell" style="horizontal-alginment:center;">
-          <%= link_to sesh.user.name, user_url(sesh.user.username) %>
-        </td>
-
-        <td class="space-cell">
-          <%= sesh.space.name %>
-        </td>
-
-        <td class="course-cell">
-          <%= sesh.course %>
-        </td>
-
-        <td class="status-cell">
-          <% if sesh.completed? %>
-            COMPLETED
-          <% else %>
-            NOT COMPLETED
-          <% end %>
-        </td>
-
-        <td class="users-cell">
-            <div
-             class="users-count"
-             style="display:inline" >
-             <div class="count-holder" style="display:inline">
-              <%= sesh.users.length %>
-              <div id="sesh-users" style="display:inline">
-                <% sesh.users.each do |user| %>
-                  <div class="clickable-username">
-                    <%=link_to user.name, user_url(user.username), class: "user-link" %> <br>
-                  </div>
-                <% end %>
-              </div>
-            </div>
-          </div>
-        </td>
-
-        <td class="action-cell">
-        <br>
-          <%=link_to "Visit", staff_training_session_url(sesh), class:"visit-button" %>
-          <%=link_to "Download",
-                    training_report_staff_training_session_path(id:sesh.id, format: "xlsx" ),
-                    action: :training_report,
-                    class:"download-button" %>
-          <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"destroy-button"%>
-        <br></br>
-        </td>
-
+        <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Space <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Course <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Status <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Users <span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+        <th class="action-header">Action</th>
       </tr>
-    <% end %>
-    </tbody>
-  </table>
 
+      <tbody>
+        <% @sessions = TrainingSession.where(user_id: @user.id).paginate(:page => params[:page], :per_page => 50) %>
+        <%= will_paginate @sessions, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+        <% @sessions.each do |sesh| %>
+          <tr>
+            <td class="date-cell">
+              <%= sesh.created_at.strftime("%I:%M %p").downcase() %>
+              <br>
+              <%= sesh.created_at.strftime("%b %e %Y").downcase() %>
+            </td>
+
+            <td class="training-cell">
+              <%= sesh.training.name %>
+            </td>
+
+            <td class="trainer-cell" style="horizontal-alginment:center;">
+              <%= link_to sesh.user.name, user_url(sesh.user.username) %>
+            </td>
+
+            <td class="space-cell">
+              <%= sesh.space.name %>
+            </td>
+
+            <td class="course-cell">
+              <%= sesh.course %>
+            </td>
+
+            <td class="status-cell">
+              <% if sesh.completed? %>
+                COMPLETED
+              <% else %>
+                NOT COMPLETED
+              <% end %>
+            </td>
+
+            <td class="users-cell">
+                <div
+                 class="users-count"
+                 style="display:inline" >
+                 <div class="count-holder" style="display:inline">
+                  <%= sesh.users.length %>
+                  <div id="sesh-users" style="display:inline">
+                    <% sesh.users.each do |user| %>
+                      <div class="clickable-username">
+                        <%=link_to user.name, user_url(user.username), class: "user-link" %> <br>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <td class="action-cell">
+            <br>
+              <%=link_to "Visit", staff_training_session_url(sesh), class:"btn btn-success btn-sm btn-block" %>
+              <%=link_to "Download",
+                        training_report_staff_training_session_path(id:sesh.id, format: "xlsx" ),
+                        action: :training_report,
+                        class:"btn btn-info btn-sm btn-block" %>
+              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"btn btn-sm btn-danger btn-block"%>
+            <br></br>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
   </div>
 </section>

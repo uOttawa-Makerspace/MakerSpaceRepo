@@ -7,15 +7,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
   <%= favicon_link_tag 'site-icon.jpg' %>
-  <%= stylesheet_link_tag 'vendor' %>
-  <%= stylesheet_link_tag 'application' %>
+  <%= javascript_pack_tag 'saml' %>
+  <%= stylesheet_pack_tag 'saml' %>
+
+  <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400,600,500' rel='stylesheet' type='text/css'>
+
+  <%= csrf_meta_tags %>
 </head>
-<body>
-<div class="container h-100">
-  <div class="row h-100">
-    <div class="main-content col-12 col-sm-10 offset-sm-1 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
-      <div style="flex-grow: 1"></div>
+<body class="h-100 d-flex flex-column">
+  <nav class="navbar navbar-expand-xl navbar-light bg-light">
+    <a class="navbar-brand" href="/">Maker<strong>Repo</strong></a>
 
-      <h1 class="brand">Maker<strong>Repo</strong></h1>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-      <div class="middle-content">
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto align-items-xl-baseline">
+        <% locales_change.each do |locale| %>
+          <li class="nav-item">
+            <%= link_to t('name', locale: locale), url_for(request.query_parameters.merge(locale: locale)), class: 'nav-link' %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container flex-grow-1">
+    <div class="row h-100">
+      <div class="main-content col-12 col-sm-10 offset-sm-1 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
+        <div style="flex-grow: 1"></div>
+
+        <h1 class="brand">Maker<strong>Repo</strong></h1>
+
+        <div class="middle-content">

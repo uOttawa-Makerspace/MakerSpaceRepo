@@ -93,6 +93,10 @@ class User < ApplicationRecord
   scope :frequency_between_dates, ->(start_date, end_date) { joins(lab_sessions: :space).where('lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?', start_date, end_date, 'Makerspace') }
   scope :active, -> { where(active: true) }
   scope :unknown_identity, -> { where(identity: 'unknown') }
+  scope :created_at_month, -> (month) { where("DATE_PART('month', created_at) = ?", month) }
+  scope :not_created_this_year, -> { where.not(created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year) }
+  scope :students, -> { where(identity: ['undergrad', 'grad']) }
+
 
   def self.display_avatar(user)
     if user.avatar.attached?
@@ -120,6 +124,10 @@ class User < ApplicationRecord
     @pword = Password.create(new_password)
     self.password = @pword
     self.password_confirmation = @pword
+  end
+
+  def has_avatar?
+    avatar.attached?
   end
 
   def student?
