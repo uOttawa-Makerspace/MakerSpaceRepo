@@ -8,35 +8,21 @@ class Admin::TrainingSessionsController < AdminAreaController
   def index
     # Preventing SQL Injection
     sort_array = %w(training_sessions.created_at trainings.name users.name training_sessions.course count(certifications.id) count(users.id))
-
+    sort_name = params[:sort_name]
+    sort_last = params[:sort_last]
     # Checking if the params are in range of the array
-    if params[:sort_name].present? && params[:sort_name].to_i.between?(1, 6)
-
-      # Check if it's ASC or DESC
-      if params[:sort_last].present? && params[:sort_last] == params[:sort_name]
-        @sessions = TrainingSession.includes(:certifications, :users).joins(:training).
-            group('trainings.name',
-                  'users.name',
-                  ['training_sessions.id', 'certifications.id'],
-                  ['training_sessions.id', 'users.id']).
-            order("#{sort_array[params[:sort_name].to_i  - 1]} ASC").
-            references(:certifications, :users).
-            paginate(:page => params[:page], :per_page => 20)
-      else
-        @sessions = TrainingSession.includes(:certifications, :users).joins(:training).
-            group('trainings.name',
-                  'users.name',
-                  ['training_sessions.id', 'certifications.id'],
-                  ['training_sessions.id', 'users.id']).
-            order("#{sort_array[params[:sort_name].to_i  - 1]} DESC").
-            references(:certifications, :users).
-            paginate(:page => params[:page], :per_page => 20)
-
-        # @last tells the view if the param DESC to switch it next time
-        @last = params[:sort_name]
-      end
+    if sort_name.present? && sort_name.to_i.between?(1, 6)
+      sort_last.present? && sort_last == sort_name ? order = 'ASC' : (order = 'DESC') && (@last = sort_name)
+      @sessions = TrainingSession.includes(:certifications, :users).joins(:training).
+          group('trainings.name',
+                'users.name',
+                ['training_sessions.id', 'certifications.id'],
+                ['training_sessions.id', 'users.id']).
+          order("#{sort_array[params[:sort_name].to_i  - 1]} #{order}").
+          references(:certifications, :users).
+          paginate(:page => params[:page], :per_page => 20)
     else
-      @sessions = TrainingSession.all.paginate(:page => params[:page], :per_page => 20)
+      @sessions = TrainingSession.order(created_at: :desc).paginate(:page => params[:page], :per_page => 20)
     end
 
     respond_to do |format|
