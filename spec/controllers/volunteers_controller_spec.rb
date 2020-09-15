@@ -34,7 +34,7 @@ RSpec.describe VolunteersController, type: :controller do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
-        total_volunteer = User.where(role: 'volunteer').count
+        total_volunteer = User.volunteers.count
         create(:user, :volunteer_with_volunteer_program)
         create(:user, :volunteer_with_volunteer_program)
         create(:user, :unactive_volunteer_with_volunteer_program)

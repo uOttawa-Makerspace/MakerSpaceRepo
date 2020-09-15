@@ -10,14 +10,14 @@ class VolunteersController < ApplicationController
   end
 
   def emails
-    @all_emails = User.where(role: 'volunteer').pluck(:email)
-    @active_emails = User.joins(:programs).where(role: 'volunteer').where(programs: {active: true, program_type: Program::VOLUNTEER}).pluck(:email)
-    @unactive_emails = User.joins(:programs).where(role: 'volunteer').where(programs: {active: false, program_type: Program::VOLUNTEER}).pluck(:email)
+    @all_emails = User.volunteers.pluck(:email)
+    @active_emails = User.volunteers.where(programs: {active: true}).pluck(:email)
+    @unactive_emails = User.volunteers.where(programs: {active: false}).pluck(:email)
   end
 
   def volunteer_list
-    @active_volunteers = User.joins(:programs).where(role: 'volunteer').where(programs: {active: true, program_type: Program::VOLUNTEER})
-    @unactive_volunteers = User.joins(:programs).where(role: 'volunteer').where(programs: {active: false, program_type: Program::VOLUNTEER})
+    @active_volunteers = User.volunteers.where(programs: {active: true})
+    @unactive_volunteers = User.volunteers.where(programs: {active: false})
   end
 
   def join_volunteer_program
