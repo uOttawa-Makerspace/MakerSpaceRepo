@@ -4,7 +4,7 @@
     <h1>Popular Hours</h1>
 
     <ul class="nav nav-tabs">
-      <% Space.all.each do |space| %>
+      <% @spaces.each do |space| %>
         <li class="nav-item">
           <a class="nav-link  <%= @space.name == space.name ? "active" : "" %>" data-toggle="tab" href="#<%= space.name.gsub(" ", "-") %>"><%= space.name %></a>
         </li>
@@ -12,23 +12,27 @@
     </ul>
 
     <div class="tab-content">
-      <% Space.all.each do |space| %>
+      <% @spaces.each do |space| %>
         <div class="tab-pane container <%= @space.name == space.name ? "active" : "" %>" id="<%= space.name.gsub(" ", "-") %>">
           <br>
+          <% popular_hours = PopularHour.from_space(space.id) %>
+
           <span style="text-align: center!important; display: block;">The following stats are being updated automatically over time. It takes the average per hour for every day of the week and every spaces.</span>
+
           <% (0..6).each do |weekday| %>
+          <% popular_hour = popular_hours.where(day: weekday)  %>
             <br>
-            <h3 class="text-center"><%= @weekdays[weekday] %></h3>
-            <canvas id="<%= space.name.gsub(" ", "-") %>-<%= weekday %>" width="450" height="300"></canvas>
+            <h3 class="text-center"><%= @weekdays[popular_hour.first.day] %></h3>
+            <canvas id="<%= space.name.gsub(" ", "-") %>-<%= popular_hour.first.day %>" width="450" height="300"></canvas>
             <script type="text/javascript" charset="utf-8">
-                var ctx = document.getElementById('<%= space.name.gsub(" ", "-") %>-<%= weekday %>').getContext('2d');
+                var ctx = document.getElementById('<%= space.name.gsub(" ", "-") %>-<%= popular_hour.first.day %>').getContext('2d');
                 var myChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: ['0h', '1h', '2h', '3h', '4h', '5h', '6h', '7h', '8h', '9h', '10h', '11h', '12h', '13h', '14h', '15h', '16h', '17h', '18h', '19h', '20h', '21h', '22h', '23h'],
                         datasets: [{
                             label: '# of people',
-                            data: <%= @data[space.name][weekday] %>,
+                            data: <%= popular_hour.pluck(:mean) %>,
                             backgroundColor: '#6db1f5',
                             borderWidth: 1
                         }]

@@ -16,6 +16,7 @@ RSpec.describe Space, type: :model do
       it { should have_many(:certifications) }
       it { should have_many(:volunteer_requests) }
       it { should have_many(:volunteer_tasks) }
+      it { should have_many(:popular_hours) }
     end
   end
 

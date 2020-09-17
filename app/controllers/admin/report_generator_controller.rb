@@ -18,8 +18,8 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   def popular_hours
     @space = @user.lab_sessions&.last&.space || Space.first
-    @weekdays = %w(Sunday Monday Tuesday Wednesday Thursday Friday Saturday)
-    @data = PopularHour.generate_data
+    @spaces = Space.all.order(name: :asc)
+    @weekdays = Date::DAYNAMES
   end
 
   def generate
