@@ -18,12 +18,12 @@ RSpec.describe PopularHour, type: :model do
     context '#from_space' do
       it 'should return popular hour from space 1' do
         popular_hours = PopularHour.from_space(@space1.id)
-        expect(popular_hours.count).to be(4)
+        expect(popular_hours.count).to be(168 + 4)
       end
 
       it 'should return popular hour from space 2' do
         popular_hours = PopularHour.from_space(@space2.id)
-        expect(popular_hours.count).to be(2)
+        expect(popular_hours.count).to be(168 + 2)
       end
     end
   end

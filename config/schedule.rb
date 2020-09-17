@@ -30,7 +30,7 @@ every 1.month do
 end
 
 every :hour do
-  rake 'popular_hours:populate'
+  rake 'popular_hours:calculate_popular_hours'
 end
 
 every 1.month do
