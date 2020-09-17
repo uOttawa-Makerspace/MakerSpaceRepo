@@ -71,7 +71,7 @@
             <a class="dropdown-item" href="<%= likes_user_path(@user.username) %>"><%= t('navbar.user.liked') %></a>
             <a class="dropdown-item" href="<%= settings_profile_path %>"><%= t('navbar.user.settings') %></a>
             <%= link_to(t('navbar.user.admin_area'), admin_index_path, class: "dropdown-item") if @user.admin? %>
-            <%= link_to(t('navbar.user.staff_area'), staff_index_path, class: "dropdown-item") if @user.staff? %>
+            <%= link_to(t('navbar.user.staff_area'), staff_dashboard_index_path, class: "dropdown-item") if @user.staff? %>
             <%= link_to(t('navbar.user.volunteer_area'), volunteers_path, class: "dropdown-item") if (@user.volunteer? || @user.staff? || @user.admin?) %>
             <%= link_to(t('navbar.user.development_program'), development_programs_path, class: "dropdown-item") if (@user.dev_program? || @user.staff? || @user.admin?) %>
             <%= link_to(t('navbar.user.exams'), exams_path, class: "dropdown-item") if (!@user.exams.blank?) %>
@@ -95,7 +95,7 @@
 
       <% locales_change.each do |locale| %>
         <li class="nav-item">
-          <a class="nav-link" href="?locale=<%= locale %>"><%= t('name', locale: locale) %></a>
+          <%= link_to t('name', locale: locale), url_for(request.query_parameters.merge(locale: locale)), class: 'nav-link' %>
         </li>
       <% end %>
     </ul>

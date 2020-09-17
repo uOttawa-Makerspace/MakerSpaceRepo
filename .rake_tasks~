@@ -52,6 +52,7 @@ diagram:models:complete_with_engines
 diagram:setup:create_new_doc_folder_if_needed
 emails:send_survey_ceed
 exams:check_expired_exams
+increment_year:true
 log:clear
 middleware
 paperclip:clean

@@ -31,5 +31,8 @@ form.onsubmit = function(){
     form.submit();
 };
 
-
-
+document.querySelector('.custom-file-input-excel').addEventListener('change',function(e){
+    var fileName = document.getElementById("excel-input").files[0].name;
+    var nextSibling = e.target.nextElementSibling
+    nextSibling.innerText = fileName
+})

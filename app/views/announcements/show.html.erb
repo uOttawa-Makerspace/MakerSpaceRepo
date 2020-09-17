@@ -1,28 +1,24 @@
-<section class="page-contents">
-  <div class="edit-column text-center">
+<%= link_to 'Back', announcements_path, class: "float-right" %>
 
-    <h2>Annoucement</h2>
-    <br />
+<div class="padding-10 text-center">
+  <h2 class="text-center pt-2 mb-5">Annoucement</h2>
 
-    <div class="jumbotron text-center">
-      <%= @announcement.description %>
-    </div>
+  <br />
 
-    <div class="row">
-
-      <div class="col-6">
-        <b>Public:</b> <%= return_public(@announcement.public_goal) %>
-        <br />
-        <br />
-      </div>
-
-      <div class="col-6">
-        <b>Created By:</b> <%= link_to @announcement.user.name.capitalize, user_path(@announcement.user.username), class: "username" %>
-        <br />
-        <br />
-      </div>
-
-    </div>
-
+  <div class="jumbotron text-center">
+    <%= @announcement.description %>
   </div>
-</section>
+
+  <div class="row">
+    <div class="col-6">
+      <b>Public:</b> <%= return_public(@announcement.public_goal) %>
+      <br />
+      <br />
+    </div>
+    <div class="col-6">
+      <b>Created By:</b> <%= link_to @announcement.user.name.capitalize, user_path(@announcement.user.username), class: "username" %>
+      <br />
+      <br />
+    </div>
+  </div>
+</div>

@@ -6,7 +6,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
   setup do
     session[:user_id] = User.find_by(username: 'adam').id
     session[:expires_at] = 'Sat, 03 Jun 2025 05:01:41 UTC +00:00'
-    @request.env['HTTP_REFERER'] = staff_index_url
+    @request.env['HTTP_REFERER'] = staff_dashboard_index_path
   end
 
   test 'staff succeed at loading Staff Dashboard' do
@@ -33,7 +33,7 @@ class StaffDashboardControllerTest < ActionController::TestCase
     get :index
     assert response.body.include? 'Welcome to '
 
-    put :change_space, params: { space_name: 'Brunsfield Centre' }
+    put :change_space, params: { space_id: 2 }
     assert_redirected_to @request.env['HTTP_REFERER'] # redirec_to back
     assert_equal flash[:notice], 'Space changed successfully'
   end

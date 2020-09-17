@@ -8,7 +8,7 @@ class ProjectProposal < ApplicationRecord
   belongs_to :user
 
   validates :title,
-            format: { with: /\A[-a-zA-Z\d\s]*\z/, message: 'Invalid project title' },
+            format: { with: /\A[-a-zA-ZÀ-ÿ\d\s]*\z/, message: 'Invalid project title' },
             presence: { message: 'Project title is required.' }
 
   validates :email,
@@ -17,5 +17,7 @@ class ProjectProposal < ApplicationRecord
   before_save do
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)
   end
+
+  scope :approved, -> { where(approved: 1) }
 
 end

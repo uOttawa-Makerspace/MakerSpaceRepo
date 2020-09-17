@@ -79,7 +79,7 @@ $(document).on("turbolinks:load", function() {
     });
 });
 
-function debounce(func, wait, immediate) {
+window.debounce = function(func, wait, immediate) {
     var timeout;
     return function() {
         var context = this, args = arguments;

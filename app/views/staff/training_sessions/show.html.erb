@@ -1,5 +1,5 @@
 <section class="page-contents">
-  <div class="edit-column">
+  <div class="padding">
     <div style="font-weight:bold;font-size:1.4em;">Training Session #<%= @current_training_session.id %></div>
 
     <div style="float:right;">Created On: <%= @current_training_session.created_at.strftime("%D at %l:%M%P") %></div>
@@ -32,13 +32,13 @@
           Level: <%= @current_training_session.level %>
           <br />
           <% label_tag 'changed_params[level]' %>
-          <%= select_tag 'changed_params[level]', options_for_select(TrainingSession.new.levels), prompt: 'Change level', class: "form-control" %>
+          <%= select_tag 'changed_params[level]', options_for_select(@levels), prompt: 'Change level', class: "form-control" %>
           <br />
           <div>
             Course: <%= @current_training_session.course %>
           </div>
           <% label_tag 'changed_params[course]' %>
-          <%= select_tag 'changed_params[course]',  options_for_select(TrainingSession.new.courses), prompt: 'Change course', class: "form-control" %>
+          <%= select_tag 'changed_params[course]',  options_for_select(@course_names), prompt: 'Change course', class: "form-control" %>
           <br />
         </div>
         <br />

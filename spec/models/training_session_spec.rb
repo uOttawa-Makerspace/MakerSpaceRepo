@@ -10,6 +10,7 @@ RSpec.describe TrainingSession, type: :model do
       it { expect(TrainingSession.reflect_on_association(:training).macro).to eq(:belongs_to) }
       it { expect(TrainingSession.reflect_on_association(:user).macro).to eq(:belongs_to) }
       it { expect(TrainingSession.reflect_on_association(:space).macro).to eq(:belongs_to) }
+      it { expect(TrainingSession.reflect_on_association(:course_name).macro).to eq(:belongs_to) }
     end
 
     context 'has_many' do
@@ -30,13 +31,6 @@ RSpec.describe TrainingSession, type: :model do
     before(:all) do
       @training_session = create(:training_session, created_at: DateTime.yesterday.end_of_day)
       3.times { create(:training_session, created_at: DateTime.now.end_of_day) }
-    end
-
-    context '#courses' do
-      it 'should return list of courses' do
-        courses = ['GNG2101', 'GNG2501', 'GNG1103', 'GNG1503', 'MCG4143', 'no course']
-        expect(@training_session.courses).to eq(courses)
-      end
     end
 
     context '#completed?' do
