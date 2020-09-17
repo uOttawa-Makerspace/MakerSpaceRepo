@@ -85,10 +85,10 @@ class PrintOrdersController < ApplicationController
 
     @print_order = PrintOrder.create(print_order_params)
     if @print_order.id.nil? || @print_order.id == 0
-      redirect_to print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !'
+      redirect_to index_new_print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !'
     else
       MsrMailer.send_print_to_makerspace(@print_order.id).deliver_now
-      redirect_to print_orders_path, notice: 'The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision.'
+      redirect_to index_new_print_orders_path, notice: 'The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision.'
     end
   end
 
@@ -158,8 +158,13 @@ class PrintOrdersController < ApplicationController
 
   def destroy
     @print_order = PrintOrder.find(params[:id])
+    user_id = @print_order.user_id
     @print_order.destroy
-    redirect_to print_orders_path
+    if @user.id == user_id
+      redirect_to index_new_print_orders_path
+    else
+      redirect_to print_orders_path
+    end
   end
 
   def edit
