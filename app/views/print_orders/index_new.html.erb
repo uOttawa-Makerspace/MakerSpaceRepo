@@ -1,0 +1,47 @@
+<h1 class="text-center">List of prints / Laser cuts</h1>
+<div class="text-center">
+  <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %>
+  <%= link_to "Staff Page", print_orders_path, {class: 'btn btn-primary'} if @user.staff? %>
+  <br><br>
+</div>
+
+<% @order.each do |order, files| %>
+
+  <% if @print_order.where(order).present? %>
+
+    <% @print_order.where(order).each do |prints| %>
+
+      <%= render 'new_template', prints: prints, files: files %>
+
+    <% end %>
+
+  <% end %>
+
+<% end %>
+
+<div class="text-center">
+  <h1>Older files</h1>
+
+  <a class="btn btn-primary" data-toggle="collapse" href="#collapse" role="button" aria-expanded="false" aria-controls="collapseExample">
+    Open/Close older prints
+  </a>
+</div>
+
+<div class="collapse" id="collapse">
+  <br>
+  <% @order_old.each do |order, files| %>
+
+    <% if @print_order.where(order).present? %>
+
+      <% @print_order.where(order).each do |prints| %>
+
+        <%= render 'new_template', prints: prints, files: files %>
+
+      <% end %>
+
+    <% end %>
+
+  <% end %>
+</div>
+
+
