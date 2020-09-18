@@ -63,6 +63,7 @@ paperclip:refresh:fingerprints
 paperclip:refresh:metadata
 paperclip:refresh:missing_styles
 paperclip:refresh:thumbnails
+popular_hours:populate
 print_order_notifications:two_weeks_reminder
 restart
 secret
