@@ -17,8 +17,6 @@ class User < ApplicationRecord
   has_many :printer_sessions, dependent: :destroy
   has_many :volunteer_hours
   has_many :volunteer_tasks
-  has_one :skill
-  has_one :volunteer_request, dependent: :destroy
   has_many :volunteer_task_joins
   has_many :training_sessions
   has_many :announcements
@@ -96,6 +94,7 @@ class User < ApplicationRecord
   scope :created_at_month, -> (month) { where("DATE_PART('month', created_at) = ?", month) }
   scope :not_created_this_year, -> { where.not(created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year) }
   scope :students, -> { where(identity: ['undergrad', 'grad']) }
+  scope :volunteers, -> { joins(:programs).where(programs: { program_type: Program::VOLUNTEER }) }
 
 
   def self.display_avatar(user)
@@ -143,7 +142,8 @@ class User < ApplicationRecord
   end
 
   def volunteer?
-    role.eql?('volunteer')
+    #role.eql?('volunteer')
+    programs.pluck(:program_type).include?(Program::VOLUNTEER)
   end
 
   def volunteer_program?

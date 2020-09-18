@@ -12,8 +12,6 @@ RSpec.describe User, type: :model do
 
     context 'has_one' do
       it { should have_one(:rfid) }
-      it { should have_one(:skill) }
-      it { should have_one(:volunteer_request) }
     end
 
     context 'accepts_nested_attributes_for' do
@@ -197,7 +195,7 @@ RSpec.describe User, type: :model do
       2.times{ create(:user, :regular_user) }
       create(:user, :admin)
       create(:user, :staff)
-      create(:user, :volunteer)
+      create(:user, :volunteer_with_volunteer_program)
       4.times{ create(:user, :regular_user, created_at: 3.months.ago) }
       5.times{ create(:user, :student) }
       2.times{ create(:user, :regular_user, created_at: 3.years.ago) }
@@ -356,14 +354,14 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return true' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         expect(user.volunteer?).to be_truthy
       end
     end
 
     context '#volunteer_program?' do
       it 'should return false' do
-        user = create(:user, :volunteer)
+        user = create(:user, :regular_user)
         expect(user.volunteer_program?).to be_falsey
       end
 
@@ -375,7 +373,7 @@ RSpec.describe User, type: :model do
 
     context '#dev_program?' do
       it 'should return false' do
-        user = create(:user, :volunteer)
+        user = create(:user, :regular_user)
         expect(user.dev_program?).to be_falsey
       end
 
@@ -507,7 +505,7 @@ RSpec.describe User, type: :model do
       end
 
       it 'should return status 2' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         create(:certification, :'3d_printing', user_id: volunteer.id)
         create(:certification, :basic_training, user_id: volunteer.id)
         expect(volunteer.return_program_status).to eq(2)
@@ -517,13 +515,6 @@ RSpec.describe User, type: :model do
         user = create(:user, :regular_user_with_certifications)
         Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
         expect(user.return_program_status).to eq(3)
-      end
-
-      it 'should return status 4' do
-        volunteer = create(:user, :volunteer_with_dev_program)
-        create(:certification, :'3d_printing', user_id: volunteer.id)
-        create(:certification, :basic_training, user_id: volunteer.id)
-        expect(volunteer.return_program_status).to eq(4)
       end
 
       it 'should return status 4' do
