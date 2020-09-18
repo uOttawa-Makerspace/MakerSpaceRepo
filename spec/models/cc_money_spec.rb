@@ -14,7 +14,7 @@ RSpec.describe CcMoney, type: :model do
   describe 'Methods' do
     context '#create_cc_money_from_approval' do
       it 'cc money should be created if a volunteer task is approved' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         volunteer_task = create(:volunteer_task)
         cc_money = CcMoney.create_cc_money_from_approval(volunteer_task.id, volunteer.id, 15)
         expect(CcMoney.find(cc_money.id).cc).to eq(15)

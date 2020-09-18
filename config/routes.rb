@@ -132,8 +132,6 @@ Rails.application.routes.draw do
     get 'admin'
   end
 
-  resources :skills, only: %i[edit update]
-
   get 'help', to: 'help#main'
   put 'send_email', to: 'help#send_email'
 
@@ -312,12 +310,6 @@ Rails.application.routes.draw do
   resources :volunteer_task_joins, only: [:create] do
     collection do
       post :remove
-    end
-  end
-
-  resources :volunteer_requests, only: %i[index create show] do
-    collection do
-      put :update_approval
     end
   end
 

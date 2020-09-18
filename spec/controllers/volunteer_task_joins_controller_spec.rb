@@ -7,7 +7,7 @@ RSpec.describe VolunteerTaskJoinsController, type: :controller do
     context "create join" do
 
       it 'should should create a join (volunteer)' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         task = create(:volunteer_task)
@@ -19,7 +19,7 @@ RSpec.describe VolunteerTaskJoinsController, type: :controller do
 
       it 'should should create a join (admin)' do
         admin = create(:user, :admin)
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
         task = create(:volunteer_task)
@@ -32,8 +32,8 @@ RSpec.describe VolunteerTaskJoinsController, type: :controller do
 
       it 'should should not create a join (already full)' do
         task = create(:volunteer_task)
-        user = create(:user, :volunteer)
-        user2 = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
+        user2 = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task_join, :active, user_id: user2.id, volunteer_task_id: task.id)
@@ -52,7 +52,7 @@ RSpec.describe VolunteerTaskJoinsController, type: :controller do
 
       it 'should delete a join' do
         task = create(:volunteer_task)
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task_join, :active, user_id: user.id, volunteer_task_id: task.id)

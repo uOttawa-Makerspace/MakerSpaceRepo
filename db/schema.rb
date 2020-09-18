@@ -379,6 +379,7 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.string "program_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "active", default: true
   end
 
   create_table "project_joins", id: :serial, force: :cascade do |t|
@@ -505,19 +506,6 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "updated_at"
   end
 
-  create_table "skills", id: :serial, force: :cascade do |t|
-    t.integer "user_id"
-    t.string "printing", default: "No Experience"
-    t.string "laser_cutting", default: "No Experience"
-    t.string "virtual_reality", default: "No Experience"
-    t.string "arduino", default: "No Experience"
-    t.string "embroidery", default: "No Experience"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.boolean "active", default: true
-    t.string "soldering", default: "No Experience"
-  end
-
   create_table "spaces", id: :serial, force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -622,21 +610,6 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "approval"
-  end
-
-  create_table "volunteer_requests", id: :serial, force: :cascade do |t|
-    t.text "interests", default: ""
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.integer "user_id"
-    t.boolean "approval"
-    t.integer "space_id"
-    t.string "printing", default: "No Experience"
-    t.string "laser_cutting", default: "No Experience"
-    t.string "virtual_reality", default: "No Experience"
-    t.string "arduino", default: "No Experience"
-    t.string "embroidery", default: "No Experience"
-    t.string "soldering", default: "No Experience"
   end
 
   create_table "volunteer_task_joins", id: :serial, force: :cascade do |t|
