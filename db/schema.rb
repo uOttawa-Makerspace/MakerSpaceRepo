@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_09_04_151628) do
+ActiveRecord::Schema.define(version: 2020_09_18_135022) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -278,6 +278,18 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.index ["space_id"], name: "index_pi_readers_on_space_id"
   end
 
+  create_table "popular_hours", force: :cascade do |t|
+    t.bigint "space_id"
+    t.float "mean", default: 0.0
+    t.integer "hour"
+    t.integer "day"
+    t.integer "count", default: 0
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.float "previous_mean", default: 0.0
+    t.index ["space_id"], name: "index_popular_hours_on_space_id"
+  end
+
   create_table "price_rules", id: :serial, force: :cascade do |t|
     t.string "shopify_price_rule_id"
     t.string "title"
@@ -306,8 +318,6 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.text "staff_comments"
     t.boolean "expedited"
     t.integer "order_type", default: 0
-    t.text "email"
-    t.text "name"
     t.datetime "timestamp_approved"
     t.string "final_file_file_name"
     t.string "final_file_content_type"
@@ -343,7 +353,6 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
     t.string "status", default: "true"
     t.string "availability", default: "true"
     t.string "color", default: "FF0000"
-    t.string "rfid"
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
@@ -684,6 +693,7 @@ ActiveRecord::Schema.define(version: 2020_09_04_151628) do
   add_foreign_key "orders", "order_statuses"
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
+  add_foreign_key "popular_hours", "spaces"
   add_foreign_key "proficient_projects", "badge_templates"
   add_foreign_key "project_kits", "proficient_projects"
   add_foreign_key "project_kits", "users"

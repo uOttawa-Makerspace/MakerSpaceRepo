@@ -33,6 +33,10 @@ every 1.month do
   runner "MsrMailer.send_monthly_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com']).deliver_now"
 end
 
+every :hour, at: 50 do
+  rake 'popular_hours:calculate_popular_hours'
+end
+
 every 1.month do
   rake 'confirmed_users:remind'
 end

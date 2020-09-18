@@ -72,5 +72,6 @@ section#report {
   }
 }
 
-
-
+.nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+  background-color: #e7e7e7;
+}
