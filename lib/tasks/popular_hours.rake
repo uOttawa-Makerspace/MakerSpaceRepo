@@ -15,9 +15,10 @@ namespace :popular_hours do
       hour = Time.new.hour
       popular_hour = PopularHour.find_by(space_id: space.id, hour: hour, day: day)
       next if popular_hour.blank?
+      prev_mean = popular_hour.mean
       new_count = popular_hour.count.next
       mean = ((popular_hour.count*popular_hour.mean) + current_users)/new_count
-      popular_hour.update(count: new_count, mean: mean)
+      popular_hour.update(count: new_count, mean: mean, previous_mean: prev_mean)
     end
   end
 end
