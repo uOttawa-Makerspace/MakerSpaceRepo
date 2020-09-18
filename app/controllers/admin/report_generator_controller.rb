@@ -16,6 +16,12 @@ class Admin::ReportGeneratorController < AdminAreaController
     ]
   end
 
+  def popular_hours
+    @space = @user.lab_sessions&.last&.space || Space.first
+    @spaces = Space.all.order(name: :asc)
+    @weekdays = Date::DAYNAMES
+  end
+
   def generate
     range_type = params[:range_type]
     term = params[:term]
