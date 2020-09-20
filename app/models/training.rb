@@ -7,6 +7,7 @@ class Training < ApplicationRecord
   has_many :certifications,       through: :training_sessions
   has_many :require_trainings,    dependent: :destroy
   has_many :proficient_projects,  dependent: :destroy
+  belongs_to :skill
 
   validates :name, presence: true, uniqueness: true
 

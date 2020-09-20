@@ -183,6 +183,8 @@ Rails.application.routes.draw do
 
     resources :trainings
 
+    resources :skills
+
     resources :course_names
 
     resources :training_sessions do

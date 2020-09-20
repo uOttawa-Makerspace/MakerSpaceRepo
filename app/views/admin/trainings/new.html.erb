@@ -14,6 +14,13 @@
             <% end %>
           </div>
 
+          <br><br>
+
+          <div class="col-md-12 form-group">
+            <%= f.label(:skills_id, "Skill Type") %>
+            <%= f.select :skills_id, options_for_select(Skill.all.pluck(:name, :id)), {include_blank: true}, {class: "form-control"} %>
+          </div>
+
           <div class="col-md-12 form-group my-5">
             <%= f.submit "Create Training", class: "btn btn-secondary btn-xl text-uppercase" %>
           </div>

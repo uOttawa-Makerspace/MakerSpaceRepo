@@ -1,0 +1,22 @@
+<section class="page-contents">
+  <div class="edit-column">
+    <div class="title">Admin Skill Manager</div>
+
+    <p class="text-center"><%= link_to "New Skill Type", new_admin_skill_path, class: "btn btn-secondary" %></p>
+    <br />
+    <table class="table table-striped mb-5">
+      <tr class="text-center">
+        <th>Skill</th>
+        <th>Action</th>
+      </tr>
+
+      <% @skills.each do |t| %>
+        <tr>
+          <td><%= t.name %></td>
+          <td><%= link_to "Edit", edit_admin_skill_path(t.id), class:"btn btn-primary" %></td>
+        </tr>
+      <% end %>
+
+    </table>
+  </div>
+</section>

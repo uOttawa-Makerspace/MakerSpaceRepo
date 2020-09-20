@@ -8,6 +8,7 @@ class DevelopmentProgramsController < ApplicationController
   def index; end
 
   def skills
+    @skills = Skill.all
     @certifications = current_user.certifications
     @remaining_trainings = current_user.remaining_trainings
   end

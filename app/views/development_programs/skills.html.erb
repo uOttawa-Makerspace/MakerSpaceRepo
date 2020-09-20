@@ -2,6 +2,41 @@
   <div class="container text-center">
     <h2>Skills</h2>
     <div class="row my-5 mx-auto">
+
+      <div class="col-md-12">
+        <% @skills.each do |skill| %>
+
+          <h2><%= skill.name %></h2>
+
+          <% unless Training.where(skills_id: skill.id).present? %>
+            <p>No trainings for this skill</p>
+          <% end %>
+
+          <% Training.where(skills_id: skill.id).each do |training| %>
+
+              <div class="accordion">
+                <div class="card m-3">
+                  <div class="card-header">
+                    <h2 class="mb-0">
+                      <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
+                        <%= training.name %>
+                      </button>
+                    </h2>
+                  </div>
+
+                  <div id="training-<%= training.id %>" class="collapse">
+                    <div class="card-body">
+                      More Info !
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+          <% end %>
+
+        <% end %>
+      </div>
+
       <% @certifications.each do |cert| %>
         <div class="col-md-3 text-center my-3">
           <b><%= cert.training.name %> </b> <br/>
