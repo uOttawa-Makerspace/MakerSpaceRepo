@@ -8,7 +8,7 @@ class StaticPagesController < SessionsController
   def about; end
 
   def contact
-    @hours = OpeningHour.all.order(name: :asc)
+    @hours = ContactInfo.all.order(name: :asc)
   end
 
   def terms_of_service; end

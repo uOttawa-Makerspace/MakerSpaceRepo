@@ -3,9 +3,9 @@
 
     <h2>Opening Hours</h2>
 
-    <%= link_to "New Opening Hour", new_admin_opening_hour_path, :class=>"btn btn-primary m-3" %>
+    <%= link_to "New Contact Info", new_admin_contact_info_path, :class=>"btn btn-primary m-3" %>
 
-    <% if !@hours.blank? %>
+    <% if !@contact_infos.blank? %>
 
       <div class="table-responsive">
         <table class="table sessions-table">
@@ -19,7 +19,7 @@
           </tr>
 
           <tbody>
-          <% @hours.each do |a| %>
+          <% @contact_infos.each do |a| %>
             <tr>
               <td>
                 <%= a.name %>
@@ -38,8 +38,8 @@
               </td>
 
               <td class="action-cell">
-                <%=link_to "Edit", edit_admin_opening_hour_path(a.id), class:"btn btn-primary btn-block btn-sm mb-1 mt-0"%>
-                <%=link_to "Delete", { controller: :opening_hours ,action: :destroy, id: a.id }, method: :delete,
+                <%=link_to "Edit", edit_admin_contact_info_path(a.id), class:"btn btn-primary btn-block btn-sm mb-1 mt-0"%>
+                <%=link_to "Delete", { controller: :contact_infos ,action: :destroy, id: a.id }, method: :delete,
                            data: { confirm: 'Are you sure that you want to delete this opening hour ?' },
                            class:"btn btn-danger btn-sm btn-block mb-1 mr-0" %>
               </td>
@@ -50,7 +50,7 @@
       </div>
     <% else %>
       <div class="m-3">
-        No Opening Hours were created yet.
+        No Contact Info were created yet.
       </div>
     <% end %>
   </div>

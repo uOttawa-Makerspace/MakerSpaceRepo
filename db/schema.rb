@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_09_20_222657) do
+ActiveRecord::Schema.define(version: 2020_09_20_223933) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -150,6 +150,16 @@ ActiveRecord::Schema.define(version: 2020_09_20_222657) do
     t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
+  create_table "contact_infos", force: :cascade do |t|
+    t.string "name"
+    t.string "email"
+    t.string "address"
+    t.string "phone_number"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.string "url"
+  end
+
   create_table "course_names", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
@@ -243,16 +253,6 @@ ActiveRecord::Schema.define(version: 2020_09_20_222657) do
     t.datetime "updated_at", null: false
     t.index ["repository_id"], name: "index_likes_on_repository_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
-  end
-
-  create_table "opening_hours", force: :cascade do |t|
-    t.string "name"
-    t.string "email"
-    t.string "address"
-    t.string "phone_number"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.string "url"
   end
 
   create_table "order_items", id: :serial, force: :cascade do |t|
