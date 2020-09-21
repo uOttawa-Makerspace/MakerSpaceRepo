@@ -6,7 +6,7 @@
     <div class="container my-3">
       <div class="row">
         <div class="col-lg-12">
-          <%= form_for @hour, url: {controller: "contact_infos", action: "create"}, :html => { class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+          <%= form_for @contact_info, url: {controller: "contact_infos", action: "update"}, :html => { class:"needs-validation", novalidate: 'novalidate' } do |f| %>
             <div class="row">
               <div class="col-md-12">
                 <div class="form-group text-center">
@@ -35,7 +35,7 @@
                 </div>
               </div>
               <div class="col-lg-12 text-center">
-                <%= f.submit "Create Contact Info", class: "btn btn-secondary btn-xl" %>
+                <%= f.submit "Edit Contact Info", class: "btn btn-secondary btn-xl" %>
               </div>
             </div>
           <% end %>
