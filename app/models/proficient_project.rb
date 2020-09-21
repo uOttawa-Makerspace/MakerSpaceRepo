@@ -57,4 +57,12 @@ class ProficientProject < ApplicationRecord
       badge_requirements.create(badge_template: badge_template) if badge_template
     end
   end
+
+  def extract_urls
+    URI.extract(self.description)
+  end
+
+  def extract_valid_urls
+    self.extract_urls.uniq.select!{ |url| url.include?("wiki.makerepo.com") } if self.extract_urls.any?
+  end
 end
