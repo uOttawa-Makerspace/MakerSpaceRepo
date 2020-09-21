@@ -35,6 +35,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     @proficient_projects_selected = ProficientProject
                                         .where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id)
                                         .order(title: :asc)
+    @valid_urls = @proficient_project.extract_valid_urls
   end
 
   def create

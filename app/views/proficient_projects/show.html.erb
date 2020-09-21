@@ -38,16 +38,9 @@
       <br/>
       <div class="row">
         <div class="col-lg-12">
-          <% if valid_url?(@proficient_project.description.html_safe) %>
-            <div class="p-3 jumbotron text-center text-wrap">
-              <iframe width="100%" height="400px" src="<%= strip_tags(@proficient_project.description.html_safe) %>"></iframe>
-              <p>You can access the same page <a href="<%= strip_tags(@proficient_project.description.html_safe) %>" target="_blank">here</a>.</p>
-            </div>
-        <% else %>
-            <div class="jumbotron text-center text-wrap">
-              <%= @proficient_project.description.html_safe %>
-            </div>
-          <% end %>
+          <div class="jumbotron text-center text-wrap">
+            <%= @proficient_project.description.html_safe %>
+          </div>
           <div id="show-photo">
             <%= image_tag @photos.first.image, data: {width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
           </div>
@@ -56,12 +49,21 @@
               <%= image_tag p.image, data: {width: p.width, height: p.height} %>
             <% end %>
           </div>
-          <br/>
-          <br/>
+          <br />
+          <br />
         </div>
       </div>
     </div>
   </div>
+
+  <% if @valid_urls.present? %>
+    <div class="col-lg-12">
+      <% @valid_urls.each do |url| %>
+        <iframe width="100%" height="600px" src="<%= url %>"></iframe>
+      <% end %>
+    </div>
+  <% end %>
+
 </section>
 
 <% @videos.each do |f| %>
