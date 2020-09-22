@@ -63,6 +63,6 @@ class ProficientProject < ApplicationRecord
   end
 
   def extract_valid_urls
-    self.extract_urls.uniq.select{ |url| url.include?("wiki.makerepo.com") } if self.extract_urls.any?
+    self.extract_urls.uniq.select{ |url| url.include?("wiki.makerepo.com") }
   end
 end
