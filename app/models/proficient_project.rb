@@ -57,4 +57,5 @@ class ProficientProject < ApplicationRecord
       badge_requirements.create(badge_template: badge_template) if badge_template
     end
   end
+
 end
