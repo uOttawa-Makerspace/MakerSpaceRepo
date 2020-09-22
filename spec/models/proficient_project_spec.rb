@@ -142,6 +142,33 @@ RSpec.describe ProficientProject, type: :model do
 
     end
 
+    describe 'URLS in description' do
+      before :all do
+        @pp_with_link = create(:proficient_project, description: 'Description, description... https://en.wiki.makerepo.com/wiki/Virtual_Reality https://makerepo.com/ https://en.wiki.makerepo.com/wiki/Raspberry_Pi')
+        @pp_without_link = create(:proficient_project, description: 'no link')
+      end
+
+      context "#extract_urls" do
+        it 'should return all urls' do
+          expect(@pp_with_link.extract_urls).to eq(['https://en.wiki.makerepo.com/wiki/Virtual_Reality', 'https://makerepo.com/', 'https://en.wiki.makerepo.com/wiki/Raspberry_Pi'])
+        end
+
+        it 'should return []' do
+          expect(@pp_without_link.extract_urls).to eq([])
+        end
+      end
+
+      context "#extract_valid_urls" do
+        it 'should return urls from wiki.makerepo' do
+          expect(@pp_with_link.extract_valid_urls).to eq(['https://en.wiki.makerepo.com/wiki/Virtual_Reality', 'https://en.wiki.makerepo.com/wiki/Raspberry_Pi'])
+        end
+
+        it 'should return nil' do
+          expect(@pp_without_link.extract_valid_urls).to eq([])
+        end
+      end
+    end
+
   end
 
 end
