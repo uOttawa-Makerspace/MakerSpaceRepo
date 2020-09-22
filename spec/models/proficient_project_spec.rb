@@ -164,7 +164,7 @@ RSpec.describe ProficientProject, type: :model do
         end
 
         it 'should return nil' do
-          expect(@pp_without_link.extract_valid_urls).to eq(nil)
+          expect(@pp_without_link.extract_valid_urls).to eq([])
         end
       end
     end
