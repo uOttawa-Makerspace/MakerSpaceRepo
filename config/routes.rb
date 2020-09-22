@@ -267,6 +267,7 @@ Rails.application.routes.draw do
     collection do
       get :join_development_program
       get :open_modal
+      get :complete_project
     end
   end
 
