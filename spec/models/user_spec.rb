@@ -213,6 +213,12 @@ RSpec.describe User, type: :model do
       end
     end
 
+    context '#created_this_year' do
+      it 'should return 14' do
+        expect(User.created_this_year.count).to eq(14)
+      end
+    end
+
     context '#students' do
       it 'should return 5' do
         expect(User.students.count).to eq(5)
