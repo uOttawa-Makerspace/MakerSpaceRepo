@@ -13,6 +13,7 @@
         <th class="name-header">Name</th>
         <th class="email-header">Email</th>
         <th class="email-header">View</th>
+        <th class="email-header">Role</th>
       </tr>
 
       <% @admins.each do |admin| %>
@@ -32,6 +33,13 @@
         <td class="link-table">
           <%= link_to fa_icon("eye"), user_url(admin.username) %>
         </td>
+
+        <td class="email-cell">
+          <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch do %>
+            <%= select_tag(:role, options_for_select(@roles, :selected => admin.role), class: "form-control") %>
+            <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control" %>
+          <% end %>
+        </td>
       </tr>
       <%end%>
     </table>
@@ -44,6 +52,7 @@
         <th class="name-header">Name</th>
         <th class="email-header">Email</th>
         <th class="email-header">View</th>
+        <th class="email-header">Role</th>
       </tr>
 
       <% @staff.each do |staff| %>
@@ -62,6 +71,13 @@
 
           <td class="link-table">
             <%= link_to fa_icon("eye"), user_url(staff.username) %>
+          </td>
+
+          <td class="email-cell">
+            <%= form_tag set_role_admin_users_path(id: staff.id), method: :patch do %>
+              <%= select_tag(:role, options_for_select(@roles, :selected => staff.role), class: "form-control") %>
+              <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control" %>
+            <% end %>
           </td>
         </tr>
       <%end%>
