@@ -28,7 +28,7 @@ module ProficientProjectsHelper
     if pp.where(level: "Beginner").present?
       "<span style='color: green'>Beg</span>"
     elsif pp.where(level: "Intermediate").present?
-      "<span style='color: yellow'>Int</span>"
+      "<span style='color: #969600'>Int</span>"
     elsif pp.where(level: "Advanced").present?
       "<span style='color: red'>Adv</span>"
     else
