@@ -28,6 +28,8 @@
                   <div id="training-<%= training.id %>" class="collapse">
                     <div class="card-body">
 
+                      <p><%= training.description if training.description.present? %></p>
+
                       <div class="d-inline">
                         <% ProficientProject.where.not(id: current_user.order_items.completed_order.pluck(:proficient_project_id)).where(training_id: training.id).each do |pp| %>
                           <%= image_tag(pp.badge_template.image_url, :style => "width: 100px") if pp.badge_template.present? %>
