@@ -37,7 +37,7 @@
                       <p>Modules finished : <%= ProficientProject.where(id: current_user.order_items.awarded.pluck(:proficient_project_id), training_id: training.id).count %> / <%= training.proficient_projects.count %></p>
                       <p>Next modules to complete :</p>
                       <ul>
-                        <% ProficientProject.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)).where(training_id: training.id).each do |next_module| %>
+                        <% get_next_pp(training.id).each do |next_module| %>
                           <li><%= link_to next_module.title, proficient_projects_path(search: next_module.title)%></li>
                         <% end %>
                       </ul>
