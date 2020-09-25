@@ -48,6 +48,17 @@ RSpec.describe Admin::SpacesController, type: :controller do
     end
   end
 
+  describe 'POST /update_max_capacity' do
+    context 'update max capacity' do
+      it 'should return a 200' do
+        space = create(:space)
+        post :update_max_capacity, params: {space_id: space.id, max_capacity: 15}
+        expect(response).to have_http_status(302)
+        expect(Space.last.max_capacity).to eq(15)
+      end
+    end
+  end
+
   describe 'POST /create' do
     context 'create a space' do
       it 'should create a space' do

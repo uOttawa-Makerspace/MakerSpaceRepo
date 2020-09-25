@@ -30,6 +30,17 @@ RSpec.describe StaffDashboardController, type: :controller do
     end
   end
 
+  describe 'GET /refresh_capacity' do
+
+    context 'logged as admin' do
+      it 'should return 200' do
+        get :refresh_capacity, format: :js
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
+
   describe "POST /import_excel" do
 
     context "import excel" do
