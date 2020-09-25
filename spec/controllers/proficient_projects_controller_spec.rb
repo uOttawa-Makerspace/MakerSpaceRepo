@@ -3,9 +3,9 @@ require 'rails_helper'
 
 RSpec.describe ProficientProjectsController, type: :controller do
 
-  describe "#index" do
+  describe '#index' do
 
-    context "index" do
+    context 'index' do
 
       it 'should show the index page' do
         user = create(:user, :volunteer_with_dev_program)
@@ -19,9 +19,9 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
   end
 
-  describe "#new" do
+  describe '#new' do
 
-    context "new" do
+    context 'new' do
 
       it 'should show the new page' do
         admin = create(:user, :admin)
@@ -44,9 +44,9 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
   end
 
-  describe "#show" do
+  describe '#show' do
 
-    context "show" do
+    context 'show' do
 
       it 'should show the project page (admin)' do
         admin = create(:user, :admin)
@@ -61,7 +61,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
-        OrderStatus.create(name: "Completed", id: 2)
+        OrderStatus.create(name: 'Completed', id: 2)
         create(:order_item, :awarded)
         Order.last.update(user_id: user.id)
         get :show, params: {id: ProficientProject.last.id}
@@ -82,9 +82,9 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
   end
 
-  describe "#create" do
+  describe '#create' do
 
-    context "create" do
+    context 'create' do
 
       before(:each) do
         admin = create(:user, :admin)
@@ -125,9 +125,9 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
   end
 
-  describe "#destroy" do
+  describe '#destroy' do
 
-    context "destroy" do
+    context 'destroy' do
 
       it 'should destroy the proficient project' do
         admin = create(:user, :admin)
@@ -143,9 +143,9 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
   end
 
-  describe "#edit" do
+  describe '#edit' do
 
-    context "edit" do
+    context 'edit' do
 
       it 'should show the edit page' do
         admin = create(:user, :admin)
@@ -160,9 +160,9 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
   end
 
-  describe "#update" do
+  describe '#update' do
 
-    context "update" do
+    context 'update' do
 
       before(:each) do
         admin = create(:user, :admin)
@@ -172,7 +172,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
       it 'should update the proficient project' do
         create(:proficient_project)
-        patch :update, params: {id: ProficientProject.last.id, proficient_project: {title: "abc"}}
+        patch :update, params: {id: ProficientProject.last.id, proficient_project: {title: 'abc'}}
         expect(response.body).to include(proficient_project_path(ProficientProject.last.id).to_s)
         expect(flash[:notice]).to eq('Proficient Project successfully updated.')
       end
@@ -181,7 +181,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         create(:badge_template, :'3d_printing')
         create(:badge_template, :laser_cutting)
         create(:proficient_project)
-        patch :update, params: {id: ProficientProject.last.id, proficient_project: {title: "abc"}, badge_requirements_id: [1, 2] }
+        patch :update, params: {id: ProficientProject.last.id, proficient_project: {title: 'abc'}, badge_requirements_id: [1, 2] }
         expect(response.body).to include(proficient_project_path(ProficientProject.last.id).to_s)
         expect(BadgeRequirement.where(proficient_project_id: ProficientProject.last.id).count).to eq(2)
         expect(flash[:notice]).to eq('Proficient Project successfully updated.')
@@ -189,7 +189,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
       it 'should update the proficient project with photos and files' do
         create(:proficient_project, :with_files)
-        patch :update, params: {id: ProficientProject.last.id, proficient_project: {title: "abc"}, files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')], deleteimages: [Photo.last.image.filename.to_s], deletefiles: [RepoFile.last.file.filename.to_s]}
+        patch :update, params: {id: ProficientProject.last.id, proficient_project: {title: 'abc'}, files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')], deleteimages: [Photo.last.image.filename.to_s], deletefiles: [RepoFile.last.file.filename.to_s]}
         expect(response.body).to include(proficient_project_path(ProficientProject.last.id).to_s)
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
@@ -198,7 +198,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
       it 'should fail to update the proficient project' do
         create(:proficient_project)
-        patch :update, params: {id: ProficientProject.last.id, proficient_project: {title: ""}}
+        patch :update, params: {id: ProficientProject.last.id, proficient_project: {title: ''}}
         expect(flash[:alert]).to eq('Unable to apply the changes.')
         expect(response).to have_http_status(:unprocessable_entity)
       end
@@ -207,17 +207,48 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
   end
 
-  describe "#open_modal" do
+  describe '#open_modal' do
 
-    context "open modal" do
+    context 'open modal' do
 
       it 'should open modal' do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:proficient_project)
-        get :open_modal, format: "js", params: {id: ProficientProject.last.id}
+        get :open_modal, format: 'js', params: {id: ProficientProject.last.id}
         expect(response).to have_http_status(:success)
+      end
+
+    end
+
+  end
+
+  describe '#complete_project' do
+
+    context 'complete_project' do
+
+      it 'should set the pp as Awarded' do
+        user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        create(:order, :with_item, user_id: user.id)
+        ProficientProject.last.update(badge_template_id: '')
+        get :complete_project, format: 'js', params: {id: ProficientProject.last.id}
+        expect(response).to redirect_to skills_development_programs_path
+        expect(OrderItem.last.status).to eq('Awarded')
+        expect(flash[:notice]).to eq('Congratulations on completing this proficient project! It is now updated as completed in the skills page!')
+      end
+
+      it 'should NOT set the pp as Awarded' do
+        user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        create(:order, :with_item, user_id: user.id)
+        get :complete_project, format: 'js', params: {id: ProficientProject.last.id}
+        expect(response).to redirect_to skills_development_programs_path
+        expect(OrderItem.last.status).to eq('In progress')
+        expect(flash[:alert]).to eq('This project cannot be completed without the staff approving the badge.')
       end
 
     end
