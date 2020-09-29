@@ -1,11 +1,12 @@
 class Admin::ContactInfosController < AdminAreaController
 
   def index
-    @contact_infos = ContactInfo.all
+    @contact_infos = ContactInfo.all.order(name: :asc)
   end
 
   def new
     @contact_info = ContactInfo.new
+    @contact_info.build_opening_hour
   end
 
   def create
@@ -18,6 +19,7 @@ class Admin::ContactInfosController < AdminAreaController
 
   def edit
     @contact_info = ContactInfo.find(params[:id])
+    @contact_info.build_opening_hour if @contact_info.opening_hour.blank?
   end
 
   def update
@@ -41,7 +43,7 @@ class Admin::ContactInfosController < AdminAreaController
   end
 
   def contact_infos_params
-    params.require(:contact_info).permit(:name, :email, :address, :phone_number, :url)
+    params.require(:contact_info).permit(:name, :email, :address, :phone_number, :url, :show_hours, opening_hour_attributes: [:students, :public, :summer])
   end
 
 end

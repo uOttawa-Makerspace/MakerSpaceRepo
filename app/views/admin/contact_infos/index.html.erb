@@ -15,6 +15,7 @@
             <th>Email</th>
             <th>Address</th>
             <th>Phone Number</th>
+            <th>Show Hours</th>
             <th class="action-header">Action</th>
           </tr>
 
@@ -35,6 +36,10 @@
 
               <td>
                 <%= a.phone_number %>
+              </td>
+
+              <td>
+                <%= a.show_hours ? "Yes" : "No" %>
               </td>
 
               <td class="action-cell">

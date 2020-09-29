@@ -13,7 +13,9 @@ class StaticPagesController < SessionsController
 
   def terms_of_service; end
 
-  def hours; end
+  def hours
+    @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
+  end
 
   def calendar; end
 

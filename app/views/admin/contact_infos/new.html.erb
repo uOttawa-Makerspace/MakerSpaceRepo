@@ -30,9 +30,26 @@
                 </div>
 
                 <div class="form-group text-center">
-                  <%= f.label :phone_number, "Name of the Space" %>
+                  <%= f.label :phone_number, "Phone Number" %>
                   <%= f.text_field :phone_number, placeholder: "Write the space's phone number", class: 'form-control' %>
                 </div>
+
+                <div class="form-group">
+                  <%= f.label :show_hours, "Show Hours" %>
+                  <%= f.check_box(:show_hours) %>
+                </div>
+
+                <div class="form-group">
+                  <%= f.fields_for :opening_hour do |h| %>
+                    <%= h.label :students, "Opening Hours for Students" %>
+                    <%= h.text_field :students, class: 'repo form-control', style: "height: auto!important;" %>
+                    <%= h.label :public, "Opening Hours for the public" %>
+                    <%= h.text_field :public, class: 'repo form-control', style: "height: auto!important;" %>
+                    <%= h.label :summer, "Opening Hours for Summer" %>
+                    <%= h.text_field :summer, class: 'repo form-control', style: "height: auto!important;" %>
+                  <% end %>
+                </div>
+
               </div>
               <div class="col-lg-12 text-center">
                 <%= f.submit "Create Contact Info", class: "btn btn-secondary btn-xl" %>

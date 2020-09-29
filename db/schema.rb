@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_09_20_223933) do
+ActiveRecord::Schema.define(version: 2020_09_28_223933) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -158,6 +158,7 @@ ActiveRecord::Schema.define(version: 2020_09_20_223933) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "url"
+    t.boolean "show_hours"
   end
 
   create_table "course_names", force: :cascade do |t|
@@ -253,6 +254,16 @@ ActiveRecord::Schema.define(version: 2020_09_20_223933) do
     t.datetime "updated_at", null: false
     t.index ["repository_id"], name: "index_likes_on_repository_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
+  end
+
+  create_table "opening_hours", force: :cascade do |t|
+    t.string "students"
+    t.string "public"
+    t.string "summer"
+    t.bigint "contact_info_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"
   end
 
   create_table "order_items", id: :serial, force: :cascade do |t|
@@ -549,6 +560,7 @@ ActiveRecord::Schema.define(version: 2020_09_20_223933) do
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "max_capacity"
   end
 
   create_table "spaces_trainings", id: false, force: :cascade do |t|
@@ -582,6 +594,7 @@ ActiveRecord::Schema.define(version: 2020_09_20_223933) do
     t.datetime "updated_at", null: false
     t.integer "space_id"
     t.bigint "skills_id"
+    t.string "description"
     t.index ["skills_id"], name: "index_trainings_on_skills_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end
