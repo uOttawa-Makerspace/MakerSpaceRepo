@@ -150,23 +150,7 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
-  create_table "contact_infos", force: :cascade do |t|
-    t.string "name"
-    t.string "email"
-    t.string "address"
-    t.string "phone_number"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.string "url"
-  end
-
   create_table "course_names", force: :cascade do |t|
-    t.string "name"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-  end
-
-  create_table "courses", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
@@ -236,16 +220,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.index ["user_id"], name: "index_lab_sessions_on_user_id"
   end
 
-  create_table "learning_modules", force: :cascade do |t|
-    t.integer "training_id"
-    t.string "title"
-    t.text "description"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.string "level", default: "Beginner"
-    t.boolean "has_project_kit"
-  end
-
   create_table "likes", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.integer "repository_id"
@@ -292,7 +266,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.integer "height"
     t.integer "width"
     t.integer "proficient_project_id"
-    t.integer "learning_module_id"
     t.index ["repository_id"], name: "index_photos_on_repository_id"
   end
 
@@ -345,8 +318,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.text "staff_comments"
     t.boolean "expedited"
     t.integer "order_type", default: 0
-    t.text "email"
-    t.text "name"
     t.datetime "timestamp_approved"
     t.string "final_file_file_name"
     t.string "final_file_content_type"
@@ -382,7 +353,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.string "status", default: "true"
     t.string "availability", default: "true"
     t.string "color", default: "FF0000"
-    t.string "rfid"
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
@@ -426,8 +396,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.boolean "delivered", default: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.bigint "learning_module_id"
-    t.index ["learning_module_id"], name: "index_project_kits_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_project_kits_on_proficient_project_id"
     t.index ["user_id"], name: "index_project_kits_on_user_id"
   end
@@ -485,7 +453,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.integer "file_file_size"
     t.datetime "file_updated_at"
     t.integer "proficient_project_id"
-    t.integer "learning_module_id"
     t.index ["repository_id"], name: "index_repo_files_on_repository_id"
   end
 
@@ -539,12 +506,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.datetime "updated_at"
   end
 
-  create_table "skills", force: :cascade do |t|
-    t.text "name"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-  end
-
   create_table "spaces", id: :serial, force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -582,9 +543,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "space_id"
-    t.bigint "skills_id"
-    t.string "description"
-    t.index ["skills_id"], name: "index_trainings_on_skills_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end
 
@@ -642,8 +600,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
     t.datetime "video_updated_at"
     t.string "direct_upload_url", null: false
     t.boolean "processed", default: false, null: false
-    t.bigint "learning_module_id"
-    t.index ["learning_module_id"], name: "index_videos_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_videos_on_proficient_project_id"
   end
 
@@ -713,7 +669,6 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
   add_foreign_key "pi_readers", "spaces"
   add_foreign_key "popular_hours", "spaces"
   add_foreign_key "proficient_projects", "badge_templates"
-  add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
   add_foreign_key "project_kits", "users"
   add_foreign_key "repo_files", "repositories"
@@ -721,10 +676,8 @@ ActiveRecord::Schema.define(version: 2020_09_25_011507) do
   add_foreign_key "rfids", "users"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
-  add_foreign_key "trainings", "skills", column: "skills_id"
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
-  add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
 end

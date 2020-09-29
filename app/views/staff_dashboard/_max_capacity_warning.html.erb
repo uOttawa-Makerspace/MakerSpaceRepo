@@ -6,7 +6,8 @@
       <br>
       Please make sure, no one else comes in the space.
       <br>
-      Remember that the max capacity is <b><%= @space.max_capacity %> people.</b>
+      There is currently <b><%= @space.signed_in_users.count %> people</b> and max capacity is
+      <b><%= @space.max_capacity %> people.</b>.
     </div>
   <% elsif @space.signed_in_users.count > @space.max_capacity %>
     <script type="text/javascript" charset="utf-8">
@@ -16,7 +17,8 @@
       <h5 style="color: #721c24">The space is <b>OVER</b> the maximum capacity.</h5>
       Please make sure, no one else comes in the space.
       <br>
-      Remember that the max capacity is <b><%= @space.max_capacity %> people.</b>
+      There is currently <b><%= @space.signed_in_users.count %> people</b> and max capacity is
+      <b><%= @space.max_capacity %> people.</b>.
     </div>
   <% elsif (@space.signed_in_users.count + 3) >= @space.max_capacity %>
     <div class="alert alert-warning text-center" role="alert">
