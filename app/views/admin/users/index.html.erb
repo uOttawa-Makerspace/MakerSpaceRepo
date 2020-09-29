@@ -1,9 +1,9 @@
 <% provide(:title, "Manage Users") %>
 
-<div class="edit-column">
+<section>
   <div class="setting-title">Manage Users</div>
-    <br>
-    <div class="search-form">
+  <br>
+  <div class="search-form">
     <%= form_tag search_admin_users_path, method: :get do %>
       <%= select_tag 'filter', options_for_select(["Name", "Email", "Username"]), prompt:'Search by...' %>
       <%= text_field_tag 'q', nil, placeholder: 'Search users...', class:'profile-text' %>
@@ -19,24 +19,24 @@
       </table>
 
       <div class="locations">
-      <table class="locations">
-        <% if params[:location].nil? %>
+        <table class="locations">
+          <% if params[:location].nil? %>
             <td class="current">
-        <% else %>
+          <% else %>
             <td>
-        <% end %>
+          <% end %>
           <%= link_to "All locations", :sort => params[:sort], :direction => params[:direction], :p => params[:p] %></td>
           <% PiReader.uniq.pluck(:pi_location).sort_by!{ |m| m }.each do |pi_location| %>
             <% if !pi_location.nil? %>
-                <% if params[:location] == pi_location %>
-                    <td class="current">
-                <% else %>
-                    <td>
-                <% end %>
-                <%= link_to pi_location, :sort => params[:sort], :direction => params[:direction], :p => params[:p], :location => pi_location %></td>
+              <% if params[:location] == pi_location %>
+                <td class="current">
+              <% else %>
+                <td>
+              <% end %>
+              <%= link_to pi_location, :sort => params[:sort], :direction => params[:direction], :p => params[:p], :location => pi_location %></td>
             <% end %>
           <% end %>
-      </table>
+        </table>
       </div>
     <% elsif params[:p] == "new_users" || params[:p].nil? %>
       <table>
@@ -51,32 +51,32 @@
         <% direction = params[:direction] == "asc" ? "desc" : "asc" %>
         <table class="admin-table" id="admin-index">
           <thead>
-            <th><%= check_box_tag 'select-all' %></th>
-            <th>
-              <%= link_to "Username", :sort => "username", :direction => direction, :p => params[:p], :location => params[:location] %>
-              <% if params[:sort] == "username" %>
-                <%= fa_icon "sort-#{direction}" %>
-              <% end %>
-            </th>
-            <th>
-              <%= link_to "Name", :sort => "name", :direction => direction, :p => params[:p], :location => params[:location] %>
-              <% if params[:sort] == "name" %>
-                <%= fa_icon "sort-#{direction}" %>
-              <% end %>
-            </th>
-            <th>
-              <%= link_to "Signed in", :sort => "lab_sessions.sign_in_time", :direction => direction, :p => params[:p], :location => params[:location] %>
-              <% if params[:sort] == "lab_sessions.sign_in_time" %>
-                <%= fa_icon "sort-#{direction}" %>
-              <% end %>
-            </th>
-            <th>
-              <%= link_to "Joined", :sort => "users.created_at", :direction => direction, :p => params[:p], :location => params[:location] %>
-              <% if params[:sort] == "users.created_at" %>
-                <%= fa_icon "sort-#{direction}" %>
-              <% end %>
-            </th>
-            <th>View</th>
+          <th><%= check_box_tag 'select-all' %></th>
+          <th>
+            <%= link_to "Username", :sort => "username", :direction => direction, :p => params[:p], :location => params[:location] %>
+            <% if params[:sort] == "username" %>
+              <%= fa_icon "sort-#{direction}" %>
+            <% end %>
+          </th>
+          <th>
+            <%= link_to "Name", :sort => "name", :direction => direction, :p => params[:p], :location => params[:location] %>
+            <% if params[:sort] == "name" %>
+              <%= fa_icon "sort-#{direction}" %>
+            <% end %>
+          </th>
+          <th>
+            <%= link_to "Signed in", :sort => "lab_sessions.sign_in_time", :direction => direction, :p => params[:p], :location => params[:location] %>
+            <% if params[:sort] == "lab_sessions.sign_in_time" %>
+              <%= fa_icon "sort-#{direction}" %>
+            <% end %>
+          </th>
+          <th>
+            <%= link_to "Joined", :sort => "users.created_at", :direction => direction, :p => params[:p], :location => params[:location] %>
+            <% if params[:sort] == "users.created_at" %>
+              <%= fa_icon "sort-#{direction}" %>
+            <% end %>
+          </th>
+          <th>View</th>
           </thead>
           <% @users.each do |user| %>
             <tr>
@@ -121,8 +121,8 @@
       <!-- pagination code ends -->
 
       <br><br>
-<!--      <center><%#= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt:'Add a certification to selected users...' %>-->
-<!--      <%#= submit_tag "Add", class: 'save-button' %></center>-->
+      <!--      <center><%#= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt:'Add a certification to selected users...' %>-->
+      <!--      <%#= submit_tag "Add", class: 'save-button' %></center>-->
     <% end %>
   </div>
-</div>
+</section>

@@ -14,37 +14,19 @@
 </head>
 <body>
 	<%= render 'layouts/header' %>
-	<section id="setting">
-		<div class="setting-grid">
-			<div class="setting-side-panel">
-        <div class="panel-title"><%= link_to 'Admin Area', admin_index_path %></div>
-				<ul>
-		      <li class="setting-menu-item">
-          	<%= link_to 'General Settings', admin_settings_path %><br><br>
-            <%= link_to 'Announcements', admin_announcements_path %><br><br>
-		      	<%= link_to 'Reports', admin_report_generator_index_path %><br><br>
-            <%= link_to 'Popular Hours', admin_report_generator_popular_hours_path %><br><br>
-            <%= link_to 'Manage Trainings', admin_trainings_path %> <br /> <br />
-            <%= link_to 'Manage Courses', admin_course_names_path %> <br /> <br />
-            <%= link_to 'Training Sessions', admin_training_sessions_path %><br><br>
-            <%= link_to 'Manage Spaces', admin_spaces_path %><br><br>
-            <%= link_to 'Manage Roles', manage_roles_admin_users_path %><br><br>
-            <%= link_to 'Manage Badges', admin_manage_badges_path %>
 
-		      </li>
-				</ul>
-			</div>
-      <% if flash[:notice] %>
-        <div id="notice"><%= flash[:notice] %></div>
-      <% end %>
+  <%= render :partial => 'partials/announcements' %>
 
-      <% if flash[:alert] %>
-        <div id="alert"><%= flash[:alert] %></div>
-      <% end %>
-			<%= yield %>
+  <%= render 'layouts/admin_area_header' %>
 
-		</div>
-	</section>
+  <section>
+    <div class="bg-white">
+      <div class="container">
+        <%= yield %>
+      </div>
+    </div>
+  </section>
+
   <%= render 'layouts/footer' %>
 </body>
 </html>

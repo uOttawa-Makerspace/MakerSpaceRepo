@@ -1,5 +1,4 @@
-<section class="page-contents">
-  <div class="edit-column">
+<section>
     <h2 class="text-center">Editing <b><%= @course.name.capitalize %></b> Course</h2>
     <%= form_for @course, url: {controller: "admin/course_names", action: "update"} do |f| %>
       <div class="container">
@@ -18,8 +17,10 @@
     <%=link_to "Delete", { controller: "admin/course_names" ,action: :destroy, id: @course.id }, method: :delete,
                data: { confirm: 'Are you sure that you want to delete this course ?' },
                class:"btn btn-danger float-right"%>
-  </div>
+  <br><br>
   <div class="float-right">
     <%= link_to "Back", admin_course_names_path %>
   </div>
+  <br>
+  <br>
 </section>

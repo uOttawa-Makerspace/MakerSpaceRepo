@@ -1,6 +1,6 @@
 <% provide(:title, "Manage Roles") %>
 
-<div class="edit-column">
+<section>
   <div class="setting-title">Manage Roles</div>
   <h3>Visit each user to update their roles.</h3>
   <br>
@@ -17,30 +17,30 @@
       </tr>
 
       <% @admins.each do |admin| %>
-      <tr>
-        <td class="username-cell">
-          <%=link_to admin.username, user_url(admin.username)%>
-        </td>
+        <tr>
+          <td class="username-cell">
+            <%=link_to admin.username, user_url(admin.username)%>
+          </td>
 
-        <td class="name-cell">
-          <%=admin.name%>
-        </td>
+          <td class="name-cell">
+            <%=admin.name%>
+          </td>
 
-        <td class="email-cell">
-          <%=admin.email%>
-        </td>
+          <td class="email-cell">
+            <%=admin.email%>
+          </td>
 
-        <td class="link-table">
-          <%= link_to fa_icon("eye"), user_url(admin.username) %>
-        </td>
+          <td class="link-table">
+            <%= link_to fa_icon("eye"), user_url(admin.username) %>
+          </td>
 
-        <td class="email-cell">
-          <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch do %>
-            <%= select_tag(:role, options_for_select(@roles, :selected => admin.role), class: "form-control") %>
-            <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control" %>
-          <% end %>
-        </td>
-      </tr>
+          <td class="email-cell">
+            <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch do %>
+              <%= select_tag(:role, options_for_select(@roles, :selected => admin.role), class: "form-control") %>
+              <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control" %>
+            <% end %>
+          </td>
+        </tr>
       <%end%>
     </table>
     <br><br>
@@ -114,4 +114,7 @@
       <%end%>
     </table>
   </div>
-</div>
+
+  <br>
+
+</section>

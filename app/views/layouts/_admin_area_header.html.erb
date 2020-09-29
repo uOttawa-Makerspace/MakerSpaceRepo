@@ -1,0 +1,26 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+
+  <a class="navbar-brand" href="<%= admin_index_path %>">Admin <strong>Area</strong></a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarSupportedContent2">
+
+      <ul class="navbar-nav mx-auto">
+        <li class="nav-item"><%= link_to 'General Settings', admin_settings_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Announcements', admin_announcements_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Reports', admin_report_generator_index_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Popular Hours', admin_report_generator_popular_hours_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Manage Trainings', admin_trainings_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Manage Courses', admin_course_names_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Training Sessions', admin_training_sessions_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Manage Spaces', admin_spaces_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Manage Roles', manage_roles_admin_users_path, class: "nav-link" %></li>
+        <li class="nav-item"><%= link_to 'Manage Badges', admin_manage_badges_path, class: "nav-link" %></li>
+      </ul>
+  </div>
+</nav>
+
+
+
+
