@@ -6,6 +6,12 @@ class StaffDashboardController < StaffAreaController
     @users = User.order(id: :desc).limit(10)
   end
 
+  def refresh_capacity
+    respond_to do |format|
+      format.js
+    end
+  end
+
   def import_excel
     begin
       file = params[:file]

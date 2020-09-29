@@ -3,6 +3,17 @@
     <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
     <h1 style="font-weight:bold;text-align:center;"><%=@space.name.upcase%></h1><br>
 
+    <div class="form-group">
+      <%= form_for update_max_capacity_admin_spaces_path, url: {controller: "admin/spaces", action: "update_max_capacity"}, method: :post do |f| %>
+        <%= label_tag(:max_capacity, "Maximum Capacity") %>
+        <%= number_field_tag :max_capacity, @space.max_capacity, {class: "form-control"} %>
+        <%= hidden_field_tag :space_id, @space.id %> <br>
+        <%= f.submit "Update Max Capacity", class: "btn btn-primary", data: { confirm: 'Are your sure you want to update the maximum capacity of the space ?' }  %>
+      <% end %>
+    </div>
+
+    <br><br>
+
     <table><th class="section-header">Manage RFID Readers</th></table><br>
     <div>
       <h3><%=@space.name.capitalize%> RFID Readers</h3>
