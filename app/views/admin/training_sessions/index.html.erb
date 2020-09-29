@@ -2,10 +2,23 @@
     <div class="setting-title">Admin Training Sessions Manager</div>
     <br>
     <div class="form-group">
-      <input type="text" style="width: 100%" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username" class="form-control">
+      <div class="form-inline">
+        <%= text_field_tag(:search, search(params[:search]), placeholder: "Search by Course, Training, User, Date ...", class: 'form-control training_session_searchbar', style: "width: 100%") %>
+      </div>
     </div>
 
     <div class="table-training-sessions">
       <%= render 'admin/training_sessions/training_session_table' %>
     </div>
 </section>
+
+<script type="text/javascript" charset="utf-8">
+
+    $('.training_session_searchbar').on('keyup', debounce(function (e) {
+        $.ajax({
+            url: '/admin/training_sessions',
+            data: {search: $(this).serialize()},
+            format: 'js'
+        });
+    }, 100));
+</script>
