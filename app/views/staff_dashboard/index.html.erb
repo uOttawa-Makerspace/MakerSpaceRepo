@@ -2,7 +2,14 @@
 
   <div class="padding-10">
 
-    <h2 class="text-center pt-2 mb-5">Welcome to <strong><%= link_to "#{@space.name.capitalize}", staff_dashboard_index_path %></strong></h2>
+    <br>
+
+    <div class="max_capacity_alert">
+      <%= render :partial => 'max_capacity_warning', space: @space %>
+    </div>
+
+    <h2 class="text-center pt-2 mb-5">Welcome to
+      <strong><%= link_to "#{@space.name.capitalize}", staff_dashboard_index_path %></strong></h2>
 
     <div style="float:right;">
       <%= link_to 'Download Excel Template', asset_path('excel/ImportUsersTemplate.xlsx'), download: 'ImportUsersTemplate.xlsx', class: "btn btn-secondary" %>
@@ -11,7 +18,7 @@
                   action: :training_report,
                   class: "btn btn-secondary" %>
     </div>
-    <br /> <br />
+    <br/> <br/>
     <%= render 'search' %>
 
     <div class="row">
@@ -60,54 +67,55 @@
         <% else %>
           <tr class="drop-rows" id="no-waiver">
         <% end %>
-            <td class="drop-username-cell">
-              <%= link_to(content_tag(:drop_username, user.name), user_url(user.username)) %>
-            </td>
+        <td class="drop-username-cell">
+          <%= link_to(content_tag(:drop_username, user.name), user_url(user.username)) %>
+        </td>
 
-            <td class="email-cell">
-              <%= user.email %>
-            </td>
+        <td class="email-cell">
+          <%= user.email %>
+        </td>
 
-            <td>
-              <% if user.flagged? %>
-                <button type="button" class="btn btn-sm btn-danger" data-toggle="tooltip" data-toggle="modal" data-placement="top" title="<%= user.flag_message %>" >
-                  See Flag
-                </button>
+        <td>
+          <% if user.flagged? %>
+            <button type="button" class="btn btn-sm btn-danger" data-toggle="tooltip" data-toggle="modal" data-placement="top" title="<%= user.flag_message %>">
+              See Flag
+            </button>
+          <% else %>
+            None
+          <% end %>
+        </td>
+
+        <td class="certifications-cell">
+          <%
+            if user.certifications.first.present? %>
+            <% user.certifications.each do |certification| %>
+              <% unless certification.out_of_date? %>
+                <div class="cert-name" style="display:inline">
+                  <div class="cert-holder" style="display:inline">
+                    <%= certification.training.name %>
+                    <div id="cert-details" style="display:inline">
+                      <%= certification.training.name %> <br>
+                      <%= certification.trainer %> <br>
+                      <%= certification.updated_at.strftime("%B %d, %Y") %>
+                    </div>
+                    <br/>
+                  </div>
+                </div>
               <% else %>
-                None
-              <% end %>
-            </td>
-
-            <td class="certifications-cell"><%
-              if user.certifications.first.present? %>
-                <% user.certifications.each do |certification| %>
-                  <% unless certification.out_of_date? %>
-                    <div class="cert-name" style="display:inline" >
-                      <div class="cert-holder" style="display:inline">
-                        <%= certification.training.name %>
-                        <div id="cert-details" style="display:inline">
-                          <%= certification.training.name %> <br>
-                          <%= certification.trainer %> <br>
-                          <%= certification.updated_at.strftime("%B %d, %Y") %>
-                        </div>
-                      <br />
-                      </div>
+                <div class="cert-name-red" style="display:inline">
+                  <div class="cert-holder" style="display:inline">
+                    <%= certification.training.name %>
+                    <div id="cert-details" style="display:inline">
+                      <%= certification.training.name %> <br>
+                      <%= certification.trainer %> <br>
+                      <%= certification.updated_at.strftime("%B %d, %Y") %>
                     </div>
-                  <% else %>
-                    <div class="cert-name-red" style="display:inline">
-                      <div class="cert-holder" style="display:inline">
-                        <%= certification.training.name %>
-                        <div id="cert-details" style="display:inline">
-                          <%= certification.training.name %> <br>
-                          <%= certification.trainer %> <br>
-                          <%= certification.updated_at.strftime("%B %d, %Y") %>
-                        </div>
-                        <br>
-                      </div>
-                    </div>
-                  <% end %>
-                <% end %>
+                    <br>
+                  </div>
+                </div>
               <% end %>
+            <% end %>
+          <% end %>
 
           <td class="email-cell">
             <%= user.lab_sessions.where('space_id' => @space.id).where('created_at BETWEEN ? AND ? ', 2.month.ago, DateTime.now).count %>

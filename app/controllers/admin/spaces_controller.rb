@@ -35,6 +35,14 @@ class Admin::SpacesController < AdminAreaController
     end
   end
 
+  def update_max_capacity
+    @space = Space.find(params[:space_id])
+    if @space.update(max_capacity: params[:max_capacity])
+      flash[:notice] = 'Space Capacity updated !'
+      redirect_back(fallback_location: root_path)
+    end
+  end
+
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
@@ -50,6 +58,6 @@ class Admin::SpacesController < AdminAreaController
   private
 
   def space_params
-    params.require(:space_params).permit(:name)
+    params.require(:space_params).permit(:name, :max_capacity)
   end
 end
