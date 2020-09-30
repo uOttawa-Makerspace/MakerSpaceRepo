@@ -3,7 +3,6 @@
 	<head>
 	  <title><%= page_title(yield(:title)) %></title>
 	  <%= favicon_link_tag 'site-icon.jpg' %>
-	  <%#= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
     <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
