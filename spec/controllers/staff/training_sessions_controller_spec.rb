@@ -44,8 +44,9 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
         users = 3.times.inject([]) { |arr| arr << create(:user, :regular_user) }
         training_session_params = { user_id: @admin.id, training_id: training.id, course: 'no course', training_session: {space_id: training.spaces.first.id}, level: "Beginner", training_session_users: users.pluck(:id) }
         expect { post :create, params: training_session_params }.to change(TrainingSession, :count).by(1)
-        expect(TrainingSession.last.users.count).to eq(users.count)
-        expect(response).to redirect_to staff_training_session_path(TrainingSession.last.id)
+        training_session = training.training_sessions.last
+        expect(training_session.users.count).to eq(users.count)
+        expect(response).to redirect_to staff_training_session_path(training_session.id)
       end
     end
   end
