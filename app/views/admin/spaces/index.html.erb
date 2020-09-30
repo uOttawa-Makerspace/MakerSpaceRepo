@@ -1,23 +1,20 @@
-<section id="page-contents">
-  <div class="edit-column">
-    <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
+<section>
+  <div class="setting-title text-center"><%= link_to "Spaces Manager", admin_spaces_path %></div>
+  <br>
 
-    <h2>Select a Space To Edit </h2>
-    <br>
-    <%Space.all.each do |space|%>
-    <div id="space-buttons">
-      <%= link_to fa_icon('gears'), edit_admin_space_path(id: space.id),  method: :get, class: "space-button", style:"border:none;"%>
-      <%= link_to ("Edit " + space.name.capitalize), edit_admin_space_path(id: space.id), method: :get, class: "space-button"%>
-      <br></br>
-    </div><br></br><br></br>
-    <%end%>
-    <br></br>
-    <h3>Create a new space by giving it a unique name </h3>
-    <br>
-    <%= form_for admin_spaces_path, :url => { :action => "create", controller: 'admin/spaces'} do |f| %>
-      <%= text_field_tag 'space_params[name]', nil, placeholder: 'Enter a unique name', style: 'width:200px;height:20px;font-size:1.3em;' %><br><br>
-      <%= submit_tag "Create", class:"btn btn-primary"%>
-    <%end%>
-    <br></br>
+  <h2>Select a Space To Edit </h2>
+  <div class="list-group">
+    <% Space.all.each do |space| %>
+      <%= link_to ("Edit " + space.name.capitalize), edit_admin_space_path(id: space.id), method: :get, class: "list-group-item list-group-item-action" %>
+    <% end %>
   </div>
+  <br>
+  <h3>Create a new space by giving it a unique name </h3>
+  <%= form_for admin_spaces_path, :url => {:action => "create", controller: 'admin/spaces'} do |f| %>
+    <div class="form-group">
+      <%= text_field_tag 'space_params[name]', nil, placeholder: 'Enter a unique name', class: "form-control" %>
+    </div>
+    <%= submit_tag "Create", class: "btn btn-primary" %>
+  <% end %>
+  <br></br>
 </section>

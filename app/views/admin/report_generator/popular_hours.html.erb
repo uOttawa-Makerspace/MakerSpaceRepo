@@ -1,7 +1,6 @@
 <% provide(:title, "Reports") %>
-<section id="report">
-  <div class="edit-column">
-    <h1>Popular Hours</h1>
+<section>
+    <h1 class="text-center py-4">Popular Hours</h1>
 
     <ul class="nav nav-tabs">
       <% @spaces.each do |space| %>
@@ -18,12 +17,14 @@
           <% popular_hours = PopularHour.from_space(space.id) %>
 
           <span style="text-align: center!important; display: block;">The following stats are being updated automatically over time. It takes the average per hour for every day of the week and every spaces.</span>
-
+          <div class="row">
           <% (0..6).each do |weekday| %>
           <% popular_hour = popular_hours.where(day: weekday)  %>
             <br>
-            <h3 class="text-center"><%= @weekdays[popular_hour.first.day] %></h3>
-            <canvas id="<%= space.name.gsub(" ", "-") %>-<%= popular_hour.first.day %>" width="450" height="300"></canvas>
+              <div class="col-4">
+                <h3 class="text-center"><%= @weekdays[popular_hour.first.day] %></h3>
+                <canvas id="<%= space.name.gsub(" ", "-") %>-<%= popular_hour.first.day %>" width="450" height="300"></canvas>
+              </div>
             <script type="text/javascript" charset="utf-8">
                 var ctx = document.getElementById('<%= space.name.gsub(" ", "-") %>-<%= popular_hour.first.day %>').getContext('2d');
                 var myChart = new Chart(ctx, {
@@ -49,10 +50,10 @@
                 });
             </script>
           <% end %>
+          </div>
         </div>
       <% end %>
       <br>
     </div>
-  </div>
 
 </section>
