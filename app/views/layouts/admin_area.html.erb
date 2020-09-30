@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Area | MakerRepo</title>
+  <title>Admin Area | <%= page_title(yield(:title)) %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <%= favicon_link_tag 'site-icon.jpg' %>
     <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>

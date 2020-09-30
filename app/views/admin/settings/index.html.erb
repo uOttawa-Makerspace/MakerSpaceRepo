@@ -52,7 +52,7 @@
       <br><br>
     </div>
     <div class="col-md-6">
-      <div>Equipment options</div><hr><br>
+      <h5>Equipment options</h5><hr><br>
       <%= form_for @equip_option, url: {controller: "admin/settings", action: "add_equipment"} do |f| %>
         <%= f.label :add_equipment, class: "profile-label" %>
         <%= f.text_field :name, class: "profile-text" %>

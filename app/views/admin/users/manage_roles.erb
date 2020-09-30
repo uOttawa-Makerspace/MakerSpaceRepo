@@ -1,13 +1,14 @@
 <% provide(:title, "Manage Roles") %>
 
 <section>
-  <div class="setting-title">Manage Roles</div>
-  <h3>Visit each user to update their roles.</h3>
+  <div class="text-center">
+    <div class="setting-title">Manage Roles</div>
+    <h3>Visit each user to update their roles.</h3>
+  </div>
   <br>
   <div>
-    <table>
+    <table class="table-striped">
       <h3>Admins on Makerepo</h3>
-
       <tr class="text-center">
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
@@ -15,26 +16,13 @@
         <th class="email-header">View</th>
         <th class="email-header">Role</th>
       </tr>
-
       <% @admins.each do |admin| %>
         <tr>
-          <td class="username-cell">
-            <%=link_to admin.username, user_url(admin.username)%>
-          </td>
-
-          <td class="name-cell">
-            <%=admin.name%>
-          </td>
-
-          <td class="email-cell">
-            <%=admin.email%>
-          </td>
-
-          <td class="link-table">
-            <%= link_to fa_icon("eye"), user_url(admin.username) %>
-          </td>
-
-          <td class="email-cell">
+          <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
+          <td class="name-cell"><%= admin.name %></td>
+          <td class="email-cell"><%= admin.email %></td>
+          <td class="link-table"><%= link_to fa_icon("eye"), user_url(admin.username) %></td>
+          <td class="form-inline">
             <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch do %>
               <%= select_tag(:role, options_for_select(@roles, :selected => admin.role), class: "form-control") %>
               <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control" %>
@@ -43,10 +31,10 @@
         </tr>
       <%end%>
     </table>
-    <br><br>
-    <table>
-      <h3>Staff on Makerepo</h3>
+    <br /><br />
 
+    <table class="table-striped">
+      <h3>Staff on Makerepo</h3>
       <tr class="text-center">
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
@@ -54,38 +42,25 @@
         <th class="email-header">View</th>
         <th class="email-header">Role</th>
       </tr>
-
       <% @staff.each do |staff| %>
         <tr>
-          <td class="username-cell">
-            <%=link_to staff.username, user_url(staff.username)%>
-          </td>
-
-          <td class="name-cell">
-            <%=staff.name%>
-          </td>
-
-          <td class="email-cell">
-            <%=staff.email%>
-          </td>
-
-          <td class="link-table">
-            <%= link_to fa_icon("eye"), user_url(staff.username) %>
-          </td>
-
-          <td class="email-cell">
+          <td class="username-cell"><%= link_to staff.username, user_url(staff.username) %></td>
+          <td class="name-cell"><%= staff.name %></td>
+          <td class="email-cell"><%= staff.email %></td>
+          <td class="link-table"><%= link_to fa_icon("eye"), user_url(staff.username) %></td>
+          <td class="form-inline">
             <%= form_tag set_role_admin_users_path(id: staff.id), method: :patch do %>
               <%= select_tag(:role, options_for_select(@roles, :selected => staff.role), class: "form-control") %>
               <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control" %>
             <% end %>
           </td>
         </tr>
-      <%end%>
+      <% end %>
     </table>
-    <br><br>
-    <table>
-      <h3>Volunteers on Makerepo</h3>
+    <br /><br />
 
+    <table class="table-striped">
+      <h3>Volunteers on Makerepo</h3>
       <tr class="text-center">
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
@@ -95,26 +70,13 @@
 
       <% @volunteers.each do |volunteer| %>
         <tr>
-          <td class="username-cell">
-            <%=link_to volunteer.username, user_url(volunteer.username)%>
-          </td>
-
-          <td class="name-cell">
-            <%=volunteer.name%>
-          </td>
-
-          <td class="email-cell">
-            <%=volunteer.email%>
-          </td>
-
-          <td class="link-table">
-            <%= link_to fa_icon("eye"), user_url(volunteer.username) %>
-          </td>
+          <td class="username-cell"><%= link_to volunteer.username, user_url(volunteer.username) %></td>
+          <td class="name-cell"><%= volunteer.name %></td>
+          <td class="email-cell"><%= volunteer.email %></td>
+          <td class="link-table"><%= link_to fa_icon("eye"), user_url(volunteer.username) %></td>
         </tr>
-      <%end%>
+      <% end %>
     </table>
   </div>
-
-  <br>
-
+  <br />
 </section>

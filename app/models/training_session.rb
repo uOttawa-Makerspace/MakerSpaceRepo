@@ -14,6 +14,7 @@ class TrainingSession < ApplicationRecord
   validate :is_staff
   before_save :check_course
   scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
+  default_scope -> { order(updated_at: :desc) }
 
   def is_staff
     errors.add(:string, 'user must be staff') unless user.staff?

@@ -1,7 +1,7 @@
 <% provide(:title, "Reports") %>
 <section>
   <br>
-  <h1>Reports</h1>
+  <h1 class="text-center">Reports</h1>
 
   <%= form_tag admin_report_generator_generate_path, method: :post do %>
     <div class="form-row align-items-center">
@@ -42,12 +42,7 @@
       </div>
     </div>
 
-    <hr>
-
-    <!--      <div class="form-group">-->
-    <%#= label_tag(:type, "Report Type") %>
-    <%#= select_tag(:type, options_for_select(@report_types), { class: "form-control" }) %>
-    <!--      </div>-->
+    <hr />
 
     <%= label_tag(:type, "Report Type") %>
     <% @report_types.each_index do |report| %>
