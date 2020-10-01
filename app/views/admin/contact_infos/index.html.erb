@@ -1,13 +1,13 @@
-<section class="page-contents">
-  <div class="edit-column text-center">
+<section>
+  <div class="text-center">
 
-    <h2>Contact Infos</h2>
+    <h2 class="py-3">Contact Infos</h2>
 
     <%= link_to "New Contact Info", new_admin_contact_info_path, :class=>"btn btn-primary m-3" %>
 
     <% if !@contact_infos.blank? %>
 
-      <div class="table-responsive">
+      <div class="table-responsive table-striped">
         <table class="table sessions-table">
 
           <tr>
