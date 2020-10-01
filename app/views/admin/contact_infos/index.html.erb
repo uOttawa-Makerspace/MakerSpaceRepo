@@ -1,0 +1,62 @@
+<section>
+  <div class="text-center">
+
+    <h2 class="py-3">Contact Infos</h2>
+
+    <%= link_to "New Contact Info", new_admin_contact_info_path, :class=>"btn btn-primary m-3" %>
+
+    <% if !@contact_infos.blank? %>
+
+      <div class="table-responsive table-striped">
+        <table class="table sessions-table">
+
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Address</th>
+            <th>Phone Number</th>
+            <th>Show Hours</th>
+            <th class="action-header">Action</th>
+          </tr>
+
+          <tbody>
+          <% @contact_infos.each do |a| %>
+            <tr>
+              <td>
+                <%= a.name %>
+              </td>
+
+              <td>
+                <%= a.email %>
+              </td>
+
+              <td>
+                <%= a.address %>
+              </td>
+
+              <td>
+                <%= a.phone_number %>
+              </td>
+
+              <td>
+                <%= a.show_hours ? "Yes" : "No" %>
+              </td>
+
+              <td class="action-cell">
+                <%=link_to "Edit", edit_admin_contact_info_path(a.id), class:"btn btn-primary btn-block btn-sm mb-1 mt-0"%>
+                <%=link_to "Delete", { controller: :contact_infos ,action: :destroy, id: a.id }, method: :delete,
+                           data: { confirm: 'Are you sure that you want to delete this contact information ?' },
+                           class:"btn btn-danger btn-sm btn-block mb-1 mr-0" %>
+              </td>
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="m-3">
+        No Contact Info were created yet.
+      </div>
+    <% end %>
+  </div>
+</section>

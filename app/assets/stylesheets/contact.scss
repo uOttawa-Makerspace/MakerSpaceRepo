@@ -15,10 +15,6 @@ section#contact-us{
   	margin-bottom: 4rem;
   }
 
-  div.card-body {
-    height: 150px!important;
-  }
-
   div.container{
     @include outer-container(100%);
   }
