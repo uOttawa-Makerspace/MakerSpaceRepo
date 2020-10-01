@@ -75,7 +75,7 @@ RSpec.describe VolunteerHour, type: :model do
     context "#create_volunteer_hour_from_approval" do
 
       it 'should create volunteer hour' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         task = create(:volunteer_task)
         expect{ VolunteerHour.create_volunteer_hour_from_approval(user.id, task.id, task.hours) }.to change(VolunteerHour, :count).by(1)
       end

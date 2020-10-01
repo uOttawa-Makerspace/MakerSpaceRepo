@@ -103,7 +103,7 @@
 
             <div class="form-group">
               <%= form.label :year_of_study, t('users.new.form.year_of_study'), class: 'required' %>
-              <%= form.number_field :year_of_study, class: 'form-control', min: 1 %>
+              <%= form.select :year_of_study, (1..10).to_a.map{|n| [n, n]}, {prompt: t('users.new.form.choose')}, class: 'form-control bootstrap-select' %>
               <%= content_tag :div, @new_user.errors[:year_of_study].first, class: 'invalid-feedback' %>
             </div>
           </fieldset>

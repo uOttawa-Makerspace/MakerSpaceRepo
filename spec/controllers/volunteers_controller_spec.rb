@@ -7,7 +7,7 @@ RSpec.describe VolunteersController, type: :controller do
     context 'index' do
 
       it 'should show the index page (volunteer)' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         get :index
@@ -34,10 +34,10 @@ RSpec.describe VolunteersController, type: :controller do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
-        total_volunteer = User.where(role: 'volunteer').count
-        create(:user, :volunteer)
-        create(:user, :volunteer)
-        create(:user, :unactive_volunteer)
+        total_volunteer = User.volunteers.count
+        create(:user, :volunteer_with_volunteer_program)
+        create(:user, :volunteer_with_volunteer_program)
+        create(:user, :unactive_volunteer_with_volunteer_program)
         get :emails
         expect(@controller.instance_variable_get(:@all_emails).count).to eq(total_volunteer + 3)
         expect(@controller.instance_variable_get(:@active_emails).count).to eq(2)
@@ -57,9 +57,9 @@ RSpec.describe VolunteersController, type: :controller do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
-        create(:user, :volunteer)
-        create(:user, :volunteer)
-        create(:user, :unactive_volunteer)
+        create(:user, :volunteer_with_volunteer_program)
+        create(:user, :volunteer_with_volunteer_program)
+        create(:user, :unactive_volunteer_with_volunteer_program)
         get :volunteer_list
         expect(@controller.instance_variable_get(:@active_volunteers).count).to eq(2)
         expect(@controller.instance_variable_get(:@unactive_volunteers).count).to eq(1)
@@ -91,7 +91,6 @@ RSpec.describe VolunteersController, type: :controller do
         expect(flash[:notice]).to eq("You've joined the Volunteer Program")
         expect(User.last.role).to eq('volunteer')
         expect(Program.last.user_id).to eq(user.id)
-        expect(Skill.last.user_id).to eq(user.id)
         expect(response).to redirect_to volunteers_path
       end
 
@@ -104,7 +103,7 @@ RSpec.describe VolunteersController, type: :controller do
     context "my_stats" do
 
       it 'should get the task for user' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task_request, :approved, user_id: volunteer.id)

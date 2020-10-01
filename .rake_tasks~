@@ -17,6 +17,7 @@ badges:get_and_update_badge_templates
 badges:get_data
 cache_digests:dependencies
 cache_digests:nested_dependencies
+confirmed_users:remind
 confirmed_users:set_true
 db:create
 db:drop
@@ -51,6 +52,8 @@ diagram:models:complete_with_engines
 diagram:setup:create_new_doc_folder_if_needed
 emails:send_survey_ceed
 exams:check_expired_exams
+increment_year:fix
+increment_year:increment_one_year
 log:clear
 middleware
 paperclip:clean
@@ -60,11 +63,13 @@ paperclip:refresh:fingerprints
 paperclip:refresh:metadata
 paperclip:refresh:missing_styles
 paperclip:refresh:thumbnails
+popular_hours:populate
 print_order_notifications:two_weeks_reminder
 restart
 secret
 shopify_api:graphql:dump
 spec
+spec:config
 spec:controllers
 spec:models
 stats
@@ -74,6 +79,7 @@ test:system
 time:zones[country_or_offset]
 tmp:clear
 tmp:create
+training_sessions:populate_course_name_id
 update_mailer:send_email
 users_without_waiver:send_emails
 webpacker

@@ -7,7 +7,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
     context 'index' do
 
       it 'should show the index page' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_hour, :approved1, user_id: user.id)
@@ -30,7 +30,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
     context 'create' do
 
       it 'should create the hours' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_task)
@@ -49,7 +49,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
     context 'edit' do
 
       it 'should edit the hours' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_hour, :approved1, user_id: user.id)
@@ -60,7 +60,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
       end
 
       it 'should edit redirect the user to volunteer_hours_path' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_hour, :approved1)
@@ -78,7 +78,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
     context 'destroy' do
 
       it 'should destroy the hours' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
@@ -88,7 +88,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
       end
 
       it 'should not destroy the hours' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_hour, :approved1)
@@ -105,7 +105,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
     context 'update' do
 
       it 'should update the hours' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_hour, :not_processed)
@@ -148,7 +148,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
     context 'update_approval' do
 
       it 'should update the volunteer hours approval to true' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_hour, :not_processed)
@@ -159,7 +159,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
       end
 
       it 'should update the volunteer hours approval to false' do
-        volunteer = create(:user, :volunteer)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_hour, :not_processed)
@@ -179,7 +179,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
 
       it 'should see the volunteer_hour per user' do
         admin = create(:user, :admin)
-        v = create(:user, :volunteer)
+        v = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
         create(:volunteer_hour, :not_processed, user_id: v.id)
@@ -195,7 +195,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
       end
 
       it 'should redirect user' do
-        user = create(:user, :volunteer)
+        user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         get :volunteer_hour_per_user

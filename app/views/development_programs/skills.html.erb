@@ -2,6 +2,57 @@
   <div class="container text-center">
     <h2>Skills</h2>
     <div class="row my-5 mx-auto">
+
+      <div class="col-md-12">
+        <% @skills.each do |skill| %>
+
+          <h2><%= skill.name %></h2>
+
+          <% unless Training.where(skills_id: skill.id).present? %>
+            <p>No trainings for this skill</p>
+          <% end %>
+
+          <% Training.where(skills_id: skill.id).each do |training| %>
+
+              <div class="accordion">
+                <div class="card m-3">
+                  <div class="card-header">
+                    <p style="float: right"><%= get_lower_level(training.id).html_safe %></p>
+                    <h2 class="mb-0">
+                      <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
+                        <%= training.name %>
+                      </button>
+                    </h2>
+                  </div>
+
+                  <div id="training-<%= training.id %>" class="collapse">
+                    <div class="card-body">
+
+                      <p><%= training.description if training.description.present? %></p>
+
+                      <div class="d-inline">
+                        <% ProficientProject.where.not(id: current_user.order_items.completed_order.pluck(:proficient_project_id)).where(training_id: training.id).each do |pp| %>
+                          <%= image_tag(pp.badge_template.image_url, :style => "width: 100px") if pp.badge_template.present? %>
+                        <% end %>
+                      </div>
+
+                      <p>Modules finished : <%= ProficientProject.where(id: current_user.order_items.awarded.pluck(:proficient_project_id), training_id: training.id).count %> / <%= training.proficient_projects.count %></p>
+                      <p>Next modules to complete :</p>
+                      <ul>
+                        <% get_next_pp(training.id).each do |next_module| %>
+                          <li><%= link_to next_module.title, proficient_projects_path(search: next_module.title)%></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+          <% end %>
+
+        <% end %>
+      </div>
+
       <% @certifications.each do |cert| %>
         <div class="col-md-3 text-center my-3">
           <b><%= cert.training.name %> </b> <br/>

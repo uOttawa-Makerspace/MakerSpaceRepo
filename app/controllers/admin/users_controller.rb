@@ -151,7 +151,7 @@ class Admin::UsersController < AdminAreaController
   def manage_roles
     @admins = User.where(role: 'admin')
     @staff = User.where(role: 'staff')
-    @volunteers = User.where(role: 'volunteer')
+    @volunteers = User.volunteers
   end
 
   private

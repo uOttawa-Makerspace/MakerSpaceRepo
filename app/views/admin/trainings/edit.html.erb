@@ -8,10 +8,21 @@
             Name: <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
           </div>
 
+          <div class="col-md-12 form-group">
+            Description: <%= f.text_area :description, placeholder: "Write an description...", class: 'form-control', required: true %>
+          </div>
+
           <div class="form-check">
             <%= f.collection_check_boxes( :space_ids, @spaces, :id, :name, bootstrap: {check_inline: true}, class: "") do |b| %>
               <%= b.label(:"data-value" => b.value) { b.check_box + b.text } %>
             <% end %>
+          </div>
+
+          <br><br>
+
+          <div class="col-md-12 form-group">
+            <%= f.label(:skills_id, "Skill Type") %>
+            <%= f.select :skills_id, options_for_select(Skill.all.pluck(:name, :id), selected: f.object.skills_id), {include_blank: true}, {class: "form-control"} %>
           </div>
 
           <div class="col-md-12 form-group my-5">

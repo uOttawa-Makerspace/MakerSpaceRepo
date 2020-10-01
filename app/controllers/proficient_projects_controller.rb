@@ -2,7 +2,7 @@
 
 class ProficientProjectsController < DevelopmentProgramsController
   before_action :only_admin_access, only: %i[new create edit update destroy]
-  before_action :set_proficient_project, only: %i[show destroy edit update]
+  before_action :set_proficient_project, only: %i[show destroy edit update complete_project]
   before_action :grant_access_to_project, only: [:show]
   before_action :set_training_categories, only: %i[new edit]
   before_action :set_badge_templates, only: %i[new edit]
@@ -90,6 +90,20 @@ class ProficientProjectsController < DevelopmentProgramsController
     respond_to do |format|
       format.js
     end
+  end
+  
+  def complete_project
+    if @proficient_project.badge_template.present?
+      flash[:alert] = 'This project cannot be completed without the staff approving the badge.'
+    else
+      if current_user.order_items.where(proficient_project_id: @proficient_project.id).present?
+        current_user.order_items.where(proficient_project_id: @proficient_project.id).first.update(status: "Awarded")
+        flash[:notice] = 'Congratulations on completing this proficient project! It is now updated as completed in the skills page!'
+      else
+        flash[:alert] = 'This project hasn\'t been found.'
+      end
+    end
+    redirect_to skills_development_programs_path
   end
 
   private

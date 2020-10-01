@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_09_13_170215) do
+ActiveRecord::Schema.define(version: 2020_10_01_013344) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -150,6 +150,17 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
     t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
+  create_table "contact_infos", force: :cascade do |t|
+    t.string "name"
+    t.string "email"
+    t.string "address"
+    t.string "phone_number"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.string "url"
+    t.boolean "show_hours"
+  end
+
   create_table "course_names", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
@@ -226,6 +237,16 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
     t.index ["user_id"], name: "index_lab_sessions_on_user_id"
   end
 
+  create_table "learning_module_tracks", force: :cascade do |t|
+    t.string "status", default: "In progress"
+    t.bigint "learning_module_id"
+    t.bigint "user_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["learning_module_id"], name: "index_learning_module_tracks_on_learning_module_id"
+    t.index ["user_id"], name: "index_learning_module_tracks_on_user_id"
+  end
+
   create_table "learning_modules", force: :cascade do |t|
     t.integer "training_id"
     t.string "title"
@@ -243,6 +264,16 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
     t.datetime "updated_at", null: false
     t.index ["repository_id"], name: "index_likes_on_repository_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
+  end
+
+  create_table "opening_hours", force: :cascade do |t|
+    t.string "students"
+    t.string "public"
+    t.string "summer"
+    t.bigint "contact_info_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"
   end
 
   create_table "order_items", id: :serial, force: :cascade do |t|
@@ -296,13 +327,15 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
   end
 
   create_table "popular_hours", force: :cascade do |t|
-    t.integer "mean"
-    t.integer "space_id"
+    t.bigint "space_id"
+    t.float "mean", default: 0.0
     t.integer "hour"
     t.integer "day"
-    t.integer "count"
+    t.integer "count", default: 0
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.float "previous_mean", default: 0.0
+    t.index ["space_id"], name: "index_popular_hours_on_space_id"
   end
 
   create_table "price_rules", id: :serial, force: :cascade do |t|
@@ -397,6 +430,7 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
     t.string "program_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "active", default: true
   end
 
   create_table "project_joins", id: :serial, force: :cascade do |t|
@@ -526,23 +560,17 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
     t.datetime "updated_at"
   end
 
-  create_table "skills", id: :serial, force: :cascade do |t|
-    t.integer "user_id"
-    t.string "printing", default: "No Experience"
-    t.string "laser_cutting", default: "No Experience"
-    t.string "virtual_reality", default: "No Experience"
-    t.string "arduino", default: "No Experience"
-    t.string "embroidery", default: "No Experience"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.boolean "active", default: true
-    t.string "soldering", default: "No Experience"
+  create_table "skills", force: :cascade do |t|
+    t.text "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "spaces", id: :serial, force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "max_capacity"
   end
 
   create_table "spaces_trainings", id: false, force: :cascade do |t|
@@ -575,6 +603,9 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "space_id"
+    t.bigint "skills_id"
+    t.string "description"
+    t.index ["skills_id"], name: "index_trainings_on_skills_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end
 
@@ -647,21 +678,6 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
     t.boolean "approval"
   end
 
-  create_table "volunteer_requests", id: :serial, force: :cascade do |t|
-    t.text "interests", default: ""
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.integer "user_id"
-    t.boolean "approval"
-    t.integer "space_id"
-    t.string "printing", default: "No Experience"
-    t.string "laser_cutting", default: "No Experience"
-    t.string "virtual_reality", default: "No Experience"
-    t.string "arduino", default: "No Experience"
-    t.string "embroidery", default: "No Experience"
-    t.string "soldering", default: "No Experience"
-  end
-
   create_table "volunteer_task_joins", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.integer "volunteer_task_id"
@@ -709,6 +725,8 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
   add_foreign_key "lab_sessions", "spaces"
+  add_foreign_key "learning_module_tracks", "learning_modules"
+  add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "order_items", "orders"
@@ -716,6 +734,7 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
   add_foreign_key "orders", "order_statuses"
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
+  add_foreign_key "popular_hours", "spaces"
   add_foreign_key "proficient_projects", "badge_templates"
   add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
@@ -725,6 +744,7 @@ ActiveRecord::Schema.define(version: 2020_09_13_170215) do
   add_foreign_key "rfids", "users"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
+  add_foreign_key "trainings", "skills", column: "skills_id"
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"

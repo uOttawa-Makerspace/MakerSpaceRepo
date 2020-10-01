@@ -132,8 +132,6 @@ Rails.application.routes.draw do
     get 'admin'
   end
 
-  resources :skills, only: %i[edit update]
-
   get 'help', to: 'help#main'
   put 'send_email', to: 'help#send_email'
 
@@ -161,6 +159,7 @@ Rails.application.routes.draw do
     namespace :report_generator do
       get "/", :as => "index", :action => "index"
       post "/generate", :as => "generate", :action => "generate", format: :xlsx
+      get :popular_hours
     end
 
     resources :users, only: %i[index edit update show] do
@@ -183,6 +182,8 @@ Rails.application.routes.draw do
     resources :pi_readers, only: [:update]
 
     resources :trainings
+
+    resources :skills
 
     resources :course_names
 
@@ -266,12 +267,20 @@ Rails.application.routes.draw do
     collection do
       get :join_development_program
       get :open_modal
+      get :complete_project
     end
   end
 
   resources :learning_area do
     collection do
       get :open_modal
+    end
+  end
+
+  resources :learning_module_track, only: %i[index] do
+    collection do
+      get :start
+      get :completed
     end
   end
 
@@ -317,12 +326,6 @@ Rails.application.routes.draw do
   resources :volunteer_task_joins, only: [:create] do
     collection do
       post :remove
-    end
-  end
-
-  resources :volunteer_requests, only: %i[index create show] do
-    collection do
-      put :update_approval
     end
   end
 

@@ -17,8 +17,6 @@ class User < ApplicationRecord
   has_many :printer_sessions, dependent: :destroy
   has_many :volunteer_hours
   has_many :volunteer_tasks
-  has_one :skill
-  has_one :volunteer_request, dependent: :destroy
   has_many :volunteer_task_joins
   has_many :training_sessions
   has_many :announcements
@@ -37,6 +35,7 @@ class User < ApplicationRecord
   has_many :discount_codes, dependent: :destroy
   has_one_attached :avatar
   has_many :project_kits, dependent: :destroy
+  has_many :learning_module_tracks
 
   validates :avatar, file_content_type: {
       allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],
@@ -50,7 +49,7 @@ class User < ApplicationRecord
   validates :username,
             presence: true,
             uniqueness: true,
-            format: { with: /\A[a-zA-Z\d]*\z/ },
+            format: { with: /\A[a-zA-ZÀ-ÿ\d]*\z/ },
             length: { maximum: 20 }
 
   validates :email,
@@ -94,6 +93,11 @@ class User < ApplicationRecord
   scope :frequency_between_dates, ->(start_date, end_date) { joins(lab_sessions: :space).where('lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?', start_date, end_date, 'Makerspace') }
   scope :active, -> { where(active: true) }
   scope :unknown_identity, -> { where(identity: 'unknown') }
+  scope :created_at_month, -> (month) { where("DATE_PART('month', created_at) = ?", month) }
+  scope :not_created_this_year, -> { where.not(created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year) }
+  scope :students, -> { where(identity: ['undergrad', 'grad']) }
+  scope :volunteers, -> { joins(:programs).where(programs: { program_type: Program::VOLUNTEER }) }
+
 
   def self.display_avatar(user)
     if user.avatar.attached?
@@ -140,7 +144,8 @@ class User < ApplicationRecord
   end
 
   def volunteer?
-    role.eql?('volunteer')
+    #role.eql?('volunteer')
+    programs.pluck(:program_type).include?(Program::VOLUNTEER)
   end
 
   def volunteer_program?

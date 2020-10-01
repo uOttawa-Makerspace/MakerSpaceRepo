@@ -29,7 +29,34 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
 
   end
 
-  describe 'post /generate' do
+  describe "GET /popular_hours" do
+
+    context "logged in as admin" do
+
+      it 'should get a 200' do
+        admin = create(:user, :admin)
+        session[:user_id] = admin.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :popular_hours
+      end
+
+    end
+
+    context "logged in as regular user" do
+
+      it 'should redirect user to root' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :popular_hours
+        expect(response).to redirect_to root_path
+      end
+
+    end
+
+  end
+
+  describe "post /generate" do
 
     before(:each) do
       admin = create(:user, :admin)

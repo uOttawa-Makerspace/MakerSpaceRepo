@@ -1,0 +1,72 @@
+<section class="p-5">
+  <div class="container text-center">
+    <h2>Skills</h2>
+    <div class="row my-5 mx-auto">
+
+      <div class="col-md-12">
+        <% @skills.each do |skill| %>
+
+          <h2><%= skill.name %></h2>
+
+          <% unless Training.where(skills_id: skill.id).present? %>
+            <p>No trainings for this skill</p>
+          <% end %>
+
+          <% Training.where(skills_id: skill.id).each do |training| %>
+
+            <div class="accordion">
+              <div class="card m-3">
+                <div class="card-header">
+                  <p style="float: right"><%= get_lower_level(training.id).html_safe %></p>
+                  <h2 class="mb-0">
+                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
+                      <%= training.name %>
+                    </button>
+                  </h2>
+                </div>
+
+                <div id="training-<%= training.id %>" class="collapse">
+                  <div class="card-body">
+
+                    <p><%= training.description if training.description.present? %></p>
+
+                    <p>Modules finished : <%= LearningModule.where(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)).where(training_id: training.id).count %> / <%= training.learning_modules.count %></p>
+                    <p>Next modules to complete :</p>
+                    <ul>
+                      <% get_next_lm(training.id).each do |next_module| %>
+                        <li><%= link_to next_module.title, learning_area_path(id: next_module.id)%></li>
+                      <% end %>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          <% end %>
+
+        <% end %>
+      </div>
+
+      <% @certifications.each do |cert| %>
+        <div class="col-md-3 text-center my-3">
+          <b><%= cert.training.name %> </b> <br/>
+          <%= image_tag(cert.get_badge_path, class: "skills-badges") %>
+          <br/>
+          <%= cert.training_session.level %>
+        </div>
+        <br/>
+        <br/>
+        <br/>
+      <% end %>
+
+      <% @remaining_trainings.each do |training| %>
+        <div class="col-md-3 text-center my-3">
+          <b><%= training.name %> </b> <br/>
+          <%= image_tag("badges/none.png", class: "skills-badges") %>
+          <br/>
+          None
+        </div>
+      <% end %>
+    </div>
+  </div>
+</section>

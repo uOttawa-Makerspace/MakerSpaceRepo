@@ -22,6 +22,7 @@ require("@rails/activestorage").start();
 require("jquery");
 require("select2");
 global.toastr = require("toastr");
+global.Chart = require("chart.js");
 require("trix");
 require("@shopify/buy-button-js");
 require("jquery-ui");
@@ -52,7 +53,6 @@ require("packs/users");
 require("packs/vendor");
 require("packs/videos");
 require("packs/volunteer_hours");
-require("packs/volunteer_requests");
 require("packs/volunteer_tasks");
 
 import "bootstrap";

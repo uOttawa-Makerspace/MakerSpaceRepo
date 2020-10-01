@@ -3,7 +3,7 @@ function validation(){
     var title = $("input#repository_title");
     $('span.form-error.repo-form').remove();
     var span = $('<span>').addClass('form-error repo-form');
-    var regex = /^[-a-zA-Z\d\s]*$/;
+    var regex = /^[-a-zA-ZÀ-ÿ\d\s]*$/;
 
 
     if( title.val().length === 0 ){
@@ -48,7 +48,7 @@ function validation_proposal(){
     var description = $("#trix_editor");
     $('span.form-error.repo-form').remove();
     var span = $('<span>').addClass('form-error repo-form');
-    var regex = /^[-a-zA-Z\d\s]*$/;
+    var regex = /^[-a-zA-ZÀ-ÿ\d\s]*$/;
 
     if( name.val().length === 0 ){
         span.text("Your name is required");
