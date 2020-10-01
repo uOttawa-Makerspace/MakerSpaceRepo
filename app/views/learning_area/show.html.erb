@@ -12,6 +12,17 @@
         <%= @learning_modules.training.name %>
         -
         <%= @learning_modules.level %>
+        <% if !LearningModuleTrack.where(learning_module_id: @learning_modules.id, user_id: current_user.id).present? %>
+          <br><br>
+          <div class="alert alert-success">
+            <%= link_to "Start the Learning Module", start_learning_module_track_index_path(learning_module_id: @learning_modules.id), class: "btn btn-primary" %>
+          </div>
+        <% elsif LearningModuleTrack.where(learning_module_id: @learning_modules.id, user_id: current_user.id, status: "Completed").present? %>
+          <br><br>
+          <div class="alert alert-info">
+            <p>Congratulations on completing this Learning Module !</p>
+          </div>
+        <% end %>
       </div>
       <br />
       <div class="row">
@@ -34,7 +45,14 @@
               <%= image_tag p.image, data: { width: p.width, height: p.height} %>
             <% end %>
           </div>
-          <br />
+          <br>
+          <div class="text-center">
+            <% if LearningModuleTrack.where(learning_module_id: @learning_modules.id, user_id: current_user.id, status: "In progress").present? %>
+              <div class="alert alert-primary">
+                <%= link_to "Change status to completed", completed_learning_module_track_index_path(learning_module_id: @learning_modules.id), class: "btn btn-primary" %>
+              </div>
+           <% end %>
+          </div>
           <br />
         </div>
       </div>

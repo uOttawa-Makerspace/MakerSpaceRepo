@@ -5,7 +5,7 @@ module LearningAreaHelper
     clean_url =~ url_regexp and clean_url.include?("wiki.makerepo.com") ? true : false
   end
 
-  def get_lower_level(training_id)
+  def get_lower_level_lm(training_id)
     lm = LearningModule.where.not(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)).where(training_id: training_id)
     if lm.where(level: "Beginner").present?
       "<span style='color: green'>Beg</span>"

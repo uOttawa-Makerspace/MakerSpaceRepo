@@ -16,7 +16,7 @@ class LearningAreaController < DevelopmentProgramsController
     @training_levels ||= TrainingSession.return_levels
   end
 
-  def show ;end
+  def show ; end
 
   def create
     @learning_modules = LearningModule.new(learning_modules_params)
