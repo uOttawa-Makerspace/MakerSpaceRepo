@@ -152,6 +152,7 @@ class Admin::UsersController < AdminAreaController
     @admins = User.where(role: 'admin')
     @staff = User.where(role: 'staff')
     @volunteers = User.volunteers
+    @roles = %w[admin staff regular_user]
   end
 
   private

@@ -1,43 +1,41 @@
-<section class="page-contents">
-  <div class="edit-column">
-    <div class="title">Admin Trainings Manager</div>
+<section>
+  <div class="title">Admin Trainings Manager</div>
 
-    <p class="text-center"><%= link_to "New Training", new_admin_training_path, class: "btn btn-secondary" %></p>
-    <br />
+  <p class="text-center"><%= link_to "New Training", new_admin_training_path, class: "btn btn-secondary" %></p>
+  <br/>
 
-      <br />
-      <table class="table table-striped mb-5">
-        <tr class="text-center">
-          <th>Training</th>
-          <th>Spaces</th>
-          <th>Training Sessions</th>
-          <th>Certifications</th>
-          <th>Action</th>
-        </tr>
+  <table class="table table-striped mb-5">
+    <tr class="text-center">
+      <th>Training</th>
+      <th>Spaces</th>
+      <th>Training Sessions</th>
+      <th>Certifications</th>
+      <th>Action</th>
+    </tr>
 
-        <% @trainings.each do |t| %>
-          <tr>
-            <td><%= t.name %></td>
-            <% spaces = t.spaces.order(:name) %>
-              <td>
-                <% spaces.each do |s| %>
-                  <%= s.name %> <br />
-                <% end %>
-              </td>
-              <td>
-                <% spaces.each do |s| %>
-                  <%= t.training_sessions.where(space_id: s.id).count %><br />
-                <% end %>
-              </td>
-              <td>
-                <% spaces.each do |s| %>
-                  <%= t.certifications.joins(:training_session).where("training_sessions.space_id = ?", s.id).count %> <br />
-                <% end %>
-              </td>
-            <td><%= link_to "Edit", edit_admin_training_path(t.id), class:"btn btn-primary" %></td>
-          </tr>
-        <% end %>
+    <% @trainings.each do |t| %>
+      <tr>
+        <td><%= t.name %></td>
+        <% spaces = t.spaces.order(:name) %>
+        <td>
+          <% spaces.each do |s| %>
+            <%= s.name %> <br/>
+          <% end %>
+        </td>
+        <td>
+          <% spaces.each do |s| %>
+            <%= t.training_sessions.where(space_id: s.id).count %><br/>
+          <% end %>
+        </td>
+        <td>
+          <% spaces.each do |s| %>
+            <%= t.certifications.joins(:training_session).where("training_sessions.space_id = ?", s.id).count %> <br/>
+          <% end %>
+        </td>
+        <td><%= link_to "Edit", edit_admin_training_path(t.id), class: "btn btn-primary" %></td>
+      </tr>
+    <% end %>
 
-      </table>
-  </div>
+  </table>
+  <br>
 </section>

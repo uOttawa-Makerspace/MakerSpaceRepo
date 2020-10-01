@@ -1,28 +1,27 @@
-<section class="page-contents">
-  <div class="edit-column">
-    <h2 class="text-center">Edting <b><%= @training.name.capitalize %></b> Training</h2>
-    <%= form_for @training, url: {controller: "admin/trainings", action: "update"} do |f| %>
-      <div class="container">
-        <div class="row text-center">
-          <div class="col-md-12 form-group">
-            Name: <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
-          </div>
+<section>
+  <h2 class="text-center">Edting <b><%= @training.name.capitalize %></b> Training</h2>
+  <%= form_for @training, url: {controller: "admin/trainings", action: "update"} do |f| %>
+    <div class="container">
+      <div class="row text-center">
+        <div class="col-md-12 form-group">
+          Name: <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
+        </div>
 
-          <div class="form-check">
-            <%= f.collection_check_boxes( :space_ids, @spaces, :id, :name, bootstrap: {check_inline: true}, class: "") do |b| %>
-              <%= b.label(:"data-value" => b.value) { b.check_box + b.text } %>
-            <% end %>
-          </div>
+        <div class="form-check">
+          <%= f.collection_check_boxes(:space_ids, @spaces, :id, :name, bootstrap: {check_inline: true}, class: "") do |b| %>
+            <%= b.label(:"data-value" => b.value) { b.check_box + b.text } %>
+          <% end %>
+        </div>
 
-          <div class="col-md-12 form-group my-5">
-            <%= f.submit "Update Training", class: "btn btn-secondary btn-xl text-uppercase" %>
-          </div>
+        <div class="col-md-12 form-group my-3">
+          <%= f.submit "Update Training", class: "btn btn-secondary btn-xl text-uppercase" %>
         </div>
       </div>
-    <% end %>
+    </div>
+  <% end %>
 
-    <%=link_to "Delete", { controller: "admin/trainings" ,action: :destroy, id: @training.id }, method: :delete,
-               data: { confirm: 'Are you sure that you want to delete this training. This will delete all the training sessions as well.?' },
-               class:"btn btn-danger"%>
-  </div>
+  <%= link_to "Delete", {controller: "admin/trainings", action: :destroy, id: @training.id}, method: :delete,
+              data: {confirm: 'Are you sure that you want to delete this training. This will delete all the training sessions as well.?'},
+              class: "btn btn-danger" %>
+  <br><br>
 </section>
