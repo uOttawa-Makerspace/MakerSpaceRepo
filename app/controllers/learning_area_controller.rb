@@ -5,7 +5,7 @@ class LearningAreaController < DevelopmentProgramsController
   before_action :set_files_photos_videos, only: %i[show edit]
 
   def index
-    @learning_modules = LearningModule.filter_attributes(get_filter_params).order(created_at: :desc).paginate(page: params[:page], per_page: 30)
+    @learning_modules = LearningModule.filter_params(get_filter_params).order(created_at: :desc).paginate(page: params[:page], per_page: 30)
     @training_levels ||= TrainingSession.return_levels
     @training_categories_names = Training.all.order('name ASC').pluck(:name)
     flash.now[:alert_yellow] = "Please visit #{view_context.link_to "My Projects", learning_area_index_path, class: "text-primary"} to access the proficient projects purchased (including Free Proficient Projects)".html_safe
