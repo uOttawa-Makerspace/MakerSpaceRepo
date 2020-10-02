@@ -1,6 +1,6 @@
-<section class="page-contents">
-  <div class="edit-column">
-    <div class="title">Admin Skill Manager</div>
+<section>
+  <div class="text-center pb-4">
+    <div class="title py-3">Admin Skill Manager</div>
 
     <p class="text-center"><%= link_to "New Skill Type", new_admin_skill_path, class: "btn btn-secondary" %></p>
     <br />
@@ -16,7 +16,6 @@
           <td><%= link_to "Edit", edit_admin_skill_path(t.id), class:"btn btn-primary" %></td>
         </tr>
       <% end %>
-
     </table>
   </div>
 </section>

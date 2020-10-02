@@ -1,6 +1,6 @@
-<section class="page-contents">
-  <div class="edit-column">
-    <h2 class="text-center">Editing <b><%= @skill.name.capitalize %></b></h2>
+<section>
+  <div class="text-center">
+    <h2>Editing <b><%= @skill.name.capitalize %></b></h2>
     <%= form_for @skill, url: {controller: "admin/skills", action: "update"} do |f| %>
       <div class="container">
         <div class="row text-center">
@@ -14,11 +14,16 @@
         </div>
       </div>
     <% end %>
+    <div class="float-left">
+      <%= link_to "Back", admin_skills_path %>
+    </div>
 
     <% unless Training.find_by_skills_id(@skill.id).present? %>
-      <%=link_to "Delete", { controller: "admin/skills" ,action: :destroy, id: @skill.id }, method: :delete,
-                 data: { confirm: 'Are you sure that you want to delete this Skill Type ?' },
-                 class:"btn btn-danger"%>
+      <div class="pb-5">
+        <%=link_to "Delete", { controller: "admin/skills" ,action: :destroy, id: @skill.id }, method: :delete,
+                   data: { confirm: 'Are you sure that you want to delete this Skill Type ?' },
+                   class:"btn btn-danger float-right"%>
+      </div>
     <% end %>
   </div>
 </section>

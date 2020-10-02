@@ -1,6 +1,6 @@
-<section class="page-contents">
-  <div class="edit-column">
-    <h2 class="text-center">New Skill Type</h2>
+<section>
+  <div class="text-center pb-4">
+    <div class="title py-3">New Skill Type</div>
     <%= form_for @new_skill, url: {controller: "admin/skills", action: "create"} do |f| %>
       <div class="container">
         <div class="row text-center">
@@ -14,5 +14,8 @@
         </div>
       </div>
     <% end %>
+    <div class="float-left">
+      <%= link_to "Back", admin_skills_path %>
+    </div>
   </div>
 </section>
