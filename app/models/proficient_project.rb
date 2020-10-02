@@ -58,4 +58,11 @@ class ProficientProject < ApplicationRecord
     end
   end
 
+  def extract_urls
+    URI.extract(self.description)
+  end
+
+  def extract_valid_urls
+    self.extract_urls.uniq.select{ |url| url.include?("wiki.makerepo.com") }
+  end
 end

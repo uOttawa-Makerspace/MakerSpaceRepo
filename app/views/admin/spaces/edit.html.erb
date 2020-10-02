@@ -1,7 +1,17 @@
-<section id="page-contents">
-  <div class="edit-column">
+<section>
     <div class="setting-title"><%=link_to "Spaces Manager", admin_spaces_path%></div><br></br>
     <h1 style="font-weight:bold;text-align:center;"><%=@space.name.upcase%></h1><br>
+
+    <div class="form-group">
+      <%= form_for update_max_capacity_admin_spaces_path, url: {controller: "admin/spaces", action: "update_max_capacity"}, method: :post do |f| %>
+        <%= label_tag(:max_capacity, "Maximum Capacity") %>
+        <%= number_field_tag :max_capacity, @space.max_capacity, {class: "form-control"} %>
+        <%= hidden_field_tag :space_id, @space.id %> <br>
+        <%= f.submit "Update Max Capacity", class: "btn btn-primary", data: { confirm: 'Are your sure you want to update the maximum capacity of the space ?' }  %>
+      <% end %>
+    </div>
+
+    <br><br>
 
     <table><th class="section-header">Manage RFID Readers</th></table><br>
     <div>
@@ -21,7 +31,7 @@
         <%end%>
       </table>
 
-      <br></br>
+      <br>
 
       <h3>Unassociated RFID Readers</h3>
       <table>
@@ -40,12 +50,11 @@
       </table>
     </div>
 
-    <br></br>
-    <br></br>
+    <br>
 
     <table><th  class="section-header">Manage Trainings</th></table>
     <div>
-      </br>
+      <br><br>
       <h3 style="font-weight:bold;">New <%=@space.name.capitalize%> Training:</h3>
       <%= form_for @new_training, :url => { :action => "create", controller: 'admin/trainings'} do |f| %>
         <%= f.hidden_field :space_id, value: @space.id %>
@@ -87,7 +96,7 @@
         <%= f.submit "Edit name", class: "btn btn-primary",   data: { confirm: 'Are your sure you want to change the name of the space ?' }  %>
       </div>
   <% end %>
-    <br><br>
+    <br>
 
     <table><th class="destroy-header">Destroy Space</th></table>
     <div>
@@ -96,15 +105,13 @@
       Type <span style="font-weight:bold;"><%=@space.name.upcase%></span> in the box then click DESTROY:
       <br>
       <%= form_for admin_spaces_path, action: :destroy, method: :delete do |f| %>
-        <%= text_field_tag :admin_input, "" %>
-        <%= hidden_field_tag :id, @space.id %> <br></br>
+        <div class="form-group">
+          <%= text_field_tag :admin_input, "", class: "form-control" %>
+        </div>
+        <%= hidden_field_tag :id, @space.id %>
         <%= f.submit "DESTROY", class: "btn btn-danger",   data: { confirm: 'Are your sure you want to completely DELETE this space and all related informaion?! Ok to confirm' }  %>
       <% end %>
     </div>
 
-    <br></br>
-    <br></br>
-    <br></br>
-
-  </div>
+    <br>
 </section>

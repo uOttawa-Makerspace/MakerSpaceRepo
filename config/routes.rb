@@ -82,7 +82,7 @@ Rails.application.routes.draw do
     get 'about'
     get 'contact'
     get 'calendar'
-    get "report_repository/:repository_id", :as => "report_repository", :action => "report_repository"
+    get 'report_repository/:repository_id', :as => 'report_repository', :action => 'report_repository'
     get 'volunteer_program_info'
     get 'development_program_info'
   end
@@ -96,9 +96,9 @@ Rails.application.routes.draw do
   namespace :search, path: '/', as: nil do
     get 'explore'
     get 'search'
-    get "category/:slug", :as => "category", :action => "category"
-    get "category/:slug/featured", :as => "featured", :action => "featured"
-    get "equipment/:slug", :as => "equipment", :action => "equipment"
+    get 'category/:slug', :as => 'category', :action => 'category'
+    get 'category/:slug/featured', :as => 'featured', :action => 'featured'
+    get 'equipment/:slug', :as => 'equipment', :action => 'equipment'
   end
 
   # TEMPLATE
@@ -150,15 +150,15 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    get "/", :as => "index", :action => "index"
+    get '/', :as => 'index', :action => 'index'
 
     resources :announcements
 
     get 'manage_badges'
 
     namespace :report_generator do
-      get "/", :as => "index", :action => "index"
-      post "/generate", :as => "generate", :action => "generate", format: :xlsx
+      get '/', :as => 'index', :action => 'index'
+      post '/generate', :as => 'generate', :action => 'generate', format: :xlsx
       get :popular_hours
     end
 
@@ -175,8 +175,12 @@ Rails.application.routes.draw do
     end
 
     resources :spaces, only: %i[index create edit] do
-      delete "/edit/", :as => "destroy", :action => "destroy"
-      post "/edit/", :as => "update_name", :action => "update_name"
+      delete '/edit/', :as => 'destroy', :action => 'destroy'
+      post '/edit/', :as => 'update_name', :action => 'update_name'
+
+      collection do
+        post :update_max_capacity
+      end
     end
 
     resources :pi_readers, only: [:update]
@@ -187,8 +191,10 @@ Rails.application.routes.draw do
 
     resources :course_names
 
+    resources :contact_infos
+
     resources :training_sessions do
-      get "/", :as => "index", :action => "index"
+      get '/', :as => 'index', :action => 'index'
 
       member do
         patch 'update'
@@ -216,7 +222,7 @@ Rails.application.routes.draw do
 
   namespace :staff do
     resources :training_sessions do
-      get "/", :as => "index", :action => "index", on: :collection
+      get '/', :as => 'index', :action => 'index', on: :collection
       member do
         post 'certify_trainees'
         patch 'renew_certification'
@@ -227,17 +233,18 @@ Rails.application.routes.draw do
   end
 
   namespace :staff_dashboard do
-    get "/", :as => "index", :action => "index"
+    get '/', :as => 'index', :action => 'index'
     get 'search'
     get 'present_users_report'
-    put "/change_space", :as => "change_space", :action => "change_space"
-    put "/add_users", :as => "sign_in_users", :action => "sign_in_users"
-    put "/remove_users", :as => "sign_out_users", :action => "sign_out_users"
+    put '/change_space', :as => 'change_space', :action => 'change_space'
+    put '/add_users', :as => 'sign_in_users', :action => 'sign_in_users'
+    put '/remove_users', :as => 'sign_out_users', :action => 'sign_out_users'
     put 'link_rfid'
     put 'unlink_rfid'
     get 'sign_out_all_users'
     get :populate_users
     post :import_excel
+    get :refresh_capacity
   end
 
   resources :development_programs, only: [:index] do
@@ -254,7 +261,7 @@ Rails.application.routes.draw do
       get :revoke_badge
       get :populate_badge_list
       get :certify
-      get "grant", :as => "grant_badge", :action => "grant_badge"
+      get 'grant', :as => 'grant_badge', :action => 'grant_badge'
       get :reinstate
       get :update_badge_data
       get :update_badge_templates
@@ -347,7 +354,7 @@ Rails.application.routes.draw do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post "vote/:comment_id", :as => "vote", :action => "vote", to: 'users#vote'
+  post 'vote/:comment_id', :as => 'vote', :action => 'vote', to: 'users#vote'
 
 
   # USER RESOURCES
@@ -370,14 +377,14 @@ Rails.application.routes.draw do
   resources :repositories, path: '/:user_username', param: :slug, except: :index do
     post 'add_like', on: :member
     collection do
-      get ":slug/download_files", :as => "download_files", :action => "download_files"
-      get ":slug/download", :as => "download", :action => "download"
+      get ':slug/download_files', :as => 'download_files', :action => 'download_files'
+      get ':slug/download', :as => 'download', :action => 'download'
       patch :link_to_pp
       patch :add_owner
       patch :remove_owner
     end
     member do
-      get "/password_entry", :as => "password_entry", :action => "password_entry"
+      get '/password_entry', :as => 'password_entry', :action => 'password_entry'
       post 'pass_authenticate'
     end
   end

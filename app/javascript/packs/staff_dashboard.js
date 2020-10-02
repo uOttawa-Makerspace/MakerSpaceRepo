@@ -36,3 +36,14 @@ document.querySelector('.custom-file-input-excel').addEventListener('change',fun
     var nextSibling = e.target.nextElementSibling
     nextSibling.innerText = fileName
 })
+
+$(document).on('turbolinks:load', function () {
+    setInterval(refreshCapacity, 60000)
+
+});
+
+function refreshCapacity() {
+    $.ajax({
+        url: "staff_dashboard/refresh_capacity"
+    })
+}

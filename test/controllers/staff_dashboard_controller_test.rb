@@ -26,12 +26,12 @@ class StaffDashboardControllerTest < ActionController::TestCase
   test 'a space is chosen by default' do
     get :index
     assert_response :success
-    assert response.body.include? 'Welcome to '
+    assert response.body.include? 'Welcome to'
   end
 
   test 'a space can be changed' do
     get :index
-    assert response.body.include? 'Welcome to '
+    assert response.body.include? 'Welcome to'
 
     put :change_space, params: { space_id: 2 }
     assert_redirected_to @request.env['HTTP_REFERER'] # redirec_to back

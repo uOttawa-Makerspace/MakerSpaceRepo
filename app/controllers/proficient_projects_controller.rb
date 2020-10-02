@@ -9,7 +9,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :set_files_photos_videos, only: %i[show edit]
 
   def index
-    @proficient_projects = ProficientProject.filter_attributes(get_filter_params).order(created_at: :desc).paginate(page: params[:page], per_page: 30)
+    @proficient_projects = ProficientProject.filter_params(get_filter_params).order(created_at: :desc).paginate(page: params[:page], per_page: 30)
     # TODO: Fix this mess
     if params['my_projects']
       @proficient_projects = @proficient_projects.where(id: current_user.order_items.completed_order.pluck(:proficient_project_id))
@@ -35,6 +35,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     @proficient_projects_selected = ProficientProject
                                         .where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id)
                                         .order(title: :asc)
+    @valid_urls = @proficient_project.extract_valid_urls
   end
 
   def create

@@ -43,6 +43,13 @@ namespace :increment_year do
       end
     end
   end
+
+  desc 'fix year for students created this year'
+  task fix_this_year: :environment do
+    User.active.students.created_this_year.where.not(year_of_study: %w[1 2 3 4 5 6 7]).find_each do |u|
+      u.update(year_of_study: 1)
+    end
+  end
 end
 
 # -- -- -- -- --

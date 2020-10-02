@@ -1,0 +1,32 @@
+<% if @space.max_capacity.present? %>
+
+  <% if @space.signed_in_users.count == @space.max_capacity %>
+    <div class="alert alert-danger text-center" role="alert">
+      <b>The maximum capacity of the space has been reached!</b>
+      <br>
+      Please make sure, no one else comes in the space.
+      <br>
+      There is currently <b><%= @space.signed_in_users.count %> people</b> and max capacity is
+      <b><%= @space.max_capacity %> people.</b>.
+    </div>
+  <% elsif @space.signed_in_users.count > @space.max_capacity %>
+    <script type="text/javascript" charset="utf-8">
+      alert("The space is OVER maximum capacity, please ensure that the maximum capacity is not exceeded !")
+    </script>
+    <div class="alert alert-danger text-center" role="alert">
+      <h5 style="color: #721c24">The space is <b>OVER</b> the maximum capacity.</h5>
+      Please make sure, no one else comes in the space.
+      <br>
+      There is currently <b><%= @space.signed_in_users.count %> people</b> and max capacity is
+      <b><%= @space.max_capacity %> people.</b>.
+    </div>
+  <% elsif (@space.signed_in_users.count + 3) >= @space.max_capacity %>
+    <div class="alert alert-warning text-center" role="alert">
+      The maximum capacity is almost reached, please monitor the amount of people coming.
+      <br>
+      There is currently <b><%= @space.signed_in_users.count %> people</b> and max capacity is
+      <b><%= @space.max_capacity %> people.</b>.
+    </div>
+  <% end %>
+
+<% end %>

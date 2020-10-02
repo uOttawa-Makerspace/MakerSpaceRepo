@@ -217,13 +217,14 @@
     <br />
     <br />
   </div>
-  <br />
   <% if @user.admin? || @current_training_session.user == @user %>
     <%= link_to "Destroy", { action: :destroy },
                 method: :delete,
                 data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
-                class:"destroy-button",
-                style:"float:right;" %>
+                class:"btn btn-danger",
+                style: "color: #fff; float:right;" %>
   <% end %>
+
+  <br>
 </section>
 <br />

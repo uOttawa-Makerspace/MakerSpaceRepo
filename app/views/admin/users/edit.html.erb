@@ -1,7 +1,7 @@
 <% provide(:title, "Edit user") %>
 
-<%= form_for @edit_admin_user, url: {controller: "admin/users", action: "update"}, html: { class: "edit_admin_user" } do |f| %>
-  <div class="edit-column">
+<section>
+  <%= form_for @edit_admin_user, url: {controller: "admin/users", action: "update"}, html: { class: "edit_admin_user" } do |f| %>
     <%= link_to fa_icon("search", text: 'View user'), admin_user_path(@edit_admin_user), class: 'edit-user-link' %>
     <div class="setting-title">Edit user: <%= @edit_admin_user.username %></div>
     <br>
@@ -27,20 +27,21 @@
     <br><br>
     <%= f.label :certifications, class: "profile-label" %>
     <%= f.select :certifications, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a certification..." %>
-    <br>
+    <br><br>
 
-    <br>
-    <br>
-    <%= f.submit "Update User", class: "save-button" %>
+    <%= f.submit "Update User", class: "btn btn-primary" %>
+
+    <br><br>
 
     <table><th class="destroy-header">Delete User</th></table>
     <span style="font-weight:bold;color:#E91D1D"> Deleting a user will erase all associated data including certifications, repositories, etc.</span>
     <br></br>
 
     <%= link_to "Delete User", delete_user_admin_users_path(id: @edit_admin_user.id), method: :delete,
-        class: "delete-button", data: {confirm: 'Are you sure?'} %>
+                class: "btn btn-danger", data: {confirm: 'Are you sure?'} %>
     <br>
     <br>
-  </div>
 
-<% end %>
+  <% end %>
+
+</section>
