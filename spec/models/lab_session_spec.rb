@@ -28,4 +28,21 @@ RSpec.describe LabSession, type: :model do
 
   end
 
+  describe "Methods" do
+
+    context "#get_popular_hours_per_period" do
+
+      it 'should make populate the hash' do
+        create(:space)
+        hash = LabSession.get_popular_hours_per_period(Date.today - 1.month, Date.today, Space.last.id)
+        expect(hash.length).to eq(7)
+        (0..6).each do |day|
+          expect(hash[day].length).to eq(24)
+        end
+      end
+
+    end
+
+  end
+
 end

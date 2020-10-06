@@ -1,6 +1,30 @@
 <% provide(:title, "Reports") %>
 <section>
-  <h1 class="text-center py-4">Popular Hours</h1>
+  <h1 class="text-center">Popular Hours</h1>
+
+  <%= form_tag admin_report_generator_popular_hours_per_period_path, method: :get do %>
+    <div style=" display: flex; justify-content: center;">
+      <div class="form-row align-items-center">
+        <div class="form-group col-md-4" style="width: 300px">
+          <%= label_tag(:start_date, "From") %>
+          <%= date_field_tag(:start_date, 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields)) %>
+        </div>
+
+        <div class="form-group col-md-4" style="width: 300px">
+          <%= label_tag(:end_date, "To") %>
+          <%= date_field_tag(:end_date, 1.week.ago.end_of_week.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields)) %>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label for="end_date">Start</label>
+          <br>
+          <%= button_tag("Generate", {class: "btn btn-primary"}) %>
+        </div>
+
+      </div>
+    </div>
+
+  <% end %>
 
   <ul class="nav nav-tabs">
     <% @spaces.each do |space| %>

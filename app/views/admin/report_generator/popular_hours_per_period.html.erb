@@ -1,0 +1,66 @@
+<% provide(:title, "Reports") %>
+<section>
+  <h1 class="text-center py-2">Popular Hours</h1>
+ <div>
+   <%= form_tag admin_report_generator_popular_hours_per_period_path, method: :get do %>
+     <div style=" display: flex; justify-content: center;">
+     <div class="form-row align-items-center">
+       <div class="form-group col-md-4" style="width: 300px">
+         <%= label_tag(:start_date, "From") %>
+         <%= date_field_tag(:start_date, 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields),) %>
+       </div>
+
+       <div class="form-group col-md-4" style="width: 300px">
+         <%= label_tag(:end_date, "To") %>
+         <%= date_field_tag(:end_date, 1.week.ago.end_of_week.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields)) %>
+       </div>
+
+       <div class="form-group col-md-4">
+         <label for="end_date">Start</label>
+         <br>
+         <%= button_tag("Generate", {class: "btn btn-primary"}) %>
+       </div>
+     </div>
+     </div>
+   <% end %>
+ </div>
+
+  <span style="text-align: center!important; display: block;">The following stats are being updated automatically over time. It takes the average per hour for every day of the week and every spaces.</span>
+  <div class="row">
+    <br>
+    <% (0..6).each do |weekday| %>
+      <div class="col-4">
+        <br>
+        <h3 class="text-center"><%= @weekdays[weekday] %></h3>
+        <canvas id="<%= @space.name.gsub(" ", "-") %>-<%= weekday %>" width="450" height="300"></canvas>
+      </div>
+      <script type="text/javascript" charset="utf-8">
+          var ctx = document.getElementById('<%= @space.name.gsub(" ", "-") %>-<%= weekday %>').getContext('2d');
+          var myChart = new Chart(ctx, {
+              type: 'bar',
+              data: {
+                  labels: ['0h', '1h', '2h', '3h', '4h', '5h', '6h', '7h', '8h', '9h', '10h', '11h', '12h', '13h', '14h', '15h', '16h', '17h', '18h', '19h', '20h', '21h', '22h', '23h'],
+                  datasets: [{
+                      label: '# of people',
+                      data: <%= @info[weekday].values %>,
+                      backgroundColor: '#6db1f5',
+                      borderWidth: 1
+                  }]
+              },
+              options: {
+                  scales: {
+                      yAxes: [{
+                          ticks: {
+                              beginAtZero: true
+                          }
+                      }]
+                  }
+              }
+          });
+      </script>
+
+    <% end %>
+  </div>
+  <br>
+
+</section>
