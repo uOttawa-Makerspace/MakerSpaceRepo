@@ -8,7 +8,7 @@ class Training < ApplicationRecord
   has_many :require_trainings,    dependent: :destroy
   has_many :proficient_projects,  dependent: :destroy
   has_many :learning_modules, dependent: :destroy
-  belongs_to :skill
+  belongs_to :skill, optional: true
 
   validates :name, presence: true, uniqueness: true
 

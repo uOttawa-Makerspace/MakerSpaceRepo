@@ -594,9 +594,9 @@ ActiveRecord::Schema.define(version: 2020_10_01_013344) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "space_id"
-    t.bigint "skills_id"
     t.string "description"
-    t.index ["skills_id"], name: "index_trainings_on_skills_id"
+    t.bigint "skill_id"
+    t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end
 
@@ -735,7 +735,7 @@ ActiveRecord::Schema.define(version: 2020_10_01_013344) do
   add_foreign_key "rfids", "users"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
-  add_foreign_key "trainings", "skills", column: "skills_id"
+  add_foreign_key "trainings", "skills"
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
