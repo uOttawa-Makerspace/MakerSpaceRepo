@@ -358,6 +358,9 @@ class ReportGenerator
               sheet.merge_cells("C#{start_index}:C#{end_index}")
               sheet.merge_cells("D#{start_index}:D#{end_index}")
               sheet.merge_cells("E#{start_index}:E#{end_index}")
+              sheet.merge_cells("F#{start_index}:F#{end_index}")
+              sheet.merge_cells("G#{start_index}:G#{end_index}")
+              sheet.merge_cells("H#{start_index}:H#{end_index}")
             end
 
             start_index = sheet.rows.last.row_index + 2
