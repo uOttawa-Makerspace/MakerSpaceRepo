@@ -8,11 +8,11 @@
 
           <h2><%= skill.name %></h2>
 
-          <% unless Training.where(skills_id: skill.id).present? %>
+          <% unless skill.trainings.present? %>
             <p>No trainings for this skill</p>
           <% end %>
 
-          <% Training.where(skills_id: skill.id).each do |training| %>
+          <% skill.trainings.each do |training| %>
 
             <div class="accordion">
               <div class="card m-3">
