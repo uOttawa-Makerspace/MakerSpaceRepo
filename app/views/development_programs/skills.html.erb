@@ -28,15 +28,34 @@
                   <div id="training-<%= training.id %>" class="collapse">
                     <div class="card-body">
 
-                      <p><%= training.description if training.description.present? %></p>
+                      <h3><b>Proficient Projects</b></h3>
 
-                      <div class="d-inline">
-                        <% ProficientProject.where.not(id: current_user.order_items.completed_order.pluck(:proficient_project_id)).where(training_id: training.id).each do |pp| %>
-                          <%= image_tag(pp.badge_template.image_url, :style => "width: 100px") if pp.badge_template.present? %>
-                        <% end %>
+                      <% if training.description.present? %>
+                        <div class="jumbotron text-center text-wrap">
+                          <%= training.description %>
+                        </div>
+                      <% end %>
+
+                      <div class="row mx-auto">
+                        <div class="col-md-6">
+                          <h5><b>Badges Awarded:</b></h5>
+                          <div class="d-inline">
+                            <% @proficient_projects_awarded.call(training).each do |pp| %>
+                              <%= image_tag(pp.badge_template.image_url, :style => "width: 100px") %>
+                            <% end %>
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <h5><b>Badges Missing:</b></h5>
+                          <div class="d-inline">
+                            <% @proficient_projects_missing.call(training).each do |pp| %>
+                              <%= image_tag(pp.badge_template.image_url, :style => "width: 100px") if pp.badge_template.present? %>
+                            <% end %>
+                          </div>
+                        </div>
                       </div>
 
-                      <p>Modules finished : <%= ProficientProject.where(id: current_user.order_items.awarded.pluck(:proficient_project_id), training_id: training.id).count %> / <%= training.proficient_projects.count %></p>
+                      <p>Modules finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
                       <p>Next modules to complete :</p>
                       <ul>
                         <% get_next_pp(training.id).each do |next_module| %>

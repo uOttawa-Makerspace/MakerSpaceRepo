@@ -11,6 +11,9 @@ class DevelopmentProgramsController < ApplicationController
     @skills = Skill.all
     @certifications = current_user.certifications
     @remaining_trainings = current_user.remaining_trainings
+    @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
+    @proficient_projects_missing = Proc.new{ |training| training.proficient_projects.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
+
   end
 
   def join_development_program
