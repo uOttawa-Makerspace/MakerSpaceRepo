@@ -21,7 +21,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     @training_categories_names = Training.all.order('name ASC').pluck(:name)
     @order_item = current_order.order_items.new
     @user_order_items = current_user.order_items.completed_order
-    flash.now[:alert_yellow] = "Please visit #{view_context.link_to "My Projects", proficient_projects_path(my_projects: true), class: "text-primary"} to access the proficient projects purchased (including Free Proficient Projects)".html_safe
+    flash.now[:alert_yellow] = "Please visit #{view_context.link_to "My Projects", proficient_projects_path(my_projects: true), class: "text-primary"} to access the proficient projects purchased".html_safe
   end
 
   def new
