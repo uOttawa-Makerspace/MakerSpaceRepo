@@ -233,10 +233,11 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:order, :with_item, user_id: user.id)
-        ProficientProject.last.update(badge_template_id: '')
-        get :complete_project, format: 'js', params: {id: ProficientProject.last.id}
+        proficient_project = ProficientProject.last
+        proficient_project.update(badge_template_id: '')
+        get :complete_project, format: 'js', params: {id: proficient_project.id}
         expect(response).to redirect_to skills_development_programs_path
-        expect(OrderItem.last.status).to eq('Awarded')
+        expect(proficient_project.order_items.last.status).to eq('Awarded')
         expect(flash[:notice]).to eq('Congratulations on completing this proficient project! It is now updated as completed in the skills page!')
       end
 

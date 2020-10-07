@@ -21,8 +21,8 @@
           <br><br>
 
           <div class="col-md-12 form-group">
-            <%= f.label(:skills_id, "Skill Type") %>
-            <%= f.select :skills_id, options_for_select(Skill.all.pluck(:name, :id)), {include_blank: true}, {class: "form-control"} %>
+            <%= f.label(:skill_id, "Skill Type") %>
+            <%= f.select :skill_id, options_for_select(@skills), {include_blank: true}, {class: "form-control"} %>
           </div>
 
           <div class="col-md-12 form-group my-5">
