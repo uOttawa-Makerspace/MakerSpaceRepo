@@ -111,14 +111,14 @@ class ReportGenerator
         prefer_not = space_detail[:genders]['Prefer not to specify'].present? ? space_detail[:genders]['Prefer not to specify'][:unique] : 0
         final_other = other + prefer_not
 
-        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "A#{space.row_index + 2}", :end_at => "C#{space.row_index + 10}", :grouping => :stacked, :show_legend => true, :title => 'Gender of unique users') do |chart|
+        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "A#{space.row_index + 2}", :end_at => "E#{space.row_index + 14}", :grouping => :stacked, :show_legend => true, :title => 'Gender of unique users') do |chart|
           chart.add_series :data => [male, female, final_other], :labels => ['Male', 'Female', 'Other/Prefer not to specify'], :colors => ['1FC3AA', '8624F5', 'A8A8A8', 'A8A8A8']
           chart.add_series :data => [male, female, final_other], :labels => ['Male', 'Female', 'Other/Prefer not to specify'], :colors => ['FFFF00', 'FFFF00', 'FFFF00']
           chart.d_lbls.show_percent = true
           chart.d_lbls.d_lbl_pos = :bestFit
         end
 
-        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "D#{space.row_index + 2}", :end_at => "H#{space.row_index + 10}", :grouping => :stacked, :show_legend => true, :title => 'Faculty of unique users') do |chart2|
+        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "A#{space.row_index + 16}", :end_at => "E#{space.row_index + 28}", :grouping => :stacked, :show_legend => true, :title => 'Faculty of unique users') do |chart2|
           chart2.add_series :data => faculty_hash.values, :labels => faculty_hash.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
           chart2.add_series :data => faculty_hash.values, :labels => faculty_hash.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
           chart2.d_lbls.show_percent = true
@@ -286,13 +286,17 @@ class ReportGenerator
       prefer_not = users.where(gender: 'Prefer not to specify').count
       final_other = other + prefer_not
 
-      sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => 'D1', :end_at => 'G8', :grouping => :stacked, :show_legend => true, :title => 'Gender of new users') do |chart|
+      sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => 'D1', :end_at => 'G13', :grouping => :stacked, :show_legend => true, :title => 'Gender of new users') do |chart|
         chart.add_series :data => [male, female, final_other], :labels => ['Male', 'Female', 'Other/Prefer not to specify'], :colors => ['1FC3AA', '8624F5', 'A8A8A8', 'A8A8A8']
         chart.add_series :data => [male, female, final_other], :labels => ['Male', 'Female', 'Other/Prefer not to specify'], :colors => ['FFFF00', 'FFFF00', 'FFFF00']
         chart.d_lbls.show_percent = true
         chart.d_lbls.d_lbl_pos = :bestFit
       end
 
+      sheet.add_row # spacing
+      sheet.add_row # spacing
+      sheet.add_row # spacing
+      sheet.add_row # spacing
 
       title(sheet, 'Overview')
 
