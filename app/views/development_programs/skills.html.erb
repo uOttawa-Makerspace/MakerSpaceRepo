@@ -24,17 +24,16 @@
                       </button>
                     </h2>
                   </div>
-
                   <div id="training-<%= training.id %>" class="collapse">
                     <div class="card-body">
-
-                      <h3><b>Proficient Projects</b></h3>
 
                       <% if training.description.present? %>
                         <div class="jumbotron text-center text-wrap">
                           <%= training.description %>
                         </div>
                       <% end %>
+
+                      <h3><b>Proficient Projects</b></h3>
 
                       <div class="row mx-auto">
                         <div class="col-md-6">
@@ -56,19 +55,30 @@
                       </div>
 
                       <p>Modules finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
-                      <p>Next modules to complete :</p>
+                      <p>Next proficient projects to complete :</p>
                       <ul>
-                        <% get_next_pp(training.id).each do |next_module| %>
+                        <% @proficient_projects_missing.call(training).order(:level).rotate(@advanced_pp_count.call(training)).each do |next_module| %>
                           <li><%= link_to next_module.title, proficient_projects_path(search: next_module.title)%></li>
                         <% end %>
                       </ul>
+                      <br />
+
+                      <h3><b>Learning Modules</b></h3>
+
+                      <p>Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
+                      <p>Next modules to complete :</p>
+                      <ul>
+                        <% @learning_modules_missing.call(training).order(:level).rotate(@advanced_lm_count.call(training)).each do |next_module| %>
+                          <li><%= link_to next_module.title, learning_area_path(id: next_module.id)%></li>
+                        <% end %>
+                      </ul>
+
                     </div>
+
                   </div>
                 </div>
               </div>
-
           <% end %>
-
         <% end %>
       </div>
 
