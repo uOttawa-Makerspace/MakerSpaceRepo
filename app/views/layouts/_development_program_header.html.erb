@@ -6,8 +6,17 @@
   </button>
   <div class="collapse navbar-collapse" id="navbarSupportedContent2">
     <ul class="navbar-nav mx-auto">
-      <li class="nav-item">
-        <%= link_to "Learning Area", proficient_projects_path(proficiency: false), class: "nav-link"%>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Learning
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+          <% if current_user.admin? %>
+            <%= link_to "New Learning Module", new_learning_area_path, class: "dropdown-item" %>
+            <div class="dropdown-divider"></div>
+          <% end %>
+          <%= link_to "All Learning Modules", learning_area_index_path, class: "dropdown-item"%>
+        </div>
       </li>
       <li class="nav-item">
         <%= link_to "My Projects", proficient_projects_path(my_projects: true), class: "nav-link"%>
@@ -16,7 +25,7 @@
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Proficient Projects
         </a>
-        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+        <div class="dropdown-menu" aria-labelledby="navbarDropdo wn2">
           <% if current_user.admin? %>
             <%= link_to "New proficient Project", new_proficient_project_path, class: "dropdown-item" %>
             <div class="dropdown-divider"></div>

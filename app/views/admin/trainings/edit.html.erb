@@ -12,6 +12,16 @@
             <%= b.label(:"data-value" => b.value) { b.check_box + b.text } %>
           <% end %>
         </div>
+          <div class="col-md-12 form-group">
+            Description: <%= f.text_area :description, placeholder: "Write an description...", class: 'form-control', required: true %>
+          </div>
+
+          <br><br>
+
+          <div class="col-md-12 form-group">
+            <%= f.label(:skill_id, "Skill Type") %>
+            <%= f.select :skill_id, options_for_select(Skill.all.pluck(:name, :id), selected: f.object.skill_id), {include_blank: true}, {class: "form-control"} %>
+          </div>
 
         <div class="col-md-12 form-group my-3">
           <%= f.submit "Update Training", class: "btn btn-secondary btn-xl text-uppercase" %>

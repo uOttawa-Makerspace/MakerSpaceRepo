@@ -17,3 +17,23 @@ window.fetch_attachment_name = function() {
     var filename = file_input.value;
     document.getElementById("video-name").innerHTML=(filename);
 }
+
+window.setLearningModule = function(){
+    var learning_module_id = document.getElementById("select_module_id").value;
+    document.getElementById("learning_module").innerHTML=("Learning Module id chosen: " + learning_module_id);
+    check_learning_module(learning_module_id)
+}
+
+window.check_learning_module = function(learning_module_id) {
+    if(learning_module_id.length === 0){
+        document.getElementById("choose_video_2").classList.add('d-none');
+    }else{
+        document.getElementById("choose_video_2").classList.remove('d-none');
+    }
+}
+
+window.fetch_attachment_name_2 = function() {
+    var file_input = document.getElementById("video-2");
+    var filename = file_input.value;
+    document.getElementById("video-name-2").innerHTML=(filename);
+}

@@ -9,5 +9,11 @@ FactoryBot.define do
       end
     end
 
+    trait :with_item do
+      after(:create) do |order|
+        create(:order_item, order_id: order.id)
+      end
+    end
+
   end
 end

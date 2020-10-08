@@ -14,7 +14,7 @@ RSpec.describe VideosController, type: :controller do
     context 'logged as admin' do
       it 'should return 200 response' do
         get :index
-        expect(@controller.instance_variable_get(:@videos).count).to eq(Video.count)
+        expect(@controller.instance_variable_get(:@videos_pp).count + @controller.instance_variable_get(:@videos_lm).count).to eq(Video.count)
         expect(response).to have_http_status(:success)
       end
     end

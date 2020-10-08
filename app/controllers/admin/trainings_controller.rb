@@ -2,6 +2,7 @@ class Admin::TrainingsController < AdminAreaController
   layout 'admin_area'
   before_action :changed_training, only: %i[update destroy]
   before_action :set_spaces, only: %i[new edit]
+  before_action :set_skills, only: %i[new edit]
 
   def index
     @trainings = Training.all.order(:name)
@@ -43,7 +44,7 @@ class Admin::TrainingsController < AdminAreaController
   private
 
     def training_params
-      params.require(:training).permit(:name, space_ids: [])
+      params.require(:training).permit(:name, :skill_id, :description, space_ids: [])
     end
 
     def changed_training
@@ -52,5 +53,9 @@ class Admin::TrainingsController < AdminAreaController
 
     def set_spaces
       @spaces ||= Space.order(:name)
+    end
+
+    def set_skills
+      @skills = Skill.all.pluck(:name, :id)
     end
 end

@@ -1,0 +1,77 @@
+<% provide(:title, "Proficient Project") %>
+<section class="card w3-card-2 <%= return_border_color(@learning_modules.level) %>">
+  <div>
+    <%=link_to 'Delete', learning_area_path, method: :delete, class: "btn btn-danger float-left ml-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
+    <%=link_to "Edit", edit_learning_area_path(@learning_modules.id), class:"btn btn-primary float-right mr-5 mt-5", style: "opacity: 0.5" if current_user.admin?%>
+  </div>
+  <div class="col-lg-7 mx-auto">
+    <br />
+    <h2 class="text-center title"><%= @learning_modules.title.html_safe %></h2>
+    <div class="container my-4">
+      <div class="text-center">
+        <%= @learning_modules.training.name %>
+        -
+        <%= @learning_modules.level %>
+        <% if !LearningModuleTrack.where(learning_module_id: @learning_modules.id, user_id: current_user.id).present? %>
+          <br><br>
+          <div class="alert alert-success">
+            <%= link_to "Start the Learning Module", start_learning_module_track_index_path(learning_module_id: @learning_modules.id), class: "btn btn-primary" %>
+          </div>
+        <% elsif LearningModuleTrack.where(learning_module_id: @learning_modules.id, user_id: current_user.id, status: "Completed").present? %>
+          <br><br>
+          <div class="alert alert-info">
+            <p>Congratulations on completing this Learning Module !</p>
+          </div>
+        <% end %>
+      </div>
+      <br />
+      <div class="row">
+        <div class="col-lg-12">
+          <% if valid_url?(@learning_modules.description.html_safe) %>
+            <div class="p-3 jumbotron text-center text-wrap">
+              <iframe width="100%" height="400px" src="<%= strip_tags(@learning_modules.description.html_safe) %>"></iframe>
+              <p>You can access the same page <a href="<%= strip_tags(@learning_modules.description.html_safe) %>" target="_blank">here</a>.</p>
+            </div>
+          <% else %>
+            <div class="jumbotron text-center text-wrap">
+              <%= @learning_modules.description.html_safe %>
+            </div>
+          <% end %>
+          <div id="show-photo">
+            <%= image_tag @photos.first.image, data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+          </div>
+          <div id="photo-slide">
+            <% @photos.each do |p| %>
+              <%= image_tag p.image, data: { width: p.width, height: p.height} %>
+            <% end %>
+          </div>
+          <br>
+          <div class="text-center">
+            <% if LearningModuleTrack.where(learning_module_id: @learning_modules.id, user_id: current_user.id, status: "In progress").present? %>
+              <div class="alert alert-primary">
+                <%= link_to "Change status to completed", completed_learning_module_track_index_path(learning_module_id: @learning_modules.id), class: "btn btn-primary" %>
+              </div>
+           <% end %>
+          </div>
+          <br />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<% @videos.each do |f| %>
+  <div class="imgbox">
+    <%= video_tag url_for(f.video), controls: true, controlslist: "nodownload", class: "center-fit" if f.video.attached? %>
+  </div>
+  <br />
+<% end %>
+
+<% @files.each do |f| %>
+  <div class="embed-responsive embed-responsive-16by9">
+    <iframe class="embed-responsive-item" src="<%= url_for(f.file) %>" allowfullscreen></iframe>
+    <br />
+  </div>
+<% end %>
+
+<%= render 'layouts/photoswipe' %>

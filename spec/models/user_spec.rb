@@ -47,6 +47,7 @@ RSpec.describe User, type: :model do
       it { should have_many(:order_items) }
       it { should have_many(:discount_codes) }
       it { should have_many(:project_kits) }
+      it { should have_many(:learning_module_tracks) }
     end
   end
 

@@ -187,6 +187,8 @@ Rails.application.routes.draw do
 
     resources :trainings
 
+    resources :skills
+
     resources :course_names
 
     resources :contact_infos
@@ -272,6 +274,20 @@ Rails.application.routes.draw do
     collection do
       get :join_development_program
       get :open_modal
+      get :complete_project
+    end
+  end
+
+  resources :learning_area do
+    collection do
+      get :open_modal
+    end
+  end
+
+  resources :learning_module_track, only: %i[index] do
+    collection do
+      get :start
+      get :completed
     end
   end
 
