@@ -14,7 +14,7 @@
               <div class="accordion">
                 <div class="card m-3">
                   <div class="card-header">
-                    <p style="float: right"><%= get_lower_level(training.id).html_safe %></p>
+                    <p style="float: right"><%= get_lower_level(training.id).html_safe %> / <%= get_lower_level_lm(training.id).html_safe %></p>
                     <h2 class="mb-0">
                       <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
                         <%= training.name %>
@@ -98,11 +98,35 @@
 
                       <p>Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
                       <p>Next modules to complete :</p>
-                      <ul>
-                        <% @learning_modules_missing.call(training).order(:level).rotate(@advanced_lm_count.call(training)).each do |next_module| %>
-                          <li><%= link_to next_module.title, learning_area_path(id: next_module.id)%></li>
+                      <div class="row">
+
+                        <% @learning_modules_missing.call(training).order(:level).rotate(@advanced_lm_count.call(training)).each do |learning_module| %>
+                          <div class="col-md-3 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %>" style="border-width:2px !important;">
+                            <form class="form-inline">
+                              <div class="form-group mx-auto">
+                                <p><h6 class="text-center py-3"><strong><%= learning_module.training.name %></strong></h6></p>
+                              </div>
+                            </form>
+                            <% if learning_module.photos.present? %>
+                              <a href="<%= learning_area_path(learning_module.id) %>">
+                                <div class="card card-image projects-image" style="background-image: url(<%= url_for(learning_module.photos.first.image) %>);">
+                                </div>
+                              </a>
+                            <% else %>
+                              <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_learning_areas_path(id: learning_module.id) %>">
+                                <div class="card card-image projects-image" style="background-image: url(<%= url_for(learning_module.photos.first.image) %>);">
+                                </div>
+                              </a>
+                            <% end %>
+                            <div>
+                              <br />
+                              <h6 class="font-weight-bold text-center"><strong><%= learning_module.title %></strong></h6>
+                              <p><%= learning_module.level %></p>
+                            </div>
+                          </div>
                         <% end %>
-                      </ul>
+
+                      </div>
 
                     </div>
 
