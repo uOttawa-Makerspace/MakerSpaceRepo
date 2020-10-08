@@ -1,7 +1,7 @@
 class Video < ApplicationRecord
   include Sidekiq::Worker
-  belongs_to :proficient_project
-  belongs_to :learning_module
+  belongs_to :proficient_project, optional: true
+  belongs_to :learning_module,    optional: true
   scope :processed, -> { where(processed: true) }
 
   has_one_attached :video
