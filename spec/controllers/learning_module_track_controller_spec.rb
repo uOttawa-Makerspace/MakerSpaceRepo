@@ -32,7 +32,7 @@ RSpec.describe LearningModuleTrackController, type: :controller do
         expect(LearningModuleTrack.last.user_id).to eq(user.id)
         expect(LearningModuleTrack.last.learning_module_id).to eq(lm.id)
         expect(LearningModuleTrack.last.status).to eq("In progress")
-        expect(response).to redirect_to learning_module_track_index_path
+        expect(response).to redirect_to learning_area_path(lm.id)
       end
 
     end
@@ -51,7 +51,7 @@ RSpec.describe LearningModuleTrackController, type: :controller do
         get :start, params: {learning_module_id: lm.id}
         get :completed, params: {learning_module_id: lm.id}
         expect(LearningModuleTrack.last.status).to eq("Completed")
-        expect(response).to redirect_to learning_module_track_index_path
+        expect(response).to redirect_to learning_area_path(lm.id)
       end
 
     end
