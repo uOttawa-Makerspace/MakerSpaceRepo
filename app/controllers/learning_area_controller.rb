@@ -67,7 +67,7 @@ class LearningAreaController < DevelopmentProgramsController
     end
 
     def learning_modules_params
-      params.require(:learning_module).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id, :has_project_kit)
+      params.require(:learning_module).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id)
     end
 
     def create_photos

@@ -8,11 +8,6 @@ RSpec.describe LearningModule, type: :model do
       it { should have_many(:photos) }
       it { should have_many(:repo_files) }
       it { should have_many(:videos) }
-      it { should have_many(:project_kits) }
-      it 'dependent destroy: should destroy project kits if destroyed' do
-        learning_module = create(:learning_module_with_project_kits)
-        expect { learning_module.destroy }.to change { ProjectKit.count }.by(-learning_module.project_kits.count)
-      end
     end
 
     context 'belongs_to' do

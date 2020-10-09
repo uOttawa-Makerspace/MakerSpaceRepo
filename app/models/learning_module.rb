@@ -4,7 +4,6 @@ class LearningModule < ApplicationRecord
   has_many :photos,                     dependent: :destroy
   has_many :repo_files,                 dependent: :destroy
   has_many :videos,                     dependent: :destroy
-  has_many :project_kits,               dependent: :destroy
   has_many :learning_module_tracks,     dependent: :destroy
 
   validates :title, presence: { message: 'A title is required.' }, uniqueness: { message: 'Title already exists' }

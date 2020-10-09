@@ -23,14 +23,6 @@
               <br />
               <%= f.label :level, "Level" %>
               <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
-              <br />
-              <%= f.label :has_project_kit, "Physical kit:" %>
-              <br />
-              <%= f.radio_button(:has_project_kit, false, checked: true, :style => 'display:inline') %>
-              <%= f.label :has_project_kit, "No" %>
-              <br />
-              <%= f.radio_button(:has_project_kit, true, :style => 'display:inline') %>
-              <%= f.label :has_project_kit, "Yes" %>
               <br>
               <br>
               <%= label_tag :file, "Project files" %>

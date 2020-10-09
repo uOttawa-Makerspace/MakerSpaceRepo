@@ -1,4 +1,4 @@
-<% provide(:title, "Proficient Project") %>
+<% provide(:title, "Learning Area") %>
 <section class="card w3-card-2 <%= return_border_color(@learning_module.level) %>">
   <div>
     <%=link_to 'Delete', learning_area_path, method: :delete, class: "btn btn-danger float-left ml-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
