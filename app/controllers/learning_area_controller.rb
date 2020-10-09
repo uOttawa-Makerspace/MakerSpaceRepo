@@ -10,6 +10,7 @@ class LearningAreaController < DevelopmentProgramsController
     @training_levels ||= TrainingSession.return_levels
     @training_categories_names = Training.all.order('name ASC').pluck(:name)
     flash.now[:alert_yellow] = "Please visit #{view_context.link_to "My Projects", proficient_projects_path(my_projects: true), class: "text-primary"} to access the proficient projects purchased".html_safe
+    @learning_module_track = Proc.new { |learning_module| learning_module.learning_module_tracks.where(user: current_user) }
   end
 
   def new

@@ -56,8 +56,11 @@
           <h6 class="font-weight-bold text-center"><strong><%= learning_module.title %></strong></h6>
           <p><%= learning_module.level %></p>
         </div>
+        <div>
+          <% @learning_module_track.call(learning_module).present? ? status = @learning_module_track.call(learning_module).first.status : status = 'Not Started' %>
+          <button type='button' class='btn <%= return_button_class(status) %> disabled mb-2'><%= status %></button>
+        </div>
       </div>
-
     <% end %>
   </div>
 
