@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_10_01_013344) do
+ActiveRecord::Schema.define(version: 2020_10_09_172654) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -248,7 +248,6 @@ ActiveRecord::Schema.define(version: 2020_10_01_013344) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "level", default: "Beginner"
-    t.boolean "has_project_kit"
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|
@@ -405,7 +404,6 @@ ActiveRecord::Schema.define(version: 2020_10_01_013344) do
     t.datetime "updated_at", null: false
     t.string "level", default: "Beginner"
     t.integer "cc", default: 0
-    t.boolean "proficient", default: true
     t.integer "badge_template_id"
     t.boolean "has_project_kit"
     t.index ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id"

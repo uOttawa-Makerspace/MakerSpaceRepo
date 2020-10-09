@@ -28,7 +28,7 @@
   <div class="row text-center">
 
     <% @learning_modules.each do |learning_module| %>
-      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %>" style="border-width:2px !important;">
+      <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %> <%= return_border_color(learning_module.level) %>" style="border-width:2px !important;">
         <form class="form-inline">
           <div class="form-group">
             <%=link_to "-Edit-", edit_learning_area_path(learning_module.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
@@ -56,8 +56,11 @@
           <h6 class="font-weight-bold text-center"><strong><%= learning_module.title %></strong></h6>
           <p><%= learning_module.level %></p>
         </div>
+        <div>
+          <% @learning_module_track.call(learning_module).present? ? status = @learning_module_track.call(learning_module).first.status : status = 'Not Started' %>
+          <button type='button' class='btn <%= return_button_class(status) %> disabled mb-2'><%= status %></button>
+        </div>
       </div>
-
     <% end %>
   </div>
 

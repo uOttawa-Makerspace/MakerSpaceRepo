@@ -8,11 +8,6 @@ RSpec.describe LearningModule, type: :model do
       it { should have_many(:photos) }
       it { should have_many(:repo_files) }
       it { should have_many(:videos) }
-      it { should have_many(:project_kits) }
-      it 'dependent destroy: should destroy project kits if destroyed' do
-        learning_module = create(:learning_module_with_project_kits)
-        expect { learning_module.destroy }.to change { ProjectKit.count }.by(-learning_module.project_kits.count)
-      end
     end
 
     context 'belongs_to' do
@@ -41,8 +36,8 @@ RSpec.describe LearningModule, type: :model do
         create(:learning_module, :intermediate)
         create(:learning_module, :intermediate)
         create(:learning_module, :advanced)
-        proficient_project_count = LearningModule.all.count
-        expect(LearningModule.filter_by_level("Beginner").count).to eq(proficient_project_count - 3)
+        learning_module_count = LearningModule.all.count
+        expect(LearningModule.filter_by_level("Beginner").count).to eq(learning_module_count - 3)
       end
 
     end
@@ -86,6 +81,33 @@ RSpec.describe LearningModule, type: :model do
 
     end
 
+  end
+
+  describe 'URLS in description' do
+    before :all do
+      @lm_with_link = create(:learning_module, description: 'Description, description... https://en.wiki.makerepo.com/wiki/Virtual_Reality https://makerepo.com/ https://en.wiki.makerepo.com/wiki/Raspberry_Pi')
+      @lm_without_link = create(:learning_module, description: 'no link')
+    end
+
+    context "#extract_urls" do
+      it 'should return all urls' do
+        expect(@lm_with_link.extract_urls).to eq(['https://en.wiki.makerepo.com/wiki/Virtual_Reality', 'https://makerepo.com/', 'https://en.wiki.makerepo.com/wiki/Raspberry_Pi'])
+      end
+
+      it 'should return []' do
+        expect(@lm_without_link.extract_urls).to eq([])
+      end
+    end
+
+    context "#extract_valid_urls" do
+      it 'should return urls from wiki.makerepo' do
+        expect(@lm_with_link.extract_valid_urls).to eq(['https://en.wiki.makerepo.com/wiki/Virtual_Reality', 'https://en.wiki.makerepo.com/wiki/Raspberry_Pi'])
+      end
+
+      it 'should return nil' do
+        expect(@lm_without_link.extract_valid_urls).to eq([])
+      end
+    end
   end
 
 end

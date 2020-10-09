@@ -4,14 +4,12 @@ class LearningModule < ApplicationRecord
   has_many :photos,                     dependent: :destroy
   has_many :repo_files,                 dependent: :destroy
   has_many :videos,                     dependent: :destroy
-  has_many :project_kits,               dependent: :destroy
   has_many :learning_module_tracks,     dependent: :destroy
 
   validates :title, presence: { message: 'A title is required.' }, uniqueness: { message: 'Title already exists' }
   before_save :capitalize_title
 
   scope :filter_by_level, ->(level) { where(level: level) }
-  scope :filter_by_proficiency, ->(proficient) { where(proficient: proficient) }
 
   def capitalize_title
     self.title = title.capitalize
@@ -29,6 +27,14 @@ class LearningModule < ApplicationRecord
     else
       self
     end
+  end
+
+  def extract_urls
+    URI.extract(self.description)
+  end
+
+  def extract_valid_urls
+    self.extract_urls.uniq.select{ |url| url.include?("wiki.makerepo.com") }
   end
 
 end

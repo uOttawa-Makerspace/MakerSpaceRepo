@@ -21,7 +21,6 @@ class ProficientProject < ApplicationRecord
   before_save :capitalize_title
 
   scope :filter_by_level, ->(level) { where(level: level) }
-  scope :filter_by_proficiency, ->(proficient) { where(proficient: proficient) }
 
   def capitalize_title
     self.title = title.capitalize
@@ -36,8 +35,6 @@ class ProficientProject < ApplicationRecord
       where("LOWER(title) like LOWER(?) OR
                  LOWER(level) like LOWER(?) OR
                  LOWER(description) like LOWER(?)", "%#{value}%", "%#{value}%", "%#{value}%")
-    elsif attribute == 'proficiency'
-      filter_by_proficiency(value)
     elsif attribute == 'price'
       bool = true if value.eql?('Paid')
       bool = false if value.eql?('Free')

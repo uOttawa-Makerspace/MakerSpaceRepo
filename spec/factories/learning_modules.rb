@@ -25,16 +25,6 @@ FactoryBot.define do
     trait :advanced do
       level { "Advanced" }
     end
-
-    factory :learning_module_with_project_kits do
-      transient do
-        project_kit_count { 3 }
-      end
-      after(:create) do |proficient_project, evaluator|
-        create_list(:project_kit, evaluator.project_kit_count, learning_module: proficient_project)
-      end
-    end
-
   end
 
 end

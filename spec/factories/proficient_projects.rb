@@ -8,7 +8,6 @@ FactoryBot.define do
     description { Faker::Lorem.paragraph }
     level { "Beginner" }
     cc { 10 }
-    proficient { true }
 
     trait :with_files do
       after(:create) do |pp|
@@ -31,10 +30,6 @@ FactoryBot.define do
 
     trait :advanced do
       level { "Advanced" }
-    end
-
-    trait :not_proficient do
-      proficient { false }
     end
 
     trait :with_badge do
