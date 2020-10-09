@@ -10,7 +10,6 @@ class LearningModule < ApplicationRecord
   before_save :capitalize_title
 
   scope :filter_by_level, ->(level) { where(level: level) }
-  scope :filter_by_proficiency, ->(proficient) { where(proficient: proficient) }
 
   def capitalize_title
     self.title = title.capitalize

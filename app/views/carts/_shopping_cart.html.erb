@@ -10,7 +10,7 @@
 <% if @order_items.size == 0 %>
     <p class="text-center m-5">
       There are no items in your shopping cart. <br />
-      Please check our <%= link_to "proficient projects", proficient_projects_path(proficiency: true), class: "text-info" %> and add some items to your cart.
+      Please check our <%= link_to "proficient projects", proficient_projects_path, class: "text-info" %> and add some items to your cart.
     </p>
 <% else %>
     <% @order_items.each do |order_item| %>

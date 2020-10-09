@@ -10,7 +10,7 @@
     <div class="text-center">
       <% if !@orders.present? %>
         <p class="text-center">
-          You have no orders. Please check our <%= link_to "projects", proficient_projects_path(proficiency: true), class: "text-info" %> and add some items to your cart.
+          You have no orders. Please check our <%= link_to "projects", proficient_projects_path, class: "text-info" %> and add some items to your cart.
         </p>
       <% else %>
         <div class="apple_pagination">

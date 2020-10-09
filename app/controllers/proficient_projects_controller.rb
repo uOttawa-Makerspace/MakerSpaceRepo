@@ -57,7 +57,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   def destroy
     @proficient_project.destroy
     respond_to do |format|
-      format.html { redirect_to proficient_projects_path(proficiency: true), notice: 'Proficient Project has been successfully deleted.' }
+      format.html { redirect_to proficient_projects_path, notice: 'Proficient Project has been successfully deleted.' }
       format.json { head :no_content }
     end
   end
@@ -215,7 +215,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def get_filter_params
-    params.permit(:search, :level, :category, :proficiency, :my_projects, :price)
+    params.permit(:search, :level, :category, :my_projects, :price)
   end
 
   def set_badge_templates

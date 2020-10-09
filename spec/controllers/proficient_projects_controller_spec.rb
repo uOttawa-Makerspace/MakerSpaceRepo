@@ -135,7 +135,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         create(:proficient_project)
         expect { delete :destroy, params: {id: ProficientProject.last.id} }.to change(ProficientProject, :count).by(-1)
-        expect(response).to redirect_to proficient_projects_path(proficiency: true)
+        expect(response).to redirect_to proficient_projects_path
         expect(flash[:notice]).to eq('Proficient Project has been successfully deleted.')
       end
 
