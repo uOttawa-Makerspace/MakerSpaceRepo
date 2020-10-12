@@ -164,12 +164,12 @@ class ReportGenerator
       trainings[:training_sessions].each do |row|
 
         training = Training.find(row[:training_id])
-        color = if training.skills_id.present?
-                  if Skill.find(training.skills_id).name == "Machine Shop Training"
+        color = if training.skill_id.present?
+                  if training.skill.name == "Machine Shop Training"
                     {:bg_color => "ed7d31"}
-                  elsif Skill.find(training.skills_id).name == "Technology Trainings"
+                  elsif training.skill.name == "Technology Trainings"
                     {:bg_color => "70ad47"}
-                  elsif Skill.find(training.skills_id).name == "CEED Trainings"
+                  elsif training.skill.name == "CEED Trainings"
                     {:bg_color => "ffc000"}
                   else
                     {}
