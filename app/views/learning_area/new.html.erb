@@ -22,7 +22,7 @@
             <br>
             <%= label_tag :file, "Project files"%>
             <label class="custom-instructable-upload">
-              <%= file_field_tag 'files[]', type: :files, multiple: true %>
+              <%= file_field_tag 'files[]', type: :files, multiple: true, style: "display: none;" %>
               Choose files...
             </label>
             <div id="file-container"></div>
@@ -34,7 +34,7 @@
                 <p>Drag &amp; Drop</p>
               </div>
               <label class="custom-image-upload">
-                <%= file_field_tag 'images[]', type: :files, multiple: true %>
+                <%= file_field_tag 'images[]', type: :files, multiple: true, style: "display: none;" %>
                 or choose an image...
               </label>
             </div>
