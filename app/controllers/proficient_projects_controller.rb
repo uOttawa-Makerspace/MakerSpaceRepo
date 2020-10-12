@@ -1,27 +1,19 @@
 # frozen_string_literal: true
 
 class ProficientProjectsController < DevelopmentProgramsController
-  before_action :only_admin_access, only: %i[new create edit update destroy]
-  before_action :set_proficient_project, only: %i[show destroy edit update complete_project]
-  before_action :grant_access_to_project, only: [:show]
-  before_action :set_training_categories, only: %i[new edit]
-  before_action :set_badge_templates, only: %i[new edit]
-  before_action :set_files_photos_videos, only: %i[show edit]
+  before_action :only_admin_access,                             only: %i[new create edit update destroy]
+  before_action :set_proficient_project,                        only: %i[show destroy edit update complete_project]
+  before_action :grant_access_to_project,                       only: [:show]
+  before_action :set_training_categories, :set_badge_templates, only: %i[new edit]
+  before_action :set_files_photos_videos,                       only: %i[show edit]
 
   def index
-    @proficient_projects = ProficientProject.filter_params(get_filter_params).order(created_at: :desc).paginate(page: params[:page], per_page: 30)
-    # TODO: Fix this mess
-    if params['my_projects']
-      @proficient_projects = @proficient_projects.where(id: current_user.order_items.completed_order.pluck(:proficient_project_id))
-    else
-      @proficient_projects = @proficient_projects.where.not(id: current_user.order_items.completed_order.pluck(:proficient_project_id))
-    end
-    @prices ||= %w[Free Paid]
-    @training_levels ||= TrainingSession.return_levels
-    @training_categories_names = Training.all.order('name ASC').pluck(:name)
+    @skills = Skill.all
+    @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
+    @all_proficient_projects = Proc.new{ |training| training.proficient_projects }
+    @advanced_pp_count = Proc.new{ |training| training.proficient_projects.where(level: "Advanced").count }
     @order_item = current_order.order_items.new
     @user_order_items = current_user.order_items.completed_order
-    flash.now[:alert_yellow] = "Please visit #{view_context.link_to "My Projects", proficient_projects_path(my_projects: true), class: "text-primary"} to access the proficient projects purchased".html_safe
   end
 
   def new
@@ -109,116 +101,116 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   private
 
-  def grant_access_to_project
-    if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress']).blank?
-      unless current_user.admin? || current_user.staff?
+    def grant_access_to_project
+      if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress']).blank?
+        unless current_user.admin? || current_user.staff?
+          redirect_to development_programs_path
+          flash[:alert] = 'You cannot access this area.'
+        end
+      end
+    end
+
+    def only_admin_access
+      unless current_user.admin?
         redirect_to development_programs_path
-        flash[:alert] = 'You cannot access this area.'
+        flash[:alert] = 'Only admin members can access this area.'
       end
     end
-  end
 
-  def only_admin_access
-    unless current_user.admin?
-      redirect_to development_programs_path
-      flash[:alert] = 'Only admin members can access this area.'
+    def proficient_project_params
+      params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id, :has_project_kit)
     end
-  end
 
-  def proficient_project_params
-    params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id, :has_project_kit)
-  end
-
-  def create_photos
-    if params['images'].present?
-      params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
-        Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
-      end
-    end
-  end
-
-  def create_files
-    if params['files'].present?
-      params['files'].each do |f|
-        @repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
-        unless @repo.save
-          flash[:alert] = 'Make sure you only upload PDFs for the project files'
-        end
-      end
-    end
-  end
-
-  def set_proficient_project
-    @proficient_project = ProficientProject.find(params[:id])
-  end
-
-  def set_training_categories
-    @training_categories = Training.all.order(:name).pluck(:name, :id)
-  end
-
-  def set_files_photos_videos
-    @photos = @proficient_project.photos || []
-    @files = @proficient_project.repo_files.order(created_at: :asc)
-    @videos = @proficient_project.videos.processed.order(created_at: :asc)
-  end
-
-  def update_photos
-    if params['deleteimages'].present?
-      @proficient_project.photos.each do |img|
-        if params['deleteimages'].include?(img.image.filename.to_s) # checks if the file should be deleted
-          img.image.purge
-          img.destroy
+    def create_photos
+      if params['images'].present?
+        params['images'].each do |img|
+          dimension = FastImage.size(img.tempfile)
+          Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
         end
       end
     end
 
-    if params['images'].present?
-      params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
-        Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
-      end
-    end
-  end
-
-  def update_files
-    if params['deletefiles'].present?
-      @proficient_project.repo_files.each do |f|
-        if params['deletefiles'].include?(f.file.filename.to_s) # checks if the file should be deleted
-          f.file.purge
-          f.destroy
+    def create_files
+      if params['files'].present?
+        params['files'].each do |f|
+          @repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
+          unless @repo.save
+            flash[:alert] = 'Make sure you only upload PDFs for the project files'
+          end
         end
       end
     end
 
-    if params['files'].present?
+    def set_proficient_project
+      @proficient_project = ProficientProject.find(params[:id])
+    end
 
-      params['files'].each do |f|
-        repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
-        unless repo.save
-          flash[:alert] = 'Make sure you only upload PDFs for the project files, the PDFs were uploaded'
+    def set_training_categories
+      @training_categories = Training.all.order(:name).pluck(:name, :id)
+    end
+
+    def set_files_photos_videos
+      @photos = @proficient_project.photos || []
+      @files = @proficient_project.repo_files.order(created_at: :asc)
+      @videos = @proficient_project.videos.processed.order(created_at: :asc)
+    end
+
+    def update_photos
+      if params['deleteimages'].present?
+        @proficient_project.photos.each do |img|
+          if params['deleteimages'].include?(img.image.filename.to_s) # checks if the file should be deleted
+            img.image.purge
+            img.destroy
+          end
         end
       end
 
-    end
-  end
-
-  def update_videos
-    if params['deletevideos'].present?
-      @proficient_project.videos.each do |f|
-        if params['deletevideos'].include?(f.video_file_name)
-          f.video.purge
-          f.destroy
+      if params['images'].present?
+        params['images'].each do |img|
+          dimension = FastImage.size(img.tempfile)
+          Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
         end
       end
     end
-  end
 
-  def get_filter_params
-    params.permit(:search, :level, :category, :my_projects, :price)
-  end
+    def update_files
+      if params['deletefiles'].present?
+        @proficient_project.repo_files.each do |f|
+          if params['deletefiles'].include?(f.file.filename.to_s) # checks if the file should be deleted
+            f.file.purge
+            f.destroy
+          end
+        end
+      end
 
-  def set_badge_templates
-    @badge_templates = BadgeTemplate.all.order(badge_name: :asc)
-  end
+      if params['files'].present?
+
+        params['files'].each do |f|
+          repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
+          unless repo.save
+            flash[:alert] = 'Make sure you only upload PDFs for the project files, the PDFs were uploaded'
+          end
+        end
+
+      end
+    end
+
+    def update_videos
+      if params['deletevideos'].present?
+        @proficient_project.videos.each do |f|
+          if params['deletevideos'].include?(f.video_file_name)
+            f.video.purge
+            f.destroy
+          end
+        end
+      end
+    end
+
+    def get_filter_params
+      params.permit(:search, :level, :category, :my_projects, :price)
+    end
+
+    def set_badge_templates
+      @badge_templates = BadgeTemplate.all.order(badge_name: :asc)
+    end
 end

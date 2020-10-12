@@ -6,11 +6,11 @@ class LearningAreaController < DevelopmentProgramsController
   before_action :set_files_photos_videos, only: %i[show edit]
 
   def index
-    @learning_modules = LearningModule.filter_params(get_filter_params).order(created_at: :desc).paginate(page: params[:page], per_page: 30)
-    @training_levels ||= TrainingSession.return_levels
-    @training_categories_names = Training.all.order('name ASC').pluck(:name)
-    flash.now[:alert_yellow] = "Please visit #{view_context.link_to "My Projects", proficient_projects_path(my_projects: true), class: "text-primary"} to access the proficient projects purchased".html_safe
+    @skills = Skill.all
     @learning_module_track = Proc.new { |learning_module| learning_module.learning_module_tracks.where(user: current_user) }
+    @all_learning_modules = Proc.new{ |training| training.learning_modules }
+    @learning_modules_completed = Proc.new { |training, level| training.learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: {user: current_user}).where(learning_modules: {level: level}) }
+    @total_learning_modules_per_level = Proc.new { |training, level| training.learning_modules.where(level: level) }
   end
 
   def new

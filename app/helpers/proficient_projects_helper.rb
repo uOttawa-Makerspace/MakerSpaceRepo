@@ -23,13 +23,14 @@ module ProficientProjectsHelper
     end
   end
 
-  def get_lower_level(training_id)
-    pp = ProficientProject.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)).where(training_id: training_id)
-    if pp.where(level: "Beginner").present?
+  def training_status(training_id)
+    pp_missing = ProficientProject.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)).where(training_id: training_id)
+    levels_missing = pp_missing.pluck(:level)
+    if levels_missing.include?("Beginner")
       "<span style='color: green'>Beg</span>"
-    elsif pp.where(level: "Intermediate").present?
+    elsif levels_missing.include?("Intermediate")
       "<span style='color: #969600'>Int</span>"
-    elsif pp.where(level: "Advanced").present?
+    elsif levels_missing.include?("Advanced")
       "<span style='color: red'>Adv</span>"
     else
       "<span style='color: blue'>Master</span>"

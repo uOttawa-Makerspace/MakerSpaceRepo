@@ -33,23 +33,15 @@
                       <% unless training.proficient_projects.count == 0 %>
                         <h3><b>Proficient Projects</b></h3>
 
-                        <div class="row mx-auto">
-                          <div class="col-md-6">
-                            <h5><b>Badges Awarded:</b></h5>
-                            <div class="d-inline">
-                              <% @proficient_projects_awarded.call(training).each do |pp| %>
-                                <%= image_tag(pp.badge_template.image_url, :style => "width: 100px") %>
-                              <% end %>
+                        <div class="row">
+                          <% @proficient_projects_awarded.call(training).each do |pp| %>
+                            <div class="col-md-3">
+                              <%= image_tag(pp.badge_template.image_url, :style => "width: 200px") %>
                             </div>
-                          </div>
-                          <div class="col-md-6">
-                            <h5><b>Badges Missing:</b></h5>
-                            <div class="d-inline">
-                              <% @proficient_projects_missing.call(training).each do |pp| %>
-                                <%= image_tag(pp.badge_template.image_url, :style => "width: 100px") if pp.badge_template.present? %>
-                              <% end %>
+                            <div class="col-md-9 my-auto">
+                              <%= pp.badge_template.badge_description %>
                             </div>
-                          </div>
+                          <% end %>
                         </div>
 
                         <p>Modules finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>

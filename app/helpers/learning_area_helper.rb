@@ -1,10 +1,4 @@
 module LearningAreaHelper
-  def valid_url?(url)
-    clean_url = strip_tags(url)
-    url_regexp = /^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/ix
-    clean_url =~ url_regexp and clean_url.include?("wiki.makerepo.com") ? true : false
-  end
-
   def get_lower_level_lm(training_id)
     lm = LearningModule.where.not(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)).where(training_id: training_id)
     if lm.where(level: "Beginner").present?
@@ -29,6 +23,20 @@ module LearningAreaHelper
     else
       []
     end
+  end
+
+  def return_text_color(level)
+    case level
+    when 'Beginner' then 'text-success'
+    when 'Intermediate' then 'text-warning'
+    when 'Advanced' then 'text-danger'
+    end
+  end
+
+  def levels_ordered(training)
+    result = training.learning_modules.pluck(:level).uniq
+    result.include?('Advanced') ? result = result.rotate(1) : result
+    result
   end
 end
 
