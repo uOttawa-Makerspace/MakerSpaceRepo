@@ -10,10 +10,8 @@ class ProficientProjectsController < DevelopmentProgramsController
   def index
     @skills = Skill.all
     @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
-    # @proficient_projects_missing = Proc.new{ |training| training.proficient_projects.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
     @all_proficient_projects = Proc.new{ |training| training.proficient_projects }
     @advanced_pp_count = Proc.new{ |training| training.proficient_projects.where(level: "Advanced").count }
-    # @advanced_pp_count = Proc.new{ |training| training.proficient_projects.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)).where(level: "Advanced").count }
     @order_item = current_order.order_items.new
     @user_order_items = current_user.order_items.completed_order
   end
