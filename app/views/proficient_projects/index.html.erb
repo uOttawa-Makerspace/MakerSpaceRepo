@@ -102,8 +102,11 @@
 
                     <div class="row">
 
-                      <% @proficient_projects_missing.call(training).order(:level).rotate(@advanced_pp_count.call(training)).each do |pp| %>
-                        <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %> <%= return_border_color(pp.level) %>" style="border-width:2px !important;">
+                      <% pp_awarded = @proficient_projects_awarded.call(training) %>
+
+                      <% @all_proficient_projects.call(training).order(:level).rotate(@advanced_pp_count.call(training)).each do |pp| %>
+                        <% pp_awarded.include?(pp) ? opacity = '' : opacity = 'w3-opacity-max' %>
+                        <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= opacity %> <%= return_hover_and_text_colors(pp.level) %> <%= return_border_color(pp.level) %>" style="border-width:2px !important;">
                           <form class="form-inline">
                             <div class="form-group mx-auto">
                               <p><h6 class="text-center py-3"><strong><%= pp.training.name %></strong></h6></p>
