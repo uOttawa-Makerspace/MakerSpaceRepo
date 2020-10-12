@@ -46,11 +46,16 @@
                               </span>
                             </div>
 
+                            <% lm_completed = @learning_modules_completed.call(training, level)  %>
+
                             <div id="training-<%= training.id %>-<%= level %>" class="collapse">
                               <div class="row">
 
                                 <% learning_modules_by_level.each do |learning_module| %>
-                                  <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %> <%= return_border_color(learning_module.level) %>" style="border-width:2px !important;">
+
+                                  <% lm_completed.include?(learning_module) ? opacity = '' : opacity = 'w3-opacity-max' %>
+
+                                  <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= opacity %> <%= return_hover_and_text_colors(learning_module.level) %> <%= return_border_color(learning_module.level) %>" style="border-width:2px !important;">
                                     <form class="form-inline">
                                       <div class="form-group">
                                         <%=link_to "-Edit-", edit_learning_area_path(learning_module.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
