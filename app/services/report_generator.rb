@@ -240,7 +240,21 @@ class ReportGenerator
           final_total_sessions['total'] += training_sessions.count
           final_total_certifications['total'] += total_certifications
 
-          sheet.add_row training_row
+          color = if training.skills_id.present?
+            if Skill.find(training.skills_id).name == "Machine Shop Training"
+              {:bg_color => "ed7d31"}
+            elsif Skill.find(training.skills_id).name == "Technology Trainings"
+              {:bg_color => "70ad47"}
+            elsif Skill.find(training.skills_id).name == "CEED Trainings"
+              {:bg_color => "ffc000"}
+            else
+               {}
+            end
+          else
+            {}
+          end
+          style = sheet.styles.add_style(color)
+          sheet.add_row training_row, :style => [style]
         end
 
         final_s = ['Total # sessions']

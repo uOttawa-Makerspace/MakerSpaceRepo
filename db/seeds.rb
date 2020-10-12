@@ -25,3 +25,4 @@ Space.all.each do |space|
     end
   end
 end
+
