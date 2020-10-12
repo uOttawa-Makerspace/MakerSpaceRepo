@@ -14,7 +14,7 @@
               <div class="accordion">
                 <div class="card m-3">
                   <div class="card-header">
-                    <p style="float: right"><%= get_lower_level(training.id).html_safe %> / <%= get_lower_level_lm(training.id).html_safe %></p>
+                    <p style="float: right"><%= training_status(training.id).html_safe %></p>
                     <h2 class="mb-0">
                       <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
                         <%= training.name %>
