@@ -34,7 +34,7 @@
                         <h3><b>Proficient Projects</b></h3>
 
                         <div class="row">
-                          <% @proficient_projects_awarded.call(training).each do |pp| %>
+                          <% @proficient_projects_awarded.call(training).where(level: ProficientProject.training_status(training.id, current_user.id)).each do |pp| %>
                             <div class="col-md-3">
                               <%= image_tag(pp.badge_template.image_url, :style => "width: 200px") %>
                             </div>
@@ -51,7 +51,7 @@
 
                           <% @proficient_projects_missing.call(training).order(:level).rotate(@advanced_pp_count.call(training)).each do |pp| %>
 
-                            <div class="col-md-3 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %>" style="border-width:2px !important;">
+                            <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %>" style="border-width:2px !important;">
                               <form class="form-inline">
                                 <div class="form-group mx-auto">
                                   <p><h6 class="text-center py-3"><strong><%= pp.training.name %></strong></h6></p>
@@ -93,7 +93,7 @@
                       <div class="row">
 
                         <% @learning_modules_missing.call(training).order(:level).rotate(@advanced_lm_count.call(training)).each do |learning_module| %>
-                          <div class="col-md-3 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %>" style="border-width:2px !important;">
+                          <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %>" style="border-width:2px !important;">
                             <form class="form-inline">
                               <div class="form-group mx-auto">
                                 <p><h6 class="text-center py-3"><strong><%= learning_module.training.name %></strong></h6></p>
