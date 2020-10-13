@@ -36,10 +36,10 @@
                         <div class="row">
                           <% @proficient_projects_awarded.call(training).each do |pp| %>
                             <div class="col-md-3">
-                              <%= image_tag(pp.badge_template.image_url, :style => "width: 200px") %>
+                              <%= image_tag(pp.badge_template.image_url, :style => "width: 200px") if pp.badge_template.present? %>
                             </div>
                             <div class="col-md-9 my-auto">
-                              <%= pp.badge_template.badge_description %>
+                              <%= pp.badge_template.badge_description if pp.badge_template.present?  %>
                             </div>
                           <% end %>
                         </div>
@@ -89,7 +89,7 @@
                       <h3><b>Learning Modules</b></h3>
 
                       <p>Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
-                      <p>Next modules to complete :</p>
+                      <p><%= @learning_modules_missing.call(training).count == 0 ? "Completed" : "Next modules to complete : " %></p>
                       <div class="row">
 
                         <% @learning_modules_missing.call(training).order(:level).rotate(@advanced_lm_count.call(training)).each do |learning_module| %>
