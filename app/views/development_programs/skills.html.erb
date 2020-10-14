@@ -28,7 +28,7 @@
                       <% end %>
 
                       <% unless training.proficient_projects.count == 0 %>
-                        <h3><b>Proficient Projects</b></h3>
+<!--                        <h3><b>Proficient Projects</b></h3>-->
 
                         <div class="row">
                           <% @proficient_projects_awarded.call(training).where(level: ProficientProject.training_status(training.id, current_user.id)).each do |pp| %>
@@ -41,84 +41,82 @@
                           <% end %>
                         </div>
 
-                        <p>Modules finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
-                        <p>Next proficient projects to complete :</p>
+                        <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
+<!--                        <p>Next proficient projects to complete :</p>-->
 
-                        <div class="row">
+<!--                        <div class="row">-->
 
-                          <% @proficient_projects_missing.call(training).order(:level).rotate(@advanced_pp_count.call(training)).each do |pp| %>
+                          <%# @proficient_projects_missing.call(training).order(:level).rotate(@advanced_pp_count.call(training)).each do |pp| %>
 
-                            <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %>" style="border-width:2px !important;">
-                              <form class="form-inline">
-                                <div class="form-group mx-auto">
-                                  <p><h6 class="text-center py-3"><strong><%= pp.training.name %></strong></h6></p>
-                                </div>
-                              </form>
-                              <% if pp.photos.present? %>
-                                <% if @user_order_items.where(proficient_project: pp, status:  ["Awarded", "In progress"]).present? %>
-                                  <a href="<%= proficient_project_path(pp.id) %>">
-                                    <div class="card card-image projects-image" style="background-image: url(<%= url_for(pp.photos.first.image) %>);">
-                                    </div>
-                                  </a>
-                                <% else %>
-                                  <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_proficient_projects_path(id: pp.id) %>">
-                                    <div class="card card-image projects-image" style="background-image: url(<%= url_for(pp.photos.first.image) %>);">
-                                    </div>
-                                  </a>
-                                <% end  %>
-                              <% end %>
-                              <div>
-                                <b class="float-right pt-2 text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + " Ccs" %></b>
-                                <br />
-                                <h6 class="font-weight-bold text-center"><strong><%= pp.title %></strong></h6>
-                                <p><%= pp.level %></p>
-                              </div>
-                              <%= render "/proficient_projects/proficient_project_row", proficient_project: pp, order_item: @order_item, user_order_items: @user_order_items %>
-                            </div>
+<!--                            <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%#= return_hover_and_text_colors(pp.level) %>" style="border-width:2px !important;">-->
+<!--                              <form class="form-inline">-->
+<!--                                <div class="form-group mx-auto">-->
+<!--                                  <p><h6 class="text-center py-3"><strong><%#= pp.training.name %></strong></h6></p>-->
+<!--                                </div>-->
+<!--                              </form>-->
+                              <%# if pp.photos.present? %>
+                                <%# if @user_order_items.where(proficient_project: pp, status:  ["Awarded", "In progress"]).present? %>
+<!--                                  <a href="<%#= proficient_project_path(pp.id) %>">-->
+<!--                                    <div class="card card-image projects-image" style="background-image: url(<%#= url_for(pp.photos.first.image) %>);">-->
+<!--                                    </div>-->
+<!--                                  </a>-->
+                                <%# else %>
+<!--                                  <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%#= open_modal_proficient_projects_path(id: pp.id) %>">-->
+<!--                                    <div class="card card-image projects-image" style="background-image: url(<%#= url_for(pp.photos.first.image) %>);">-->
+<!--                                    </div>-->
+<!--                                  </a>-->
+                                <%# end  %>
+                              <%# end %>
+<!--                              <div>-->
+<!--                                <b class="float-right pt-2 text-info"><%#= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + " Ccs" %></b>-->
+<!--                                <br />-->
+<!--                                <h6 class="font-weight-bold text-center"><strong><%#= pp.title %></strong></h6>-->
+<!--                                <p><%#= pp.level %></p>-->
+<!--                              </div>-->
+                              <%#= render "/proficient_projects/proficient_project_row", proficient_project: pp, order_item: @order_item, user_order_items: @user_order_items %>
+<!--                            </div>-->
 
-                          <% end %>
+                          <%# end %>
 
-                        </div>
-                        <br />
+<!--                        </div>-->
 
                       <% end %>
 
-                      <h3><b>Learning Modules</b></h3>
+<!--                      <h3><b>Learning Modules</b></h3>-->
 
-                      <p>Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
-                      <p><%= @learning_modules_missing.call(training).count == 0 ? "Completed" : "Next modules to complete : " %></p>
-                      <div class="row">
+                      <p>Learning Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
+<!--                      <p><%#= @learning_modules_missing.call(training).count == 0 ? "Completed" : "Next modules to complete : " %></p>-->
+<!--                      <div class="row">-->
 
-                        <% @learning_modules_missing.call(training).order(:level).rotate(@advanced_lm_count.call(training)).each do |learning_module| %>
-                          <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %>" style="border-width:2px !important;">
-                            <form class="form-inline">
-                              <div class="form-group mx-auto">
-                                <p><h6 class="text-center py-3"><strong><%= learning_module.training.name %></strong></h6></p>
-                              </div>
-                            </form>
-                            <% if learning_module.photos.present? %>
-                              <a href="<%= learning_area_path(learning_module.id) %>">
-                                <div class="card card-image projects-image" style="background-image: url(<%= url_for(learning_module.photos.first.image) %>);">
-                                </div>
-                              </a>
-                            <% else %>
-                              <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_learning_areas_path(id: learning_module.id) %>">
-                                <div class="card card-image projects-image" style="background-image: url(<%= url_for(learning_module.photos.first.image) %>);">
-                                </div>
-                              </a>
-                            <% end %>
-                            <div>
-                              <br />
-                              <h6 class="font-weight-bold text-center"><strong><%= learning_module.title %></strong></h6>
-                              <p><%= learning_module.level %></p>
-                            </div>
-                          </div>
-                        <% end %>
+                        <%# @learning_modules_missing.call(training).order(:level).rotate(@advanced_lm_count.call(training)).each do |learning_module| %>
+<!--                          <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%#= return_hover_and_text_colors(learning_module.level) %>" style="border-width:2px !important;">-->
+<!--                            <form class="form-inline">-->
+<!--                              <div class="form-group mx-auto">-->
+<!--                                <p><h6 class="text-center py-3"><strong><%#= learning_module.training.name %></strong></h6></p>-->
+<!--                              </div>-->
+<!--                            </form>-->
+                            <%# if learning_module.photos.present? %>
+<!--                              <a href="<%#= learning_area_path(learning_module.id) %>">-->
+<!--                                <div class="card card-image projects-image" style="background-image: url(<%#= url_for(learning_module.photos.first.image) %>);">-->
+<!--                                </div>-->
+<!--                              </a>-->
+                            <%# else %>
+<!--                              <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%#= open_modal_learning_areas_path(id: learning_module.id) %>">-->
+<!--                                <div class="card card-image projects-image" style="background-image: url(<%#= url_for(learning_module.photos.first.image) %>);">-->
+<!--                                </div>-->
+<!--                              </a>-->
+                            <%# end %>
+<!--                            <div>-->
+<!--                              <br />-->
+<!--                              <h6 class="font-weight-bold text-center"><strong><%#= learning_module.title %></strong></h6>-->
+<!--                              <p><%#= learning_module.level %></p>-->
+<!--                            </div>-->
+<!--                          </div>-->
+                        <%# end %>
 
-                      </div>
-
+<!--                      </div>-->
+                      <p>Recomended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, current_user.id)) %></p>
                     </div>
-
                   </div>
                 </div>
               </div>
