@@ -39,6 +39,9 @@
                             <div class="col-md-9 my-auto">
                               <%= pp.badge_template.badge_description %>
                             </div>
+                            <div class="col-12">
+                              Skills Acquired: <%= @badge_template_skills.call(pp.badge_template) %>
+                            </div>
                           <% end %>
                         </div>
 

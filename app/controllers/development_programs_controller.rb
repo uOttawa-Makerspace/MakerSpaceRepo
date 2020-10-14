@@ -20,6 +20,7 @@ class DevelopmentProgramsController < ApplicationController
     # @user_order_items = current_user.order_items.completed_order
     # @order_item = current_order.order_items.new
     @recomended_hours = Proc.new { |training, levels| training.learning_modules.where(level: levels).count + training.proficient_projects.where(level: levels).count }
+    @badge_template_skills = Proc.new { |badge_template| badge_template.acclaim_api_get_badge_template['data']['skills'].join('') }
   end
 
   def join_development_program
