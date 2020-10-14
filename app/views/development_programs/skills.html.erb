@@ -10,6 +10,7 @@
           <h2 class="mt-4"><%= skill.name %></h2>
 
           <% skill.trainings.each do |training| %>
+            <% next unless training.learning_modules.present? || training.proficient_projects.present?%>
 
               <div class="accordion">
                 <div class="card">
