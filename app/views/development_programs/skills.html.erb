@@ -1,26 +1,23 @@
-<section class="p-5">
-  <div class="container text-center">
-    <h2>Skills</h2>
-    <div class="row my-5 mx-auto">
+<section>
+  <div class="text-center">
+    <h2 class="pt-3">Skills</h2>
+    <div class="row mx-auto">
 
       <div class="col-md-12">
         <% @skills.each do |skill| %>
           <% next unless skill.trainings.present? %>
 
-          <h2><%= skill.name %></h2>
+          <h2 class="mt-4"><%= skill.name %></h2>
 
           <% skill.trainings.each do |training| %>
 
               <div class="accordion">
-                <div class="card m-3">
-                  <div class="card-header">
-                    <p style="float: right"><%= training_status(training.id).html_safe %></p>
-                    <h2 class="mb-0">
-                      <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
-                        <%= training.name %>
-                      </button>
-                    </h2>
+                <div class="card">
+                  <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
+                    <span class="float-right"><%= training_status(training).html_safe %></span>
+                    <button class="btn btn-link" type="button"><%= training.name %></button>
                   </div>
+
                   <div id="training-<%= training.id %>" class="collapse">
                     <div class="card-body">
 
