@@ -62,4 +62,18 @@ class ProficientProject < ApplicationRecord
   def extract_valid_urls
     self.extract_urls.uniq.select{ |url| url.include?("wiki.makerepo.com") }
   end
+
+  def self.training_status(training_id, user_id)
+    pp_missing = ProficientProject.where.not(id: User.find(user_id).order_items.awarded.pluck(:proficient_project_id)).where(training_id: training_id)
+    levels_missing = pp_missing.pluck(:level)
+    if levels_missing.include?("Beginner")
+      "Beginner"
+    elsif levels_missing.include?("Intermediate")
+      "Intermediate"
+    elsif levels_missing.include?("Advanced")
+      "Advanced"
+    else
+      "Master"
+    end
+  end
 end

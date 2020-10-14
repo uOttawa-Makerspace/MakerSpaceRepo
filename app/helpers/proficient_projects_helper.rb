@@ -36,4 +36,13 @@ module ProficientProjectsHelper
       "<span style='color: blue'>Master</span>"
     end
   end
+
+  def return_levels(training_id, user_id)
+    current_status = ProficientProject.training_status(training_id, user_id)
+    case current_status
+    when 'Beginner' then ['Beginner']
+    when 'Intermediate' then ['Beginner', 'Intermediate']
+    when 'Advanced' then ['Beginner', 'Intermediate', 'Advanced']
+    end
+  end
 end
