@@ -31,12 +31,13 @@
 <!--                        <h3><b>Proficient Projects</b></h3>-->
 
                         <div class="row">
-                          <% @proficient_projects_awarded.call(training).where(level: ProficientProject.training_status(training.id, current_user.id)).each do |pp| %>
+                          <% pp = @proficient_projects_awarded.call(training).where(level: ProficientProject.training_status(training.id, current_user.id))&.last %>
+                          <% unless pp.nil? || pp.badge_template.blank? %>
                             <div class="col-md-3">
-                              <%= image_tag(pp.badge_template.image_url, :style => "width: 200px") if pp.badge_template.present? %>
+                              <%= image_tag(pp.badge_template.image_url, :style => "width: 200px") %>
                             </div>
                             <div class="col-md-9 my-auto">
-                              <%= pp.badge_template.badge_description if pp.badge_template.present?  %>
+                              <%= pp.badge_template.badge_description %>
                             </div>
                           <% end %>
                         </div>
