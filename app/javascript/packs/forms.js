@@ -488,7 +488,7 @@ function load() {
     
   });
 
-  $("form#new_repository, form.edit_repository, form#new_proficient_project, form.edit_proficient_project, form.makes_new").submit(function(e){
+  $("form#new_repository, form.edit_repository, form#new_proficient_project, form.edit_proficient_project, form#new_learning_module, form.edit_learning_module, form.makes_new").submit(function(e){
     e.preventDefault();
 
     console.log(categoryArray.length);

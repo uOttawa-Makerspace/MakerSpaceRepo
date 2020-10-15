@@ -4,11 +4,13 @@ class VideosController < DevelopmentProgramsController
   before_action :set_video, only: %i[download destroy]
 
   def index
-    @videos = Video.order(created_at: :desc)
+    @videos_pp = Video.joins(:proficient_project).order(created_at: :desc)
+    @videos_lm = Video.joins(:learning_module).order(created_at: :desc)
   end
 
   def new
     @proficient_projects = ProficientProject.all.order(created_at: :asc).pluck(:title, :id)
+    @learning_modules = LearningModule.all.order(created_at: :asc).pluck(:title, :id)
     @new_video = Video.new
   end
 
@@ -46,7 +48,7 @@ class VideosController < DevelopmentProgramsController
   end
 
   def video_params
-    params.require(:video).permit(:video, :proficient_project_id)
+    params.require(:video).permit(:video, :proficient_project_id, :learning_module_id)
   end
 
   def grant_access_admin

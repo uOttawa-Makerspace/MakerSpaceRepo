@@ -54,6 +54,15 @@
         </div>
       </div>
     </div>
+
+    <% if !@proficient_project.badge_template.present? and current_user.order_items.where(proficient_project_id: @proficient_project.id, status: "In progress").present? %>
+      <div class="text-center">
+        <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will show as completed in the <%= link_to "skills", skills_development_programs_path %> section.</p>
+        <%= link_to "Complete Project", complete_project_proficient_projects_path(id: @proficient_project.id), class: "btn btn-primary"%>
+        <br><br>
+      </div>
+    <% end %>
+
   </div>
 
   <% if @valid_urls.present? %>
@@ -79,6 +88,8 @@
     <br/>
   </div>
 <% end %>
+
+
 
 <% if !@project_requirements.blank? %>
   <br/>

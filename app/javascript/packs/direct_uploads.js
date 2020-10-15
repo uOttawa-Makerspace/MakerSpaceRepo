@@ -3,6 +3,8 @@ addEventListener("direct-upload:initialize", event => {
     const { id, file } = detail
     document.getElementById("video").classList.add('d-none');
     document.getElementById("video-label").classList.add('d-none');
+    document.getElementById("video-2").classList.add('d-none');
+    document.getElementById("video-label-2").classList.add('d-none');
     target.insertAdjacentHTML("beforebegin", `
     <div id="direct-upload-${id}" class="direct-upload direct-upload--pending">
       <div id="direct-upload-progress-${id}" class="direct-upload__progress" style="width: 100%"></div>
