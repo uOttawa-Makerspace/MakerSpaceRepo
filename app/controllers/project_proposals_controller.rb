@@ -14,9 +14,10 @@ class ProjectProposalsController < ApplicationController
       @approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
       @not_approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
     else
-      @project_proposals = ProjectProposal.all
+      @user_pending_project_proposals = ProjectProposal.all
                                           .joins('LEFT OUTER JOIN project_joins ON (project_proposals.id = project_joins.project_proposal_id)')
                                           .where('project_joins.id IS NULL')
+                                          .where(user_id: @user.id)
                                           .order(created_at: :desc)
                                           .paginate(per_page: 15, page: params[:page])
     end

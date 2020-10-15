@@ -9,6 +9,6 @@
 <% end %>
 
 <%= render :partial => 'listing', :locals => {:tittle => "Pending Project Proposals", :project_proposals => @pending_project_proposals, param_name: "page_pending"} if @user.admin? %>
-<%= render :partial => 'listing_user', :locals => {:tittle => "Pending Project Proposals", :project_proposals => @pending_project_proposals, param_name: "page_pending"} if !@user.admin? %>
+<%= render :partial => 'listing_user', :locals => {:tittle => "Pending Project Proposals", :project_proposals => @user_pending_project_proposals, param_name: "page_pending"} if !@user.admin? %>
 <%= render :partial => 'listing', :locals => {:tittle => "List of Project Proposals", :project_proposals => @approved_project_proposals, param_name: "page_approved"} %>
 <%= render :partial => 'listing', :locals => {:tittle => "Project Proposals not approved", :project_proposals => @not_approved_project_proposals, param_name: "page_not_approved"} if @user.admin? %>

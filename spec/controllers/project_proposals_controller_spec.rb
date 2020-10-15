@@ -18,17 +18,17 @@ RSpec.describe ProjectProposalsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         get :index
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@project_proposals).count).to eq(3)
+        expect(@controller.instance_variable_get(:@pending_project_proposals).count).to eq(3)
       end
 
       it 'should get the user\'s project proposals (user)' do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
-        ProjectJoin.create(user_id: ProjectProposal.last.user_id, project_proposal_id: ProjectProposal.last.id)
+        ProjectProposal.last.update(user_id: user.id)
         get :index
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@project_proposals).count).to eq(2)
+        expect(@controller.instance_variable_get(:@user_pending_project_proposals).count).to eq(1)
       end
 
     end
@@ -98,7 +98,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         create(:project_proposal, :joined)
         get :projects_assigned
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@project_proposals).count).to eq(1)
+        expect(@controller.instance_variable_get(:@assigned_project_proposals).count).to eq(1)
       end
 
     end
@@ -118,7 +118,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         create(:project_proposal, :completed)
         get :projects_completed
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@project_proposals).count).to eq(1)
+        expect(@controller.instance_variable_get(:@completed_project_proposals).count).to eq(1)
       end
 
     end
