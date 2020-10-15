@@ -24,16 +24,8 @@
               <%= f.label :level, "Level" %>
               <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
               <br />
-              <%= f.label :cc, "Cc Points (leave it 0 if the project is for the learning area)" %>
+              <%= f.label :cc, "Cc Points" %>
               <%= f.number_field(:cc, :class => "form-control") %>
-              <br />
-              <%= f.label :proficient, "Project Type:" %>
-              <br />
-              <%= f.radio_button(:proficient, true , :style => 'display:inline') %>
-              <%= f.label :proficient, "Proficient Project (project will be paid)" %>
-              <br />
-              <%= f.radio_button(:proficient, false , :style => 'display:inline') %>
-              <%= f.label :proficient, "Learning Area (project will be free and in the learning area)" %>
               <br />
               <br />
               <%= f.label :has_project_kit, "Physical kit:" %>
@@ -54,7 +46,7 @@
               <br>
               <%= label_tag :file, "Project files" %>
               <label class="custom-instructable-upload">
-                <%= file_field_tag 'files[]', type: :files, multiple: true %>
+                <%= file_field_tag 'files[]', type: :files, multiple: true, style: "display: none;" %>
                 Choose files...
               </label>
               <div id="file-container">
@@ -95,7 +87,7 @@
                   <p>Drag &amp; Drop</p>
                 </div>
                 <label class="custom-image-upload">
-                  <%= file_field_tag 'images[]', type: :files, multiple: true %>
+                  <%= file_field_tag 'images[]', type: :files, multiple: true, style: "display: none;" %>
                   or choose an image...
                 </label>
               </div>

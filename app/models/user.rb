@@ -29,11 +29,13 @@ class User < ApplicationRecord
   has_many :badges, dependent: :destroy
   has_many :programs, dependent: :destroy
   has_and_belongs_to_many :proficient_projects
+  # has_and_belongs_to_many :learning_modules
   has_many :orders, dependent: :destroy
   has_many :order_items, through: :orders
   has_many :discount_codes, dependent: :destroy
   has_one_attached :avatar
   has_many :project_kits, dependent: :destroy
+  has_many :learning_module_tracks
 
   validates :avatar, file_content_type: {
       allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],

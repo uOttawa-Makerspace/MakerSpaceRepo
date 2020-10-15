@@ -3,6 +3,7 @@
 class Photo < ApplicationRecord
   belongs_to :repository
   belongs_to :proficient_project
+  belongs_to :learning_module
 
   has_one_attached :image
   validates :image, file_content_type: {
