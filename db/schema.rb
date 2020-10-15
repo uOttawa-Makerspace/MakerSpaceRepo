@@ -156,13 +156,19 @@ ActiveRecord::Schema.define(version: 2020_10_14_171425) do
     t.string "email"
     t.string "address"
     t.string "phone_number"
-    t.string "url"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "url"
     t.boolean "show_hours"
   end
 
   create_table "course_names", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "courses", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
@@ -360,6 +366,8 @@ ActiveRecord::Schema.define(version: 2020_10_14_171425) do
     t.text "staff_comments"
     t.boolean "expedited"
     t.integer "order_type", default: 0
+    t.text "email"
+    t.text "name"
     t.datetime "timestamp_approved"
     t.string "final_file_file_name"
     t.string "final_file_content_type"
@@ -395,6 +403,7 @@ ActiveRecord::Schema.define(version: 2020_10_14_171425) do
     t.string "status", default: "true"
     t.string "availability", default: "true"
     t.string "color", default: "FF0000"
+    t.string "rfid"
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
