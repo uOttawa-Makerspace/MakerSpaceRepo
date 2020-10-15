@@ -162,6 +162,23 @@ class ReportGenerator
       table_header(sheet, ['Training', 'Level', 'Course', 'Instructor', 'Date', 'Facility', 'Attendee Count'])
 
       trainings[:training_sessions].each do |row|
+
+        training = Training.find(row[:training_id])
+        color = if training.skill_id.present?
+                  if training.skill.name == "Machine Shop Training"
+                    {:bg_color => "ed7d31"}
+                  elsif training.skill.name == "Technology Trainings"
+                    {:bg_color => "70ad47"}
+                  elsif training.skill.name == "CEED Trainings"
+                    {:bg_color => "ffc000"}
+                  else
+                    {}
+                  end
+                else
+                  {}
+                end
+        style = sheet.styles.add_style(color)
+
         sheet.add_row [
             row[:training_name],
             row[:training_level],
@@ -170,7 +187,7 @@ class ReportGenerator
             row[:date].localtime.strftime('%Y-%m-%d %H:%M'),
             row[:facility],
             row[:attendee_count]
-        ]
+        ], :style => [style]
       end
     end
 
@@ -738,6 +755,7 @@ class ReportGenerator
 
     ActiveRecord::Base.connection.exec_query(query).each do |row|
       result[:training_sessions] << {
+          training_id: row['training_id'],
           training_name: row['training_name'],
           training_level: row['training_level'],
           course_name: row['course_name'],
