@@ -82,13 +82,17 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        table_header(sheet, ['Identity', 'Distinct Users', '', 'Total Visits', '', 'Faculty',])
+        table_header(sheet, ['Identity', 'Distinct Users', '', 'Total Visits', '', 'Faculty'])
         space_detail[:identities].each do |identity_name, identity|
           start_index = sheet.rows.last.row_index + 1
 
           identity[:faculties].each do |faculty_name, faculty|
             sheet.add_row [identity_name, faculty[:unique], '', faculty[:total], '', faculty_name], style: [merge_cell]
-            faculty_hash[faculty_name] = faculty[:unique]
+            if faculty_hash[faculty_name].blank?
+              faculty_hash[faculty_name] = faculty[:unique]
+            else
+              faculty_hash[faculty_name] = faculty[:unique] + faculty_hash[faculty_name]
+            end
           end
 
           end_index = sheet.rows.last.row_index
