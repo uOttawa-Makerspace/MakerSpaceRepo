@@ -10,12 +10,15 @@ class ProjectProposalsController < ApplicationController
   def index
     @user = current_user
     if @user.admin?
-      @project_proposals = ProjectProposal.all.order(created_at: :desc)
+      @pending_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: nil).paginate(per_page: 5, page: params[:page_pending])
+      @approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 1).paginate(per_page: 5, page: params[:page_approved])
+      @not_approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 0).paginate(per_page: 5, page: params[:page_not_approved])
     else
       @project_proposals = ProjectProposal.all
                                           .joins('LEFT OUTER JOIN project_joins ON (project_proposals.id = project_joins.project_proposal_id)')
                                           .where('project_joins.id IS NULL')
                                           .order(created_at: :desc)
+                                          .paginate(per_page: 15, page: params[:page])
     end
   end
 
@@ -23,7 +26,7 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals/1.json
   def show
     @categories = @project_proposal.categories
-    @repositories = @project_proposal.repositories.paginate(per_page: 12, page: params[:page]).public_repos.order([sort_order].to_h).page params[:page]
+    @repositories = @project_proposal.repositories.public_repos.order([sort_order].to_h).page params[:page]
     @photos = photo_hash
   end
 
@@ -38,14 +41,16 @@ class ProjectProposalsController < ApplicationController
   end
 
   def projects_assigned
-    @project_proposals = ProjectProposal.joins(:project_joins)
-                                        .joins('LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id)')
-                                        .where('repositories.id IS NULL')
-                                        .distinct.order(created_at: :desc)
+    @assigned_project_proposals = ProjectProposal.joins(:project_joins)
+                                                 .joins('LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id)')
+                                                 .where('repositories.id IS NULL')
+                                                 .where(approved: 1)
+                                                 .distinct.order(created_at: :desc)
+                                                 .paginate(per_page: 15, page: params[:page])
   end
 
   def projects_completed
-    @project_proposals = ProjectProposal.joins(:repositories).distinct.order(created_at: :desc)
+    @completed_project_proposals = ProjectProposal.where(approved: 1).joins(:repositories).distinct.order(created_at: :desc).paginate(per_page: 15, page: params[:page])
   end
 
   # POST /project_proposals

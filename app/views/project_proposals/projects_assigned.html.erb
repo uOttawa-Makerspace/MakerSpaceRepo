@@ -8,4 +8,4 @@
     <div id="alert"><%= flash[:alert] %></div>
 <% end %>
 
-<%= render :partial => 'listing', :locals => {:tittle => "List of Projects Assigned", :approval => 1} %>
+<%= render :partial => 'listing', :locals => {:tittle => "List of Project Proposals", :project_proposals => @assigned_project_proposals, param_name: "page"} %>

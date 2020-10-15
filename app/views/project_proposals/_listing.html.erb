@@ -1,4 +1,9 @@
-<% if @project_proposals.where(:approved => approval).present? %>
+<% if project_proposals.present? %>
+
+  <div>
+    <%= will_paginate project_proposals, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, param_name: (local_variables.include?(:param_name) ? param_name : "page") %>
+  </div>
+
   <br>
   <div class="titlepp"><%= tittle %></div>
     <table class="spacing_table table-striped text-center">
@@ -23,7 +28,7 @@
       </thead>
 
       <tbody>
-        <% @project_proposals.where(:approved => approval).each.with_index do |project_proposal, n| %>
+        <% project_proposals.each.with_index do |project_proposal, n| %>
           <tr>
             <td><%= n+1 %></td>
             <% if @user.try(:admin?) %>

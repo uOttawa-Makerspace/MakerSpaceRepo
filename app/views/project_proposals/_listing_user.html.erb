@@ -1,4 +1,4 @@
-<% if @project_proposals.where(:approved => approval).present? %>
+<% if project_proposals.present? %>
   <br>
   <div class="titlepp"><%= tittle %></div>
   <table class="spacing_table table-striped text-center">
@@ -12,7 +12,7 @@
     </thead>
 
     <tbody>
-    <% @project_proposals.where(:approved => approval, user_id: @user.id).each.with_index do |project_proposal, n| %>
+    <% project_proposals.where(user_id: @user.id).each.with_index do |project_proposal, n| %>
       <tr>
         <td><%= n+1 %></td>
         <td><%= project_proposal.title %></td>
