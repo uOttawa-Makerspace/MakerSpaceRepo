@@ -10,7 +10,6 @@ class ProjectProposalsControllerTest < ActionController::TestCase
   test 'should get index' do
     get :index
     assert_response :success
-    assert_not_nil assigns(:project_proposals)
   end
 
   test 'should get new' do
