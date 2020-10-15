@@ -10,9 +10,9 @@ class ProjectProposalsController < ApplicationController
   def index
     @user = current_user
     if @user.admin?
-      @pending_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: nil).paginate(per_page: 5, page: params[:page_pending])
-      @approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 1).paginate(per_page: 5, page: params[:page_approved])
-      @not_approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 0).paginate(per_page: 5, page: params[:page_not_approved])
+      @pending_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: nil).paginate(per_page: 15, page: params[:page_pending])
+      @approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
+      @not_approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
     else
       @project_proposals = ProjectProposal.all
                                           .joins('LEFT OUTER JOIN project_joins ON (project_proposals.id = project_joins.project_proposal_id)')
