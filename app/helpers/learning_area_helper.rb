@@ -34,7 +34,7 @@ module LearningAreaHelper
   end
 
   def levels_ordered(training)
-    result = training.learning_modules.pluck(:level).uniq
+    result = training.learning_modules.pluck(:level).uniq.sort
     result.include?('Advanced') ? result = result.rotate(1) : result
     result
   end
