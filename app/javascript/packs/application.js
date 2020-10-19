@@ -29,7 +29,7 @@ require("jquery-ui");
 global.PhotoSwipe = require('photoswipe');
 global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
 var Clipboard = require("clipboard");
-window.Cookies = require("js-cookie")
+// window.Cookies = require("js-cookie");
 
 require("bootbox");
 require("packs/validation");
