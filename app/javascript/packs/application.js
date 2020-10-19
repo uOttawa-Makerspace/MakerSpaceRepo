@@ -29,6 +29,8 @@ require("jquery-ui");
 global.PhotoSwipe = require('photoswipe');
 global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
 var Clipboard = require("clipboard");
+window.Cookies = require("js-cookie")
+
 require("bootbox");
 require("packs/validation");
 require("packs/badges");
@@ -54,6 +56,7 @@ require("packs/vendor");
 require("packs/videos");
 require("packs/volunteer_hours");
 require("packs/volunteer_tasks");
+require("packs/accordion-load");
 
 import "bootstrap";
 require("packs/toastr");
