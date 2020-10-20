@@ -1,0 +1,5 @@
+<% provide(:title, "User Projects") %>
+
+<%= render :partial => 'listing', :locals => {:title => "Project Proposals Joined", :project_proposals => @project_proposals_joined, param_name: "page_pending"} %>
+<%= render :partial => 'listing', :locals => {:title => "Pending Project Proposals", :project_proposals => @user_pending_project_proposals, param_name: "page_pending"} %>
+<%= render :partial => 'listing', :locals => {:title => "Approved Project Proposals", :project_proposals => @approved_project_proposals, param_name: "page_pending"} %>

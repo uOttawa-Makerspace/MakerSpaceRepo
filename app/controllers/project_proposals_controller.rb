@@ -24,6 +24,12 @@ class ProjectProposalsController < ApplicationController
     end
   end
 
+  def user_projects
+    @project_proposals_joined = ProjectProposal.all.joins(:project_joins).where(project_joins: { user: current_user } ).order(created_at: :desc).paginate(per_page: 15, page: params[:page])
+    @user_pending_project_proposals = current_user.project_proposals.where(approved: nil).order(created_at: :desc).paginate(per_page: 15, page: params[:page])
+    @approved_project_proposals = current_user.project_proposals.order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
+  end
+
   # GET /project_proposals/1
   # GET /project_proposals/1.json
   def show
