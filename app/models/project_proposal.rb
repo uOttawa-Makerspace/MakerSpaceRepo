@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class ProjectProposal < ApplicationRecord
+  belongs_to :user
+  belongs_to :admin, class_name: 'User', foreign_key: 'admin_id'
   has_many :categories,     dependent: :destroy
   has_many :project_joins,  dependent: :destroy
   has_many :repositories
-
-  belongs_to :user
 
   validates :title,
             format: { with: /\A[-a-zA-ZÀ-ÿ\d\s]*\z/, message: 'Invalid project title' },
