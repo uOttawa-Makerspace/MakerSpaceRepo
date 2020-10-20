@@ -90,9 +90,28 @@ class MsrMailer < ApplicationMailer
     mail(to: 'uomakerspaceprintinvoices@gmail.com', subject: 'Invoice for Order #' + @print_order.id.to_s + ' ')
   end
 
-  def send_admin_pp_evaluation
+  def send_admin_pp_evaluation(pp)
+    @pp = pp
     email = "mtc@uottawa.ca"
     mail(to: email, subject: 'A new proficient project needs to be evaluated')
+  end
+
+  def send_user_pp_evaluation(pp, user)
+    @pp = pp
+    @user = user
+    mail(to: @user.email, subject: 'Your Proficient Project Request')
+  end
+
+  def send_results_pp_pass(pp, user)
+    @pp = pp
+    @user = user
+    mail(to: @user.email, subject: 'Your Proficient Project Results')
+  end
+
+  def send_results_pp_fail(pp, user)
+    @pp = pp
+    @user = user
+    mail(to: @user.email, subject: 'Your Proficient Project Results')
   end
 
   def send_ommic
