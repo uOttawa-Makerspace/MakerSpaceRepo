@@ -5,6 +5,8 @@
 
   <div><%= will_paginate project_proposals, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, param_name: (local_variables.include?(:param_name) ? param_name : "page") %></div>
 
+  <% action_flag = project_proposals.first.approved %>
+
   <table class="spacing_table table-striped text-center">
     <thead>
       <tr>
@@ -20,7 +22,9 @@
         <th>Title</th>
         <th>Categories</th>
         <th>Proposed on</th>
-        <th>Action</th>
+        <% if action_flag || @user.admin? %>
+          <th>Action</th>
+        <% end %>
       </tr>
     </thead>
 
@@ -33,7 +37,7 @@
             <% if username %>
               <td class="username"><%= link_to username, user_path(username) %></td>
             <% else %>
-              <td><%= username %></td>
+              <td><%= project_proposal.username %></td>
             <% end %>
             <% admin_username = project_proposal.admin&.username %>
             <td class="admin_username"><%= link_to admin_username, user_path(admin_username) if admin_username.present? %></td>
@@ -52,7 +56,7 @@
               <%= link_to 'Delete', project_proposal, method: :delete,
                                                   class: "btn btn-danger btn-block btn-sm", data: { confirm: 'Are you sure?' } %>
               </td>
-          <% else %>
+          <% elsif action_flag %>
               <td><%= link_to 'Show', project_proposal, class: "btn btn-success btn-block btn-sm" %></td>
           <% end %>
         </tr>
