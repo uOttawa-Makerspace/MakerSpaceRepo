@@ -24,16 +24,15 @@ module ProficientProjectsHelper
   end
 
   def training_status(training_id)
-    pp_missing = ProficientProject.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)).where(training_id: training_id)
-    levels_missing = pp_missing.pluck(:level)
-    if levels_missing.include?("Beginner")
-      "<span style='color: green'>Beg</span>"
-    elsif levels_missing.include?("Intermediate")
-      "<span style='color: #969600'>Int</span>"
-    elsif levels_missing.include?("Advanced")
-      "<span style='color: red'>Adv</span>"
-    else
+    level = TrainingSession.where(training_id: training_id).pluck(:level)
+    if level.include?("Advanced")
       "<span style='color: blue'>Master</span>"
+    elsif level.include?("Intermediate")
+      "<span style='color: red'>Adv</span>"
+    elsif level.include?("Beginner")
+      "<span style='color: #969600'>Int</span>"
+    else
+      "<span style='color: green'>Beg</span>"
     end
   end
 
