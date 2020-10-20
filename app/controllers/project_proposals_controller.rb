@@ -14,12 +14,13 @@ class ProjectProposalsController < ApplicationController
       @approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
       @not_approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
     else
-      @user_pending_project_proposals = ProjectProposal.all
+      @user_pending_project_proposals = @user.project_proposals
                                           .joins('LEFT OUTER JOIN project_joins ON (project_proposals.id = project_joins.project_proposal_id)')
                                           .where('project_joins.id IS NULL')
-                                          .where(user_id: @user.id)
+                                          .where(approved: nil)
                                           .order(created_at: :desc)
                                           .paginate(per_page: 15, page: params[:page])
+      @approved_project_proposals = @user.project_proposals.order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
     end
   end
 
@@ -39,6 +40,7 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals/1/edit
   def edit
     @categories = @project_proposal.categories
+    @category_options =  CategoryOption.show_options
   end
 
   def projects_assigned

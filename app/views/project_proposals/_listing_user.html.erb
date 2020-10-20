@@ -1,6 +1,6 @@
+<br>
+<div class="titlepp"><%= title %></div>
 <% if project_proposals.present? %>
-  <br>
-  <div class="titlepp"><%= tittle %></div>
   <table class="spacing_table table-striped text-center">
     <thead>
     <tr>
@@ -12,7 +12,7 @@
     </thead>
 
     <tbody>
-    <% project_proposals.each.with_index do |project_proposal, n| %>
+    <% project_proposals.each_with_index do |project_proposal, n| %>
       <tr>
         <td><%= n+1 %></td>
         <td><%= project_proposal.title %></td>
@@ -25,6 +25,6 @@
   <br>
 <% else %>
   <br>
-  <div class="titlepp">No Projects Here</div>
+  <h5 class="text-center">No Projects Here</h5>
 <% end %>
 

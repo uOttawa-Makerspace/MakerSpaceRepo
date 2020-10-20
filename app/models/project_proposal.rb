@@ -6,6 +6,7 @@ class ProjectProposal < ApplicationRecord
   has_many :categories,     dependent: :destroy
   has_many :project_joins,  dependent: :destroy
   has_many :repositories
+  scope :approved, -> { where(approved: 1) }
 
   validates :title,
             format: { with: /\A[-a-zA-ZÀ-ÿ\d\s]*\z/, message: 'Invalid project title' },
@@ -18,6 +19,12 @@ class ProjectProposal < ApplicationRecord
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)
   end
 
-  scope :approved, -> { where(approved: 1) }
+  def approval_status
+    case self.approved
+    when 0 then "No"
+    when 1 then "Yes"
+    when nil then "Not validated"
+    end
+  end
 
 end
