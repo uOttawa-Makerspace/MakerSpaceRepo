@@ -90,6 +90,11 @@ class MsrMailer < ApplicationMailer
     mail(to: 'uomakerspaceprintinvoices@gmail.com', subject: 'Invoice for Order #' + @print_order.id.to_s + ' ')
   end
 
+  def send_admin_pp_evaluation
+    email = "mtc@uottawa.ca"
+    mail(to: email, subject: 'A new proficient project needs to be evaluated')
+  end
+
   def send_ommic
     all_users = User.where('email like ? and length(email) = 19', '%@uottawa.ca').pluck(:email).uniq
     attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
