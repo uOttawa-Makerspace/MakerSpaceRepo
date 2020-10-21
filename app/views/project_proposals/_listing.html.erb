@@ -10,7 +10,7 @@
   <table class="spacing_table table-striped text-center">
     <thead>
       <tr>
-        <th>#</th>
+        <th>ID #</th>
         <% if @user.admin? %>
           <th>User</th>
           <th>Admin</th>
@@ -29,9 +29,9 @@
     </thead>
 
     <tbody>
-      <% project_proposals.each_with_index do |project_proposal, n| %>
+      <% project_proposals.each do |project_proposal| %>
         <tr>
-          <td><%= n+1 %></td>
+          <td><%= project_proposal.id %></td>
           <% if @user.admin? %>
             <% username = project_proposal.user&.username %>
             <% if username %>
