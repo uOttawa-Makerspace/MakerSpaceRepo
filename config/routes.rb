@@ -274,8 +274,11 @@ Rails.application.routes.draw do
   resources :proficient_projects do
     collection do
       get :join_development_program
+      get :requests
       get :open_modal
       get :complete_project
+      get :approve_project
+      get :revoke_project
     end
   end
 

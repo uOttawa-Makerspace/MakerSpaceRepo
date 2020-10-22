@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class ProficientProjectsController < DevelopmentProgramsController
-  before_action :only_admin_access,                             only: %i[new create edit update destroy]
+  before_action :only_admin_access,                             only: %i[new create edit update destroy requests]
   before_action :set_proficient_project,                        only: %i[show destroy edit update complete_project]
   before_action :grant_access_to_project,                       only: [:show]
   before_action :set_training_categories, :set_badge_templates, only: %i[new edit]
@@ -11,9 +11,13 @@ class ProficientProjectsController < DevelopmentProgramsController
     @skills = Skill.all
     @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
     @all_proficient_projects = Proc.new{ |training| training.proficient_projects }
-    @advanced_pp_count = Proc.new{ |training| training.proficient_projects.where(level: "Advanced").count }
+    @advanced_pp_count = Proc.new{ |training| training.proficient_projects.where(level: 'Advanced').count }
     @order_item = current_order.order_items.new
     @user_order_items = current_user.order_items.completed_order
+  end
+
+  def requests
+    @order_item_waiting_for_approval = OrderItem.all.waiting_for_approval
   end
 
   def new
@@ -84,25 +88,74 @@ class ProficientProjectsController < DevelopmentProgramsController
       format.js
     end
   end
-  
+
   def complete_project
-    if @proficient_project.badge_template.present?
-      flash[:alert] = 'This project cannot be completed without the staff approving the badge.'
+    order_items = current_user.order_items.where(proficient_project_id: @proficient_project.id)
+    if order_items.present?
+      order_items.first.update(status: 'Waiting for approval')
+      flash[:notice] = 'Congratulations on completing this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.'
     else
-      if current_user.order_items.where(proficient_project_id: @proficient_project.id).present?
-        current_user.order_items.where(proficient_project_id: @proficient_project.id).first.update(status: "Awarded")
-        flash[:notice] = 'Congratulations on completing this proficient project! It is now updated as completed in the skills page!'
-      else
-        flash[:alert] = 'This project hasn\'t been found.'
-      end
+      flash[:alert] = "This project hasn't been found."
     end
-    redirect_to skills_development_programs_path
+    redirect_to @proficient_project
+  end
+
+  def approve_project
+    order_item = OrderItem.find_by(id: params[:oi_id])
+    if order_item
+      space = Space.find_by_name('Makerepo')
+      admin = User.find_by_email("avend029@uottawa.ca") || User.where(role: 'admin').last
+      course_name = CourseName.find_by_name('no course')
+      training_session = TrainingSession.find_or_create_by(training_id: order_item.proficient_project.training_id,
+                                                level: order_item.proficient_project.level,
+                                                user: admin,
+                                                space: space,
+                                                course_name: course_name)
+      if training_session.present?
+        Certification.find_or_create_by(training_session_id: training_session.id, user_id: order_item.order.user_id)
+        badge_template = order_item.proficient_project.badge_template
+        if badge_template.present?
+          user = order_item.order.user
+          response = Badge.acclaim_api_create_badge(user, badge_template.acclaim_template_id)
+          if response.status == 201
+            badge_data = JSON.parse(response.body)['data']
+            Badge.create(user_id: user.id,
+                         issued_to: user.name,
+                         acclaim_badge_id: badge_data['id'],
+                         badge_template_id: badge_template.id)
+            order_item.update(status: 'Awarded')
+            flash[:notice] = 'A badge has been awarded to the user!'
+          else
+            flash[:alert] = 'An error has occurred when creating the badge, this message might help : ' + JSON.parse(response.body)['data']['message']
+          end
+        else
+          order_item.update(status: 'Awarded')
+        end
+        flash[:notice] = 'The project has been approved!'
+      else
+        flash[:error] = 'An error has occurred, please try again later.'
+      end
+    else
+      flash[:error] = 'An error has occured, please try again later.'
+    end
+    redirect_to requests_proficient_projects_path
+  end
+
+  def revoke_project
+    order_item = OrderItem.find_by(id: params[:oi_id])
+    if order_item
+      order_item.update(status: 'Revoked')
+      flash[:alert_yellow] = 'The project has been revoked.'
+    else
+      flash[:error] = 'An error has occured, please try again later.'
+    end
+    redirect_to requests_proficient_projects_path
   end
 
   private
 
     def grant_access_to_project
-      if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress']).blank?
+      if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress', 'Waiting for approval']).blank?
         unless current_user.admin? || current_user.staff?
           redirect_to development_programs_path
           flash[:alert] = 'You cannot access this area.'

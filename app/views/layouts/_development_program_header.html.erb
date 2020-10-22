@@ -24,6 +24,7 @@
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdo wn2">
           <% if current_user.admin? %>
+            <%= link_to "Requests", requests_proficient_projects_path, class: "dropdown-item" %>
             <%= link_to "New proficient Project", new_proficient_project_path, class: "dropdown-item" %>
             <div class="dropdown-divider"></div>
           <% end %>

@@ -228,7 +228,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
     context 'complete_project' do
 
-      it 'should set the pp as Awarded' do
+      it 'should set the pp as Waiting for approval' do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
@@ -236,20 +236,74 @@ RSpec.describe ProficientProjectsController, type: :controller do
         proficient_project = ProficientProject.last
         proficient_project.update(badge_template_id: '')
         get :complete_project, format: 'js', params: {id: proficient_project.id}
-        expect(response).to redirect_to skills_development_programs_path
-        expect(proficient_project.order_items.last.status).to eq('Awarded')
-        expect(flash[:notice]).to eq('Congratulations on completing this proficient project! It is now updated as completed in the skills page!')
+        expect(response).to redirect_to proficient_project
+        expect(proficient_project.order_items.last.status).to eq('Waiting for approval')
+        expect(flash[:notice]).to eq('Congratulations on completing this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.')
       end
 
-      it 'should NOT set the pp as Awarded' do
+    end
+
+  end
+
+  describe '#approve_project' do
+
+    context 'approve_project' do
+
+      before(:each) do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:order, :with_item, user_id: user.id)
-        get :complete_project, format: 'js', params: {id: ProficientProject.last.id}
-        expect(response).to redirect_to skills_development_programs_path
-        expect(OrderItem.last.status).to eq('In progress')
-        expect(flash[:alert]).to eq('This project cannot be completed without the staff approving the badge.')
+        create(:user, email: "avend029@uottawa.ca")
+        @proficient_project = ProficientProject.last
+        @proficient_project.update(badge_template_id: '')
+        get :complete_project, format: 'js', params: {id: @proficient_project.id}
+      end
+
+      it 'should set the oi as Awarded' do
+        get :approve_project, format: 'js', params: {oi_id: OrderItem.last.id}
+        expect(response).to redirect_to requests_proficient_projects_path
+        expect(OrderItem.last.status).to eq('Awarded')
+        expect(flash[:notice]).to eq('The project has been approved!')
+      end
+
+      it 'should NOT set the oi as Awarded' do
+        get :approve_project, format: 'js'
+        expect(response).to redirect_to requests_proficient_projects_path
+        expect(OrderItem.last.status).to eq('Waiting for approval')
+        expect(flash[:error]).to eq('An error has occured, please try again later.')
+      end
+
+    end
+
+  end
+
+  describe '#revoke_project' do
+
+    context 'revoke_project' do
+
+      before(:each) do
+        user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        create(:order, :with_item, user_id: user.id)
+        @proficient_project = ProficientProject.last
+        @proficient_project.update(badge_template_id: '')
+        get :complete_project, format: 'js', params: {id: @proficient_project.id}
+      end
+
+      it 'should set the oi as Revoked' do
+        get :revoke_project, format: 'js', params: {oi_id: OrderItem.last.id}
+        expect(response).to redirect_to requests_proficient_projects_path
+        expect(OrderItem.last.status).to eq('Revoked')
+        expect(flash[:alert_yellow]).to eq('The project has been revoked.')
+      end
+
+      it 'should NOT set the oi as Revoked' do
+        get :revoke_project, format: 'js'
+        expect(response).to redirect_to requests_proficient_projects_path
+        expect(OrderItem.last.status).to eq('Waiting for approval')
+        expect(flash[:error]).to eq('An error has occured, please try again later.')
       end
 
     end
