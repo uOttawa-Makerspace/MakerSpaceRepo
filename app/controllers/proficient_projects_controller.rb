@@ -112,7 +112,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       if training_session.present?
         Certification.create(training_session_id: training_session.id, user_id: order_item.order.user_id)
         order_item.update(status: 'Awarded')
-        MsrMailer.send_results_pp_pass(order_item.proficient_project, order_item.order.user)
+        MsrMailer.send_results_pp_pass(order_item.proficient_project, order_item.order.user).deliver_now
         flash[:notice] = 'The project has been approved!'
       else
         flash[:error] = 'An error has occured, please try again later.'
@@ -127,7 +127,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     if params[:oi_id].present? and OrderItem.where(id: params[:oi_id]).present?
       oi = OrderItem.find(params[:oi_id])
       oi.update(status: 'Revoked')
-      MsrMailer.send_results_pp_fail(oi.proficient_project, oi.order.user)
+      MsrMailer.send_results_pp_fail(oi.proficient_project, oi.order.user).deliver_now
       flash[:alert_yellow] = 'The project has been revoked.'
     else
       flash[:error] = 'An error has occured, please try again later.'
