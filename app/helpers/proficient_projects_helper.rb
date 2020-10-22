@@ -24,15 +24,22 @@ module ProficientProjectsHelper
   end
 
   def training_status(training_id)
-    level = TrainingSession.where(training_id: training_id).pluck(:level)
+    level = Certification.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user: current_user ).pluck(:level)
     if level.include?("Advanced")
-      "<span style='color: blue'>Master</span>"
+      "<span style='color: red'>Advanced</span>"
     elsif level.include?("Intermediate")
-      "<span style='color: red'>Adv</span>"
+      "<span style='color: #969600'>Intermediate</span>"
+
     elsif level.include?("Beginner")
-      "<span style='color: #969600'>Int</span>"
+      "<span style='color: green'>Beginner</span>"
     else
-      "<span style='color: green'>Beg</span>"
+      training = Training.find(training_id)
+      learning_modules_completed = training.learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: {user: current_user, status: 'Completed'}).present?
+      if learning_modules_completed
+        "<span style='color: green'>Newbie</span>"
+      else
+        "<span style='color: gray'>Not Started</span>"
+      end
     end
   end
 
