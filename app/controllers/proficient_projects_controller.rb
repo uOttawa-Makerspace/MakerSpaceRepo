@@ -90,16 +90,12 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def complete_project
-    if @proficient_project.badge_template.present?
-      flash[:alert] = 'This project cannot be completed without the staff approving the badge.'
+    order_items = current_user.order_items.where(proficient_project_id: @proficient_project.id)
+    if order_items.present?
+      order_items.first.update(status: 'Waiting for approval')
+      flash[:notice] = 'Congratulations on completing this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.'
     else
-      order_items = current_user.order_items.where(proficient_project_id: @proficient_project.id)
-      if order_items.present?
-        order_items.first.update(status: 'Waiting for approval')
-        flash[:notice] = 'Congratulations on completing this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.'
-      else
-        flash[:alert] = "This project hasn't been found."
-      end
+      flash[:alert] = "This project hasn't been found."
     end
     redirect_to @proficient_project
   end
@@ -107,14 +103,20 @@ class ProficientProjectsController < DevelopmentProgramsController
   def approve_project
     order_item = OrderItem.find_by(id: params[:oi_id])
     if order_item
+      space = Space.find_by_name('Makerepo')
       admin = User.find_by_email("avend029@uottawa.ca") || User.where(role: 'admin').last
-      training_session = TrainingSession.create(training_id: order_item.proficient_project.training_id, level: order_item.proficient_project.level, user: admin)
+      course_name = CourseName.find_by_name('no course')
+      training_session = TrainingSession.create(training_id: order_item.proficient_project.training_id,
+                                                level: order_item.proficient_project.level,
+                                                user: admin,
+                                                space: space,
+                                                course_name: course_name)
       if training_session.present?
         Certification.create(training_session_id: training_session.id, user_id: order_item.order.user_id)
         order_item.update(status: 'Awarded')
         flash[:notice] = 'The project has been approved!'
       else
-        flash[:error] = 'An error has occured, please try again later.'
+        flash[:error] = 'An error has occurred, please try again later.'
       end
     else
       flash[:error] = 'An error has occured, please try again later.'

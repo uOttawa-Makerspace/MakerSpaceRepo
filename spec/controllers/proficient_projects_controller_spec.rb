@@ -241,18 +241,6 @@ RSpec.describe ProficientProjectsController, type: :controller do
         expect(flash[:notice]).to eq('Congratulations on completing this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.')
       end
 
-      it 'should NOT set the pp as Waiting for approval' do
-        user = create(:user, :volunteer_with_dev_program)
-        session[:user_id] = user.id
-        session[:expires_at] = Time.zone.now + 10000
-        create(:order, :with_item, user_id: user.id)
-        proficient_project = ProficientProject.last
-        get :complete_project, format: 'js', params: {id: proficient_project.id}
-        expect(response).to redirect_to proficient_project
-        expect(OrderItem.last.status).to eq('In progress')
-        expect(flash[:alert]).to eq('This project cannot be completed without the staff approving the badge.')
-      end
-
     end
 
   end
