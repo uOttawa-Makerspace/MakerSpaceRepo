@@ -276,7 +276,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :approve_project, format: 'js', params: {oi_id: OrderItem.last.id}
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq('Awarded')
-        expect(ActionMailer::Base.deliveries.count).to eq(2)
+        expect(ActionMailer::Base.deliveries.count).to eq(3)
         expect(ActionMailer::Base.deliveries.second.to.first).to eq(@user.email)
         expect(flash[:notice]).to eq('The project has been approved!')
       end
@@ -310,7 +310,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :revoke_project, format: 'js', params: {oi_id: OrderItem.last.id}
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq('Revoked')
-        expect(ActionMailer::Base.deliveries.count).to eq(2)
+        expect(ActionMailer::Base.deliveries.count).to eq(3)
         expect(ActionMailer::Base.deliveries.second.to.first).to eq(@user.email)
         expect(flash[:alert_yellow]).to eq('The project has been revoked.')
       end
