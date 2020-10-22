@@ -104,9 +104,10 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def approve_project
-    if params[:oi_id].present? and OrderItem.where(id: params[:oi_id]).present?
-      order_item = OrderItem.find(params[:oi_id])
-      training_session = TrainingSession.create(training_id: order_item.proficient_project.training_id, level: order_item.proficient_project.level, user_id: User.find_by_email("avend029@uottawa.ca").id)
+    order_item = OrderItem.find_by(id: params[:oi_id])
+    if order_item
+      admin = User.find_by_email("avend029@uottawa.ca") || User.where(role: 'admin').last
+      training_session = TrainingSession.create(training_id: order_item.proficient_project.training_id, level: order_item.proficient_project.level, user: admin)
       if training_session.present?
         Certification.create(training_session_id: training_session.id, user_id: order_item.order.user_id)
         order_item.update(status: 'Awarded')
@@ -121,8 +122,9 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def revoke_project
-    if params[:oi_id].present? and OrderItem.where(id: params[:oi_id]).present?
-      OrderItem.find(params[:oi_id]).update(status: 'Revoked')
+    order_item = OrderItem.find_by(id: params[:oi_id])
+    if order_item
+      order_item.update(status: 'Revoked')
       flash[:alert_yellow] = 'The project has been revoked.'
     else
       flash[:error] = 'An error has occured, please try again later.'
