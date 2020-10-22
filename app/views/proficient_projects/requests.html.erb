@@ -12,7 +12,7 @@
       <% @order_item_waiting_for_approval.each do |oi| %>
         <tr>
           <td><%= link_to oi.order.user.name, user_path(oi.order.user.username) %></td>
-          <td><%= oi.proficient_project.title %></td>
+          <td><%= link_to oi.proficient_project.title, oi.proficient_project %></td>
           <td class="action-cell"><%= link_to (fa_icon('check')), approve_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'check-button' %></td>
           <td class="action-cell"><%= link_to (fa_icon('times')), revoke_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'x-button' %></td>
         </tr>

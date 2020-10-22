@@ -106,14 +106,31 @@ class ProficientProjectsController < DevelopmentProgramsController
       space = Space.find_by_name('Makerepo')
       admin = User.find_by_email("avend029@uottawa.ca") || User.where(role: 'admin').last
       course_name = CourseName.find_by_name('no course')
-      training_session = TrainingSession.create(training_id: order_item.proficient_project.training_id,
+      training_session = TrainingSession.find_or_create_by(training_id: order_item.proficient_project.training_id,
                                                 level: order_item.proficient_project.level,
                                                 user: admin,
                                                 space: space,
                                                 course_name: course_name)
       if training_session.present?
-        Certification.create(training_session_id: training_session.id, user_id: order_item.order.user_id)
-        Badge.create_badge(order_item.id)
+        Certification.find_or_create_by(training_session_id: training_session.id, user_id: order_item.order.user_id)
+        badge_template = order_item.proficient_project.badge_template
+        if badge_template.present?
+          user = order_item.order.user
+          response = Badge.acclaim_api_create_badge(user, badge_template.acclaim_template_id)
+          if response.status == 201
+            badge_data = JSON.parse(response.body)['data']
+            Badge.create(user_id: user.id,
+                         issued_to: user.name,
+                         acclaim_badge_id: badge_data['id'],
+                         badge_template_id: badge_template.id)
+            order_item.update(status: 'Awarded')
+            flash[:notice] = 'A badge has been awarded to the user!'
+          else
+            flash[:alert] = 'An error has occurred when creating the badge, this message might help : ' + JSON.parse(response.body)['data']['message']
+          end
+        else
+          order_item.update(status: 'Awarded')
+        end
         flash[:notice] = 'The project has been approved!'
       else
         flash[:error] = 'An error has occurred, please try again later.'
