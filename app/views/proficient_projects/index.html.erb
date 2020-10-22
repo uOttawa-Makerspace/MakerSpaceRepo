@@ -41,7 +41,7 @@
                             </div>
                           </form>
                           <% if pp.photos.present? %>
-                            <% if @user_order_items.where(proficient_project: pp, status:  ["Awarded", "In progress"]).present? %>
+                            <% if @user_order_items.where(proficient_project: pp, status:  ['Awarded', 'In progress', 'Waiting for approval']).present? %>
                               <a href="<%= proficient_project_path(pp.id) %>">
                                 <div class="card card-image projects-image" style="background-image: url(<%= url_for(pp.photos.first.image) %>);">
                                 </div>

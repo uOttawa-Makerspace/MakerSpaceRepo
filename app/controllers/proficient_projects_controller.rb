@@ -113,7 +113,7 @@ class ProficientProjectsController < DevelopmentProgramsController
                                                 course_name: course_name)
       if training_session.present?
         Certification.create(training_session_id: training_session.id, user_id: order_item.order.user_id)
-        order_item.update(status: 'Awarded')
+        Badge.create_badge(order_item.id)
         flash[:notice] = 'The project has been approved!'
       else
         flash[:error] = 'An error has occurred, please try again later.'

@@ -55,4 +55,22 @@ class Badge < ApplicationRecord
                         issued_at: Time.zone.now,
                         suppress_revoke_notification_email: Rails.env.test? ? true : false })
   end
+
+  def self.create_badge(order_item_id)
+    order_item = OrderItem.find(order_item_id)
+    badge_template = order_item.proficient_project.badge_template
+    user = order_item.order.user
+    response = Badge.acclaim_api_create_badge(user, badge_template.acclaim_template_id)
+    if response.status == 201
+      badge_data = JSON.parse(response.body)['data']
+      Badge.create(user_id: user.id,
+                   issued_to: user.name,
+                   acclaim_badge_id: badge_data['id'],
+                   badge_template_id: badge_template.id)
+      order_item.update(status: 'Awarded')
+      flash[:notice] = 'The badge has been sent to the user !'
+    else
+      flash[:alert] = 'An error has occurred when creating the badge, this message might help : ' + JSON.parse(response.body)['data']['message']
+    end
+  end
 end
