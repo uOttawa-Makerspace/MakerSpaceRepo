@@ -1,42 +1,31 @@
 <section>
   <h2 class="text-center py-3"><b>Proficient Projects Requests</b></h2>
 
-  <table class="text-center table-striped staff-newly-signed-up-users-table mb-5">
-    <th>
-      User's Name
-    </th>
-    <th>
-      Project's Title
-    </th>
-    <th>
-      Approve
-    </th>
-    <th>
-      Revoke
-    </th>
-    <% @order_item_waiting_for_approval.each do |oi| %>
-      <tr>
-        <td>
-          <%= link_to oi.order.user.name, user_path(oi.order.user.username) %>
-        </td>
-        <td>
-          <%= oi.proficient_project.title %>
-        </td>
+  <% if @order_item_waiting_for_approval.present? %>
+    <table class="text-center table-striped staff-newly-signed-up-users-table mb-5">
 
-        <td class="action-cell">
-          <%= link_to (fa_icon('check')), approve_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'check-button' %>
-        </td>
+      <th>User</th>
+      <th>Title</th>
+      <th>Approve</th>
+      <th>Revoke</th>
 
-        <td class="action-cell">
-          <%= link_to (fa_icon('times')), revoke_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'x-button' %>
-        </td>
+      <% @order_item_waiting_for_approval.each do |oi| %>
+        <tr>
+          <td><%= link_to oi.order.user.name, user_path(oi.order.user.username) %></td>
+          <td><%= oi.proficient_project.title %></td>
+          <td class="action-cell"><%= link_to (fa_icon('check')), approve_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'check-button' %></td>
+          <td class="action-cell"><%= link_to (fa_icon('times')), revoke_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'x-button' %></td>
+        </tr>
+      <% end %>
+    </table>
 
-      </tr>
-    <% end %>
-  </table>
+  <% else %>
 
-  <br>
+    <p class="text-center">No Requests so far.</p>
 
+  <% end %>
+
+  <br />
 </section>
 
 
