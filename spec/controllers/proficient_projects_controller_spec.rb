@@ -318,7 +318,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
       it 'should NOT set the oi as Revoked' do
         get :revoke_project, format: 'js'
         expect(response).to redirect_to requests_proficient_projects_path
-        expect(OrderItem.last.status).to eq('Waiting for approval')
+        expect(OrderItem.order(updated_at: :desc).first.status).to eq('Waiting for approval')
         expect(flash[:error]).to eq('An error has occured, please try again later.')
       end
 
