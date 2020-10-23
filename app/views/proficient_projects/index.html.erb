@@ -13,14 +13,21 @@
               <div class="card">
 
                 <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
-                  <span class="float-right"><%= training_status(training.id).html_safe %></span>
-                  <button class="btn btn-link" type="button"><%= training.name %></button>
+                  <div class="row">
+                    <div class="col-4 float-right"></div>
+                    <div class="col-4">
+                      <button class="btn btn-link" type="button"><%= training.name %></button>
+                    </div>
+                    <div class="col-4">
+                      <%= training_status(training.id).html_safe %>
+                    </div>
+                  </div>
                 </div>
 
                 <div id="training-<%= training.id %>" class="collapse">
                   <div class="card-body">
 
-                    <p>Modules finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
+                    <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
 
                     <div class="row">
 

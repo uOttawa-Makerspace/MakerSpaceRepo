@@ -13,15 +13,23 @@
               <div class="card">
 
                 <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
-                  <span class="float-right"><%= training_status(training.id).html_safe %></span>
-                  <span class="mx-auto">
-                    <% levels_ordered(training).each do |level| %>
-                      <span class="<%= return_text_color(level) %> p-3">
-                        <%= @learning_modules_completed.call(training, level).count %>/<%= @total_learning_modules_per_level.call(training, level).count %>
+                  <div class="row">
+                    <div class="col-4">
+                      <button class="btn btn-link float-left" type="button"><%= training.name %></button>
+                    </div>
+                    <div class="col-4">
+                      <span class="mx-auto">
+                        <% levels_ordered(training).each do |level| %>
+                          <span class="<%= return_text_color(level) %> p-3">
+                            <%= @learning_modules_completed.call(training, level).count %>/<%= @total_learning_modules_per_level.call(training, level).count %>
+                          </span>
+                        <% end %>
                       </span>
-                    <% end %>
-                  </span>
-                  <button class="btn btn-link float-left" type="button"><%= training.name %></button>
+                    </div>
+                    <div class="col-4">
+                      <%= training_status(training.id).html_safe %>
+                    </div>
+                  </div>
                 </div>
 
                 <div id="training-<%= training.id %>" class="collapse">
@@ -45,8 +53,6 @@
                                 </span>
                               </span>
                             </div>
-
-                            <% lm_completed = @learning_modules_completed.call(training, level)  %>
 
                             <div id="training-<%= training.id %>-<%= level %>" class="collapse">
                               <div class="row m-2">
