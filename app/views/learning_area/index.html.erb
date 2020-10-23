@@ -13,7 +13,7 @@
               <div class="card">
 
                 <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
-                  <span class="float-right"><%= training_status(training).html_safe %></span>
+                  <span class="float-right"><%= training_status(training.id).html_safe %></span>
                   <span class="mx-auto">
                     <% levels_ordered(training).each do |level| %>
                       <span class="<%= return_text_color(level) %> p-3">
