@@ -9,7 +9,7 @@ class LearningAreaController < DevelopmentProgramsController
     @skills = Skill.all
     @learning_module_track = Proc.new { |learning_module| learning_module.learning_module_tracks.where(user: current_user) }
     @all_learning_modules = Proc.new{ |training| training.learning_modules }
-    @learning_modules_completed = Proc.new { |training, level| training.learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: {user: current_user}).where(learning_modules: {level: level}) }
+    @learning_modules_completed = Proc.new { |training, level| training.learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: { user: current_user, status: 'Completed'}).where(learning_modules: {level: level}) }
     @total_learning_modules_per_level = Proc.new { |training, level| training.learning_modules.where(level: level) }
   end
 

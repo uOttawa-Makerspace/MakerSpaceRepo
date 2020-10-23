@@ -12,15 +12,8 @@ class DevelopmentProgramsController < ApplicationController
     @certifications = current_user.certifications
     @remaining_trainings = current_user.remaining_trainings
     @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
-    # @proficient_projects_missing = Proc.new{ |training| training.proficient_projects.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
-    # @advanced_pp_count = Proc.new{ |training| training.proficient_projects.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)).where(level: "Advanced").count }
     @learning_modules_completed = Proc.new{ |training| training.learning_modules.where(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id))}
-    # @learning_modules_missing = Proc.new{ |training| training.learning_modules.where.not(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)) }
-    # @advanced_lm_count = Proc.new{ |training| training.learning_modules.where.not(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)).where(level: "Advanced").count }
-    # @user_order_items = current_user.order_items.completed_order
-    # @order_item = current_order.order_items.new
     @recomended_hours = Proc.new { |training, levels| training.learning_modules.where(level: levels).count + training.proficient_projects.where(level: levels).count }
-    # @badge_template_skills = Proc.new { |badge_template| badge_template.acclaim_api_get_badge_template['data']['skills'].join('') }
   end
 
   def join_development_program
