@@ -111,6 +111,7 @@ class ProficientProjectsController < DevelopmentProgramsController
                                                 user: admin,
                                                 space: space,
                                                 course_name: course_name)
+      training_session.users << order_item.order.user
       if training_session.present?
         Certification.find_or_create_by(training_session_id: training_session.id, user_id: order_item.order.user_id)
         badge_template = order_item.proficient_project.badge_template
