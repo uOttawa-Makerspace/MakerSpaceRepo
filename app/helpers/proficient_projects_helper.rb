@@ -35,7 +35,8 @@ module ProficientProjectsHelper
     else
       training = Training.find(training_id)
       learning_modules_completed = training.learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: {user: current_user, status: 'Completed'}).present?
-      if learning_modules_completed
+      proficient_projects_completed = training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)).present?
+      if learning_modules_completed || proficient_projects_completed
         div.call('black', '🐥 Newbie')
       else
         div.call('gray', '🐣 Not Started')
