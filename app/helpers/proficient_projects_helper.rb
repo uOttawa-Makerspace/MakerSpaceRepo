@@ -24,16 +24,22 @@ module ProficientProjectsHelper
   end
 
   def training_status(training_id)
-    pp_missing = ProficientProject.where.not(id: current_user.order_items.awarded.pluck(:proficient_project_id)).where(training_id: training_id)
-    levels_missing = pp_missing.pluck(:level)
-    if levels_missing.include?("Beginner")
-      "<span style='color: green'>Beg</span>"
-    elsif levels_missing.include?("Intermediate")
-      "<span style='color: #969600'>Int</span>"
-    elsif levels_missing.include?("Advanced")
-      "<span style='color: red'>Adv</span>"
+    level = Certification.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user: current_user ).pluck(:level)
+    div = Proc.new{ |color, level| "<span class='float-right' style='color: #{color}'>#{level}</span>" }
+    if level.include?("Advanced")
+      div.call('red', '🦅 Advanced')
+    elsif level.include?("Intermediate")
+      div.call('#969600', '🦩 Intermediate')
+    elsif level.include?("Beginner")
+      div.call('green', '🦆 Beginner')
     else
-      "<span style='color: blue'>Master</span>"
+      training = Training.find(training_id)
+      learning_modules_completed = training.learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: {user: current_user, status: 'Completed'}).present?
+      if learning_modules_completed
+        div.call('black', '🐥 Newbie')
+      else
+        div.call('gray', '🐣 Not Started')
+      end
     end
   end
 

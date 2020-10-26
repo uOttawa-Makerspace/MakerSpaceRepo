@@ -60,6 +60,7 @@ Rails.application.routes.draw do
       get :unjoin_project_proposal
       get :projects_assigned
       get :projects_completed
+      get :user_projects
     end
   end
 

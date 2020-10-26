@@ -236,21 +236,10 @@ RSpec.describe ProficientProjectsController, type: :controller do
         proficient_project = ProficientProject.last
         proficient_project.update(badge_template_id: '')
         get :complete_project, format: 'js', params: {id: proficient_project.id}
-        expect(response).to redirect_to skills_development_programs_path
+        expect(response).to redirect_to proficient_project
         expect(proficient_project.order_items.last.status).to eq('Waiting for approval')
         expect(ActionMailer::Base.deliveries.count).to eq(2)
         expect(flash[:notice]).to eq('Congratulations on submitting this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.')
-      end
-
-      it 'should NOT set the pp as Waiting for approval' do
-        user = create(:user, :volunteer_with_dev_program)
-        session[:user_id] = user.id
-        session[:expires_at] = Time.zone.now + 10000
-        create(:order, :with_item, user_id: user.id)
-        get :complete_project, format: 'js', params: {id: ProficientProject.last.id}
-        expect(response).to redirect_to skills_development_programs_path
-        expect(OrderItem.last.status).to eq('In progress')
-        expect(flash[:alert]).to eq('This project cannot be completed without the staff approving the badge.')
       end
 
     end

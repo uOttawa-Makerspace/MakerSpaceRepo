@@ -90,32 +90,55 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def complete_project
-    if @proficient_project.badge_template.present?
-      flash[:alert] = 'This project cannot be completed without the staff approving the badge.'
+    order_items = current_user.order_items.where(proficient_project_id: @proficient_project.id)
+    if order_items.present?
+      order_items.first.update(status: 'Waiting for approval')
+      MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
+      MsrMailer.send_user_pp_evaluation(@proficient_project, current_user).deliver_now
+      flash[:notice] = 'Congratulations on completing this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.'
     else
-      if current_user.order_items.where(proficient_project_id: @proficient_project.id).present?
-        current_user.order_items.where(proficient_project_id: @proficient_project.id).first.update(status: 'Waiting for approval')
-        MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
-        MsrMailer.send_user_pp_evaluation(@proficient_project, current_user).deliver_now
-        flash[:notice] = 'Congratulations on submitting this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.'
-      else
-        flash[:alert] = 'This project hasn\'t been found.'
-      end
+      flash[:alert] = "This project hasn't been found."
     end
-    redirect_to skills_development_programs_path
+    redirect_to @proficient_project
   end
 
   def approve_project
-    if params[:oi_id].present? and OrderItem.where(id: params[:oi_id]).present?
-      order_item = OrderItem.find(params[:oi_id])
-      training_session = TrainingSession.create(training_id: order_item.proficient_project.training_id, level: order_item.proficient_project.level, user_id: User.find_by_email("avend029@uottawa.ca").id)
+    order_item = OrderItem.find_by(id: params[:oi_id])
+    if order_item
+      space = Space.find_by_name('Makerepo')
+      admin = User.find_by_email("avend029@uottawa.ca") || User.where(role: 'admin').last
+      course_name = CourseName.find_by_name('no course')
+      training_session = TrainingSession.find_or_create_by(training_id: order_item.proficient_project.training_id,
+                                                level: order_item.proficient_project.level,
+                                                user: admin,
+                                                space: space,
+                                                course_name: course_name)
+      training_session.users << order_item.order.user
       if training_session.present?
-        Certification.create(training_session_id: training_session.id, user_id: order_item.order.user_id)
-        order_item.update(status: 'Awarded')
-        MsrMailer.send_results_pp_pass(order_item.proficient_project, order_item.order.user).deliver_now
+        Certification.find_or_create_by(training_session_id: training_session.id, user_id: order_item.order.user_id)
+        badge_template = order_item.proficient_project.badge_template
+        if badge_template.present?
+          user = order_item.order.user
+          response = Badge.acclaim_api_create_badge(user, badge_template.acclaim_template_id)
+          if response.status == 201
+            badge_data = JSON.parse(response.body)['data']
+            Badge.create(user_id: user.id,
+                         issued_to: user.name,
+                         acclaim_badge_id: badge_data['id'],
+                         badge_template_id: badge_template.id)
+            order_item.update(status: 'Awarded')
+            MsrMailer.send_results_pp_pass(order_item.proficient_project, order_item.order.user).deliver_now
+            flash[:notice] = 'A badge has been awarded to the user!'
+          else
+            flash[:alert] = 'An error has occurred when creating the badge, this message might help : ' + JSON.parse(response.body)['data']['message']
+          end
+        else
+          order_item.update(status: 'Awarded')
+          MsrMailer.send_results_pp_pass(order_item.proficient_project, order_item.order.user).deliver_now
+        end
         flash[:notice] = 'The project has been approved!'
       else
-        flash[:error] = 'An error has occured, please try again later.'
+        flash[:error] = 'An error has occurred, please try again later.'
       end
     else
       flash[:error] = 'An error has occured, please try again later.'
@@ -124,9 +147,9 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def revoke_project
-    if params[:oi_id].present? and OrderItem.where(id: params[:oi_id]).present?
-      oi = OrderItem.find(params[:oi_id])
-      oi.update(status: 'Revoked')
+    order_item = OrderItem.find_by(id: params[:oi_id])
+    if order_item
+      order_item.update(status: 'Revoked')
       MsrMailer.send_results_pp_fail(oi.proficient_project, oi.order.user).deliver_now
       flash[:alert_yellow] = 'The project has been revoked.'
     else
@@ -137,116 +160,116 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   private
 
-  def grant_access_to_project
-    if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress', 'Waiting for approval']).blank?
-      unless current_user.admin? || current_user.staff?
+    def grant_access_to_project
+      if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress', 'Waiting for approval']).blank?
+        unless current_user.admin? || current_user.staff?
+          redirect_to development_programs_path
+          flash[:alert] = 'You cannot access this area.'
+        end
+      end
+    end
+
+    def only_admin_access
+      unless current_user.admin?
         redirect_to development_programs_path
-        flash[:alert] = 'You cannot access this area.'
+        flash[:alert] = 'Only admin members can access this area.'
       end
     end
-  end
 
-  def only_admin_access
-    unless current_user.admin?
-      redirect_to development_programs_path
-      flash[:alert] = 'Only admin members can access this area.'
+    def proficient_project_params
+      params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id, :has_project_kit)
     end
-  end
 
-  def proficient_project_params
-    params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id, :has_project_kit)
-  end
-
-  def create_photos
-    if params['images'].present?
-      params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
-        Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
-      end
-    end
-  end
-
-  def create_files
-    if params['files'].present?
-      params['files'].each do |f|
-        @repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
-        unless @repo.save
-          flash[:alert] = 'Make sure you only upload PDFs for the project files'
-        end
-      end
-    end
-  end
-
-  def set_proficient_project
-    @proficient_project = ProficientProject.find(params[:id])
-  end
-
-  def set_training_categories
-    @training_categories = Training.all.order(:name).pluck(:name, :id)
-  end
-
-  def set_files_photos_videos
-    @photos = @proficient_project.photos || []
-    @files = @proficient_project.repo_files.order(created_at: :asc)
-    @videos = @proficient_project.videos.processed.order(created_at: :asc)
-  end
-
-  def update_photos
-    if params['deleteimages'].present?
-      @proficient_project.photos.each do |img|
-        if params['deleteimages'].include?(img.image.filename.to_s) # checks if the file should be deleted
-          img.image.purge
-          img.destroy
+    def create_photos
+      if params['images'].present?
+        params['images'].each do |img|
+          dimension = FastImage.size(img.tempfile)
+          Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
         end
       end
     end
 
-    if params['images'].present?
-      params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
-        Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
-      end
-    end
-  end
-
-  def update_files
-    if params['deletefiles'].present?
-      @proficient_project.repo_files.each do |f|
-        if params['deletefiles'].include?(f.file.filename.to_s) # checks if the file should be deleted
-          f.file.purge
-          f.destroy
+    def create_files
+      if params['files'].present?
+        params['files'].each do |f|
+          @repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
+          unless @repo.save
+            flash[:alert] = 'Make sure you only upload PDFs for the project files'
+          end
         end
       end
     end
 
-    if params['files'].present?
+    def set_proficient_project
+      @proficient_project = ProficientProject.find(params[:id])
+    end
 
-      params['files'].each do |f|
-        repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
-        unless repo.save
-          flash[:alert] = 'Make sure you only upload PDFs for the project files, the PDFs were uploaded'
+    def set_training_categories
+      @training_categories = Training.all.order(:name).pluck(:name, :id)
+    end
+
+    def set_files_photos_videos
+      @photos = @proficient_project.photos || []
+      @files = @proficient_project.repo_files.order(created_at: :asc)
+      @videos = @proficient_project.videos.processed.order(created_at: :asc)
+    end
+
+    def update_photos
+      if params['deleteimages'].present?
+        @proficient_project.photos.each do |img|
+          if params['deleteimages'].include?(img.image.filename.to_s) # checks if the file should be deleted
+            img.image.purge
+            img.destroy
+          end
         end
       end
 
-    end
-  end
-
-  def update_videos
-    if params['deletevideos'].present?
-      @proficient_project.videos.each do |f|
-        if params['deletevideos'].include?(f.video_file_name)
-          f.video.purge
-          f.destroy
+      if params['images'].present?
+        params['images'].each do |img|
+          dimension = FastImage.size(img.tempfile)
+          Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
         end
       end
     end
-  end
 
-  def get_filter_params
-    params.permit(:search, :level, :category, :my_projects, :price)
-  end
+    def update_files
+      if params['deletefiles'].present?
+        @proficient_project.repo_files.each do |f|
+          if params['deletefiles'].include?(f.file.filename.to_s) # checks if the file should be deleted
+            f.file.purge
+            f.destroy
+          end
+        end
+      end
 
-  def set_badge_templates
-    @badge_templates = BadgeTemplate.all.order(badge_name: :asc)
-  end
+      if params['files'].present?
+
+        params['files'].each do |f|
+          repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
+          unless repo.save
+            flash[:alert] = 'Make sure you only upload PDFs for the project files, the PDFs were uploaded'
+          end
+        end
+
+      end
+    end
+
+    def update_videos
+      if params['deletevideos'].present?
+        @proficient_project.videos.each do |f|
+          if params['deletevideos'].include?(f.video_file_name)
+            f.video.purge
+            f.destroy
+          end
+        end
+      end
+    end
+
+    def get_filter_params
+      params.permit(:search, :level, :category, :my_projects, :price)
+    end
+
+    def set_badge_templates
+      @badge_templates = BadgeTemplate.all.order(badge_name: :asc)
+    end
 end

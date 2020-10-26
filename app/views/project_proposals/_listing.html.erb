@@ -1,72 +1,71 @@
-<% if @project_proposals.where(:approved => approval).present? %>
-  <br>
-  <div class="titlepp"><%= tittle %></div>
-    <table class="spacing_table table-striped text-center">
-      <thead>
-        <tr>
-          <th>#</th>
-          <% if @user.try(:admin?) %>
-            <th>User</th>
-            <th>Admin</th>
-            <th>Client Type</th>
-            <th>Client</th>
-            <th>Client Interest</th>
-<!--            <th>Client Background</th>-->
-<!--            <th>Supervisor Background</th>-->
-            <th>Approved</th>
-          <% end %>
-          <th>Title</th>
-          <th>Categories</th>
-          <th>Proposed on</th>
-          <th>Action</th>
-        </tr>
-      </thead>
+<br>
+<div class="titlepp"><%= title %></div>
 
-      <tbody>
-        <% @project_proposals.where(:approved => approval).each.with_index do |project_proposal, n| %>
-          <tr>
-            <td><%= n+1 %></td>
-            <% if @user.try(:admin?) %>
-              <% username = User.find(project_proposal.user_id).username if project_proposal.user_id.present? %>
-                <% case username
-                       when nil %><td><%= project_proposal.username %></td>
-                    <% else %><td class="username"><%= link_to username, user_path(username) %></td>
-                <% end %>
-              <% admin_username = User.find(project_proposal.admin_id).username if project_proposal.admin_id.present? %>
-              <td class="admin_username"><%= link_to admin_username, user_path(admin_username) if admin_username.present? %></td>
-              <td><%= project_proposal.client_type %></td>
-              <td><%= project_proposal.client %></td>
-              <td><%= project_proposal.client_interest %></td>
-<!--              <td><%#= project_proposal.client_background %></td>-->
-<!--              <td><%#= project_proposal.supervisor_background %></td>-->
-              <td>
-                <% case project_proposal.approved
-                     when 0 %><%= "No" %>
-                  <% when 1 %><%= "Yes" %>
-                  <% when nil %><%= "Not validated" %>
-                <% end %>
-              </td>
-            <% end %>
-            <td><%= project_proposal.title %></td>
-            <td><% project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
-            <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>
-            <% if @user.admin? %>
-                <td>
-                <%= link_to 'Show', project_proposal, class: "btn btn-success btn-block btn-sm" %>
-                <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "btn btn-primary btn-block btn-sm" %>
-                <%= link_to 'Delete', project_proposal, method: :delete,
-                                                    class: "btn btn-danger btn-block btn-sm", data: { confirm: 'Are you sure?' } %>
-                </td>
-            <% else %>
-                <td><%= link_to 'Show', project_proposal, class: "btn btn-success btn-block btn-sm" %></td>
-            <% end %>
-          </tr>
+<% if project_proposals.present? %>
+
+  <div><%= will_paginate project_proposals, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, param_name: (local_variables.include?(:param_name) ? param_name : "page") %></div>
+
+  <% action_flag = project_proposals.first.approved %>
+
+  <table class="spacing_table table-striped text-center">
+    <thead>
+      <tr>
+        <th>ID #</th>
+        <% if @user.admin? %>
+          <th>User</th>
+          <th>Admin</th>
+          <th>Client Type</th>
+          <th>Client</th>
+          <th>Client Interest</th>
+          <th>Approved</th>
         <% end %>
-      </tbody>
-    </table>
+        <th>Title</th>
+        <th>Categories</th>
+        <th>Proposed on</th>
+        <% if action_flag || @user.admin? %>
+          <th>Action</th>
+        <% end %>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% project_proposals.each do |project_proposal| %>
+        <tr>
+          <td><%= project_proposal.id %></td>
+          <% if @user.admin? %>
+            <% username = project_proposal.user&.username %>
+            <% if username %>
+              <td class="username"><%= link_to username, user_path(username) %></td>
+            <% else %>
+              <td><%= project_proposal.username %></td>
+            <% end %>
+            <% admin_username = project_proposal.admin&.username %>
+            <td class="admin_username"><%= link_to admin_username, user_path(admin_username) if admin_username.present? %></td>
+            <td><%= project_proposal.client_type %></td>
+            <td><%= project_proposal.client %></td>
+            <td><%= project_proposal.client_interest %></td>
+            <td><%= project_proposal.approval_status %></td>
+          <% end %>
+          <td><%= project_proposal.title %></td>
+          <td><% project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
+          <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>
+          <% if @user.admin? %>
+              <td>
+              <%= link_to 'Show', project_proposal, class: "btn btn-success btn-block btn-sm" %>
+              <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "btn btn-primary btn-block btn-sm" %>
+              <%= link_to 'Delete', project_proposal, method: :delete,
+                                                  class: "btn btn-danger btn-block btn-sm", data: { confirm: 'Are you sure?' } %>
+              </td>
+          <% elsif action_flag %>
+              <td><%= link_to 'Show', project_proposal, class: "btn btn-success btn-block btn-sm" %></td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
   <br>
 <% else %>
     <br>
-    <div class="titlepp">No Projects Here</div>
+    <h5 class="text-center">No Projects Here</h5>
 <% end %>
 

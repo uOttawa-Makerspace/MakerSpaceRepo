@@ -157,9 +157,10 @@ class BadgesController < DevelopmentProgramsController
   end
 
   def set_orders
+    statuses = ['In progress', 'Waiting for approval']
     order_items = OrderItem.completed_order.order(updated_at: :desc).includes(order: :user).joins(proficient_project: :badge_template)
-    @order_items = order_items.where(status: 'In progress').paginate(page: params[:page], per_page: 20)
-    @order_items_done = order_items.where.not(status: 'In progress').paginate(page: params[:page], per_page: 20)
+    @order_items = order_items.where(status: statuses).paginate(page: params[:page], per_page: 20)
+    @order_items_done = order_items.where.not(status: statuses).paginate(page: params[:page], per_page: 20)
   end
 
   def badge_params
