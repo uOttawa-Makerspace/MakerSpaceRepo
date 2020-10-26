@@ -127,21 +127,21 @@ class ProficientProjectsController < DevelopmentProgramsController
                          acclaim_badge_id: badge_data['id'],
                          badge_template_id: badge_template.id)
             order_item.update(status: 'Awarded')
-            MsrMailer.send_results_pp_pass(order_item.proficient_project, order_item.order.user).deliver_now
+            MsrMailer.send_results_pp(order_item.proficient_project, order_item.order.user, 'Passed').deliver_now
             flash[:notice] = 'A badge has been awarded to the user!'
           else
             flash[:alert] = 'An error has occurred when creating the badge, this message might help : ' + JSON.parse(response.body)['data']['message']
           end
         else
           order_item.update(status: 'Awarded')
-          MsrMailer.send_results_pp_pass(order_item.proficient_project, order_item.order.user).deliver_now
+          MsrMailer.send_results_pp(order_item.proficient_project, order_item.order.user, 'Passed').deliver_now
         end
         flash[:notice] = 'The project has been approved!'
       else
         flash[:error] = 'An error has occurred, please try again later.'
       end
     else
-      flash[:error] = 'An error has occured, please try again later.'
+      flash[:error] = 'An error has occurred, please try again later.'
     end
     redirect_to requests_proficient_projects_path
   end
@@ -150,10 +150,10 @@ class ProficientProjectsController < DevelopmentProgramsController
     order_item = OrderItem.find_by(id: params[:oi_id])
     if order_item
       order_item.update(status: 'Revoked')
-      MsrMailer.send_results_pp_fail(order_item.proficient_project, order_item.order.user).deliver_now
+      MsrMailer.send_results_pp(order_item.proficient_project, order_item.order.user, 'Failed').deliver_now
       flash[:alert_yellow] = 'The project has been revoked.'
     else
-      flash[:error] = 'An error has occured, please try again later.'
+      flash[:error] = 'An error has occurred, please try again later.'
     end
     redirect_to requests_proficient_projects_path
   end

@@ -274,7 +274,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :approve_project, format: 'js'
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq('Waiting for approval')
-        expect(flash[:error]).to eq('An error has occured, please try again later.')
+        expect(flash[:error]).to eq('An error has occurred, please try again later.')
       end
 
     end
@@ -308,7 +308,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :revoke_project, format: 'js'
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.order(updated_at: :desc).first.status).to eq('Waiting for approval')
-        expect(flash[:error]).to eq('An error has occured, please try again later.')
+        expect(flash[:error]).to eq('An error has occurred, please try again later.')
       end
 
     end
