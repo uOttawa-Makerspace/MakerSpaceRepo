@@ -238,7 +238,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :complete_project, format: 'js', params: {id: proficient_project.id}
         expect(response).to redirect_to proficient_project
         expect(proficient_project.order_items.last.status).to eq('Waiting for approval')
-        expect(flash[:notice]).to eq('Congratulations on completing this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.')
+        expect(ActionMailer::Base.deliveries.count).to eq(2)
+        expect(flash[:notice]).to eq('Congratulations on submitting this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.')
       end
 
     end
@@ -250,10 +251,10 @@ RSpec.describe ProficientProjectsController, type: :controller do
     context 'approve_project' do
 
       before(:each) do
-        user = create(:user, :volunteer_with_dev_program)
-        session[:user_id] = user.id
+        @user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10000
-        create(:order, :with_item, user_id: user.id)
+        create(:order, :with_item, user_id: @user.id)
         create(:user, email: "avend029@uottawa.ca")
         @proficient_project = ProficientProject.last
         @proficient_project.update(badge_template_id: '')
@@ -264,6 +265,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :approve_project, format: 'js', params: {oi_id: OrderItem.last.id}
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq('Awarded')
+        expect(ActionMailer::Base.deliveries.count).to eq(3)
+        expect(ActionMailer::Base.deliveries.second.to.first).to eq(@user.email)
         expect(flash[:notice]).to eq('The project has been approved!')
       end
 
@@ -271,7 +274,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :approve_project, format: 'js'
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq('Waiting for approval')
-        expect(flash[:error]).to eq('An error has occured, please try again later.')
+        expect(flash[:error]).to eq('An error has occurred, please try again later.')
       end
 
     end
@@ -283,10 +286,10 @@ RSpec.describe ProficientProjectsController, type: :controller do
     context 'revoke_project' do
 
       before(:each) do
-        user = create(:user, :volunteer_with_dev_program)
-        session[:user_id] = user.id
+        @user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10000
-        create(:order, :with_item, user_id: user.id)
+        create(:order, :with_item, user_id: @user.id)
         @proficient_project = ProficientProject.last
         @proficient_project.update(badge_template_id: '')
         get :complete_project, format: 'js', params: {id: @proficient_project.id}
@@ -296,14 +299,16 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :revoke_project, format: 'js', params: {oi_id: OrderItem.last.id}
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq('Revoked')
+        expect(ActionMailer::Base.deliveries.count).to eq(3)
+        expect(ActionMailer::Base.deliveries.second.to.first).to eq(@user.email)
         expect(flash[:alert_yellow]).to eq('The project has been revoked.')
       end
 
       it 'should NOT set the oi as Revoked' do
         get :revoke_project, format: 'js'
         expect(response).to redirect_to requests_proficient_projects_path
-        expect(OrderItem.last.status).to eq('Waiting for approval')
-        expect(flash[:error]).to eq('An error has occured, please try again later.')
+        expect(OrderItem.order(updated_at: :desc).first.status).to eq('Waiting for approval')
+        expect(flash[:error]).to eq('An error has occurred, please try again later.')
       end
 
     end

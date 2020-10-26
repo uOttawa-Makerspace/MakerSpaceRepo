@@ -39,13 +39,13 @@ class MsrMailer < ApplicationMailer
   def send_cc_money_email(email, cc, hash)
     @cc = cc
     @hash = hash
-    mail(to: email, subject: "Your CC Money order")
+    mail(to: email, subject: 'Your CC Money order')
   end
 
   def send_kit_email(user, pp)
     @user = user
     @pp = pp
-    mail(to: @user.email, subject: "Your proficient project kit order")
+    mail(to: @user.email, subject: 'Your proficient project kit order')
   end
 
   def send_print_user_approval_to_makerspace(id)
@@ -88,6 +88,29 @@ class MsrMailer < ApplicationMailer
     @name = name
     @print_order = print_order
     mail(to: 'uomakerspaceprintinvoices@gmail.com', subject: 'Invoice for Order #' + @print_order.id.to_s + ' ')
+  end
+
+  def send_admin_pp_evaluation(pp)
+    @pp = pp
+    email = if @pp.training.skill.name.downcase == 'technical'
+              'makerspace@uottawa.ca'
+            else
+              'mtc@uottawa.ca'
+            end
+    mail(to: email, subject: 'A new proficient project needs to be evaluated')
+  end
+
+  def send_user_pp_evaluation(pp, user)
+    @pp = pp
+    @user = user
+    mail(to: @user.email, subject: 'Your Proficient Project Request')
+  end
+
+  def send_results_pp(pp, user, result)
+    @result = result
+    @pp = pp
+    @user = user
+    mail(to: @user.email, subject: 'Your Proficient Project Results')
   end
 
   def send_ommic

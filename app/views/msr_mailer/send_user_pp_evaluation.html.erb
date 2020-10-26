@@ -1,0 +1,18 @@
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+    Hi <%= @user.name %>,
+</p>
+
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+    Your proficient project (<%= @pp.title %>) has successfully been submitted to admins.
+    <br>
+    You can now <b>drop off</b> your project <b>following this description</b> :
+    <br>
+    <%= @pp.description.html_safe %>
+    <br>
+    They will grade your project in around 5 business days. Once they have made a decision you will be contacted on the same email with your grade.
+</p>
+
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+Best regards,<br>
+The CEED Team
+</p>
