@@ -93,7 +93,11 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = 'Something went wrong'
       end
     end
-    redirect_to staff_dashboard_index_path
+    if params[:training].present? and params[:training] == 'true'
+      redirect_to new_staff_training_session_path
+    else
+      redirect_to staff_dashboard_index_path
+    end
   end
 
   def link_rfid
