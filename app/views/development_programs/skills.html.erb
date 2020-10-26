@@ -15,8 +15,15 @@
               <div class="accordion">
                 <div class="card">
                   <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
-                    <span class="float-right"><%= training_status(training.id).html_safe %></span>
-                    <button class="btn btn-link" type="button"><%= training.name %></button>
+                    <div class="row">
+                      <div class="col-4 float-right"></div>
+                      <div class="col-4">
+                        <button class="btn btn-link" type="button"><%= training.name %></button>
+                      </div>
+                      <div class="col-4">
+                        <%= training_status(training.id).html_safe %>
+                      </div>
+                    </div>
                   </div>
 
                   <div id="training-<%= training.id %>" class="collapse">
