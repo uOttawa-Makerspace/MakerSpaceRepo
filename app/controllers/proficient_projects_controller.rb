@@ -95,7 +95,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       order_items.first.update(status: 'Waiting for approval')
       MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
       MsrMailer.send_user_pp_evaluation(@proficient_project, current_user).deliver_now
-      flash[:notice] = 'Congratulations on completing this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.'
+      flash[:notice] = 'Congratulations on submitting this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.'
     else
       flash[:alert] = "This project hasn't been found."
     end
@@ -150,7 +150,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     order_item = OrderItem.find_by(id: params[:oi_id])
     if order_item
       order_item.update(status: 'Revoked')
-      MsrMailer.send_results_pp_fail(oi.proficient_project, oi.order.user).deliver_now
+      MsrMailer.send_results_pp_fail(order_item.proficient_project, order_item.order.user).deliver_now
       flash[:alert_yellow] = 'The project has been revoked.'
     else
       flash[:error] = 'An error has occured, please try again later.'
