@@ -64,16 +64,15 @@ class ProficientProject < ApplicationRecord
   end
 
   def self.training_status(training_id, user_id)
-    pp_missing = ProficientProject.where.not(id: User.find(user_id).order_items.awarded.pluck(:proficient_project_id)).where(training_id: training_id)
-    levels_missing = pp_missing.pluck(:level)
-    if levels_missing.include?("Beginner")
-      "Beginner"
-    elsif levels_missing.include?("Intermediate")
-      "Intermediate"
-    elsif levels_missing.include?("Advanced")
-      "Advanced"
-    else
-      "Master"
-    end
+    user = User.find(user_id)
+    level = Certification.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user: user ).pluck(:level)
+    result =  if level.include?("Advanced")
+                'Advanced'
+              elsif level.include?("Intermediate")
+                'Intermediate'
+              else
+                'Beginner'
+              end
+    result
   end
 end
