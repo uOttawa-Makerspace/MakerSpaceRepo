@@ -38,8 +38,9 @@
                       <% unless training.proficient_projects.count == 0 %>
 
                         <div class="row">
-                          <% pp = @proficient_projects_awarded.call(training).where(level: ProficientProject.training_status(training.id, current_user.id))&.last %>
-                          <% unless pp.nil? || pp.badge_template.blank? %>
+                          <% pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, current_user.id)).order(created_at: :desc)&.last %>
+                          <% unless pp.nil? %>
+                            <%=  %>
                             <div class="col-md-3">
                               <%= image_tag(pp.badge_template.image_url, :style => "width: 200px") %>
                             </div>
