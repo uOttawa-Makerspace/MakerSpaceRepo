@@ -4,11 +4,11 @@ FactoryBot.define do
     description { Faker::Lorem.paragraph }
 
     trait :with_image do
-      image { FilesTestHelper.png }
+      images { [FilesTestHelper.png] }
     end
 
     trait :with_invalid_image do
-      image { FilesTestHelper.stl }
+      images { [FilesTestHelper.stl] }
     end
 
     factory :question_with_training do

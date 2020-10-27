@@ -20,9 +20,9 @@
             </div>
             <br />
 
-            <label class="image-upload">
-              <%= f.file_field :image, id: "pictureInput", style: "display: none;"%>
-              Change image...
+            <label>
+              <%= f.file_field :images, id: "pictureInput", multiple: true %>
+              Choose an image...
             </label>
 
             <br />
@@ -31,7 +31,11 @@
             <div id="image-target" class="mx-auto text-center"></div>
 
             <div class="text-center" id="edit-image">
-              <%= image_tag @question.image.variant(resize: "300x300") if @question.image.attached? %>
+              <% if @question.images.attached? %>
+                <% @question.images.each do |img| %>
+                  <%= image_tag(img.variant(resize: "500x500")) %>
+                <% end %>
+              <% end %>
             </div>
 
           </div>

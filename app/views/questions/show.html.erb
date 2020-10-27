@@ -5,7 +5,11 @@
 </div>
 
 <div class="text-center">
-  <%= image_tag(@question.image.last.variant(resize: "300x300")) if @question.image.attached? %>
+  <% if @question.images.attached? %>
+    <% @question.images.each do |img| %>
+      <%= image_tag(img.variant(resize: "500x500")) %>
+    <% end %>
+  <% end %>
 </div>
 
 <hr>

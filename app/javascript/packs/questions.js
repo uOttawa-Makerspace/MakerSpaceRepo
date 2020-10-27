@@ -16,23 +16,15 @@ $(document).on('turbolinks:load', function () {
     $('#pictureInput').on('change', function(event) {
         var files = event.target.files;
         var image = files;
-        var total_img = [];
         for(var i = 0; i < files.length; i++){
             var reader = new FileReader();
             reader.onload = function(file) {
                 var img = new Image();
                 img.src = file.target.result;
-                total_img = total_img + [img]
-                $('#image-target').html(img);
-                // return function(e) {
-                //     var span = document.createElement('span');
-                //     span.innerHTML = ['<img src="', e.target.result, '" title="', escape(file.name), '">'].join('');
-                //     document.getElementById('image-target').insertBefore(span, null);
-                // }
+                document.getElementById('image-target').insertBefore(img, null);
             }
             reader.readAsDataURL(image[i]);
         }
-
         var editImage = document.getElementById("edit-image");
         if(editImage){
          editImage.style.display = "none";
