@@ -4,6 +4,7 @@ class Question < ApplicationRecord
   has_many :exam_questions
   has_many :exams, through: :exam_questions
   has_many :answers, dependent: :destroy
+  # before_update :delete_existing_images
 
   has_many :exam_responses, through: :exam_questions do
     def find_by_user(user)
@@ -21,4 +22,8 @@ class Question < ApplicationRecord
       allow: ['image/jpeg', 'image/png'],
       if: -> {images.attached?},
   }
+
+  # def delete_existing_images
+  #   images.purge
+  # end
 end
