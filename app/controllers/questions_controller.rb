@@ -10,9 +10,10 @@ class QuestionsController < StaffAreaController
   end
 
   def new
-    @new_question = Question.new
+    @new_question = Question.new(params[:new_question])
     @categories = Training.all.order(:name)
-    5.times { @new_question.answers.new }
+    (params[:n_answers].present? and params[:n_answers].to_i > 1) ? n = params[:n_answers].to_i : (n = 1 and params[:n_answers] = 1)
+    n.times { @new_question.answers.new }
   end
 
   def create
