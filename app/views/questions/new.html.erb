@@ -20,10 +20,9 @@
               <br />
               <br />
 
-              <label class="image-upload">
-                <%= f.file_field :image, id: "pictureInput", style: "display: none;" %>
-                Choose an image...
-              </label>
+              <div class="text-center">
+                <%= f.file_field :images, id: "pictureInput", multiple: true %>
+              </div>
               <br />
               <br />
 
