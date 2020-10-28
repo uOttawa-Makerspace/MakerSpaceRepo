@@ -3,7 +3,7 @@
 </div>
 <% if question.images.attached? %>
   <% question.images.each do |img| %>
-    <%= image_tag(img.variant(resize: "500x500")) %>
+    <%= image_tag(img, style: 'height: 300px;') %>
   <% end %>
 <% end %>
 <hr>

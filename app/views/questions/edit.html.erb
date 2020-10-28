@@ -32,7 +32,7 @@
             <div class="text-center" id="edit-image">
               <% if @question.images.attached? %>
                 <% @question.images.each do |img| %>
-                  <%= image_tag(img.variant(resize: "500x500")) %>
+                  <%= image_tag(img, style: 'height: 200px;') %>
                 <% end %>
               <% end %>
             </div>
