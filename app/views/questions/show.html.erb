@@ -17,9 +17,9 @@
 <div class="text-left">
   <% @question.answers.randomize_answers.each do |a| %>
     <% if a.correct %>
-      <p class="correct-answers"><%= a.description %></p>
+      <div class="correct-answers"><%= a.description %></div>
     <% else %>
-      <p class="answers"><%= a.description %></p>
+      <div class="answers"><%= a.description %></div>
     <% end  %>
   <% end %>
 </div>

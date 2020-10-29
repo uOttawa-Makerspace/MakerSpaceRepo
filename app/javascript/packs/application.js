@@ -30,6 +30,7 @@ global.PhotoSwipe = require('photoswipe');
 global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
 var Clipboard = require("clipboard");
 // window.Cookies = require("js-cookie");
+require("@rails/actiontext")
 
 require("bootbox");
 require("packs/validation");
@@ -94,4 +95,3 @@ $(document).on('turbolinks:load', function () {
     console.log(clipboard);
 
 });
-

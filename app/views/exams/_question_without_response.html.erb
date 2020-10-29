@@ -9,8 +9,8 @@
 <hr>
 <div class="text-left">
   <% question.answers.randomize_answers.each do |a| %>
-    <p class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+    <div class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
       <%= a.description %>
-    </p>
+    </div>
   <% end %>
 </div>
