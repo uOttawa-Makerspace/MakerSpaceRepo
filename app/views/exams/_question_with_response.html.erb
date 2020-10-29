@@ -10,13 +10,13 @@
 <div class="text-left">
   <% question.answers.randomize_answers.each do |a| %>
     <% if response.answer.eql?(a) %>
-      <p class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+      <div class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
         <%= a.description %>
-      </p>
+      </div>
     <% else %>
-      <p class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+      <div class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
         <%= a.description %>
-      </p>
+      </div>
     <% end %>
   <% end %>
 </div>
