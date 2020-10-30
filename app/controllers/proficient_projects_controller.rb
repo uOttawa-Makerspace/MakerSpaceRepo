@@ -14,6 +14,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     @advanced_pp_count = Proc.new{ |training| training.proficient_projects.where(level: 'Advanced').count }
     @order_item = current_order.order_items.new
     @user_order_items = current_user.order_items.completed_order
+    @proficient_projects_bought = Proc.new{ |training| training.proficient_projects.where(id: current_user.order_items.where(status: ['Awarded', 'In progress', 'Waiting for approval']).pluck(:proficient_project_id)) }
   end
 
   def requests
