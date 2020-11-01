@@ -16,6 +16,7 @@ class ProficientProject < ApplicationRecord
   has_many :order_items,                dependent: :destroy
   has_many :badge_requirements,         dependent: :destroy
   has_many :project_kits,               dependent: :destroy
+  has_one :drop_off_location
 
   validates :title, presence: { message: 'A title is required.' }, uniqueness: { message: 'Title already exists' }
   before_save :capitalize_title

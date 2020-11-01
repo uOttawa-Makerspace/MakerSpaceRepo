@@ -189,6 +189,8 @@ Rails.application.routes.draw do
 
     resources :skills
 
+    resources :drop_off_locations
+
     resources :course_names
 
     resources :contact_infos

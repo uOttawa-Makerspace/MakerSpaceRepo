@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_10_14_171425) do
+ActiveRecord::Schema.define(version: 2020_11_01_210222) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -184,6 +184,12 @@ ActiveRecord::Schema.define(version: 2020_10_14_171425) do
     t.datetime "updated_at", null: false
     t.index ["price_rule_id"], name: "index_discount_codes_on_price_rule_id"
     t.index ["user_id"], name: "index_discount_codes_on_user_id"
+  end
+
+  create_table "drop_off_locations", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "equipment", id: :serial, force: :cascade do |t|
@@ -416,7 +422,9 @@ ActiveRecord::Schema.define(version: 2020_10_14_171425) do
     t.integer "cc", default: 0
     t.integer "badge_template_id"
     t.boolean "has_project_kit"
+    t.bigint "drop_off_location_id"
     t.index ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id"
+    t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
@@ -735,6 +743,7 @@ ActiveRecord::Schema.define(version: 2020_10_14_171425) do
   add_foreign_key "pi_readers", "spaces"
   add_foreign_key "popular_hours", "spaces"
   add_foreign_key "proficient_projects", "badge_templates"
+  add_foreign_key "proficient_projects", "drop_off_locations"
   add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
   add_foreign_key "project_kits", "users"
