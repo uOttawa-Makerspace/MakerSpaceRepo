@@ -174,12 +174,7 @@
                 <th>ACTION</th>
               <% end %>
             </tr>
-            <% @repo_user.certifications.each do |certification| %>
-              <% if certification.out_of_date? %>
-                <tr class="cert-row-red">
-              <% else %>
-                <tr>
-              <% end %>
+            <% @repo_user.certifications.highest_certifications(@repo_user.id).each do |certification| %>
               <td>
                 <%= certification.training.name %>
                 <br/>
@@ -202,11 +197,11 @@
               <% if @user.admin? || (@user == certification.training_session.user) %>
                 <td class="action-cell">
                   <%=
-                    link_to "renew", renew_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                    link_to "Renew", renew_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
                             method: :patch, class: 'btn btn-success btn-block btn-sm', style: "background-color:#53BE6A;"
                   %>
                   <%=
-                    link_to "revoke", revoke_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
+                    link_to "Demote", revoke_certification_staff_training_session_url(id: certification.training_session_id, cert_id: certification.id),
                             method: :delete, class: 'btn btn-danger btn-block btn-sm'
                   %>
                 </td>
