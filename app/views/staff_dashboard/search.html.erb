@@ -7,7 +7,7 @@
 
     <br>
     <% if @users.any? %>
-    <table class="staff-search-results">
+    <table class="staff-search-results text-center">
         Search results
         <tr>
           <th>Name <span onclick="sortTable('staff-search-results', 0)"><%=fa_icon('arrow-down')%></span></th>
@@ -65,7 +65,7 @@
     <% end %>
     <br><br>
 
-    <table class="space-users-table">
+    <table class="space-users-table text-center">
         Users inside <%=@space.name.capitalize%></h2>
         <tr>
           <th>Name <span onclick="sortTable('space-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
@@ -135,7 +135,7 @@
 
     <br></br>
 
-    <table class="staff-recent-users-table">
+    <table class="staff-recent-users-table text-center">
       Users recently signed out of <%=@space.name.capitalize%></h2>
       <tr>
         <th>Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
