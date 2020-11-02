@@ -1,6 +1,9 @@
 <section>
   <div class="text-center">
-    <h2>Editing <b><%= @skill.name.capitalize %></b></h2>
+    <div class="float-right">
+      <%= link_to "Back", admin_skills_path %>
+    </div>
+    <h2 class="font-weight-bold">Editing <b><%= @skill.name.capitalize %></b></h2>
     <%= form_for @skill, url: {controller: "admin/skills", action: "update"} do |f| %>
       <div class="container">
         <div class="row text-center">
@@ -14,9 +17,6 @@
         </div>
       </div>
     <% end %>
-    <div class="float-left">
-      <%= link_to "Back", admin_skills_path %>
-    </div>
 
     <div class="pb-5">
       <%=link_to "Delete", { controller: "admin/skills", action: :destroy, id: @skill.id }, method: :delete,
