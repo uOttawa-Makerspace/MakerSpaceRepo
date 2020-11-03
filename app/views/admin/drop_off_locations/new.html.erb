@@ -1,6 +1,10 @@
 <section>
   <div class="text-center pb-4">
-    <div class="title py-3">New Drop-Off Location</div>
+    <h2 class="font-weight-bold py-3">New Drop-Off Location</h2>
+    <div class="float-right">
+      <%= link_to "Back", admin_drop_off_locations_path %>
+    </div>
+    <br />
     <%= form_for @new_location, url: {controller: "admin/drop_off_locations", action: "create"} do |f| %>
       <div class="container">
         <div class="row text-center">
@@ -14,8 +18,5 @@
         </div>
       </div>
     <% end %>
-    <div class="float-left">
-      <%= link_to "Back", admin_drop_off_locations_path %>
-    </div>
   </div>
 </section>

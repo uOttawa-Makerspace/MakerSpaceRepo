@@ -37,7 +37,7 @@ class Admin::DropOffLocationsController < AdminAreaController
     else
       flash[:alert] = 'An error occured while deleting the Drop-off Location.'
     end
-    redirect_to admin_drop_off_location_path
+    redirect_to admin_drop_off_locations_path
   end
 
   private
