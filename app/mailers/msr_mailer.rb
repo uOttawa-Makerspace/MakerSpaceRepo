@@ -103,6 +103,11 @@ class MsrMailer < ApplicationMailer
   def send_user_pp_evaluation(pp, user)
     @pp = pp
     @user = user
+    @email = if @pp.training.skill.name.downcase == 'technical'
+              'makerspace@uottawa.ca'
+            else
+              'mtc@uottawa.ca'
+            end
     mail(to: @user.email, subject: 'Your Proficient Project Request')
   end
 

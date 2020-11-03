@@ -30,7 +30,10 @@
               <br />
               <%= f.radio_button(:has_project_kit, true, :style => 'display:inline') %>
               <%= f.label :has_project_kit, "Yes" %>
-              <br />
+              <br>
+              <br>
+              <%= f.label :drop_off_location_id, "Drop-Off Location" %>
+              <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id)), {:include_blank => "No Location"}, {:class => "form-control"}) %>
               <br />
               <%= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)" %>
               <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name'), {:multiple => true, :id => "badge_requirements", :class => "form-control select2"} %>
