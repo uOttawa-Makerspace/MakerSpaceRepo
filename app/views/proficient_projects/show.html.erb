@@ -61,7 +61,7 @@
       </div>
     </div>
 
-    <% if current_user.order_items.order(updated_at: :desc).first.status == "In progress" %>
+    <% if @order_item&.status == "In progress" %>
       <div class="text-center">
         <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will then be reviewed by an admin in about 5 business days.</p>
         <%= link_to "Submit Project", complete_project_proficient_projects_path(id: @proficient_project.id), class: "btn btn-primary"%>
