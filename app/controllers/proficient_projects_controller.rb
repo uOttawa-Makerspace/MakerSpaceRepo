@@ -33,6 +33,7 @@ class ProficientProjectsController < DevelopmentProgramsController
                                         .where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id)
                                         .order(title: :asc)
     @valid_urls = @proficient_project.extract_valid_urls
+    @order_item = current_user.order_items.where(proficient_project: @proficient_project).order(updated_at: :desc).first
   end
 
   def create
