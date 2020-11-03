@@ -35,6 +35,12 @@
         -
         <%= @proficient_project.level %>
       </div>
+
+      <% if @proficient_project.drop_off_location.present? %>
+        <div class="text-center">
+          Drop-off location: <b><%= @proficient_project.drop_off_location.name %></b>
+        </div>
+      <% end %>
       <br/>
       <div class="row">
         <div class="col-lg-12">
