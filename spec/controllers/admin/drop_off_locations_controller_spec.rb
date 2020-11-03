@@ -71,7 +71,7 @@ RSpec.describe Admin::DropOffLocationsController, type: :controller do
     context 'logged as admin' do
       it 'should destroy the drop-off location' do
         expect { delete :destroy, params: {id: @location1.id} }.to change(DropOffLocation, :count).by(-1)
-        expect(response).to redirect_to admin_drop_off_location_path
+        expect(response).to redirect_to admin_drop_off_locations_path
         expect(flash[:notice]).to eq('Drop-off Location Deleted successfully')
       end
     end
