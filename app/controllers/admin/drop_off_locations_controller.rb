@@ -42,11 +42,11 @@ class Admin::DropOffLocationsController < AdminAreaController
 
   private
 
-  def drop_off_location_params
-    params.require(:drop_off_location).permit(:name)
-  end
+    def drop_off_location_params
+      params.require(:drop_off_location).permit(:name)
+    end
 
-  def set_location
-    @location = DropOffLocation.find(params[:id])
-  end
+    def set_location
+      @location = DropOffLocation.find(params[:id])
+    end
 end
