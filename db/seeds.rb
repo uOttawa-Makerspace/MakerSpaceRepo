@@ -50,3 +50,8 @@ Training.all.each do |training|
   end
   training.save
 end
+
+# Drop-off locations
+['MTC', 'Makerspace'].each do |location_name|
+  DropOffLocation.create(name: location_name)
+end
