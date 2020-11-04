@@ -32,71 +32,46 @@
           <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
         </tr>
 
-      <% @space.signed_in_users.each do |user| %>
-        <%if user.read_and_accepted_waiver_form%>
-          <tr>
-        <%else%>
-          <tr id="no-waiver">
-        <%end%>
-          <td class="action-cell">
-             <%= check_box_tag 'training_session_users[]', value=user.id%>
-          </td>
+        <% @space.signed_in_users.each do |user| %>
+          <tr id="<%= return_no_waiver_id(user) %>">
+            <td class="action-cell">
+               <%= check_box_tag 'training_session_users[]', value=user.id%>
+            </td>
 
-          <td class="user-name">
-            <%= link_to(user.name, user_url(user.username)) %>
-          </td>
+            <td class="user-name">
+              <%= link_to(user.name, user_url(user.username)) %>
+            </td>
 
-          <td class="email-cell" style="horizontal-alginment:center;">
-            <%= user.email  %>
-          </td>
+            <td class="email-cell" style="horizontal-alginment:center;">
+              <%= user.email  %>
+            </td>
 
-          <td class="signed-in-cell" style="horizontal-alginment:center;">
-            <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
-          </td>
+            <td class="signed-in-cell" style="horizontal-alginment:center;">
+              <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
+            </td>
 
-          <td class="certifications-cell"><%
-            if user.certifications.first.present?
-              user.certifications.each do |certification|
-              %><%
-                unless certification.out_of_date? %>
-                <div
-                 class="cert-name"
-                 style="display:inline" >
-                 <div class="cert-holder" style="display:inline">
-                  <%= certification.training.name %>
-                  <div id="cert-details" style="display:inline">
-                    <%= certification.training.name %> <br>
-                    <%= certification.trainer %> <br>
-                    <%= certification.updated_at.strftime("%B %d, %Y")  %>
+            <td class="certifications-cell">
+              <% if user.certifications.first.present? %>
+                <% user.certifications.each do |certification| %>
+                  <div class="cert-name" style="display:inline" >
+                    <div class="cert-holder" style="display:inline">
+                      <%= certification.training.name %>
+                      <div id="cert-details" style="display:inline">
+                        <%= certification.training.name %> <br />
+                        <%= certification.trainer %> <br />
+                        <%= certification.updated_at.strftime("%B %d, %Y") %>
+                      </div>
+                      <br />
+                    </div>
                   </div>
-                  <br>
-                </div>
-              </div>
-              <% else %>
-              <div
-               class="cert-name-red"
-               style="display:inline" >
-               <div class="cert-holder" style="display:inline">
-                <%= certification.training.name %>
-                <div id="cert-details" style="display:inline">
-                  <%= certification.training.name %> <br>
-                  <%= certification.trainer %> <br>
-                  <%= certification.updated_at.strftime("%B %d, %Y")  %>
-                </div>
-                <br>
-              </div>
-            </div>
-            <% end
-              end
-            end
-            %>
-          </td>
-        </tr>
-      <% end %>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
       </table>
-      <br>
+      <br />
       <%= submit_tag "Begin Training", class:"btn btn-secondary"%>
     <% end %>
-
   </div>
 </section>

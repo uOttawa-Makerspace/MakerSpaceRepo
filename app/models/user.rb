@@ -242,4 +242,5 @@ class User < ApplicationRecord
     badge_requirements_set = badge_requirements.pluck(:badge_template_id).to_set
     badge_requirements_set.subset?(user_badges_set)
   end
+
 end

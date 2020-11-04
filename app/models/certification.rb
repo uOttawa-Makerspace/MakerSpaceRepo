@@ -16,10 +16,6 @@ class Certification < ApplicationRecord
     training_session.user.name
   end
 
-  def out_of_date?
-    updated_at < 2.years.ago
-  end
-
   def self.to_csv(attributes)
     CSV.generate do |csv|
       attributes.each do |row|
@@ -59,4 +55,29 @@ class Certification < ApplicationRecord
     end
     path
   end
+
+  def self.get_highest_level_from_training(training_id, user_id)
+    training_session = TrainingSession.includes(:users).where(training_id: training_id, training_sessions_users: { user_id: user_id })
+    if training_session.find_by(level: 'Advanced').present?
+      training_session.find_by(level: 'Advanced').id
+    elsif training_session.find_by(level: 'Intermediate').present?
+      training_session.find_by(level: 'Intermediate').id
+    elsif training_session.find_by(level: 'Beginner').present?
+      training_session.find_by(level: 'Beginner').id
+    end
+  end
+
+  def self.highest_certifications(user_id)
+    training_ids = []
+    ts_ids = []
+    all.find_each do |cert|
+      training_ids << cert.training_session.training_id
+    end
+    training_ids.uniq!
+    training_ids.each do |tr|
+      ts_ids << get_highest_level_from_training(tr, user_id)
+    end
+    where(training_session_id: ts_ids)
+  end
+
 end
