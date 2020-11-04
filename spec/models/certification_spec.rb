@@ -43,17 +43,7 @@ RSpec.describe Certification, type: :model do
       end
     end
 
-    # context '#out_of_date?' do
-    #   it 'should return false for not expired certification' do
-    #     certification = create(:certification)
-    #     expect(certification.out_of_date?).to eq(false)
-    #   end
-    #
-    #   it 'should return true for expired certification' do
-    #     certification = create(:certification, created_at: 3.years.ago, updated_at: 3.years.ago)
-    #     expect(certification.out_of_date?).to eq(true)
-    #   end
-    # end
+
 
     context '#unique_cert' do
       it "should return true if certification is unique" do
