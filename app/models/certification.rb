@@ -16,11 +16,6 @@ class Certification < ApplicationRecord
     training_session.user.name
   end
 
-  #
-  # def out_of_date?
-  #   updated_at < 2.years.ago
-  # end
-
   def self.to_csv(attributes)
     CSV.generate do |csv|
       attributes.each do |row|
