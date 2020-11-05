@@ -58,11 +58,12 @@ class Certification < ApplicationRecord
 
   def self.get_highest_level_from_training(training_id, user_id)
     training_session = TrainingSession.includes(:users).where(training_id: training_id, training_sessions_users: { user_id: user_id })
-    if training_session.find_by(level: 'Advanced').present?
+    certification = Proc.new{ |user_id, training_session_id| Certification.find_by(user_id: user_id, training_session_id: training_session_id) }
+    if training_session.find_by(level: 'Advanced').present? && certification.call(user_id, training_session.find_by(level: 'Advanced').id).present?
       training_session.find_by(level: 'Advanced').id
-    elsif training_session.find_by(level: 'Intermediate').present?
+    elsif training_session.find_by(level: 'Intermediate').present? && certification.call(user_id, training_session.find_by(level: 'Intermediate').id).present?
       training_session.find_by(level: 'Intermediate').id
-    elsif training_session.find_by(level: 'Beginner').present?
+    elsif training_session.find_by(level: 'Beginner').present? && certification.call(user_id, training_session.find_by(level: 'Beginner').id).present?
       training_session.find_by(level: 'Beginner').id
     end
   end
