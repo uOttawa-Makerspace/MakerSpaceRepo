@@ -4,7 +4,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
   layout 'staff_area'
   before_action :current_training_session, except: %i[new create index]
   before_action :changed_params, only: [:update]
-  before_action :verify_ownership, except: %i[new create index renew_certification]
+  before_action :verify_ownership, except: %i[new create index]
   before_action :set_courses_and_levels, only: %i[new show]
 
   def index; end
@@ -70,16 +70,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
     end
     flash[:notice] = 'Training Session Completed Successfully'
     redirect_to staff_dashboard_index_path
-  end
-
-  def renew_certification
-    cert = Certification.find(params[:cert_id])
-    if cert.touch
-      flash[:notice] = 'Renewed Successfully'
-    else
-      flash[:alert] = 'Something went wrong, try refreshing'
-    end
-    redirect_to user_path(cert.user.username)
   end
 
   def revoke_certification

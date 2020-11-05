@@ -63,47 +63,25 @@
         </tr>
 
       <% @current_training_session.users.each do |user| %>
-        <% if user.read_and_accepted_waiver_form %>
-          <tr>
-        <% else %>
-          <tr id="no-waiver">
-        <% end %>
-        <td class="action-cell">
-          <%= link_to(fa_icon('times-circle'),
-                      {controller: :training_sessions,
-                       action: :update,
-                       id: @current_training_session.id,
-                       dropped_users: [user.username],
-                       changed_params: {course: ''} },
-                      method: :patch,
-                      class: 'x-button') %>
-        </td>
+        <tr id="<%= return_no_waiver_id(user) %>">
+          <td class="action-cell">
+            <%= link_to(fa_icon('times-circle'), {controller: :training_sessions, action: :update, id: @current_training_session.id,
+                                                  dropped_users: [user.username], changed_params: {course: ''} },
+                                                  method: :patch, class: 'x-button') %>
+          </td>
 
-        <td class="user-name">
-          <%= link_to(user.name, user_url(user.username)) %>
-        </td>
+          <td class="user-name">
+            <%= link_to(user.name, user_url(user.username)) %>
+          </td>
 
-        <td class="email-cell" style="horizontal-alginment:center;">
-          <%= user.email  %>
-        </td>
+          <td class="email-cell" style="horizontal-alginment:center;">
+            <%= user.email  %>
+          </td>
 
-        <td class="certifications-cell">
-          <% if user.certifications.first.present?
-               user.certifications.each do |certification| %>
-              <% unless certification.out_of_date? %>
-              <div class="cert-name" style="display:inline" >
-                <div class="cert-holder" style="display:inline">
-                  <%= certification.training.name %>
-                  <div id="cert-details" style="display:inline">
-                    <%= certification.training.name %> <br>
-                    <%= certification.trainer %> <br>
-                    <%= certification.updated_at.strftime("%B %d, %Y")  %>
-                  </div>
-                  <br>
-                </div>
-              </div>
-              <% else %>
-                <div class="cert-name-red" style="display:inline" >
+          <td class="certifications-cell">
+            <% if user.certifications.first.present? %>
+              <% user.certifications.each do |certification| %>
+                <div class="cert-name" style="display:inline" >
                   <div class="cert-holder" style="display:inline">
                     <%= certification.training.name %>
                     <div id="cert-details" style="display:inline">
@@ -116,25 +94,24 @@
                 </div>
               <% end %>
             <% end %>
-          <% end %>
-        </td>
-        <td>
-          <% exams = @current_training_session.exams.where(user_id: user.id).order(:created_at) %>
-          <% if !exams.blank? %>
-            <% exams.each_with_index do |exam, i| %>
-              E<%= i + 1 %>:
-              <%= exam.status.capitalize %><br />
-              <%= link_to "Resend Exam",
-                          create_for_single_user_exams_path(training_session_id: @current_training_session.id, user_id: user.id),
-                          class:'btn btn-secondary' if exam.failed? && user.exams.count < 2 %>
+          </td>
+          <td>
+            <% exams = @current_training_session.exams.where(user_id: user.id).order(:created_at) %>
+            <% if !exams.blank? %>
+              <% exams.each_with_index do |exam, i| %>
+                E<%= i + 1 %>:
+                <%= exam.status.capitalize %>
+                <br />
+                <%= link_to "Resend Exam",
+                            create_for_single_user_exams_path(training_session_id: @current_training_session.id, user_id: user.id),
+                            class:'btn btn-secondary' if exam.failed? && user.exams.count < 2 %>
+              <% end %>
+            <% else %>
+              <%= "NA" %>
+              <br />
             <% end %>
-          <% else  %>
-            <%= "NA" %><br />
-          <% end %>
-        </td>
-        <td>
-          <%= @current_training_session.certifications.where(user_id: user.id).last.try(:training).try(:name) || "None"%>
-        </td>
+          </td>
+          <td><%= @current_training_session.certifications.where(user_id: user.id).last.try(:training).try(:name) || "None"%></td>
         </tr>
       <% end %>
     </table>
@@ -182,7 +159,6 @@
             <td class="certifications-cell">
               <% if user.certifications.first.present? %>
                 <% user.certifications.each do |certification| %>
-                  <% unless certification.out_of_date? %>
                     <div class="cert-name" style="display:inline" >
                       <div class="cert-holder" style="display:inline">
                         <%= certification.training.name %>
@@ -194,19 +170,6 @@
                         <br />
                       </div>
                     </div>
-                  <% else %>
-                    <div class="cert-name-red" style="display:inline" >
-                      <div class="cert-holder" style="display:inline">
-                        <%= certification.training.name %>
-                        <div id="cert-details" style="display:inline">
-                          <%= certification.training.name %> <br>
-                          <%= certification.trainer %> <br>
-                          <%= certification.updated_at.strftime("%B %d, %Y") %>
-                        </div>
-                        <br />
-                      </div>
-                    </div>
-                  <% end %>
                 <% end %>
               <% end %>
             </td>
