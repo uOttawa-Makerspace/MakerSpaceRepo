@@ -24,9 +24,10 @@ jobs:
   - stage: test
     name: Test
     script:
-    - bundle exec rake db:migrate RAILS_ENV=test
-    - bundle exec rake spec RAILS_ENV=test
-    - bundle exec rake test RAILS_ENV=test
+    - rails db:environment:set RAILS_ENV=test
+    - bundle exec rails db:migrate RAILS_ENV=test
+    - bundle exec rails spec RAILS_ENV=test
+    - bundle exec rails test RAILS_ENV=test
   - stage: deploy
     name: Deploy
     script:
