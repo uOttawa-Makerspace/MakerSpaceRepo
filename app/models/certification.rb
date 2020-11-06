@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Certification < ApplicationRecord
-  include CertificationsHelper
   belongs_to :user
   belongs_to :training_session
   has_one :space, through: :training_session
@@ -62,13 +61,13 @@ class Certification < ApplicationRecord
     trainings = Training.where(id: training_ids)
     certs = []
     trainings.each do |training|
-      certs << Certification.certification_highest_level(training.id, user_id)
+      certs << self.certification_highest_level(training.id, user_id)
     end
     certs
   end
 
   def self.certification_highest_level(training_id, user_id)
-    certifications = Certification.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user_id: user_id )
+    certifications = self.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user_id: user_id )
     level = certifications.pluck(:level)
     if level.include?('Advanced')
       certifications.where(training_sessions: { level: 'Advanced' }).last
