@@ -8,10 +8,11 @@ class Certification < ApplicationRecord
 
   validates :user, presence: { message: 'A user is required.' }
   validates :training_session, presence: { message: 'A training session is required.' }
-  validate :unique_cert
+  validate :unique_cert, on: :create
 
   default_scope -> { where(active: true) }
   scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
+  scope :inactive, -> { unscoped.where(active: false) }
 
   def trainer
     training_session.user.name

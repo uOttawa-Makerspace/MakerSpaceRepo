@@ -232,6 +232,11 @@ Rails.application.routes.draw do
         get 'training_report'
       end
     end
+    resources :certifications, only: :update do
+      collection do
+        get :open_modal
+      end
+    end
   end
 
   namespace :staff_dashboard do

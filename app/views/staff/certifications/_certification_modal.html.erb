@@ -1,0 +1,19 @@
+<div class="modal-header">
+  <h2 class="text-center">Demote: <b><%= certification.training.name %> - <%= certification.training_session.level %></b></h2>
+  <button type="button" class="close" data-dismiss="modal">&times;</button>
+</div>
+<div class="modal-body">
+  <%= form_for certification, url: staff_certification_path(certification) do |f| %>
+    <div class="row">
+      <div class="col-md-12">
+        <%= f.hidden_field :active, value: false %>
+        <div class="form-group text-center">
+          <%= f.text_field :demotion_reason, placeholder: "Write the reason for demotion...", class: 'form-control', required: true %>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-12 text-center">
+      <%= f.submit "Demote", class: "btn btn-danger btn-xl text-uppercase" %>
+    </div>
+  <% end %>
+</div>

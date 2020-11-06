@@ -39,6 +39,14 @@ RSpec.describe Certification, type: :model do
         expect(Certification.count).to eq(3)
       end
     end
+
+    context '#inactive' do
+      it 'should return only inactive certifications (active: false)' do
+        3.times{ create(:certification) }
+        2.times{ create(:certification, :inactive) }
+        expect(Certification.inactive.count).to eq(2)
+      end
+    end
   end
 
   describe 'Methods' do
