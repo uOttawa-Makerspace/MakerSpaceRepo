@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Certification < ApplicationRecord
+  include CertificationsHelper
   belongs_to :user
   belongs_to :training_session
   has_one :space, through: :training_session
@@ -56,29 +57,26 @@ class Certification < ApplicationRecord
     path
   end
 
-  def self.get_highest_level_from_training(training_id, user_id)
-    training_session = TrainingSession.includes(:users).where(training_id: training_id, training_sessions_users: { user_id: user_id })
-    certification = Proc.new{ |user_id, training_session_id| Certification.find_by(user_id: user_id, training_session_id: training_session_id) }
-    if training_session.find_by(level: 'Advanced').present? && certification.call(user_id, training_session.find_by(level: 'Advanced').id).present?
-      training_session.find_by(level: 'Advanced').id
-    elsif training_session.find_by(level: 'Intermediate').present? && certification.call(user_id, training_session.find_by(level: 'Intermediate').id).present?
-      training_session.find_by(level: 'Intermediate').id
-    elsif training_session.find_by(level: 'Beginner').present? && certification.call(user_id, training_session.find_by(level: 'Beginner').id).present?
-      training_session.find_by(level: 'Beginner').id
+  def self.highest_certifications(user_id)
+    training_ids = self.joins(:training).pluck(:training_id)
+    trainings = Training.where(id: training_ids)
+    certs = []
+    trainings.each do |training|
+      certs << Certification.certification_highest_level(training.id, user_id)
     end
+    certs
   end
 
-  def self.highest_certifications(user_id)
-    training_ids = []
-    ts_ids = []
-    all.find_each do |cert|
-      training_ids << cert.training_session.training_id
+  def self.certification_highest_level(training_id, user_id)
+    certifications = Certification.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user_id: user_id )
+    level = certifications.pluck(:level)
+    if level.include?('Advanced')
+      certifications.where(training_sessions: { level: 'Advanced' }).last
+    elsif level.include?('Intermediate')
+      certifications.where(training_sessions: { level: 'Intermediate' }).last
+    elsif level.include?('Beginner')
+      certifications.where(training_sessions: { level: 'Beginner' }).last
     end
-    training_ids.uniq!
-    training_ids.each do |tr|
-      ts_ids << get_highest_level_from_training(tr, user_id)
-    end
-    where(training_session_id: ts_ids)
   end
 
 end
