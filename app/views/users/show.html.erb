@@ -175,7 +175,11 @@
             </tr>
             <% @repo_user.certifications.highest_certifications(@repo_user.id).each do |certification| %>
               <td>
-                <%= link_to certification.training.name, staff_training_session_path(certification.training_session) %>
+                <% if current_user.admin? %>
+                  <%= link_to certification.training.name, staff_training_session_path(certification.training_session) %>
+                <% else %>
+                  <%= certification.training.name %>
+                <% end %>
                 <br/>
                 <%= certification_status(certification.training_session.level).html_safe %>
               </td>
@@ -226,7 +230,11 @@
     <div class="row my-5">
       <% @certifications.each do |cert| %>
         <div class="col-md-3 text-center my-3">
-          <b><%= cert.training.name %> </b> <br/>
+          <% if current_user.admin? %>
+            <b><%= link_to cert.training.name, staff_training_session_path(cert.training_session) %></b> <br />
+          <% else %>
+            <b><%= cert.training.name %></b><br />
+          <% end %>
           <%= image_tag(cert.get_badge_path, class: "skills-badges") %>
           <br/>
           <%= cert.training_session.level %>
