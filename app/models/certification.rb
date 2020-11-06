@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Certification < ApplicationRecord
-  include CertificationsHelper
   belongs_to :user
   belongs_to :training_session
   has_one :space, through: :training_session
