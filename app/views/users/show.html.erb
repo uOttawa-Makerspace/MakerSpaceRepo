@@ -175,7 +175,7 @@
             </tr>
             <% @repo_user.certifications.highest_certifications(@repo_user.id).each do |certification| %>
               <td>
-                <%= certification.training.name %>
+                <%= link_to certification.training.name, staff_training_session_path(certification.training_session) %>
                 <br/>
                 <%= certification_status(certification.training_session.level).html_safe %>
               </td>
