@@ -31,6 +31,22 @@ RSpec.describe Certification, type: :model do
         expect(Certification.between_dates_picked(3.days.ago.beginning_of_day, 3.days.from_now).count).to eq(3)
       end
     end
+
+    context '#default_scope' do
+      it 'should return only active certifications' do
+        3.times{ create(:certification) }
+        2.times{ create(:certification, :inactive) }
+        expect(Certification.count).to eq(3)
+      end
+    end
+
+    context '#inactive' do
+      it 'should return only inactive certifications (active: false)' do
+        3.times{ create(:certification) }
+        2.times{ create(:certification, :inactive) }
+        expect(Certification.inactive.count).to eq(2)
+      end
+    end
   end
 
   describe 'Methods' do

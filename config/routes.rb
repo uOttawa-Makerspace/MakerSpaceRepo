@@ -221,6 +221,13 @@ Rails.application.routes.draw do
         get 'pin_unpin_repository'
       end
     end
+
+    resources :certifications, only: %i[update destroy] do
+      collection do
+        get :open_modal
+        get :demotions
+      end
+    end
   end
 
   namespace :staff do

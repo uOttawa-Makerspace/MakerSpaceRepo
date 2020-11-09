@@ -13,7 +13,7 @@ OrderStatus.create(id: 2, name: 'Completed')
 
 
 # Creating Spaces
-['Makerspace', 'MTC', 'Brunsfield Center', 'PITS', 'Makerlab 121', 'Makerlab 119', 'Sandbox', 'CEED'].each do |space_name|
+['Makerspace', 'MTC', 'Brunsfield Center', 'PITS', 'Makerlab 121', 'Makerlab 119', 'Sandbox', 'CEED', 'Makerepo'].each do |space_name|
   Space.find_or_create_by(name: space_name)
 end
 

@@ -5,7 +5,7 @@
     <div style="float:right;">Created On: <%= @current_training_session.created_at.strftime("%D at %l:%M%P") %></div>
     <br />
     <div style="float:right;">Updated On: <%= @current_training_session.updated_at.strftime("%D at %l:%M%P") %></div>
-    <div>Space: <span style="font-weight:bold;"> <%= @space.name.capitalize %></span></div>
+    <div>Space: <span style="font-weight:bold;"> <%= @current_training_session.space.name %></span></div>
     <div>
       Status:
       <% if @current_training_session.completed? %>

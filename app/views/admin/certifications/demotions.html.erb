@@ -1,0 +1,49 @@
+<section>
+  <div class="text-center">
+    <h2 class="py-3 font-weight-bold">Demotions</h2>
+    <% if @demotions.present? %>
+
+      <div class="table-responsive table-striped">
+        <table class="table sessions-table">
+
+          <tr>
+            <th>User</th>
+            <th>Training</th>
+            <th>Trainer</th>
+            <th>Created on</th>
+            <th>Demotion's reason</th>
+            <th class="action-header">Action</th>
+          </tr>
+
+          <tbody>
+          <% @demotions.each do |demotion| %>
+            <tr>
+              <td class="username"><%= link_to demotion.user.name.capitalize, user_path(demotion.user.username) %></td>
+              <td>
+                <%= link_to demotion.training.name, staff_training_session_path(demotion.training_session) %>
+                <br/>
+                <%= certification_status(demotion.training_session.level).html_safe %>
+              </td>
+              <td><%= demotion.trainer %></td>
+              <td><%= link_to demotion.created_at.strftime("%B %d, %Y"), staff_training_session_path(id: demotion.training_session.id), style: "text-decoration:underline;" %></td>
+              <td><%= demotion.demotion_reason %></td>
+              <td class="action-cell">
+                <%= form_for demotion, url: admin_certification_path(demotion) do |f| %>
+                  <%= f.hidden_field :active, value: true %>
+                  <%= f.hidden_field :demotion_reason, value: nil %>
+                  <%= f.submit "Reinstate", data: { confirm: 'Are you sure that you want to reinstate this certification?' }, class:"btn btn-success btn-sm btn-block mb-1 mr-0" %>
+                <% end %>
+                <%=link_to "Delete", { controller: :certifications, action: :destroy, id: demotion.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this certification? This action cannot be undone.' }, class:"btn btn-danger btn-sm btn-block mb-1 mr-0" %>
+              </td>
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="m-3">
+        No demotions so far.
+      </div>
+    <% end %>
+  </div>
+</section>
