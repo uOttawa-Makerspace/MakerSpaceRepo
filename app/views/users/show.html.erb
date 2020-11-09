@@ -196,7 +196,7 @@
               </td>
               <% if @user.admin? || (@user == certification.training_session.user) %>
                 <td class="action-cell">
-                  <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_staff_certifications_path(id: certification.id) %>" class="btn btn-danger btn-block btn-sm">Demote</a>
+                  <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_admin_certifications_path(id: certification.id) %>" class="btn btn-danger btn-block btn-sm">Demote</a>
                 </td>
               <% end %>
               </tr>

@@ -1,14 +1,13 @@
-class Staff::CertificationsController < StaffDashboardController
-  before_action :grant_access_admin, only: :demotions
+class Admin::CertificationsController < AdminAreaController
   before_action :set_certification, only: %i[update destroy]
 
   def update
     if @cert.update(certification_params)
-      flash[:notice] = 'Demotion completed.'
+      flash[:notice] = 'Action completed.'
     else
       flash[:alert] = 'Something went wrong. Try again later.'
     end
-    @cert.active ? redirection = demotions_staff_certifications_path : redirection = user_path(@cert.user.username)
+    @cert.active ? redirection = demotions_admin_certifications_path : redirection = user_path(@cert.user.username)
     redirect_to redirection
   end
 
@@ -18,7 +17,7 @@ class Staff::CertificationsController < StaffDashboardController
     else
       flash[:alert] = 'Something went wrong. Try again later.'
     end
-    redirect_to demotions_staff_certifications_path
+    redirect_to demotions_admin_certifications_path
   end
 
   def open_modal
@@ -36,13 +35,6 @@ class Staff::CertificationsController < StaffDashboardController
 
     def certification_params
       params.require(:certification).permit(:active, :demotion_reason)
-    end
-
-    def grant_access_admin
-      unless current_user.admin?
-        redirect_to root_path
-        flash[:alert] = 'You cannot access this area.'
-      end
     end
 
     def set_certification
