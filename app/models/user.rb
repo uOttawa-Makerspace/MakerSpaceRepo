@@ -100,12 +100,8 @@ class User < ApplicationRecord
   scope :volunteers, -> { joins(:programs).where(programs: { program_type: Program::VOLUNTEER }) }
 
 
-  def self.display_avatar(user)
-    if user.avatar.attached?
-      user.avatar
-    else
-      "default-avatar.png"
-    end
+  def display_avatar
+    avatar.attached? ? avatar : "default-avatar.png"
   end
 
   def self.authenticate(username_email, password)

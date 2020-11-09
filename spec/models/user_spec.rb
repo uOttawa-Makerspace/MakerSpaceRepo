@@ -275,12 +275,12 @@ RSpec.describe User, type: :model do
 
       it 'should get the avatar' do
         user = create(:user, :regular_user_with_avatar)
-        expect(User.display_avatar(User.find(user.id)).filename).to eq("avatar.png")
+        expect(user.display_avatar.filename).to eq("avatar.png")
       end
 
       it 'should get the default avatar' do
         user = create(:user, :regular_user)
-        expect(User.display_avatar(User.find(user.id))).to eq("default-avatar.png")
+        expect(user.display_avatar).to eq("default-avatar.png")
       end
 
     end

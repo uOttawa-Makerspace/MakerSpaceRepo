@@ -10,7 +10,7 @@
 
     <%= link_to settings_profile_path do %>
       <div class="user-avatar">
-        <%= image_tag User.display_avatar(@repo_user) %>
+        <%= image_tag @repo_user.display_avatar %>
         <div class="edit-avatar">
           Change avatar
         </div>
@@ -18,7 +18,7 @@
     <% end %>
   <% else %>
     <div class="user-avatar">
-      <%= image_tag User.display_avatar(@repo_user) %>
+      <%= image_tag @repo_user.display_avatar %>
     </div>
   <% end %>
 
