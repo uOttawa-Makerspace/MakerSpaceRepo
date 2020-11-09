@@ -179,7 +179,8 @@ RSpec.describe UsersController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         get :remove_avatar
         expect(response).to redirect_to settings_profile_path
-        expect(User.display_avatar(User.find(user.id))).to eq('default-avatar.png')
+        user = User.find(user.id)
+        expect(user.display_avatar).to eq('default-avatar.png')
       end
 
       it 'should remove nothing and not give an error' do
@@ -188,7 +189,7 @@ RSpec.describe UsersController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         get :remove_avatar
         expect(response).to redirect_to settings_profile_path
-        expect(User.display_avatar(User.find(user.id))).to eq('default-avatar.png')
+        expect(user.display_avatar).to eq('default-avatar.png')
       end
     end
 
