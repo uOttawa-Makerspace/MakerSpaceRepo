@@ -232,9 +232,10 @@ Rails.application.routes.draw do
         get 'training_report'
       end
     end
-    resources :certifications, only: :update do
+    resources :certifications, only: %i[update destroy] do
       collection do
         get :open_modal
+        get :demotions
       end
     end
   end
