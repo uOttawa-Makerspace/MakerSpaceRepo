@@ -116,14 +116,14 @@
       <br />
     </table>
 
-    <table class="text-center table-striped staff-newly-signed-up-users-table mb-5">
+    <table class="text-center table-striped staff-newly-signed-up-users-table mb-5" id="newly-signed-up">
       <p class="text-center">Newly signed up users on Maker<strong>Repo</strong></p>
       <tr>
         <th class="name-header">Name
           <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
         <th class="email-header">Email
           <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-        <th class="action-header">Sign In To <%= @space.name.capitalize %></span></th>
+        <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
       </tr>
 
       <% @users.each do |user| %>
@@ -135,9 +135,12 @@
           <td class="email-cell">
             <%= user.email %>
           </td>
-
-          <td class="action-cell">
-            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]}, method: :put, class: 'check-button', remote: true %>
+          <td class="action-cell" >
+            <% if @space.signed_in_users.include?(user) %>
+              <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button', remote: true %>
+            <% else %>
+              <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button', remote: true %>
+            <% end %>
           </td>
         </tr>
       <% end %>
