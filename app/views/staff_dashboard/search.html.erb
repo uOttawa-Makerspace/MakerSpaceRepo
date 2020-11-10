@@ -51,7 +51,7 @@
     <% end %>
     <br /><br />
 
-    <table class="space-users-table" id="table-js-signed-in">
+    <table class="space-users-table text-center" id="table-js-signed-in">
         <h2>Users inside <%=@space.name.capitalize%></h2>
         <tr>
           <th>Name <span onclick="sortTable('space-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
@@ -70,7 +70,7 @@
             </td>
             <td class="certifications-cell">
               <% if user.certifications.first.present? %>
-                <%= user.certifications.each do |certification| %>
+                <% user.certifications.each do |certification| %>
                   <div class="cert-name" style="display:inline" >
                     <div class="cert-holder" style="display:inline">
                       <%= certification.training.name %>
@@ -97,7 +97,7 @@
 
     <br />
 
-    <table class="staff-recent-users-table" id="table-js-signed-out">
+    <table class="staff-recent-users-table text-center" id="table-js-signed-out">
       <h2>Users recently signed out of <%=@space.name.capitalize%></h2>
       <tr>
         <th>Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
