@@ -77,7 +77,10 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = "Error signing #{user.name} in" unless lab_session.save
       end
     end
-    redirect_to staff_dashboard_index_path(space_id: @space.id)
+    respond_to do |format|
+      format.html {redirect_to staff_dashboard_index_path(space_id: @space.id)}
+      format.js
+    end
   end
 
   def change_space

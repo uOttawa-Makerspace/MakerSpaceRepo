@@ -43,7 +43,7 @@
       </div>
     <% end %>
     <br />
-    <table class="staff-users-table text-center mb-5" id="table-js">
+    <table class="staff-users-table text-center mb-5" id="table-js-signed-in">
       <p class="text-center">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>
       <% if @space.signed_in_users.present? %>
         <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary' %>
@@ -137,7 +137,7 @@
           </td>
 
           <td class="action-cell">
-            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]}, method: :put, class: 'check-button' %>
+            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]}, method: :put, class: 'check-button', remote: true %>
           </td>
         </tr>
       <% end %>
@@ -145,7 +145,7 @@
     </table>
 
     <br>
-    <table class="staff-recent-users-table text-center mb-5">
+    <table class="staff-recent-users-table text-center mb-5" id="table-js-signed-out">
       <p class="text-center">Users recently signed out of <%= @space.name %></p>
       <tr>
         <th class="name-header">Name
@@ -172,7 +172,7 @@
           </td>
 
           <td class="action-cell">
-            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]}, method: :put, class: 'check-button' %>
+            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]}, method: :put, class: 'check-button', remote: true %>
           </td>
         </tr>
       <% end %>
