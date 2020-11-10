@@ -4,7 +4,7 @@
     <%= render 'search' %>
     <br />
     <% if @users.any? %>
-    <table class="staff-search-results text-center">
+    <table class="staff-search-results text-center" id="table-js-search">
         Search results
         <tr>
           <th>Name <span onclick="sortTable('staff-search-results', 0)"><%=fa_icon('arrow-down')%></span></th>
@@ -35,9 +35,9 @@
 
             <td class="action-cell" >
               <% if @space.signed_in_users.include?(user) %>
-                <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
+                <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button', remote: true %>
               <% else %>
-                <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
+                <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button', remote: true %>
               <% end %>
             </td>
 
@@ -51,7 +51,7 @@
     <% end %>
     <br /><br />
 
-    <table class="space-users-table">
+    <table class="space-users-table" id="table-js-signed-in">
         <h2>Users inside <%=@space.name.capitalize%></h2>
         <tr>
           <th>Name <span onclick="sortTable('space-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
@@ -87,7 +87,7 @@
             </td>
 
             <td class="action-cell" >
-              <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button' %>
+              <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button', remote: true %>
             </td>
           </tr>
         <% end %>
@@ -97,7 +97,7 @@
 
     <br />
 
-    <table class="staff-recent-users-table">
+    <table class="staff-recent-users-table" id="table-js-signed-out">
       <h2>Users recently signed out of <%=@space.name.capitalize%></h2>
       <tr>
         <th>Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
@@ -123,7 +123,7 @@
           %></td>
 
           <td class="action-cell" >
-            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button' %>
+            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button', remote: true %>
           </td>
 
         </tr>
