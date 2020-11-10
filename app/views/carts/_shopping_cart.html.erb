@@ -13,12 +13,49 @@
       Please check our <%= link_to "proficient projects", proficient_projects_path, class: "text-info" %> and add some items to your cart.
     </p>
 <% else %>
+  <table class="table text-center">
+    <thead>
+    <tr>
+      <th scope="col" class="border-0 bg-light">
+        <div class="p-2 px-3 text-uppercase">Product</div>
+      </th>
+      <th scope="col" class="border-0 bg-light">
+        <div class="py-2 text-uppercase">Quantity</div>
+      </th>
+      <th scope="col" class="border-0 bg-light">
+        <div class="py-2 text-uppercase">Unit Price</div>
+      </th>
+      <th scope="col" class="border-0 bg-light">
+        <div class="py-2 text-uppercase">Sub Total</div>
+      </th>
+      <th scope="col" class="border-0 bg-light">
+        <div class="py-2 text-uppercase">Remove</div>
+      </th>
+    </tr>
+    </thead>
+
+    <tbody>
     <% @order_items.each do |order_item| %>
         <%= render 'carts/cart_row', proficient_project: order_item.proficient_project, order_item: order_item, show_total: true %>
     <% end %>
-    <h6 class="text-center">Order Total: <span style="color: green"><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></span></h6>
-    <br />
-    <div class="text-center">
-      <%= link_to "Confirm order", orders_path, :action => :create, :method => :post, class: "btn btn-secondary", data: {confirm:"Are you sure you want to proceed with the order ?"} %>
-    </div>
+    </tbody>
+  </table>
+  <br>
+  <div class="row">
+    <div class="col-md-7"></div>
+    <div class="col-md-5">
+      <div class="bg-light rounded-pill px-4 py-3 text-uppercase font-weight-bold">Order summary </div>
+      <div class="p-4">
+        <ul class="list-unstyled mb-4">
+          <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Order Subtotal </strong><strong><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></strong></li>
+          <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Tax</strong><strong><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>0.00</strong></li>
+          <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Total</strong>
+            <h5 class="font-weight-bold"><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></h5>
+          </li>
+        <%= link_to "Confirm order", orders_path, :action => :create, :method => :post, class: "btn btn-primary rounded-pill py-2 btn-block", data: {confirm:"Are you sure you want to proceed with the order ?"} %>
+        </ul>
+      </div>
+  </div>
+  </div>
+
 <% end %>
