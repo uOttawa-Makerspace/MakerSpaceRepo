@@ -141,10 +141,10 @@ div.form-error{
 //  display: none;
 //}
 
-// Fixing Div bug for Trix editor
-//.trix-content {
-//  height: auto;
-//}
+//Fixing Div bug for Trix editor
+.trix-content {
+  height: auto;
+}
 
 .button-color {
   .btn-primary {

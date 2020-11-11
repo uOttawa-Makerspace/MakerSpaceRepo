@@ -27,7 +27,9 @@
     <br>
     <br>
     <div>
-      <b>List of Equipments</b>: <%= @project_proposal.equipments %>
+      <b>Possible technologies involved</b>: <%= @project_proposal.equipments %>
+      <br>
+      <b>Project Type</b>: <%= @project_proposal.project_type %>
     </div>
 
     <div class="repo-desc">
@@ -63,10 +65,12 @@
           <b>Client Background:</b> <%= @project_proposal.client_background %>
         </div>
 
-        <div class="title">Supervisor Background:</div>
-        <div class="jumbotron text-center word-break">
-          <%= @project_proposal.client_background %>
-        </div>
+        <% if @project_proposal.supervisor_background.present? %>
+          <div class="title">Supervisor Background:</div>
+          <div class="jumbotron text-center word-break">
+            <%= @project_proposal.supervisor_background %>
+          </div>
+        <% end %>
       <% end %>
       <br /> <br />
       <% if @user.admin?%>
