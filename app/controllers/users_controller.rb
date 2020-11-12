@@ -173,6 +173,7 @@ class UsersController < SessionsController
     @photos = photo_hash
     @certifications = @repo_user.certifications
     @remaining_trainings = @repo_user.remaining_trainings
+    @skills = Skill.all
   end
 
   def likes
