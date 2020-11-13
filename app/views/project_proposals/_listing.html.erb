@@ -23,6 +23,9 @@
         <th>Categories</th>
         <th>Proposed on</th>
         <% if action_flag || @user.admin? %>
+          <% if title == "Pending Project Proposals" %>
+            <th>Approval</th>
+          <% end %>
           <th>Action</th>
         <% end %>
       </tr>
@@ -50,6 +53,12 @@
           <td><% project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
           <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>
           <% if @user.admin? %>
+            <% if title == "Pending Project Proposals" %>
+              <td>
+                <%= link_to 'Approve', approve_project_proposals_path(:id => project_proposal.id), method: :post, class: "btn btn-success btn-block btn-sm", data: { confirm: 'Are you sure?' }  %>
+                <%= link_to 'Disapprove', decline_project_proposals_path(id: project_proposal.id), method: :post, class: "btn btn-danger btn-block btn-sm", data: { confirm: 'Are you sure?' }  %>
+              </td>
+              <% end %>
               <td>
               <%= link_to 'Show', project_proposal, class: "btn btn-success btn-block btn-sm" %>
               <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "btn btn-primary btn-block btn-sm" %>

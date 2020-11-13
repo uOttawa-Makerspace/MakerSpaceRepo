@@ -7,9 +7,9 @@
     <% end%>
     <br></br>
     <% if @user.admin?%>
-        <%= link_to "Approve", approve_project_proposals_path(:id => @project_proposal.id), method: :post,
+        <%= link_to "Approuver / Approve", approve_project_proposals_path(:id => @project_proposal.id), method: :post,
                     class: "btn btn-success", data: {confirm: 'Are you sure? This will approve the project.'} %>
-        <%= link_to "Decline", decline_project_proposals_path(id: @project_proposal.id), method: :post,
+        <%= link_to "désapprouver / Decline", decline_project_proposals_path(id: @project_proposal.id), method: :post,
                     class: "btn btn-danger", data: {confirm: 'Are you sure? This will decline the project.'} %>
     <% end %>
     <% if @project_proposal.description.present? %>
@@ -27,24 +27,26 @@
     <br>
     <br>
     <div>
-      <b>Possible technologies involved</b>: <%= @project_proposal.equipments %>
+      <b>Technologies possibles impliquées</b>: <%= @project_proposal.equipments %>
       <br>
-      <b>Project Type</b>: <%= @project_proposal.project_type %>
+      <b>Type de projet / Project Type</b>: <%= @project_proposal.project_type %>
+      <br>
+      <b>Coût prévu du projet / Expected project cost</b>: <%= @project_proposal.project_cost.present? ?  "$#{@project_proposal.project_cost}" : "Not available" %>
     </div>
 
     <div class="repo-desc">
         <br></br>
         <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
         <% if @project_join.present? %>
-        <%= link_to "Leave Project", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
+        <%= link_to "Partir du projet / Leave Project", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
                     class: "btn btn-danger", data: {confirm: 'Are you sure that you want to join this project?'} %>
         <% elsif @user.id.present? %>
-        <%= link_to "Join Project", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
+        <%= link_to "Se joindre au projet / Join Project", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
                     class: "btn btn-primary", data: {confirm: 'Are you sure that you want to join this project?'} %>
       <% end %>
       <br></br>
       <% if @project_proposal.project_joins.present? %>
-        <div>Users that joined this project:</div>
+        <div>Utilisateurs qui ont joins le projet / Users that joined this project:</div>
         <div>
         <% @project_proposal.project_joins.find_each do |pj| %>
           <% user_pj = User.find(pj.user_id).username %>
@@ -54,32 +56,32 @@
       <% end %>
       <br><br><br>
       <% if @user.staff?%>
-        <div class="title">Client Information:</div>
+        <div class="title">Information sur le client / Client Information:</div>
         <div class="jumbotron text-center word-break">
           <b>Client:</b> <%= @project_proposal.client %>
           <br />
-          <b>Client type:</b> <%= @project_proposal.client_type %>
+          <b>Type de client / Client type:</b> <%= @project_proposal.client_type %>
           <br />
-          <b>Client interest:</b> <%= @project_proposal.client_interest %>
+          <b>Interets du client / Client interest:</b> <%= @project_proposal.client_interest %>
           <br />
-          <b>Client Background:</b> <%= @project_proposal.client_background %>
+          <b>Contexte du client / Client Background:</b> <%= @project_proposal.client_background.html_safe %>
         </div>
 
         <% if @project_proposal.supervisor_background.present? %>
           <div class="title">Supervisor Background:</div>
           <div class="jumbotron text-center word-break">
-            <%= @project_proposal.supervisor_background %>
+            <%= @project_proposal.supervisor_background.html_safe %>
           </div>
         <% end %>
       <% end %>
       <br /> <br />
       <% if @user.admin?%>
-          <%= link_to "Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
+          <%= link_to "Supprimer / Delete", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
                       class: "btn btn-danger", data: {confirm: 'Are you sure?'} %>
           <br></br>
           <% if @project_proposal.approved.present? &&  @project_proposal.admin_id.present? %>
               <% admin_username = User.find(@project_proposal.admin_id).username %>
-              <div> This project was reviewed by:
+              <div> Ce projet a été revu par / This project was reviewed by:
                 <p class="username"><%= link_to admin_username, user_path(admin_username) %></p>
               </div>
           <% elsif @project_proposal.approved.present? %>
@@ -97,11 +99,11 @@
                     edit_project_proposal_path(@project_proposal), class: 'edit-repo-link' %>
     <% end %>
     <div id="repo-title">
-      <%= "Project Proposal: #{@project_proposal.title}" %>
+      <%= "Proposition de projet / Project Proposal: #{@project_proposal.title}" %>
     </div>
     <div id="repo-info">
       <div class="repo-info-item">
-        <div class="title">PROPOSED BY</div>
+        <div class="title">PROPOSÉ PAR <br> PROPOSED BY</div>
         <% if @project_proposal.user_id %>
             <% project_username = User.find(@project_proposal.user_id).username%>
             <div class="name"><%= link_to project_username, user_path(project_username) %></div>
@@ -110,7 +112,7 @@
         <% end %>
       </div>
       <div class="repo-info-item">
-        <div class="title">PROPOSED ON</div>
+        <div class="title">PROPOSÉ LE <br> PROPOSED ON</div>
         <div class="date"><%= @project_proposal.created_at.strftime("%b %e %Y") %></div>
       </div>
       <div class="repo-info-item">
@@ -121,9 +123,9 @@
         <div class="repo-info-item">
           <div class="title">VALIDATION</div>
             <% case @project_proposal.approved
-                 when 0 %><div class="declined"><%= "Declined" %></div>
-                <% when 1 %><div class="approved"><%= "Approved" %></div>
-            <% when nil %><div><%= "Not Validated" %></div>
+                 when 0 %><div class="declined"><%= "Désapprouvé / Declined" %></div>
+                <% when 1 %><div class="approved"><%= "Approuvé / Approved" %></div>
+            <% when nil %><div><%= "Pas validé / Not Validated" %></div>
             <% end %>
         </div>
       <% end %>
@@ -137,14 +139,14 @@
       <% end %>
       <% if @user.id.present? %>
         <div class="repo-info-item">
-        <%= link_to "Create Repository", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
+        <%= link_to "Créer un projet / Create Repository", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
                     class: "btn btn-success",
                     data: {confirm: 'This action will create a repository related to this project proposal'} %>
         </div>
       <% end %>
       <div class="repo-info-item">
         <div class="report">
-          <%= link_to fa_icon('flag', text: 'Report inapropriate'), report_repository_path(@project_proposal.id), class: 'repository_report' %>
+          <%= link_to fa_icon('flag', text: 'Reporter comme inapproprié / Report inapropriate'), report_repository_path(@project_proposal.id), class: 'repository_report' %>
           <div class="spinner">
             <div class="rect1"></div>
             <div class="rect2"></div>
@@ -160,7 +162,7 @@
 
 <% if @repositories.present? %>
   <section id="repositories-index">
-    <div class="title">REPOSITORIES CREATED FROM THIS PROJECT PROPOSAL:</div> <br>
+    <div class="title" style="max-width: fit-content;">PROJET CRÉÉ A PARTIR DE CETTE PROPOSITION / REPOSITORIES CREATED FROM THIS PROJECT PROPOSAL:</div> <br>
     <section id="repository-filter">
       <div class="sort">sort by/classer par</div>
       <nav>

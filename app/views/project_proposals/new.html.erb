@@ -70,18 +70,22 @@
     <div class="form-group required">
       <%= f.label :client_background, "Client Background/Contexte du client", class: "control-label" %>
       <div>What is the client background?<br>Quel est le contexte du client?</div>
-      <%= f.text_field :client_background, class: 'form-control', required: true %>
-      <div class="invalid-feedback">
-        Veuillez entrer le contexte du client / Please enter client's background
+      <div style="width: 420px;">
+        <%= f.trix_editor :client_background, class: 'form-control', id: "trix_editor", required: true %>
+        <div class="invalid-feedback">
+          Veuillez entrer le contexte du client / Please enter client's background
+        </div>
       </div>
     </div>
     <br/>
     <div class="form-group required">
       <%= f.label :supervisor_background, "Supervisor Background/Contexte du Superviseur", class: "control-label" %>
       <div>What is the supervisor background?<br>Quel est le contexte du superviseur?</div>
-      <%= f.text_field :supervisor_background, class: 'form-control', required: true %>
-      <div class="invalid-feedback">
-        Veuillez entrer le contexte du superviseur / Please enter supervisor's background
+      <div style="width: 420px;">
+        <%= f.trix_editor :supervisor_background, class: 'form-control', id: "trix_editor", required: true %>
+        <div class="invalid-feedback">
+          Veuillez entrer le contexte du superviseur / Please enter supervisor's background
+        </div>
       </div>
     </div>
     <br/>
@@ -116,7 +120,22 @@
     </div>
     <br>
     <div class="form-group required">
+      <%= f.label :project_cost, "Coût attendu du projet / Expected cost of the project", class: "control-label" %>
+      <div>Coût attendu du projet / Expected cost of the project</div>
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <span class="input-group-text" id="basic-addon1">$</span>
+        </div>
+        <%= f.number_field :project_cost, class: 'form-control', required: true, value: 0 %>
+        <div class="invalid-feedback">
+          Veuillez entrer le coût attendu du projet / Please enter the expected project cost
+        </div>
+      </div>
+    </div>
+    <br>
+    <div class="form-group required">
       <%= f.label :project_type, "Type de projet / Project Type", class: "control-label" %>
+      <div>Choisissez un type de projet / Choose a project type</div>
       <div class='checkbox-list'>
         <%= f.radio_button :project_type, 'General', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
         <%= f.label :project_type, 'General', :id => 'type', :style => 'display:inline' %>
@@ -128,7 +147,7 @@
         <%= f.label :project_type, 'S/O | N/A', :id => 'type', :style => 'display:inline' %>
       </div>
     </div>
-    <br/>
+    <br>
     <div class="form-group">
       <%= f.label :categories, "Categories/Catégories", class: "control-label" %>
       <div>Choose at most 5 categories that fit your project.<br>Choisi un maximum de 5 catégories qui convent à ton

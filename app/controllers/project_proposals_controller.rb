@@ -147,7 +147,7 @@ class ProjectProposalsController < ApplicationController
     params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description,
                                              :youtube_link, :username, :email, :client, :client_type,
                                              :client_interest, :client_background, :supervisor_background, :equipments,
-                                             :project_type, area: [])
+                                             :project_type, :project_cost, area: [])
   end
 
   def create_categories
