@@ -31,16 +31,19 @@
             <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">About</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile-skills" role="tab" aria-controls="profile" aria-selected="false">Skills</a>
+            <a class="nav-link" id="skills-tab" data-toggle="tab" href="#profile-skills" role="tab" aria-controls="profile" aria-selected="false">Skills</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="badges-tab" data-toggle="tab" href="#badges-manager" role="tab" aria-controls="profile" aria-selected="false">Badges</a>
           </li>
           <% if @user.staff? %>
             <li class="nav-item">
-              <a class="nav-link" id="profile-tab" data-toggle="tab" href="#certifications-manager" role="tab" aria-controls="profile" aria-selected="false">Certifications</a>
+              <a class="nav-link text-danger" id="certifications-tab" data-toggle="tab" href="#certifications-manager" role="tab" aria-controls="profile" aria-selected="false">Certifications</a>
             </li>
           <% end %>
           <% if @user.admin? %>
             <li class="nav-item">
-              <a class="nav-link" id="profile-tab" data-toggle="tab" href="#role-manager" role="tab" aria-controls="profile" aria-selected="false">Role Manager</a>
+              <a class="nav-link text-danger" id="roles-tab" data-toggle="tab" href="#role-manager" role="tab" aria-controls="profile" aria-selected="false">Role Manager</a>
             </li>
           <% end %>
         </ul>
@@ -195,6 +198,28 @@
           </div>
         </div>
 
+        <div class="tab-pane fade" id="badges-manager" role="tabpanel" aria-labelledby="badges-tab">
+          <% begin %>
+            <% if @acclaim_data.present? %>
+              <div class="row">
+                <% @acclaim_data.each do |badges| %>
+                  <% begin %>
+                    <div class="col-md-3">
+                      <% if badges.badge_url.present? %>
+                        <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges.acclaim_badge_id %>">
+                          <%= image_tag(badges.badge_template.image_url, :style => "width: inherit") %>
+                        </a>
+                      <% else %>
+                        <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", 'data-toggle' => "modal", 'data-target' => "#pending_modal") %>
+                      <% end %>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+
         <div class="tab-pane fade" id="profile-skills" role="tabpanel" aria-labelledby="profile-tab">
           <div class="col-md-12">
             <% @skills.each do |skill| %>
@@ -229,6 +254,28 @@
                                   <%= training.description %>
                                 </div>
                               <% end %>
+
+                              <% unless training.proficient_projects.count == 0 %>
+
+                                <div class="row">
+                                  <% pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, current_user.id)).order(created_at: :desc)&.last %>
+                                  <% unless pp.nil? %>
+                                    <div class="col-lg-3 text-center">
+                                      <%= image_tag(pp.badge_template.image_url, :style => "width: 150px") %>
+                                    </div>
+                                    <div class="col-lg-9 my-auto">
+                                      <%= pp.badge_template.badge_description %>
+                                    </div>
+                                    <div class="col-12 pt-2">
+                                      <p>Skills Acquired: <b><%= pp.badge_template.list_of_skills %></b></p>
+                                    </div>
+                                  <% end %>
+                                </div>
+
+                                <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
+                              <% end %>
+                              <p>Learning Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
+                              <p>Recomended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, current_user.id)) %></p>
                             </div>
                           </div>
                         </div>
@@ -384,8 +431,27 @@
     </table>
   <% end %>
 </section>
+
 <div id="modal-window" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content"></div>
+  </div>
+</div>
+
+<div class="modal fade" id="pending_modal" role="dialog">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Badge pending</h4>
+      </div>
+      <div class="modal-body">
+        <p>To accept your badge, please look into your emails (it could be in the spam folder), you should have
+          received an email from Acclaim or CEED with a link to accept the badge!</p>
+        <p>Congratulations!</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+      </div>
+    </div>
   </div>
 </div>
