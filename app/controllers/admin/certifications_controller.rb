@@ -2,7 +2,17 @@ class Admin::CertificationsController < AdminAreaController
   before_action :set_certification, only: %i[update destroy]
 
   def update
+    past_demotion_reason = @cert.demotion_reason
     if @cert.update(certification_params)
+      user = @cert.user
+      if @cert.active
+        user.flag_message = user.flag_message.gsub("; This user was demoted in '#{@cert.training.name}' because '#{past_demotion_reason}'", '')
+        user.flagged = false if user.flag_message.blank?
+      else
+        user.flag_message += "; This user was demoted in '#{@cert.training.name}' because '#{@cert.demotion_reason}'"
+        user.flagged = true
+      end
+      user.save
       flash[:notice] = 'Action completed.'
     else
       flash[:alert] = 'Something went wrong. Try again later.'

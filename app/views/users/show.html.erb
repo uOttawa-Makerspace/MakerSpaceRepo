@@ -289,6 +289,9 @@
         </div>
         <% if @user.staff? %>
           <div class="tab-pane fade" id="certifications-manager" role="tabpanel" aria-labelledby="profile-tab">
+            <% if @user.admin? %>
+              <div class="mb-3 text-center"><%= link_to 'See Demotions', demotions_admin_certifications_path, class: 'btn btn-primary' %></div>
+            <% end %>
             <table class="table table-striped text-center">
               <tr>
                 <th>TRAINING</th>
