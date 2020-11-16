@@ -157,6 +157,11 @@
     <div>Project similar in Youtube<br>Projet similaire sur Youtube</div>
     <%= f.text_field :youtube_link, class: 'repo' %>
     <br>
+    <div class="form-group">
+      <%= f.label :past_experiences, "Experiences passées / Past experiences", class: "control-label" %>
+      <%= f.text_area :past_experiences, class: 'form-control' %>
+    </div>
+    <br>
     <div class="form-group required">
       <%= f.label :project_cost, "Coût attendu du projet / Expected cost of the project", class: "control-label" %>
       <div>Coût attendu du projet / Expected cost of the project</div>
