@@ -262,7 +262,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
       end
 
       it 'should set the oi as Awarded' do
-        get :approve_project, format: 'js', params: {oi_id: OrderItem.last.id}
+        get :approve_project, params: {oi_id: OrderItem.last.id}
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq('Awarded')
         expect(ActionMailer::Base.deliveries.count).to eq(3)

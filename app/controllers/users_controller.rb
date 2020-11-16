@@ -173,6 +173,10 @@ class UsersController < SessionsController
     @photos = photo_hash
     @certifications = @repo_user.certifications
     @remaining_trainings = @repo_user.remaining_trainings
+    @skills = Skill.all
+    @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
+    @learning_modules_completed = Proc.new{ |training| training.learning_modules.where(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id))}
+    @recomended_hours = Proc.new { |training, levels| training.learning_modules.where(level: levels).count + training.proficient_projects.where(level: levels).count }
   end
 
   def likes
