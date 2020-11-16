@@ -2,7 +2,7 @@
 <section id="new-repo">
   <div class="title">New Project Proposal<br>Nouvelle Proposition de Projet</div>
 
-  <%= form_for @project_proposal, html: {class: "needs-validation", novalidate: true, multipart: true } do |f| %>
+  <%= form_for @project_proposal, html: {class: "needs-validation", novalidate: true, multipart: true} do |f| %>
     <br>
     <div class="form-group required">
       <%= f.label :username, "Name/Nom", class: "control-label" %>
@@ -113,13 +113,13 @@
 
     <br>
 
-    <%= label_tag :file, "Project files"%>
+    <%= label_tag :file, "Project files" %>
     <label class="custom-instructable-upload">
       <%= file_field_tag 'files[]', type: :files, multiple: true, style: "display: none;" %>
       Choose files...
     </label>
     <div id="file-container"></div>
-    <br />
+    <br/>
     <%= label_tag :photo, "Gallery*" %>
     <div class="repo-image mx-auto">
       <div id="dragndrop">
@@ -148,7 +148,16 @@
     <div class="form-group">
       <%= f.label :past_experiences, "Experiences passées / Past experiences", class: "control-label" %>
       <%= f.text_area :past_experiences, class: 'form-control', value: "There has been no previous attempt to solving this problem." %>
+
+      <div id="linkRef">
+        <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link
+        </button>
+        <br><br>
+        <ul class="main_ul">
+        </ul>
+      </div>
     </div>
+
     <br>
     <div class="form-group required">
       <%= f.label :project_cost, "Coût attendu du projet / Expected cost of the project", class: "control-label" %>

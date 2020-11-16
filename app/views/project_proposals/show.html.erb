@@ -46,6 +46,19 @@
       <br>
       <b>Coût prévu du projet / Expected project
         cost</b>: <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : "Not available" %>
+      <br>
+      <% if !@project_proposal.past_experiences.nil?  %>
+        <b>Experiences passées / Past attempts:</b>
+        <br>
+        <%= @project_proposal.past_experiences.split("|")[0] %>
+        <br>
+        <% if  @project_proposal.past_experiences.split("|")[1].present? %>
+          <% @project_proposal.past_experiences.split("|")[1].split(",").each do |links| %>
+            <%= link_to links, links %> <br>
+          <% end %>
+        <% end %>
+
+      <% end %>
     </div>
 
     <div class="repo-desc">
@@ -79,6 +92,7 @@
           <b>Interets du client / Client interest:</b> <%= @project_proposal.client_interest %>
           <br/>
           <b>Contexte du client / Client Background:</b> <%= @project_proposal.client_background.html_safe %>
+          <br>
         </div>
 
         <% if @project_proposal.supervisor_background.present? %>

@@ -159,8 +159,26 @@
     <br>
     <div class="form-group">
       <%= f.label :past_experiences, "Experiences passées / Past experiences", class: "control-label" %>
-      <%= f.text_area :past_experiences, class: 'form-control' %>
+      <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split("|")[0] : f.object.past_experiences %>
+
+      <div id="linkRef">
+        <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link
+        </button>
+        <br><br>
+        <ul class="main_ul">
+        </ul>
+      </div>
     </div>
+
+    <script type="text/javascript" charset="utf-8">
+      let urls = '<%= !f.object.past_experiences.nil? ? f.object.past_experiences.split("|")[1] : "" %>'.split(",");
+      for (let i = 0; i < urls.length; i++) {
+          $('.main_ul').append(
+              $('<li><div class="form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text" value="' + urls[i] + '"></div></li>')
+          );
+      }
+    </script>
+
     <br>
     <div class="form-group required">
       <%= f.label :project_cost, "Coût attendu du projet / Expected cost of the project", class: "control-label" %>

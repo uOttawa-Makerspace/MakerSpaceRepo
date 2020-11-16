@@ -102,7 +102,6 @@ function validation_proposal(){
     return true
 }
 
-
 function scrow_to_error(element_id) {
     var elmnt = document.getElementById(element_id);
     elmnt.scrollIntoView(true);
@@ -120,6 +119,13 @@ var equipmentArray;
 var certificationArray;
 
 $(document).on("turbolinks:load", function(){
+
+    $('body').on('click', 'button.link-list', function() {
+        $('.main_ul').append(
+            $('<li><div class="form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div></li>')
+        );
+    });
+
   load();
 });
 
@@ -551,6 +557,30 @@ function load() {
   });
 
     $("form#new_project_proposal, form.edit_project_proposal").submit(function(e){
+
+        let experiences_list = "";
+
+        function updateList() {
+            Array.from(document.getElementsByClassName("link_name")).forEach(
+                function (element, index, array) {
+                    console.log(element.value);
+                    experiences_list += element.value + ",";
+                }
+            );
+            if(experiences_list.length >= 1) {
+                experiences_list = experiences_list.substring(0, experiences_list.length-1);
+            }
+
+        }
+
+        updateList();
+
+        console.log(experiences_list);
+
+        document.getElementById('project_proposal_past_experiences').value = document.getElementById('project_proposal_past_experiences').value + "|" + "" + experiences_list;
+
+        console.log(document.getElementById('project_proposal_past_experiences').value)
+
         e.preventDefault();
         var validate = validation_proposal();
 
