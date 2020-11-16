@@ -2,7 +2,7 @@
 <section id="new-repo">
   <div class="title">New Project Proposal<br>Nouvelle Proposition de Projet</div>
 
-  <%= form_for @project_proposal, html: {class: "needs-validation", novalidate: true} do |f| %>
+  <%= form_for @project_proposal, html: {class: "needs-validation", novalidate: true, multipart: true } do |f| %>
     <br>
     <div class="form-group required">
       <%= f.label :username, "Name/Nom", class: "control-label" %>
@@ -71,7 +71,8 @@
       <%= f.label :client_background, "Client Background/Contexte du client", class: "control-label" %>
       <div>What is the client background?<br>Quel est le contexte du client?</div>
       <div style="width: 420px;">
-        <%= f.trix_editor :client_background, class: 'form-control', id: "trix_editor", required: true %>
+        <%= f.hidden_field :client_background, id: :project_proposal_client_background, class: "form-control" %>
+        <trix-editor input="project_proposal_client_background"></trix-editor>
         <div class="invalid-feedback">
           Veuillez entrer le contexte du client / Please enter client's background
         </div>
@@ -82,7 +83,8 @@
       <%= f.label :supervisor_background, "Supervisor Background/Contexte du Superviseur", class: "control-label" %>
       <div>What is the supervisor background?<br>Quel est le contexte du superviseur?</div>
       <div style="width: 420px;">
-        <%= f.trix_editor :supervisor_background, class: 'form-control', id: "trix_editor", required: true %>
+        <%= f.hidden_field :supervisor_background, id: :project_proposal_supervisor_background, class: "form-control" %>
+        <trix-editor input="project_proposal_supervisor_background"></trix-editor>
         <div class="invalid-feedback">
           Veuillez entrer le contexte du superviseur / Please enter supervisor's background
         </div>
@@ -101,13 +103,37 @@
     <div class="form-group required">
       <%= f.label :description, "Description", class: "control-label" %>
       <div style="width: 420px;">
-        <%= f.trix_editor :description, class: 'form-control', id: "trix_editor", required: true %>
+        <%= f.hidden_field :description, id: :project_proposal_description, class: "form-control", required: true %>
+        <trix-editor input="project_proposal_description"></trix-editor>
         <div class="invalid-feedback">
           Veuillez entrer la description du projet / Please enter project's description
         </div>
       </div>
     </div>
-    <br/>
+
+    <br>
+
+    <%= label_tag :file, "Project files"%>
+    <label class="custom-instructable-upload">
+      <%= file_field_tag 'files[]', type: :files, multiple: true, style: "display: none;" %>
+      Choose files...
+    </label>
+    <div id="file-container"></div>
+    <br />
+    <%= label_tag :photo, "Gallery*" %>
+    <div class="repo-image mx-auto">
+      <div id="dragndrop">
+        <%= fa_icon 'cloud-upload' %>
+        <p>Drag &amp; Drop</p>
+      </div>
+      <label class="custom-image-upload">
+        <%= file_field_tag 'images[]', type: :files, multiple: true, style: "display: none;" %>
+        or choose an image...
+      </label>
+    </div>
+    <div id="image-container" class="mx-auto"></div>
+
+    <br>
     <div class="form-group">
       <%= f.label :equipments, "Possible technologies involved", class: "control-label" %>
       <%= f.text_area :equipments, class: 'form-control' %>

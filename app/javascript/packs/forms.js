@@ -45,7 +45,7 @@ function validation_proposal(){
     var email = $("input#project_proposal_email");
     var client = $("input#project_proposal_client");
     var client_background = $("input#project_proposal_client_background");
-    var description = $("#trix_editor");
+    var description = $("#project_proposal_description");
     $('span.form-error.repo-form').remove();
     var span = $('<span>').addClass('form-error repo-form');
     var regex = /^[-a-zA-ZÀ-ÿ\d\s]*$/;
@@ -95,8 +95,8 @@ function validation_proposal(){
 
     if( description.val().length === 0 ){
         span.text("Description is required.");
-        $('#trix_editor').before(span);
-        scrow_to_error("trix_editor");
+        $('#project_proposal_description').before(span);
+        scrow_to_error("project_proposal_description");
         return false;
     }
     return true
@@ -557,6 +557,14 @@ function load() {
         var _this = $(this),
             uri   = _this[0].action,
             form  = new FormData(_this[0]);
+
+        for (var i = 0; i < instructableFiles.length; i++) {
+            form.append("files[]", instructableFiles[i]);
+        };
+
+        for (var i = 0; i < photoFiles.length; i++) {
+            form.append("images[]", photoFiles[i]);
+        };
 
         for (var i = 0; i < categoryArray.length; i++) {
             form.append("categories[]", categoryArray[i]);

@@ -25,6 +25,8 @@ class ProjectProposalsController < ApplicationController
     @categories = @project_proposal.categories
     @repositories = @project_proposal.repositories.public_repos.order([sort_order].to_h).page params[:page]
     @photos = photo_hash
+    @project_photos = @project_proposal.photos.joins(:image_attachment)&.first(5) || []
+    @project_files = @project_proposal.repo_files.joins(:file_attachment)
   end
 
   # GET /project_proposals/new
@@ -36,6 +38,8 @@ class ProjectProposalsController < ApplicationController
   def edit
     @categories = @project_proposal.categories
     @category_options = CategoryOption.show_options
+    @photos = @project_proposal.photos.joins(:image_attachment).first(5)
+    @files = @project_proposal.repo_files.joins(:file_attachment)
   end
 
   def projects_assigned
@@ -59,6 +63,8 @@ class ProjectProposalsController < ApplicationController
 
     respond_to do |format|
       if @project_proposal.save
+        create_photos
+        create_files
         create_categories
         format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully created.' }
         format.json { render :show, status: :created, location: @project_proposal }
@@ -76,6 +82,8 @@ class ProjectProposalsController < ApplicationController
     @project_proposal.categories.destroy_all
     respond_to do |format|
       if @project_proposal.update(project_proposal_params)
+        update_photos
+        update_files
         create_categories
         format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully updated.' }
         format.json { render :show, status: :ok, location: @project_proposal }
@@ -136,6 +144,60 @@ class ProjectProposalsController < ApplicationController
   end
 
   private
+
+  def create_photos
+    if params[:images].present?
+      params[:images].first(5).each do |img|
+        dimension = FastImage.size(img.tempfile)
+        Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
+      end
+    end
+  end
+
+  def create_files
+    if params[:files].present?
+      params[:files].each do |f|
+        RepoFile.create(file: f, project_proposal_id: @project_proposal.id)
+      end
+    end
+  end
+
+  def update_photos
+    if params[:deleteimages].present?
+      @project_proposal.photos.each do |img|
+        if params[:deleteimages].include?(img.image.filename.to_s) # checks if the file should be deleted
+          img.image.purge
+          img.destroy
+        end
+      end
+    end
+
+    if params['images'].present?
+      params['images'].each do |img|
+        dimension = FastImage.size(img.tempfile)
+        Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
+      end
+    end
+  end
+
+  def update_files
+    if params['deletefiles'].present?
+      @project_proposal.repo_files.each do |f|
+        if params['deletefiles'].include?(f.file.id.to_s) # checks if the file should be deleted
+          f.file.purge
+          f.destroy
+        end
+      end
+    end
+
+    if params['files'].present?
+
+      params['files'].each do |f|
+        RepoFile.create(file: f, project_proposal_id: @project_proposal.id)
+      end
+
+    end
+  end
 
   # Use callbacks to share common setup or constraints between actions.
   def set_project_proposal
