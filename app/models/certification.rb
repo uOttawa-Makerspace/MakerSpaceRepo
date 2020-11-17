@@ -80,4 +80,12 @@ class Certification < ApplicationRecord
     end
   end
 
+  def self.filter_by_attribute(value)
+    if value.present?
+      where("LOWER(certifications.demotion_reason) like LOWER(?)", "%#{value}%",)
+    else
+      inactive
+    end
+  end
+
 end

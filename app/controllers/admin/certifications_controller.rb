@@ -38,7 +38,12 @@ class Admin::CertificationsController < AdminAreaController
   end
 
   def demotions
-    @demotions = Certification.inactive
+    search_params = params[:search]
+    @demotions = Certification.filter_by_attribute(search_params)
+    respond_to do |format|
+      format.html
+      format.js
+    end
   end
 
   private

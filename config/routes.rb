@@ -226,6 +226,7 @@ Rails.application.routes.draw do
       collection do
         get :open_modal
         get :demotions
+        get :search_demotions
       end
     end
   end
