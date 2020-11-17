@@ -20,9 +20,16 @@ window.change_color = function(radio) {
 
 window.checkFile = function(yourForm) {
 
-    var file = yourForm.elements['print_order[final_file]'].value;
+    let file = document.getElementById("print_order_final_file").files;
 
-    if(file != ""){
+    let checked = true;
+    for (x of file) {
+        if (x.name == "") {
+            checked = false;
+        }
+    }
+
+    if(checked === true) {
         yourForm.submit();
     } else {
         if(confirm("Do you want to continue without adding a file ?")) {

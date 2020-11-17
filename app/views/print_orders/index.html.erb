@@ -87,9 +87,11 @@
             <% if @user.admin? || @user.staff? %>
               <td>
                 <% if prints.final_file.attached? %>
-                  <%= link_to "Download", rails_blob_path(prints.final_file, disposition: 'attachment'), class: "btn btn-primary" %>
-                  <br>
-                  <span style="word-break: break-all;"><%= prints.final_file.filename %></span>
+                    <% prints.final_file.each do |final_file| %>
+                      <%= link_to "Download", rails_blob_path(final_file, disposition: 'attachment'), class: "btn btn-primary" %>
+                      <br>
+                      <span style="word-break: break-all;"><%= final_file.filename %></span>
+                    <% end %>
                 <% else %>
                   Not Available
                 <% end %>
