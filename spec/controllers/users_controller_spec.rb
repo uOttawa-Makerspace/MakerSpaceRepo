@@ -104,7 +104,7 @@ RSpec.describe UsersController, type: :controller do
         post :flag, params: {flagged_user: user.id, flag: "flag", flag_message: "abc"}
         expect(response).to redirect_to user_path(user.username)
         expect(User.last.flagged?).to be_truthy
-        expect(User.last.flag_message).to eq("abc")
+        expect(User.last.flag_message).to eq("; abc")
       end
 
       it 'should unflag user' do

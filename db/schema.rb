@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_11_06_200437) do
+ActiveRecord::Schema.define(version: 2020_11_17_163656) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -648,7 +648,7 @@ ActiveRecord::Schema.define(version: 2020_11_06_200437) do
     t.datetime "last_seen_at"
     t.integer "wallet", default: 0
     t.boolean "flagged"
-    t.string "flag_message"
+    t.string "flag_message", default: ""
     t.boolean "confirmed", default: false
   end
 
