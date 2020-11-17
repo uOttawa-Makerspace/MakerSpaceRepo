@@ -2,48 +2,36 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Flag comments</h5>
+        <h5 class="modal-title" id="exampleModalLabel"><b><%= @repo_user.name %></b> Flags</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-        <%= @repo_user.flag_message %>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <%= form_tag(flag_users_path, :method => "post") do %>
-          <%= hidden_field_tag :flagged_user, nil, value: @repo_user.id %>
-          <%= hidden_field_tag :flag, nil, value: "unflag" %>
-          <%= submit_tag "Remove Flag", class: "btn btn-danger" %>
+        Flags: <br />
+        <% @repo_user.flag_message.split('; ').drop(1).each_with_index do |flag, i| %>
+          <b>(<%= i + 1 %>) <%= flag %></b> <br />
         <% end %>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="flag_user" tabindex="-1" role="dialog" aria-labelledby="flag_user" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Flag : <%= @repo_user.name %></h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
+        <br />
+        <br />
+        <br />
         <%= form_tag(flag_users_path, :method => "post") do %>
           <%= hidden_field_tag :flagged_user, nil, value: @repo_user.id %>
           <%= hidden_field_tag :flag, nil, value: "flag" %>
           <div class="form-group">
             <%= text_field_tag :flag_message, nil, placeholder: "Message", class: "form-control" %>
           </div>
-          <button type="submit" class="btn btn-danger">Flag User</button>
-      <% end %>
+          <button type="submit" class="btn btn-success">Add flag</button>
+        <% end %>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        </div>
+        <%= form_tag(flag_users_path, :method => "post") do %>
+          <%= hidden_field_tag :flagged_user, nil, value: @repo_user.id %>
+          <%= hidden_field_tag :flag, nil, value: "unflag" %>
+          <%= submit_tag "Remove Flags", class: "btn btn-danger" %>
+        <% end %>
+      </div>
     </div>
   </div>
 </div>

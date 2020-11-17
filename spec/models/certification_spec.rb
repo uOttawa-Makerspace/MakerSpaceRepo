@@ -47,6 +47,17 @@ RSpec.describe Certification, type: :model do
         expect(Certification.inactive.count).to eq(2)
       end
     end
+
+    context '#filter_by_attribute' do
+      it 'should filter by user name, training name or demotions reason' do
+        3.times{ create(:certification) }
+        2.times{ create(:certification, :inactive) }
+        2.times{ create(:certification, :inactive, demotion_reason: 'This is a reason') }
+        cert_filtered = Certification.filter_by_attribute('This is a reason')
+        expect(cert_filtered.count).to eq(2)
+        expect(cert_filtered.pluck(:demotion_reason).uniq).to eq(['This is a reason'])
+      end
+    end
   end
 
   describe 'Methods' do
@@ -58,8 +69,6 @@ RSpec.describe Certification, type: :model do
         expect(certification.trainer).to eq(User.find(user.id).name)
       end
     end
-
-
 
     context '#unique_cert' do
       it "should return true if certification is unique" do

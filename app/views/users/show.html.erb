@@ -56,15 +56,9 @@
       <% if @user.staff? %>
         <%= render 'users/flag' %>
         <b>Flagged: <%= @repo_user.flagged? ? "Yes" : "No"%></b><br>
-        <% if !@repo_user.flagged? %>
-          <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#flag_user">
-            Flag
-          </button>
-        <% else %>
-          <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#flag_message">
-            See flag
-          </button>
-        <% end %>
+        <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#flag_message">
+          <%= !@repo_user.flagged? ? 'Flag' : 'See Flags' %>
+        </button>
       <% end %><br>
     </div>
   </div>
@@ -289,6 +283,9 @@
         </div>
         <% if @user.staff? %>
           <div class="tab-pane fade" id="certifications-manager" role="tabpanel" aria-labelledby="profile-tab">
+            <% if @user.admin? %>
+              <div class="mb-3 text-center"><%= link_to 'See Demotions', demotions_admin_certifications_path, class: 'btn btn-primary' %></div>
+            <% end %>
             <table class="table table-striped text-center">
               <tr>
                 <th>TRAINING</th>

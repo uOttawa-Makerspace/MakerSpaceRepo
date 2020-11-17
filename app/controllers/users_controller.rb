@@ -87,7 +87,9 @@ class UsersController < SessionsController
     if params[:flag].present? and params[:flagged_user].present? and @user.staff?
       @flagged_user = User.find(params[:flagged_user])
       if params[:flag] == "flag" and params[:flag_message].present?
-        @flagged_user.update(flagged: true, flag_message: params[:flag_message])
+        @flagged_user.flagged = true
+        @flagged_user.flag_message += "; #{params[:flag_message]}"
+        @flagged_user.save
       elsif params[:flag] == "unflag"
         @flagged_user.update(flagged: false, flag_message: "")
       end

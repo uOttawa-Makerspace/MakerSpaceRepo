@@ -80,4 +80,15 @@ class Certification < ApplicationRecord
     end
   end
 
+  def self.filter_by_attribute(value)
+    if value.present?
+      inactive.joins(:user, :training).
+                where("LOWER(demotion_reason) like LOWER(:value) OR
+                       LOWER(users.name) like LOWER(:value) OR
+                       LOWER(trainings.name) like LOWER(:value)", { :value => "%#{value}%" })
+    else
+      inactive
+    end
+  end
+
 end
