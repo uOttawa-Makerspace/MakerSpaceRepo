@@ -17,11 +17,11 @@ FactoryBot.define do
     end
 
     trait :with_final_file do
-      final_file { FilesTestHelper.stl }
+      final_file { [FilesTestHelper.stl] }
     end
 
     trait :with_invalid_final_file do
-      final_file { FilesTestHelper.png }
+      final_file { [FilesTestHelper.png] }
     end
 
     trait :approved do

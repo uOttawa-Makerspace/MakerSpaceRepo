@@ -137,7 +137,7 @@ class PrintOrdersController < ApplicationController
           if params[:email_message].present?
             message = params[:email_message].html_safe
           else
-            message = "<div>Hi #{@print_order.name}, <br>Your print has completed and is now available for pickup! Your order ID is #{@print_order.id} and your quoted balance is $. Please visit <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a> for information on how to pay for your job and email makerspace@uottawa.ca to arrange for the pick up of your part during weekdays between 9h-17h.<br><br></div><div>Best regards,<br>The Makerspace Team<br></div>".html_safe
+            message = "<div>Hi #{@print_order.user.name}, <br>Your print has completed and is now available for pickup! Your order ID is #{@print_order.id} and your quoted balance is $. Please visit <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a> for information on how to pay for your job and email makerspace@uottawa.ca to arrange for the pick up of your part during weekdays between 9h-17h.<br><br></div><div>Best regards,<br>The Makerspace Team<br></div>".html_safe
           end
           MsrMailer.send_print_finished(@user, @print_order.id, @print_order.quote, message).deliver_now
         end
