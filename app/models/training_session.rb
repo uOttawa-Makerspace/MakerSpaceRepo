@@ -11,6 +11,7 @@ class TrainingSession < ApplicationRecord
 
   validates :training, presence: {message: 'A training subject is required'}
   validates :user, presence: {message: 'A trainer is required'}
+  validates :level, presence: {message: 'A level is required'}
   validate :is_staff
   before_save :check_course
   scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
