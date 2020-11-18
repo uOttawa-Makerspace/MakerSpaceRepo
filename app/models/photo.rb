@@ -6,8 +6,11 @@ class Photo < ApplicationRecord
   belongs_to :learning_module
 
   has_one_attached :image
+
+  ALLOWED_CONTENT_TYPES = %w[image/jpeg image/png image/gif image/x-icon image/svg+xml].freeze
+
   validates :image, file_content_type: {
-      allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],
+      allow: [ALLOWED_CONTENT_TYPES],
       if: -> {image.attached?},
   }
 end
