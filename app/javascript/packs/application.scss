@@ -5,12 +5,11 @@ $color-marker-active: #FF9900 !default;
 $color-marker: #aaa !default;
 $marker-size: 32px !default;
 $color-marker-hover: #6e6e6e;
+//$table-accent-bg: #a8a8a84f;
+$table-accent-bg: #d6ebeb;
 
 @import "shared/variables";
 @import "~bootstrap/scss/bootstrap";
-//@import '~bootstrap/scss/_functions';
-//@import '~bootstrap/scss/_variables';
-//@import '~bootstrap/scss/mixins/_breakpoints';
 @import "~photoswipe/src/css/main";
 @import "~photoswipe/src/css/default-skin/default-skin";
 @import "~progress-tracker/src/styles/progress-tracker";

@@ -137,14 +137,14 @@ div.form-error{
 }
 
 // Hiding File button for Trix editor
-trix-toolbar .trix-button-group--file-tools {
-  display: none;
-}
+//trix-toolbar .trix-button-group--file-tools {
+//  display: none;
+//}
 
 // Fixing Div bug for Trix editor
-.trix-content {
-  height: auto;
-}
+//.trix-content {
+//  height: auto;
+//}
 
 .button-color {
   .btn-primary {
@@ -176,3 +176,4 @@ trix-toolbar .trix-button-group--file-tools {
 
   @extend .button-color;
 }
+

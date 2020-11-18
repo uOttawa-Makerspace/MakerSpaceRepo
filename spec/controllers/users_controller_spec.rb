@@ -104,7 +104,7 @@ RSpec.describe UsersController, type: :controller do
         post :flag, params: {flagged_user: user.id, flag: "flag", flag_message: "abc"}
         expect(response).to redirect_to user_path(user.username)
         expect(User.last.flagged?).to be_truthy
-        expect(User.last.flag_message).to eq("abc")
+        expect(User.last.flag_message).to eq("; abc")
       end
 
       it 'should unflag user' do
@@ -179,7 +179,8 @@ RSpec.describe UsersController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         get :remove_avatar
         expect(response).to redirect_to settings_profile_path
-        expect(User.display_avatar(User.find(user.id))).to eq('default-avatar.png')
+        user = User.find(user.id)
+        expect(user.display_avatar).to eq('default-avatar.png')
       end
 
       it 'should remove nothing and not give an error' do
@@ -188,7 +189,7 @@ RSpec.describe UsersController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         get :remove_avatar
         expect(response).to redirect_to settings_profile_path
-        expect(User.display_avatar(User.find(user.id))).to eq('default-avatar.png')
+        expect(user.display_avatar).to eq('default-avatar.png')
       end
     end
 

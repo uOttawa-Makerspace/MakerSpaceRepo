@@ -8,16 +8,14 @@ class Certification < ApplicationRecord
 
   validates :user, presence: { message: 'A user is required.' }
   validates :training_session, presence: { message: 'A training session is required.' }
-  validate :unique_cert
+  validate :unique_cert, on: :create
 
+  default_scope -> { where(active: true) }
   scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
+  scope :inactive, -> { unscoped.where(active: false) }
 
   def trainer
     training_session.user.name
-  end
-
-  def out_of_date?
-    updated_at < 2.years.ago
   end
 
   def self.to_csv(attributes)
@@ -59,4 +57,38 @@ class Certification < ApplicationRecord
     end
     path
   end
+
+  def self.highest_certifications(user_id)
+    training_ids = self.joins(:training).pluck(:training_id)
+    trainings = Training.where(id: training_ids)
+    certs = []
+    trainings.each do |training|
+      certs << self.certification_highest_level(training.id, user_id)
+    end
+    certs
+  end
+
+  def self.certification_highest_level(training_id, user_id)
+    certifications = self.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user_id: user_id )
+    level = certifications.pluck(:level)
+    if level.include?('Advanced')
+      certifications.where(training_sessions: { level: 'Advanced' }).last
+    elsif level.include?('Intermediate')
+      certifications.where(training_sessions: { level: 'Intermediate' }).last
+    elsif level.include?('Beginner')
+      certifications.where(training_sessions: { level: 'Beginner' }).last
+    end
+  end
+
+  def self.filter_by_attribute(value)
+    if value.present?
+      inactive.joins(:user, :training).
+                where("LOWER(demotion_reason) like LOWER(:value) OR
+                       LOWER(users.name) like LOWER(:value) OR
+                       LOWER(trainings.name) like LOWER(:value)", { :value => "%#{value}%" })
+    else
+      inactive
+    end
+  end
+
 end

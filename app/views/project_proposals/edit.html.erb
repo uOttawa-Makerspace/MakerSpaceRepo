@@ -1,7 +1,5 @@
 <% provide(:title, "Edit Project Proposal") %>
-<% if flash[:alert] %>
-    <div id="alert"><%= flash[:alert] %></div>
-<% end %>
+
 <section id="new-repo">
   <div class="title">Edit Project Proposal</div>
   <%= link_to fa_icon("search", text: 'View project proposal'), project_proposal_path(@project_proposal.id), class: 'edit-repo-link', id: 'view-repo-link' %>
@@ -33,13 +31,6 @@
       <div>Great project titles are short and memorable.</div>
       <%= f.text_field :title, class: 'repo' %>
       <br>
-      <!--<%= f.label :area, "Client Level of Interest" %>-->
-      <!--<div>Which area(s) does your project touch on? <br> Votre projet touche sur quel(s) domaine(s)?</div>-->
-      <!--<div class = 'checkbox-list'>-->
-        <!--<%= f.collection_check_boxes :area, AreaOption.show_options, :name, :name do |b| %>-->
-            <!--<%= b.label { b.check_box + b.text } %>-->
-        <!--<% end %>-->
-      <!--</div>-->
       <%= f.label :client_interest, "Client Level of Interest/Niveau d'intérêt du Client" %>
       <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
       <div class = 'checkbox-list'>
@@ -72,7 +63,7 @@
       <br>
       <%= f.label :categories %>
       <div>Choose at most 5 categories that fit your project.</div>
-      <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a category..." %>
+      <%= f.select :categories, options_from_collection_for_select(@category_options, :id, :name), class: "profile-text", include_blank: "Select a category..." %>
       <div id="category-container">
         <% @categories.each do |category| %>
             <span class="category"><%= category.name %></span>

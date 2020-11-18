@@ -260,6 +260,9 @@
       </td>
     </tr>
   </table>
+  <% if @print_order.staff_comments.present? %>
+    <p>Comments to the user : <%= @print_order.staff_comments %></p>
+  <% end %>
 </div>
 </body>
 </html>

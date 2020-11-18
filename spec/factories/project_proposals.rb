@@ -28,6 +28,11 @@ FactoryBot.define do
       youtube_link { "" }
     end
 
+    trait 'not_approved' do
+      approved { 0 }
+      youtube_link { "" }
+    end
+
     trait 'joined' do
       approved { 1 }
       youtube_link { "" }

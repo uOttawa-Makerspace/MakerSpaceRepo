@@ -60,6 +60,7 @@ Rails.application.routes.draw do
       get :unjoin_project_proposal
       get :projects_assigned
       get :projects_completed
+      get :user_projects
     end
   end
 
@@ -187,6 +188,10 @@ Rails.application.routes.draw do
 
     resources :trainings
 
+    resources :skills
+
+    resources :drop_off_locations
+
     resources :course_names
 
     resources :contact_infos
@@ -216,6 +221,14 @@ Rails.application.routes.draw do
         get 'pin_unpin_repository'
       end
     end
+
+    resources :certifications, only: %i[update destroy] do
+      collection do
+        get :open_modal
+        get :demotions
+        get :search_demotions
+      end
+    end
   end
 
   namespace :staff do
@@ -223,7 +236,6 @@ Rails.application.routes.draw do
       get '/', :as => 'index', :action => 'index', on: :collection
       member do
         post 'certify_trainees'
-        patch 'renew_certification'
         delete 'revoke_certification'
         get 'training_report'
       end
@@ -271,7 +283,24 @@ Rails.application.routes.draw do
   resources :proficient_projects do
     collection do
       get :join_development_program
+      get :requests
       get :open_modal
+      get :complete_project
+      get :approve_project
+      get :revoke_project
+    end
+  end
+
+  resources :learning_area do
+    collection do
+      get :open_modal
+    end
+  end
+
+  resources :learning_module_track, only: %i[index] do
+    collection do
+      get :start
+      get :completed
     end
   end
 

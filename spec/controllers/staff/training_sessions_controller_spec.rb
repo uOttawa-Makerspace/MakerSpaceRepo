@@ -100,18 +100,6 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
     end
   end
 
-  describe 'PATCH /renew_certification' do
-    context 'logged as admin' do
-      it 'should renew certification' do
-        certification = create(:certification, created_at: DateTime.yesterday.in_time_zone , updated_at: DateTime.yesterday.in_time_zone )
-        patch :renew_certification, params: { id: certification.training_session.id, cert_id: certification.id }
-        expect(Certification.find(certification.id).updated_at.strftime("%Y%m%d%H%M")).to eq(DateTime.now.in_time_zone.strftime("%Y%m%d%H%M"))
-        expect(response).to redirect_to user_path(certification.user.username)
-        expect(flash[:notice]).to eq('Renewed Successfully')
-      end
-    end
-  end
-
   describe 'DELETE /revoke_certification' do
     context 'logged as admin' do
       it 'should delete certification' do

@@ -4,7 +4,7 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-12 text-center mb-4">
-        <h2>Your Kits</h2>
+        <h2><b>Your Kits</b></h2>
       </div>
     </div>
     <div class="text-center">
@@ -12,7 +12,7 @@
         <p class="text-center">
           Some Proficient Projects might include kits that will be used to complete it. <br />
           You have no kits. <br />
-          Please check our <%= link_to "projects", proficient_projects_path(proficiency: true), class: "text-info" %> and add some items to your cart.
+          Please check our <%= link_to "projects", proficient_projects_path, class: "text-info" %> and add some items to your cart.
         </p>
       <% else %>
         <div class="apple_pagination">
@@ -45,7 +45,7 @@
       <hr>
       <div class="row">
         <div class="col-lg-12 text-center mb-4">
-          <h2>All Kits</h2>
+          <h2><b>All Kits</b></h2>
         </div>
       </div>
       <div class="text-center">

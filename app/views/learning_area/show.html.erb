@@ -1,0 +1,74 @@
+<% provide(:title, "Learning Area") %>
+<section class="card w3-card-2 <%= return_border_color(@learning_module.level) %>">
+  <div>
+    <%=link_to 'Delete', learning_area_path, method: :delete, class: "btn btn-danger float-left ml-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
+    <%=link_to "Edit", edit_learning_area_path(@learning_module.id), class:"btn btn-primary float-right mr-5 mt-5", style: "opacity: 0.5" if current_user.admin?%>
+  </div>
+  <div class="col-lg-7 mx-auto">
+    <br />
+    <h2 class="text-center title"><%= @learning_module.title.html_safe %></h2>
+    <div class="container my-4">
+      <div class="text-center">
+        <%= @learning_module.training.name %>
+        -
+        <%= @learning_module.level %>
+        <br />
+        <br />
+        <% if @learning_module_track.blank? %>
+          <div class="alert alert-success">
+            <%= link_to "Start", start_learning_module_track_index_path(learning_module_id: @learning_module.id), class: "btn btn-primary" %>
+          </div>
+        <% elsif @learning_module_track.first.status == 'In progress' %>
+          <div class="alert alert-primary">
+            <%= link_to "Change to Completed", completed_learning_module_track_index_path(learning_module_id: @learning_module.id), class: "btn btn-primary" %>
+          </div>
+        <% elsif @learning_module_track.first.status == 'Completed' %>
+          <div class="alert alert-info">
+            <p>Congratulations on completing this Learning Module !</p>
+          </div>
+        <% end %>
+      </div>
+      <br />
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="jumbotron text-center text-wrap">
+            <%= @learning_module.description.html_safe %>
+          </div>
+          <div id="show-photo">
+            <%= image_tag @photos.first.image, data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+          </div>
+          <div id="photo-slide">
+            <% @photos.each do |p| %>
+              <%= image_tag p.image, data: { width: p.width, height: p.height} %>
+            <% end %>
+          </div>
+          <br />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% if @valid_urls.present? %>
+    <div class="col-lg-12">
+      <% @valid_urls.each do |url| %>
+        <iframe width="100%" height="600px" src="<%= url %>"></iframe>
+      <% end %>
+    </div>
+  <% end %>
+</section>
+
+<% @videos.each do |f| %>
+  <div class="imgbox">
+    <%= video_tag url_for(f.video), controls: true, controlslist: "nodownload", class: "center-fit" if f.video.attached? %>
+  </div>
+  <br />
+<% end %>
+
+<% @files.each do |f| %>
+  <div class="embed-responsive embed-responsive-16by9">
+    <iframe class="embed-responsive-item" src="<%= url_for(f.file) %>" allowfullscreen></iframe>
+    <br />
+  </div>
+<% end %>
+
+<%= render 'layouts/photoswipe' %>

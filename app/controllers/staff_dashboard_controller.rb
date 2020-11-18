@@ -49,7 +49,10 @@ class StaffDashboardController < StaffAreaController
       lab_sessions = LabSession.where(user_id: users)
       lab_sessions.update_all(sign_out_time: Time.zone.now)
     end
-    redirect_to staff_dashboard_index_path(space_id: @space.id)
+    respond_to do |format|
+      format.html
+      format.js
+    end
   end
 
   def sign_out_all_users
@@ -74,7 +77,10 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = "Error signing #{user.name} in" unless lab_session.save
       end
     end
-    redirect_to staff_dashboard_index_path(space_id: @space.id)
+    respond_to do |format|
+      format.html {redirect_to staff_dashboard_index_path(space_id: @space.id)}
+      format.js
+    end
   end
 
   def change_space
@@ -93,7 +99,11 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = 'Something went wrong'
       end
     end
-    redirect_to staff_dashboard_index_path
+    if params[:training].present? and params[:training] == 'true'
+      redirect_to new_staff_training_session_path
+    else
+      redirect_to staff_dashboard_index_path
+    end
   end
 
   def link_rfid

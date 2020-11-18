@@ -31,6 +31,33 @@ RSpec.describe Certification, type: :model do
         expect(Certification.between_dates_picked(3.days.ago.beginning_of_day, 3.days.from_now).count).to eq(3)
       end
     end
+
+    context '#default_scope' do
+      it 'should return only active certifications' do
+        3.times{ create(:certification) }
+        2.times{ create(:certification, :inactive) }
+        expect(Certification.count).to eq(3)
+      end
+    end
+
+    context '#inactive' do
+      it 'should return only inactive certifications (active: false)' do
+        3.times{ create(:certification) }
+        2.times{ create(:certification, :inactive) }
+        expect(Certification.inactive.count).to eq(2)
+      end
+    end
+
+    context '#filter_by_attribute' do
+      it 'should filter by user name, training name or demotions reason' do
+        3.times{ create(:certification) }
+        2.times{ create(:certification, :inactive) }
+        2.times{ create(:certification, :inactive, demotion_reason: 'This is a reason') }
+        cert_filtered = Certification.filter_by_attribute('This is a reason')
+        expect(cert_filtered.count).to eq(2)
+        expect(cert_filtered.pluck(:demotion_reason).uniq).to eq(['This is a reason'])
+      end
+    end
   end
 
   describe 'Methods' do
@@ -40,18 +67,6 @@ RSpec.describe Certification, type: :model do
         training_session = certification.training_session
         user = training_session.user
         expect(certification.trainer).to eq(User.find(user.id).name)
-      end
-    end
-
-    context '#out_of_date?' do
-      it 'should return false for not expired certification' do
-        certification = create(:certification)
-        expect(certification.out_of_date?).to eq(false)
-      end
-
-      it 'should return true for expired certification' do
-        certification = create(:certification, created_at: 3.years.ago, updated_at: 3.years.ago)
-        expect(certification.out_of_date?).to eq(true)
       end
     end
 

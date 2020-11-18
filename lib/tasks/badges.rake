@@ -29,7 +29,7 @@ namespace :badges do
     data = BadgeTemplate.acclaim_api_get_all_badge_templates
     data['data'].each do |badge_template|
       bt = BadgeTemplate.find_or_create_by(acclaim_template_id: badge_template['id'])
-      bt.update(badge_description: badge_template['description'], badge_name: badge_template['name'], image_url: badge_template['image_url'])
+      bt.update(badge_description: badge_template['description'], badge_name: badge_template['name'], image_url: badge_template['image_url'], list_of_skills: badge_template['skills'].join(', '))
       puts "#{bt.badge_name}: Updated!"
     end
     puts 'Done!'

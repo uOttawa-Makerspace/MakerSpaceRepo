@@ -13,9 +13,18 @@ window.examResponse = function(exam_id, answer_id){
 
 function changeAnswerClass(){
     var clickedAnswer = $(event.target);
-    var allAnswersSelected = clickedAnswer.parent().children("p.selected-answers");
-    allAnswersSelected.removeClass('selected-answers');
-    allAnswersSelected.addClass('answers');
-    clickedAnswer.removeClass('answers');
-    clickedAnswer.addClass('selected-answers');
+    if (typeof clickedAnswer.attr('class') !== 'undefined') {
+        var allAnswersSelected = clickedAnswer.parent().children("div.selected-answers");
+        allAnswersSelected.removeClass('selected-answers');
+        allAnswersSelected.addClass('answers');
+        clickedAnswer.removeClass('answers');
+        clickedAnswer.addClass('selected-answers');
+    } else {
+        clickedAnswer = clickedAnswer.parent().parent();
+        var allAnswersSelected = clickedAnswer.parent().children("div.selected-answers");
+        allAnswersSelected.removeClass('selected-answers');
+        allAnswersSelected.addClass('answers');
+        clickedAnswer.removeClass('answers');
+        clickedAnswer.addClass('selected-answers');
+    }
 }

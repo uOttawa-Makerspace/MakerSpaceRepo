@@ -1,18 +1,22 @@
 <div class=" text-left word-break">
   <h2><b><%= question.description %></b></h2>
 </div>
-<%= image_tag question.image.variant(resize: "300x300") if question.image.attached? %>
+<% if question.images.attached? %>
+  <% question.images.each do |img| %>
+    <%= image_tag(img, style: 'height: 300px;') %>
+  <% end %>
+<% end %>
 <hr>
 <div class="text-left">
   <% question.answers.randomize_answers.each do |a| %>
     <% if response.answer.eql?(a) %>
-      <p class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+      <div class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
         <%= a.description %>
-      </p>
+      </div>
     <% else %>
-      <p class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+      <div class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
         <%= a.description %>
-      </p>
+      </div>
     <% end %>
   <% end %>
 </div>

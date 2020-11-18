@@ -28,7 +28,7 @@ RSpec.describe Question, type: :model do
     context 'has_one_attached' do
       it "has image attached" do
         question = create(:question, :with_image)
-        expect(question.image).to be_attached
+        expect(question.images).to be_attached
       end
 
       it 'invalid image attached' do

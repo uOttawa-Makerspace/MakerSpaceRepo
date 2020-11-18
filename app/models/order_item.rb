@@ -9,6 +9,8 @@ class OrderItem < ApplicationRecord
   before_save :finalize
   scope :completed_order, -> { joins(order: :order_status).where(order_statuses: { name: 'Completed' }) }
   scope :in_progress, -> { where(status: 'In progress') }
+  scope :awarded, -> { where(status: 'Awarded') }
+  scope :waiting_for_approval, -> { where(status: 'Waiting for approval') }
 
   def unit_price
     if persisted?
