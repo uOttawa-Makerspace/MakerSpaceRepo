@@ -13,7 +13,7 @@
       Please check our <%= link_to "proficient projects", proficient_projects_path, class: "text-info" %> and add some items to your cart.
     </p>
 <% else %>
-  <table class="table text-center">
+  <table class="table text-center table-striped">
     <thead>
     <tr>
       <th scope="col" class="border-0 bg-light">
@@ -48,7 +48,6 @@
       <div class="p-4">
         <ul class="list-unstyled mb-4">
           <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Order Subtotal </strong><strong><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></strong></li>
-          <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Tax</strong><strong><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>0.00</strong></li>
           <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Total</strong>
             <h5 class="font-weight-bold"><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></h5>
           </li>
