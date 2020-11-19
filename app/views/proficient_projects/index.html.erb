@@ -71,7 +71,8 @@
                               <% end  %>
                             <% end %>
                             <div>
-                              <b class="float-right pt-2 text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + " Ccs" %></b>
+                              <b class="float-right pt-2  text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + " Ccs" %></b>
+                              <br />
                               <br />
                               <h6 class="font-weight-bold text-center"><strong><%= pp.title %></strong></h6>
                               <p><%= pp.level %></p>
