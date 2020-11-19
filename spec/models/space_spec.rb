@@ -50,5 +50,12 @@ RSpec.describe Space, type: :model do
         expect { create(:space) }.to change(PopularHour, :count).by(168)
       end
     end
+
+    context '#makerspace?' do
+      it 'should return false' do
+        space = create(:space, name: "MTC")
+        expect { space.makerspace? }.to eq(false)
+      end
+    end
   end
 end

@@ -33,4 +33,8 @@ class Space < ApplicationRecord
       end
     end
   end
+
+  def makerspace?
+    name.eql?("Makerspace")
+  end
 end
