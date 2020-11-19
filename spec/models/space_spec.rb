@@ -54,7 +54,7 @@ RSpec.describe Space, type: :model do
     context '#makerspace?' do
       it 'should return false' do
         space = create(:space, name: "MTC")
-        expect { space.makerspace? }.to eq(false)
+        expect(space.makerspace?).to eq(false)
       end
     end
   end

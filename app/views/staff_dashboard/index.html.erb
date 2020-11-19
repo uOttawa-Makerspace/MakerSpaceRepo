@@ -83,8 +83,8 @@
           </td>
 
           <td class="certifications-cell">
-            <% if user.certifications.first.present? %>
-              <% user.certifications.each do |certification| %>
+            <% if @certifications_on_space.call(user, @space.id).present? %>
+              <% @certifications_on_space.call(user, @space.id).each do |certification| %>
                   <div class="cert-name" style="display:inline">
                     <div class="cert-holder" style="display:inline">
                       <%= certification.training.name %>
