@@ -37,4 +37,8 @@ class Space < ApplicationRecord
   def makerspace?
     name.eql?("Makerspace")
   end
+
+  def ceed?
+    name.eql?("CEED")
+  end
 end

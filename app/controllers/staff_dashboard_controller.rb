@@ -5,6 +5,7 @@ class StaffDashboardController < StaffAreaController
   def index
     @users = User.order(id: :desc).limit(10)
     @certifications_on_space = Proc.new { |user, space_id| user.certifications.joins(:space).where(spaces: {id: space_id} ) }
+    @all_user_certs = Proc.new { |user| user.certifications }
   end
 
   def refresh_capacity

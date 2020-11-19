@@ -56,6 +56,23 @@ RSpec.describe Space, type: :model do
         space = create(:space, name: "MTC")
         expect(space.makerspace?).to eq(false)
       end
+
+      it 'should return true' do
+        space = create(:space, name: "Makerspace")
+        expect(space.makerspace?).to eq(true)
+      end
+    end
+
+    context '#ceed?' do
+      it 'should return false' do
+        space = create(:space, name: "MTC")
+        expect(space.ceed?).to eq(false)
+      end
+
+      it 'should return true' do
+        space = create(:space, name: "CEED")
+        expect(space.ceed?).to eq(true)
+      end
     end
   end
 end

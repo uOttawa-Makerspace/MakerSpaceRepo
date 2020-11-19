@@ -83,8 +83,9 @@
           </td>
 
           <td class="certifications-cell">
-            <% if @certifications_on_space.call(user, @space.id).present? %>
-              <% @certifications_on_space.call(user, @space.id).each do |certification| %>
+            <% @space.ceed? ? proc = @all_user_certs : proc = @certifications_on_space %>
+            <% if proc.call(user, @space.id).present? %>
+              <% proc.call(user, @space.id).each do |certification| %>
                   <div class="cert-name" style="display:inline">
                     <div class="cert-holder" style="display:inline">
                       <%= certification.training.name %>
