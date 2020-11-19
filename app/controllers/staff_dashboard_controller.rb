@@ -132,8 +132,8 @@ class StaffDashboardController < StaffAreaController
 
   def search
     if params[:query].blank? and params[:username].blank?
-      redirect_back(fallback_location: root_path)
-      flash[:alert] = 'Invalid parameters!'
+      flash[:alert] = 'No search parameters.'
+      redirect_to staff_dashboard_index_path
     elsif params[:username].present?
       @users = User.where("username = ?", params[:username])
     else
