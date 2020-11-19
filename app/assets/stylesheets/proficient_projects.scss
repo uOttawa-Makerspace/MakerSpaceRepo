@@ -31,3 +31,21 @@
   background-size: cover;
   height: 270px;
 }
+
+.watermark {
+  display: block;
+  position: relative;
+}
+
+.watermark::after {
+  content: "";
+  background:url(completed_stamp.png) no-repeat;
+  background-size: 325px 250px;
+  opacity: 0.6;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  position: absolute;
+  z-index: 1;
+}
