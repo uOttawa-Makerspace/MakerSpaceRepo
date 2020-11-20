@@ -76,7 +76,7 @@
 
             <td>
               <% if prints.file.attached? %>
-                <%= link_to "Download", rails_blob_path(prints.file, disposition: 'attachment'), class: "btn btn-primary" %>
+                <%= link_to "Download", rails_blob_path(prints.file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
                 <br>
                 <span style="word-break: break-all;"><%= prints.file.filename %></span>
               <% else %>
@@ -87,8 +87,9 @@
             <% if @user.admin? || @user.staff? %>
               <td>
                 <% if prints.final_file.attached? %>
+                    <%= link_to "Edit files", print_order_edit_approval_path(prints.id), class: "btn btn-sm btn-primary", style: "margin-bottom: 10px;" %>
                     <% prints.final_file.each do |final_file| %>
-                      <%= link_to "Download", rails_blob_path(final_file, disposition: 'attachment'), class: "btn btn-primary" %>
+                      <%= link_to "Download", rails_blob_path(final_file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
                       <br>
                       <span style="word-break: break-all;"><%= final_file.filename %></span>
                     <% end %>

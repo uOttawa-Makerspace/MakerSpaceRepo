@@ -1,0 +1,47 @@
+<div class="padding-10">
+  <div class="row">
+    <div class="col-md-8">
+
+      <p><%= link_to "Back to Print Order Home", print_orders_path, class: "btn btn-primary" %></p>
+      <br>
+      <h2>Edit Print Order Print Files</h2>
+
+      <ul class="list-group">
+        <% @print_order.final_file.each do |files| %>
+          <li class="list-group-item" id="<%= files.filename %>"><%= files.filename %> <button class="float-right btn btn-danger" data-file="<%= files.filename %>" onclick="refresh_fileList(this)">X</button> </li>
+        <% end %>
+      </ul>
+      <br>
+
+      <%= form_for @print_order, multipart: true, url: {controller: "print_orders", action: "update_submission"} do |f| %>
+
+        <%= hidden_field_tag :id, @print_order.id %>
+        <%= hidden_field_tag :remove_files, "", id: "remove_files" %>
+
+        <div class="form-group">
+          <%= f.hidden_field :id, value: @print_order.id %>
+          <%= f.label "final_file", "PDF/GCode Files" %>
+          <%= f.file_field "final_file", style: "display: block!important;", multiple: true %>
+        </div>
+
+        <div class="form-group">
+          <button class="btn btn-primary" type="submit">Edit Request</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+
+<script type="text/javascript" charset="utf-8">
+    function refresh_fileList(list_item) {
+        let remove_files = document.getElementById('remove_files');
+        let file = list_item.getAttribute('data-file');
+        if (remove_files.value === "") {
+            remove_files.value += file;
+        } else if (remove_files.value.includes(file) == false) {
+            remove_files.value += "," + file;
+        }
+        document.getElementById(file).hidden = true;
+    }
+</script>
