@@ -78,60 +78,60 @@
 <!--      PROFILE CONTENT Section-->
       <div class="tab-content profile-tab" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
-          <div class="row">
+          <div class="row mb-1">
             <div class="col-md-6">
               <label>Username</label>
             </div>
             <div class="col-md-6">
-              <p><%= @repo_user.username %></p>
+              <label class="right-side"><%= @repo_user.username %></label>
             </div>
           </div>
-          <div class="row">
+          <div class="row mb-1">
             <div class="col-md-6">
               <label>Name</label>
             </div>
             <div class="col-md-6">
-              <p><%= @repo_user.name %></p>
+              <label class="right-side"><%= @repo_user.name %></label>
             </div>
           </div>
-          <div class="row">
+          <div class="row mb-1">
             <div class="col-md-6">
               <label>Email</label>
             </div>
             <div class="col-md-6">
-              <p><%= @repo_user.email %></p>
+              <label class="right-side"><%= @repo_user.email %></label>
             </div>
           </div>
-          <div class="row">
+          <div class="row mb-1">
             <div class="col-md-6">
               <label>Faculty</label>
             </div>
             <div class="col-md-6">
-              <p><%= @repo_user.faculty.present? ? @repo_user.faculty : "-" %></p>
+              <label class="right-side"><%= @repo_user.faculty.present? ? @repo_user.faculty : "-" %></label>
             </div>
           </div>
-          <div class="row">
+          <div class="row mb-1">
             <div class="col-md-6">
               <label>Program</label>
             </div>
             <div class="col-md-6">
-              <p><%= @repo_user.program.present? ? @repo_user.program : "-" %></p>
+              <label class="right-side"><%= @repo_user.program.present? ? @repo_user.program : "-" %></label>
             </div>
           </div>
-          <div class="row">
+          <div class="row mb-1">
             <div class="col-md-6">
               <label>Year of study</label>
             </div>
             <div class="col-md-6">
-              <p><%= @repo_user.year_of_study.present? ? @repo_user.year_of_study : "-" %></p>
+              <label class="right-side"><%= @repo_user.year_of_study.present? ? @repo_user.year_of_study : "-" %></label>
             </div>
           </div>
-          <div class="row">
+          <div class="row mb-1">
             <div class="col-md-6">
               <label>Identity</label>
             </div>
             <div class="col-md-6">
-              <p><%= @repo_user.identity.present? ? @repo_user.identity.capitalize : "-" %></p>
+              <label class="right-side"><%= @repo_user.identity.present? ? @repo_user.identity.capitalize : "-" %></label>
             </div>
           </div>
         </div>
@@ -271,12 +271,12 @@
 
         <% if @user.admin? %>
           <div class="tab-pane fade" id="role-manager" role="tabpanel" aria-labelledby="profile-tab">
-            <div class="row">
+            <div class="row mb-1">
               <div class="col-md-6">
                 <label>Current role</label>
               </div>
               <div class="col-md-6">
-                <p><%= @repo_user.role.gsub("_", " ").capitalize %></p>
+                <label class="right-side"><%= @repo_user.role.gsub("_", " ").capitalize %></label>
               </div>
             </div>
             <div class="row">
