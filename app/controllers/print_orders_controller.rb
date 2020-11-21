@@ -49,6 +49,7 @@ class PrintOrdersController < ApplicationController
 
   def edit
     @print_order = PrintOrder.find(params[:id])
+    @comments = @print_order.comments.split(",")
 
     unless @print_order.approved.nil?
       redirect_to index_new_print_orders_path, alert: 'The print order has already been approved by admins, you cannot modify your submission'
@@ -73,6 +74,20 @@ class PrintOrdersController < ApplicationController
       @print_order.final_file.each do |file|
         file.purge if removed_files.include? file.filename.to_s
       end
+    end
+
+    params[:print_order][:comments] = params[:print_order][:comments].split(",").join(" ")
+
+    if params[:print_order][:material] && params[:print_order][:comments]
+      unless (params[:print_order][:comments] == '1/8" MDF') || (params[:print_order][:comments] == '1/4" MDF')
+        params[:print_order][:comments] = params[:print_order][:material].to_s + ', ' + params[:print_order][:comments].to_s
+      end
+    end
+
+    params[:print_order][:sst] = 'true' if params[:print_order][:material] == 'SST'
+
+    if params[:print_order][:comments] && (params[:comments_box] != '')
+      params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:comments_box].to_s
     end
 
     if @print_order.update(print_order_params)

@@ -5,6 +5,7 @@
       <p><%= link_to "Back to Print Order Home", print_orders_path, class: "btn btn-primary" %></p>
       <br>
       <h2>Edit Print Order Print Files</h2>
+      <p>Since the user already received the quote, you can only modify the files.</p>
 
       <ul class="list-group">
         <% @print_order.final_file.each do |files| %>
