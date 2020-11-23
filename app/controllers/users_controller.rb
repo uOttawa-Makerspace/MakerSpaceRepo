@@ -99,6 +99,15 @@ class UsersController < SessionsController
     end
   end
 
+  def remove_flag
+    @repo_user = User.find(params[:repo_user_id])
+    msg = params[:flag_msg]
+    @repo_user.flag_message = @repo_user.flag_message.gsub("; #{msg}", '')
+    @repo_user.flag_message.blank? ? @repo_user.flagged = false : @repo_user.flagged = true
+    @repo_user.save
+    redirect_to user_path(@repo_user.username)
+  end
+
   def remove_avatar
     @user.avatar.purge
     redirect_to settings_profile_path
