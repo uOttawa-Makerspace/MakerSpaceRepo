@@ -58,9 +58,8 @@ class PrintOrdersController < ApplicationController
   end
 
   def edit_approval
-    if @user.admin?
-      @print_order = PrintOrder.find(params[:print_order_id])
-    else
+    @print_order = PrintOrder.find(params[:print_order_id])
+    unless @user.admin? && @print_order.approved?
       redirect_to index_new_print_orders_path, alert: 'You are not allowed on this page'
     end
   end
@@ -76,7 +75,9 @@ class PrintOrdersController < ApplicationController
       end
     end
 
-    params[:print_order][:comments] = params[:print_order][:comments].split(",").join(" ")
+    if params[:comments].present?
+      params[:print_order][:comments] = params[:print_order][:comments].split(",").join(" ")
+    end
 
     if params[:print_order][:material] && params[:print_order][:comments]
       unless (params[:print_order][:comments] == '1/8" MDF') || (params[:print_order][:comments] == '1/4" MDF')

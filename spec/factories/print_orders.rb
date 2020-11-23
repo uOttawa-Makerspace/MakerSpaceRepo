@@ -3,10 +3,10 @@ FactoryBot.define do
     association :user, :regular_user
     comments { Faker::Lorem.paragraph }
     material { "PLA" }
-    approved { false }
-    user_approval { false }
-    printed { false }
-    expedited { false }
+    approved { nil }
+    user_approval { nil }
+    printed { nil }
+    expedited { nil }
 
     trait :with_file do
       file { FilesTestHelper.stl }
