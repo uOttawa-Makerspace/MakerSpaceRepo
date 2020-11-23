@@ -161,7 +161,7 @@
         <div class="tab-pane fade" id="profile-skills" role="tabpanel" aria-labelledby="profile-tab">
           <div class="col-md-12">
             <% @skills.each do |skill| %>
-              <% next unless skill.trainings.present? %>
+
               <div class="accordion">
                 <div class="card">
                   <div class="card-header" type="button" data-toggle="collapse" data-target="#trainings-<%= skill.id %>">
@@ -169,14 +169,13 @@
                   </div>
                   <div id="trainings-<%= skill.id %>" class="collapse">
                     <% skill.trainings.each do |training| %>
-                      <% next unless training.learning_modules.present? || training.proficient_projects.present?%>
 
                       <div class="accordion">
                         <div class="card">
                           <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
                             <div class="row">
-                              <div class="col-4 float-right"></div>
-                              <div class="col-4">
+                              <div class="col-4"></div>
+                              <div class="col-4 text-center">
                                 <button class="btn btn-link" type="button"><%= training.name %></button>
                               </div>
                               <div class="col-4">
@@ -193,15 +192,13 @@
                                 </div>
                               <% end %>
 
-                              <% unless training.proficient_projects.count == 0 %>
-
                                 <div class="row">
                                   <% pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, current_user.id)).order(created_at: :desc)&.last %>
                                   <% unless pp.nil? %>
-                                    <div class="col-lg-3 text-center">
+                                    <div class="col-lg-4 text-center">
                                       <%= image_tag(pp.badge_template.image_url, :style => "width: 150px") %>
                                     </div>
-                                    <div class="col-lg-9 my-auto">
+                                    <div class="col-lg-8 my-auto">
                                       <%= pp.badge_template.badge_description %>
                                     </div>
                                     <div class="col-12 pt-2">
@@ -209,9 +206,7 @@
                                     </div>
                                   <% end %>
                                 </div>
-
-                                <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
-                              <% end %>
+                              <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
                               <p>Learning Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
                               <p>Recomended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, current_user.id)) %></p>
                             </div>
