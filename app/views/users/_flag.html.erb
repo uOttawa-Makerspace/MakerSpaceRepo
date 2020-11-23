@@ -9,9 +9,9 @@
       </div>
       <div class="modal-body">
         Flags: <br />
-        <% @repo_user.flag_message.split('; ').drop(1).each_with_index do |flag, i| %>
-          <b>(<%= i + 1 %>) <%= flag %></b> <br />
-        <% end %>
+        <div id="flag-modal">
+          <%= render :partial => 'flag_list', locals: {repo_user: @repo_user} %>
+        </div>
         <br />
         <br />
         <br />

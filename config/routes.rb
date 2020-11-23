@@ -380,6 +380,7 @@ Rails.application.routes.draw do
       get :remove_avatar
       post :flag
       get :change_email
+      put :remove_flag
     end
 
     get 'likes', on: :member

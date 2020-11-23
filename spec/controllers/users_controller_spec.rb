@@ -93,9 +93,7 @@ RSpec.describe UsersController, type: :controller do
   end
 
   describe "POST /flag" do
-
     context 'flag' do
-
       it 'should flag user' do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
@@ -125,9 +123,32 @@ RSpec.describe UsersController, type: :controller do
         post :flag, params: {flagged_user: user.id, flag: "flag"}
         expect(response).to redirect_to user_path(user.username)
       end
+    end
+  end
 
+  describe "PUT /remove_flag" do
+    context 'logged as admin' do
+      it 'should remove flag user' do
+        admin = create(:user, :admin)
+        session[:user_id] = admin.id
+        session[:expires_at] = Time.zone.now + 10000
+        user = create(:user, :regular_user, flag_message: '; abc', flagged: true)
+        put :remove_flag, params: {repo_user_id: user.id, flag_msg: "abc"}
+        expect(response).to redirect_to user_path(user.username)
+        expect(User.last.flagged?).to be_falsey
+        expect(User.last.flag_message).to eq("")
+      end
     end
 
+    context 'logged as regular user' do
+      it 'should redirect user' do
+        user = create(:user, :regular_user, flag_message: 'abc', flagged: true)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        put :remove_flag, params: {repo_user_id: user.id, flag_msg: "abc"}
+        expect(response).to redirect_to user_path(user.username)
+      end
+    end
   end
 
   describe "GET /new" do
