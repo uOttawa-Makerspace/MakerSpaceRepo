@@ -23,7 +23,7 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals/1.json
   def show
     @categories = @project_proposal.categories
-    @repositories = @project_proposal.repositories.public_repos.order([sort_order].to_h).page params[:page]
+    @repositories = @project_proposal.repositories.order([sort_order].to_h).page params[:page]
     @photos = photo_hash
   end
 
