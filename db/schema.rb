@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_11_17_163656) do
+ActiveRecord::Schema.define(version: 2020_11_24_142131) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -95,7 +95,9 @@ ActiveRecord::Schema.define(version: 2020_11_17_163656) do
     t.integer "user_id"
     t.string "badge_url"
     t.integer "badge_template_id"
+    t.bigint "certification_id"
     t.index ["badge_template_id"], name: "index_badges_on_badge_template_id"
+    t.index ["certification_id"], name: "index_badges_on_certification_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
@@ -712,6 +714,7 @@ ActiveRecord::Schema.define(version: 2020_11_17_163656) do
   add_foreign_key "badge_requirements", "badge_templates"
   add_foreign_key "badge_requirements", "proficient_projects"
   add_foreign_key "badges", "badge_templates"
+  add_foreign_key "badges", "certifications"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"

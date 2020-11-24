@@ -5,6 +5,7 @@ class Certification < ApplicationRecord
   belongs_to :training_session
   has_one :space, through: :training_session
   has_one :training, through: :training_session
+  has_many :badges
 
   validates :user, presence: { message: 'A user is required.' }
   validates :training_session, presence: { message: 'A training session is required.' }

@@ -7,6 +7,7 @@ RSpec.describe Badge, type: :model do
     context "belongs_to" do
       it { should belong_to(:user) }
       it { should belong_to(:badge_template) }
+      it { should belong_to(:certification) }
     end
 
   end

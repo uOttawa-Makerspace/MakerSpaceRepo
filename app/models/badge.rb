@@ -3,6 +3,7 @@
 class Badge < ApplicationRecord
   belongs_to :user
   belongs_to :badge_template
+  belongs_to :certification, optional: true
 
   def self.filter_by_attribute(value)
     if value
