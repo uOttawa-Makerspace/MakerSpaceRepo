@@ -251,7 +251,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
     context 'approve_project' do
 
       before(:each) do
-        @user = create(:user, :volunteer_with_dev_program)
+        @user = create(:user, :admin)
         session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:order, :with_item, user_id: @user.id)
@@ -271,10 +271,13 @@ RSpec.describe ProficientProjectsController, type: :controller do
       end
 
       it 'should NOT set the oi as Awarded' do
+        user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
         get :approve_project, format: 'js'
-        expect(response).to redirect_to requests_proficient_projects_path
+        expect(response).to redirect_to development_programs_path
         expect(OrderItem.last.status).to eq('Waiting for approval')
-        expect(flash[:error]).to eq('An error has occurred, please try again later.')
+        expect(flash[:alert]).to eq('Only admin members can access this area.')
       end
 
     end
