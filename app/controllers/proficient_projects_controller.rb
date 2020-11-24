@@ -117,7 +117,7 @@ class ProficientProjectsController < DevelopmentProgramsController
                                                 course_name: course_name)
       training_session.users << order_item.order.user
       if training_session.present?
-        Certification.find_or_create_by(training_session_id: training_session.id, user_id: order_item.order.user_id)
+        cert = Certification.find_or_create_by(training_session_id: training_session.id, user_id: order_item.order.user_id)
         badge_template = order_item.proficient_project.badge_template
         if badge_template.present?
           user = order_item.order.user
@@ -127,7 +127,8 @@ class ProficientProjectsController < DevelopmentProgramsController
             Badge.create(user_id: user.id,
                          issued_to: user.name,
                          acclaim_badge_id: badge_data['id'],
-                         badge_template_id: badge_template.id)
+                         badge_template_id: badge_template.id,
+                         certification: cert)
             order_item.update(status: 'Awarded')
             MsrMailer.send_results_pp(order_item.proficient_project, order_item.order.user, 'Passed').deliver_now
             flash[:notice] = 'A badge has been awarded to the user!'
@@ -145,7 +146,8 @@ class ProficientProjectsController < DevelopmentProgramsController
     else
       flash[:error] = 'An error has occurred, please try again later.'
     end
-    redirect_to requests_proficient_projects_path
+    current_user.admin? ? redirect_path = requests_proficient_projects_path : redirect_path = order_item.proficient_project
+    redirect_to redirect_path
   end
 
   def revoke_project
@@ -163,7 +165,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   private
 
   def grant_access_to_project
-    if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress']).blank?
+    if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress', 'Waiting for approval']).blank?
       unless current_user.admin? || current_user.staff?
         redirect_to development_programs_path
         flash[:alert] = 'You cannot access this area.'
