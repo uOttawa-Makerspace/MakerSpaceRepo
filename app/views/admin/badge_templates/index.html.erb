@@ -1,0 +1,45 @@
+<div class="text-center">
+  <br />
+  <h2 class="font-weight-bold">Badge Templates</h2>
+
+  <br><br>
+
+  <% if !@badge_template.blank? %>
+    <br />
+
+    <div class="table-responsive">
+      <table class="table sessions-table">
+
+        <tr>
+          <th>Badge Name</th>
+          <th>Related training</th>
+          <th class="action-header">Action</th>
+        </tr>
+
+        <tbody>
+        <% @badge_template.each do |bt| %>
+          <tr>
+            <td>
+              <%= bt.badge_name %>
+            </td>
+
+           <td>
+             <%= bt.training_id.present? ? Training.find(bt.training_id).name : "No related trainings" %>
+           </td>
+
+            <td class="action-cell">
+              <%=link_to "Edit", edit_admin_badge_template_path(bt.id), class:"btn btn-primary btn-block btn-sm mb-1 mt-0" if current_user.staff?%>
+            </td>
+
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="m-5">
+      No Badge Templates were created yet.
+    </div>
+    <br>
+  <% end %>
+</div>

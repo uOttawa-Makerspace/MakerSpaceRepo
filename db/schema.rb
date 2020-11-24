@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_11_24_142131) do
+ActiveRecord::Schema.define(version: 2020_11_24_183034) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -85,6 +85,8 @@ ActiveRecord::Schema.define(version: 2020_11_24_142131) do
     t.datetime "updated_at", null: false
     t.string "image_url"
     t.string "list_of_skills"
+    t.bigint "training_id"
+    t.index ["training_id"], name: "index_badge_templates_on_training_id"
   end
 
   create_table "badges", id: :serial, force: :cascade do |t|
@@ -159,13 +161,19 @@ ActiveRecord::Schema.define(version: 2020_11_24_142131) do
     t.string "email"
     t.string "address"
     t.string "phone_number"
-    t.string "url"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "url"
     t.boolean "show_hours"
   end
 
   create_table "course_names", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "courses", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
@@ -317,6 +325,7 @@ ActiveRecord::Schema.define(version: 2020_11_24_142131) do
     t.integer "width"
     t.integer "proficient_project_id"
     t.integer "learning_module_id"
+    t.integer "project_proposal_id"
     t.index ["repository_id"], name: "index_photos_on_repository_id"
   end
 
@@ -369,6 +378,8 @@ ActiveRecord::Schema.define(version: 2020_11_24_142131) do
     t.text "staff_comments"
     t.boolean "expedited"
     t.integer "order_type", default: 0
+    t.text "email"
+    t.text "name"
     t.datetime "timestamp_approved"
     t.string "final_file_file_name"
     t.string "final_file_content_type"
@@ -404,6 +415,7 @@ ActiveRecord::Schema.define(version: 2020_11_24_142131) do
     t.string "status", default: "true"
     t.string "availability", default: "true"
     t.string "color", default: "FF0000"
+    t.string "rfid"
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
@@ -472,6 +484,9 @@ ActiveRecord::Schema.define(version: 2020_11_24_142131) do
     t.string "client_background"
     t.string "supervisor_background"
     t.text "equipments", default: "Not informed."
+    t.string "project_type"
+    t.integer "project_cost"
+    t.string "past_experiences"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
@@ -508,6 +523,7 @@ ActiveRecord::Schema.define(version: 2020_11_24_142131) do
     t.datetime "file_updated_at"
     t.integer "proficient_project_id"
     t.integer "learning_module_id"
+    t.integer "project_proposal_id"
     t.index ["repository_id"], name: "index_repo_files_on_repository_id"
   end
 
@@ -713,6 +729,7 @@ ActiveRecord::Schema.define(version: 2020_11_24_142131) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "badge_requirements", "badge_templates"
   add_foreign_key "badge_requirements", "proficient_projects"
+  add_foreign_key "badge_templates", "trainings"
   add_foreign_key "badges", "badge_templates"
   add_foreign_key "badges", "certifications"
   add_foreign_key "categories", "category_options"
