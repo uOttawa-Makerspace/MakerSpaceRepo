@@ -19,7 +19,7 @@
                         <button class="btn btn-link" type="button"><%= training.name %></button>
                       </div>
                       <div class="col-4">
-                        <%= training_status(training.id, @repo_user.id).html_safe %>
+                        <%= training_status(training.id, current_user.id).html_safe %>
                       </div>
                     </div>
                   </div>
@@ -32,16 +32,17 @@
                         </div>
                       <% end %>
                       <div class="row">
-                        <% pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, current_user.id)).order(created_at: :desc)&.last %>
-                        <% unless pp.nil? %>
+                        <%# pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, current_user.id)).order(created_at: :desc)&.last %>
+                        <% badge = current_user.badges.joins(:certification => :training_session).where(training_sessions: {training_id: training.id, level: ProficientProject.training_status(training.id, current_user.id)})&.last %>
+                        <% unless badge.nil? %>
                           <div class="col-md-3">
-                            <%= image_tag(pp.badge_template.image_url, :style => "width: 200px") %>
+                            <%= image_tag(badge.badge_template.image_url, :style => "width: 200px") %>
                           </div>
                           <div class="col-md-9 my-auto">
-                            <%= pp.badge_template.badge_description %>
+                            <%= badge.badge_template.badge_description %>
                           </div>
                           <div class="col-12">
-                            Skills Acquired: <%= pp.badge_template.list_of_skills %>
+                            Skills Acquired: <%= badge.badge_template.list_of_skills %>
                           </div>
                         <% end %>
                       </div>
