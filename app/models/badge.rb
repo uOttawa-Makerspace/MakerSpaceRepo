@@ -22,13 +22,8 @@ class Badge < ApplicationRecord
   end
 
   def self.acclaim_api_get_all_badges
-    # response = Excon.get("#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/high_volume_issued_badge_search",
-    #                      user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
-    #                      password: '',
-    #                      headers: { 'Content-type' => 'application/json' })
-    #
-    response = Excon.get("https://api.youracclaim.com/v1/organizations/ca99f878-7088-404c-bce6-4e3c6e719bfa/high_volume_issued_badge_search",
-                         user: 'ZPZQkeseKPzP_Ir1JTyprNYdumAmMrh4krtS',
+    response = Excon.get("#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/high_volume_issued_badge_search",
+                         user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
                          password: '',
                          headers: { 'Content-type' => 'application/json' })
     JSON.parse(response.body)
@@ -80,37 +75,30 @@ class Badge < ApplicationRecord
     end
   end
 
-  def self.create_certification(user, badge_template)
+  def create_certification
+    user = self.user
+    badge_template = self.badge_template
+    return if (self.certification.present? || badge_template.blank? || badge_template.training.blank?)
+    level = if badge_template.badge_name.include?('Advanced')
+              'Advanced'
+            elsif badge_template.badge_name.include?('Intermediate')
+              'Intermediate'
+            else
+              'Beginner'
+            end
+    admin = if User.find_by(email: 'mtc@uottawa.ca').present?
+              User.find_by(email: 'mtc@uottawa.ca')
+            else
+              User.find_by(role: 'admin')
+            end
 
-    if badge_template.present? && badge_template.training_id.present?
-
-      level = if badge_template.badge_name.include?('Intermediate')
-                'Intermediate'
-              elsif badge_template.badge_name.include?('Advanced')
-                'Advanced'
-              else
-                'Beginner'
-              end
-      admin = if User.find_by(email: 'mtc@uottawa.ca').present?
-                User.find_by(email: 'mtc@uottawa.ca').id
-              else
-                User.find_by(role: 'admin').id
-              end
-
-      trainings = TrainingSession.includes(:users).where(user: user.id, level: level, training_id: badge_template.training_id)
-      already_created = false
-
-      if trainings.present?
-        trainings.each do |training|
-          already_created = true if Certification.where(training_session_id: training.id, user_id: user.id)
-        end
-      end
-
-      if already_created == false
-        training_session = TrainingSession.create(user_id: admin, training_id: badge_template.training_id, level: level)
-        training_session.users << user
-        Certification.create(user_id: user.id, training_session_id: training_session.id) if training_session.save
-      end
+    cert = Certification.existent_certification(user, badge_template.training, level)
+    unless cert.present?
+      training_session = TrainingSession.create(user: admin, training: badge_template.training, level: level)
+      training_session.users << user
+      cert = training_session.certifications.create(user: user, training_session: training_session)
     end
+
+    self.update(certification: cert)
   end
 end

@@ -4,7 +4,7 @@ class Admin::BadgeTemplatesController < AdminAreaController
   layout 'admin_area'
 
   def index
-    @badge_template = BadgeTemplate.all.order(created_at: :asc)
+    @badge_template = BadgeTemplate.all.order(badge_name: :asc)
   end
 
   def edit

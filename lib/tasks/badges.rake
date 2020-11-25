@@ -7,17 +7,17 @@ namespace :badges do
     begin
       data = Badge.acclaim_api_get_all_badges
       data['data'].each do |badges|
-        next unless User.where(email: badges['recipient_email']).present? && (badges['state'] != 'revoked')
+        next unless (User.where(email: badges['recipient_email']).present? && (badges['state'] != 'revoked'))
 
         user = User.find_by(email: badges['recipient_email'])
         new_badge = Badge.find_or_create_by(acclaim_badge_id: badges['id'], user: user)
         badge_template = BadgeTemplate.find_by(acclaim_template_id: badges['badge_template']['id'])
-        Badge.create_certification(user, badge_template)
         values = { issued_to: badges['issued_to'],
                    acclaim_badge_id: badges['id'],
                    badge_url: badges['badge_url'],
                    badge_template_id: badge_template.id }
         new_badge.update(values)
+        new_badge.create_certification unless new_badge.certification.present?
         puts "#{new_badge.user.name}: Updated!"
       end
     end

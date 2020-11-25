@@ -16,11 +16,19 @@
         <li class="nav-item"><%= link_to 'Training Sessions', admin_training_sessions_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'Spaces', admin_spaces_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'Roles', manage_roles_admin_users_path, class: "nav-link" %></li>
-        <li class="nav-item"><%= link_to 'Badges', admin_manage_badges_path, class: "nav-link" %></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Badges
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+            <%= link_to "Refreash Badges Data", admin_manage_badges_path, class: "dropdown-item" %>
+            <div class="dropdown-divider"></div>
+            <%= link_to "Badges Template", admin_badge_templates_path, class: "dropdown-item"%>
+          </div>
+        </li>
         <li class="nav-item"><%= link_to 'Contact', admin_contact_infos_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'Skills', admin_skills_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'Drop-Off Locations', admin_drop_off_locations_path, class: "nav-link" %></li>
-        <li class="nav-item"><%= link_to 'Badge Templates', admin_badge_templates_path, class: "nav-link" %></li>
       </ul>
   </div>
 </nav>
