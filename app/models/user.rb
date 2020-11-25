@@ -239,4 +239,16 @@ class User < ApplicationRecord
     badge_requirements_set.subset?(user_badges_set)
   end
 
+  def highest_badge(training)
+    badges = self.badges.joins(:certification => :training_session).where(training_sessions: {training_id: training.id})
+    if badges.where(training_sessions: {level: 'Advanced'}).present?
+      badge = badges.where(training_sessions: {level: 'Advanced'}).last
+    elsif badges.where(training_sessions: {level: 'Intermediate'}).present?
+      badge = badges.where(training_sessions: {level: 'Intermediate'}).last
+    elsif badges.where(training_sessions: {level: 'Beginner'}).present?
+      badge = badges.where(training_sessions: {level: 'Beginner'}).last
+    end
+    badge
+  end
+
 end
