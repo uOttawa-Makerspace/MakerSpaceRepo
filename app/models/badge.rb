@@ -21,8 +21,9 @@ class Badge < ApplicationRecord
     end
   end
 
-  def self.acclaim_api_get_all_badges
-    response = Excon.get("#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/high_volume_issued_badge_search",
+  def self.acclaim_api_get_all_badges(url = nil)
+    url = "#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/high_volume_issued_badge_search" if url.blank?
+    response = Excon.get(url,
                          user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
                          password: '',
                          headers: { 'Content-type' => 'application/json' })
