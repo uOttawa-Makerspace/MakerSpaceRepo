@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class ProficientProjectsController < DevelopmentProgramsController
-  before_action :only_admin_access,                             only: %i[new create edit update destroy requests]
+  before_action :only_admin_access,                             only: %i[new create edit update destroy requests approve_project]
   before_action :set_proficient_project,                        only: %i[show destroy edit update complete_project]
   before_action :grant_access_to_project,                       only: [:show]
   before_action :set_training_categories, :set_badge_templates, :set_drop_off_location,only: %i[new edit]
