@@ -179,7 +179,7 @@
                                 <button class="btn btn-link" type="button"><%= training.name %></button>
                               </div>
                               <div class="col-4">
-                                <%= training_status(training.id).html_safe %>
+                                <%= training_status(training.id, @repo_user.id).html_safe %>
                               </div>
                             </div>
                           </div>
@@ -193,22 +193,24 @@
                               <% end %>
 
                                 <div class="row">
-                                  <% pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, current_user.id)).order(created_at: :desc)&.last %>
-                                  <% unless pp.nil? %>
+                                  <%# pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, @repo_user.id)).order(created_at: :desc)&.last %>
+                                  <%# badge = @repo_user.badges.joins(:certification => :training_session).where(training_sessions: {training_id: training.id, level: ProficientProject.training_status(training.id, @repo_user.id)})&.last %>
+                                  <% badge = @repo_user.highest_badge(training) %>
+                                  <% unless badge.nil? %>
                                     <div class="col-lg-4 text-center">
-                                      <%= image_tag(pp.badge_template.image_url, :style => "width: 150px") %>
+                                      <%= image_tag(badge.badge_template.image_url, :style => "width: 150px") %>
                                     </div>
                                     <div class="col-lg-8 my-auto">
-                                      <%= pp.badge_template.badge_description %>
+                                      <b><%= badge.badge_template.badge_name %>:</b> <%= badge.badge_template.badge_description %>
                                     </div>
                                     <div class="col-12 pt-2">
-                                      <p>Skills Acquired: <b><%= pp.badge_template.list_of_skills %></b></p>
+                                      <p>Skills Acquired: <b><%= badge.badge_template.list_of_skills %></b></p>
                                     </div>
                                   <% end %>
                                 </div>
                               <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
                               <p>Learning Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
-                              <p>Recomended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, current_user.id)) %></p>
+                              <p>Recomended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, @repo_user.id)) %></p>
                             </div>
                           </div>
                         </div>

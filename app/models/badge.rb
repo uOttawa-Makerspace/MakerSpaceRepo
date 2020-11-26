@@ -3,6 +3,7 @@
 class Badge < ApplicationRecord
   belongs_to :user
   belongs_to :badge_template
+  belongs_to :certification, optional: true
 
   def self.filter_by_attribute(value)
     if value
@@ -20,8 +21,10 @@ class Badge < ApplicationRecord
     end
   end
 
-  def self.acclaim_api_get_all_badges
-    response = Excon.get("#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/high_volume_issued_badge_search",
+  def self.acclaim_api_get_all_badges(url = nil)
+    options = "?filter=state::accepted,rejected,pending"
+    url = "#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/high_volume_issued_badge_search#{options}" if url.blank?
+    response = Excon.get(url,
                          user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
                          password: '',
                          headers: { 'Content-type' => 'application/json' })
@@ -72,5 +75,32 @@ class Badge < ApplicationRecord
     else
       flash[:alert] = 'An error has occurred when creating the badge, this message might help : ' + JSON.parse(response.body)['data']['message']
     end
+  end
+
+  def create_certification
+    user = self.user
+    badge_template = self.badge_template
+    return if (self.certification.present? || badge_template.blank? || badge_template.training.blank?)
+    level = if badge_template.badge_name.include?('Advanced')
+              'Advanced'
+            elsif badge_template.badge_name.include?('Intermediate')
+              'Intermediate'
+            else
+              'Beginner'
+            end
+    admin = if User.find_by(email: 'mtc@uottawa.ca').present?
+              User.find_by(email: 'mtc@uottawa.ca')
+            else
+              User.find_by(role: 'admin')
+            end
+
+    cert = Certification.existent_certification(user, badge_template.training, level)
+    unless cert.present?
+      training_session = TrainingSession.create(user: admin, training: badge_template.training, level: level)
+      training_session.users << user
+      cert = training_session.certifications.create(user: user, training_session: training_session)
+    end
+
+    self.update(certification: cert)
   end
 end

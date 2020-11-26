@@ -5,6 +5,7 @@ class Certification < ApplicationRecord
   belongs_to :training_session
   has_one :space, through: :training_session
   has_one :training, through: :training_session
+  has_many :badges
 
   validates :user, presence: { message: 'A user is required.' }
   validates :training_session, presence: { message: 'A training session is required.' }
@@ -89,6 +90,16 @@ class Certification < ApplicationRecord
     else
       inactive
     end
+  end
+
+  def self.existent_certification(user, training, level)
+    user_certs = user.certifications
+    user_certs.each do |cert|
+      if (cert.training.id == training.id) && (cert.training_session.level == level)
+        return cert
+      end
+    end
+    false
   end
 
 end
