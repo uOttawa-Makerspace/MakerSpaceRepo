@@ -92,4 +92,14 @@ class Certification < ApplicationRecord
     end
   end
 
+  def self.existent_certification(user, training, level)
+    user_certs = user.certifications
+    user_certs.each do |cert|
+      if (cert.training.id == training.id) && (cert.training_session.level == level)
+        return cert
+      end
+    end
+    false
+  end
+
 end

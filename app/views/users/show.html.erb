@@ -193,16 +193,18 @@
                               <% end %>
 
                                 <div class="row">
-                                  <% pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, @repo_user.id)).order(created_at: :desc)&.last %>
-                                  <% unless pp.nil? %>
+                                  <%# pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, @repo_user.id)).order(created_at: :desc)&.last %>
+                                  <%# badge = @repo_user.badges.joins(:certification => :training_session).where(training_sessions: {training_id: training.id, level: ProficientProject.training_status(training.id, @repo_user.id)})&.last %>
+                                  <% badge = @repo_user.highest_badge(training) %>
+                                  <% unless badge.nil? %>
                                     <div class="col-lg-4 text-center">
-                                      <%= image_tag(pp.badge_template.image_url, :style => "width: 150px") %>
+                                      <%= image_tag(badge.badge_template.image_url, :style => "width: 150px") %>
                                     </div>
                                     <div class="col-lg-8 my-auto">
-                                      <b><%= pp.badge_template.badge_name %>:</b> <%= pp.badge_template.badge_description %>
+                                      <b><%= badge.badge_template.badge_name %>:</b> <%= badge.badge_template.badge_description %>
                                     </div>
                                     <div class="col-12 pt-2">
-                                      <p>Skills Acquired: <b><%= pp.badge_template.list_of_skills %></b></p>
+                                      <p>Skills Acquired: <b><%= badge.badge_template.list_of_skills %></b></p>
                                     </div>
                                   <% end %>
                                 </div>

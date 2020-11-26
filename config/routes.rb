@@ -155,6 +155,8 @@ Rails.application.routes.draw do
 
     resources :announcements
 
+    resources :badge_templates, only: %i[index edit update]
+
     get 'manage_badges'
 
     namespace :report_generator do
