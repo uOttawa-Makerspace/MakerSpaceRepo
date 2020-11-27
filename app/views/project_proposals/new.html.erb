@@ -101,7 +101,7 @@
       <br>
     </div>
     <div class="form-group required">
-      <%= f.label :description, "Description", class: "control-label" %>
+      <%= f.label :description, "Description / La Description", class: "control-label" %>
       <div style="width: 420px;">
         <%= f.hidden_field :description, id: :project_proposal_description, class: "form-control", required: true %>
         <trix-editor input="project_proposal_description"></trix-editor>
@@ -113,14 +113,14 @@
 
     <br>
 
-    <%= label_tag :file, "Project files" %>
+    <%= label_tag :file, "Project files / Fichiers de Projet" %>
     <label class="custom-instructable-upload">
       <%= file_field_tag 'files[]', type: :files, multiple: true, style: "display: none;" %>
       Choose files...
     </label>
     <div id="file-container"></div>
     <br/>
-    <%= label_tag :photo, "Gallery*" %>
+    <%= label_tag :photo, "Gallery / Galerie", class: 'control-label' %>
     <div class="repo-image mx-auto">
       <div id="dragndrop">
         <%= fa_icon 'cloud-upload' %>
@@ -135,7 +135,7 @@
 
     <br>
     <div class="form-group">
-      <%= f.label :equipments, "Possible technologies involved", class: "control-label" %>
+      <%= f.label :equipments, "Possible technologies involved / Technologies possibles impliquées", class: "control-label" %>
       <%= f.text_area :equipments, class: 'form-control' %>
     </div>
     <br>
@@ -146,7 +146,7 @@
     </div>
     <br>
     <div class="form-group">
-      <%= f.label :past_experiences, "Experiences passées / Past experiences", class: "control-label" %>
+      <%= f.label :past_experiences, "Past experiences / Experiences passées", class: "control-label" %>
       <%= f.text_area :past_experiences, class: 'form-control', value: "There has been no previous attempt to solving this problem." %>
 
       <div id="linkRef">
@@ -158,31 +158,31 @@
 
     <br>
     <div class="form-group required">
-      <%= f.label :project_cost, "Coût attendu du projet / Expected cost of the project", class: "control-label" %>
-      <div>Coût attendu du projet / Expected cost of the project</div>
+      <%= f.label :project_cost, "Expected cost of the project / Coût attendu du projet", class: "control-label" %>
+      <div>Expected cost of the project / Coût attendu du projet</div>
       <div class="input-group mb-3">
         <div class="input-group-prepend">
           <span class="input-group-text" id="basic-addon1">$</span>
         </div>
         <%= f.number_field :project_cost, class: 'form-control', required: true, value: 0 %>
         <div class="invalid-feedback">
-          Veuillez entrer le coût attendu du projet / Please enter the expected project cost
+          Please enter the expected project cost / Veuillez entrer le coût attendu du projet
         </div>
       </div>
     </div>
     <br>
     <div class="form-group required">
-      <%= f.label :project_type, "Type de projet / Project Type", class: "control-label" %>
-      <div>Choisissez un type de projet / Choose a project type</div>
+      <%= f.label :project_type, "Project Type / Type de projet", class: "control-label" %>
+      <div>Choose a project type / Choisissez un type de projet</div>
       <div class='checkbox-list'>
         <%= f.radio_button :project_type, 'General', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
         <%= f.label :project_type, 'General', :id => 'type', :style => 'display:inline' %>
         <br>
         <%= f.radio_button :project_type, 'Client Specific', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :project_type, 'Spécifique au client / Client Specific', :id => 'type', :style => 'display:inline' %>
+        <%= f.label :project_type, 'Client Specific / Spécifique au client', :id => 'type', :style => 'display:inline' %>
         <br>
-        <%= f.radio_button :project_type, 'S/O | N/A', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :project_type, 'S/O | N/A', :id => 'type', :style => 'display:inline' %>
+        <%= f.radio_button :project_type, 'N/A | S/O', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label :project_type, 'N/A | S/O', :id => 'type', :style => 'display:inline' %>
       </div>
     </div>
     <br>
