@@ -16,9 +16,9 @@
       <% if @print_order.where(order).present? %>
 
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" data-toggle="collapse" data-target="#accordion-printorder-<%= index %>" aria-expanded="true">
             <h2 class="mb-0 text-center">
-              <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#accordion-printorder-<%= index %>" aria-expanded="true">
+              <button class="btn btn-link" type="button">
                 <%= order_string %>
               </button>
             </h2>
@@ -26,7 +26,7 @@
           <div id="accordion-printorder-<%= index %>" class="collapse" aria-labelledby="#accordion-printorder-<%= index %>">
             <div class="card-body">
               <h2 class="text-center"><%= order_string %></h2>
-              <table class="table table-striped">
+              <table class="table table-striped table-responsive">
                 <thead>
                 <tr>
                   <th style="text-align: center;" scope="col">User</th>
