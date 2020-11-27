@@ -93,6 +93,14 @@ RSpec.describe ProjectProposalsController, type: :controller do
         expect(response).to have_http_status(:success)
         expect(ActionMailer::Base.deliveries.count).to eq(0)
       end
+
+      it 'should create a repository with images and files' do
+        project_proposal_params = FactoryBot.attributes_for(:project_proposal, :normal)
+        expect { post :create, params: {project_proposal: project_proposal_params, files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')]} }.to change(ProjectProposal, :count).by(1)
+        expect(RepoFile.count).to eq(1)
+        expect(Photo.count).to eq(1)
+        expect(flash[:notice]).to eq('Project proposal was successfully created.')
+      end
     end
   end
 
@@ -109,6 +117,14 @@ RSpec.describe ProjectProposalsController, type: :controller do
         project_proposal = ProjectProposal.first
         patch :update, params: {id: project_proposal.id, project_proposal: {title: "abc$123"}}
         expect(response).to have_http_status(:success)
+      end
+
+      it 'should update the project proposal with photos and files' do
+        create(:project_proposal, :with_repo_files)
+        patch :update, params: {id: ProjectProposal.last.id, project_proposal: {files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')], deleteimages: [Photo.last.image.filename.to_s], deletefiles: [RepoFile.last.file.id.to_s]}}
+        expect(RepoFile.count).to eq(1)
+        expect(Photo.count).to eq(1)
+        expect(flash[:notice]).to eq('Project proposal was successfully updated.')
       end
     end
   end

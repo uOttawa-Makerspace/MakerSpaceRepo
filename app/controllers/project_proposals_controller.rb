@@ -14,7 +14,7 @@ class ProjectProposalsController < ApplicationController
   end
 
   def user_projects
-    @project_proposals_joined = ProjectProposal.all.joins(:project_joins).where(project_joins: { user: current_user } ).order(created_at: :desc).paginate(per_page: 15, page: params[:page])
+    @project_proposals_joined = ProjectProposal.all.joins(:project_joins).where(project_joins: {user: current_user}).order(created_at: :desc).paginate(per_page: 15, page: params[:page])
     @user_pending_project_proposals = current_user.project_proposals.where(approved: nil).order(created_at: :desc).paginate(per_page: 15, page: params[:page])
     @approved_project_proposals = current_user.project_proposals.order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
   end
@@ -25,6 +25,8 @@ class ProjectProposalsController < ApplicationController
     @categories = @project_proposal.categories
     @repositories = @project_proposal.repositories.order([sort_order].to_h).page params[:page]
     @photos = photo_hash
+    @project_photos = @project_proposal.photos.joins(:image_attachment)&.first(5) || []
+    @project_files = @project_proposal.repo_files.joins(:file_attachment)
   end
 
   # GET /project_proposals/new
@@ -35,16 +37,18 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals/1/edit
   def edit
     @categories = @project_proposal.categories
-    @category_options =  CategoryOption.show_options
+    @category_options = CategoryOption.show_options
+    @photos = @project_proposal.photos.joins(:image_attachment).first(5)
+    @files = @project_proposal.repo_files.joins(:file_attachment)
   end
 
   def projects_assigned
     @assigned_project_proposals = ProjectProposal.joins(:project_joins)
-                                                 .joins('LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id)')
-                                                 .where('repositories.id IS NULL')
-                                                 .where(approved: 1)
-                                                 .distinct.order(created_at: :desc)
-                                                 .paginate(per_page: 15, page: params[:page])
+                                      .joins('LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id)')
+                                      .where('repositories.id IS NULL')
+                                      .where(approved: 1)
+                                      .distinct.order(created_at: :desc)
+                                      .paginate(per_page: 15, page: params[:page])
   end
 
   def projects_completed
@@ -59,6 +63,8 @@ class ProjectProposalsController < ApplicationController
 
     respond_to do |format|
       if @project_proposal.save
+        create_photos
+        create_files
         create_categories
         format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully created.' }
         format.json { render :show, status: :created, location: @project_proposal }
@@ -76,6 +82,8 @@ class ProjectProposalsController < ApplicationController
     @project_proposal.categories.destroy_all
     respond_to do |format|
       if @project_proposal.update(project_proposal_params)
+        update_photos
+        update_files
         create_categories
         format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully updated.' }
         format.json { render :show, status: :ok, location: @project_proposal }
@@ -137,6 +145,60 @@ class ProjectProposalsController < ApplicationController
 
   private
 
+  def create_photos
+    if params[:images].present?
+      params[:images].first(5).each do |img|
+        dimension = FastImage.size(img.tempfile)
+        Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
+      end
+    end
+  end
+
+  def create_files
+    if params[:files].present?
+      params[:files].each do |f|
+        RepoFile.create(file: f, project_proposal_id: @project_proposal.id)
+      end
+    end
+  end
+
+  def update_photos
+    if params[:deleteimages].present?
+      @project_proposal.photos.each do |img|
+        if params[:deleteimages].include?(img.image.filename.to_s) # checks if the file should be deleted
+          img.image.purge
+          img.destroy
+        end
+      end
+    end
+
+    if params['images'].present?
+      params['images'].each do |img|
+        dimension = FastImage.size(img.tempfile)
+        Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
+      end
+    end
+  end
+
+  def update_files
+    if params['deletefiles'].present?
+      @project_proposal.repo_files.each do |f|
+        if params['deletefiles'].include?(f.file.id.to_s) # checks if the file should be deleted
+          f.file.purge
+          f.destroy
+        end
+      end
+    end
+
+    if params['files'].present?
+
+      params['files'].each do |f|
+        RepoFile.create(file: f, project_proposal_id: @project_proposal.id)
+      end
+
+    end
+  end
+
   # Use callbacks to share common setup or constraints between actions.
   def set_project_proposal
     @project_proposal = ProjectProposal.find(params[:id])
@@ -146,7 +208,8 @@ class ProjectProposalsController < ApplicationController
   def project_proposal_params
     params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description,
                                              :youtube_link, :username, :email, :client, :client_type,
-                                             :client_interest, :client_background, :supervisor_background, :equipments, area: [])
+                                             :client_interest, :client_background, :supervisor_background, :equipments,
+                                             :project_type, :project_cost, :past_experiences, area: [])
   end
 
   def create_categories
@@ -154,7 +217,7 @@ class ProjectProposalsController < ApplicationController
       params['categories'].first(5).each do |c|
         Category.create(name: c, project_proposal_id: @project_proposal.id)
       end
-      end
+    end
   end
 
   def project_join_params
@@ -171,11 +234,16 @@ class ProjectProposalsController < ApplicationController
   # TODO: sort_order and photo_hash for everyone
   def sort_order
     case params[:sort]
-    when 'newest' then %i[created_at desc]
-    when 'most_likes' then %i[like desc]
-    when 'most_makes' then %i[make desc]
-    when 'recently_updated' then %i[updated_at desc]
-    else %i[created_at desc]
+    when 'newest' then
+      %i[created_at desc]
+    when 'most_likes' then
+      %i[like desc]
+    when 'most_makes' then
+      %i[make desc]
+    when 'recently_updated' then
+      %i[updated_at desc]
+    else
+      %i[created_at desc]
     end
   end
 

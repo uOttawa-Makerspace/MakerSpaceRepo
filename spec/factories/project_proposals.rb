@@ -50,6 +50,13 @@ FactoryBot.define do
       end
     end
 
+    trait :with_repo_files do
+      after(:create) do |repo|
+        RepoFile.create(project_proposal_id: repo.id, file: fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf'))
+        Photo.create(project_proposal_id: repo.id, image: fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png'))
+      end
+    end
+
     trait 'bad_link' do
       youtube_link { "https://youtube.com" }
     end

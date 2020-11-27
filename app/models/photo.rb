@@ -4,6 +4,7 @@ class Photo < ApplicationRecord
   belongs_to :repository
   belongs_to :proficient_project
   belongs_to :learning_module
+  belongs_to :project_proposal
 
   has_one_attached :image
 
