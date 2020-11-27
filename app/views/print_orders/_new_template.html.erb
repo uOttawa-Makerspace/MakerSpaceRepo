@@ -67,6 +67,9 @@
             <div class="progress-marker"></div>
             <div class="progress-text">
               <h4 class="progress-title mb-0"><%= file %></h4><p><%= prints.updated_at.to_formatted_s(:short) if prints.updated_at.present? %></p>
+              <% if file == "Waiting on Admin's approval" %>
+                <%= link_to "Edit submission", edit_print_order_path(prints.id) %>
+              <% end %>
             </div>
           </li>
         <% elsif index == array_size %>

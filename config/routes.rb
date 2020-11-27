@@ -45,10 +45,12 @@ Rails.application.routes.draw do
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
 
-  resources :print_orders, only: %i[index create update new destroy] do
+  resources :print_orders, only: %i[index create update new destroy edit] do
     get :invoice
+    get :edit_approval
     collection do
       get :index_new
+      patch :update_submission
     end
   end
 
@@ -154,6 +156,8 @@ Rails.application.routes.draw do
     get '/', :as => 'index', :action => 'index'
 
     resources :announcements
+
+    resources :badge_templates, only: %i[index edit update]
 
     get 'manage_badges'
 

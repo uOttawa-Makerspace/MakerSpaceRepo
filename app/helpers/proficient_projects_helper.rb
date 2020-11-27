@@ -23,8 +23,9 @@ module ProficientProjectsHelper
     end
   end
 
-  def training_status(training_id)
-    level = Certification.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user: current_user ).pluck(:level)
+  def training_status(training_id, user_id)
+    user = User.find(user_id)
+    level = Certification.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user: user ).pluck(:level)
     div = Proc.new{ |color, level| "<span class='float-right' style='color: #{color}'>#{level}</span>" }
     if level.include?("Advanced")
       div.call('red', '🦅 Advanced')
@@ -34,8 +35,8 @@ module ProficientProjectsHelper
       div.call('green', '🦆 Beginner')
     else
       training = Training.find(training_id)
-      learning_modules_completed = training.learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: {user: current_user, status: 'Completed'}).present?
-      proficient_projects_completed = training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)).present?
+      learning_modules_completed = training.learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: {user: user, status: 'Completed'}).present?
+      proficient_projects_completed = training.proficient_projects.where(id: user.order_items.awarded.pluck(:proficient_project_id)).present?
       if learning_modules_completed || proficient_projects_completed
         div.call('black', '🐥 Newbie')
       else

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_11_17_163656) do
+ActiveRecord::Schema.define(version: 2020_11_24_183034) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -85,6 +85,8 @@ ActiveRecord::Schema.define(version: 2020_11_17_163656) do
     t.datetime "updated_at", null: false
     t.string "image_url"
     t.string "list_of_skills"
+    t.bigint "training_id"
+    t.index ["training_id"], name: "index_badge_templates_on_training_id"
   end
 
   create_table "badges", id: :serial, force: :cascade do |t|
@@ -95,7 +97,9 @@ ActiveRecord::Schema.define(version: 2020_11_17_163656) do
     t.integer "user_id"
     t.string "badge_url"
     t.integer "badge_template_id"
+    t.bigint "certification_id"
     t.index ["badge_template_id"], name: "index_badges_on_badge_template_id"
+    t.index ["certification_id"], name: "index_badges_on_certification_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
@@ -315,6 +319,7 @@ ActiveRecord::Schema.define(version: 2020_11_17_163656) do
     t.integer "width"
     t.integer "proficient_project_id"
     t.integer "learning_module_id"
+    t.integer "project_proposal_id"
     t.index ["repository_id"], name: "index_photos_on_repository_id"
   end
 
@@ -470,6 +475,9 @@ ActiveRecord::Schema.define(version: 2020_11_17_163656) do
     t.string "client_background"
     t.string "supervisor_background"
     t.text "equipments", default: "Not informed."
+    t.string "project_type"
+    t.integer "project_cost"
+    t.string "past_experiences"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
@@ -506,6 +514,7 @@ ActiveRecord::Schema.define(version: 2020_11_17_163656) do
     t.datetime "file_updated_at"
     t.integer "proficient_project_id"
     t.integer "learning_module_id"
+    t.integer "project_proposal_id"
     t.index ["repository_id"], name: "index_repo_files_on_repository_id"
   end
 
@@ -711,7 +720,9 @@ ActiveRecord::Schema.define(version: 2020_11_17_163656) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "badge_requirements", "badge_templates"
   add_foreign_key "badge_requirements", "proficient_projects"
+  add_foreign_key "badge_templates", "trainings"
   add_foreign_key "badges", "badge_templates"
+  add_foreign_key "badges", "certifications"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"

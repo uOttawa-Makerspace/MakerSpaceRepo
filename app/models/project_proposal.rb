@@ -6,6 +6,9 @@ class ProjectProposal < ApplicationRecord
   has_many :categories,     dependent: :destroy
   has_many :project_joins,  dependent: :destroy
   has_many :repositories
+  has_many :photos, dependent: :destroy
+  has_many :repo_files, dependent: :destroy
+
   scope :approved, -> { where(approved: 1) }
 
   validates :title,
