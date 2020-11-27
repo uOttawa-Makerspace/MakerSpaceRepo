@@ -70,6 +70,79 @@ RSpec.describe PrintOrdersController, type: :controller do
     end
   end
 
+  describe "GET /edit" do
+    context "logged in as regular user" do
+      it 'should load the edit page' do
+        create(:print_order, user_id: @user.id)
+        get :edit, params: {id: PrintOrder.last.id}
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'should not load the edit page' do
+        create(:print_order, :approved, user_id: @user.id)
+        get :edit, params: {id: PrintOrder.last.id}
+        expect(response).to redirect_to index_new_print_orders_path
+        expect(flash[:alert]).to eq('The print order has already been approved by admins, you cannot modify your submission')
+      end
+    end
+  end
+
+  describe "GET /edit_approval" do
+    context "logged in as regular user" do
+      it 'should not load the edit page' do
+        create(:print_order, user_id: @user.id)
+        get :edit_approval, params: {print_order_id: PrintOrder.last.id}
+        expect(response).to redirect_to index_new_print_orders_path
+        expect(flash[:alert]).to eq('You are not allowed on this page')
+      end
+    end
+
+    context "logged as admin" do
+      it 'should not let the admin go on the page' do
+        session[:user_id] = @admin.id
+        create(:print_order, user_id: @user.id)
+        get :edit_approval, params: {print_order_id: PrintOrder.last.id}
+        expect(response).to redirect_to index_new_print_orders_path
+        expect(flash[:alert]).to eq('You are not allowed on this page')
+      end
+
+      it 'should let the admin go on the page' do
+        session[:user_id] = @admin.id
+        create(:print_order, :approved, user_id: @user.id)
+        get :edit_approval, params: {print_order_id: PrintOrder.last.id}
+        expect(response).to have_http_status(:success)
+      end
+
+    end
+  end
+
+  describe "PATCH /update_submission" do
+
+    context "logged in as regular user" do
+
+      it 'should update the print order' do
+        create(:print_order, user_id: @user.id)
+        patch :update_submission, params: {id: PrintOrder.last.id, print_order: {comments: "abc1234", file: fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')}}
+        expect(response).to redirect_to index_new_print_orders_path
+        expect(flash[:notice]).to eq("The print order has been updated!")
+        expect(PrintOrder.last.comments).to eq("abc1234, ")
+        expect(PrintOrder.last.file.filename).to eq("#{PrintOrder.last.id}_RepoFile1.pdf")
+      end
+
+    end
+
+    context "logged in as admin" do
+      it 'should update the print order' do
+        create(:print_order, :approved, :with_final_file, :with_file, user_id: @user.id)
+        patch :update_submission, params: {id: PrintOrder.last.id, print_order: {final_file: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')]}, remove_files: [PrintOrder.last.final_file.last.filename]}
+        expect(response).to redirect_to print_orders_path
+        expect(flash[:notice]).to eq("The print order has been updated!")
+        expect(PrintOrder.last.final_file.first.filename).to eq("#{PrintOrder.last.id}_RepoFile1.pdf")
+      end
+    end
+
+  end
+
   describe 'POST /create' do
     context 'create print order' do
       it 'should create a print order with notice' do
