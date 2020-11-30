@@ -193,8 +193,6 @@
                               <% end %>
 
                                 <div class="row">
-                                  <%# pp = @proficient_projects_awarded.call(training).joins(:badge_template).where(level: ProficientProject.training_status(training.id, @repo_user.id)).order(created_at: :desc)&.last %>
-                                  <%# badge = @repo_user.badges.joins(:certification => :training_session).where(training_sessions: {training_id: training.id, level: ProficientProject.training_status(training.id, @repo_user.id)})&.last %>
                                   <% badge = @repo_user.highest_badge(training) %>
                                   <% unless badge.nil? %>
                                     <div class="col-lg-4 text-center">
