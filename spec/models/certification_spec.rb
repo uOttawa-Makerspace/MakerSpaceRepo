@@ -117,5 +117,20 @@ RSpec.describe Certification, type: :model do
         expect(certification.get_badge_path).to eq('badges/golden.png')
       end
     end
+
+    context '#highest_level' do
+      it 'should certify user' do
+        user = create(:user, :regular_user)
+        training = create(:training)
+        ts1 = create(:training_session, training: training)
+        ts1.users << user
+        ts2 = create(:training_session, training: training, level: "Intermediate")
+        ts2.users << user
+        create(:certification, training_session: ts1, user: user)
+        create(:certification, training_session: ts2, user: user)
+        expect(user.certifications.highest_level.count).to eq(1)
+        expect(user.certifications.highest_level.last.training_session.level).to eq("Intermediate")
+      end
+    end
   end
 end

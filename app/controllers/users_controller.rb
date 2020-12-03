@@ -182,7 +182,7 @@ class UsersController < SessionsController
     @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
     @joined_projects = @user.project_joins
     @photos = photo_hash
-    @certifications = @repo_user.certifications
+    @certifications = @repo_user.certifications.highest_level
     @remaining_trainings = @repo_user.remaining_trainings
     @skills = Skill.all
     @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: @repo_user.order_items.awarded.pluck(:proficient_project_id)) }
