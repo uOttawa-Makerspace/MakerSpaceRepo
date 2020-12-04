@@ -102,4 +102,20 @@ class Certification < ApplicationRecord
     false
   end
 
+  def self.highest_level
+    high_certs = []
+    self.all.joins(:training_session).group_by(&:training).each do |_, certs|
+      certifications = certs
+      level = certifications.map{|c| c.training_session.level}
+      if level.include?('Advanced')
+        high_certs += certifications.select{|c| c.training_session.level == 'Advanced'}
+      elsif level.include?('Intermediate')
+        high_certs += certifications.select{|c| c.training_session.level == 'Intermediate'}
+      elsif level.include?('Beginner')
+        high_certs += certifications.select{|c| c.training_session.level == 'Beginner'}
+      end
+    end
+    high_certs
+  end
+
 end
