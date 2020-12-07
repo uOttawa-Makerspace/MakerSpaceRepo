@@ -49,6 +49,16 @@ class QuestionsController < StaffAreaController
     redirect_to questions_path
   end
 
+  def delete_individually
+    @image = ActiveStorage::Attachment.find(params[:id])
+    question_id = @image.record.id
+    @image.purge
+    @question = Question.find(question_id)
+    respond_to do |format|
+      format.js
+    end
+  end
+
   private
 
     def question_params
