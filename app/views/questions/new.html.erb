@@ -18,6 +18,12 @@
                 <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name'), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
               </div>
               <br />
+
+              <div class="form-group">
+                <%= f.label 'level' %>
+                <%= f.select 'level', options_for_select(@levels), {prompt: 'Select level'}, class: "form-control", required: true %><br>
+              </div>
+              <br />
               <br />
 
               <div class="text-center">

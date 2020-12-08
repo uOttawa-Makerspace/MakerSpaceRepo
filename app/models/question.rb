@@ -5,6 +5,8 @@ class Question < ApplicationRecord
   has_many :exams, through: :exam_questions
   has_many :answers, dependent: :destroy
 
+  LEVELS = ['Beginner', 'Intermediate', 'Advanced']
+
   has_many :exam_responses, through: :exam_questions do
     def find_by_user(user)
       joins(:exam).where("exams.user_id": user.id)
