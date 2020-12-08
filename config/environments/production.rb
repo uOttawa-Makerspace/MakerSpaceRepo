@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 Rails.application.configure do
-  $n_exams_question = 20
+  $n_exams_question = 10
   # Settings specified here will take precedence over those in config/application.rb.
 
   # Code is not reloaded between requests.
