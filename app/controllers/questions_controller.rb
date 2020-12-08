@@ -3,6 +3,7 @@
 class QuestionsController < StaffAreaController
   layout 'staff_area'
   before_action :set_question, only: %i[show edit update destroy]
+  before_action :set_levels, only: %i[new edit]
   # before_action :delete_existing_images, only: :update
 
   def index
@@ -62,11 +63,15 @@ class QuestionsController < StaffAreaController
   private
 
     def question_params
-      params.require(:question).permit(:description, images: [], training_ids: [], answers_attributes: %i[id description correct])
+      params.require(:question).permit(:description, :level, images: [], training_ids: [], answers_attributes: %i[id description correct])
     end
 
     def set_question
       @question = Question.find(params[:id])
+    end
+
+    def set_levels
+      @levels = Question::LEVELS
     end
 
     # def delete_existing_images
