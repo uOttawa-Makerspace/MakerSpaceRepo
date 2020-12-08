@@ -12,10 +12,10 @@ $(document).on('turbolinks:load', function () {
             }
             reader.readAsDataURL(image[i]);
         }
-        var editImage = document.getElementById("edit-image");
-        if(editImage){
-         editImage.style.display = "none";
-        }
+        // var editImage = document.getElementById("edit-image");
+        // if(editImage){
+        //  editImage.style.display = "none";
+        // }
     });
 });
 

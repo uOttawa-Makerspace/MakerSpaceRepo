@@ -1,0 +1,8 @@
+<% if @question.images.attached? %>
+  <% @question.images.each do |img| %>
+    <div class="img-wrap my-2 col-6">
+      <span class="close"><%= link_to (fa_icon('times')), delete_individually_questions_path(id: img.id), method: :delete, class: 'x-button', remote: true %></span>
+      <%= image_tag(img, style: 'height: 200px;') %>
+    </div>
+  <% end %>
+<% end %>
