@@ -28,6 +28,11 @@ FactoryBot.define do
       youtube_link { "" }
     end
 
+    trait 'not_approved' do
+      approved { 0 }
+      youtube_link { "" }
+    end
+
     trait 'joined' do
       approved { 1 }
       youtube_link { "" }
@@ -42,6 +47,13 @@ FactoryBot.define do
       after(:create) do |pp|
         ProjectJoin.create(project_proposal_id: pp.id, user_id: User.last.id)
         create(:repository, project_proposal_id: pp.id)
+      end
+    end
+
+    trait :with_repo_files do
+      after(:create) do |repo|
+        RepoFile.create(project_proposal_id: repo.id, file: fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf'))
+        Photo.create(project_proposal_id: repo.id, image: fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png'))
       end
     end
 

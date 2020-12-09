@@ -53,6 +53,7 @@ diagram:setup:create_new_doc_folder_if_needed
 emails:send_survey_ceed
 exams:check_expired_exams
 increment_year:fix
+increment_year:fix_this_year
 increment_year:increment_one_year
 log:clear
 middleware
@@ -63,15 +64,18 @@ paperclip:refresh:fingerprints
 paperclip:refresh:metadata
 paperclip:refresh:missing_styles
 paperclip:refresh:thumbnails
-popular_hours:populate
+popular_hours:calculate_popular_hours
 print_order_notifications:two_weeks_reminder
+questions:update_attachment
 restart
 secret
 shopify_api:graphql:dump
 spec
 spec:config
 spec:controllers
+spec:helpers
 spec:models
+spec:requests
 stats
 test
 test:db

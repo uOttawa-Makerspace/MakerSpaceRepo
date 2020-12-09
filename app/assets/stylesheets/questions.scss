@@ -1,29 +1,105 @@
 @import "lib";
 
-label.image-upload{
-  @include transition(100);
-  font-size: 10px;
-  background-color: rgba(194, 236, 246, 0.95);
-  padding: 5px 20px;
-  border-radius: 10px;
-  border-style: solid;
-  border-width: thin;
-  position: absolute;
-  left: 0;right: 0;
-  margin: -10px auto;
-  width: 100px;
-  text-align: center;
-
-
-  &:hover{
-    background-color: rgba(58, 153, 127, 0.95);
-    cursor:pointer;
-  }
-}
-
 #image-target{
   img {
     max-width:200px;
     height:auto;
   }
+}
+
+.circle-button{
+  border: 2px solid lightgrey;
+  background-color: #fff;
+  font-size: 16px;
+  height: 2.5em;
+  width: 2.5em;
+  border-radius: 999px;
+  position: relative;
+}
+
+.minus-button {
+  border: 2px solid lightgrey;
+  background-color: #fff;
+  font-size: 16px;
+  height: 2.5em;
+  width: 2.5em;
+  border-radius: 999px;
+  position: relative;
+
+  &:after,
+  &:before {
+    content: "";
+    display: block;
+    background-color: grey;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  &:after {
+    height: 0.2em;
+    width: 1em;
+  }
+}
+
+.minus-button-small {
+  font-size: 12px;
+}
+
+.minus-button-large {
+  font-size: 22px;
+}
+
+.plus-button {
+  border: 2px solid lightgrey;
+  background-color: #fff;
+  font-size: 16px;
+  height: 2.5em;
+  width: 2.5em;
+  border-radius: 999px;
+  position: relative;
+
+  &:after,
+  &:before {
+    content: "";
+    display: block;
+    background-color: grey;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  &:before {
+    height: 1em;
+    width: 0.2em;
+  }
+
+  &:after {
+    height: 0.2em;
+    width: 1em;
+  }
+}
+
+.plus-button-small {
+  font-size: 12px;
+}
+
+.plus-button-large {
+  font-size: 22px;
+}
+
+.blob-height{
+  height: 300px !important;
+}
+
+img-wrap {
+  position: relative;
+}
+.img-wrap .close::after {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 100;
 }

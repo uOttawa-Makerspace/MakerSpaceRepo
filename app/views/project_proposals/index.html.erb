@@ -1,14 +1,49 @@
-<% provide(:title, "Project Proposals") %>
+<div>
+  <% provide(:title, "Project Proposals") %>
 
-<% if flash[:notice] %>
-    <div id="notice"><%= flash[:notice] %></div>
-<% end %>
+  <div class="accordion">
+    <div class="card">
+      <div class="card-header" data-toggle="collapse" data-target="#page_pending" aria-expanded="true" aria-controls="collapseOne">
+        <h2 class="mb-0">
+          <button class="btn btn-link btn-block text-left text-center" type="button" >
+            Pending Project Proposals
+          </button>
+        </h2>
+      </div>
 
-<% if flash[:alert] %>
-    <div id="alert"><%= flash[:alert] %></div>
-<% end %>
+      <div id="page_pending" class="collapse">
+        <div class="card-body">
+          <%= render :partial => 'listing', :locals => {:title => "Pending Project Proposals", :project_proposals => @pending_project_proposals, param_name: "page_pending"} %>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" data-toggle="collapse" data-target="#page_approved">
+        <h2 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed text-center" type="button">
+            Approved Project Proposals
+          </button>
+        </h2>
+      </div>
+      <div id="page_approved" class="collapse">
+        <div class="card-body">
+          <%= render :partial => 'listing', :locals => {:title => "Approved Project Proposals", :project_proposals => @approved_project_proposals, param_name: "page_approved"} %>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" data-toggle="collapse" data-target="#page_not_approved" aria-controls="collapseThree">
+        <h2 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed text-center" type="button">
+            Project Proposals not approved
+          </button>
+        </h2>
+      </div>
+      <div id="page_not_approved" class="collapse">
+        <div class="card-body">
+          <%= render :partial => 'listing', :locals => {:title => "Project Proposals not approved", :project_proposals => @not_approved_project_proposals, param_name: "page_not_approved"} if @user.admin? %>      </div>
+      </div>
+    </div>
+  </div>
 
-<%= render :partial => 'listing', :locals => {:tittle => "Pending Project Proposals", :approval => nil} if @user.admin? %>
-<%= render :partial => 'listing_user', :locals => {:tittle => "Pending Project Proposals", :approval => nil} if !@user.admin? %>
-<%= render :partial => 'listing', :locals => {:tittle => "List of Project Proposals", :approval => 1} %>
-<%= render :partial => 'listing', :locals => {:tittle => "Project Proposals not approved", :approval => 0} if @user.admin? %>
+</div>

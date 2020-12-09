@@ -3,11 +3,11 @@ $(document).on("turbolinks:load", function () {
     var i;
     for (i = 0; i < x.length; i++) {
         if (x[i].innerHTML === "Revoked") {
-            x[i].classList.add('btn-outline-danger');
+            x[i].classList.add('btn-danger');
         } else if (x[i].innerHTML === "Awarded") {
-            x[i].classList.add('btn-outline-success');
+            x[i].classList.add('btn-success');
         } else {
-            x[i].classList.add('btn-outline-warning');
+            x[i].classList.add('btn-warning');
         }
     }
 });

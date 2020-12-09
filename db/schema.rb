@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_09_18_135022) do
+ActiveRecord::Schema.define(version: 2020_12_08_195036) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -57,7 +57,6 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
 
   create_table "answers", id: :serial, force: :cascade do |t|
     t.integer "question_id"
-    t.text "description"
     t.boolean "correct", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -85,6 +84,9 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "image_url"
+    t.string "list_of_skills"
+    t.bigint "training_id"
+    t.index ["training_id"], name: "index_badge_templates_on_training_id"
   end
 
   create_table "badges", id: :serial, force: :cascade do |t|
@@ -95,7 +97,9 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.integer "user_id"
     t.string "badge_url"
     t.integer "badge_template_id"
+    t.bigint "certification_id"
     t.index ["badge_template_id"], name: "index_badges_on_badge_template_id"
+    t.index ["certification_id"], name: "index_badges_on_certification_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
@@ -135,6 +139,8 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "training_session_id"
+    t.boolean "active", default: true
+    t.string "demotion_reason"
     t.index ["user_id"], name: "index_certifications_on_user_id"
   end
 
@@ -177,6 +183,12 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "updated_at", null: false
     t.index ["price_rule_id"], name: "index_discount_codes_on_price_rule_id"
     t.index ["user_id"], name: "index_discount_codes_on_user_id"
+  end
+
+  create_table "drop_off_locations", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "equipment", id: :serial, force: :cascade do |t|
@@ -229,6 +241,25 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.integer "space_id"
     t.index ["space_id"], name: "index_lab_sessions_on_space_id"
     t.index ["user_id"], name: "index_lab_sessions_on_user_id"
+  end
+
+  create_table "learning_module_tracks", force: :cascade do |t|
+    t.string "status", default: "In progress"
+    t.bigint "learning_module_id"
+    t.bigint "user_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["learning_module_id"], name: "index_learning_module_tracks_on_learning_module_id"
+    t.index ["user_id"], name: "index_learning_module_tracks_on_user_id"
+  end
+
+  create_table "learning_modules", force: :cascade do |t|
+    t.integer "training_id"
+    t.string "title"
+    t.text "description"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.string "level", default: "Beginner"
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|
@@ -287,6 +318,8 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.integer "height"
     t.integer "width"
     t.integer "proficient_project_id"
+    t.integer "learning_module_id"
+    t.integer "project_proposal_id"
     t.index ["repository_id"], name: "index_photos_on_repository_id"
   end
 
@@ -384,10 +417,11 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "updated_at", null: false
     t.string "level", default: "Beginner"
     t.integer "cc", default: 0
-    t.boolean "proficient", default: true
     t.integer "badge_template_id"
     t.boolean "has_project_kit"
+    t.bigint "drop_off_location_id"
     t.index ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id"
+    t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
@@ -417,6 +451,8 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.boolean "delivered", default: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.bigint "learning_module_id"
+    t.index ["learning_module_id"], name: "index_project_kits_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_project_kits_on_proficient_project_id"
     t.index ["user_id"], name: "index_project_kits_on_user_id"
   end
@@ -439,6 +475,9 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.string "client_background"
     t.string "supervisor_background"
     t.text "equipments", default: "Not informed."
+    t.string "project_type"
+    t.integer "project_cost"
+    t.string "past_experiences"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
@@ -458,6 +497,7 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.integer "image_file_size"
     t.datetime "image_updated_at"
     t.integer "training_id"
+    t.string "level", default: "Beginner"
   end
 
   create_table "questions_trainings", id: false, force: :cascade do |t|
@@ -474,6 +514,8 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.integer "file_file_size"
     t.datetime "file_updated_at"
     t.integer "proficient_project_id"
+    t.integer "learning_module_id"
+    t.integer "project_proposal_id"
     t.index ["repository_id"], name: "index_repo_files_on_repository_id"
   end
 
@@ -527,6 +569,12 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "updated_at"
   end
 
+  create_table "skills", force: :cascade do |t|
+    t.text "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
   create_table "spaces", id: :serial, force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -564,6 +612,9 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "space_id"
+    t.string "description"
+    t.bigint "skill_id"
+    t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end
 
@@ -607,7 +658,7 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "last_seen_at"
     t.integer "wallet", default: 0
     t.boolean "flagged"
-    t.string "flag_message"
+    t.string "flag_message", default: ""
     t.boolean "confirmed", default: false
   end
 
@@ -621,6 +672,8 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
     t.datetime "video_updated_at"
     t.string "direct_upload_url", null: false
     t.boolean "processed", default: false, null: false
+    t.bigint "learning_module_id"
+    t.index ["learning_module_id"], name: "index_videos_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_videos_on_proficient_project_id"
   end
 
@@ -668,7 +721,9 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "badge_requirements", "badge_templates"
   add_foreign_key "badge_requirements", "proficient_projects"
+  add_foreign_key "badge_templates", "trainings"
   add_foreign_key "badges", "badge_templates"
+  add_foreign_key "badges", "certifications"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
@@ -681,6 +736,8 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
   add_foreign_key "lab_sessions", "spaces"
+  add_foreign_key "learning_module_tracks", "learning_modules"
+  add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "order_items", "orders"
@@ -690,6 +747,8 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
   add_foreign_key "pi_readers", "spaces"
   add_foreign_key "popular_hours", "spaces"
   add_foreign_key "proficient_projects", "badge_templates"
+  add_foreign_key "proficient_projects", "drop_off_locations"
+  add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
   add_foreign_key "project_kits", "users"
   add_foreign_key "repo_files", "repositories"
@@ -697,8 +756,10 @@ ActiveRecord::Schema.define(version: 2020_09_18_135022) do
   add_foreign_key "rfids", "users"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
+  add_foreign_key "trainings", "skills"
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
+  add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
 end

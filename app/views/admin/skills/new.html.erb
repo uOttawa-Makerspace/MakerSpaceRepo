@@ -1,0 +1,22 @@
+<section>
+  <div class="text-center pb-4">
+    <h2 class="py-3 font-weight-bold">New Skill Type</h2>
+    <div class="float-right">
+      <%= link_to "Back", admin_skills_path %>
+    </div>
+    <br />
+    <%= form_for @new_skill, url: {controller: "admin/skills", action: "create"} do |f| %>
+      <div class="container">
+        <div class="row text-center">
+          <div class="col-md-12 form-group">
+            Name: <%= f.text_field :name, placeholder: "Write a skill type", class: 'form-control', required: true %>
+          </div>
+
+          <div class="col-md-12 form-group my-1">
+            <%= f.submit "Create Skill Type", class: "btn btn-secondary btn-xl" %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</section>

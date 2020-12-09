@@ -2,7 +2,7 @@
   <div class="text-center">
 
     <% current_user.staff? ? title = "Requests" : title = "Your Requests"%>
-    <h2><%= title %></h2>
+    <h2 class="font-weight-bold"><%= title %></h2>
 
     <h5>Total requests: <b><%= @volunteer_task_requests.count %></b></h5>
     <h5>Pending requests: <b><%= @pending_volunteer_task_requests.count %></b></h5>

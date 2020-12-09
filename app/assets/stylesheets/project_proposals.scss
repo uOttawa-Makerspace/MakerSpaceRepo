@@ -149,3 +149,9 @@ div.declined{
 .spacing_table td {
   padding: 10px;
 }
+
+.form-group.required .control-label:after {
+  content:"*";
+  color:red;
+  font-size: 25px;
+}

@@ -1,0 +1,22 @@
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+    Hello, <%= @user.name %>.
+</p>
+
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+    The proficient project (<%= @pp.title %>) has been submitted successfully.
+    <br />
+    <% if @pp.drop_off_location.present? %>
+      Please <b>drop off</b> your project <b>here</b>:<%= @pp.drop_off_location.name %>
+    <% else %>
+      This project has no drop-off locations. If you think this is an error or you have any questions about it,
+      please contact <%= @email %>.
+    <% end %>
+    <br />
+    After the drop-off (if your project needs to be dropped-off), we will review it and get back to you within 5 business days. <br />
+    If you have any questions, feel free to contact us at <%= @email %>.
+</p>
+
+<p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
+Best regards,<br>
+The CEED Team
+</p>

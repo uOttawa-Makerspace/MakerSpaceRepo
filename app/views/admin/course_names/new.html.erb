@@ -1,5 +1,9 @@
 <section>
-    <h2 class="text-center">New Course</h2>
+  <h2 class="text-center font-weight-bold py-3">New Course</h2>
+  <div class="float-right">
+    <%= link_to "Back", admin_course_names_path %>
+  </div>
+  <br />
     <%= form_for @new_course, url: {controller: "admin/course_names", action: "create"} do |f| %>
       <div class="container">
         <div class="row text-center">
@@ -12,10 +16,6 @@
         </div>
       </div>
     <% end %>
-
-  <div class="float-right">
-    <%= link_to "Back", admin_course_names_path %>
-  </div>
 
   <br><br>
 </section>

@@ -10,6 +10,10 @@ FactoryBot.define do
     trait :basic_training do
       association :training_session, :basic_training
     end
+
+    trait 'inactive' do
+      active { false }
+    end
   end
 end
 

@@ -46,15 +46,35 @@ RSpec.describe ProjectProposal, type: :model do
     end
   end
 
+  before :all do
+    3.times{ create(:project_proposal, :normal) }
+    2.times { create(:project_proposal, :approved) }
+    create(:project_proposal, :not_approved)
+  end
+
   describe "scopes" do
     context "#approved" do
-      before :all do
-        3.times{ create(:project_proposal, :normal) }
-        2.times { create(:project_proposal, :approved) }
-      end
-
       it 'should return all approved project proposals' do
         expect(ProjectProposal.approved.count).to eq(2)
+      end
+    end
+  end
+
+  describe 'Methods' do
+    context '#approval_status' do
+      it 'should return No (not approved)' do
+        pp = ProjectProposal.where(approved: 0).first
+        expect(pp.approval_status).to eq('No')
+      end
+
+      it 'should return Yes (approved)' do
+        pp = ProjectProposal.where(approved: 1).first
+        expect(pp.approval_status).to eq('Yes')
+      end
+
+      it 'should return Not validated (approved = nil)' do
+        pp = ProjectProposal.where(approved: nil).first
+        expect(pp.approval_status).to eq('Not validated')
       end
     end
   end

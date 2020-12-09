@@ -25,6 +25,7 @@ RSpec.describe ProficientProject, type: :model do
     context 'belongs_to' do
       it { should belong_to(:training) }
       it { should belong_to(:badge_template) }
+      it { should belong_to(:drop_off_location) }
     end
 
     context 'has_and_belongs_to_many' do
@@ -59,20 +60,6 @@ RSpec.describe ProficientProject, type: :model do
 
     end
 
-    context "#filter_by_proficiency" do
-
-      it 'should only get private repos' do
-        create(:proficient_project)
-        create(:proficient_project)
-        create(:proficient_project, :not_proficient)
-        create(:proficient_project, :intermediate)
-        create(:proficient_project, :not_proficient)
-        proficient_project_count = ProficientProject.all.count
-        expect(ProficientProject.filter_by_proficiency(true).count).to eq(proficient_project_count - 2)
-      end
-
-    end
-
   end
 
   describe "Model methods" do
@@ -94,27 +81,20 @@ RSpec.describe ProficientProject, type: :model do
         create(:proficient_project)
         create(:proficient_project)
         create(:proficient_project, :intermediate)
-        create(:proficient_project, :not_proficient)
-        create(:proficient_project, :not_proficient)
-        create(:proficient_project, :not_proficient)
         create(:proficient_project, :advanced)
         create(:proficient_project, :advanced)
       end
 
       it 'should get the right level' do
-        expect(ProficientProject.filter_by_attribute("level", "Beginner").count).to eq(6)
+        expect(ProficientProject.filter_by_attribute("level", "Beginner").count).to eq(3)
       end
 
       it 'should get the right category' do
         expect(ProficientProject.filter_by_attribute("category", Training.last.name).count).to eq(1)
       end
 
-      it 'should get the right proficiency' do
-        expect(ProficientProject.filter_by_attribute("proficiency",true).count).to eq(6)
-      end
-
       it 'should get the right search result' do
-        expect(ProficientProject.filter_by_attribute("search", "Beginner").count).to eq(6)
+        expect(ProficientProject.filter_by_attribute("search", "Intermediate").count).to eq(1)
       end
 
     end

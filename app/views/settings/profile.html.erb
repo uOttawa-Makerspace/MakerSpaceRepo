@@ -14,7 +14,7 @@
       <%= f.label :avatar, t('settings.profile.avatar'), class: "profile-label" %>
 
       <div class="avatar-column">
-        <%= image_tag User.display_avatar(@user), class: 'edit-avatar' %>
+        <%= image_tag @user.display_avatar, class: 'edit-avatar' %>
         <label class="custom-file-upload">
           <%= f.file_field :avatar %>
           <%= t('settings.profile.choose_image') %>
