@@ -1,27 +1,24 @@
 # frozen_string_literal: true
 
 class ProficientProjectsController < DevelopmentProgramsController
-  before_action :only_admin_access, only: %i[new create edit update destroy]
-  before_action :set_proficient_project, only: %i[show destroy edit update]
-  before_action :grant_access_to_project, only: [:show]
-  before_action :set_training_categories, only: %i[new edit]
-  before_action :set_badge_templates, only: %i[new edit]
-  before_action :set_files_photos_videos, only: %i[show edit]
+  before_action :only_admin_access,                             only: %i[new create edit update destroy requests approve_project]
+  before_action :set_proficient_project,                        only: %i[show destroy edit update complete_project]
+  before_action :grant_access_to_project,                       only: [:show]
+  before_action :set_training_categories, :set_badge_templates, :set_drop_off_location,only: %i[new edit]
+  before_action :set_files_photos_videos,                       only: %i[show edit]
 
   def index
-    @proficient_projects = ProficientProject.filter_params(get_filter_params).order(created_at: :desc).paginate(page: params[:page], per_page: 30)
-    # TODO: Fix this mess
-    if params['my_projects']
-      @proficient_projects = @proficient_projects.where(id: current_user.order_items.completed_order.pluck(:proficient_project_id))
-    else
-      @proficient_projects = @proficient_projects.where.not(id: current_user.order_items.completed_order.pluck(:proficient_project_id))
-    end
-    @prices ||= %w[Free Paid]
-    @training_levels ||= TrainingSession.return_levels
-    @training_categories_names = Training.all.order('name ASC').pluck(:name)
+    @skills = Skill.all
+    @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
+    @all_proficient_projects = Proc.new{ |training| training.proficient_projects }
+    @advanced_pp_count = Proc.new{ |training| training.proficient_projects.where(level: 'Advanced').count }
     @order_item = current_order.order_items.new
     @user_order_items = current_user.order_items.completed_order
-    flash.now[:alert_yellow] = "Please visit #{view_context.link_to "My Projects", proficient_projects_path(my_projects: true), class: "text-primary"} to access the proficient projects purchased (including Free Proficient Projects)".html_safe
+    @proficient_projects_bought = Proc.new{ |training| training.proficient_projects.where(id: current_user.order_items.where(status: ['Awarded', 'In progress', 'Waiting for approval']).pluck(:proficient_project_id)) }
+  end
+
+  def requests
+    @order_item_waiting_for_approval = OrderItem.all.waiting_for_approval
   end
 
   def new
@@ -36,6 +33,7 @@ class ProficientProjectsController < DevelopmentProgramsController
                                         .where.not(id: @project_requirements.pluck(:required_project_id) << @proficient_project.id)
                                         .order(title: :asc)
     @valid_urls = @proficient_project.extract_valid_urls
+    @order_item = current_user.order_items.where(proficient_project: @proficient_project).order(updated_at: :desc).first
   end
 
   def create
@@ -57,7 +55,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   def destroy
     @proficient_project.destroy
     respond_to do |format|
-      format.html { redirect_to proficient_projects_path(proficiency: true), notice: 'Proficient Project has been successfully deleted.' }
+      format.html { redirect_to proficient_projects_path, notice: 'Proficient Project has been successfully deleted.' }
       format.json { head :no_content }
     end
   end
@@ -93,10 +91,81 @@ class ProficientProjectsController < DevelopmentProgramsController
     end
   end
 
+  def complete_project
+    order_items = current_user.order_items.where(proficient_project_id: @proficient_project.id)
+    if order_items.present?
+      order_items.first.update(status: 'Waiting for approval')
+      MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
+      MsrMailer.send_user_pp_evaluation(@proficient_project, current_user).deliver_now
+      flash[:notice] = 'Congratulations on submitting this proficient project! The proficient project will now be reviewed by an admin in around 5 business days.'
+    else
+      flash[:alert] = "This project hasn't been found."
+    end
+    redirect_to @proficient_project
+  end
+
+  def approve_project
+    order_item = OrderItem.find_by(id: params[:oi_id])
+    if order_item
+      space = Space.find_by_name('Makerepo')
+      admin = User.find_by_email("avend029@uottawa.ca") || User.where(role: 'admin').last
+      course_name = CourseName.find_by_name('no course')
+      training_session = TrainingSession.find_or_create_by(training_id: order_item.proficient_project.training_id,
+                                                level: order_item.proficient_project.level,
+                                                user: admin,
+                                                space: space,
+                                                course_name: course_name)
+      training_session.users << order_item.order.user
+      if training_session.present?
+        cert = Certification.find_or_create_by(training_session_id: training_session.id, user_id: order_item.order.user_id)
+        badge_template = order_item.proficient_project.badge_template
+        if badge_template.present?
+          user = order_item.order.user
+          response = Badge.acclaim_api_create_badge(user, badge_template.acclaim_template_id)
+          if response.status == 201
+            badge_data = JSON.parse(response.body)['data']
+            Badge.create(user_id: user.id,
+                         issued_to: user.name,
+                         acclaim_badge_id: badge_data['id'],
+                         badge_template_id: badge_template.id,
+                         certification: cert)
+            order_item.update(status: 'Awarded')
+            MsrMailer.send_results_pp(order_item.proficient_project, order_item.order.user, 'Passed').deliver_now
+            flash[:notice] = 'A badge has been awarded to the user!'
+          else
+            flash[:alert] = 'An error has occurred when creating the badge, this message might help : ' + JSON.parse(response.body)['data']['message']
+          end
+        else
+          order_item.update(status: 'Awarded')
+          MsrMailer.send_results_pp(order_item.proficient_project, order_item.order.user, 'Passed').deliver_now
+        end
+        flash[:notice] = 'The project has been approved!'
+      else
+        flash[:error] = 'An error has occurred, please try again later.'
+      end
+    else
+      flash[:error] = 'An error has occurred, please try again later.'
+    end
+    current_user.admin? ? redirect_path = requests_proficient_projects_path : redirect_path = order_item.proficient_project
+    redirect_to redirect_path
+  end
+
+  def revoke_project
+    order_item = OrderItem.find_by(id: params[:oi_id])
+    if order_item
+      order_item.update(status: 'Revoked')
+      MsrMailer.send_results_pp(order_item.proficient_project, order_item.order.user, 'Failed').deliver_now
+      flash[:alert_yellow] = 'The project has been revoked.'
+    else
+      flash[:error] = 'An error has occurred, please try again later.'
+    end
+    redirect_to requests_proficient_projects_path
+  end
+
   private
 
   def grant_access_to_project
-    if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress']).blank?
+    if current_user.order_items.completed_order.where(proficient_project: @proficient_project, status: ['Awarded', 'In progress', 'Waiting for approval']).blank?
       unless current_user.admin? || current_user.staff?
         redirect_to development_programs_path
         flash[:alert] = 'You cannot access this area.'
@@ -112,7 +181,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def proficient_project_params
-    params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id, :has_project_kit)
+    params.require(:proficient_project).permit(:title, :description, :training_id, :level, :proficient, :cc, :badge_template_id, :has_project_kit, :drop_off_location_id)
   end
 
   def create_photos
@@ -201,10 +270,14 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def get_filter_params
-    params.permit(:search, :level, :category, :proficiency, :my_projects, :price)
+    params.permit(:search, :level, :category, :my_projects, :price)
   end
 
   def set_badge_templates
     @badge_templates = BadgeTemplate.all.order(badge_name: :asc)
+  end
+
+  def set_drop_off_location
+    @drop_off_location = DropOffLocation.all.order(name: :asc)
   end
 end

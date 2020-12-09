@@ -7,6 +7,7 @@ RSpec.describe RepoFile, type: :model do
     context 'belongs_to' do
       it { should belong_to(:repository) }
       it { should belong_to(:proficient_project) }
+      it { should belong_to(:project_proposal) }
     end
 
   end

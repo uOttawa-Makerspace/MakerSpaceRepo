@@ -44,6 +44,6 @@ $(document).on('turbolinks:load', function () {
 
 function refreshCapacity() {
     $.ajax({
-        url: "staff_dashboard/refresh_capacity"
+        url: "/staff_dashboard/refresh_capacity"
     })
 }

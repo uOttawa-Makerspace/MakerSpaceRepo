@@ -4,13 +4,13 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-12 text-center mb-4">
-        <h2>Your Orders</h2>
+        <h2><b>Your Orders</b></h2>
       </div>
     </div>
     <div class="text-center">
       <% if !@orders.present? %>
         <p class="text-center">
-          You have no orders. Please check our <%= link_to "projects", proficient_projects_path(proficiency: true), class: "text-info" %> and add some items to your cart.
+          You have no orders. Please check our <%= link_to "projects", proficient_projects_path, class: "text-info" %> and add some items to your cart.
         </p>
       <% else %>
         <div class="apple_pagination">
@@ -59,7 +59,7 @@
       <hr>
       <div class="row">
         <div class="col-lg-12 text-center mb-4">
-          <h2>All Orders</h2>
+          <h2><b>All Orders</b></h2>
         </div>
       </div>
       <div class="text-center">

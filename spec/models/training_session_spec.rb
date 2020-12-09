@@ -27,6 +27,14 @@ RSpec.describe TrainingSession, type: :model do
     end
   end
 
+  describe 'Validations' do
+    context 'presence and uniqueness' do
+      subject { create(:training_session) }
+      it { should validate_presence_of(:training).with_message('A training subject is required') }
+      it { should validate_presence_of(:level).with_message('A level is required') }
+    end
+  end
+
   describe 'Methods' do
     before(:all) do
       @training_session = create(:training_session, created_at: DateTime.yesterday.end_of_day)

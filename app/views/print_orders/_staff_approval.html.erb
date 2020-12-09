@@ -10,7 +10,7 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <%= form_for prints, url: print_order_path(prints) do |f| %>
+      <%= form_for(prints, url: print_order_path(prints), html: {multipart: true}) do |f| %>
         <div class="modal-body">
           <%= f.hidden_field :approved, :value => true %>
           <% if prints.order_type == 0 and (prints.sst != true) %>
@@ -92,8 +92,8 @@
             </div>
           <% end %>
           <div class="form-group">
-            <%= f.label :final_file, "PDF/GCode" %>
-            <%= f.file_field :final_file, style: "display: block!important;" %>
+            <%= f.label "final_file", "PDF/GCode" %>
+            <%= f.file_field "final_file", style: "display: block!important;", multiple: true %>
           </div>
 
           <div class="form-group">

@@ -16,9 +16,9 @@ class Question < ApplicationRecord
   end
 
   accepts_nested_attributes_for :answers
-  has_one_attached :image
-  validates :image, file_content_type: {
+  has_many_attached :images
+  validates :images, file_content_type: {
       allow: ['image/jpeg', 'image/png'],
-      if: -> {image.attached?},
+      if: -> {images.attached?},
   }
 end

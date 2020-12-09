@@ -16,7 +16,7 @@ class RepositoriesController < SessionsController
     @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
     @vote = @user.upvotes.where(comment_id: @comments.map(&:id)).pluck(:comment_id, :downvote)
-    @project_proposals = ProjectProposal.all.where(approved: 1).pluck(:title, :id)
+    @project_proposals = ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
     @owners = @repository.users
     @all_users = User.where.not(id: @owners.pluck(:id)).pluck(:name, :id)
   end
@@ -55,7 +55,7 @@ class RepositoriesController < SessionsController
 
   def new
     @repository = Repository.new
-    @project_proposals = ProjectProposal.approved.pluck(:title, :id) unless params[:project_proposal_id].present?
+    @project_proposals = ProjectProposal.approved.order(title: :asc).pluck(:title, :id) unless params[:project_proposal_id].present?
   end
 
   def edit

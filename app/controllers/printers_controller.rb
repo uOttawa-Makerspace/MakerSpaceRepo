@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-class PrintersController < ApplicationController
-  before_action :current_user, :user_staff
+class PrintersController < StaffAreaController
   layout 'staff_area'
 
   def staff_printers
@@ -33,13 +32,4 @@ class PrintersController < ApplicationController
     redirect_to staff_printers_printers_path
   end
 
-  private
-
-  def user_staff
-    @user = current_user
-    unless @user.staff? || @user.admin?
-      flash[:alert] = 'You cannot access this area.'
-      redirect_to '/' and return
-    end
-  end
 end

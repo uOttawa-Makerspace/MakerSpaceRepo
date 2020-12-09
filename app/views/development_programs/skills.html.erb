@@ -1,7 +1,68 @@
-<section class="p-5">
-  <div class="container text-center">
-    <h2>Skills</h2>
-    <div class="row my-5 mx-auto">
+<section>
+  <div class="text-center">
+    <h2 class="pt-3"><b>Skills</b></h2>
+    <div class="row mx-auto">
+
+      <div class="col-md-12">
+        <% @skills.each do |skill| %>
+
+          <div class="accordion">
+            <div class="card">
+              <div class="card-header" type="button" data-toggle="collapse" data-target="#trainings-<%= skill.id %>">
+                <h6 class="my-auto py-2"><%= skill.name %></h6>
+              </div>
+              <div id="trainings-<%= skill.id %>" class="collapse">
+
+                <% skill.trainings.each do |training| %>
+                  <div class="accordion">
+                    <div class="card">
+                      <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
+                        <div class="row">
+                          <div class="col-4 float-right"></div>
+                          <div class="col-4">
+                            <button class="btn btn-link" type="button"><%= training.name %></button>
+                          </div>
+                          <div class="col-4">
+                            <%= training_status(training.id, current_user.id).html_safe %>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div id="training-<%= training.id %>" class="collapse">
+                        <div class="card-body">
+                          <% if training.description.present? %>
+                            <div class="jumbotron text-center text-wrap">
+                              <%= training.description %>
+                            </div>
+                          <% end %>
+                          <div class="row">
+                            <% badge = current_user.highest_badge(training) %>
+                            <% unless badge.nil? %>
+                              <div class="col-md-3">
+                                <%= image_tag(badge.badge_template.image_url, :style => "width: 200px") %>
+                              </div>
+                              <div class="col-md-9 my-auto">
+                                <b><%= badge.badge_template.badge_name %>:</b> <%= badge.badge_template.badge_description %>
+                              </div>
+                              <div class="col-12">
+                                <b>Skills Acquired:</b> <%= badge.badge_template.list_of_skills %>
+                              </div>
+                            <% end %>
+                          </div>
+                          <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
+                          <p>Learning Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
+                          <p>Recomended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, current_user.id)) %></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
       <% @certifications.each do |cert| %>
         <div class="col-md-3 text-center my-3">
           <b><%= cert.training.name %> </b> <br/>
@@ -25,3 +86,9 @@
     </div>
   </div>
 </section>
+
+<div id="modal-window" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content"></div>
+  </div>
+</div>

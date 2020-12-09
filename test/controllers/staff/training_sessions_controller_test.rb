@@ -16,7 +16,7 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
   end
 
   test 'staff can create a new training session' do
-    post :create, params: { training_session_users: [users(:bob).id, users(:mary).id], training_id: Training.last.id, course: 'GNG2205', training_session: { space_id: Space.last.id } }
+    post :create, params: { training_session_users: [users(:bob).id, users(:mary).id], training_id: Training.last.id, course: 'GNG2205', level: 'Beginner', training_session: { space_id: Space.last.id } }
     @new_training_session = TrainingSession.where(training_id: Training.last.id, user_id: @user.id, course: 'GNG2205', space_id: Space.last.id).last
     assert @new_training_session.present?
     assert @new_training_session.users.include? User.find_by(username: 'bob')
@@ -81,15 +81,6 @@ class Staff::TrainingSessionsControllerTest < ActionController::TestCase
     assert Certification.find_by(user_id: users(:olivia).id, training_session_id: training_sessions(:lathe_1_session).id).present?
     patch :update, params: { dropped_users: ['olivia'], id: training_session, changed_params: { user_id: @user.id } }
     assert_not Certification.find_by(user_id: users(:olivia).id, training_session_id: training_sessions(:lathe_1_session).id).present?
-  end
-
-  test 'staff can renew a certification issued by them at an old training session' do
-    training_session = training_sessions(:old_soldering_session)
-    cert = certifications(:mary_old_soldering)
-    patch :renew_certification, params: { id: training_session.id, cert_id: cert.id }
-    assert_equal flash[:notice], 'Renewed Successfully'
-    assert cert.updated_at < 1.day.ago
-    assert_redirected_to user_path(users(:mary).username)
   end
 
   test 'staff can revoke a certification issued by them at an old training session' do

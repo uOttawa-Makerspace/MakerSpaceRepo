@@ -44,7 +44,7 @@ function validation_proposal(){
     var name = $("input#project_proposal_username");
     var email = $("input#project_proposal_email");
     var client = $("input#project_proposal_client");
-    var client_background = $("input#project_proposal_client_background");
+    var client_background = $("input#client_background_trix_input_project_proposal");
     var description = $("#trix_editor");
     $('span.form-error.repo-form').remove();
     var span = $('<span>').addClass('form-error repo-form');
@@ -88,7 +88,7 @@ function validation_proposal(){
 
     if( client_background.val().length === 0 ){
         span.text("Client background is required.");
-        $('input#project_proposal_client_background').before(span);
+        $('input#client_background_trix_input_project_proposal').before(span);
         scrow_to_error("project_proposal_client_background");
         return false;
     }

@@ -170,7 +170,7 @@ RSpec.describe StaffDashboardController, type: :controller do
         LabSession.create(user_id: user.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
         get :search, params: {query: ""}
         expect(response).to have_http_status(302)
-        expect(flash[:alert]).to eq('Invalid parameters!')
+        expect(flash[:alert]).to eq("No search parameters.")
       end
 
     end
