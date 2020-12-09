@@ -155,10 +155,10 @@ class ReportGenerator
 
       trainings[:training_types].each do |_, training_type|
         sheet.add_row [
-            training_type[:name],
-            training_type[:count],
-            training_type[:total_attendees]
-        ]
+                          training_type[:name],
+                          training_type[:count],
+                          training_type[:total_attendees]
+                      ]
       end
 
       sheet.add_row # spacing
@@ -184,14 +184,14 @@ class ReportGenerator
         style = sheet.styles.add_style(color)
 
         sheet.add_row [
-            row[:training_name],
-            row[:training_level],
-            row[:course_name],
-            row[:instructor_name],
-            row[:date].localtime.strftime('%Y-%m-%d %H:%M'),
-            row[:facility],
-            row[:attendee_count]
-        ], :style => [style]
+                          row[:training_name],
+                          row[:training_level],
+                          row[:course_name],
+                          row[:instructor_name],
+                          row[:date].localtime.strftime('%Y-%m-%d %H:%M'),
+                          row[:facility],
+                          row[:attendee_count]
+                      ], :style => [style]
       end
     end
 
@@ -347,16 +347,16 @@ class ReportGenerator
 
       users.each do |user|
         sheet.add_row [
-            user.name,
-            user.username,
-            user.email,
-            user.gender,
-            user.identity,
-            user.faculty,
-            user.year_of_study,
-            user.student_id,
-            user.created_at.localtime.strftime('%Y-%m-%d %H:%M')
-        ]
+                          user.name,
+                          user.username,
+                          user.email,
+                          user.gender,
+                          user.identity,
+                          user.faculty,
+                          user.year_of_study,
+                          user.student_id,
+                          user.created_at.localtime.strftime('%Y-%m-%d %H:%M')
+                      ]
       end
     end
 
@@ -370,17 +370,17 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
-      merge_cell = sheet.styles.add_style alignment: {vertical: :center}
+    certifications.each do |_space, space_certifications|
 
-      title(sheet, 'Training Attendees')
+      spreadsheet.workbook.add_worksheet(name: "Report - #{space_certifications[0].training_session.space.name}") do |sheet|
+        merge_cell = sheet.styles.add_style alignment: {vertical: :center}
 
-      sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
-      sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
-      sheet.add_row # spacing
+        title(sheet, "Training Attendees - #{space_certifications[0].training_session.space.name}")
 
-      certifications.each do |_space, space_certifications|
-        title(sheet, space_certifications[0].training_session.space.name)
+        sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
+        sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
+        sheet.add_row # spacing
+
         table_header(sheet, ['Student ID', 'Name', 'Email Address', 'Certification Type', 'Certification Date', 'Instructor', 'Course', 'Facility'])
 
         start_index = sheet.rows.last.row_index + 2
@@ -406,15 +406,15 @@ class ReportGenerator
           end
 
           sheet.add_row [
-              certification.user.student_id,
-              certification.user.name,
-              certification.user.email,
-              certification.training_session.training.name,
-              certification.training_session.created_at.strftime('%Y-%m-%d %H:%M'),
-              certification.training_session.user.name,
-              certification.training_session.course,
-              certification.training_session.space.name,
-          ], style: [merge_cell, merge_cell, merge_cell, merge_cell, merge_cell]
+                            certification.user.student_id,
+                            certification.user.name,
+                            certification.user.email,
+                            certification.training_session.training.name,
+                            certification.training_session.created_at.strftime('%Y-%m-%d %H:%M'),
+                            certification.training_session.user.name,
+                            certification.training_session.course,
+                            certification.training_session.space.name,
+                        ], style: [merge_cell, merge_cell, merge_cell, merge_cell, merge_cell]
 
           last_training_session_id = certification.training_session.id
         end
@@ -481,11 +481,11 @@ class ReportGenerator
 
       repositories.each do |repository|
         sheet.add_row [
-            repository.title,
-            repository.users.map(&:name).join(', '),
-            Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username),
-            repository.categories.map(&:name).join(', ')
-        ]
+                          repository.title,
+                          repository.users.map(&:name).join(', '),
+                          Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username),
+                          repository.categories.map(&:name).join(', ')
+                      ]
       end
     end
 
