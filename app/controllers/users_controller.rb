@@ -87,7 +87,9 @@ class UsersController < SessionsController
     if params[:flag].present? and params[:flagged_user].present? and @user.staff?
       @flagged_user = User.find(params[:flagged_user])
       if params[:flag] == "flag" and params[:flag_message].present?
-        @flagged_user.update(flagged: true, flag_message: params[:flag_message])
+        @flagged_user.flagged = true
+        @flagged_user.flag_message += "; #{params[:flag_message]}"
+        @flagged_user.save
       elsif params[:flag] == "unflag"
         @flagged_user.update(flagged: false, flag_message: "")
       end
@@ -95,6 +97,15 @@ class UsersController < SessionsController
     else
       redirect_to user_path(@user.username) and return
     end
+  end
+
+  def remove_flag
+    @repo_user = User.find(params[:repo_user_id])
+    msg = params[:flag_msg]
+    @repo_user.flag_message = @repo_user.flag_message.gsub("; #{msg}", '')
+    @repo_user.flag_message.blank? ? @repo_user.flagged = false : @repo_user.flagged = true
+    @repo_user.save
+    redirect_to user_path(@repo_user.username)
   end
 
   def remove_avatar
@@ -171,8 +182,12 @@ class UsersController < SessionsController
     @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
     @joined_projects = @user.project_joins
     @photos = photo_hash
-    @certifications = @repo_user.certifications
+    @certifications = @repo_user.certifications.highest_level
     @remaining_trainings = @repo_user.remaining_trainings
+    @skills = Skill.all
+    @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: @repo_user.order_items.awarded.pluck(:proficient_project_id)) }
+    @learning_modules_completed = Proc.new{ |training| training.learning_modules.where(id: @repo_user.learning_module_tracks.completed.pluck(:learning_module_id))}
+    @recomended_hours = Proc.new { |training, levels| training.learning_modules.where(level: levels).count + training.proficient_projects.where(level: levels).count }
   end
 
   def likes

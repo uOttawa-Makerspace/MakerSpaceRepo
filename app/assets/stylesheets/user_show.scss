@@ -10,12 +10,6 @@ section#user-show{
 	background-color: #fff;
 	padding-bottom: 3rem;
 
-    div.skills{
-      margin: 25rem 0;
-      @include span-columns(4.5,5);
-      position: absolute;
-    }
-
 	div.user-avatar{
 		margin: 3rem 0;
 		@include span-columns(4.5,5);
@@ -163,9 +157,8 @@ div#rfid-thing.user-info{
 
 a.edit-user-profile{
 	@include transition(100ms);
-	position: absolute;
+	//position: absolute;
 	right: 2rem;
-	top: 2rem;
 	background-color: #789;
 	color: #fff;
 	padding: 0.5rem 1rem;

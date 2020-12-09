@@ -16,12 +16,12 @@ class ProficientProject < ApplicationRecord
   has_many :order_items,                dependent: :destroy
   has_many :badge_requirements,         dependent: :destroy
   has_many :project_kits,               dependent: :destroy
+  belongs_to :drop_off_location
 
   validates :title, presence: { message: 'A title is required.' }, uniqueness: { message: 'Title already exists' }
   before_save :capitalize_title
 
   scope :filter_by_level, ->(level) { where(level: level) }
-  scope :filter_by_proficiency, ->(proficient) { where(proficient: proficient) }
 
   def capitalize_title
     self.title = title.capitalize
@@ -36,8 +36,6 @@ class ProficientProject < ApplicationRecord
       where("LOWER(title) like LOWER(?) OR
                  LOWER(level) like LOWER(?) OR
                  LOWER(description) like LOWER(?)", "%#{value}%", "%#{value}%", "%#{value}%")
-    elsif attribute == 'proficiency'
-      filter_by_proficiency(value)
     elsif attribute == 'price'
       bool = true if value.eql?('Paid')
       bool = false if value.eql?('Free')
@@ -64,5 +62,18 @@ class ProficientProject < ApplicationRecord
 
   def extract_valid_urls
     self.extract_urls.uniq.select{ |url| url.include?("wiki.makerepo.com") }
+  end
+
+  def self.training_status(training_id, user_id)
+    user = User.find(user_id)
+    level = Certification.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user: user ).pluck(:level)
+    result =  if level.include?("Advanced")
+                'Advanced'
+              elsif level.include?("Intermediate")
+                'Intermediate'
+              else
+                'Beginner'
+              end
+    result
   end
 end

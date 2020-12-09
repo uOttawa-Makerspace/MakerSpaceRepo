@@ -1,0 +1,4 @@
+<% repo_user.flag_message.split('; ').drop(1).each_with_index do |flag, i| %>
+  <%= link_to (fa_icon('times')), {controller: :users, action: :remove_flag, flag_msg: flag, repo_user_id: repo_user.id },  method: :put, class: 'x-button' %>
+  <b class="word-break">(<%= i + 1 %>) <%= flag %></b> <br />
+<% end %>

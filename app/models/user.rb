@@ -29,11 +29,13 @@ class User < ApplicationRecord
   has_many :badges, dependent: :destroy
   has_many :programs, dependent: :destroy
   has_and_belongs_to_many :proficient_projects
+  # has_and_belongs_to_many :learning_modules
   has_many :orders, dependent: :destroy
   has_many :order_items, through: :orders
   has_many :discount_codes, dependent: :destroy
   has_one_attached :avatar
   has_many :project_kits, dependent: :destroy
+  has_many :learning_module_tracks
 
   validates :avatar, file_content_type: {
       allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],
@@ -98,12 +100,8 @@ class User < ApplicationRecord
   scope :volunteers, -> { joins(:programs).where(programs: { program_type: Program::VOLUNTEER }) }
 
 
-  def self.display_avatar(user)
-    if user.avatar.attached?
-      user.avatar
-    else
-      "default-avatar.png"
-    end
+  def display_avatar
+    avatar.attached? ? avatar : "default-avatar.png"
   end
 
   def self.authenticate(username_email, password)
@@ -240,4 +238,17 @@ class User < ApplicationRecord
     badge_requirements_set = badge_requirements.pluck(:badge_template_id).to_set
     badge_requirements_set.subset?(user_badges_set)
   end
+
+  def highest_badge(training)
+    badges = self.badges.joins(:certification => :training_session).where(training_sessions: {training_id: training.id})
+    if badges.where(training_sessions: {level: 'Advanced'}).present?
+      badge = badges.where(training_sessions: {level: 'Advanced'}).last
+    elsif badges.where(training_sessions: {level: 'Intermediate'}).present?
+      badge = badges.where(training_sessions: {level: 'Intermediate'}).last
+    elsif badges.where(training_sessions: {level: 'Beginner'}).present?
+      badge = badges.where(training_sessions: {level: 'Beginner'}).last
+    end
+    badge
+  end
+
 end

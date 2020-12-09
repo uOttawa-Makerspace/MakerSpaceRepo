@@ -22,7 +22,7 @@
       </div>
       <div>
     <% end %>
-    <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: "sign_in_user_fastsearch" do %>
+    <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: "sign_in_user_fastsearch", remote: true do %>
       <%= hidden_field_tag :added_users, "", {:id => "sign_in_user_fastsearch_username"} %>
       <%= submit_tag "Sign In", class: 'btn btn-info btn-sm btn-block', style: "margin-left: 8px;" %>
     <% end %>

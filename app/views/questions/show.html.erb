@@ -5,7 +5,11 @@
 </div>
 
 <div class="text-center">
-  <%= image_tag(@question.image.variant(resize: "300x300")) if @question.image.attached? %>
+  <% if @question.images.attached? %>
+    <% @question.images.each do |img| %>
+      <%= image_tag(img, style: 'height: 300px; border:1px solid #021a40;', class: 'my-1') %>
+    <% end %>
+  <% end %>
 </div>
 
 <hr>
@@ -13,9 +17,9 @@
 <div class="text-left">
   <% @question.answers.randomize_answers.each do |a| %>
     <% if a.correct %>
-      <p class="correct-answers"><%= a.description %></p>
+      <div class="correct-answers"><%= a.description %></div>
     <% else %>
-      <p class="answers"><%= a.description %></p>
+      <div class="answers"><%= a.description %></div>
     <% end  %>
   <% end %>
 </div>

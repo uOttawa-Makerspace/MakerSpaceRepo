@@ -55,7 +55,7 @@ table{
   font-size: 14px;
 
   th {
-      background-color: #c2d6d6;
+      //background-color: #c2d6d6;
       color: #366;
       padding:5px;
       width: 200px;
@@ -88,12 +88,12 @@ table{
       padding:5px 6px;
       text-align: center;
   }
-  tr {
-      background-color: #f0f5f5;
-  }
-  tr.current-session {
-      background-color: #b3e6cc;
-  }
+  //tr {
+  //    background-color: #f0f5f5;
+  //}
+  //tr.current-session {
+  //    background-color: #b3e6cc;
+  //}
   .link-table {
     color: #366;
     text-align:center;

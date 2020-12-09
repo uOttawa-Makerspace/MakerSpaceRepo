@@ -4,6 +4,8 @@ class StaffDashboardController < StaffAreaController
 
   def index
     @users = User.order(id: :desc).limit(10)
+    @certifications_on_space = Proc.new { |user, space_id| user.certifications.joins(:training, training: :spaces).where(trainings: {spaces: {id: space_id} }) }
+    @all_user_certs = Proc.new { |user| user.certifications }
   end
 
   def refresh_capacity
@@ -49,7 +51,10 @@ class StaffDashboardController < StaffAreaController
       lab_sessions = LabSession.where(user_id: users)
       lab_sessions.update_all(sign_out_time: Time.zone.now)
     end
-    redirect_to staff_dashboard_index_path(space_id: @space.id)
+    respond_to do |format|
+      format.html
+      format.js
+    end
   end
 
   def sign_out_all_users
@@ -74,7 +79,10 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = "Error signing #{user.name} in" unless lab_session.save
       end
     end
-    redirect_to staff_dashboard_index_path(space_id: @space.id)
+    respond_to do |format|
+      format.html {redirect_to staff_dashboard_index_path(space_id: @space.id)}
+      format.js
+    end
   end
 
   def change_space
@@ -93,7 +101,11 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = 'Something went wrong'
       end
     end
-    redirect_to staff_dashboard_index_path
+    if params[:training].present? and params[:training] == 'true'
+      redirect_to new_staff_training_session_path
+    else
+      redirect_to staff_dashboard_index_path
+    end
   end
 
   def link_rfid
@@ -120,8 +132,8 @@ class StaffDashboardController < StaffAreaController
 
   def search
     if params[:query].blank? and params[:username].blank?
-      redirect_back(fallback_location: root_path)
-      flash[:alert] = 'Invalid parameters!'
+      flash[:alert] = 'No search parameters.'
+      redirect_to staff_dashboard_index_path
     elsif params[:username].present?
       @users = User.where("username = ?", params[:username])
     else

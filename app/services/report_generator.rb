@@ -82,13 +82,17 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        table_header(sheet, ['Identity', 'Distinct Users', '', 'Total Visits', '', 'Faculty',])
+        table_header(sheet, ['Identity', 'Distinct Users', '', 'Total Visits', '', 'Faculty'])
         space_detail[:identities].each do |identity_name, identity|
           start_index = sheet.rows.last.row_index + 1
 
           identity[:faculties].each do |faculty_name, faculty|
             sheet.add_row [identity_name, faculty[:unique], '', faculty[:total], '', faculty_name], style: [merge_cell]
-            faculty_hash[faculty_name] = faculty[:unique]
+            if faculty_hash[faculty_name].blank?
+              faculty_hash[faculty_name] = faculty[:unique]
+            else
+              faculty_hash[faculty_name] = faculty[:unique] + faculty_hash[faculty_name]
+            end
           end
 
           end_index = sheet.rows.last.row_index
@@ -111,14 +115,14 @@ class ReportGenerator
         prefer_not = space_detail[:genders]['Prefer not to specify'].present? ? space_detail[:genders]['Prefer not to specify'][:unique] : 0
         final_other = other + prefer_not
 
-        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "A#{space.row_index + 2}", :end_at => "C#{space.row_index + 10}", :grouping => :stacked, :show_legend => true, :title => 'Gender of unique users') do |chart|
+        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "A#{space.row_index + 2}", :end_at => "E#{space.row_index + 14}", :grouping => :stacked, :show_legend => true, :title => 'Gender of unique users') do |chart|
           chart.add_series :data => [male, female, final_other], :labels => ['Male', 'Female', 'Other/Prefer not to specify'], :colors => ['1FC3AA', '8624F5', 'A8A8A8', 'A8A8A8']
           chart.add_series :data => [male, female, final_other], :labels => ['Male', 'Female', 'Other/Prefer not to specify'], :colors => ['FFFF00', 'FFFF00', 'FFFF00']
           chart.d_lbls.show_percent = true
           chart.d_lbls.d_lbl_pos = :bestFit
         end
 
-        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "D#{space.row_index + 2}", :end_at => "H#{space.row_index + 10}", :grouping => :stacked, :show_legend => true, :title => 'Faculty of unique users') do |chart2|
+        sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => "A#{space.row_index + 16}", :end_at => "E#{space.row_index + 28}", :grouping => :stacked, :show_legend => true, :title => 'Faculty of unique users') do |chart2|
           chart2.add_series :data => faculty_hash.values, :labels => faculty_hash.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
           chart2.add_series :data => faculty_hash.values, :labels => faculty_hash.keys, :colors => ['416145', '33EEDD', '860F48', '88E615', '6346F0', 'F5E1FE', 'E9A55B', 'A2F8FA', '260AD2', '12032E', '755025', '723634']
           chart2.d_lbls.show_percent = true
@@ -151,10 +155,10 @@ class ReportGenerator
 
       trainings[:training_types].each do |_, training_type|
         sheet.add_row [
-            training_type[:name],
-            training_type[:count],
-            training_type[:total_attendees]
-        ]
+                          training_type[:name],
+                          training_type[:count],
+                          training_type[:total_attendees]
+                      ]
       end
 
       sheet.add_row # spacing
@@ -162,15 +166,32 @@ class ReportGenerator
       table_header(sheet, ['Training', 'Level', 'Course', 'Instructor', 'Date', 'Facility', 'Attendee Count'])
 
       trainings[:training_sessions].each do |row|
+
+        training = Training.find(row[:training_id])
+        color = if training.skill_id.present?
+                  if training.skill.name == "Machine Shop Training"
+                    {:bg_color => "ed7d31"}
+                  elsif training.skill.name == "Technology Trainings"
+                    {:bg_color => "70ad47"}
+                  elsif training.skill.name == "CEED Trainings"
+                    {:bg_color => "ffc000"}
+                  else
+                    {}
+                  end
+                else
+                  {}
+                end
+        style = sheet.styles.add_style(color)
+
         sheet.add_row [
-            row[:training_name],
-            row[:training_level],
-            row[:course_name],
-            row[:instructor_name],
-            row[:date].localtime.strftime('%Y-%m-%d %H:%M'),
-            row[:facility],
-            row[:attendee_count]
-        ]
+                          row[:training_name],
+                          row[:training_level],
+                          row[:course_name],
+                          row[:instructor_name],
+                          row[:date].localtime.strftime('%Y-%m-%d %H:%M'),
+                          row[:facility],
+                          row[:attendee_count]
+                      ], :style => [style]
       end
     end
 
@@ -240,7 +261,21 @@ class ReportGenerator
           final_total_sessions['total'] += training_sessions.count
           final_total_certifications['total'] += total_certifications
 
-          sheet.add_row training_row
+          color = if training.skill_id.present?
+            if training.skill.name == "Machine Shop Training"
+              {:bg_color => "ed7d31"}
+            elsif training.skill..name == "Technology Trainings"
+              {:bg_color => "70ad47"}
+            elsif training.skill.name == "CEED Trainings"
+              {:bg_color => "ffc000"}
+            else
+               {}
+            end
+          else
+            {}
+          end
+          style = sheet.styles.add_style(color)
+          sheet.add_row training_row, :style => [style]
         end
 
         final_s = ['Total # sessions']
@@ -286,13 +321,17 @@ class ReportGenerator
       prefer_not = users.where(gender: 'Prefer not to specify').count
       final_other = other + prefer_not
 
-      sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => 'D1', :end_at => 'G8', :grouping => :stacked, :show_legend => true, :title => 'Gender of new users') do |chart|
+      sheet.add_chart(Axlsx::Pie3DChart, rot_x: 90, :start_at => 'D1', :end_at => 'G13', :grouping => :stacked, :show_legend => true, :title => 'Gender of new users') do |chart|
         chart.add_series :data => [male, female, final_other], :labels => ['Male', 'Female', 'Other/Prefer not to specify'], :colors => ['1FC3AA', '8624F5', 'A8A8A8', 'A8A8A8']
         chart.add_series :data => [male, female, final_other], :labels => ['Male', 'Female', 'Other/Prefer not to specify'], :colors => ['FFFF00', 'FFFF00', 'FFFF00']
         chart.d_lbls.show_percent = true
         chart.d_lbls.d_lbl_pos = :bestFit
       end
 
+      sheet.add_row # spacing
+      sheet.add_row # spacing
+      sheet.add_row # spacing
+      sheet.add_row # spacing
 
       title(sheet, 'Overview')
 
@@ -308,16 +347,16 @@ class ReportGenerator
 
       users.each do |user|
         sheet.add_row [
-            user.name,
-            user.username,
-            user.email,
-            user.gender,
-            user.identity,
-            user.faculty,
-            user.year_of_study,
-            user.student_id,
-            user.created_at.localtime.strftime('%Y-%m-%d %H:%M')
-        ]
+                          user.name,
+                          user.username,
+                          user.email,
+                          user.gender,
+                          user.identity,
+                          user.faculty,
+                          user.year_of_study,
+                          user.student_id,
+                          user.created_at.localtime.strftime('%Y-%m-%d %H:%M')
+                      ]
       end
     end
 
@@ -331,17 +370,17 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
-      merge_cell = sheet.styles.add_style alignment: {vertical: :center}
+    certifications.each do |_space, space_certifications|
 
-      title(sheet, 'Training Attendees')
+      spreadsheet.workbook.add_worksheet(name: "Report - #{space_certifications[0].training_session.space.name}") do |sheet|
+        merge_cell = sheet.styles.add_style alignment: {vertical: :center}
 
-      sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
-      sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
-      sheet.add_row # spacing
+        title(sheet, "Training Attendees - #{space_certifications[0].training_session.space.name}")
 
-      certifications.each do |_space, space_certifications|
-        title(sheet, space_certifications[0].training_session.space.name)
+        sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
+        sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
+        sheet.add_row # spacing
+
         table_header(sheet, ['Student ID', 'Name', 'Email Address', 'Certification Type', 'Certification Date', 'Instructor', 'Course', 'Facility'])
 
         start_index = sheet.rows.last.row_index + 2
@@ -358,21 +397,24 @@ class ReportGenerator
               sheet.merge_cells("C#{start_index}:C#{end_index}")
               sheet.merge_cells("D#{start_index}:D#{end_index}")
               sheet.merge_cells("E#{start_index}:E#{end_index}")
+              sheet.merge_cells("F#{start_index}:F#{end_index}")
+              sheet.merge_cells("G#{start_index}:G#{end_index}")
+              sheet.merge_cells("H#{start_index}:H#{end_index}")
             end
 
             start_index = sheet.rows.last.row_index + 2
           end
 
           sheet.add_row [
-              certification.user.student_id,
-              certification.user.name,
-              certification.user.email,
-              certification.training_session.training.name,
-              certification.training_session.created_at.strftime('%Y-%m-%d %H:%M'),
-              certification.training_session.user.name,
-              certification.training_session.course,
-              certification.training_session.space.name,
-          ], style: [merge_cell, merge_cell, merge_cell, merge_cell, merge_cell]
+                            certification.user.student_id,
+                            certification.user.name,
+                            certification.user.email,
+                            certification.training_session.training.name,
+                            certification.training_session.created_at.strftime('%Y-%m-%d %H:%M'),
+                            certification.training_session.user.name,
+                            certification.training_session.course,
+                            certification.training_session.space.name,
+                        ], style: [merge_cell, merge_cell, merge_cell, merge_cell, merge_cell]
 
           last_training_session_id = certification.training_session.id
         end
@@ -439,11 +481,11 @@ class ReportGenerator
 
       repositories.each do |repository|
         sheet.add_row [
-            repository.title,
-            repository.users.map(&:name).join(', '),
-            Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username),
-            repository.categories.map(&:name).join(', ')
-        ]
+                          repository.title,
+                          repository.users.map(&:name).join(', '),
+                          Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username),
+                          repository.categories.map(&:name).join(', ')
+                      ]
       end
     end
 
@@ -738,6 +780,7 @@ class ReportGenerator
 
     ActiveRecord::Base.connection.exec_query(query).each do |row|
       result[:training_sessions] << {
+          training_id: row['training_id'],
           training_name: row['training_name'],
           training_level: row['training_level'],
           course_name: row['course_name'],

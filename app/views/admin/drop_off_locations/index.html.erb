@@ -1,0 +1,21 @@
+<section>
+  <div class="text-center pb-4">
+    <h2 class="font-weight-bold py-3">Drop-Off Location Manager</h2>
+
+    <p class="text-center"><%= link_to "New Location", new_admin_drop_off_location_path, class: "btn btn-secondary" %></p>
+    <br />
+    <table class="table table-striped mb-5">
+      <tr class="text-center">
+        <th>Drop-Off Location</th>
+        <th>Action</th>
+      </tr>
+
+      <% @locations.each do |t| %>
+        <tr>
+          <td><%= t.name %></td>
+          <td><%= link_to "Edit", edit_admin_drop_off_location_path(t.id), class:"btn btn-primary" %></td>
+        </tr>
+      <% end %>
+    </table>
+  </div>
+</section>

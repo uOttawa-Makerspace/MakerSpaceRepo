@@ -1,7 +1,7 @@
 <section class="page-contents">
-  <div class="padding-10 text-center">
+  <div class="py-3 padding-10 text-center">
 
-    <h2>Questions</h2>
+    <h2 class="font-weight-bold">Questions</h2>
 
     <%= link_to "New Question", new_question_path, :class=>"btn btn-primary m-5" %>
 
@@ -11,13 +11,14 @@
       <br />
 
       <div class="table-responsive">
-        <table class="table sessions-table">
+        <table class="table sessions-table table-striped">
 
           <tr>
             <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Category <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Description <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Created by<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Level <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Description <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Created by<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <th class="action-header">Action</th>
           </tr>
 
@@ -39,13 +40,11 @@
                 <% end %>
               </td>
 
-              <td class="word-break">
-                <%= q.description.split[0...5].join(' ') + "..." %>
-              </td>
+              <td><%= q.level %></td>
 
-              <td class = "username">
-                <%= link_to q.user.name.capitalize, user_path(q.user.username) %>
-              </td>
+              <td class="word-break"><%= q.description.split[0...5].join(' ') + "..." %></td>
+
+              <td class = "username"><%= link_to q.user.name.capitalize, user_path(q.user.username) %></td>
 
               <td class="action-cell">
                 <%=link_to "Edit", edit_question_path(q.id), class:"btn-block btn btn-primary btn-sm" %>
