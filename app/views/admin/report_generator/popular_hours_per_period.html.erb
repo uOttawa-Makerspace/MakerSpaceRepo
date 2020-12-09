@@ -1,18 +1,19 @@
 <% provide(:title, "Reports") %>
 <section>
-  <h1 class="text-center py-2">Popular Hours</h1>
+  <h1 class="text-center py-2 font-weight-bold">Popular Hours</h1>
+  <h3 class="text-center py-2 font-weight-bold"><%= @space.name %></h3>
  <div>
-   <%= form_tag admin_report_generator_popular_hours_per_period_path, method: :get do %>
+   <%= form_tag admin_report_generator_popular_hours_per_period_path(space_id: @space.id), method: :get do %>
      <div style=" display: flex; justify-content: center;">
      <div class="form-row align-items-center">
        <div class="form-group col-md-4" style="width: 300px">
          <%= label_tag(:start_date, "From") %>
-         <%= date_field_tag(:start_date, 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields),) %>
+         <%= date_field_tag(:start_date, params[:start_date], class: %w(form-control range-type-date-range-fields),) %>
        </div>
 
        <div class="form-group col-md-4" style="width: 300px">
          <%= label_tag(:end_date, "To") %>
-         <%= date_field_tag(:end_date, 1.week.ago.end_of_week.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields)) %>
+         <%= date_field_tag(:end_date, params[:end_date], class: %w(form-control range-type-date-range-fields)) %>
        </div>
 
        <div class="form-group col-md-4">
