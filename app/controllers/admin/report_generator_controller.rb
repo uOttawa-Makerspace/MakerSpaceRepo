@@ -28,7 +28,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     else
       @space = Space.find_by(id: params[:space_id]) || @user.lab_sessions&.last&.space || Space.first
       @weekdays = Date::DAYNAMES
-      @info = LabSession.get_popular_hours_per_period(params[:start_date].to_date, params[:end_date].to_date, @space.id)
+      @info = PopularHour.popular_hours_per_period(params[:start_date].to_date, params[:end_date].to_date, @space)
     end
   end
 
