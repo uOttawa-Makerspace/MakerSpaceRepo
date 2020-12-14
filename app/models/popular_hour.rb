@@ -17,7 +17,7 @@ class PopularHour < ApplicationRecord
         if (start_date..end_date).count {|date| weekday == date.wday } == 0
           data[weekday][hour] = 0
         else
-          data[weekday][hour] = s.where("extract('hour' from created_at) = ?", hour).count.to_f / (start_date..end_date).count {|date| weekday == date.wday }
+          data[weekday][hour] = (s.where("extract('hour' from created_at) = ?", hour).count.to_f / (start_date..end_date).count {|date| weekday == date.wday }).round(2)
         end
       end
     end
