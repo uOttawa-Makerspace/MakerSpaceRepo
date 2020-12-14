@@ -38,20 +38,47 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
         get :popular_hours
+        expect(response).to have_http_status(:success)
+      end
+
+    end
+  end
+
+  describe "GET /popular_hours_per_period" do
+
+    context "without params" do
+
+      it 'should get a 200' do
+        admin = create(:user, :admin)
+        session[:user_id] = admin.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :popular_hours_per_period
+        expect(response).to redirect_to admin_report_generator_popular_hours_path
       end
 
     end
 
-    context "logged in as regular user" do
+    context "with params" do
 
-      it 'should redirect user to root' do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
+      it 'should get a 200' do
+        admin = create(:user, :admin)
+        session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
-        get :popular_hours
-        expect(response).to redirect_to root_path
+        get :popular_hours_per_period, params: {start_date: Date.yesterday, end_date: Date.today}
+        expect(response).to have_http_status(:success)
       end
 
+    end
+  end
+
+  context "logged in as regular user" do
+
+    it 'should redirect user to root' do
+      user = create(:user, :regular_user)
+      session[:user_id] = user.id
+      session[:expires_at] = Time.zone.now + 10000
+      get :popular_hours
+      expect(response).to redirect_to root_path
     end
 
   end
