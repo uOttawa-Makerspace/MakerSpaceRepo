@@ -91,6 +91,26 @@ RSpec.describe QuestionsController, type: :controller do
     end
   end
 
+  describe "DELETE /remove_answer" do
+    context 'logged as admin' do
+      it 'should delete answer' do
+        expect { delete :remove_answer, params: {id: @question.id, answer_id: @question.answers.first.id} }.to change(Answer, :count).by(-1)
+        expect(response).to redirect_to edit_question_path(@question)
+        expect(flash[:notice]).to eq("Answer Removed")
+      end
+    end
+  end
+
+  describe "POST /add_answer" do
+    context 'logged as admin' do
+      it 'should create answer' do
+        expect { post :add_answer, params: {id: @question.id} }.to change(Answer, :count).by(1)
+        expect(response).to redirect_to edit_question_path(@question)
+        expect(flash[:notice]).to eq("Answer added. Please update its content!")
+      end
+    end
+  end
+
   after(:all) do
     Question.destroy_all
   end
