@@ -2,8 +2,8 @@
 
 class QuestionsController < StaffAreaController
   layout 'staff_area'
-  before_action :set_question, only: %i[show edit update destroy remove_answer]
-  before_action :set_levels, :set_categories, only: %i[new edit remove_answer]
+  before_action :set_question, only: %i[show edit update destroy remove_answer add_answer]
+  before_action :set_levels, :set_categories, only: %i[new edit remove_answer add_answer]
 
   def index
     @questions = Question.all.order(created_at: :desc).paginate(page: params[:page], per_page: 50)
@@ -62,7 +62,12 @@ class QuestionsController < StaffAreaController
   def remove_answer
     answer = Answer.find(params[:answer_id])
     answer.destroy
-    redirect_to edit_question_path(@question, :notice => 'Answer Removed')
+    redirect_to edit_question_path(@question), :notice => 'Answer Removed'
+  end
+
+  def add_answer
+    @question.answers.create(description: 'Please change this content...')
+    redirect_to edit_question_path(@question), :notice => 'Answer added. Please update its content!'
   end
 
   private

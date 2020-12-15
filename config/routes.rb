@@ -324,6 +324,7 @@ Rails.application.routes.draw do
     collection do
       delete :delete_individually
       delete :remove_answer
+      get :add_answer
     end
   end
 
