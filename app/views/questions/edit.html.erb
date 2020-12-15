@@ -3,61 +3,7 @@
 <div class="container my-5">
   <div class="row">
     <div class="col-lg-12">
-      <%= form_for @question, url: {controller: "questions", action: "update"}, :html => {  class:"needs-validation", novalidate: 'novalidate' } do |f| %>
-        <div class="row">
-          <div class="col-md-12">
-            <div class="form-group text-center">
-              <%= f.text_area :description, placeholder: "Write your question here...", class: 'form-control', required: true %>
-              <div class="invalid-feedback">
-                Please provide the question description.
-              </div>
-              <br />
-              Categories:
-              <br />
-              <div class="mt-3">
-                <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', :selected => (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
-              </div>
-              <br />
-              <div class="form-group">
-                <%= f.label :level %>
-                <%= f.select :level, options_for_select(@levels, selected: @question.level), {prompt: 'Select a Level'}, class: "form-control", required: true %>
-              </div>
-            </div>
-            <br />
-
-            <div class="text-center">
-              <%= f.file_field :images, id: "pictureInput", multiple: true %>
-            </div>
-
-            <br />
-            <br />
-
-            <div id="image-target" class="mx-auto text-center"></div>
-
-            <div class="text-center row" id="edit-image">
-              <%= render 'question_images' %>
-            </div>
-
-          </div>
-
-          <div class="col-md-12">
-            <div class="form-group">
-              <p class="text-success text-center"><b>First answer</b> is the correct answer.</p>
-              <%= f.fields_for :answers do |af| %>
-                <%= af.rich_text_area :description, placeholder: "Write the answers here...", class: 'form-control h-auto', required: true %>
-                <div class="invalid-feedback">
-                  Please provide Answers
-                </div>
-                <br />
-              <% end %>
-            </div>
-          </div>
-
-          <div class="col-lg-12 text-center">
-            <%= f.submit "Update Question", class: "btn btn-secondary btn-xl text-uppercase" %>
-          </div>
-        </div>
-      <% end %>
+      <%= render 'question_form' %>
     </div>
   </div>
 </div>
