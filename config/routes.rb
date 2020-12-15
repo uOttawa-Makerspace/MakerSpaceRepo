@@ -323,6 +323,7 @@ Rails.application.routes.draw do
   resources :questions do
     collection do
       delete :delete_individually
+      delete :remove_answer
     end
   end
 
