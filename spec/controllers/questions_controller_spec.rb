@@ -74,7 +74,7 @@ RSpec.describe QuestionsController, type: :controller do
     context 'logged as admin' do
       it 'should update the question' do
         patch :update, params: {id: @question.id, question: {description: "updated"} }
-        expect(response).to redirect_to questions_path
+        expect(response).to redirect_to edit_question_path(@question)
         expect(Question.find(@question.id).description).to eq("updated")
         expect(flash[:notice]).to eq("Question updated")
       end
