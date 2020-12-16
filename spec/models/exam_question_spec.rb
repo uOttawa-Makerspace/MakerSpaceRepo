@@ -21,8 +21,7 @@ RSpec.describe ExamQuestion, type: :model do
 
     context '#create_exam_questions' do
       it 'should create exams questions for a training that has questions' do
-        n_of_questions = 3
-        expect { ExamQuestion.create_exam_questions(@exam.id, @training.id, n_of_questions) }.to change { ExamQuestion.count }.by(n_of_questions)
+        expect { ExamQuestion.create_exam_questions(@exam.id, @training.id, 3, 'Beginner') }.to change { ExamQuestion.count }.by(3)
       end
     end
 
