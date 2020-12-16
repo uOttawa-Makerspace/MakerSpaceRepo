@@ -122,11 +122,17 @@ $(document).on("turbolinks:load", function () {
 
     $('body').on('click', 'button.link-list', function () {
         $('.main_ul').append(
-            $('<li><div class="form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div></li>')
+            $('<li><div class="row"><div class="col-11 form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div><div class="col-1 pt-1"><button type="button" class="close" data-dismiss="alert">&times;</button></div></div></li>')
         );
     });
 
-    load();
+    // $('body').on('click', 'button.link-list', function () {
+    //     $('.main_ul').append(
+    //         $('<li><div class="form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div></li>')
+    //     );
+    // });
+    //
+    // load();
 });
 
 function load() {
