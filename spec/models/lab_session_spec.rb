@@ -27,5 +27,4 @@ RSpec.describe LabSession, type: :model do
     end
 
   end
-
 end

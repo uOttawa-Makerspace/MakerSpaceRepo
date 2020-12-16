@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_11_24_183034) do
+ActiveRecord::Schema.define(version: 2020_12_08_195036) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -497,6 +497,7 @@ ActiveRecord::Schema.define(version: 2020_11_24_183034) do
     t.integer "image_file_size"
     t.datetime "image_updated_at"
     t.integer "training_id"
+    t.string "level", default: "Beginner"
   end
 
   create_table "questions_trainings", id: false, force: :cascade do |t|

@@ -165,6 +165,7 @@ Rails.application.routes.draw do
       get '/', :as => 'index', :action => 'index'
       post '/generate', :as => 'generate', :action => 'generate', format: :xlsx
       get :popular_hours
+      get :popular_hours_per_period
     end
 
     resources :users, only: %i[index edit update show] do
@@ -319,7 +320,13 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :questions
+  resources :questions do
+    collection do
+      delete :delete_individually
+      delete :remove_answer
+      post :add_answer
+    end
+  end
 
   resources :exams, only: %i[index create show destroy] do
     collection do

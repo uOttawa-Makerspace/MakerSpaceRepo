@@ -2,8 +2,8 @@
 
 class QuestionsController < StaffAreaController
   layout 'staff_area'
-  before_action :set_question, only: %i[show edit update destroy]
-  before_action :delete_existing_images, only: :update
+  before_action :set_question, only: %i[show edit update destroy remove_answer add_answer]
+  before_action :set_levels, :set_categories, only: %i[new edit remove_answer add_answer]
 
   def index
     @questions = Question.all.order(created_at: :desc).paginate(page: params[:page], per_page: 50)
@@ -11,9 +11,9 @@ class QuestionsController < StaffAreaController
 
   def new
     @new_question = Question.new(params[:new_question])
-    @categories = Training.all.order(:name)
-    (params[:n_answers].present? and params[:n_answers].to_i > 1) ? n = params[:n_answers].to_i : (n = 1 and params[:n_answers] = 1)
+    (params[:n_answers].present? and params[:n_answers].to_i > 1) ? n = params[:n_answers].to_i : (n = 4 and params[:n_answers] = 4)
     n.times { @new_question.answers.new }
+    @new_question.answers.first.correct = true
   end
 
   def create
@@ -25,10 +25,10 @@ class QuestionsController < StaffAreaController
     end
   end
 
-  def show ;end
+  def show; end
 
   def edit
-    @categories = Training.all.order(:name)
+    @answers = @question.answers.sort_by { |a| a.correct ? 0 : 1 }
   end
 
   def update
@@ -37,7 +37,7 @@ class QuestionsController < StaffAreaController
     else
       flash[:alert] = 'Something went wrong'
     end
-    redirect_to questions_path
+    redirect_to edit_question_path(@question)
   end
 
   def destroy
@@ -49,17 +49,42 @@ class QuestionsController < StaffAreaController
     redirect_to questions_path
   end
 
+  def delete_individually
+    @image = ActiveStorage::Attachment.find(params[:id])
+    question_id = @image.record.id
+    @image.purge
+    @question = Question.find(question_id)
+    respond_to do |format|
+      format.js
+    end
+  end
+
+  def remove_answer
+    answer = Answer.find(params[:answer_id])
+    answer.destroy
+    redirect_to edit_question_path(@question), :notice => 'Answer Removed'
+  end
+
+  def add_answer
+    @question.answers.create(description: 'Please change this content...')
+    redirect_to edit_question_path(@question), :notice => 'Answer added. Please update its content!'
+  end
+
   private
 
     def question_params
-      params.require(:question).permit(:description, images: [], training_ids: [], answers_attributes: %i[id description correct])
+      params.require(:question).permit(:description, :level, images: [], training_ids: [], answers_attributes: %i[id description correct])
     end
 
     def set_question
       @question = Question.find(params[:id])
     end
 
-    def delete_existing_images
-      @question.images.purge if @question.images.attached?
+    def set_levels
+      @levels = Question::LEVELS
+    end
+
+    def set_categories
+      @categories = Training.all.order(:name)
     end
 end

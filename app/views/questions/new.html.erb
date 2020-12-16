@@ -18,6 +18,12 @@
                 <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name'), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
               </div>
               <br />
+
+              <div class="form-group">
+                <%= f.label 'level' %>
+                <%= f.select 'level', options_for_select(@levels), {prompt: 'Select level'}, class: "form-control", required: true %><br>
+              </div>
+              <br />
               <br />
 
               <div class="text-center">
@@ -37,7 +43,7 @@
               <p class="text-success text-center">The <b>Answer 1</b> will be the correct answer</p>
               <% i = 1 %>
               <%= f.fields_for :answers do |af| %>
-                <%= af.rich_text_area :description, placeholder: "Answer #{i}: Write the answer description here...", class: 'form-control h-auto', required: true %>
+                <%= af.rich_text_area :description, placeholder: "Answer #{i}: Write the answer description here...", class: "form-control h-auto #{return_border_color(af.object)}", required: true %>
                 <div class="invalid-feedback">Please provide Answers</div>
                 <br />
                 <% i+=1 %>
