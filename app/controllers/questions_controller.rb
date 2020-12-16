@@ -73,7 +73,7 @@ class QuestionsController < StaffAreaController
   private
 
     def question_params
-      params.require(:question).permit(:description, :level, images: [], training_ids: [], answers_attributes: %i[id description correct _destroy])
+      params.require(:question).permit(:description, :level, images: [], training_ids: [], answers_attributes: %i[id description correct])
     end
 
     def set_question
