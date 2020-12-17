@@ -1,7 +1,6 @@
 <div class="bg-white printorder-padding">
   <br>
-  <h1>List of prints / Laser
-    Cuts    <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %>  <%= link_to "User page", index_new_print_orders_path, {class: 'btn btn-primary'} %></h1>
+  <h1>List of prints / Laser Cuts <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %>  <%= link_to "User page", index_new_print_orders_path, {class: 'btn btn-primary'} %></h1>
 
   <div>
     <%= form_with(url: print_orders_path, method: "get", class: "form-inline") do %>
@@ -29,24 +28,24 @@
               <table class="table table-striped table-responsive">
                 <thead>
                 <tr>
-                  <th style="text-align: center;" scope="col">User</th>
-                  <th style="text-align: center;" scope="col">Identity</th>
-                  <th style="text-align: center;" scope="col">Type</th>
-                  <th style="text-align: center;" scope="col">ID</th>
-                  <th style="text-align: center;" scope="col">Submitted on</th>
-                  <th style="text-align: center;" scope="col">Comments</th>
+                  <th style="text-align: center;" scope="col">User<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+                  <th style="text-align: center;" scope="col">Identity<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+                  <th style="text-align: center;" scope="col">Type<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+                  <th style="text-align: center;" scope="col">ID<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+                  <th style="text-align: center;" scope="col">Submitted on<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+                  <th style="text-align: center;" scope="col">Comments<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
                   <th style="text-align: center;" scope="col">STL/SVG</th>
                   <% if @user.admin? || @user.staff? %>
                     <th style="text-align: center;" scope="col">GCode/PDF</th>
                   <% end %>
-                  <th style="text-align: center;" scope="col">Expedited</th>
-                  <th style="text-align: center;" scope="col">Approved by admins ?</th>
-                  <th style="text-align: center;" scope="col">Approved by user ?</th>
+                  <th style="text-align: center;" scope="col">Expedited<span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+                  <th style="text-align: center;" scope="col">Approved by admins ?<span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+                  <th style="text-align: center;" scope="col">Approved by user ?<span onclick="sortTable('sessions-table', 8)"><%=fa_icon('arrow-down')%></span></th>
                   <% if @user.admin? || @user.staff? %>
-                    <th style="text-align: center;" scope="col">Staff Assigned</th>
+                    <th style="text-align: center;" scope="col">Staff Assigned<span onclick="sortTable('sessions-table', 9)"><%=fa_icon('arrow-down')%></span></th>
                   <% end %>
                   <th style="text-align: center;" scope="col">Printed ?</th>
-                  <th style="text-align: center;" scope="col">Delete</th>
+                  <th style="text-align: center;" scope="col">Action</th>
                 </tr>
                 </thead>
 
