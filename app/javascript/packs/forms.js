@@ -121,9 +121,15 @@ let certificationArray;
 $(document).on("turbolinks:load", function () {
 
     $('body').on('click', 'button.link-list', function () {
+        let id = $('.main_ul')[0].childElementCount - 1;
         $('.main_ul').append(
             $('<li><div class="form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div></li>')
         );
+    });
+
+    $('body').on('click', 'button#remove-link-list', function () {
+        let id = $('.main_ul')[0].childElementCount - 1;
+        $('.main_ul')[0].removeChild($('.main_ul')[0].childNodes[id]);
     });
 
     load();
