@@ -121,18 +121,18 @@ let certificationArray;
 $(document).on("turbolinks:load", function () {
 
     $('body').on('click', 'button.link-list', function () {
+        let id = $('.main_ul')[0].childElementCount - 1;
         $('.main_ul').append(
-            $('<li><div class="row"><div class="col-11 form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div><div class="col-1 pt-1"><button type="button" class="close" data-dismiss="alert">&times;</button></div></div></li>')
+            $('<li><div class="form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div></li>')
         );
     });
 
-    // $('body').on('click', 'button.link-list', function () {
-    //     $('.main_ul').append(
-    //         $('<li><div class="form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div></li>')
-    //     );
-    // });
-    //
-    // load();
+    $('body').on('click', 'button#remove-link-list', function () {
+        let id = $('.main_ul')[0].childElementCount - 1;
+        $('.main_ul')[0].removeChild($('.main_ul')[0].childNodes[id]);
+    });
+
+    load();
 });
 
 function load() {
