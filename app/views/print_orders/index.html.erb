@@ -26,35 +26,35 @@
             <div class="card-body">
               <h2 class="text-center"><%= order_string %></h2>
               <table class="table table-striped table-responsive print-order-table-<%= index %>">
-                <thead>
-                <tr>
-                  <th style="text-align: center;" scope="col">User<span onclick="sortTable('print-order-table-<%= index %>', 0)"><%=fa_icon('arrow-down')%></span></th>
-                  <th style="text-align: center;" scope="col">Identity<span onclick="sortTable('print-order-table-<%= index %>', 1)"><%=fa_icon('arrow-down')%></span></th>
-                  <th style="text-align: center;" scope="col">Type<span onclick="sortTable('print-order-table-<%= index %>', 2)"><%=fa_icon('arrow-down')%></span></th>
-                  <th style="text-align: center;" scope="col">ID<span onclick="sortTable('print-order-table-<%= index %>', 3)"><%=fa_icon('arrow-down')%></span></th>
-                  <th style="text-align: center;" scope="col">Submitted on<span onclick="sortTable('print-order-table-<%= index %>', 4)"><%=fa_icon('arrow-down')%></span></th>
-                  <th style="text-align: center;" scope="col">Comments<span onclick="sortTable('print-order-table-<%= index %>', 5)"><%=fa_icon('arrow-down')%></span></th>
-                  <th style="text-align: center;" scope="col">STL/SVG</th>
+
+                <tr class="text-center">
+                  <th>User<span onclick="sortTable('print-order-table-<%= index %>', 0)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Identity<span onclick="sortTable('print-order-table-<%= index %>', 1)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Type<span onclick="sortTable('print-order-table-<%= index %>', 2)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>ID<span onclick="sortTable('print-order-table-<%= index %>', 3)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Submitted on<span onclick="sortTable('print-order-table-<%= index %>', 4)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Comments<span onclick="sortTable('print-order-table-<%= index %>', 5)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>STL/SVG</th>
                   <% if @user.admin? || @user.staff? %>
-                    <th style="text-align: center;" scope="col">GCode/PDF</th>
+                    <th>GCode/PDF</th>
                   <% end %>
-                  <th style="text-align: center;" scope="col">Expedited<span onclick="sortTable('print-order-table-<%= index %>', 6)"><%=fa_icon('arrow-down')%></span></th>
-                  <th style="text-align: center;" scope="col">Approved by admins ?<span onclick="sortTable('print-order-table-<%= index %>', 7)"><%=fa_icon('arrow-down')%></span></th>
-                  <th style="text-align: center;" scope="col">Approved by user ?<span onclick="sortTable('print-order-table-<%= index %>', 8)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Expedited<span onclick="sortTable('print-order-table-<%= index %>', 6)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Approved by admins ?<span onclick="sortTable('print-order-table-<%= index %>', 7)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Approved by user ?<span onclick="sortTable('print-order-table-<%= index %>', 8)"><%=fa_icon('arrow-down')%></span></th>
                   <% if @user.admin? || @user.staff? %>
-                    <th style="text-align: center;" scope="col">Staff Assigned<span onclick="sortTable('print-order-table-<%= index %>', 9)"><%=fa_icon('arrow-down')%></span></th>
+                    <th>Staff Assigned<span onclick="sortTable('print-order-table-<%= index %>', 9)"><%=fa_icon('arrow-down')%></span></th>
                   <% end %>
-                  <th style="text-align: center;" scope="col">Printed ?</th>
-                  <th style="text-align: center;" scope="col">Action</th>
+                  <th>Printed ?</th>
+                  <th>Action</th>
                 </tr>
-                </thead>
+
 
                 <% @print_order.where(order).each do |prints| %>
-                  <tbody>
-                  <tr>
-                    <th class="username" style="text-align: center;" scope="row">
-                      <%= link_to prints.user.name, user_path(prints.user.username) %> <br>
-                      <a href="<%= prints.user.email %>"><%= prints.user.email %></a>
+
+                  <tr class="text-center">
+                    <th>
+                      <%= link_to prints.user.name, user_path(prints.user.username), class: 'username' %> <br>
+                      <span><%= prints.user.email %></span>
                     </th>
 
                     <% if (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") %>
@@ -73,9 +73,9 @@
                       <td>Unknown</td>
                     <% end %>
 
-                    <td style="text-align: center;"><%= prints.id %></td>
+                    <td><%= prints.id %></td>
 
-                    <td style="text-align: center;">
+                    <td>
                       <% if prints.created_at %>
                         Submitted on <%= prints.created_at.to_formatted_s(:long_ordinal) %>
                       <% else %>
@@ -278,7 +278,7 @@
                       <td>Can not delete</td>
                     <% end %>
                   </tr>
-                  </tbody>
+
                 <% end %>
               </table>
             </div>
