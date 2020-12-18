@@ -152,7 +152,8 @@ class LearningAreaController < DevelopmentProgramsController
     def update_videos
       if params['deletevideos'].present?
         @learning_module.videos.each do |f|
-          if params['deletevideos'].include?(f.video_file_name)
+          if params['deletevideos'].include?(f.video.map{|v| v.filename.to_s})
+            # Code more here
             f.video.purge
             f.destroy
           end

@@ -261,7 +261,8 @@ class ProficientProjectsController < DevelopmentProgramsController
   def update_videos
     if params['deletevideos'].present?
       @proficient_project.videos.each do |f|
-        if params['deletevideos'].include?(f.video_file_name)
+        if (params['deletevideos'] - f.video.map{|v| v.filename.to_s}).any?
+          # Code more here
           f.video.purge
           f.destroy
         end
