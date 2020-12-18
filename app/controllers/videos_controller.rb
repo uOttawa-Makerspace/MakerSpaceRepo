@@ -48,7 +48,7 @@ class VideosController < DevelopmentProgramsController
   end
 
   def video_params
-    params.require(:video).permit(:video, :proficient_project_id, :learning_module_id)
+    params.require(:video).permit(:proficient_project_id, :learning_module_id, video: [])
   end
 
   def grant_access_admin

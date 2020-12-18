@@ -4,7 +4,7 @@ class Video < ApplicationRecord
   belongs_to :learning_module,    optional: true
   scope :processed, -> { where(processed: true) }
 
-  has_one_attached :video
+  has_many_attached :video
 
   ALLOWED_CONTENT_TYPES = %w[video/mp4 video/avi video/mov video/quicktime].freeze
 

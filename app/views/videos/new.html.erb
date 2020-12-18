@@ -12,7 +12,7 @@
             <%= f.select :proficient_project_id, options_for_select(@proficient_projects),{:include_blank => 'Choose a Project...'}, class: "form-control", id: "select_proficient_id", :onchange => 'setProficientProject()', required: true%>
             <p id="proficient_project"></p>
             <div class="d-none" id="choose_video">
-                <%= f.file_field :video, direct_upload: true, accept: "video/*", :onchange => 'fetch_attachment_name()', id: "video", style: "display: none;" %>
+                <%= f.file_field :video, direct_upload: true, accept: "video/*", :onchange => 'fetch_attachment_name()', id: "video", style: "display: none;", multiple: true %>
                 <label for="video" class="custom-instructable-upload-video" id="video-label">Choose Video...</label>
               <div class="text-center mb-5" id="video-name"></div>
               <br />
@@ -20,6 +20,7 @@
             </div>
           <% end %>
         </div>
+        <hr />
 
         <h5>Learning Modules</h5>
         <div class="form-group">
