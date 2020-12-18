@@ -38,11 +38,11 @@
                   <% if @user.admin? || @user.staff? %>
                     <th>GCode/PDF</th>
                   <% end %>
-                  <th>Expedited<span onclick="sortTable('print-order-table-<%= index %>', 6)"><%=fa_icon('arrow-down')%></span></th>
-                  <th>Approved by admins ?<span onclick="sortTable('print-order-table-<%= index %>', 7)"><%=fa_icon('arrow-down')%></span></th>
-                  <th>Approved by user ?<span onclick="sortTable('print-order-table-<%= index %>', 8)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Expedited<span onclick="sortTable('print-order-table-<%= index %>', 8)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Approved by admins ?<span onclick="sortTable('print-order-table-<%= index %>', 9)"><%=fa_icon('arrow-down')%></span></th>
+                  <th>Approved by user ?<span onclick="sortTable('print-order-table-<%= index %>', 10)"><%=fa_icon('arrow-down')%></span></th>
                   <% if @user.admin? || @user.staff? %>
-                    <th>Staff Assigned<span onclick="sortTable('print-order-table-<%= index %>', 9)"><%=fa_icon('arrow-down')%></span></th>
+                    <th>Staff Assigned<span onclick="sortTable('print-order-table-<%= index %>', 11)"><%=fa_icon('arrow-down')%></span></th>
                   <% end %>
                   <th>Printed ?</th>
                   <th>Action</th>
