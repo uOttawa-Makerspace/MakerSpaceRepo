@@ -1,7 +1,7 @@
 <div class="form-group">
   <p class="text-success text-center"><b>First answer</b> is the correct answer.</p>
   <%= f.fields_for :answers, @answers do |af| %>
-    <%= af.rich_text_area :description, placeholder: "Write the answers here...", class: "form-control h-auto #{return_border_color(af.object)}", required: true %>
+    <%= af.rich_text_area :description, placeholder: "Write the answers here...", class: "form-control h-auto #{return_answer_border_color(af.object)}", required: true %>
     <%= link_to 'Remove', remove_answer_questions_path(answer_id: af.object.id, id: @question.id), class: 'btn btn-danger text-white float-right', method: :delete, data: {confirm: 'Are you sure?'} unless af.object.correct %>
     <br />
     <br />
