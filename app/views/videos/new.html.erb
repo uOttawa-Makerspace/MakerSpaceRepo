@@ -28,7 +28,7 @@
             <%= f.select :learning_module_id, options_for_select(@learning_modules),{:include_blank => 'Choose a Module...'}, class: "form-control", id: "select_module_id", :onchange => 'setLearningModule()', required: true%>
             <p id="learning_module"></p>
             <div class="d-none" id="choose_video_2">
-              <%= f.file_field :video, direct_upload: true, accept: "video/*", :onchange => 'fetch_attachment_name_2()', id: "video-2", style: "display: none;" %>
+              <%= f.file_field :video, direct_upload: true, accept: "video/*", :onchange => 'fetch_attachment_name_2()', id: "video-2", style: "display: none;", multiple: true %>
               <label for="video-2" class="custom-instructable-upload-video" id="video-label-2">Choose Video...</label>
               <div class="text-center mb-5" id="video-name-2"></div>
               <br />
