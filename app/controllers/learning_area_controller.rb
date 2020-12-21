@@ -150,12 +150,16 @@ class LearningAreaController < DevelopmentProgramsController
     end
 
     def update_videos
-      if params['deletevideos'].present?
+      videos_id = params['deletevideos']
+      if videos_id.present?
+        videos_id = videos_id.split(',').uniq.map{|id| id.to_i}
         @learning_module.videos.each do |f|
-          if params['deletevideos'].include?(f.video.map{|v| v.filename.to_s})
-            # Code more here
-            f.video.purge
-            f.destroy
+          if (f.video.pluck(:id) & videos_id).any?
+            videos_id.each do |video_id|
+              video = f.video.find(video_id)
+              video.purge
+            end
+            f.destroy unless f.video.attached?
           end
         end
       end

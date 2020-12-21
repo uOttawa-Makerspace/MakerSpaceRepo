@@ -16,7 +16,7 @@ class VideosController < DevelopmentProgramsController
 
   def create
     @video = Video.new(video_params)
-    @video.direct_upload_url = ""
+    # @video.direct_upload_url = ""
     if @video.save
       @video.update(processed: true)
       # blob = @video.video.blob

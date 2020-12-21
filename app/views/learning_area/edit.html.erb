@@ -54,7 +54,7 @@
                       <tr class="file-item">
                         <td><%= fa_icon "file-text-o" %> <%= video.filename %></td>
                         <td><span><%= bytes_to_megabytes(video.byte_size) %> MB</span></td>
-                        <td><span id="<%= video.filename %>" class="video-remove">remove</span></td>
+                        <td><span id="<%= video.id %>" class="video-remove">remove</span></td>
                       </tr>
                     </table>
                   <% end %>
