@@ -1,7 +1,6 @@
 FactoryBot.define do
   factory :video do
     association :proficient_project
-    direct_upload_url { "" }
 
     trait :with_video do
       video { [FilesTestHelper.mp4] }
