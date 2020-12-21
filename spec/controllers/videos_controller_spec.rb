@@ -65,7 +65,7 @@ RSpec.describe VideosController, type: :controller do
     context 'logged as admin' do
       it 'should create a video and redirect' do
         pp = create(:proficient_project)
-        video_params = { proficient_project_id: pp.id, video: FilesTestHelper.mp4 }
+        video_params = { proficient_project_id: pp.id, video: [FilesTestHelper.mp4] }
         expect { post :create, params: {video: video_params} }.to change(Video, :count).by(1)
         expect(flash[:notice]).to eq("Video Uploaded")
         expect(response).to redirect_to videos_path
@@ -77,7 +77,7 @@ RSpec.describe VideosController, type: :controller do
     context 'logged as admin' do
       it 'should destroy the video' do
         video = create(:video, :with_video)
-        expect { delete :destroy, params: {id: video.id} }.to change(Video, :count).by(-1)
+        expect { delete :destroy, params: {id: video.id, video_id: video.video.last.id} }.to change(Video, :count).by(-1)
         expect(response).to redirect_to videos_path
         expect(flash[:notice]).to eq('Video Deleted.')
       end
