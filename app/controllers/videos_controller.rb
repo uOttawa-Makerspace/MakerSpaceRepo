@@ -37,7 +37,10 @@ class VideosController < DevelopmentProgramsController
   end
 
   def destroy
-    @video.destroy
+    videos = @video.video
+    video = videos.find(params[:video_id])
+    video.purge
+    @video.destroy unless @video.video.attached?
     flash[:notice] = 'Video Deleted.'
     redirect_to videos_path
   end
