@@ -49,13 +49,15 @@
               <div id="video-container">
 
                 <% @videos.each do |f| %>
-                  <table>
-                    <tr class="file-item">
-                      <td><%= fa_icon "file-text-o" %> <%= f.video_file_name %></td>
-                      <td><span><%= f.video_file_size %> MB</span></td>
-                      <td><span id="<%= f.video_file_name %>" class="video-remove">remove</span></td>
-                    </tr>
-                  </table>
+                  <% f.video.each do |video| %>
+                    <table>
+                      <tr class="file-item">
+                        <td><%= fa_icon "file-text-o" %> <%= video.filename %></td>
+                        <td><span><%= bytes_to_megabytes(video.byte_size) %> MB</span></td>
+                        <td><span id="<%= video.filename %>" class="video-remove">remove</span></td>
+                      </tr>
+                    </table>
+                  <% end %>
                 <% end %>
                 <%= hidden_field_tag 'deletevideos' %>
               </div>
