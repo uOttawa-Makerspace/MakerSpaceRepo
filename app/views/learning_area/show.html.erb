@@ -58,10 +58,12 @@
 </section>
 
 <% @videos.each do |f| %>
-  <div class="imgbox">
-    <%= video_tag url_for(f.video), controls: true, controlslist: "nodownload", class: "center-fit" if f.video.attached? %>
-  </div>
-  <br />
+  <% f.video.each do |video| %>
+    <div class="imgbox">
+      <%= video_tag url_for(video), controls: true, controlslist: "nodownload", class: "center-fit" if f.video.attached? %>
+    </div>
+    <br/>
+  <% end %>
 <% end %>
 
 <% @files.each do |f| %>

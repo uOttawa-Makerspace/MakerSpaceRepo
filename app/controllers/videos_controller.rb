@@ -16,17 +16,18 @@ class VideosController < DevelopmentProgramsController
 
   def create
     @video = Video.new(video_params)
-    @video.direct_upload_url = ""
+    # @video.direct_upload_url = ""
     if @video.save
-      blob = @video.video.blob
-      blob_size = bytes_to_megabytes(blob.byte_size)
-      @video.update(
-          video_file_name: blob.filename,
-          video_file_size: blob_size,
-          video_content_type: blob.content_type,
-          video_updated_at: blob.created_at,
-          processed: true
-          )
+      @video.update(processed: true)
+      # blob = @video.video.blob
+      # blob_size = bytes_to_megabytes(blob.byte_size)
+      # @video.update(
+      #     video_file_name: blob.filename,
+      #     video_file_size: blob_size,
+      #     video_content_type: blob.content_type,
+      #     video_updated_at: blob.created_at,
+      #     processed: true
+      #     )
       flash[:notice] = "Video Uploaded"
       redirect_to videos_path
     else
@@ -36,7 +37,10 @@ class VideosController < DevelopmentProgramsController
   end
 
   def destroy
-    @video.destroy
+    videos = @video.video
+    video = videos.find(params[:video_id])
+    video.purge
+    @video.destroy unless @video.video.attached?
     flash[:notice] = 'Video Deleted.'
     redirect_to videos_path
   end
@@ -48,7 +52,7 @@ class VideosController < DevelopmentProgramsController
   end
 
   def video_params
-    params.require(:video).permit(:video, :proficient_project_id, :learning_module_id)
+    params.require(:video).permit(:proficient_project_id, :learning_module_id, video: [])
   end
 
   def grant_access_admin
