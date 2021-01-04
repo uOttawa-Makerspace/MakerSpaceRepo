@@ -21,7 +21,7 @@ class MakesController < SessionsController
       create_photos
       copy_categories_and_equipment
       @repository.increment!(:make)
-      render json: { redirect_uri: repository_path(@user.username, @repo.slug).to_s }
+      render json: { redirect_uri: repository_path(@user.username, @repo.id).to_s }
       @user.increment!(:reputation, 15)
     else
       render :new, alert: 'Something went wrong'
@@ -35,7 +35,7 @@ class MakesController < SessionsController
   private
 
   def set_repository
-    @repository = Repository.find_by(user_username: params[:user_username], slug: params[:slug])
+    @repository = Repository.find_by(user_username: params[:user_username], id: params[:id])
   end
 
   def create_photos

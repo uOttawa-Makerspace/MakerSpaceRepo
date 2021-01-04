@@ -382,16 +382,16 @@
       <div class="repository-container">
         <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if (repository.photos.present? and repository.photos.first.present? and repository.photos.first.image.attached?)}')" %> >
           <% if repository.user_username.eql?(@user.username) %>
-            <%= link_to "Delete", repository_path(repository.user_username, repository.slug),
+            <%= link_to "Delete", repository_path(repository.user_username, repository.id),
                         method: :delete, data: {confirm: "Are you sure? Once you delete the repository there is no coming back!"}, class: 'delete-repo' %>
-            <%= link_to "Edit", edit_repository_path(repository.user_username, repository.slug), class: 'edit-repo' %>
+            <%= link_to "Edit", edit_repository_path(repository.user_username, repository.id), class: 'edit-repo' %>
           <% end %>
-          <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
+          <%= link_to "", repository_path(repository.user_username, repository.id), class: 'link' %>
         </div>
 
         <div class="repo-info">
           <div class="left">
-            <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %></div>
+            <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.id) %></div>
             <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
             <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
           </div>

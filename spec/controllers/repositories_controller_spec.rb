@@ -14,21 +14,21 @@ RSpec.describe RepositoriesController, type: :controller do
 
       it 'should show the repo (no password)' do
         create(:repository)
-        get :show, params: {slug: Repository.last.slug, user_username: Repository.last.user_username}
+        get :show, params: {id: Repository.last.id, user_username: Repository.last.user_username}
         expect(response).to have_http_status(:success)
       end
 
       it 'should show the repo (authenticated)' do
         create(:repository, :private)
-        post :pass_authenticate, params: {user_username: Repository.last.user_username, slug: Repository.last.slug, password: 'abc'}
-        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.slug)
+        post :pass_authenticate, params: {user_username: Repository.last.user_username, id: Repository.last.id, password: 'abc'}
+        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.id)
         expect(flash[:notice]).to eq('Success')
       end
 
       it 'should redirect user to the password form' do
         create(:repository, :private)
-        get :show, params: {slug: Repository.last.slug, user_username: Repository.last.user_username}
-        expect(response).to redirect_to password_entry_repository_path(Repository.last.user_username, Repository.last.slug)
+        get :show, params: {id: Repository.last.id, user_username: Repository.last.user_username}
+        expect(response).to redirect_to password_entry_repository_path(Repository.last.user_username, Repository.last.id)
       end
 
     end
@@ -44,7 +44,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         repo = create(:repository, :with_repo_files)
-        get :download_files, params: {slug: Repository.last.slug, user_username: Repository.last.user_username}
+        get :download_files, params: {id: Repository.last.id, user_username: Repository.last.user_username}
 
         expected_file_path = "#{Rails.root}/public/tmp/makerepo_file_#{repo.id.to_s}.zip"
         expect(File).to be_file(expected_file_path)
@@ -80,8 +80,8 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:repository)
-        get :edit, params: {user_username: User.last.username, slug: Repository.last.slug}
-        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.slug)
+        get :edit, params: {user_username: User.last.username, id: Repository.last.id}
+        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.id)
         expect(flash[:alert]).to eq('You are not allowed to perform this action!')
       end
 
@@ -91,7 +91,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         create(:repository)
         Repository.last.users << User.last
-        get :edit, params: {user_username: User.last.username, slug: Repository.last.slug}
+        get :edit, params: {user_username: User.last.username, id: Repository.last.id}
         expect(response).to have_http_status(:success)
       end
 
@@ -114,7 +114,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect { post :create, params: {user_username: User.last.username, repository: repo_params} }.to change(Repository, :count).by(1)
         expect(Repository.last.users.first.id).to eq(User.last.id)
         expect(User.last.reputation).to eq(25)
-        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.id).to_s)
       end
 
       it 'should create a repository with images and files' do
@@ -124,7 +124,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(User.last.reputation).to eq(25)
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
-        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.id).to_s)
       end
 
       it 'should create a repository with categories and equipements' do
@@ -134,7 +134,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(User.last.reputation).to eq(25)
         expect(Repository.last.categories.count).to eq(2)
         expect(Repository.last.equipments.count).to eq(2)
-        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.id).to_s)
       end
 
       it 'should create a private repository' do
@@ -143,7 +143,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(Repository.last.users.first.id).to eq(User.last.id)
         expect(User.last.reputation).to eq(25)
         expect(Repository.last.password).not_to be_nil
-        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.id).to_s)
       end
 
       it 'should fail to create a repository' do
@@ -168,15 +168,15 @@ RSpec.describe RepositoriesController, type: :controller do
 
       it 'should update the repository' do
         create(:repository)
-        patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, repository: {title: "abc"}}
-        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+        patch :update, params: {user_username: User.last.username, id: Repository.last.id, repository: {title: "abc"}}
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.id).to_s)
         expect(flash[:notice]).to eq('Project updated successfully!')
       end
 
       it 'should update the repository with photos and files' do
         create(:repository, :with_repo_files)
-        patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, repository: {title: "abc"}, files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')], deleteimages: [Photo.last.image.filename.to_s], deletefiles: [RepoFile.last.file.id.to_s]}
-        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+        patch :update, params: {user_username: User.last.username, id: Repository.last.id, repository: {title: "abc"}, files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')], deleteimages: [Photo.last.image.filename.to_s], deletefiles: [RepoFile.last.file.id.to_s]}
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.id).to_s)
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
         expect(flash[:notice]).to eq('Project updated successfully!')
@@ -184,15 +184,15 @@ RSpec.describe RepositoriesController, type: :controller do
 
       it 'should fail to update the repository' do
         create(:repository)
-        patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, repository: {title: "$$$abc"}}
+        patch :update, params: {user_username: User.last.username, id: Repository.last.id, repository: {title: "$$$abc"}}
         expect(flash[:alert]).to eq('Unable to apply the changes.')
       end
 
       it 'should create a private repository' do
         create(:repository, :private)
         old_pass = Repository.last.password
-        patch :update, params: {user_username: User.last.username, slug: Repository.last.slug, password: ["abcd"], repository: {title: "abc"}}
-        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
+        patch :update, params: {user_username: User.last.username, id: Repository.last.id, password: ["abcd"], repository: {title: "abc"}}
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.id).to_s)
         expect(Repository.last.password).not_to eq(old_pass)
         expect(BCrypt::Password.new(Repository.last.password) == "abcd").to be_truthy
         expect(flash[:notice]).to eq('Project updated successfully!')
@@ -211,7 +211,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:repository)
-        expect{ delete :destroy, params: {user_username: User.last.username, slug: Repository.last.slug} }.to change(Repository, :count).by(-1)
+        expect{ delete :destroy, params: {user_username: User.last.username, id: Repository.last.id} }.to change(Repository, :count).by(-1)
       end
 
     end
@@ -228,7 +228,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         create(:repository, user_id: user.id)
         Repository.last.users << User.last
-        expect{ post :add_like, params: {user_username: User.last.username, slug: Repository.last.slug} }.to change(Repository.last.likes, :count).by(1)
+        expect{ post :add_like, params: {user_username: User.last.username, id: Repository.last.id} }.to change(Repository.last.likes, :count).by(1)
         expect(User.last.reputation).to eq(5)
       end
 
@@ -238,8 +238,8 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         create(:repository, user_id: user.id)
         Repository.last.users << User.last
-        expect{ post :add_like, params: {user_username: User.last.username, slug: Repository.last.slug} }.to change(Repository.last.likes, :count).by(1)
-        expect{ post :add_like, params: {user_username: User.last.username, slug: Repository.last.slug} }.to change(Repository.last.likes, :count).by(0)
+        expect{ post :add_like, params: {user_username: User.last.username, id: Repository.last.id} }.to change(Repository.last.likes, :count).by(1)
+        expect{ post :add_like, params: {user_username: User.last.username, id: Repository.last.id} }.to change(Repository.last.likes, :count).by(0)
         expect(response.body).to include("failed")
       end
       
@@ -256,7 +256,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:repository, :private)
-        get :password_entry, params: {user_username: User.last.username, slug: Repository.last.slug}
+        get :password_entry, params: {user_username: User.last.username, id: Repository.last.id}
         expect(response).to have_http_status(:success)
       end
 
@@ -273,8 +273,8 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:repository, :private)
-        get :pass_authenticate, params: {user_username: User.last.username, slug: Repository.last.slug, password: ""}
-        expect(response).to redirect_to password_entry_repository_path(Repository.last.user_username, Repository.last.slug)
+        get :pass_authenticate, params: {user_username: User.last.username, id: Repository.last.id, password: ""}
+        expect(response).to redirect_to password_entry_repository_path(Repository.last.user_username, Repository.last.id)
         expect(flash[:alert]).to eq('Incorrect password. Try again!')
       end
 
@@ -283,8 +283,8 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         create(:repository, :private)
-        get :pass_authenticate, params: {user_username: User.last.username, slug: Repository.last.slug, password: "abc"}
-        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.slug)
+        get :pass_authenticate, params: {user_username: User.last.username, id: Repository.last.id, password: "abc"}
+        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.id)
         expect(flash[:notice]).to eq('Success')
       end
 

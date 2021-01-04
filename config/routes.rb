@@ -399,11 +399,11 @@ Rails.application.routes.draw do
   end
 
   # REPOSITORY RESOURCES
-  resources :repositories, path: '/:user_username', param: :slug, except: :index do
+  resources :repositories, path: '/:user_username', param: :id, except: :index do
     post 'add_like', on: :member
     collection do
-      get ':slug/download_files', :as => 'download_files', :action => 'download_files'
-      get ':slug/download', :as => 'download', :action => 'download'
+      get ':id/download_files', :as => 'download_files', :action => 'download_files'
+      get ':id/download', :as => 'download', :action => 'download'
       patch :link_to_pp
       patch :add_owner
       patch :remove_owner
@@ -414,13 +414,13 @@ Rails.application.routes.draw do
     end
   end
 
-  namespace :makes, path: 'makes/:user_username/:slug' do
+  namespace :makes, path: 'makes/:user_username/:id' do
     post 'create'
     get 'new'
   end
 
   namespace :comments do
-    post :create, path: '/:slug'
+    post :create, path: '/:id'
     delete :destroy, path: '/:id/destroy'
   end
 

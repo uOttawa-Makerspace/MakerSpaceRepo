@@ -229,13 +229,13 @@
         <div class="repository-container">
 
           <div class="repo-display-wrapper" <%= "style=background-image:url('#{@photos[repository.id].try(:image).try(:url)}')" %> >
-            <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
+            <%= link_to "", repository_path(repository.user_username, repository.id), class: 'link' %>
           </div>
 
           <div class="repo-info">
             <div class="left">
               <div class="title">
-                <%= link_to repository.title, repository_path(user_username: repository.user_username, slug: repository.slug) %>
+                <%= link_to repository.title, repository_path(user_username: repository.user_username, id: repository.id) %>
               </div>
               <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
               <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
