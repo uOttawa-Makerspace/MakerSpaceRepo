@@ -131,6 +131,8 @@
 
             <td>
               Client : <%= @print_order.user.name %>
+              <br>
+              Date : <%= @print_order.updated_at.strftime("%Y/%m/%d") %>
             </td>
           </tr>
         </table>
