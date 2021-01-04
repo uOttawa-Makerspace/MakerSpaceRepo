@@ -2,6 +2,7 @@ name: CI
 on: [push, pull_request]
 
 env:
+  RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }} 
   DB_HOST: localhost
   DB_USERNAME: postgres
   DB_PASSWORD: postgres
