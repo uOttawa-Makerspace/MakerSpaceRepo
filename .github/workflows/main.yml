@@ -40,10 +40,10 @@ jobs:
       - name: Build and run tests
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
-          REDIS_URL: redis://localhpst:6379/0
+          REDIS_URL: redis://localhost:6379/0
           RAILS_ENV: test
           #RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
-        run:
+        run: |
           sudo apt-get -yqq install libpq-dev
           gem install bundler
           bundle install -jobs 4 --retry 3
