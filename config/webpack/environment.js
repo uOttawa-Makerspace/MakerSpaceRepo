@@ -10,7 +10,10 @@ environment.plugins.append("Provide",
 
 }));
 
-environment.config.set('resolve.alias', {jquery: 'jquery/src/jquery'});
+environment.config.set('resolve.alias', {
+        jquery: 'jquery/src/jquery',
+        'jquery-ui': 'jquery-ui-dist/jquery-ui.js'
+});
 
 environment.loaders.prepend('erb', erb)
 module.exports = environment;
