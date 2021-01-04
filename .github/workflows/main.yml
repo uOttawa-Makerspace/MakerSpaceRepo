@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:11
+        image: postgres:12
         env:
           POSTGRES_DB: makerspacerepo_test        
           POSTGRES_PASSWORD: postgres
@@ -32,7 +32,7 @@ jobs:
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
         with:
-          ruby-version: 2.5.3
+          ruby-version: 2.5
       - uses: borales/actions-yarn@v2.0.0
         with:
           cmd: install
@@ -41,7 +41,7 @@ jobs:
           DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
           REDIS_URL: redis://localhpst:6379/0
           RAILS_ENV: test
-          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          #RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
         run:
           sudo apt-get -yqq install libpq-dev
           gem install bundler
@@ -50,6 +50,7 @@ jobs:
           mkdir certs && touch certs/saml.key && touch certs/saml.crt
           openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
           bundle exec rails db:prepare
+          bundle exec rails db:migrate
           bundle exec rails spec
           bundle exec rails test
 
