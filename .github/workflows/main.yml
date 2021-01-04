@@ -33,9 +33,10 @@ jobs:
         uses: actions/setup-ruby@v1
         with:
           ruby-version: 2.5
-      - uses: borales/actions-yarn@v2.0.0
+      - uses: actions/setup-node@v2
         with:
-          cmd: install
+          node-version: '12'
+      - run: yarn install
       - name: Build and run tests
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
