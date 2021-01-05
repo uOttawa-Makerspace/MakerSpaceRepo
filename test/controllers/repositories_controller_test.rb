@@ -7,7 +7,7 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'mary').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    post :create, params: { user_username: 'mary', slug: 'repository44', repository: { id: 44,
+    post :create, params: { user_username: 'mary', id: 44, repository: { id: 44,
                                                                                        title: 'Repository44',
                                                                                        description: 'description44',
                                                                                        category: '3D-Model',
@@ -21,8 +21,8 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'mary').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    patch :update, params: { user_username: 'mary', slug: 'repository2', repository: { description: 'mydescription' } }
-    assert_equal 'mydescription', Repository.find_by(slug: 'repository2').description
+    patch :update, params: { user_username: 'mary', id: 2, repository: { description: 'mydescription' } }
+    assert_equal 'mydescription', Repository.find_by(id: 2).description
     assert Repository.find_by(description: 'mydescription').present?
     assert_not Repository.find_by(description: 'description2').present?
     assert_equal flash[:notice], 'Project updated successfully!'
@@ -32,10 +32,10 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'mary').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    patch :update, params: { user_username: 'mary', slug: 'repository2', repository: { share_type: 'private', password: 'myPass' } }
+    patch :update, params: { user_username: 'mary', id: 2, repository: { share_type: 'private', password: 'myPass' } }
 
-    assert_equal 'private', Repository.find_by(slug: 'repository2').share_type
-    assert_equal 'myPass', Repository.find_by(slug: 'repository2').password
+    assert_equal 'private', Repository.find_by(id: 2).share_type
+    assert_equal 'myPass', Repository.find_by(id: 2).password
 
     assert_equal flash[:notice], 'Project updated successfully!'
   end
@@ -44,10 +44,10 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'mary').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    patch :update, params: { user_username: 'mary', slug: 'repository2', repository: { share_type: 'public' } }
+    patch :update, params: { user_username: 'mary', id: 2, repository: { share_type: 'public' } }
 
-    assert_equal 'public', Repository.find_by(slug: 'repository2').share_type
-    assert_nil Repository.find_by(slug: 'repository2').password
+    assert_equal 'public', Repository.find_by(id: 2).share_type
+    assert_nil Repository.find_by(id: 2).password
 
     assert_equal flash[:notice], 'Project updated successfully!'
   end
@@ -56,10 +56,10 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'mary').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    patch :update, params: { user_username: 'mary', slug: 'repository3', repository: { share_type: 'public' } }
+    patch :update, params: { user_username: 'mary', id: 3, repository: { share_type: 'public' } }
 
-    assert_equal 'public', Repository.find_by(slug: 'repository3').share_type
-    assert_nil Repository.find_by(slug: 'repository3').password
+    assert_equal 'public', Repository.find_by(id: 3).share_type
+    assert_nil Repository.find_by(id: 3).password
 
     assert_equal flash[:notice], 'Project updated successfully!'
   end
@@ -68,8 +68,8 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'mary').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    delete :destroy, params: { user_username: 'mary', slug: 'repository2', repository: {} }
-    assert_not Repository.find_by(slug: 'repository2').present?
+    delete :destroy, params: { user_username: 'mary', id: 2, repository: {} }
+    assert_not Repository.find_by(id: 2).present?
     assert_redirected_to user_path('mary')
   end
 
@@ -77,7 +77,7 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'bob').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    get :show, params: { user_username: 'mary', slug: 'repository3' }
+    get :show, params: { user_username: 'mary', id: 3 }
     assert_redirected_to password_entry_repository_url
   end
 
@@ -85,7 +85,7 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'adam').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    get :show, params: { user_username: 'mary', slug: 'repository3' }
+    get :show, params: { user_username: 'mary', id: 3 }
     assert_response :success
   end
 
@@ -93,7 +93,7 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'olivia').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    get :show, params: { user_username: 'mary', slug: 'repository3' }
+    get :show, params: { user_username: 'mary', id: 3 }
     assert_response :success
   end
 
@@ -101,7 +101,7 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'adam').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    post :pass_authenticate, params: { user_username: 'mary', slug: 'repository3', password: 'Password1', repository: { password: 'Password1', slug: 'repository3' } }
+    post :pass_authenticate, params: { user_username: 'mary', id: 3, password: 'Password1', repository: { password: 'Password1', id: 3 } }
     assert_equal 'Success', flash[:notice]
     assert_redirected_to repository_path
   end
@@ -110,7 +110,7 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'bob').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    get :edit, params: { user_username: 'bob', slug: 'repository1' }
+    get :edit, params: { user_username: 'bob', id: 1 }
     assert_response :success
   end
 
@@ -118,7 +118,7 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'adam').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    get :edit, params: { user_username: 'bob', slug: 'repository1' }
+    get :edit, params: { user_username: 'bob', id: 1 }
     assert_response :success
   end
 
@@ -126,8 +126,8 @@ class RepositoriesControllerTest < ActionController::TestCase
     session[:user_id] = User.find_by(username: 'sara').id
     session[:expires_at] = 'Sat, 03 Jun 2030 05:01:41 UTC +00:00'
 
-    get :edit, params: { user_username: 'mary', slug: 'repository2' }
+    get :edit, params: { user_username: 'mary', id: 2 }
     assert_equal 'You are not allowed to perform this action!', flash[:alert]
-    assert_redirected_to repository_path('mary', 'repository2')
+    assert_redirected_to repository_path('mary', 2)
   end
 end

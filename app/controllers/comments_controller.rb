@@ -5,13 +5,13 @@ class CommentsController < SessionsController
   before_action :signed_in, except: %i[index show]
 
   def create
-    repository = Repository.find_by slug: params[:slug]
+    repository = Repository.find(params[:id])
     comment = repository.comments.build(comment_params)
     comment.user_id = @user.id
     comment.username = @user.username
 
     if comment.save
-      redirect_to repository_path(slug: repository.slug, user_username: repository.user_username, :anchor => "repo-comments")
+      redirect_to repository_path(id: repository.id, user_username: repository.user_username, :anchor => "repo-comments")
     else
       redirect_to root_path
     end
@@ -27,7 +27,7 @@ class CommentsController < SessionsController
     else
       flash[:alert] = 'Something went wrong'
     end
-    redirect_to repository_path(slug: comment.repository.slug, user_username: comment.repository.user_username)
+    redirect_to repository_path(id: comment.repository.id, user_username: comment.repository.user_username)
   end
 
   private

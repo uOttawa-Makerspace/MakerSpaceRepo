@@ -16,7 +16,7 @@ RSpec.describe MakesController, type: :controller do
         repo = create(:repository, :create_equipement_and_categories)
         Repository.last.users << User.last
         Repository.last.save
-        expect { post :create, params: {slug: Repository.find(repo.id).slug, user_username: Repository.last.user_username, "#{Repository.find(repo.id).title}": {title: Faker::Lorem.word, description: Faker::Lorem.paragraph}, images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')]} }.to change(Repository, :count).by(1)
+        expect { post :create, params: {id: repo.id, user_username: Repository.last.user_username, "#{Repository.find(repo.id).title}": {title: Faker::Lorem.word, description: Faker::Lorem.paragraph}, images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')]} }.to change(Repository, :count).by(1)
         expect(Repository.last.photos.last.image).to be_attached
         expect(Repository.last.categories.count).to eq(2)
         expect(Repository.last.equipments.count).to eq(2)
@@ -32,7 +32,7 @@ RSpec.describe MakesController, type: :controller do
 
       it 'should get a 200' do
         repo = create(:repository)
-        get :new, params: {user_username: Repository.find(repo.id).user_username, slug: Repository.find(repo.id).slug}
+        get :new, params: {user_username: Repository.find(repo.id).user_username, id: repo.id}
         expect(response).to have_http_status(:success)
       end
 

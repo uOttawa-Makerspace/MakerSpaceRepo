@@ -17,13 +17,13 @@ RSpec.describe CommentsController, type: :controller do
 
       it "should create a comment" do
         repo = create(:repository)
-        expect{ post :create, params: {slug: repo.slug, content: "abc"} }.to change(Comment, :count).by(1)
-        expect(response).to redirect_to repository_path(slug: repo.slug, user_username: repo.user_username, :anchor => "repo-comments")
+        expect{ post :create, params: {id: repo.id, content: "abc"} }.to change(Comment, :count).by(1)
+        expect(response).to redirect_to repository_path(id: repo.id, user_username: repo.user_username, :anchor => "repo-comments")
       end
 
       it "should fail to create a comment" do
         repo = create(:repository)
-        expect{ post :create, params: {slug: repo.slug, content: ""} }.to change(Comment, :count).by(0)
+        expect{ post :create, params: {id: repo.id, content: ""} }.to change(Comment, :count).by(0)
         expect(response).to redirect_to root_path
       end
 
