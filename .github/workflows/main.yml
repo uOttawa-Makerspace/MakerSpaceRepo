@@ -55,16 +55,15 @@ jobs:
           bundle exec rails db:prepare
           bundle exec rails db:migrate
           bundle exec rails spec
-      - uses: actions/checkout@v1
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 2.5.3
-          bundler-cache: true
-      - uses: miloserdow/capistrano-deploy@master
         if: github.ref == 'refs/heads/staging'
-        with:
-          target: production
-          deploy_key: ${{ secrets.DEPLOY_ENC_KEY }}
+      - name: Deploy
+        run: |
+          - openssl aes-256-cbc -k $DEPLOY_KEY -d -a -in config/deploy_id_rsa_enc_travis -out config/deploy_id_rsa
+          - chmod 600 config/deploy_id_rsa
+          - eval "$(ssh-agent -s)"
+          - ssh-add config/deploy_id_rsa
+          - gem install capistrano
+          - bundle exec cap staging deploy
 
 
 
