@@ -38,8 +38,9 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '12'
+      - run: npm i -g yarn
       - run: yarn install
-      - name: Build and run tests
+      - name: Build
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
           REDIS_URL: redis://localhost:6379/0
@@ -49,11 +50,24 @@ jobs:
           sudo apt-get -yqq install libpq-dev
           gem install bundler
           bundle install --jobs 4 --retry 3
+      - name: Yarn Install
+        run: bin/rails yarn:install
+
+      - name: Compile Assets
+        shell: bash
+        run: |
+          if [[ ! -d public/packs-test ]]; then
+            bundle exec rails webpacker:compile
+          else
+            echo "No need to compile assets."
+          fi
+          
+      - name: Run tests
+        run: |
           mkdir certs && touch certs/saml.key && touch certs/saml.crt
           openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
           bundle exec rails db:prepare
           bundle exec rails db:migrate
-          bundle exec rails webpacker:compile
           bundle exec rails spec
           bundle exec rails test
 
