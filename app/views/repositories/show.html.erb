@@ -46,7 +46,7 @@
 
   <% if @repository.users.pluck(:email).include?(@user.email) || @user.role.eql?("admin") %>
     <%= link_to fa_icon("pencil", text: 'Edit project'),
-      edit_repository_path(@repository.user_username, @repository.slug), class: 'edit-repo-link' %>
+      edit_repository_path(@repository.user_username, @repository.id), class: 'edit-repo-link' %>
   <% end %>
 
     <div id="repo-title">
@@ -72,7 +72,7 @@
       </div>
       <% if @files.present? %>
       <div class="repo-info-item">
-        <table><tr><td class="title">PROJECT FILES</td><td><span id="download-zip" class="bg-download"><%= link_to fa_icon("download", text: "Download"), download_files_repositories_path(@repository.user_username, @repository.slug), :id => "download-zip-link" %></span></td></tr></table>
+        <table><tr><td class="title">PROJECT FILES</td><td><span id="download-zip" class="bg-download"><%= link_to fa_icon("download", text: "Download"), download_files_repositories_path(@repository.user_username, @repository.id), :id => "download-zip-link" %></span></td></tr></table>
         <div class="files-show">
         <% @files.each do |f| %>
           <div class="file-item-show">
@@ -107,7 +107,7 @@
         </span>
         <span class="make" style="color: white;">
           <%= link_to(fa_icon('code-fork', text: 'Make'),
-            makes_new_path(@repository.user_username, @repository.slug)) %>
+            makes_new_path(@repository.user_username, @repository.id)) %>
         </span>
       </div>
       <div class="repo-info-item">

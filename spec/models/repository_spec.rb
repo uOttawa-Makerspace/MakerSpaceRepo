@@ -163,12 +163,12 @@ RSpec.describe Repository, type: :model do
       end
 
       it 'should return nothing' do
-        expect(Repository.authenticate(Repository.last.slug, 'somethingelse')).to be_falsey
+        expect(Repository.authenticate(Repository.last.id, 'somethingelse')).to be_falsey
       end
 
       it 'should return the user' do
         create(:repository, :private)
-        expect(Repository.authenticate(Repository.last.slug, 'abc')).to be_truthy
+        expect(Repository.authenticate(Repository.last.id, 'abc')).to be_truthy
       end
 
     end

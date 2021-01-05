@@ -91,6 +91,7 @@ class PrintOrdersController < ApplicationController
       params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:comments_box].to_s
     end
 
+
     if @print_order.update(print_order_params)
       flash[:notice] = "The print order has been updated!"
     else

@@ -57,8 +57,8 @@ class Repository < ApplicationRecord
     share_type.eql?('private')
   end
 
-  def self.authenticate(slug, password)
-    @repository = Repository.find_by(slug: slug)
+  def self.authenticate(id, password)
+    @repository = Repository.find(id)
     @repository.pword == password
   end
 

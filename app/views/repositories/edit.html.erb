@@ -3,7 +3,7 @@
 <% end %>
 <section id="new-repo">
   <div class="title">Edit Project</div>
-  <%= link_to fa_icon("search", text: 'View project'), repository_path(@repository.user_username, @repository.slug), class: 'edit-repo-link', id: 'view-repo-link' %>
+  <%= link_to fa_icon("search", text: 'View project'), repository_path(@repository.user_username, @repository.id), class: 'edit-repo-link', id: 'view-repo-link' %>
   <%= form_for @repository, url: {controller: "repositories", action: "update"}, html: { multipart: true } do |f| %>
 
     <br>
@@ -117,7 +117,7 @@
     <br>
     <br>
     <br>
-    <% content_tag "repository[slug]", @repository.slug%>
+    <% content_tag "repository[id]", @repository.id%>
     <%= f.submit "Update Project", class: "btn btn-primary", id: "waiting-save-button" %>
     <span id="status-save"></span>
     <br>

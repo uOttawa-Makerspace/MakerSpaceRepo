@@ -483,7 +483,7 @@ class ReportGenerator
         sheet.add_row [
                           repository.title,
                           repository.users.map(&:name).join(', '),
-                          Rails.application.routes.url_helpers.repository_path(slug: repository.slug, user_username: repository.user_username),
+                          Rails.application.routes.url_helpers.repository_path(id: repository.id, user_username: repository.user_username),
                           repository.categories.map(&:name).join(', ')
                       ]
       end

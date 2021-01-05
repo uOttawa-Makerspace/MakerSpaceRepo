@@ -7,7 +7,7 @@ class RepositoriesController < SessionsController
 
   def show
     if @repository.private? && !@check_passed
-      redirect_to password_entry_repository_path(@repository.user_username, @repository.slug) and return
+      redirect_to password_entry_repository_path(@repository.user_username, @repository.id) and return
     end
 
     @photos = @repository.photos.joins(:image_attachment)&.first(5) || []
@@ -66,7 +66,7 @@ class RepositoriesController < SessionsController
       @equipments = @repository.equipments
     else
       flash[:alert] = 'You are not allowed to perform this action!'
-      redirect_to repository_path(@repository.user_username, @repository.slug)
+      redirect_to repository_path(@repository.user_username, @repository.id)
     end
   end
 
@@ -84,7 +84,7 @@ class RepositoriesController < SessionsController
       create_files
       create_categories
       create_equipments
-      render json: {redirect_uri: repository_path(@user.username, @repository.slug).to_s}
+      render json: {redirect_uri: repository_path(@user.username, @repository.id).to_s}
     else
       render json: @repository.errors['title'].first, status: :unprocessable_entity
     end
@@ -101,7 +101,7 @@ class RepositoriesController < SessionsController
       create_categories
       create_equipments
       flash[:notice] = 'Project updated successfully!'
-      render json: {redirect_uri: repository_path(@repository.user_username, @repository.slug).to_s}
+      render json: {redirect_uri: repository_path(@repository.user_username, @repository.id).to_s}
     else
       flash[:alert] = 'Unable to apply the changes.'
       render json: @repository.errors['title'].first, status: :unprocessable_entity
@@ -130,17 +130,17 @@ class RepositoriesController < SessionsController
   end
 
   def pass_authenticate
-    @auth = Repository.authenticate(params[:slug], params[:password])
+    @auth = Repository.authenticate(params[:id], params[:password])
     respond_to do |format|
       if @auth
         @authorized = true
         authorized_repo_ids << params[:id]
         flash[:notice] = 'Success'
-        format.html { redirect_to repository_path(@repository.user_username, @repository.slug) }
+        format.html { redirect_to repository_path(@repository.user_username, @repository.id) }
       else
         @authorized = false
         flash[:alert] = 'Incorrect password. Try again!'
-        format.html { redirect_to password_entry_repository_path(@repository.user_username, @repository.slug) }
+        format.html { redirect_to password_entry_repository_path(@repository.user_username, @repository.id) }
       end
     end
   end
@@ -196,7 +196,7 @@ class RepositoriesController < SessionsController
   end
 
   def set_repository
-    @repository = Repository.find_by(slug: params[:slug])
+    @repository = Repository.find(params[:id])
   end
 
   def repository_params
