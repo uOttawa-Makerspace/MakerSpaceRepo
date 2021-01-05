@@ -2,7 +2,7 @@ name: CI
 on: [push, pull_request]
 
 env:
-  RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }} 
+  RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
   DB_HOST: localhost
   DB_USERNAME: postgres
   DB_PASSWORD: postgres
@@ -14,10 +14,10 @@ jobs:
       postgres:
         image: postgres:12
         env:
-          POSTGRES_DB: makerspacerepo_test        
+          POSTGRES_DB: makerspacerepo_test
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
-        ports: 
+        ports:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
@@ -55,16 +55,11 @@ jobs:
           bundle exec rails db:prepare
           bundle exec rails db:migrate
           bundle exec rails spec
-    if: github.ref == 'refs/heads/staging'
-    steps:
-      - uses: actions/checkout@v1
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 2.5.3
-          bundler-cache: true
+        if: github.ref == 'refs/heads/staging'
+      - name: Deploy
       - uses: miloserdow/capistrano-deploy@master
         with:
-          target: production
+          target: staging
           deploy_key: ${{ secrets.DEPLOY_ENC_KEY }}
 
 
