@@ -58,7 +58,7 @@ jobs:
         if: github.ref == 'refs/heads/staging'
       - name: Deploy
         run: |
-          - openssl aes-256-cbc -k ${{ DEPLOY_ENC_KEY }} -d -a -in config/deploy_id_rsa_enc -out config/deploy_id_rsa
+          - openssl aes-256-cbc -k ${{ secrets.DEPLOY_ENC_KEY }} -d -a -in config/deploy_id_rsa_enc -out config/deploy_id_rsa
           - chmod 600 config/deploy_id_rsa
           - eval "$(ssh-agent -s)"
           - ssh-add config/deploy_id_rsa
