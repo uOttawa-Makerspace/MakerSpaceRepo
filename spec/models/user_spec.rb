@@ -197,7 +197,7 @@ RSpec.describe User, type: :model do
       create(:user, :admin)
       create(:user, :staff)
       create(:user, :volunteer_with_volunteer_program)
-      4.times{ create(:user, :regular_user, created_at: 3.months.ago) }
+      4.times{ create(:user, :regular_user, created_at: 1.month.ago) }
       5.times{ create(:user, :student) }
       2.times{ create(:user, :regular_user, created_at: 3.years.ago) }
     end
@@ -210,13 +210,21 @@ RSpec.describe User, type: :model do
 
     context '#not_created_this_year' do
       it 'should return 2' do
-        expect(User.not_created_this_year.count).to eq(2)
+        if Time.new.month == 1
+          expect(User.not_created_this_year.count).to eq(6)
+        else
+          expect(User.not_created_this_year.count).to eq(2)
+        end
       end
     end
 
     context '#created_this_year' do
       it 'should return 14' do
-        expect(User.created_this_year.count).to eq(14)
+        if Time.new.month == 1
+          expect(User.created_this_year.count).to eq(10)
+        else
+          expect(User.created_this_year.count).to eq(14)
+        end
       end
     end
 
@@ -234,8 +242,8 @@ RSpec.describe User, type: :model do
 
     context '#between_dates_picked' do
       it 'should return one' do
-        start_date = 4.months.ago
-        end_date = 2.months.ago
+        start_date = 2.months.ago
+        end_date = 1.day.ago
         expect(User.between_dates_picked(start_date, end_date).count).to eq(4)
       end
 
