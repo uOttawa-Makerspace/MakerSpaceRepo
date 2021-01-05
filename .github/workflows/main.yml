@@ -38,8 +38,9 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '12'
+      - run: npm i -g yarn
       - run: yarn install
-      - name: Build and run tests
+      - name: Build and test
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
           REDIS_URL: redis://localhost:6379/0
@@ -53,9 +54,7 @@ jobs:
           openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
           bundle exec rails db:prepare
           bundle exec rails db:migrate
-          RAILS_ENV=test bundle exec rails webpacker:compile
           bundle exec rails spec
-          bundle exec rails test
 
   deploy:
     if: github.ref == 'refs/heads/staging'
