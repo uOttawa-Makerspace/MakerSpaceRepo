@@ -55,14 +55,13 @@ jobs:
           bundle exec rails db:prepare
           bundle exec rails db:migrate
           bundle exec rails spec
-    if: github.ref == 'refs/heads/staging'
-    steps:
       - uses: actions/checkout@v1
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: 2.5.3
           bundler-cache: true
       - uses: miloserdow/capistrano-deploy@master
+        if: github.ref == 'refs/heads/staging'
         with:
           target: production
           deploy_key: ${{ secrets.DEPLOY_ENC_KEY }}
