@@ -93,8 +93,8 @@ RSpec.describe Repository, type: :model do
     context 'self.slug' do
 
       it 'should get the right slug' do
-        repo = create(:repository, title: 'ABC Abc', id: 150)
-        expect(repo.slug).to eq("#{repo.id}.abc-abc")
+        repo = create(:repository, title: 'ABC Abc')
+        expect(repo.slug).to eq("abc-abc")
       end
 
     end
