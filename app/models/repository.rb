@@ -43,8 +43,12 @@ class Repository < ApplicationRecord
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)
   end
 
-  before_save do
+  before_create do
     self.slug = title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
+  end
+
+  before_update do
+    self.slug = id.to_s + '.' + title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
 
   before_destroy do
