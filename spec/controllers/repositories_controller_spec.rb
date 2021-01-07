@@ -21,7 +21,7 @@ RSpec.describe RepositoriesController, type: :controller do
       it 'should show the repo (authenticated)' do
         create(:repository, :private)
         post :pass_authenticate, params: {user_username: Repository.last.user_username, id: Repository.last.id, password: 'abc'}
-        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.id)
+        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.slug)
         expect(flash[:notice]).to eq('Success')
       end
 
@@ -81,7 +81,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         create(:repository)
         get :edit, params: {user_username: User.last.username, id: Repository.last.id}
-        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.id)
+        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.slug)
         expect(flash[:alert]).to eq('You are not allowed to perform this action!')
       end
 
@@ -143,7 +143,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(Repository.last.users.first.id).to eq(User.last.id)
         expect(User.last.reputation).to eq(25)
         expect(Repository.last.password).not_to be_nil
-        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.id).to_s)
+        expect(response.body).to include(repository_path(Repository.last.user_username, Repository.last.slug).to_s)
       end
 
       it 'should fail to create a repository' do
@@ -274,7 +274,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         create(:repository, :private)
         get :pass_authenticate, params: {user_username: User.last.username, id: Repository.last.id, password: ""}
-        expect(response).to redirect_to password_entry_repository_path(Repository.last.user_username, Repository.last.id)
+        expect(response).to redirect_to password_entry_repository_path(Repository.last.user_username, Repository.last.slug)
         expect(flash[:alert]).to eq('Incorrect password. Try again!')
       end
 
@@ -284,7 +284,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         create(:repository, :private)
         get :pass_authenticate, params: {user_username: User.last.username, id: Repository.last.id, password: "abc"}
-        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.id)
+        expect(response).to redirect_to repository_path(Repository.last.user_username, Repository.last.slug)
         expect(flash[:notice]).to eq('Success')
       end
 
