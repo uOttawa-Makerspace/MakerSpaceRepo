@@ -38,6 +38,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '12'
+      - uses: c-hive/gha-yarn-cache@v1
       - run: npm i -g yarn
       - run: yarn install
       - name: Build and test
