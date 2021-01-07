@@ -26,9 +26,9 @@ RSpec.describe Repository, type: :model do
 
   end
 
-  describe "Scopes" do
+  describe 'Scopes' do
 
-    context "public_repo" do
+    context 'public_repo' do
 
       it 'should only get private repos' do
         create(:repository)
@@ -41,35 +41,35 @@ RSpec.describe Repository, type: :model do
 
   end
 
-  describe "Validations" do
+  describe 'Validations' do
 
-    context "title" do
+    context 'title' do
       subject { build :repository }
-      it { should_not allow_value("gds%%$32").for(:title).with_message("Invalid project title") }
-      it { should allow_value("johndoe").for(:title) }
-      it { should validate_presence_of(:title).with_message("Project title is required.") }
-      it { should validate_uniqueness_of(:title).scoped_to(:user_username).with_message("Project title is already in use.") }
+      it { should_not allow_value('gds%%$32').for(:title).with_message('Invalid project title') }
+      it { should allow_value('johndoe').for(:title) }
+      it { should validate_presence_of(:title).with_message('Project title is required.') }
+      it { should validate_uniqueness_of(:title).scoped_to(:user_username).with_message('Project title is already in use.') }
     end
 
-    context "share type" do
-      it { should_not allow_value("Nothing").for(:share_type) }
+    context 'share type' do
+      it { should_not allow_value('Nothing').for(:share_type) }
       it { should allow_value('public', 'private').for(:share_type) }
-      it { should validate_presence_of(:share_type).with_message("Is your project public or private?") }
+      it { should validate_presence_of(:share_type).with_message('Is your project public or private?') }
     end
 
     context 'password private' do
       subject { build(:repository, :private) }
-      it { should validate_presence_of(:password).with_message("Password is required for private projects") }
+      it { should validate_presence_of(:password).with_message('Password is required for private projects') }
     end
 
-    context "password public" do
+    context 'password public' do
       subject { build(:repository) }
       it { should_not validate_presence_of(:password) }
     end
 
   end
 
-  describe "Before save" do
+  describe 'Before save' do
 
     context 'youtube_link' do
 
@@ -85,7 +85,7 @@ RSpec.describe Repository, type: :model do
 
       it 'should return nil (good link)' do
         pp = create(:repository, :working_link)
-        expect(pp.youtube_link).to eq("https://www.youtube.com/watch?v=AbcdeFGHIJLK")
+        expect(pp.youtube_link).to eq('https://www.youtube.com/watch?v=AbcdeFGHIJLK')
       end
 
     end
@@ -93,7 +93,7 @@ RSpec.describe Repository, type: :model do
     context 'self.slug' do
 
       it 'should get the right slug' do
-        repo = create(:repository, title: "ABC Abc")
+        repo = create(:repository, title: 'ABC Abc')
         expect(repo.slug).to eq("abc-abc")
       end
 
@@ -102,9 +102,9 @@ RSpec.describe Repository, type: :model do
   end
 
 
-  describe "before destroy" do
+  describe 'before destroy' do
 
-    context "reputation" do
+    context 'reputation' do
 
       it 'should lower reputation by 25' do
         user = create(:user, :regular_user)
@@ -118,7 +118,7 @@ RSpec.describe Repository, type: :model do
 
   end
 
-  describe "#scopes" do
+  describe '#scopes' do
 
     context '#between_dates_picked' do
 
@@ -140,16 +140,16 @@ RSpec.describe Repository, type: :model do
 
   end
 
-  describe "methods" do
+  describe 'methods' do
 
-    context "#private?" do
+    context '#private?' do
 
       it "shoudn't be private" do
         repo = create(:repository)
         expect(repo.private?).to be_falsey
       end
 
-      it "should be private" do
+      it 'should be private' do
         repo = create(:repository, :private)
         expect(repo.private?).to be_truthy
       end
@@ -173,14 +173,14 @@ RSpec.describe Repository, type: :model do
 
     end
 
-    context "#pword=" do
+    context '#pword=' do
 
       it 'should return a new password' do
         repo = create(:repository, :private)
         @repository = Repository.find(repo.id)
-        @repository.pword = "abcd"
+        @repository.pword = 'abcd'
         @repository.save
-        expect(Repository.last.password).not_to eq("$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2")
+        expect(Repository.last.password).not_to eq('$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2')
       end
 
     end

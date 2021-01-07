@@ -3,7 +3,7 @@ fr:
   navbar:
     explore: "Explorer"
     project_proposals: "Propositions de projet"
-    propose_project: "Proposer un projet"
+    propose_project: "Proposer une nouvelle idée pour un projet"
     proposed_projects: "Projets proposés"
     your_projects: "Vous Projets"
     assigned_projects: "Projets assignés"
@@ -18,7 +18,7 @@ fr:
     create_account: "Créer un compte"
     search: "Rechercher"
     buy_cc_money: "Acheter des CC"
-    create_project: "Créer un projet"
+    create_project: "Documenter un projet"
     user:
       profile: "Profil"
       liked: "J'aime"

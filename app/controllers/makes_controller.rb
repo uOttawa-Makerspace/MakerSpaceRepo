@@ -18,10 +18,11 @@ class MakesController < SessionsController
     end
 
     if @repo.save
+      @repo.update(slug: @repo.id.to_s + '.' + @repo.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-'))
       create_photos
       copy_categories_and_equipment
       @repository.increment!(:make)
-      render json: { redirect_uri: repository_path(@user.username, @repo.id).to_s }
+      render json: { redirect_uri: repository_path(@user.username, @repo.slug).to_s }
       @user.increment!(:reputation, 15)
     else
       render :new, alert: 'Something went wrong'
