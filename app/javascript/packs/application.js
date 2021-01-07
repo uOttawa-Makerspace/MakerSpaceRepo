@@ -20,12 +20,12 @@ require("@rails/ujs").start();
 require("turbolinks").start();
 require("@rails/activestorage").start();
 require("jquery");
+require("jquery-ui")
 require("select2");
 global.toastr = require("toastr");
 global.Chart = require("chart.js");
 require("trix");
 require("@shopify/buy-button-js");
-require("jquery-ui");
 global.PhotoSwipe = require('photoswipe');
 global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
 var Clipboard = require("clipboard");
