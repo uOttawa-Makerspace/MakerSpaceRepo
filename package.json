@@ -18,6 +18,7 @@
     "jquery-ui": "^1.12.1",
     "jquery-ui-dist": "^1.12.1",
     "js-cookie": "^2.2.1",
+    "justifiedGallery": "^3.8.1",
     "lightgallery": "^1.7.2",
     "node": "^14.14.0",
     "node-sass": "^4.14.1",
