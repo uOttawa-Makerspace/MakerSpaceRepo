@@ -291,6 +291,54 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
+        header_summary = ['']
+        summary_total = ['Total']
+        CourseName.all.each do |course|
+          header_summary << if course.name == 'no course'
+                      'Open'
+                    else
+                      course.name
+                            end
+          summary_total << 0
+        end
+        summary_total << 0
+        header_summary << 'Total'
+        sheet.add_row header_summary
+
+        certification_summary = {}
+
+        Training.all.each do |training|
+
+          training_sessions = TrainingSession.where(training_id: training.id, space_id: space_id, created_at: start_date..end_date)
+          training_row = [training.name]
+          total_certifications = 0
+
+          CourseName.all.each_with_index do |course, i|
+            if certification_summary[course.name].nil?
+              certification_summary[course.name] = 0
+            end
+
+            user_count = 0
+            course_training_session = training_sessions.where(course: course.name)
+            course_training_session.each do |session|
+              user_count += session.users.count
+            end
+            training_row << user_count
+            total_certifications += user_count
+            certification_summary[course.name] += user_count
+            summary_total[i+1] = summary_total[i].to_i + user_count
+          end
+
+          training_row << total_certifications
+          certification_summary['total'] = 0 if certification_summary['total'].nil?
+          certification_summary['total'] += total_certifications
+          summary_total[-1] = summary_total[-1] + total_certifications
+
+          sheet.add_row training_row
+        end
+
+        sheet.add_row summary_total
+
       end
 
     end
