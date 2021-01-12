@@ -338,9 +338,12 @@ class ReportGenerator
         end
 
         final_summary = ['Total']
+        final = summary_total['total'].to_i
+        summary_total.delete('total')
         summary_total.values.each do |value|
           final_summary.push(value)
         end
+        final_summary << final
         sheet.add_row final_summary
 
       end
