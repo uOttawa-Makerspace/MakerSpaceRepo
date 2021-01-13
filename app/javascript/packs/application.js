@@ -21,6 +21,7 @@ require("turbolinks").start();
 require("@rails/activestorage").start();
 require("jquery");
 require("jquery-ui")
+require("justifiedGallery")
 require("select2");
 global.toastr = require("toastr");
 global.Chart = require("chart.js");

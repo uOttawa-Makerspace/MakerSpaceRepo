@@ -4,10 +4,12 @@
   <h2><b><%= @question.description %></b></h2>
 </div>
 
-<div class="text-center">
+<div id="questionImageGallery" class="text-center justified-gallery">
   <% if @question.images.attached? %>
     <% @question.images.each do |img| %>
-      <%= image_tag(img, style: 'height: 300px; border:1px solid #021a40;', class: 'my-1') %>
+      <a href="#">
+        <%= image_tag(img, style: 'border:1px solid #021a40;') %>
+      </a>
     <% end %>
   <% end %>
 </div>
