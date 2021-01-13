@@ -204,7 +204,7 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    %w[MTC Makerspace].each do |space|
+    ['MTC', 'Makerspace', 'Makerlab 119', 'Makerlab 121'].each do |space|
       spreadsheet.workbook.add_worksheet(name: space) do |sheet|
 
         space_id = Space.find_by_name(space).id
@@ -262,16 +262,16 @@ class ReportGenerator
           final_total_certifications['total'] += total_certifications
 
           color = if training.skill_id.present?
-            if training.skill.name == "Machine Shop Training"
-              {:bg_color => "ed7d31"}
-            elsif training.skill..name == "Technology Trainings"
-              {:bg_color => "70ad47"}
-            elsif training.skill.name == "CEED Trainings"
-              {:bg_color => "ffc000"}
-            else
-               {}
-            end
-          else
+                    if training.skill.name == "Machine Shop Training"
+                      {:bg_color => "ed7d31"}
+                    elsif training.skill..name == "Technology Trainings"
+                      {:bg_color => "70ad47"}
+                    elsif training.skill.name == "CEED Trainings"
+                      {:bg_color => "ffc000"}
+                    else
+                      {}
+                    end
+                  else
             {}
           end
           style = sheet.styles.add_style(color)
@@ -291,19 +291,21 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        header_summary = ['']
+        # Summary
         summary_total = {'total' => 0}
+        certification_summary = {}
+
+        # Header
+        header_summary = ['']
         CourseName.all.each do |course|
           header_summary << if course.name == 'no course'
-                      'Open'
-                    else
-                      course.name
+                              'Open'
+                            else
+                              course.name
                             end
         end
         header_summary << 'Total'
         sheet.add_row header_summary
-
-        certification_summary = {}
 
         Training.all.each do |training|
 
@@ -311,6 +313,7 @@ class ReportGenerator
           training_row = [training.name]
           total_certifications = 0
 
+          # One row
           CourseName.all.each do |course|
             if certification_summary[course.name].nil?
               certification_summary[course.name] = 0
@@ -318,8 +321,7 @@ class ReportGenerator
             end
 
             user_count = 0
-            course_training_session = training_sessions.where(course: course.name)
-            course_training_session.each do |session|
+            training_sessions.where(course: course.name).each do |session|
               user_count += session.users.count
             end
 
@@ -337,13 +339,16 @@ class ReportGenerator
           sheet.add_row training_row
         end
 
+        # Adding the summary
         final_summary = ['Total']
-        final = summary_total['total'].to_i
+        final = summary_total['total'].to_i # Adding the final number last
         summary_total.delete('total')
         summary_total.values.each do |value|
           final_summary.push(value)
         end
+
         final_summary << final
+
         sheet.add_row final_summary
 
       end
