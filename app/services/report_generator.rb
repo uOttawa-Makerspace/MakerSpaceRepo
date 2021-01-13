@@ -204,148 +204,156 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    %w[MTC Makerspace].each do |space|
-      spreadsheet.workbook.add_worksheet(name: space) do |sheet|
+    ['MTC', 'Makerspace', 'Makerlab 119', 'Makerlab 121'].each do |space|
 
-        space_id = Space.find_by_name(space).id
+      if Space.find_by(name: space).present?
+        spreadsheet.workbook.add_worksheet(name: space) do |sheet|
 
-        header(sheet, "Certifications in #{space}", start_date, end_date)
+          space_id = Space.find_by_name(space).id
 
-        header = ['Certification']
-        header2 = ['']
-        CourseName.all.each do |course|
-          header << if course.name == 'no course'
-                      'Open'
+          header(sheet, "Certifications in #{space}", start_date, end_date)
+
+          header = ['Certification']
+          header2 = ['']
+          CourseName.all.each do |course|
+            header << if course.name == 'no course'
+                        'Open'
+                      else
+                        course.name
+                      end
+            header << ''
+            header2.push('# sessions', '# of attendees')
+          end
+
+          header.push('Total Sessions', 'Total Certifications')
+
+          table_header(sheet, header)
+          table_header(sheet, header2)
+          final_total_sessions = {}
+          final_total_certifications = {}
+
+          Training.all.each do |training|
+
+            training_sessions = TrainingSession.where(training_id: training.id, space_id: space_id, created_at: start_date..end_date)
+            training_row = [training.name]
+            total_certifications = 0
+
+            CourseName.all.each do |course|
+              if final_total_sessions[course.name].nil?
+                final_total_sessions[course.name] = 0
+                final_total_certifications[course.name] = 0
+              end
+
+              user_count = 0
+              course_training_session = training_sessions.where(course: course.name)
+              course_training_session.each do |session|
+                user_count += session.users.count
+              end
+              training_row << course_training_session.count
+              training_row << user_count
+              total_certifications += user_count
+              final_total_sessions[course.name] += course_training_session.count
+              final_total_certifications[course.name] += user_count
+            end
+
+            training_row << training_sessions.count
+            training_row << total_certifications
+            final_total_sessions['total'] = 0 if final_total_sessions['total'].nil?
+            final_total_certifications['total'] = 0 if final_total_certifications['total'].nil?
+            final_total_sessions['total'] += training_sessions.count
+            final_total_certifications['total'] += total_certifications
+
+            color = if training.skill_id.present?
+                      if training.skill.name == "Machine Shop Training"
+                        {:bg_color => "ed7d31"}
+                      elsif training.skill..name == "Technology Trainings"
+                        {:bg_color => "70ad47"}
+                      elsif training.skill.name == "CEED Trainings"
+                        {:bg_color => "ffc000"}
+                      else
+                        {}
+                      end
                     else
-                      course.name
+                      {}
                     end
-          header << ''
-          header2.push('# sessions', '# of attendees')
-        end
+            style = sheet.styles.add_style(color)
+            sheet.add_row training_row, :style => [style]
+          end
 
-        header.push('Total Sessions', 'Total Certifications')
+          final_s = ['Total # sessions']
+          final_c = ['Total # certifications', '']
+          final_total_sessions.values.each do |value|
+            final_s.push(value, '')
+          end
+          final_total_certifications.values.each do |value|
+            final_c.push(value, '')
+          end
+          sheet.add_row final_s
+          sheet.add_row final_c
 
-        table_header(sheet, header)
-        table_header(sheet, header2)
-        final_total_sessions = {}
-        final_total_certifications = {}
+          sheet.add_row # spacing
 
-        Training.all.each do |training|
+          # Summary
+          summary_total = {'total' => 0}
+          certification_summary = {}
 
-          training_sessions = TrainingSession.where(training_id: training.id, space_id: space_id, created_at: start_date..end_date)
-          training_row = [training.name]
-          total_certifications = 0
-
+          # Header
+          header_summary = ['']
           CourseName.all.each do |course|
-            if final_total_sessions[course.name].nil?
-              final_total_sessions[course.name] = 0
-              final_total_certifications[course.name] = 0
+            header_summary << if course.name == 'no course'
+                                'Open'
+                              else
+                                course.name
+                              end
+          end
+          header_summary << 'Total'
+          sheet.add_row header_summary
+
+          Training.all.each do |training|
+
+            training_sessions = TrainingSession.where(training_id: training.id, space_id: space_id, created_at: start_date..end_date)
+            training_row = [training.name]
+            total_certifications = 0
+
+            # One row
+            CourseName.all.each do |course|
+              if certification_summary[course.name].nil?
+                certification_summary[course.name] = 0
+                summary_total[course.name] = 0
+              end
+
+              user_count = 0
+              training_sessions.where(course: course.name).each do |session|
+                user_count += session.users.count
+              end
+
+              training_row << user_count
+              total_certifications += user_count
+              certification_summary[course.name] += user_count
+              summary_total[course.name] += user_count
             end
 
-            user_count = 0
-            course_training_session = training_sessions.where(course: course.name)
-            course_training_session.each do |session|
-              user_count += session.users.count
-            end
-            training_row << course_training_session.count
-            training_row << user_count
-            total_certifications += user_count
-            final_total_sessions[course.name] += course_training_session.count
-            final_total_certifications[course.name] += user_count
+            training_row << total_certifications
+            certification_summary['total'] = 0 if certification_summary['total'].nil?
+            certification_summary['total'] += total_certifications
+            summary_total['total'] = summary_total['total'] + total_certifications
+
+            sheet.add_row training_row
           end
 
-          training_row << training_sessions.count
-          training_row << total_certifications
-          final_total_sessions['total'] = 0 if final_total_sessions['total'].nil?
-          final_total_certifications['total'] = 0 if final_total_certifications['total'].nil?
-          final_total_sessions['total'] += training_sessions.count
-          final_total_certifications['total'] += total_certifications
-
-          color = if training.skill_id.present?
-            if training.skill.name == "Machine Shop Training"
-              {:bg_color => "ed7d31"}
-            elsif training.skill..name == "Technology Trainings"
-              {:bg_color => "70ad47"}
-            elsif training.skill.name == "CEED Trainings"
-              {:bg_color => "ffc000"}
-            else
-               {}
-            end
-          else
-            {}
-          end
-          style = sheet.styles.add_style(color)
-          sheet.add_row training_row, :style => [style]
-        end
-
-        final_s = ['Total # sessions']
-        final_c = ['Total # certifications', '']
-        final_total_sessions.values.each do |value|
-          final_s.push(value, '')
-        end
-        final_total_certifications.values.each do |value|
-          final_c.push(value, '')
-        end
-        sheet.add_row final_s
-        sheet.add_row final_c
-
-        sheet.add_row # spacing
-
-        header_summary = ['']
-        summary_total = {'total' => 0}
-        CourseName.all.each do |course|
-          header_summary << if course.name == 'no course'
-                      'Open'
-                    else
-                      course.name
-                            end
-        end
-        header_summary << 'Total'
-        sheet.add_row header_summary
-
-        certification_summary = {}
-
-        Training.all.each do |training|
-
-          training_sessions = TrainingSession.where(training_id: training.id, space_id: space_id, created_at: start_date..end_date)
-          training_row = [training.name]
-          total_certifications = 0
-
-          CourseName.all.each do |course|
-            if certification_summary[course.name].nil?
-              certification_summary[course.name] = 0
-              summary_total[course.name] = 0
-            end
-
-            user_count = 0
-            course_training_session = training_sessions.where(course: course.name)
-            course_training_session.each do |session|
-              user_count += session.users.count
-            end
-
-            training_row << user_count
-            total_certifications += user_count
-            certification_summary[course.name] += user_count
-            summary_total[course.name] += user_count
+          # Adding the summary
+          final_summary = ['Total']
+          final = summary_total['total'].to_i # Adding the final number last
+          summary_total.delete('total')
+          summary_total.values.each do |value|
+            final_summary.push(value)
           end
 
-          training_row << total_certifications
-          certification_summary['total'] = 0 if certification_summary['total'].nil?
-          certification_summary['total'] += total_certifications
-          summary_total['total'] = summary_total['total'] + total_certifications
+          final_summary << final
 
-          sheet.add_row training_row
+          sheet.add_row final_summary
+
         end
-
-        final_summary = ['Total']
-        final = summary_total['total'].to_i
-        summary_total.delete('total')
-        summary_total.values.each do |value|
-          final_summary.push(value)
-        end
-        final_summary << final
-        sheet.add_row final_summary
-
       end
 
     end
