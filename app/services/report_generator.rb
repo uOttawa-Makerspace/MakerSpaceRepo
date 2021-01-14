@@ -245,7 +245,7 @@ class ReportGenerator
               end
 
               user_count = 0
-              course_training_session = training_sessions.where(course: course.name)
+              course_training_session = training_sessions.where(course_name_id: course.id)
               course_training_session.each do |session|
                 user_count += session.users.count
               end
@@ -323,7 +323,7 @@ class ReportGenerator
               end
 
               user_count = 0
-              training_sessions.where(course: course.name).each do |session|
+              training_sessions.where(course_name_id: course.id).each do |session|
                 user_count += session.users.count
               end
 
