@@ -39,8 +39,9 @@ class TrainingSession < ApplicationRecord
         default_scoped
       else
         value = value.split('=').last.gsub('+', ' ').gsub('%20', ' ')
-        where("LOWER(trainings.name) like LOWER(?) OR
-                 LOWER(user.name) like LOWER(?) OR
+        joins(:user)
+          .where("LOWER(trainings.name) like LOWER(?) OR
+                 LOWER(users.name) like LOWER(?) OR
                  CAST(to_char(training_sessions.created_at, 'HH:MI mon DD YYYY') AS text) LIKE LOWER(?) OR
                  LOWER(training_sessions.course) like LOWER(?)", "%#{value}%", "%#{value}%", "%#{value}%", "%#{value}%")
       end
