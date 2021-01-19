@@ -4615,6 +4615,13 @@ jsprim@^1.2.2:
     json-schema "0.2.3"
     verror "1.10.0"
 
+justifiedGallery@^3.8.1:
+  version "3.8.1"
+  resolved "https://registry.yarnpkg.com/justifiedGallery/-/justifiedGallery-3.8.1.tgz#0b0c117aa03ce3130a9c90516ae93bd2f2a72948"
+  integrity sha512-qHvW4bGD9RkYYR2WfuXQK8/OdHRMTm09RJUmjWYDjAM5BS3yUpoHqXHgLjolE6m9QDReT9E6bME5YBP3VxRYtw==
+  dependencies:
+    jquery "^3.5.1"
+
 killable@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/killable/-/killable-1.0.1.tgz#4c8ce441187a061c7474fb87ca08e2a638194892"

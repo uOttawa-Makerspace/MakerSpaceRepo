@@ -1,11 +1,16 @@
 <div class=" text-left word-break">
   <h2><b><%= question.description %></b></h2>
 </div>
-<% if question.images.attached? %>
-  <% question.images.each do |img| %>
-    <%= image_tag(img, style: 'height: 300px;') %>
+
+<div id="questionImageGallery" class="text-center justified-gallery">
+  <% if question.images.attached? %>
+    <% question.images.each do |img| %>
+      <a href="#">
+        <%= image_tag(img) %>
+      </a>
+    <% end %>
   <% end %>
-<% end %>
+</div>
 <hr>
 <div class="text-left">
   <% question.answers.randomize_answers.each do |a| %>

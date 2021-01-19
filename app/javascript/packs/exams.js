@@ -3,5 +3,12 @@ jQuery( document ).ready(function( $ ) {
     $(window).on('popstate', function() {
         location.reload(true);
     });
+});
+
+$(document).on("turbolinks:load", function () {
+    $("#questionImageGallery").justifiedGallery({
+        rowHeight: 250,
+        lastRow: 'center'
+    });
 
 });

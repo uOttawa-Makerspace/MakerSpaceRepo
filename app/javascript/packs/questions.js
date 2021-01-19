@@ -24,4 +24,11 @@ $(document).on("turbolinks:load", function () {
         allowClear: true,
         multiple: true
     });
+
+    $("#questionImageGallery").justifiedGallery({
+        rowHeight: 250,
+        lastRow: 'center'
+    });
+
 });
+
