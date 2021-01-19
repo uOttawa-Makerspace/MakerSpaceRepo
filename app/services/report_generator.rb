@@ -309,7 +309,7 @@ class ReportGenerator
           header_summary << 'Total'
           sheet.add_row header_summary
 
-          Training.all.each do |training|
+          Training.all.joins(:spaces_trainings).where(spaces_trainings: {space_id: space_id}).each do |training|
 
             training_sessions = TrainingSession.where(training_id: training.id, space_id: space_id, created_at: start_date..end_date)
             training_row = [training.name]
