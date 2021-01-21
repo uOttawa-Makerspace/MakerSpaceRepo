@@ -23,7 +23,7 @@
   <div class="row">
     <% @order_items.each do |order_item| %>
       <div class="col-md-3" style="opacity: 0.3;">
-        <%= image_tag(order_item.proficient_project.badge_template.image_url, :style => "width: inherit") %>
+        <%= image_tag(order_item.proficient_project.badge_template.image_url, :style => "width: inherit", :alt => "Logo for #{order_item.proficient_project.badge_template.badge_name}") %>
       </div>
     <% end %>
   </div>

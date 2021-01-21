@@ -28,10 +28,10 @@
       <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
       <div class='checkbox-list'>
         <%= f.radio_button :client_type, 'Organization', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :client_type, 'Organization', :id => 'type', :style => 'display:inline' %>
+        <%= f.label 'client_type_organization', 'Organization', :id => 'type', :style => 'display:inline' %>
         <br>
         <%= f.radio_button :client_type, 'Individual', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :client_type, 'Individual', :id => 'type', :style => 'display:inline' %>
+        <%= f.label 'client_type_individual', 'Individual', :id => 'type', :style => 'display:inline' %>
       </div>
     </div>
     <br>
@@ -58,13 +58,13 @@
       <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
       <div class='checkbox-list'>
         <%= f.radio_button :client_interest, 'Low', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :client_type, 'Low', :id => 'type', :style => 'display:inline', class: "control-label" %>
+        <%= f.label 'client_interest_low', 'Low', :id => 'type', :style => 'display:inline', class: "control-label" %>
         <br>
         <%= f.radio_button :client_interest, 'Medium', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :client_type, 'Medium', :id => 'type', :style => 'display:inline', class: "control-label" %>
+        <%= f.label 'client_interest_medium', 'Medium', :id => 'type', :style => 'display:inline', class: "control-label" %>
         <br>
         <%= f.radio_button :client_interest, 'High', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :client_type, 'High', :id => 'type', :style => 'display:inline', class: "control-label" %>
+        <%= f.label 'client_interest_high', 'High', :id => 'type', :style => 'display:inline', class: "control-label" %>
       </div>
     </div>
     <br/>
@@ -105,10 +105,12 @@
     <br>
 
     <%= label_tag :file, "Project files" %>
-    <label class="custom-instructable-upload">
-      <%= file_field_tag 'files[]', type: :files, multiple: true, style: "display: none;" %>
-      Choose files...
-    </label>
+    <div class="input-group mb-3">
+      <div class="custom-file">
+        <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'custom-file-input', aria_label: 'Project Files / Fichiers du projet' %>
+        <label class="custom-file-label m-0" for="files_">Choose file</label>
+      </div>
+    </div>
     <div id="file-container">
 
       <% @files.each do |f| %>
@@ -126,22 +128,19 @@
 
     <br />
     <%= label_tag :photo, "Gallery*" %>
-    <div class="repo-image mx-auto">
-      <div id="dragndrop">
-        <%= fa_icon 'cloud-upload' %>
-        <p>Drag &amp; Drop</p>
+    <div class="mx-auto">
+      <div id="dragndrop"></div>
+      <div class="custom-file">
+        <%= file_field_tag 'images[]', type: :files, multiple: true, class: "custom-file-input", aria_label: "Select Pictures / Selectionner des images" %>
+        <label class="custom-file-label m-0" for="images_">Choose an image...</label>
       </div>
-      <label class="custom-image-upload">
-        <%= file_field_tag 'images[]', type: :files, multiple: true, style: "display: none;" %>
-        or choose an image...
-      </label>
     </div>
 
     <div id="image-container" class="mx-auto">
       <% @photos.each do |img| %>
         <div class="image-item">
           <span id="<%= img.image.filename %>" class="image-remove"></span>
-          <%= image_tag img.image %>
+          <%= image_tag img.image, alt: 'Project Proposal Picture' %>
         </div>
       <% end %>
       <%= hidden_field_tag 'deleteimages' %>
@@ -188,13 +187,13 @@
       <div></div>
       <div class='checkbox-list'>
         <%= f.radio_button :project_type, 'General', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :project_type, 'General', :id => 'type', :style => 'display:inline' %>
+        <%= f.label 'project_type_general', 'General', :id => 'type', :style => 'display:inline' %>
         <br>
         <%= f.radio_button :project_type, 'Client Specific', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :project_type, 'Spécifique au client / Client Specific', :id => 'type', :style => 'display:inline' %>
+        <%= f.label 'project_type_client_specific', 'Spécifique au client / Client Specific', :id => 'type', :style => 'display:inline' %>
         <br>
         <%= f.radio_button :project_type, 'S/O | N/A', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label :project_type, 'S/O | N/A', :id => 'type', :style => 'display:inline' %>
+        <%= f.label 'project_type_na__so', 'S/O | N/A', :id => 'type', :style => 'display:inline' %>
       </div>
     </div>
     <br/>

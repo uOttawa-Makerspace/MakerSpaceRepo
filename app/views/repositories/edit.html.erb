@@ -57,7 +57,7 @@
     <% @photos.each do |img| %>
       <div class="image-item">
         <span id="<%= img.image.filename %>" class="image-remove"></span>
-        <%= image_tag img.image %>
+        <%= image_tag img.image, alt: 'Edit repository Image' %>
       </div>
     <% end %>
     <%= hidden_field_tag 'deleteimages' %>
