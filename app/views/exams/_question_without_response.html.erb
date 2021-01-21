@@ -6,7 +6,7 @@
   <% if question.images.attached? %>
   <% question.images.each do |img| %>
       <a href="#">
-        <%= image_tag(img) %>
+        <%= image_tag(img, alt: 'Image related to the question') %>
       </a>
   <% end %>
 <% end %>

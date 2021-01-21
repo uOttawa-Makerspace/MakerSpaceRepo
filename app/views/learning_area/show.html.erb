@@ -35,11 +35,11 @@
             <%= @learning_module.description.html_safe %>
           </div>
           <div id="show-photo">
-            <%= image_tag @photos.first.image, data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+            <%= image_tag @photos.first.image, alt: 'Learning Area First Picture', data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
           </div>
           <div id="photo-slide">
             <% @photos.each do |p| %>
-              <%= image_tag p.image, data: { width: p.width, height: p.height} %>
+              <%= image_tag p.image, alt: 'Learning Area Picture', data: { width: p.width, height: p.height} %>
             <% end %>
           </div>
           <br />

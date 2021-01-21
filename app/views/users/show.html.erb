@@ -7,10 +7,10 @@
       <div class="profile-img">
         <% if @repo_user.eql?(@user) %>
           <%= link_to settings_profile_path do %>
-            <%= image_tag @repo_user.display_avatar %>
+            <%= image_tag @repo_user.display_avatar, alt: 'Avatar' %>
           <% end %>
         <% else %>
-          <%= image_tag @repo_user.display_avatar %>
+          <%= image_tag @repo_user.display_avatar, alt: 'Avatar' %>
         <% end %>
       </div>
 
@@ -198,10 +198,10 @@
                     <div class="col-md-3">
                       <% if badges.badge_url.present? %>
                         <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges.acclaim_badge_id %>">
-                          <%= image_tag(badges.badge_template.image_url, :style => "width: inherit") %>
+                          <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", alt: 'Badge') %>
                         </a>
                       <% else %>
-                        <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", 'data-toggle' => "modal", 'data-target' => "#pending_modal") %>
+                        <%= image_tag(badges.badge_template.image_url, alt: 'Badge', :style => "width: inherit", 'data-toggle' => "modal", 'data-target' => "#pending_modal") %>
                       <% end %>
                     </div>
                   <% end %>
@@ -249,7 +249,7 @@
                                   <% badge = @repo_user.highest_badge(training) %>
                                   <% unless badge.nil? %>
                                     <div class="col-lg-4 text-center">
-                                      <%= image_tag(badge.badge_template.image_url, :style => "width: 150px") %>
+                                      <%= image_tag(badge.badge_template.image_url, alt: 'Badge', :style => "width: 150px") %>
                                     </div>
                                     <div class="col-lg-8 my-auto">
                                       <b><%= badge.badge_template.badge_name %>:</b> <%= badge.badge_template.badge_description %>

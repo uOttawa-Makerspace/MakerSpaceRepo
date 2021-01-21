@@ -8,13 +8,13 @@
 
     <div id="show-photo">
     <% if @project_photos.present? and @project_photos.first.image.attached? %>
-        <%= image_tag @project_photos.first.image, data: {width: @project_photos.first.try(:width), height: @project_photos.first.try(:height)} %>
+        <%= image_tag @project_photos.first.image, alt: 'Project Proposal Picture', data: {width: @project_photos.first.try(:width), height: @project_photos.first.try(:height)} %>
     <% end %>
     </div>
 
     <div id="photo-slide">
       <% @project_photos.each do |p| %>
-        <%= image_tag p.image, data: {width: p.width, height: p.height} %>
+        <%= image_tag p.image, alt: 'Related Repository Image', data: {width: p.width, height: p.height} %>
       <% end %>
     </div>
 
