@@ -28,7 +28,7 @@
         <% if params['type'] != "laser" %>
           <div class="form-group">
             <label>STL File</label>
-            <%= f.file_field :file, style: "display: block!important;", :required => true %>
+            <%= f.file_field :file, style: "display: block!important;", :required => true, 'aria-label': 'STL File' %>
           </div>
 
           <fieldset class="form-group">
@@ -36,35 +36,35 @@
               <legend class="col-form-label col-sm-2 pt-0">Material</legend>
               <div class="col-sm-10">
                 <div class="form-check">
-                  <input type="radio" checked class="form-check-input" id="PLA" name="print_order[material]" value="PLA">
+                  <input type="radio" checked class="form-check-input" id="PLA" name="print_order[material]" value="PLA" aria-label="PLA">
                   PLA<br>
                   <label class="form-check-label label-size">
                     (Most used material in 3D Printers)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" id="ABS" name="print_order[material]" value="ABS">
+                  <input type="radio" class="form-check-input" id="ABS" name="print_order[material]" value="ABS" aria-label="ABS">
                   ABS<br>
                   <label class="form-check-label label-size">
                     (Stronger than PLA)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" id="SST" name="print_order[material]" value="SST">
+                  <input type="radio" class="form-check-input" id="SST" name="print_order[material]" value="SST" aria-label="Dimension SST">
                   Dimension SST ABS<br>
                   <label class="form-check-label label-size">
                     (Printer that uses ABS and soluble supports)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" id="M2Onyx" name="print_order[material]" value="M2 Onyx">
+                  <input type="radio" class="form-check-input" id="M2Onyx" name="print_order[material]" value="M2 Onyx" aria-label="M2 Onyx">
                   MarkForged Mark II Onyx (please specify continuous filaments in comments)<br>
                   <label class="form-check-label label-size">
                     (Filament with Nylon and chopped parts of carbon fiber)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" id="other_filament" name="print_order[material]" value="">Other
+                  <input type="radio" class="form-check-input" id="other_filament" name="print_order[material]" aria-label="Other" value="">Other
                   <input id="input_other_filament" class="form-control" type="text" placeholder="Ninjaflex" onchange="changeOtherFilament()"/>
                 </div>
               </div>
@@ -76,28 +76,28 @@
               <legend class="col-form-label col-sm-2 pt-0">Quality</legend>
               <div class="col-sm-10">
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" name="print_order[comments]" value="Low Quality"> Low
+                  <input type="radio" class="form-check-input" name="print_order[comments]" aria-label="Low Quality" value="Low Quality"> Low
                   Quality<br>
                   <label class="form-check-label label-size">
                     (Short time and small price, 0.3mm Layer Height, 15% infill, supports if needed)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" checked class="form-check-input" name="print_order[comments]" value="Medium Quality">
+                  <input type="radio" checked class="form-check-input" name="print_order[comments]" aria-label="Medium Quality" value="Medium Quality">
                   Medium Quality<br>
                   <label class="form-check-label label-size">
                     (Medium time and medium price, 0.2mm Layer Height, 15% infill, supports if needed)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" name="print_order[comments]" value="High Quality"> High
+                  <input type="radio" class="form-check-input" name="print_order[comments]" aria-label="High Quality" value="High Quality"> High
                   Quality<br>
                   <label class="form-check-label label-size">
                     (Long time, more expensive, 0.1mm Layer Height, 20% infill, supports if needed)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" id="other_quality" name="print_order[comments]" value="">Other
+                  <input type="radio" class="form-check-input" id="other_quality" name="print_order[comments]" aria-label="Other Quality (Please input in the next text field)" value="">Other
                   <input id="input_other_quality" class="form-control" type="text" placeholder="0.2mm Layer Height, 20% Infill" onchange="changeOtherQuality()"/>
                 </div>
               </div>
@@ -111,7 +111,7 @@
           <div class="form-group">
             <label>SVG File</label>
             <label class="label-size">(Please put cut lines as 0.001 Inch and everything at 100% Opacity)</label>
-            <%= f.file_field :file, style: "display: block!important;", :required => true %>
+            <%= f.file_field :file, style: "display: block!important;", :required => true, 'aria-label': 'SVG File' %>
 
           </div>
           <fieldset class="form-group">
@@ -119,19 +119,19 @@
               <legend class="col-form-label col-sm-2 pt-0">Material</legend>
               <div class="col-sm-10">
                 <div class="form-check">
-                  <input type="radio" id="MDF" checked class="form-check-input" name="print_order[comments]" value='1/8" MDF' onclick="change_color(this)">
+                  <input type="radio" id="MDF" checked class="form-check-input" name="print_order[comments]" aria-label="1/8 inch MDF" value='1/8" MDF' onclick="change_color(this)">
                   1/8" MDF<br>
                 </div>
                 <div class="form-check">
-                  <input type="radio" id="MDF" class="form-check-input" name="print_order[comments]" value='1/4" MDF' onclick="change_color(this)">
+                  <input type="radio" id="MDF" class="form-check-input" name="print_order[comments]" value='1/4" MDF' aria-label="1/4 inch MDF" onclick="change_color(this)">
                   1/4" MDF<br>
                 </div>
                 <div class="form-check">
-                  <input type="radio" id="Acrylic" class="form-check-input" name="print_order[comments]" value='1/8" Acrylic' onclick="change_color(this)">
+                  <input type="radio" id="Acrylic" class="form-check-input" name="print_order[comments]" value='1/8" Acrylic' aria-label="1/8 inch Acrylic" onclick="change_color(this)">
                   1/8" Acrylic <br>
                 </div>
                 <div class="form-check">
-                  <input type="radio" id="Acrylic" class="form-check-input" name="print_order[comments]" value='1/4" Acrylic' onclick="change_color(this)">
+                  <input type="radio" id="Acrylic" class="form-check-input" name="print_order[comments]" value='1/4" Acrylic' aria-label="1/4 inch Acrylic" onclick="change_color(this)">
                   1/4" Acrylic<br>
                 </div>
               </div>
@@ -143,14 +143,14 @@
               <legend class="col-form-label col-sm-2 pt-0">Color</legend>
               <div class="col-sm-10">
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" name="print_order[material]" value='White'> White<br>
+                  <input type="radio" class="form-check-input" name="print_order[material]" aria-label="White" value='White'> White<br>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" name="print_order[material]" value='Black'>
+                  <input type="radio" class="form-check-input" name="print_order[material]" aria-label="Black" value='Black'>
                   Black<br>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" name="print_order[material]" value="Clear"> Clear<br>
+                  <input type="radio" class="form-check-input" name="print_order[material]" aria-label="Clear" value="Clear"> Clear<br>
                 </div>
               </div>
             </div>
@@ -165,13 +165,13 @@
             <legend class="col-form-label col-sm-2 pt-0">Expedited, extra charge ($20 CAD)</legend>
             <div class="col-sm-10">
               <div class="form-check">
-                <input type="radio" checked class="form-check-input" name="print_order[expedited]" value="false">
+                <input type="radio" checked class="form-check-input" aria-label="Not Expedited" name="print_order[expedited]" value="false">
                 <label class="form-check-label" for="gridRadios3">
                   No
                 </label>
               </div>
               <div class="form-check">
-                <input type="radio" class="form-check-input" name="print_order[expedited]" value="true">
+                <input type="radio" class="form-check-input" aria-label="Expedited (20$ surcharge)" name="print_order[expedited]" value="true">
                 <label class="form-check-label" for="gridRadios3">
                   Yes
                 </label>
@@ -184,7 +184,7 @@
           <div class="row">
             <legend class="col-form-label col-sm-2 pt-0">Comments</legend>
             <div class="col-sm-10">
-              <textarea class="form-control" name="print_order[comments_box]" rows="3"></textarea>
+              <textarea class="form-control" aria-label="Comments" name="print_order[comments_box]" rows="3"></textarea>
             </div>
           </div>
         </fieldset>

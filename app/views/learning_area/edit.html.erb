@@ -64,8 +64,12 @@
 
               <br />
               <%= label_tag :photo, "Gallery*" %>
-              <div class="mx-auto">
-                <div id="dragndrop"></div>
+              <div class="mx-auto repo-image">
+                <div id="dragndrop">
+                  <br>
+                  <%= fa_icon 'cloud-upload' %>
+                  <p>Drag &amp; Drop</p>
+                </div>
                 <div class="custom-file">
                   <%= file_field_tag 'images[]', type: :files, multiple: true, class: "custom-file-input", aria_label: "Select Pictures / Selectionner des images" %>
                   <label class="custom-file-label m-0" for="images_">Choose an image...</label>
