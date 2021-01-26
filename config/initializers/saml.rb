@@ -10,7 +10,7 @@ SamlIdp.configure do |config|
     },
     'rooms.makerepo.com' => {
       metadata_url: 'https://rooms.makerepo.com/users/auth/saml/metadata',
-      response_hosts: %w(rooms.makerepo.com localhost)
+      response_hosts: %w(rooms.makerepo.com)
     }
   }
 
