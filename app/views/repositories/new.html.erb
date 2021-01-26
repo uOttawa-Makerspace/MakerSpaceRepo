@@ -19,10 +19,12 @@
 
     <%= label_tag :file, "Project files<br>Fichiers du Projet".html_safe %>
     <div class="form-group"></div>
-    <label class="custom-instructable-upload">
-      <%= file_field_tag 'files[]', type: :files, multiple: true, style: "display: none;" %>
-      Choose files...<br>Sélectionner des fichiers...
-    </label>
+    <div class="input-group mb-3">
+      <div class="custom-file">
+        <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'custom-file-input', aria_label: 'Project Files / Fichiers du projet' %>
+        <label class="custom-file-label m-0" for="files_">Choose file</label>
+      </div>
+    </div>
 
     <div id="file-container"></div>
 
@@ -32,13 +34,14 @@
     </div>
     <div class="repo-image">
       <div id="dragndrop">
+        <br>
         <%= fa_icon 'cloud-upload' %>
         <p>Drag &amp; Drop</p>
       </div>
-      <label class="custom-image-upload">
-        <%= file_field_tag 'images[]', type: :files, multiple: true, style: "display: none;" %>
-        or choose an image.../ou choisi une image...
-      </label>
+      <div class="custom-file">
+        <%= file_field_tag 'images[]', type: :files, multiple: true, class: "custom-file-input", aria_label: "Select Pictures / Selectionner des images" %>
+        <label class="custom-file-label m-0" for="images_">Choose an image...</label>
+      </div>
     </div>
 
     <div id="image-container"></div>
@@ -101,14 +104,14 @@
     <div id="share_option">
       <%= f.label :share_type, "Your project is..." %>
       <%= fa_icon('globe') %>
-      <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline-flex; vertical-align:middle; margin-right: 4px;", :onclick => "hidePass();", required: true) %><%= f.label(:share_type, "Public", :id => "type", :style => "display:inline") %>
+      <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline-flex; vertical-align:middle; margin-right: 4px;", :onclick => "hidePass();", required: true) %><%= f.label('share_type_public', "Public", :id => "type", :style => "display:inline") %>
       <div id="description"> Anyone can see this repository</div>
       <%= fa_icon('lock') %>
-      <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline-flex; vertical-align:middle; margin-right: 4px;", :onclick => "showPass();") %><%= f.label(:share_type, "Private", :id => "type", :style => "display:inline") %>
+      <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline-flex; vertical-align:middle; margin-right: 4px;", :onclick => "showPass();") %><%= f.label('share_type_private', "Private", :id => "type", :style => "display:inline") %>
       <div id="description"> Only those with the url and password can view this repository</div>
 
       <div id="pass" class="form-group">
-        <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', style: "display: none;", class: "form-control" %>
+        <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', style: "display: none;", 'aria-label': "Password / Mot de Passe", class: "form-control" %>
       </div>
 
     </div>

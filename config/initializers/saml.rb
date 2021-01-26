@@ -7,6 +7,10 @@ SamlIdp.configure do |config|
     'wiki.makerepo.com' => {
       metadata_url: 'https://wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com',
       response_hosts: %w(en.wiki.makerepo.com fr.wiki.makerepo.com staff.makerepo.com)
+    },
+    'rooms.makerepo.com' => {
+      metadata_url: 'https://rooms.makerepo.com/users/auth/saml/metadata',
+      response_hosts: %w(rooms.makerepo.com)
     }
   }
 

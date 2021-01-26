@@ -8,7 +8,7 @@
   <% if @question.images.attached? %>
     <% @question.images.each do |img| %>
       <a href="#">
-        <%= image_tag(img, style: 'border:1px solid #021a40;') %>
+        <%= image_tag(img, alt: 'Image related question', style: 'border:1px solid #021a40;') %>
       </a>
     <% end %>
   <% end %>

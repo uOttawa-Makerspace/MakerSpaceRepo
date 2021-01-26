@@ -18,7 +18,7 @@
       <% badge_requirements = proficient_project.badge_requirements %>
       <% if badge_requirements.present? %>
         <% badge_requirements.each do |badge_requirement| %>
-          <%= image_tag(badge_requirement.badge_template.image_url, :style => "width: 80px;") %>
+          <%= image_tag(badge_requirement.badge_template.image_url, :style => "width: 80px;", alt: "Badge Image") %>
         <% end %>
       <% else %>
         None
@@ -27,7 +27,7 @@
       Badge being Awarded:
       <% badge_template = proficient_project.badge_template %>
       <% if badge_template.present? %>
-        <%= image_tag(badge_template.image_url, :style => "width: 80px;") %>
+        <%= image_tag(badge_template.image_url, :style => "width: 80px;", alt: 'Badge image') %>
       <% else %>
         None
       <% end %>

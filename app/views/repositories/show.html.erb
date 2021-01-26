@@ -14,12 +14,12 @@
     <% end%>
       <div id="show-photo">
         <% if @photos.present? and @photos.first.image.attached? %>
-          <%= image_tag @photos.first.image, data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+          <%= image_tag @photos.first.image, alt: 'Repository Main image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
         <% end %>
       </div>
     <div id="photo-slide">
       <% @photos.each do |p| %>
-        <%= image_tag p.image, data: { width: p.width, height: p.height} %>
+        <%= image_tag p.image, alt: 'Repository Image', data: { width: p.width, height: p.height} %>
       <% end %>
     </div>
 

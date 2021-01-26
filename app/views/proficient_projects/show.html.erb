@@ -10,7 +10,7 @@
     <br/>
     <% badge_template = @proficient_project.badge_template %>
     <% if badge_template.present? %>
-      <%= image_tag(badge_template.image_url, :style => "width: 100px;") %>
+      <%= image_tag(badge_template.image_url, :style => "width: 100px;", alt: 'Proficient Project Image') %>
     <% else %>
       None
     <% end %>
@@ -48,11 +48,11 @@
             <%= @proficient_project.description.html_safe %>
           </div>
           <div id="show-photo">
-            <%= image_tag @photos.first.image, data: {width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+            <%= image_tag @photos.first.image, alt: 'Proficient Project Image', data: {width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
           </div>
           <div id="photo-slide">
             <% @photos.each do |p| %>
-              <%= image_tag p.image, data: {width: p.width, height: p.height} %>
+              <%= image_tag p.image, alt: 'Proficient Project Image', data: {width: p.width, height: p.height} %>
             <% end %>
           </div>
           <br />
