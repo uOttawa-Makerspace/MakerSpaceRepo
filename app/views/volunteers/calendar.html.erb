@@ -1,0 +1,28 @@
+<section class="page-contents">
+  <div class="text-center">
+
+    <h1 class="font-weight-bold">Volunteer Calendar</h1>
+
+    <h2>Makerspace</h2>
+
+    <div class="googleCalendar">
+      <iframe src="https://calendar.google.com/calendar/embed?height=600&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=America%2FToronto&amp;showTitle=1&amp;src=bWFrZXJlcG8uY29tX3UyamVxanJrZzh0ZGhvYjJ2ZDMyYTVhZDQ0QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&amp;color=%23D81B60&amp;showPrint=0&amp;title=Makerspace%20Shadowing" style="border:solid 1px #777" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+    </div>
+
+    <br>
+
+    <h2>Brunsfield</h2>
+
+    <div class="googleCalendar">
+      <iframe src="https://calendar.google.com/calendar/embed?height=600&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=America%2FToronto&amp;showTitle=1&amp;showPrint=0&amp;title=Brunsfield%20Shadowing&amp;src=bWFrZXJlcG8uY29tX29qYTllZGF1bW80Mmw5YzlrdHFuajUybjZjQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&amp;color=%23795548" style="border:solid 1px #777" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+    </div>
+
+    <br>
+
+    <div>
+      <%= link_to "Add Makerspace Shadow", create_event_volunteers_path(space: "makerspace"), class: "btn btn-primary d-inline" %>
+      <%= link_to "Add Brunsfield Shadow", create_event_volunteers_path(space: "brunsfield"), class: "btn btn-primary d-inline" %>
+    </div>
+
+  </div>
+</section>

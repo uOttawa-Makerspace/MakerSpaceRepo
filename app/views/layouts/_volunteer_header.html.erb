@@ -13,12 +13,32 @@
         <li class="nav-item"><%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'Requests', volunteer_task_requests_path, class: "nav-link" %></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="calendar" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Calendar
+          </a>
+          <div class="dropdown-menu" aria-labelledby="calendar">
+            <%= link_to 'Calendar', calendar_volunteers_path, class: "dropdown-item" %>
+            <%= link_to 'Add Makerspace Shadow', create_event_volunteers_path(space: "Makerspace"), class: "dropdown-item" %>
+            <%= link_to 'Add Brunsfield Shadow', create_event_volunteers_path(space: "Brunsfield"), class: "dropdown-item" %>
+          </div>
+        </li>
       </ul>
     <% elsif current_user.staff? %>
       <ul class="navbar-nav mx-auto">
         <li class="nav-item"><%= link_to 'Getting Started', volunteers_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'My Stats', my_stats_volunteers_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "nav-link" %></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="calendar" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Calendar
+          </a>
+          <div class="dropdown-menu" aria-labelledby="calendar">
+            <%= link_to 'Calendar', calendar_volunteers_path, class: "dropdown-item" %>
+            <%= link_to 'Add Makerspace Shadow', new_event_volunteers_path(space: "makerspace"), class: "dropdown-item" %>
+            <%= link_to 'Add Brunsfield Shadow', new_event_volunteers_path(space: "brunsfield"), class: "dropdown-item" %>
+          </div>
+        </li>
       </ul>
       <ul class="navbar-nav mx-auto">
         <li class="nav-item"><%= link_to 'Requests', volunteer_task_requests_path, class: "nav-link" %></li>

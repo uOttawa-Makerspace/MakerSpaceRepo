@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require 'googleauth'
+require 'google/apis/calendar_v3'
 
 class VolunteersController < ApplicationController
   layout 'volunteer'
@@ -36,6 +38,60 @@ class VolunteersController < ApplicationController
     @processed_volunteer_task_requests = volunteer_task_requests.processed.approved.order(created_at: :desc).paginate(page: params[:page], per_page: 15)
     @certifications = current_user.certifications
     @remaining_trainings = current_user.remaining_trainings
+  end
+
+  def calendar
+
+  end
+
+  def new_event
+
+  end
+
+  def create_event
+    if params[:space] == "makerspace" || params[:space] == "brunsfield"
+      scope = 'https://www.googleapis.com/auth/calendar'
+
+      authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
+        json_key_io: File.open("#{Rails.root}/config/makerepo-1632742c49cc.json"),
+        scope: scope)
+
+      authorizer.fetch_access_token!
+
+      service = Google::Apis::CalendarV3::CalendarService.new
+      service.authorization = authorizer
+
+      start_time = DateTime.parse(params[:datepicker_start]).strftime("%Y-%m-%dT%k:%M:00")
+      end_time = DateTime.parse(params[:datepicker_end]).strftime("%Y-%m-%dT%k:%M:00")
+
+      puts(start_time)
+      puts(end_time)
+
+      event = Google::Apis::CalendarV3::Event.new(
+        summary: "#{current_user.name} Shadowing",
+        start: Google::Apis::CalendarV3::EventDateTime.new(
+          date_time: start_time,
+          time_zone: 'America/Toronto'
+        ),
+        end: Google::Apis::CalendarV3::EventDateTime.new(
+          date_time: end_time,
+          time_zone: 'America/Toronto'
+        )
+      )
+
+      calendar_id = params[:space] == "makerspace" ? Rails.application.credentials[Rails.env.to_sym][:calendar][:makerspace] : Rails.application.credentials[Rails.env.to_sym][:calendar][:brunsfield]
+
+      response = service.insert_event(calendar_id, event)
+
+      if response.status != "cancelled"
+        flash[:notice] = "The shadowing hour has been added"
+      else
+        flash[:alert] = "An hour occured"
+      end
+
+      redirect_to calendar_volunteers_path
+
+    end
   end
 
   private

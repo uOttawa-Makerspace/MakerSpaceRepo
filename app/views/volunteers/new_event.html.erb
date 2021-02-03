@@ -1,0 +1,30 @@
+<section class="text-center">
+  <h1>Add a shadowing slot for <%= params[:space] %></h1>
+
+  <%= form_with url: create_event_volunteers_path, method: :get do %>
+
+    <div class="d-inline">
+      <%= text_field_tag "datepicker_start" %>
+
+      <span>TO</span>
+
+      <%= text_field_tag "datepicker_end" %>
+    </div>
+
+    <%= hidden_field_tag "space", params[:space] %>
+
+    <br><br>
+
+    <%= submit_tag "Add Event", class: "btn btn-primary" %>
+
+    <% end %>
+</section>
+
+<script type="text/javascript" charset="utf-8">
+    jQuery('#datepicker_start').datetimepicker({
+        format: "Y-m-d H:m:s",
+    });
+    jQuery('#datepicker_end').datetimepicker({
+        format: "Y-m-d H:m:s",
+    });
+</script>

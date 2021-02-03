@@ -317,6 +317,9 @@ Rails.application.routes.draw do
       get :volunteer_list
       get :join_volunteer_program
       get :my_stats
+      get :calendar
+      get :create_event
+      get :new_event
     end
   end
 
