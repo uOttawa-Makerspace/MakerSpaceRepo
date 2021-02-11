@@ -48,50 +48,46 @@ class VolunteersController < ApplicationController
 
   end
 
-  def create_event
-    if params[:space] == "makerspace" || params[:space] == "brunsfield"
-      scope = 'https://www.googleapis.com/auth/calendar'
+  def shadowing_shifts
+    @shifts = current_user.shadowing_hours.where('end_time > ?', DateTime.now)
+    @all_shifts = ShadowingHour.where('end_time > ?', DateTime.now).all
+  end
 
-      authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
-        json_key_io: File.open("#{Rails.root}/config/makerepo-1632742c49cc.json"),
-        scope: scope)
+  def delete_event
+    if params[:event_id].present? && current_user.shadowing_hours.find_by(event_id: params[:event_id]).present?
+      space = current_user.shadowing_hours.find_by(event_id: params[:event_id]).space.name
+      event = ShadowingHour.delete_event(params[:event_id], space)
 
-      authorizer.fetch_access_token!
-
-      service = Google::Apis::CalendarV3::CalendarService.new
-      service.authorization = authorizer
-
-      start_time = DateTime.parse(params[:datepicker_start]).strftime("%Y-%m-%dT%k:%M:00")
-      end_time = DateTime.parse(params[:datepicker_end]).strftime("%Y-%m-%dT%k:%M:00")
-
-      puts(start_time)
-      puts(end_time)
-
-      event = Google::Apis::CalendarV3::Event.new(
-        summary: "#{current_user.name} Shadowing",
-        start: Google::Apis::CalendarV3::EventDateTime.new(
-          date_time: start_time,
-          time_zone: 'America/Toronto'
-        ),
-        end: Google::Apis::CalendarV3::EventDateTime.new(
-          date_time: end_time,
-          time_zone: 'America/Toronto'
-        )
-      )
-
-      calendar_id = params[:space] == "makerspace" ? Rails.application.credentials[Rails.env.to_sym][:calendar][:makerspace] : Rails.application.credentials[Rails.env.to_sym][:calendar][:brunsfield]
-
-      response = service.insert_event(calendar_id, event)
-
-      if response.status != "cancelled"
-        flash[:notice] = "The shadowing hour has been added"
+      if event != 'error'
+        current_user.shadowing_hours.find_by(event_id: params[:event_id]).destroy!
+        flash[:notice] = "This shift has been cancelled."
       else
-        flash[:alert] = "An hour occured"
+        flash[:alert] = "An error occured while deleting the shift."
       end
-
-      redirect_to calendar_volunteers_path
-
+    else
+      flash[:alert] = "This shift has not been found."
     end
+    redirect_to calendar_volunteers_path
+  end
+
+  def create_event
+    if (params[:space] == "makerspace" || params[:space] == "brunsfield centre") && params[:datepicker_start].present? && params[:datepicker_end].present?
+
+      start_time = DateTime.parse(params[:datepicker_start].to_s).strftime("%Y-%m-%dT%k:%M:00")
+      end_time = DateTime.parse(params[:datepicker_end].to_s).strftime("%Y-%m-%dT%k:%M:00")
+
+      event = ShadowingHour.create_event(start_time, end_time, current_user, params[:space])
+
+      if event.status != "cancelled"
+        ShadowingHour.create!(user_id: current_user.id, start_time: start_time, end_time: end_time, event_id: event.id, space_id: Space.where('LOWER(name) = ?', params[:space].downcase).first.id)
+        flash[:notice] = "The shadowing shift has been added"
+      else
+        flash[:alert] = "An hour occurred"
+      end
+    else
+      flash[:alert] = "An error occurred, please make sure you choose a space."
+    end
+    redirect_to calendar_volunteers_path
   end
 
   private

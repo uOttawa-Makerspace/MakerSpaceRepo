@@ -318,6 +318,8 @@ Rails.application.routes.draw do
       get :join_volunteer_program
       get :my_stats
       get :calendar
+      get :shadowing_shifts
+      get :delete_event
       get :create_event
       get :new_event
     end

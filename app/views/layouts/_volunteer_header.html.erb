@@ -19,8 +19,9 @@
           </a>
           <div class="dropdown-menu" aria-labelledby="calendar">
             <%= link_to 'Calendar', calendar_volunteers_path, class: "dropdown-item" %>
-            <%= link_to 'Add Makerspace Shadow', create_event_volunteers_path(space: "Makerspace"), class: "dropdown-item" %>
-            <%= link_to 'Add Brunsfield Shadow', create_event_volunteers_path(space: "Brunsfield"), class: "dropdown-item" %>
+            <%= link_to 'Next Shadowing Shifts', shadowing_shifts_volunteers_path, class: "dropdown-item" %>
+            <%= link_to 'Add Makerspace Shift', create_event_volunteers_path(space: "Makerspace"), class: "dropdown-item" %>
+            <%= link_to 'Add Brunsfield Shift', create_event_volunteers_path(space: "Brunsfield"), class: "dropdown-item" %>
           </div>
         </li>
       </ul>
@@ -35,8 +36,8 @@
           </a>
           <div class="dropdown-menu" aria-labelledby="calendar">
             <%= link_to 'Calendar', calendar_volunteers_path, class: "dropdown-item" %>
-            <%= link_to 'Add Makerspace Shadow', new_event_volunteers_path(space: "makerspace"), class: "dropdown-item" %>
-            <%= link_to 'Add Brunsfield Shadow', new_event_volunteers_path(space: "brunsfield"), class: "dropdown-item" %>
+            <%= link_to 'Next Shadowing Shifts', shadowing_shifts_volunteers_path, class: "dropdown-item" %>
+            <%= link_to 'Add Shadowing Shift', new_event_volunteers_path, class: "dropdown-item" %>
           </div>
         </li>
       </ul>

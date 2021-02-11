@@ -15,7 +15,7 @@ $table-accent-bg: #d6ebeb;
 @import "~justifiedGallery/dist/css/justifiedGallery";
 @import "~progress-tracker/src/styles/progress-tracker";
 @import 'toastr/build/toastr.min';
-@import "~jquery-datetimepicker/jquery.datetimepicker";
+@import "~flatpickr/dist/flatpickr";
 
 .progress-step {
   &.is-declined {

@@ -1,30 +1,40 @@
 <section class="text-center">
-  <h1>Add a shadowing slot for <%= params[:space] %></h1>
+  <h1>Add a shadowing shift</h1>
 
   <%= form_with url: create_event_volunteers_path, method: :get do %>
 
-    <div class="d-inline">
-      <%= text_field_tag "datepicker_start" %>
+      <label for="space_input">Space</label> <br>
+      <select name="space" id="space_input" class="custom-select" required>
+        <option value="makerspace">Makerspace</option>
+        <option value="brunsfield centre">Brunsfield Centre</option>
+      </select>
 
-      <span>TO</span>
+      <br><br>
 
-      <%= text_field_tag "datepicker_end" %>
+    <div class="row">
+      <div class="col">
+        <%= text_field_tag "datepicker_start", nil, autocomplete: 'off', class: "form-control" %>
+      </div>
+        <span>TO</span>
+      <div class="col">
+        <%= text_field_tag "datepicker_end", nil, autocomplete: 'off', class: "form-control" %>
+      </div>
     </div>
 
-    <%= hidden_field_tag "space", params[:space] %>
-
-    <br><br>
+    <br>
 
     <%= submit_tag "Add Event", class: "btn btn-primary" %>
 
-    <% end %>
+  <% end %>
 </section>
 
 <script type="text/javascript" charset="utf-8">
-    jQuery('#datepicker_start').datetimepicker({
-        format: "Y-m-d H:m:s",
+    jQuery('#datepicker_start').flatpickr({
+        enableTime: true,
+        time_24hr: true,
     });
-    jQuery('#datepicker_end').datetimepicker({
-        format: "Y-m-d H:m:s",
+    jQuery('#datepicker_end').flatpickr({
+        enableTime: true,
+        time_24hr: true,
     });
 </script>

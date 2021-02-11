@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_01_19_200251) do
+ActiveRecord::Schema.define(version: 2021_02_09_165453) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -580,6 +580,18 @@ ActiveRecord::Schema.define(version: 2021_01_19_200251) do
     t.datetime "updated_at"
   end
 
+  create_table "shadowing_hours", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "event_id"
+    t.datetime "start_time"
+    t.datetime "end_time"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.bigint "space_id"
+    t.index ["space_id"], name: "index_shadowing_hours_on_space_id"
+    t.index ["user_id"], name: "index_shadowing_hours_on_user_id"
+  end
+
   create_table "skills", force: :cascade do |t|
     t.text "name"
     t.datetime "created_at", precision: 6, null: false
@@ -760,6 +772,8 @@ ActiveRecord::Schema.define(version: 2021_01_19_200251) do
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"
+  add_foreign_key "shadowing_hours", "spaces"
+  add_foreign_key "shadowing_hours", "users"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"
