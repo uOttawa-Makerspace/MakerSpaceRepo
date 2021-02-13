@@ -41,6 +41,13 @@ jobs:
       - uses: c-hive/gha-yarn-cache@v1
       - run: npm i -g yarn
       - run: yarn install
+      - name: create-json
+        id: create-json
+        uses: jsdaniell/create-json@1.1.2
+        with:
+          name: "makerepo-1632742c49cc.json"
+          json: ${{ secrets.CREDENTIALS_JSON }}
+          dir: 'config/'
       - name: Build and test
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
