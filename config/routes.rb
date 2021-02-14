@@ -322,6 +322,7 @@ Rails.application.routes.draw do
       get :delete_event
       get :create_event
       get :new_event
+      get :populate_users
     end
   end
 

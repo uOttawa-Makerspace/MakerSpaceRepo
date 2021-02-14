@@ -8,7 +8,9 @@
           <th scope="col">Space</th>
           <th scope="col">Start Date/Time</th>
           <th scope="col">End Date/Time</th>
-          <th scope="col">Remove Event</th>
+          <% if current_user.staff? || current_user.admin? %>
+            <th scope="col">Remove Event</th>
+          <% end %>
         </tr>
       </thead>
       <tbody>
@@ -17,8 +19,9 @@
           <td><%= s.space.name %></td>
           <td><%= s.start_time %></td>
           <td><%= s.end_time %></td>
-          <td><%= link_to "Cancel", delete_event_volunteers_path(event_id: s.event_id), class: "btn btn-danger", data: {confirm: "Are you sure you want to cancel the shadowing shift ?"} %></td>
-        </tr>
+          <% if current_user.staff? || current_user.admin? %>
+            <td><%= link_to "Cancel", delete_event_volunteers_path(event_id: s.event_id), class: "btn btn-danger", data: {confirm: "Are you sure you want to cancel the shadowing shift ?"} %></td>
+          <% end %>
       <% end %>
       </tbody>
     </table>

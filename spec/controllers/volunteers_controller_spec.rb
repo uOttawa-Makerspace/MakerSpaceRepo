@@ -141,6 +141,22 @@ RSpec.describe VolunteersController, type: :controller do
 
   end
 
+  describe "#populate_users" do
+
+    context "populate_users" do
+
+      it 'should get the volunteers searched for' do
+        user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :populate_users, params: {search: user.name}
+        expect(JSON.parse(response.body)['users'][0]['id']).to eq(user.id)
+      end
+
+    end
+
+  end
+
   describe "#new_event" do
 
     context 'new_event' do

@@ -3,11 +3,21 @@
 
   <%= form_with url: create_event_volunteers_path, method: :get do %>
 
-      <label for="space_input">Space</label> <br>
-      <select name="space" id="space_input" class="custom-select" required>
-        <option value="makerspace">Makerspace</option>
-        <option value="brunsfield centre">Brunsfield Centre</option>
-      </select>
+    <div class="row">
+      <div class="col">
+        <label for="space_input">Space</label>
+        <br>
+        <select name="space" id="space_input" class="custom-select" required>
+          <option value="makerspace">Makerspace</option>
+          <option value="brunsfield centre">Brunsfield Centre</option>
+        </select>
+      </div>
+      <div class="col">
+        <%= label_tag :user_id, "User" %>
+        <%= select_tag(:user_id, {prompt: "Choose User..."} , {:class => "user_select form-control", :id => "user_select"}) %>
+        <br>
+      </div>
+    </div>
 
       <br><br>
 
@@ -36,5 +46,33 @@
     jQuery('#datepicker_end').flatpickr({
         enableTime: true,
         time_24hr: true,
+    });
+
+    $(document).on("turbolinks:load", function() {
+
+        $(".user_select").select2({
+            ajax: {
+                url: "populate_users",
+                type: "GET",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        search: params.term
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: $.map(data.users, function (item) {
+                            return {
+                                text: item.name,
+                                id: item.id
+                            }
+                        })
+                    };
+                },
+            },
+            minimumInputLength: 3,
+        });
     });
 </script>

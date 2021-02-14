@@ -13,6 +13,7 @@ class ShadowingHour < ApplicationRecord
 
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
+    attendees = !Rails.env.test? ? [Google::Apis::CalendarV3::EventAttendee.new(email: user.email)] : []
 
     event = Google::Apis::CalendarV3::Event.new(
       summary: "#{user.name} Shadowing",
@@ -23,7 +24,8 @@ class ShadowingHour < ApplicationRecord
       end: Google::Apis::CalendarV3::EventDateTime.new(
         date_time: end_time,
         time_zone: 'America/Toronto'
-      )
+      ),
+      attendees: attendees
     )
 
     calendar_id = space == "makerspace" ? Rails.application.credentials[Rails.env.to_sym][:calendar][:makerspace] : Rails.application.credentials[Rails.env.to_sym][:calendar][:brunsfield]
