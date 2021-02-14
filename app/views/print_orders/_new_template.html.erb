@@ -38,12 +38,12 @@
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <%= f.hidden_field :user_approval, :value => true %>
                   <%= f.hidden_field :timestamp_approved, :value => DateTime.now %>
-                  <%= f.submit "I accept the quote", class: 'btn btn-primary', 'aria-label': "I accept tbe quote of #{prints.quote} $", data: {confirm: 'Are you sure?'} %>
+                  <%= f.submit "I accept the quote", class: 'btn btn-primary', 'aria-label': "I accept the quote of #{prints.quote} $", data: {confirm: 'Are you sure?'} %>
                 <% end %>
                 <br>
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <%= f.hidden_field :user_approval, :value => false %>
-                  <%= f.submit "I don't accept it", class: 'btn btn-danger', 'aria-label': "I DO NOT acceot tbe quote of #{prints.quote} $", data: {confirm: 'Are you sure?'} %>
+                  <%= f.submit "I don't accept it", class: 'btn btn-danger', 'aria-label': "I DO NOT accept the quote of #{prints.quote} $", data: {confirm: 'Are you sure?'} %>
                 <% end %>
               </div>
               <div class="modal-footer">
