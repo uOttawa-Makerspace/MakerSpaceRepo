@@ -3,7 +3,7 @@
 <div class="emp-profile">
   <div class="row">
     <div class="col-md-4">
-<!--      User's Avatar-->
+      <!--      User's Avatar-->
       <div class="profile-img">
         <% if @repo_user.eql?(@user) %>
           <%= link_to settings_profile_path do %>
@@ -14,18 +14,18 @@
         <% end %>
       </div>
 
-<!--      MORE INFO Section-->
+      <!--      MORE INFO Section-->
       <div class="profile-work">
         <p>MORE INFO</p>
-        <%= fa_icon "location-arrow", text: @repo_user.location if @repo_user.location.present? %><br />
-        <%= fa_icon "clock-o", text: "Joined on #{@repo_user.created_at.strftime("%B %d %Y")}" %><br />
+        <%= fa_icon "location-arrow", text: @repo_user.location if @repo_user.location.present? %><br/>
+        <%= fa_icon "clock-o", text: "Joined on #{@repo_user.created_at.strftime("%B %d %Y")}" %><br/>
         <% if @github_username.present? %>
           <%= fa_icon "github-alt" %>
-          <%= link_to @github_username, "https://github.com/#{@github_username}" %><br />
+          <%= link_to @github_username, "https://github.com/#{@github_username}" %><br/>
         <% end %>
         <% if @repo_user.url.present? %>
           <%= fa_icon("link") %>
-          <%= link_to "#{@repo_user.url.gsub(/\Ahttps?:\/\//, '')}", @repo_user.url %> <br />
+          <%= link_to "#{@repo_user.url.gsub(/\Ahttps?:\/\//, '')}", @repo_user.url %> <br/>
         <% end %>
         <p>SKILLS</p>
         <% @certifications.each do |certification| %>
@@ -38,20 +38,21 @@
               <% end %>
             </div>
             <div class="col-md-6">
-              <span style="font-size: 15px;"><%= certification_status(certification.training_session.level).html_safe %></span> <br />
+              <span style="font-size: 15px;"><%= certification_status(certification.training_session.level).html_safe %></span>
+              <br/>
             </div>
           </div>
         <% end %>
       </div>
     </div>
 
-<!--      PROFILE HEADER Section-->
+    <!--      PROFILE HEADER Section-->
     <div class="col-md-8">
       <!--      EDIT PROFILE Section-->
       <div class="col-lg-4 col-md-5 col-sm-5 col-5 float-right">
         <%= link_to fa_icon("cog", text: 'Edit Profile'), settings_profile_path, class: 'edit-user-profile profile-edit-btn' if @repo_user.eql?(@user) %>
-        <br />
-        <br />
+        <br/>
+        <br/>
         <% if @user.staff? %>
           <%= render 'users/flag' %>
           <div class="row mx-auto mb-1">
@@ -122,13 +123,14 @@
           <% end %>
           <% if @user.admin? %>
             <li class="nav-item">
-              <a class="nav-link text-danger" id="roles-tab" data-toggle="tab" href="#role-manager" role="tab" aria-controls="profile" aria-selected="false">Role Manager</a>
+              <a class="nav-link text-danger" id="roles-tab" data-toggle="tab" href="#role-manager" role="tab" aria-controls="profile" aria-selected="false">Role
+                Manager</a>
             </li>
           <% end %>
         </ul>
       </div>
 
-<!--      PROFILE CONTENT Section-->
+      <!--      PROFILE CONTENT Section-->
       <div class="tab-content profile-tab bg-light border-black" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
           <div class="row mb-1">
@@ -147,14 +149,16 @@
               <label class="right-side"><%= @repo_user.name %></label>
             </div>
           </div>
-          <div class="row mb-1">
-            <div class="col-md-6">
-              <label>Email</label>
+          <% if @user.staff? %>
+            <div class="row mb-1">
+              <div class="col-md-6">
+                <label>Email</label>
+              </div>
+              <div class="col-md-6">
+                <label class="right-side"><%= @repo_user.email %></label>
+              </div>
             </div>
-            <div class="col-md-6">
-              <label class="right-side"><%= @repo_user.email %></label>
-            </div>
-          </div>
+          <% end %>
           <div class="row mb-1">
             <div class="col-md-6">
               <label>Faculty</label>
@@ -245,23 +249,27 @@
                                 </div>
                               <% end %>
 
-                                <div class="row">
-                                  <% badge = @repo_user.highest_badge(training) %>
-                                  <% unless badge.nil? %>
-                                    <div class="col-lg-4 text-center">
-                                      <%= image_tag(badge.badge_template.image_url, alt: 'Badge', :style => "width: 150px") %>
-                                    </div>
-                                    <div class="col-lg-8 my-auto">
-                                      <b><%= badge.badge_template.badge_name %>:</b> <%= badge.badge_template.badge_description %>
-                                    </div>
-                                    <div class="col-12 pt-2">
-                                      <p>Skills Acquired: <b><%= badge.badge_template.list_of_skills %></b></p>
-                                    </div>
-                                  <% end %>
-                                </div>
-                              <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
-                              <p>Learning Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
-                              <p>Recomended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, @repo_user.id)) %></p>
+                              <div class="row">
+                                <% badge = @repo_user.highest_badge(training) %>
+                                <% unless badge.nil? %>
+                                  <div class="col-lg-4 text-center">
+                                    <%= image_tag(badge.badge_template.image_url, alt: 'Badge', :style => "width: 150px") %>
+                                  </div>
+                                  <div class="col-lg-8 my-auto">
+                                    <b><%= badge.badge_template.badge_name %>
+                                      :</b> <%= badge.badge_template.badge_description %>
+                                  </div>
+                                  <div class="col-12 pt-2">
+                                    <p>Skills Acquired: <b><%= badge.badge_template.list_of_skills %></b></p>
+                                  </div>
+                                <% end %>
+                              </div>
+                              <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %>
+                                / <%= training.proficient_projects.count %></p>
+                              <p>Learning Modules finished : <%= @learning_modules_completed.call(training).count %>
+                                / <%= training.learning_modules.count %></p>
+                              <p>Recomended hours before moving
+                                on: <%= @recomended_hours.call(training, return_levels(training.id, @repo_user.id)) %></p>
                             </div>
                           </div>
                         </div>
@@ -334,11 +342,11 @@
               <div class="col-md-6 float-right">
                 <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
                   <%= radio_button_tag :role, "admin" %>
-                  <%= label_tag "Admin" %> <br />
+                  <%= label_tag "Admin" %> <br/>
                   <%= radio_button_tag :role, "staff" %>
-                  <%= label_tag "Staff" %> <br />
+                  <%= label_tag "Staff" %> <br/>
                   <%= radio_button_tag :role, "regular_user" %>
-                  <%= label_tag "Regular" %> <br />
+                  <%= label_tag "Regular" %> <br/>
                   <%= submit_tag "Update", class: "btn btn-primary" %>
                 <% end %>
               </div>
@@ -383,7 +391,7 @@
         <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if (repository.photos.present? and repository.photos.first.present? and repository.photos.first.image.attached?)}')" %> >
           <% if repository.user_username.eql?(@user.username) %>
             <%= link_to "Delete", repository_path(repository.user_username, repository.id),
-                        method: :delete, data: {confirm: "Are you sure? Once you delete the repository there is no coming back!"}, class: 'delete-repo' %>
+                        method: :delete, data: { confirm: "Are you sure? Once you delete the repository there is no coming back!" }, class: 'delete-repo' %>
             <%= link_to "Edit", edit_repository_path(repository.user_username, repository.id), class: 'edit-repo' %>
           <% end %>
           <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
