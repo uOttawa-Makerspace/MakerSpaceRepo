@@ -5,9 +5,19 @@ class ShadowingHour < ApplicationRecord
   def self.create_event(start_time, end_time, user, space)
     scope = 'https://www.googleapis.com/auth/calendar'
 
+    @config = {
+      private_key: Rails.application.credentials[Rails.env.to_sym][:google][:private_key],
+      client_email: Rails.application.credentials[Rails.env.to_sym][:google][:client_email],
+      project_id: Rails.application.credentials[Rails.env.to_sym][:google][:project_id],
+      private_key_id: Rails.application.credentials[Rails.env.to_sym][:google][:private_key_id],
+      type: Rails.application.credentials[Rails.env.to_sym][:google][:type]
+    }
+
     authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
-      json_key_io: File.open("#{Rails.root}/config/makerepo-1632742c49cc.json"),
+      json_key_io: StringIO.new(@config.to_json, 'r'),
       scope: scope)
+
+    authorizer.sub = 'volunteer@makerepo.com'
 
     authorizer.fetch_access_token!
 
@@ -30,7 +40,7 @@ class ShadowingHour < ApplicationRecord
 
     calendar_id = space == "makerspace" ? Rails.application.credentials[Rails.env.to_sym][:calendar][:makerspace] : Rails.application.credentials[Rails.env.to_sym][:calendar][:brunsfield]
 
-    response = service.insert_event(calendar_id, event)
+    response = service.insert_event(calendar_id, event, send_notifications: true)
 
     return response
   end
@@ -39,9 +49,19 @@ class ShadowingHour < ApplicationRecord
 
     scope = 'https://www.googleapis.com/auth/calendar'
 
+    @config = {
+      private_key: Rails.application.credentials[Rails.env.to_sym][:google][:private_key],
+      client_email: Rails.application.credentials[Rails.env.to_sym][:google][:client_email],
+      project_id: Rails.application.credentials[Rails.env.to_sym][:google][:project_id],
+      private_key_id: Rails.application.credentials[Rails.env.to_sym][:google][:private_key_id],
+      type: Rails.application.credentials[Rails.env.to_sym][:google][:type]
+    }
+
     authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
-      json_key_io: File.open("#{Rails.root}/config/makerepo-1632742c49cc.json"),
+      json_key_io: StringIO.new(@config.to_json, 'r'),
       scope: scope)
+
+    authorizer.sub = 'volunteer@makerepo.com'
 
     authorizer.fetch_access_token!
 

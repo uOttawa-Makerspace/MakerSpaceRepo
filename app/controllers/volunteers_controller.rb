@@ -61,11 +61,11 @@ class VolunteersController < ApplicationController
 
   def delete_event
     if params[:event_id].present? && ShadowingHour.find_by(event_id: params[:event_id]).present?
-      space = current_user.shadowing_hours.find_by(event_id: params[:event_id]).space.name
+      space = ShadowingHour.find_by(event_id: params[:event_id]).space.name
       event = ShadowingHour.delete_event(params[:event_id], space)
 
       if event != 'error'
-        current_user.shadowing_hours.find_by(event_id: params[:event_id]).destroy!
+        ShadowingHour.find_by(event_id: params[:event_id]).destroy!
         flash[:notice] = "This shift has been cancelled."
       else
         flash[:alert] = "An error occured while deleting the shift."
