@@ -9,6 +9,7 @@ class Space < ApplicationRecord
   has_many :certifications, through: :training_sessions
   has_many :volunteer_tasks, dependent: :destroy
   has_many :popular_hours, dependent: :destroy
+  has_many :shadowing_hours
 
   after_create :create_popular_hours
 
