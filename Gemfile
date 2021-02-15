@@ -60,6 +60,7 @@ gem 'concurrent-ruby', '~> 1.1', '>= 1.1.6'
 gem 'net-ssh'
 gem "roo", "~> 2.8.3"
 gem 'roo-xls'
+gem "recaptcha"
 
 group :development, :test do
   gem 'byebug', platform: :mri

@@ -62,7 +62,7 @@ class ProjectProposalsController < ApplicationController
     @project_proposal.user_id = @user.try(:id)
 
     respond_to do |format|
-      if @project_proposal.save
+      if verify_recaptcha(model: @project_proposal) && @project_proposal.save
         create_photos
         create_files
         create_categories

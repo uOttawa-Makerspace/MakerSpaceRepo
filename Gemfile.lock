@@ -1096,6 +1096,7 @@ GEM
       thor (>= 0.14, < 2.0)
     jquery-ui-rails (6.0.1)
       railties (>= 3.2.16)
+    json (2.5.1)
     jwt (2.2.1)
     kaminari (1.2.1)
       activesupport (>= 4.1.0)
@@ -1231,6 +1232,8 @@ GEM
     rb-inotify (0.10.1)
       ffi (~> 1.0)
     rdoc (6.2.1)
+    recaptcha (5.7.0)
+      json
     redis (4.2.1)
     regexp_parser (1.7.1)
     rexml (3.2.4)
@@ -1448,6 +1451,7 @@ DEPENDENCIES
   railroady
   rails (~> 6.0.3.2)
   rails-controller-testing
+  recaptcha
   roo (~> 2.8.3)
   roo-xls
   rspec-rails
