@@ -198,9 +198,11 @@
       <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), include_blank: "Select a category.../Sélectionne une catégorie..." %>
       <div id="category-container"></div>
     </div>
+
+    <%= recaptcha_tags %>
+
     <br>
-    <br>
-    <br>
+
     <%= f.submit "Create Project Proposal/Créer une proposition de projet", class: "btn btn-primary", id: "waiting-save-button", data: {disable_with: false} %>
     <span id="status-save"></span>
 
