@@ -17,6 +17,12 @@ class PrintOrder < ApplicationRecord
       if: -> {final_file.attached?},
   }
 
+  has_one_attached :pdf_form
+  validates :pdf_form, file_content_type: {
+    allow: %w[application/pdf image/svg+xml text/html text/plain image/vnd.dxf image/x-dxf],
+    if: -> {file.attached?},
+  }
+
   def set_filename
     file.blob.update(filename: "#{id}_#{file.filename}") if file.attached? && !file.filename.to_s.start_with?(id.to_s)
 
@@ -26,6 +32,10 @@ class PrintOrder < ApplicationRecord
           staff_files.blob.update(filename: "#{id}_#{staff_files.filename}")
         end
       end
+    end
+
+    if pdf_form.attached?
+      pdf_form.blob.update(filename: "#{id}_#{pdf_form.filename}") if pdf_form.attached? && !pdf_form.filename.to_s.start_with?(id.to_s)
     end
   end
 

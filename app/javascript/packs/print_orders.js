@@ -36,12 +36,18 @@ document.addEventListener("turbolinks:load", () => {
 
 window.checkFile = function(yourForm) {
 
-    let file = document.getElementById("print_order_final_file").files;
+    let file = yourForm['print_order[final_file][]'].files;
 
-    let checked = true;
-    for (x of file) {
-        if (x.name == "") {
-            checked = false;
+    let checked;
+
+    if(file.length === 0) {
+        checked = false;
+    } else {
+        checked = true;
+        for (x of file) {
+            if (x.name == "") {
+                checked = false;
+            }
         }
     }
 
