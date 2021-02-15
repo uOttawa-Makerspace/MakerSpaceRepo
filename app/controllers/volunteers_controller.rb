@@ -89,7 +89,7 @@ class VolunteersController < ApplicationController
         ShadowingHour.create!(user_id: user.id, start_time: start_time, end_time: end_time, event_id: event.id, space_id: Space.where('LOWER(name) = ?', params[:space].downcase).first.id)
         flash[:notice] = "The shadowing shift has been added"
       else
-        flash[:alert] = "An hour occurred"
+        flash[:alert] = "An Error occurred"
       end
     else
       flash[:alert] = "An error occurred, please make sure you choose a space."

@@ -78,13 +78,23 @@ RSpec.describe VolunteersController, type: :controller do
 
     context 'create_event' do
 
-      it 'should create a shadowing shift (volunteer)' do
+      it 'should create a shadowing shift (admin)' do
+        user = create(:user, :admin)
+        session[:expires_at] = DateTime.tomorrow.end_of_day
+        session[:user_id] = user.id
+        volunteer = create(:user, :volunteer_with_volunteer_program)
+        Space.find_or_create_by(name: "Makerspace")
+        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: volunteer.id} }.to change(ShadowingHour, :count).by(1)
+        expect(response).to redirect_to calendar_volunteers_path
+      end
+
+      it 'should not create a shadowing shift (volunteer)' do
         user = create(:user, :volunteer_with_volunteer_program)
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = user.id
         Space.find_or_create_by(name: "Makerspace")
-        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow} }.to change(ShadowingHour, :count).by(1)
-        expect(response).to redirect_to calendar_volunteers_path
+        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: user.id} }.to change(ShadowingHour, :count).by(0)
+        expect(response).to redirect_to root_path
       end
 
       it 'should show redirect the user to calendar page (volunteer, missing params)' do
@@ -92,7 +102,7 @@ RSpec.describe VolunteersController, type: :controller do
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = user.id
         get :create_event
-        expect(response).to redirect_to calendar_volunteers_path
+        expect(response).to redirect_to root_path
       end
 
       it 'should redirect user to root (regular user)' do
@@ -111,12 +121,13 @@ RSpec.describe VolunteersController, type: :controller do
 
     context 'delete_event' do
 
-      it 'should delete a shadowing shift (volunteer)' do
-        user = create(:user, :volunteer_with_volunteer_program)
+      it 'should delete a shadowing shift (admin)' do
+        user = create(:user, :admin)
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = user.id
+        volunteer = create(:user, :volunteer_with_volunteer_program)
         Space.find_or_create_by(name: "Makerspace")
-        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow} }.to change(ShadowingHour, :count).by(1)
+        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: volunteer.id} }.to change(ShadowingHour, :count).by(1)
         expect { get :delete_event, params: {event_id: ShadowingHour.last.event_id}}.to change(ShadowingHour, :count).by(-1)
         expect(response).to redirect_to calendar_volunteers_path
       end
@@ -126,7 +137,7 @@ RSpec.describe VolunteersController, type: :controller do
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = user.id
         get :delete_event
-        expect(response).to redirect_to calendar_volunteers_path
+        expect(response).to redirect_to root_path
       end
 
       it 'should redirect user to root (regular user)' do
@@ -146,11 +157,12 @@ RSpec.describe VolunteersController, type: :controller do
     context "populate_users" do
 
       it 'should get the volunteers searched for' do
-        user = create(:user, :volunteer_with_dev_program)
+        user = create(:user, :admin)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
-        get :populate_users, params: {search: user.name}
-        expect(JSON.parse(response.body)['users'][0]['id']).to eq(user.id)
+        volunteer = create(:user, :volunteer_with_volunteer_program)
+        get :populate_users, params: {search: volunteer.name}
+        expect(JSON.parse(response.body)['users'][0]['id']).to eq(volunteer.id)
       end
 
     end
@@ -161,12 +173,20 @@ RSpec.describe VolunteersController, type: :controller do
 
     context 'new_event' do
 
-      it 'should show the new_event page' do
-        user = create(:user, :volunteer_with_volunteer_program)
+      it 'should show the new_event page (admin)' do
+        user = create(:user, :admin)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
         get :new_event
         expect(response).to have_http_status(:success)
+      end
+
+      it 'should not show the new_event page (volunteer)' do
+        user = create(:user, :volunteer_with_volunteer_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :new_event
+        expect(response).to redirect_to root_path
       end
 
       it 'should redirect user to root (regular user)' do

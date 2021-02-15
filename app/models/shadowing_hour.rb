@@ -2,7 +2,7 @@ class ShadowingHour < ApplicationRecord
   belongs_to :user
   belongs_to :space
 
-  def self.create_event(start_time, end_time, user, space)
+  def self.authorizer
     scope = 'https://www.googleapis.com/auth/calendar'
 
     @config = {
@@ -20,6 +20,11 @@ class ShadowingHour < ApplicationRecord
     authorizer.sub = 'volunteer@makerepo.com'
 
     authorizer.fetch_access_token!
+
+    return authorizer
+  end
+
+  def self.create_event(start_time, end_time, user, space)
 
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
@@ -46,24 +51,6 @@ class ShadowingHour < ApplicationRecord
   end
 
   def self.delete_event(event_id, space)
-
-    scope = 'https://www.googleapis.com/auth/calendar'
-
-    @config = {
-      private_key: Rails.application.credentials[Rails.env.to_sym][:google][:private_key],
-      client_email: Rails.application.credentials[Rails.env.to_sym][:google][:client_email],
-      project_id: Rails.application.credentials[Rails.env.to_sym][:google][:project_id],
-      private_key_id: Rails.application.credentials[Rails.env.to_sym][:google][:private_key_id],
-      type: Rails.application.credentials[Rails.env.to_sym][:google][:type]
-    }
-
-    authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
-      json_key_io: StringIO.new(@config.to_json, 'r'),
-      scope: scope)
-
-    authorizer.sub = 'volunteer@makerepo.com'
-
-    authorizer.fetch_access_token!
 
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
