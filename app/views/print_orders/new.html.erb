@@ -112,7 +112,6 @@
             <label>SVG File</label>
             <label class="label-size">(Please put cut lines as 0.001 Inch and everything at 100% Opacity)</label>
             <%= f.file_field :file, style: "display: block!important;", :required => true, 'aria-label': 'SVG File' %>
-
           </div>
           <fieldset class="form-group">
             <div class="row">
@@ -159,6 +158,15 @@
           <%= f.hidden_field :order_type, :value => 1 %>
 
         <% end %>
+
+        <br>
+
+        <div class="form-group">
+          <label>If you are in a <b>competitive team</b> please submit your signed off drawing for this part.</label>
+          <%= f.file_field :pdf_form, style: "display: block!important;", :required => true, 'aria-label': 'SVG File' %>
+        </div>
+
+        <br>
 
         <fieldset class="form-group">
           <div class="row">

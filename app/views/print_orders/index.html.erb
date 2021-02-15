@@ -44,6 +44,7 @@
                   </th>
                   <th>STL/SVG</th>
                   <% if @user.admin? || @user.staff? %>
+                    <th>PDF for Teams</th>
                     <th>GCode/PDF</th>
                   <% end %>
                   <th>Expedited<span onclick="sortTable('print-order-table-<%= index %>', 8)"><%= fa_icon('arrow-down') %></span>
@@ -115,6 +116,15 @@
                     </td>
 
                     <% if @user.admin? || @user.staff? %>
+                      <td>
+                        <% if prints.pdf_form.attached? %>
+                          <%= link_to "Download", rails_blob_path(prints.pdf_form, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+                          <br>
+                          <span style="word-break: break-all;"><%= prints.pdf_form.filename %></span>
+                        <% else %>
+                          Not Available
+                        <% end %>
+                      </td>
                       <td>
                         <% if prints.final_file.attached? %>
                           <%= link_to "Edit files", print_order_edit_approval_path(prints.id), class: "btn btn-sm btn-primary", style: "margin-bottom: 10px;" %>
