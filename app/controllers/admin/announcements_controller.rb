@@ -51,7 +51,7 @@ class Admin::AnnouncementsController < AdminAreaController
   private
 
   def announcement_params
-    params.require(:announcement).permit(:description, :public_goal, :active)
+    params.require(:announcement).permit(:description, :public_goal, :active, :end_date)
   end
 
 end
