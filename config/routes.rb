@@ -390,6 +390,7 @@ Rails.application.routes.draw do
       post :create, path: '/new'
       get :remove_avatar
       post :flag
+      post :unflag
       get :change_email
       put :remove_flag
     end
