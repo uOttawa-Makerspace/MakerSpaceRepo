@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_02_09_165453) do
+ActiveRecord::Schema.define(version: 2021_02_16_163647) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -141,6 +141,8 @@ ActiveRecord::Schema.define(version: 2021_02_09_165453) do
     t.integer "training_session_id"
     t.boolean "active", default: true
     t.string "demotion_reason"
+    t.bigint "demotion_staff_id"
+    t.index ["demotion_staff_id"], name: "index_certifications_on_demotion_staff_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
   end
 
@@ -748,6 +750,7 @@ ActiveRecord::Schema.define(version: 2021_02_09_165453) do
   add_foreign_key "cc_moneys", "orders"
   add_foreign_key "cc_moneys", "proficient_projects"
   add_foreign_key "certifications", "users"
+  add_foreign_key "certifications", "users", column: "demotion_staff_id"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
   add_foreign_key "discount_codes", "price_rules"

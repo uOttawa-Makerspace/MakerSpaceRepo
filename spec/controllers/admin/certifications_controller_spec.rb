@@ -34,6 +34,7 @@ RSpec.describe Admin::CertificationsController, type: :controller do
       it 'should update the certification (demote) and return to the user profile' do
         patch :update, params: {id: @certification.id, certification: { active: false } }
         expect(response).to redirect_to user_path(@certification.user.username)
+        expect(Certification.unscoped.find(@certification.id).demotion_staff).to eq(@admin)
         expect(Certification.unscoped.find(@certification.id).active).to eq(false)
         expect(flash[:notice]).to eq('Action completed.')
       end
