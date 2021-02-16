@@ -110,10 +110,10 @@ RSpec.describe UsersController, type: :controller do
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10000
         user = create(:user, :regular_user, flagged: true, flag_message: "abc")
-        post :flag, params: {flagged_user: user.id, flag: "unflag"}
+        post :unflag, params: {flagged_user: user.id}
         expect(response).to redirect_to user_path(user.username)
         expect(User.last.flagged?).to be_falsey
-        expect(User.last.flag_message).to eq("")
+        expect(User.last.flag_message).to eq(nil)
       end
 
       it 'should redirect user' do
