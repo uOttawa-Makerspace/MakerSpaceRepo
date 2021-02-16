@@ -12,6 +12,7 @@ storage/
 # Ignore Credentials
 /config/local_env.yml
 /config/master.key
+/config/makerepo-1632742c49cc.json
 
 # Ignore the default SQLite database.
 /db/*.sqlite3

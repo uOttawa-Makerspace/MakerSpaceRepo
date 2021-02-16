@@ -26,6 +26,181 @@ RSpec.describe VolunteersController, type: :controller do
 
   end
 
+  describe "#calendar" do
+
+    context 'calendar' do
+
+      it 'should show the calendar page (volunteer)' do
+        user = create(:user, :volunteer_with_volunteer_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :calendar
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'should redirect user to root (regular user)' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :calendar
+        expect(response).to redirect_to root_path
+      end
+
+    end
+
+  end
+
+  describe "#shadowing_shifts" do
+
+    context 'shadowing_shifts' do
+
+      it 'should show the shadowing_shifts page (volunteer)' do
+        user = create(:user, :volunteer_with_volunteer_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :shadowing_shifts
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'should redirect user to root (regular user)' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :shadowing_shifts
+        expect(response).to redirect_to root_path
+      end
+
+    end
+
+  end
+
+  describe "#create_event" do
+
+    context 'create_event' do
+
+      it 'should create a shadowing shift (admin)' do
+        user = create(:user, :admin)
+        session[:expires_at] = DateTime.tomorrow.end_of_day
+        session[:user_id] = user.id
+        volunteer = create(:user, :volunteer_with_volunteer_program)
+        Space.find_or_create_by(name: "Makerspace")
+        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: volunteer.id} }.to change(ShadowingHour, :count).by(1)
+        expect(response).to redirect_to calendar_volunteers_path
+      end
+
+      it 'should not create a shadowing shift (volunteer)' do
+        user = create(:user, :volunteer_with_volunteer_program)
+        session[:expires_at] = DateTime.tomorrow.end_of_day
+        session[:user_id] = user.id
+        Space.find_or_create_by(name: "Makerspace")
+        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: user.id} }.to change(ShadowingHour, :count).by(0)
+        expect(response).to redirect_to root_path
+      end
+
+      it 'should show redirect the user to calendar page (volunteer, missing params)' do
+        user = create(:user, :volunteer_with_volunteer_program)
+        session[:expires_at] = DateTime.tomorrow.end_of_day
+        session[:user_id] = user.id
+        get :create_event
+        expect(response).to redirect_to root_path
+      end
+
+      it 'should redirect user to root (regular user)' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :create_event
+        expect(response).to redirect_to root_path
+      end
+
+    end
+
+  end
+
+  describe "#delete_event" do
+
+    context 'delete_event' do
+
+      it 'should delete a shadowing shift (admin)' do
+        user = create(:user, :admin)
+        session[:expires_at] = DateTime.tomorrow.end_of_day
+        session[:user_id] = user.id
+        volunteer = create(:user, :volunteer_with_volunteer_program)
+        Space.find_or_create_by(name: "Makerspace")
+        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: volunteer.id} }.to change(ShadowingHour, :count).by(1)
+        expect { get :delete_event, params: {event_id: ShadowingHour.last.event_id}}.to change(ShadowingHour, :count).by(-1)
+        expect(response).to redirect_to calendar_volunteers_path
+      end
+
+      it 'should show redirect the user to calendar page (volunteer, missing params)' do
+        user = create(:user, :volunteer_with_volunteer_program)
+        session[:expires_at] = DateTime.tomorrow.end_of_day
+        session[:user_id] = user.id
+        get :delete_event
+        expect(response).to redirect_to root_path
+      end
+
+      it 'should redirect user to root (regular user)' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :delete_event
+        expect(response).to redirect_to root_path
+      end
+
+    end
+
+  end
+
+  describe "#populate_users" do
+
+    context "populate_users" do
+
+      it 'should get the volunteers searched for' do
+        user = create(:user, :admin)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        volunteer = create(:user, :volunteer_with_volunteer_program)
+        get :populate_users, params: {search: volunteer.name}
+        expect(JSON.parse(response.body)['users'][0]['id']).to eq(volunteer.id)
+      end
+
+    end
+
+  end
+
+  describe "#new_event" do
+
+    context 'new_event' do
+
+      it 'should show the new_event page (admin)' do
+        user = create(:user, :admin)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :new_event
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'should not show the new_event page (volunteer)' do
+        user = create(:user, :volunteer_with_volunteer_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :new_event
+        expect(response).to redirect_to root_path
+      end
+
+      it 'should redirect user to root (regular user)' do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10000
+        get :new_event
+        expect(response).to redirect_to root_path
+      end
+
+    end
+
+  end
+
   describe "#emails" do
 
     context "emails" do

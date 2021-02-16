@@ -22,7 +22,7 @@ gem 'jquery-rails'
 gem 'jquery-ui-rails'
 gem 'kaminari'
 gem 'mocha'
-gem 'octokit', '~> 3.0'
+gem 'octokit', '~> 4.0'
 gem 'paperclip'
 gem 'paperclip-av-transcoder'
 gem 'pg', '~> 0.18.2'
@@ -60,6 +60,10 @@ gem 'concurrent-ruby', '~> 1.1', '>= 1.1.6'
 gem 'net-ssh'
 gem "roo", "~> 2.8.3"
 gem 'roo-xls'
+gem 'googleauth', '~> 0.15.0'
+gem 'google-api-client', require: ['google/apis/calendar_v3']
+gem 'faraday', '~> 0.17.0'
+gem "recaptcha"
 
 group :development, :test do
   gem 'byebug', platform: :mri

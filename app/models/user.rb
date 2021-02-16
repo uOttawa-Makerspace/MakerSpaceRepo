@@ -37,6 +37,7 @@ class User < ApplicationRecord
   has_one_attached :avatar
   has_many :project_kits, dependent: :destroy
   has_many :learning_module_tracks
+  has_many :shadowing_hours
 
   validates :avatar, file_content_type: {
       allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],
