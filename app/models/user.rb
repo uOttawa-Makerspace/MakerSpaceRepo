@@ -8,7 +8,8 @@ class User < ApplicationRecord
   has_many :upvotes, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_and_belongs_to_many :repositories, dependent: :destroy
-  has_many :certifications, dependent: :destroy
+  has_many :certifications, class_name: "Certification", foreign_key: 'user_id',dependent: :destroy
+  has_many :demotion_staff, class_name: "Certification", foreign_key: 'demotion_staff_id',dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
   has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories

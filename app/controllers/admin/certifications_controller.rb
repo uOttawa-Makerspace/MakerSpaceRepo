@@ -9,7 +9,12 @@ class Admin::CertificationsController < AdminAreaController
         user.flag_message = user.flag_message.gsub("; This user was demoted in '#{@cert.training.name}' because '#{past_demotion_reason}'", '')
         user.flagged = false if user.flag_message.blank?
       else
-        user.flag_message += "; This user was demoted in '#{@cert.training.name}' because '#{@cert.demotion_reason}'"
+        @cert.update(demotion_staff: @user)
+        if user.flag_message.blank?
+          user.flag_message = "; This user was demoted in '#{@cert.training.name}' because '#{@cert.demotion_reason}'"
+        else
+          user.flag_message += "; This user was demoted in '#{@cert.training.name}' because '#{@cert.demotion_reason}'"
+        end
         user.flagged = true
       end
       user.save

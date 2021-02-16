@@ -7,6 +7,7 @@
       <th>Created on</th>
       <th>Demoted on</th>
       <th>Demotion's reason</th>
+      <th>Demoted By</th>
       <th class="action-header">Action</th>
     </tr>
 
@@ -23,6 +24,7 @@
         <td><%= link_to demotion.created_at.strftime("%B %d, %Y"), staff_training_session_path(id: demotion.training_session.id), style: "text-decoration:underline;" %></td>
         <td><%= demotion.updated_at.strftime("%B %d, %Y") %></td>
         <td><%= demotion.demotion_reason %></td>
+        <td><%= link_to demotion.demotion_staff.name, user_path(demotion.demotion_staff.username) %></td>
         <td class="action-cell">
           <%= form_for demotion, url: admin_certification_path(demotion) do |f| %>
             <%= f.hidden_field :active, value: true %>
