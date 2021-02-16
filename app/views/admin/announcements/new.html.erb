@@ -5,7 +5,7 @@
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
-          <%= form_for @announcement, url: {controller: "announcements", action: "create"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+          <%= form_for @announcement, url: { controller: "announcements", action: "create" }, :html => { :id => "volunteerForm", class: "needs-validation", novalidate: 'novalidate' } do |f| %>
             <div class="row">
               <div class="col-md-12">
                 <div class="form-group text-center">
@@ -17,37 +17,44 @@
                 </div>
               </div>
               <div class="mx-auto col-md-12 text-center">
-                <b>Select to what public you want this to appear</b> <br />
+                <b>Select to what public you want this to appear</b> <br/>
                 <div class="d-inline-block text-left">
                   <%= f.radio_button :public_goal, 'volunteer', :style => 'display:inline', checked: true %>
                   <%= f.label :public_goal, 'Volunteers', :style => 'display:inline' %>
-                  <br />
+                  <br/>
                   <%= f.radio_button :public_goal, 'regular_user', :style => 'display:inline' %>
                   <%= f.label :public_goal, 'Regular Users', :style => 'display:inline' %>
-                  <br />
+                  <br/>
                   <%= f.radio_button :public_goal, 'staff', :style => 'display:inline' %>
                   <%= f.label :public_goal, 'Staff', :style => 'display:inline' %>
-                  <br />
+                  <br/>
                   <%= f.radio_button :public_goal, 'admin', :style => 'display:inline' %>
                   <%= f.label :public_goal, 'Admins', :style => 'display:inline' %>
-                  <br />
+                  <br/>
                   <%= f.radio_button :public_goal, 'all', :style => 'display:inline' %>
                   <%= f.label :public_goal, 'All Users', :style => 'display:inline' %>
-                  <br />
-                  <br />
+                  <br/>
+                  <br/>
                 </div>
               </div>
-              <div class="col-md-12">
-
+              <div class="form-group col-md-4"></div>
+              <div class="form-group col-md-4 text-center">
+                <%= f.label :end_time, 'End Date (Optional)' %>
+                <%= f.text_field "end_date", autocomplete: 'off', class: "form-control", id: 'end_date' %>
               </div>
-              <div class="col-lg-12 text-center">
-                <%= f.submit "Create Announcement", class: "btn btn-secondary btn-xl text-uppercase" %>
-              </div>
-              <br><br>
+              <div class="col-md-4"></div>
             </div>
+            <div class="col-lg-12 text-center">
+              <%= f.submit "Create Announcement", class: "btn btn-secondary btn-xl text-uppercase" %>
+            </div>
+            <br>
           <% end %>
         </div>
       </div>
     </div>
   </div>
 </section>
+
+<script type="text/javascript" charset="utf-8">
+    jQuery('#end_date').flatpickr();
+</script>

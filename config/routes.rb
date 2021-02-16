@@ -317,6 +317,12 @@ Rails.application.routes.draw do
       get :volunteer_list
       get :join_volunteer_program
       get :my_stats
+      get :calendar
+      get :shadowing_shifts
+      get :delete_event
+      get :create_event
+      get :new_event
+      get :populate_users
     end
   end
 
@@ -390,6 +396,7 @@ Rails.application.routes.draw do
       post :create, path: '/new'
       get :remove_avatar
       post :flag
+      post :unflag
       get :change_email
       put :remove_flag
     end

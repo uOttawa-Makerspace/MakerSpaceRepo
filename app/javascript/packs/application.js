@@ -32,6 +32,7 @@ global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
 var Clipboard = require("clipboard");
 // window.Cookies = require("js-cookie");
 require("@rails/actiontext")
+require("flatpickr/dist/flatpickr")
 
 require("bootbox");
 require("packs/validation");

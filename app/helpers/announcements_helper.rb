@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
 module AnnouncementsHelper
-  def return_active(active)
-    case active
-    when true
-      'Yes'
-    when false
-      'No'
+  def return_active(a)
+    if (a.end_date == nil) or (a.end_date >= Date.today)
+      case a.active
+      when true
+        'Yes'
+      when false
+        'No'
+      end
+    else
+      'Yes but the publishing date is over.'
     end
   end
 

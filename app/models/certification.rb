@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class Certification < ApplicationRecord
-  belongs_to :user
+  belongs_to :user, class_name: "User"
+  belongs_to :demotion_staff, class_name: "User"
   belongs_to :training_session
   has_one :space, through: :training_session
   has_one :training, through: :training_session

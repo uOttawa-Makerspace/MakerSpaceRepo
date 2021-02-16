@@ -156,14 +156,12 @@ class PrintOrdersController < ApplicationController
       end
     end
 
-    @user = @print_order.user
-
     if @print_order.update(print_order_params)
 
       if params[:print_order][:approved] == 'true'
-        MsrMailer.send_print_quote(expedited_price, @user, @print_order, params[:print_order][:staff_comments]).deliver_now
+        MsrMailer.send_print_quote(expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments]).deliver_now
       elsif params[:print_order][:approved] == 'false'
-        MsrMailer.send_print_declined(@user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
+        MsrMailer.send_print_declined(@print_order.user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
       elsif params[:print_order][:user_approval] == 'true'
         MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
       elsif params[:print_order][:printed] == 'true'
@@ -173,9 +171,9 @@ class PrintOrdersController < ApplicationController
           else
             message = "<div>Hi #{@print_order.user.name}, <br>Your print has completed and is now available for pickup! Your order ID is #{@print_order.id} and your quoted balance is $. Please visit <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a> for information on how to pay for your job and email makerspace@uottawa.ca to arrange for the pick up of your part during weekdays between 9h-17h.<br><br></div><div>Best regards,<br>The Makerspace Team<br></div>".html_safe
           end
-          MsrMailer.send_print_finished(@user, @print_order.id, @print_order.quote, message).deliver_now
+          MsrMailer.send_print_finished(@print_order.user, @print_order.id, @print_order.quote, message).deliver_now
         end
-        MsrMailer.send_invoice(@user.name, @print_order).deliver_now
+        MsrMailer.send_invoice(@print_order.user.name, @print_order).deliver_now
       end
       flash[:notice] = 'Update has been completed !'
     else
@@ -209,7 +207,7 @@ class PrintOrdersController < ApplicationController
   private
 
   def print_order_params
-    params.require(:print_order).permit(:user_id, :hours, :sst, :material, :grams, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited, :comments_for_staff, :grams_carbonfiber, :price_per_gram_carbonfiber, :price_per_gram_fiberglass, :grams_fiberglass, :payed, :picked_up, final_file: [])
+    params.require(:print_order).permit(:user_id, :hours, :sst, :material, :grams, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited, :comments_for_staff, :grams_carbonfiber, :price_per_gram_carbonfiber, :price_per_gram_fiberglass, :grams_fiberglass, :payed, :picked_up, :pdf_form, final_file: [])
   end
 
   def set_pricing

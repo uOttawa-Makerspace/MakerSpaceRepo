@@ -1,10 +1,13 @@
 # frozen_string_literal: true
+require 'googleauth'
+require 'google/apis/calendar_v3'
 
 class VolunteersController < ApplicationController
   layout 'volunteer'
   before_action :current_user
   before_action :grant_access, except: [:join_volunteer_program]
-  before_action :grant_access_list, only: [:volunteer_list]
+  before_action :grant_access_list, only: [:volunteer_list, :create_event, :delete_event, :new_event]
+
   def index
     @user = current_user
   end
@@ -36,6 +39,62 @@ class VolunteersController < ApplicationController
     @processed_volunteer_task_requests = volunteer_task_requests.processed.approved.order(created_at: :desc).paginate(page: params[:page], per_page: 15)
     @certifications = current_user.certifications
     @remaining_trainings = current_user.remaining_trainings
+  end
+
+  def calendar
+
+  end
+
+  def populate_users
+    json_data = User.all.volunteers.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
+    render json: { users: json_data }
+  end
+
+  def new_event
+
+  end
+
+  def shadowing_shifts
+    @shifts = current_user.shadowing_hours.where('end_time > ?', DateTime.now)
+    @all_shifts = ShadowingHour.where('end_time > ?', DateTime.now).all
+  end
+
+  def delete_event
+    if params[:event_id].present? && ShadowingHour.find_by(event_id: params[:event_id]).present?
+      space = ShadowingHour.find_by(event_id: params[:event_id]).space.name
+      event = ShadowingHour.delete_event(params[:event_id], space)
+
+      if event != 'error'
+        ShadowingHour.find_by(event_id: params[:event_id]).destroy!
+        flash[:notice] = "This shift has been cancelled."
+      else
+        flash[:alert] = "An error occured while deleting the shift."
+      end
+    else
+      flash[:alert] = "This shift has not been found."
+    end
+    redirect_to calendar_volunteers_path
+  end
+
+  def create_event
+    if (params[:space] == "makerspace" || params[:space] == "brunsfield centre") && params[:datepicker_start].present? && params[:datepicker_end].present? && params[:user_id] && User.find(params[:user_id]).present?
+
+      start_time = DateTime.parse(params[:datepicker_start].to_s).strftime("%Y-%m-%dT%k:%M:00")
+      end_time = DateTime.parse(params[:datepicker_end].to_s).strftime("%Y-%m-%dT%k:%M:00")
+      user = User.find(params[:user_id])
+
+      event = ShadowingHour.create_event(start_time, end_time, user, params[:space])
+
+      if event.status != "cancelled"
+        ShadowingHour.create!(user_id: user.id, start_time: start_time, end_time: end_time, event_id: event.id, space_id: Space.where('LOWER(name) = ?', params[:space].downcase).first.id)
+        flash[:notice] = "The shadowing shift has been added"
+      else
+        flash[:alert] = "An Error occurred"
+      end
+    else
+      flash[:alert] = "An error occurred, please make sure you choose a space."
+    end
+    redirect_to calendar_volunteers_path
   end
 
   private
