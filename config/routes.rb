@@ -387,6 +387,7 @@ Rails.application.routes.draw do
       get :resend_confirmation
       get :confirm_edited_email
       get :confirm
+      post :change_programs
       post :create, path: '/new'
       get :remove_avatar
       post :flag

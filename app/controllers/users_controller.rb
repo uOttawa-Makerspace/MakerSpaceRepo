@@ -163,8 +163,36 @@ class UsersController < SessionsController
     redirect_to settings_admin_path
   end
 
+  def change_programs
+    user =  User.find(params[:user_id])
+    if user.present? && (@user.staff? || @user.admin?)
+      if params[:dev_program].present?
+        user.programs.find_or_create_by(program_type: Program::DEV_PROGRAM)
+      else
+        if user.programs.find_by(program_type: Program::DEV_PROGRAM).present?
+          user.programs.find_by(program_type: Program::DEV_PROGRAM).destroy
+        end
+      end
+
+      if params[:volunteer].present?
+        user.programs.find_or_create_by(program_type: Program::VOLUNTEER)
+      else
+        if user.programs.find_by(program_type: Program::VOLUNTEER).present?
+          user.programs.find_by(program_type: Program::VOLUNTEER).destroy
+        end
+      end
+      flash[:notice] = "The programs for #{user.name} has been updated!"
+      redirect_to user_path(user.username)
+    else
+      flash[:alert] = 'An error occurred: A user must me selected; You need to be staff/admin to change the programs.'
+      redirect_to root_path
+    end
+
+  end
+
   def show
     @repo_user = User.find_by username: params[:username]
+    @programs = @repo_user.programs.pluck(:program_type)
     @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
     @repositories = if params[:username] == @user.username || @user.admin? || @user.staff?
                       @repo_user.repositories.where(make_id: nil).paginate(page: params[:page], per_page: 18)
