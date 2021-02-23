@@ -97,3 +97,7 @@ $(document).on('turbolinks:load', function () {
     console.log(clipboard);
 
 });
+
+window.clearEndDate = function() {
+    document.getElementById("end_date").value = null;
+}
