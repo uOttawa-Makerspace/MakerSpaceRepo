@@ -30,6 +30,3 @@ form.onsubmit = function(){
     document.getElementById('sign_in_user_fastsearch_username').value = [document.getElementById('user_dashboard_select').value];
     form.submit();
 };
-
-
-

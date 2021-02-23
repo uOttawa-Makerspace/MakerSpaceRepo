@@ -131,6 +131,15 @@ class StaffDashboardController < StaffAreaController
     redirect_back(fallback_location: root_path)
   end
 
+  def user_profile
+    if params[:username].present? and User.find_by(username: params[:username]).present?
+      redirect_to user_path(params[:username])
+    else
+      flash[:alert] = "A valid user must be selected"
+      redirect_to staff_dashboard_index_path
+    end
+  end
+
   def search
     if params[:query].blank? and params[:username].blank?
       flash[:alert] = 'No search parameters.'

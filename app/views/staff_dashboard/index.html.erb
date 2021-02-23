@@ -58,8 +58,9 @@
           </td>
 
           <td>
+            <%= render 'staff_dashboard/flag', staff_dashboard_user: user %>
             <% if user.flagged? %>
-              <button type="button" class="btn btn-sm btn-danger" data-toggle="tooltip" data-toggle="modal" data-placement="top" title="<%= user.flag_message %>">
+              <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#flag_message">
                 See Flag
               </button>
             <% else %>

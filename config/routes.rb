@@ -257,6 +257,7 @@ Rails.application.routes.draw do
     put 'link_rfid'
     put 'unlink_rfid'
     get 'sign_out_all_users'
+    get :user_profile
     get :populate_users
     post :import_excel
     get :refresh_capacity

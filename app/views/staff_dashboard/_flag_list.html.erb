@@ -1,0 +1,5 @@
+<% if !staff_dashboard_user.flag_message.blank? %>
+  <% staff_dashboard_user.flag_message.split('; ').drop(1).each_with_index do |flag, i| %>
+    <b class="word-break">(<%= i + 1 %>) <%= flag %></b> <br />
+  <% end %>
+<% end %>
