@@ -11,7 +11,7 @@ class Exam < ApplicationRecord
              passed: 'passed',
              failed: 'failed' }.freeze
 
-  SCORE_TO_PASS = 75
+  SCORE_TO_PASS = 68
 
   def calculate_score
     all_questions = exam_questions.count
