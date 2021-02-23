@@ -43,7 +43,7 @@ RSpec.describe Exam, type: :model do
 
     context 'score to pass exam' do
       it 'should return the score that user needs to achieve to pass exam' do
-        expect(Exam::SCORE_TO_PASS).to eq(75)
+        expect(Exam::SCORE_TO_PASS).to eq(68)
       end
     end
   end
