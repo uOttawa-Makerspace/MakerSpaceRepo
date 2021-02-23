@@ -84,15 +84,27 @@ class UsersController < SessionsController
   end
 
   def flag
-    if params[:flag].present? and params[:flagged_user].present? and @user.staff?
+    if params[:flagged_user].present? and params[:flag_message].present? and @user.staff?
       @flagged_user = User.find(params[:flagged_user])
-      if params[:flag] == "flag" and params[:flag_message].present?
-        @flagged_user.flagged = true
+      @flagged_user.flagged = true
+
+      if @flagged_user.flag_message.blank?
+        @flagged_user.flag_message = "; #{params[:flag_message]}"
+      else
         @flagged_user.flag_message += "; #{params[:flag_message]}"
-        @flagged_user.save
-      elsif params[:flag] == "unflag"
-        @flagged_user.update(flagged: false, flag_message: "")
       end
+
+      @flagged_user.save
+      redirect_to user_path(@flagged_user.username) and return
+    else
+      redirect_to user_path(@user.username) and return
+    end
+  end
+
+  def unflag
+    if params[:flagged_user].present? and @user.staff?
+      @flagged_user = User.find(params[:flagged_user])
+      @flagged_user.update(flagged: false, flag_message: nil)
       redirect_to user_path(@flagged_user.username) and return
     else
       redirect_to user_path(@user.username) and return
@@ -163,8 +175,36 @@ class UsersController < SessionsController
     redirect_to settings_admin_path
   end
 
+  def change_programs
+    user =  User.find(params[:user_id])
+    if user.present? && (@user.staff? || @user.admin?)
+      if params[:dev_program].present?
+        user.programs.find_or_create_by(program_type: Program::DEV_PROGRAM)
+      else
+        if user.programs.find_by(program_type: Program::DEV_PROGRAM).present?
+          user.programs.find_by(program_type: Program::DEV_PROGRAM).destroy
+        end
+      end
+
+      if params[:volunteer].present?
+        user.programs.find_or_create_by(program_type: Program::VOLUNTEER)
+      else
+        if user.programs.find_by(program_type: Program::VOLUNTEER).present?
+          user.programs.find_by(program_type: Program::VOLUNTEER).destroy
+        end
+      end
+      flash[:notice] = "The programs for #{user.name} has been updated!"
+      redirect_to user_path(user.username)
+    else
+      flash[:alert] = 'An error occurred: A user must me selected; You need to be staff/admin to change the programs.'
+      redirect_to root_path
+    end
+
+  end
+
   def show
     @repo_user = User.find_by username: params[:username]
+    @programs = @repo_user.programs.pluck(:program_type)
     @github_username = Octokit::Client.new(access_token: @repo_user.access_token).login
     @repositories = if params[:username] == @user.username || @user.admin? || @user.staff?
                       @repo_user.repositories.where(make_id: nil).paginate(page: params[:page], per_page: 18)
@@ -185,8 +225,8 @@ class UsersController < SessionsController
     @certifications = @repo_user.certifications.highest_level
     @remaining_trainings = @repo_user.remaining_trainings
     @skills = Skill.all
-    @proficient_projects_awarded = Proc.new{ |training| training.proficient_projects.where(id: @repo_user.order_items.awarded.pluck(:proficient_project_id)) }
-    @learning_modules_completed = Proc.new{ |training| training.learning_modules.where(id: @repo_user.learning_module_tracks.completed.pluck(:learning_module_id))}
+    @proficient_projects_awarded = Proc.new { |training| training.proficient_projects.where(id: @repo_user.order_items.awarded.pluck(:proficient_project_id)) }
+    @learning_modules_completed = Proc.new { |training| training.learning_modules.where(id: @repo_user.learning_module_tracks.completed.pluck(:learning_module_id)) }
     @recomended_hours = Proc.new { |training, levels| training.learning_modules.where(level: levels).count + training.proficient_projects.where(level: levels).count }
   end
 
@@ -240,11 +280,16 @@ class UsersController < SessionsController
 
   def sort_order
     case params[:sort]
-    when 'newest' then %i[created_at desc]
-    when 'most_likes' then %i[like desc]
-    when 'most_makes' then %i[make desc]
-    when 'recently_updated' then %i[updated_at desc]
-    else %i[created_at desc]
+    when 'newest' then
+      %i[created_at desc]
+    when 'most_likes' then
+      %i[like desc]
+    when 'most_makes' then
+      %i[make desc]
+    when 'recently_updated' then
+      %i[updated_at desc]
+    else
+      %i[created_at desc]
     end
   end
 

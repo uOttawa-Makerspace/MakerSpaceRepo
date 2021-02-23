@@ -257,6 +257,7 @@ Rails.application.routes.draw do
     put 'link_rfid'
     put 'unlink_rfid'
     get 'sign_out_all_users'
+    get :user_profile
     get :populate_users
     post :import_excel
     get :refresh_capacity
@@ -317,6 +318,12 @@ Rails.application.routes.draw do
       get :volunteer_list
       get :join_volunteer_program
       get :my_stats
+      get :calendar
+      get :shadowing_shifts
+      get :delete_event
+      get :create_event
+      get :new_event
+      get :populate_users
     end
   end
 
@@ -387,9 +394,11 @@ Rails.application.routes.draw do
       get :resend_confirmation
       get :confirm_edited_email
       get :confirm
+      post :change_programs
       post :create, path: '/new'
       get :remove_avatar
       post :flag
+      post :unflag
       get :change_email
       put :remove_flag
     end

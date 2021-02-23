@@ -88,18 +88,19 @@ class StaffDashboardController < StaffAreaController
   def change_space
     new_space = Space.find_by(id: params[:space_id])
     if new_space.present?
-      update_lab_session
-      new_sesh = LabSession.new(
-        user_id: current_user.id,
-        sign_in_time: Time.zone.now,
-        sign_out_time: Time.zone.now + 8.hours,
-        space_id: new_space.id
-      )
-      if new_sesh.save
-        flash[:notice] = 'Space changed successfully'
-      else
-        flash[:alert] = 'Something went wrong'
-      end
+      # update_lab_session
+      # new_sesh = LabSession.new(
+      #   user_id: current_user.id,
+      #   sign_in_time: Time.zone.now,
+      #   sign_out_time: Time.zone.now + 8.hours,
+      #   space_id: new_space.id
+      # )
+      # if new_sesh.save
+      #   flash[:notice] = 'Space changed successfully'
+      # else
+      #   flash[:alert] = 'Something went wrong'
+      # end
+      flash[:notice] = 'Space changed successfully'
     end
     if params[:training].present? and params[:training] == 'true'
       redirect_to new_staff_training_session_path
@@ -128,6 +129,15 @@ class StaffDashboardController < StaffAreaController
       rfid.save
     end
     redirect_back(fallback_location: root_path)
+  end
+
+  def user_profile
+    if params[:username].present? and User.find_by(username: params[:username]).present?
+      redirect_to user_path(params[:username])
+    else
+      flash[:alert] = "A valid user must be selected"
+      redirect_to staff_dashboard_index_path
+    end
   end
 
   def search

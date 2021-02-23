@@ -26,9 +26,10 @@ class Admin::ReportGeneratorController < AdminAreaController
     if params[:start_date].blank? || params[:end_date].blank?
       redirect_to admin_report_generator_popular_hours_path, alert: 'You need to select dates to get Popular Hours for a specific period.'
     else
-      @space = Space.find_by(id: params[:space_id]) || @user.lab_sessions&.last&.space || Space.first
+      @space = @user.lab_sessions&.last&.space || Space.first
+      @spaces = Space.all.order(name: :asc)
       @weekdays = Date::DAYNAMES
-      @info = PopularHour.popular_hours_per_period(params[:start_date].to_date, params[:end_date].to_date, @space)
+      @info = PopularHour.popular_hours_per_period(params[:start_date].to_date, params[:end_date].to_date)
     end
   end
 

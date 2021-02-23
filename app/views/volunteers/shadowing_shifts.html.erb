@@ -1,0 +1,66 @@
+<section class="text-center">
+  <h1>My next shadowing shifts</h1>
+
+  <% if @shifts.count > 0 %>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th scope="col">Space</th>
+          <th scope="col">Start Date/Time</th>
+          <th scope="col">End Date/Time</th>
+          <% if current_user.staff? || current_user.admin? %>
+            <th scope="col">Remove Event</th>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody>
+      <% @shifts.each do |s| %>
+        <tr>
+          <td><%= s.space.name %></td>
+          <td><%= s.start_time %></td>
+          <td><%= s.end_time %></td>
+          <% if current_user.staff? || current_user.admin? %>
+            <td><%= link_to "Cancel", delete_event_volunteers_path(event_id: s.event_id), class: "btn btn-danger", data: {confirm: "Are you sure you want to cancel the shadowing shift ?"} %></td>
+          <% end %>
+      <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p>You do not have any shifts planned.</p>
+    <p>You can create one for <%= link_to "Makerspace", new_event_volunteers_path(space: "makerspace") %> or <%= link_to "Brunsfield", new_event_volunteers_path(space: "brunsfield") %></p>
+  <% end %>
+</section>
+
+<% if current_user.staff? %>
+  <section class="text-center">
+    <h1>Volunteers' next shadowing shifts</h1>
+
+    <% if @all_shifts.count > 0 %>
+      <table class="table table-striped">
+        <thead>
+        <tr>
+          <th scope="col">Space</th>
+          <th scope="col">Name</th>
+          <th scope="col">Start Date/Time</th>
+          <th scope="col">End Date/Time</th>
+          <th scope="col">Remove Event</th>
+        </tr>
+        </thead>
+        <tbody>
+        <% @all_shifts.each do |s| %>
+          <tr>
+            <td><%= s.space.name %></td>
+            <td><%= s.user.name %></td>
+            <td><%= s.start_time %></td>
+            <td><%= s.end_time %></td>
+            <td><%= link_to "Cancel", delete_event_volunteers_path(event_id: s.event_id), class: "btn btn-danger", data: {confirm: "Are you sure you want to cancel the shadowing shift ?"} %></td>
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p>There isn't any shifts planned.</p>
+    <% end %>
+  </section>
+
+<% end %>

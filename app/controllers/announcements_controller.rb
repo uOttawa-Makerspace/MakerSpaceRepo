@@ -46,7 +46,7 @@ class AnnouncementsController < StaffAreaController
   private
 
     def announcement_params
-      params.require(:announcement).permit(:description, :public_goal, :active)
+      params.require(:announcement).permit(:description, :public_goal, :active, :end_date)
     end
 
     def set_announcement

@@ -30,10 +30,13 @@ RSpec.describe PopularHour, type: :model do
     context "#get_popular_hours_per_period" do
       it 'should make populate the hash' do
         create(:space)
-        hash = PopularHour.popular_hours_per_period(Date.today - 1.month, Date.today, Space.last)
-        expect(hash.length).to eq(7)
-        (0..6).each do |day|
-          expect(hash[day].length).to eq(24)
+        hash = PopularHour.popular_hours_per_period(Date.today - 1.month, Date.today)
+        expect(hash.length).to eq(Space.all.count)
+        Space.all.each do |space|
+          expect(hash[space.id].length).to eq(7)
+          (0..6).each do |day|
+            expect(hash[space.id][day].length).to eq(24)
+          end
         end
       end
     end
