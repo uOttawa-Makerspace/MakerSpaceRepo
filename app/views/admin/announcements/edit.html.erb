@@ -52,6 +52,7 @@
               <div class="form-group col-md-4 text-center">
                 <%= f.label :end_time, 'End Date (Optional)' %>
                 <%= f.text_field "end_date", autocomplete: 'off', class: "form-control", id: 'end_date' %>
+                <button class="btn btn-danger btn-sm" type="button" onclick="clearEndDate();">Clear End Date</button>
               </div>
               <div class="col-md-4"></div>
               <div class="col-lg-12 text-center">
