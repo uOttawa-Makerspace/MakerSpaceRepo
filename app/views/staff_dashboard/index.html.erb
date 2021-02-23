@@ -60,7 +60,7 @@
           <td>
             <%= render 'staff_dashboard/flag', staff_dashboard_user: user %>
             <% if user.flagged? %>
-              <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#flag_message">
+              <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#flag_message_<%= user.id %>">
                 See Flag
               </button>
             <% else %>
