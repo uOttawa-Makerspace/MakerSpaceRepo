@@ -2,7 +2,7 @@
 A website where makers can publish projects. An initiative by the University of Ottawa's
 [Centre for Entrepreneurship and Engineering Design (CEED)](https://engineering.uottawa.ca/CEED).
 
-[![CI Actions Status](https://github.com/uOttawa-Makerspace/MakerSpaceRepo/workflows/main/badge.svg)](https://github.com/uOttawa-Makerspace/MakerSpaceRepo/actions)
+[![Actions Status](https://github.com/uOttawa-Makerspace/MakerSpaceRepo/workflows/CI/badge.svg)](https://github.com/uOttawa-Makerspace/MakerSpaceRepo/actions)
 
 [![Build Status](https://travis-ci.com/uOttawa-Makerspace/MakerSpaceRepo.svg?branch=master)](https://travis-ci.com/uOttawa-Makerspace/MakerSpaceRepo)
 

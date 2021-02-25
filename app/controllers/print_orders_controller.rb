@@ -8,11 +8,11 @@ class PrintOrdersController < ApplicationController
   def index
     # TODO: Too much logic in index.html.erb
     @order = {
-        'approved is NULL' => 'Waiting for Staff Approval',
-        'user_approval is NULL and approved is TRUE' => 'Waiting for user Approval',
-        'user_approval is TRUE and approved is TRUE and printed is NULL' => 'Waiting to be printed',
-        'user_approval is TRUE and approved is TRUE and printed is TRUE' => 'Printed',
-        'user_approval is FALSE or approved is FALSE' => 'Declined'
+      'approved is NULL' => 'Waiting for Staff Approval',
+      'user_approval is NULL and approved is TRUE' => 'Waiting for user Approval',
+      'user_approval is TRUE and approved is TRUE and printed is NULL' => 'Waiting to be printed',
+      'user_approval is TRUE and approved is TRUE and printed is TRUE' => 'Printed',
+      'user_approval is FALSE or approved is FALSE' => 'Declined'
     }
 
     @print_order = if @user.staff? || @user.admin?
@@ -24,20 +24,20 @@ class PrintOrdersController < ApplicationController
 
   def index_new
     @order = {
-        # Postgresql request => [Completed steps, current step, [next steps ("" if none)]]
-        'approved is NULL' => ["Waiting on Admin's approval", ['Waiting on your approval', 'Queued to be printed', 'Printed']],
-        'user_approval is NULL and approved is TRUE' => ['Approved by Admins', 'Waiting on your approval', ['Queued to be printed', 'Printed']],
-        'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ['Approved by Admins', 'Approved by you', 'Queued to be printed', 'Currently being printed'],
-        'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Currently being printed', ''],
-        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Printed', ''],
-        "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Declined by admins', ''],
-        "user_approval is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Declined by you', '']
+      # Postgresql request => [Completed steps, current step, [next steps ("" if none)]]
+      'approved is NULL' => ["Waiting on Admin's approval", ['Waiting on your approval', 'Queued to be printed', 'Printed']],
+      'user_approval is NULL and approved is TRUE' => ['Approved by Admins', 'Waiting on your approval', ['Queued to be printed', 'Printed']],
+      'user_approval is TRUE and approved is TRUE and staff_id is NULL and printed is NULL' => ['Approved by Admins', 'Approved by you', 'Queued to be printed', 'Currently being printed'],
+      'user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is NULL' => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Currently being printed', ''],
+      "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at > NOW() - INTERVAL '7 days'" => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Printed', ''],
+      "approved is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Declined by admins', ''],
+      "user_approval is FALSE and updated_at > NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Declined by you', '']
     }
 
     @order_old = {
-        "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at < NOW() - INTERVAL '7 days'" => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Printed', ''],
-        "approved is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Declined by admins', ''],
-        "user_approval is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Declined by you', '']
+      "user_approval is TRUE and approved is TRUE and staff_id is NOT NULL and printed is TRUE and updated_at < NOW() - INTERVAL '7 days'" => ['Approved by Admins', 'Approved by you', 'Queue is done', 'Printed', ''],
+      "approved is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Declined by admins', ''],
+      "user_approval is FALSE and updated_at < NOW() - INTERVAL '7 days'" => ['Approved by admins', 'Declined by you', '']
     }
 
     @print_order = @user.print_orders.order(expedited: :desc, created_at: :desc)
@@ -91,7 +91,6 @@ class PrintOrdersController < ApplicationController
       params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:comments_box].to_s
     end
 
-
     if @print_order.update(print_order_params)
       flash[:notice] = "The print order has been updated!"
     else
@@ -119,7 +118,7 @@ class PrintOrdersController < ApplicationController
 
     @print_order = PrintOrder.create(print_order_params)
     if @print_order.id.nil? || @print_order.id == 0
-      redirect_to index_new_print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !'
+      redirect_to index_new_print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting and PDF for the team drawing !'
     else
       MsrMailer.send_print_to_makerspace(@print_order.id).deliver_now
       redirect_to index_new_print_orders_path, notice: 'The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision.'
@@ -218,23 +217,23 @@ class PrintOrdersController < ApplicationController
              end
     @table = if params[:type] == 'laser'
                [
-                   ['Laser - mdf 1/8" (Per Sheet)', prices[10], 15],
-                   ["Laser - mdf 1/4\" (Per Sheet)\t", prices[11], 15],
-                   ['Laser - acrylic 1/8" (Per Sheet)', prices[12], 15],
-                   ['Laser - acrylic 1/4" (Per Sheet)', prices[13], 15]
+                 ['Laser - mdf 1/8" (Per Sheet)', prices[10], 15],
+                 ["Laser - mdf 1/4\" (Per Sheet)\t", prices[11], 15],
+                 ['Laser - acrylic 1/8" (Per Sheet)', prices[12], 15],
+                 ['Laser - acrylic 1/4" (Per Sheet)', prices[13], 15]
                ]
              else
                [
-                   ['3D Low (PLA/ABS), (per g)', prices[0], 10],
-                   ['3D Medium (PLA/ABS), (per g)', prices[1], 10],
-                   ['3D High (PLA/ABS), (per g)', prices[2], 10],
-                   ['3D Low (Other Materials), (per g)', prices[3], 10],
-                   ['3D Medium (Other Materials), (per g)', prices[4], 10],
-                   ['3D High (Other Materials), (per g)', prices[5], 10],
-                   ['SST Printer (Per Hour)', prices[6], 10],
-                   ['M2 Onyx (per cm3)', prices[7], 10],
-                   ['M2 Carbon Fiber (per cm3)', prices[8], 10],
-                   ["M2 Fiberglass (per cm3)\t", prices[9], 10]
+                 ['3D Low (PLA/ABS), (per g)', prices[0], 10],
+                 ['3D Medium (PLA/ABS), (per g)', prices[1], 10],
+                 ['3D High (PLA/ABS), (per g)', prices[2], 10],
+                 ['3D Low (Other Materials), (per g)', prices[3], 10],
+                 ['3D Medium (Other Materials), (per g)', prices[4], 10],
+                 ['3D High (Other Materials), (per g)', prices[5], 10],
+                 ['SST Printer (Per Hour)', prices[6], 10],
+                 ['M2 Onyx (per cm3)', prices[7], 10],
+                 ['M2 Carbon Fiber (per cm3)', prices[8], 10],
+                 ["M2 Fiberglass (per cm3)\t", prices[9], 10]
                ]
              end
   end
