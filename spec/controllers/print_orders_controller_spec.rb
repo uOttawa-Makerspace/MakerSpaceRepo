@@ -164,7 +164,7 @@ RSpec.describe PrintOrdersController, type: :controller do
         print_order_params = FactoryBot.attributes_for(:print_order, :with_invalid_file)
         post :create, params: {print_order: print_order_params}
         expect(response).to redirect_to index_new_print_orders_path
-        expect(flash[:alert]).to eq('The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting !')
+        expect(flash[:alert]).to eq('The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting and PDF for the team drawing !')
         expect { post :create, params: {print_order: print_order_params} }.to change(PrintOrder, :count).by(0)
       end
     end

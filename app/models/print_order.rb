@@ -19,8 +19,8 @@ class PrintOrder < ApplicationRecord
 
   has_one_attached :pdf_form
   validates :pdf_form, file_content_type: {
-    allow: %w[application/pdf image/svg+xml text/html text/plain image/vnd.dxf image/x-dxf],
-    if: -> {file.attached?},
+    allow: %w[application/pdf text/plain],
+    if: -> {pdf_form.attached?},
   }
 
   def set_filename

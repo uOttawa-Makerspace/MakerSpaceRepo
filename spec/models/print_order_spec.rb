@@ -32,6 +32,18 @@ RSpec.describe PrintOrder, type: :model do
         expect(print_order.valid?).to be_truthy
       end
     end
+
+    context 'team pdf type validation' do
+      it 'should be false' do
+        print_order = build(:print_order, :with_invalid_final_file)
+        expect(print_order.valid?).to be_falsey
+      end
+
+      it 'should be true' do
+        print_order = build(:print_order, :with_final_file)
+        expect(print_order.valid?).to be_truthy
+      end
+    end
   end
 
   describe "after_save" do
