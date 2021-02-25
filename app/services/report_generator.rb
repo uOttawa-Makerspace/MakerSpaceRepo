@@ -678,6 +678,37 @@ class ReportGenerator
     spreadsheet
   end
 
+
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.generate_kit_purchased_report(start_date, end_date)
+    kits = ProjectKit.where('created_at' => start_date..end_date)
+
+    spreadsheet = Axlsx::Package.new
+
+    spreadsheet.workbook.add_worksheet(name: 'Report') do |sheet|
+      title(sheet, 'Purchased kits')
+
+      sheet.add_row ['From', start_date.strftime('%Y-%m-%d')]
+      sheet.add_row ['To', end_date.strftime('%Y-%m-%d')]
+      sheet.add_row # spacing
+
+      table_header(sheet, ['Kit name', 'User', 'Date', 'Delivery Status'])
+
+      kits.each do |kit|
+        status = kit.delivered? ? "Delivered": "Not yet delivered"
+        sheet.add_row [
+                        kit.proficient_project.title,
+                        kit.user.name,
+                        kit.created_at,
+                        status
+                      ]
+      end
+    end
+
+    spreadsheet
+  end
+
   # endregion
 
   # region Database helpers

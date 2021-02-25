@@ -12,7 +12,8 @@ class Admin::ReportGeneratorController < AdminAreaController
       ['Trainings', :trainings],
       ['Training Attendees', :training_attendees],
       ['Visitors', :visitors],
-      ['Visits by Hour', :visits_by_hour]
+      ['Visits by Hour', :visits_by_hour],
+      ['Kit purchased', :kit_purchased]
     ]
   end
 
@@ -97,6 +98,8 @@ class Admin::ReportGeneratorController < AdminAreaController
       spreadsheet = ReportGenerator.generate_new_projects_report(start_date, end_date)
     when 'visits_by_hour'
       spreadsheet = ReportGenerator.generate_peak_hours_report(start_date, end_date)
+    when 'kit_purchased'
+      spreadsheet = ReportGenerator.generate_kit_purchased_report(start_date, end_date)
     else
       render plain: 'Unknown report type', status: :bad_request
       return
