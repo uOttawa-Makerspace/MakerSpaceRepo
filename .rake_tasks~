@@ -57,6 +57,7 @@ increment_year:fix_this_year
 increment_year:increment_one_year
 log:clear
 middleware
+move_volunteer_to_volunteer_program:move
 paperclip:clean
 paperclip:find_broken_attachments
 paperclip:refresh
