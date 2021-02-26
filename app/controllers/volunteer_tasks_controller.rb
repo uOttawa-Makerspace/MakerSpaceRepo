@@ -25,6 +25,12 @@ class VolunteerTasksController < ApplicationController
       if params[:certifications_id].present?
         @volunteer_task.create_certifications(params[:certifications_id])
       end
+      if params[:staff_id].present?
+
+      end
+      if params[:volunteer_id].present?
+
+      end
       redirect_to new_volunteer_task_path
       flash[:notice] = "You've successfully created a new Volunteer Task"
     end
