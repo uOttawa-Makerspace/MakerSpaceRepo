@@ -14,7 +14,11 @@ class StaffAreaController < SessionsController
     end
 
     def default_space
-      @space = current_user.lab_sessions&.last&.space || Space.first
+      if current_user.space.present?
+        @space = current_user.space
+      else
+        @space = Space.first
+      end
     end
 
     def define_spaces
