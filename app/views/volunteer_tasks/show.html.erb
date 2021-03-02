@@ -2,7 +2,8 @@
   <div class="text-center">
 
     <h2>Volunteer Task: <%= @volunteer_task.title.capitalize %></h2>
-    <br />
+    <%= link_to "Edit", edit_volunteer_task_path(@volunteer_task), class: "btn btn-primary" %>
+    <br><br>
 
     <h6><b>Category:</b> <%= @volunteer_task.category.capitalize %></h6>
     <br />
@@ -119,35 +120,35 @@
         <% end %>
       </div>
 
-      <% if current_user.staff? %>
+      <%# if current_user.staff? %>
 
-        <div class="col-12">
-          <p>Add Required Certifications for this Task:</p>
-          <%= form_for @new_required_training, url: {controller: "require_trainings", action: "create"} do |f| %>
-            <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%= f.select :training_id, @trainings, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
-            <br />
-            <br />
-            <%= f.submit "Add Required Certification", class: "btn btn-primary mb-5" %>
-          <% end %>
-        </div>
+<!--        <div class="col-12">-->
+<!--          <p>Add Required Certifications for this Task:</p>-->
+          <%#= form_for @new_required_training, url: {controller: "require_trainings", action: "create"} do |f| %>
+            <%#= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
+            <%#= f.select :training_id, @trainings, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+<!--            <br />-->
+<!--            <br />-->
+            <%#= f.submit "Add Required Certification", class: "btn btn-primary mb-5" %>
+          <%# end %>
+<!--        </div>-->
 
-        <div class="col-12">
-          <p>Remove Required Certifications for this Task:</p>
-          <%= form_for @new_required_training, url: {controller: "require_trainings", action: "remove_trainings"} do |f| %>
-            <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%= f.select :training_id, @trainings_already_added, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
-            <br />
-            <br />
-            <%= f.submit "Remove Required Certification", class: "btn btn-danger mb-5" %>
-          <% end %>
-        </div>
+<!--        <div class="col-12">-->
+<!--          <p>Remove Required Certifications for this Task:</p>-->
+          <%#= form_for @new_required_training, url: {controller: "require_trainings", action: "remove_trainings"} do |f| %>
+            <%#= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
+            <%#= f.select :training_id, @trainings_already_added, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+<!--            <br />-->
+<!--            <br />-->
+            <%#= f.submit "Remove Required Certification", class: "btn btn-danger mb-5" %>
+          <%# end %>
+<!--        </div>-->
 
-        <%= render "volunteer_task_joins/new" %>
+        <%#= render "volunteer_task_joins/new" %>
 
-        <%= render "volunteer_task_joins/remove" %>
+        <%#= render "volunteer_task_joins/remove" %>
 
-      <% end %>
+      <%# end %>
       </div>
 
     </div>

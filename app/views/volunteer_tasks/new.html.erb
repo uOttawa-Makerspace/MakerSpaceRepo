@@ -99,9 +99,10 @@
               </div>
 
               <div class="col-md-6">
-                  <%= label_tag :volunteer_id, 'Add Volunteer to this Task:' %>
+                  <%= label_tag :volunteer_id, 'Add Volunteer to this Task:', class: 'font-weight-bold' %>
                   <%= select_tag :volunteer_id, options_from_collection_for_select(User.all.volunteers, 'id', 'name'), {prompt: "Choose Volunteer", class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
               </div>
+
 
               <div class="col-lg-12 text-center">
                 <br>

@@ -25,20 +25,8 @@ class VolunteerTasksController < ApplicationController
       if params[:certifications_id].present?
         @volunteer_task.create_certifications(params[:certifications_id])
       end
-      if params[:staff_id].present? && (User.find(params[:staff_id]).staff?)
-        @volunteer_task_join = VolunteerTaskJoin.new(volunteer_task_id: @volunteer_task.id, user_id: params[:staff_id])
-        if @volunteer_task_join.save
-          @volunteer_task_join.update(user_type: User.find(params[:staff_id]).role.capitalize)
-        else
-          flash[:error] = "The staff could not be added to this task, please try again later."
-        end
-      end
-      if params[:volunteer_id].present?
-        @volunteer_task_join = VolunteerTaskJoin.new(volunteer_task_id: @volunteer_task.id, user_id: params[:volunteer_id])
-        unless @volunteer_task_join.save
-          flash[:error] = "The volunteer could not be added to this task, please try again later."
-        end
-      end
+      add_volunteer_join(@volunteer_task.id)
+      remove_volunteer_join(@volunteer_task.id)
       redirect_to volunteer_tasks_path
       flash[:notice] = "You've successfully created a new Volunteer Task"
     end
@@ -77,6 +65,8 @@ class VolunteerTasksController < ApplicationController
     @volunteer_task = VolunteerTask.find(params[:id])
     @tasks_categories = %w[Events Projects Supervising Workshops Other]
     @certifications = Training.all
+    @volunteers_in_task = User.joins(:programs).where(programs: {program_type: Program::VOLUNTEER}, id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+    @staff_in_task = User.where('users.role = ? OR users.role = ?', 'staff', 'admin').where(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
   end
 
   def update
@@ -85,6 +75,8 @@ class VolunteerTasksController < ApplicationController
     if params[:certifications_id].present?
       volunteer_task.create_certifications(params[:certifications_id])
     end
+    add_volunteer_join(volunteer_task.id)
+    remove_volunteer_join(volunteer_task.id)
     if volunteer_task.update(volunteer_task_params)
       flash[:notice] = 'Volunteer task updated'
     else
@@ -117,6 +109,39 @@ class VolunteerTasksController < ApplicationController
     if !current_user.staff? && !current_user.volunteer?
       flash[:alert] = 'You cannot access this area.'
       redirect_to root_path
+    end
+  end
+
+  def add_volunteer_join(task_id)
+    @volunteer_task = VolunteerTask.find(task_id)
+    if params[:staff_id].present? && (User.find(params[:staff_id]).staff?)
+      @volunteer_task_join = VolunteerTaskJoin.new(volunteer_task_id: @volunteer_task.id, user_id: params[:staff_id])
+      if @volunteer_task_join.save
+        @volunteer_task_join.update(user_type: User.find(params[:staff_id]).role.capitalize)
+      else
+        flash[:error] = "The staff could not be added to this task, please try again later."
+      end
+    end
+    if params[:volunteer_id].present?
+      @volunteer_task_join = VolunteerTaskJoin.new(volunteer_task_id: @volunteer_task.id, user_id: params[:volunteer_id])
+      unless @volunteer_task_join.save
+        flash[:error] = "The volunteer could not be added to this task, please try again later."
+      end
+    end
+  end
+
+  def remove_volunteer_join(task_id)
+    if params[:remove_staff_id].present? && (User.find(params[:remove_staff_id]).staff?)
+      @volunteer_join_staff = VolunteerTaskJoin.find_by(user_id: params[:remove_staff_id], volunteer_task_id: task_id)
+      unless @volunteer_join_staff.destroy
+        flash[:error] = "The staff could not be delete from this task, please try again later."
+      end
+    end
+    if params[:remove_volunteer_id].present?
+      @volunteer_join_volunteer = VolunteerTaskJoin.find_by(user_id: params[:remove_volunteer_id], volunteer_task_id: task_id)
+      unless @volunteer_join_volunteer.destroy
+        flash[:error] = "The volunteer could not be delete from this task, please try again later."
+      end
     end
   end
 
