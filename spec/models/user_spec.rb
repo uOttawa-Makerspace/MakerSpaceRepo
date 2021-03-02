@@ -10,6 +10,10 @@ RSpec.describe User, type: :model do
 
   describe 'Association' do
 
+    context 'belongs_to' do
+      it { should belong_to(:space) }
+    end
+
     context 'has_one' do
       it { should have_one(:rfid) }
     end
