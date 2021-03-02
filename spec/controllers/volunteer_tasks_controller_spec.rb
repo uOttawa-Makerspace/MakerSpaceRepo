@@ -59,7 +59,7 @@ RSpec.describe VolunteerTasksController, type: :controller do
         volunteer_task_params = FactoryBot.attributes_for(:volunteer_task)
         expect { post :create, params: {volunteer_task: volunteer_task_params} }.to change(VolunteerTask, :count).by(1)
         expect(flash[:notice]).to eq("You've successfully created a new Volunteer Task")
-        expect(response).to redirect_to new_volunteer_task_path
+        expect(response).to redirect_to volunteer_tasks_path
       end
 
       it 'should create a volunteer task with certifications' do
@@ -69,7 +69,19 @@ RSpec.describe VolunteerTasksController, type: :controller do
         expect { post :create, params: {volunteer_task: volunteer_task_params, certifications_id: [t1.id, t2.id]} }.to change(VolunteerTask, :count).by(1)
         expect(RequireTraining.where(volunteer_task_id: VolunteerTask.last.id).count).to eq(2)
         expect(flash[:notice]).to eq("You've successfully created a new Volunteer Task")
-        expect(response).to redirect_to new_volunteer_task_path
+        expect(response).to redirect_to volunteer_tasks_path
+      end
+
+      it 'should create a volunteer task with staff' do
+        volunteer_task_params = FactoryBot.attributes_for(:volunteer_task)
+        staff = create(:user, :staff)
+        t1 = create(:training)
+        t2 = create(:training)
+        expect { post :create, params: {volunteer_task: volunteer_task_params, certifications_id: [t1.id, t2.id], staff_id: staff.id} }.to change(VolunteerTask, :count).by(1)
+        expect(RequireTraining.where(volunteer_task_id: VolunteerTask.last.id).count).to eq(2)
+        expect(VolunteerTaskJoin.where(volunteer_task_id: VolunteerTask.last.id).count).to eq(1)
+        expect(flash[:notice]).to eq("You've successfully created a new Volunteer Task")
+        expect(response).to redirect_to volunteer_tasks_path
       end
 
     end

@@ -25,7 +25,7 @@ class VolunteersController < ApplicationController
 
   def join_volunteer_program
     if current_user.staff?
-      flash[:notice] = 'You already have access to the Volunteer Area.'
+      flash[:notice] = 'You already have access to the Volunteer Program.'
     else
       Program.create(user_id: current_user.id, program_type: Program::VOLUNTEER, active: true)
       flash[:notice] = "You've joined the Volunteer Program"
