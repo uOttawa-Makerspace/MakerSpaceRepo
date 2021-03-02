@@ -25,13 +25,21 @@ class VolunteerTasksController < ApplicationController
       if params[:certifications_id].present?
         @volunteer_task.create_certifications(params[:certifications_id])
       end
-      if params[:staff_id].present?
-
+      if params[:staff_id].present? && (User.find(params[:staff_id]).staff?)
+        @volunteer_task_join = VolunteerTaskJoin.new(volunteer_task_id: @volunteer_task.id, user_id: params[:staff_id])
+        if @volunteer_task_join.save
+          @volunteer_task_join.update(user_type: User.find(params[:staff_id]).role.capitalize)
+        else
+          flash[:error] = "The staff could not be added to this task, please try again later."
+        end
       end
       if params[:volunteer_id].present?
-
+        @volunteer_task_join = VolunteerTaskJoin.new(volunteer_task_id: @volunteer_task.id, user_id: params[:volunteer_id])
+        unless @volunteer_task_join.save
+          flash[:error] = "The volunteer could not be added to this task, please try again later."
+        end
       end
-      redirect_to new_volunteer_task_path
+      redirect_to volunteer_tasks_path
       flash[:notice] = "You've successfully created a new Volunteer Task"
     end
   end
