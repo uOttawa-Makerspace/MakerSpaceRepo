@@ -254,7 +254,7 @@ RSpec.describe VolunteersController, type: :controller do
         session[:user_id] = staff.id
         session[:expires_at] = Time.zone.now + 10000
         get :join_volunteer_program
-        expect(flash[:notice]).to eq('You already have access to the Volunteer Area.')
+        expect(flash[:notice]).to eq('You already have access to the Volunteer Program.')
         expect(response).to redirect_to volunteers_path
       end
 
@@ -264,7 +264,6 @@ RSpec.describe VolunteersController, type: :controller do
         session[:expires_at] = Time.zone.now + 10000
         get :join_volunteer_program
         expect(flash[:notice]).to eq("You've joined the Volunteer Program")
-        expect(User.last.role).to eq('volunteer')
         expect(Program.last.user_id).to eq(user.id)
         expect(response).to redirect_to volunteers_path
       end

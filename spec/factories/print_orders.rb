@@ -24,6 +24,14 @@ FactoryBot.define do
       final_file { [FilesTestHelper.png] }
     end
 
+    trait :with_pdf_form do
+      final_file { [FilesTestHelper.pdf] }
+    end
+
+    trait :with_invalid_pdf_form do
+      final_file { [FilesTestHelper.png] }
+    end
+
     trait :approved do
       approved { true }
       service_charge { 20 }

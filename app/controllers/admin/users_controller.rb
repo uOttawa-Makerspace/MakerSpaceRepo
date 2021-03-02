@@ -136,7 +136,7 @@ class Admin::UsersController < AdminAreaController
   def manage_roles
     @admins = User.where(role: 'admin')
     @staff = User.where(role: 'staff')
-    @volunteers = User.volunteers
+    @volunteers = User.joins(:programs).where(programs: { program_type: Program::VOLUNTEER })
     @roles = %w[admin staff regular_user]
   end
 
