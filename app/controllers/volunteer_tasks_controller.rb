@@ -56,7 +56,7 @@ class VolunteerTasksController < ApplicationController
     @volunteer_task_trainings = volunteer_task_trainings
     @volunteer_task_request = @volunteer_task.volunteer_task_requests.where(user_id: current_user.id).not_processed.try(:last)
     if current_user.staff?
-      @volunteers = User.where(role: 'volunteer').where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
+      @volunteers = User.joins(:programs).where(programs: {program_type: Program::VOLUNTEER}).where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
       @staff = User.where('users.role = ? OR users.role = ?', 'staff', 'admin').where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
       @volunteers_in_task = User.joins(:programs).where(programs: {program_type: Program::VOLUNTEER}, id: @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
       @staff_in_task = User.where('users.role = ? OR users.role = ?', 'staff', 'admin').where(id: @volunteer_task.volunteer_task_joins.pluck(:user_id)).pluck(:name, :id)
