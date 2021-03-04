@@ -48,7 +48,7 @@ end
 
 # At 7:30am of First day of every week
 every :monday, at: '7am' do
-  runner "MsrMailer.send_training_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca]).deliver_now"
+  runner "MsrMailer.send_training_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca']).deliver_now"
 end
 
 every :sunday, at: '1am' do
