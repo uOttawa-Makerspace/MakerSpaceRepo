@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_02_16_184944) do
+ActiveRecord::Schema.define(version: 2021_03_16_160541) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -606,6 +606,7 @@ ActiveRecord::Schema.define(version: 2021_02_16_184944) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "max_capacity"
+    t.integer "destroy_admin_id"
   end
 
   create_table "spaces_trainings", id: false, force: :cascade do |t|
@@ -686,6 +687,8 @@ ActiveRecord::Schema.define(version: 2021_02_16_184944) do
     t.boolean "flagged"
     t.string "flag_message", default: ""
     t.boolean "confirmed", default: false
+    t.bigint "space_id"
+    t.index ["space_id"], name: "index_users_on_space_id"
   end
 
   create_table "videos", id: :serial, force: :cascade do |t|
@@ -784,6 +787,7 @@ ActiveRecord::Schema.define(version: 2021_02_16_184944) do
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
+  add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
 end

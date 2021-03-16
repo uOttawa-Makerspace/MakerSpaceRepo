@@ -80,6 +80,10 @@ RSpec.describe Admin::SpacesController, type: :controller do
     context 'destroy space' do
       it 'should delete the space' do
         space = create(:space)
+        expect { delete :destroy, params: {id: space.id, space_id:space.id, admin_input: space.name.upcase} }.to change(Space, :count).by(0)
+        session[:expires_at] = DateTime.tomorrow.end_of_day
+        admin2 = create(:user, :admin)
+        session[:user_id] = admin2.id
         expect { delete :destroy, params: {id: space.id, space_id:space.id, admin_input: space.name.upcase} }.to change(Space, :count).by(-1)
         expect(flash[:notice]).to eq('Space deleted!')
         expect(response).to redirect_to admin_spaces_path
