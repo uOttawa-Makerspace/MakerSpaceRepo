@@ -80,6 +80,12 @@ class RepositoriesController < SessionsController
 
     if @repository.save
       @user.increment!(:reputation, 25)
+
+      if params[:owner].present?
+        @repository.users << User.find_by(username: params[:owner])
+        @repository.save
+      end
+
       create_photos
       create_files
       create_categories
@@ -179,6 +185,11 @@ class RepositoriesController < SessionsController
       flash[:alert] = 'Something went wrong.'
     end
     redirect_to repository_path(repository.user_username, repository.slug)
+  end
+
+  def populate_users
+    json_data = User.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
+    render json: { users: json_data }
   end
 
   private
