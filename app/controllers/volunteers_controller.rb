@@ -36,8 +36,13 @@ class VolunteersController < ApplicationController
   def my_stats
     volunteer_task_requests = current_user.volunteer_task_requests
     @processed_volunteer_task_requests = volunteer_task_requests.processed.approved.order(created_at: :desc).paginate(page: params[:page], per_page: 15)
-    @certifications = current_user.certifications
+    @certifications = current_user.certifications.highest_level
     @remaining_trainings = current_user.remaining_trainings
+    @skills = Skill.all
+    @proficient_projects_awarded = Proc.new { |training| training.proficient_projects.where(id: current_user.order_items.awarded.pluck(:proficient_project_id)) }
+    @learning_modules_completed = Proc.new { |training| training.learning_modules.where(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)) }
+    @recommended_hours = Proc.new { |training, levels| training.learning_modules.where(level: levels).count + training.proficient_projects.where(level: levels).count }
+
   end
 
   def calendar

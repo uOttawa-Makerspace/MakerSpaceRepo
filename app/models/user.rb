@@ -3,7 +3,7 @@
 class User < ApplicationRecord
   include BCrypt
   include ActiveModel::Serialization
-
+  belongs_to :space
   has_one :rfid, dependent: :destroy
   has_many :upvotes, dependent: :destroy
   has_many :comments, dependent: :destroy

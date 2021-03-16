@@ -17,6 +17,7 @@ RSpec.describe Space, type: :model do
       it { should have_many(:volunteer_tasks) }
       it { should have_many(:popular_hours) }
       it { should have_many(:shadowing_hours) }
+      it { should have_many(:users) }
     end
   end
 

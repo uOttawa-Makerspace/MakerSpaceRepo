@@ -87,24 +87,30 @@ class StaffDashboardController < StaffAreaController
 
   def change_space
     new_space = Space.find_by(id: params[:space_id])
-    if new_space.present?
+    current_user.update(space_id: new_space.id)
+    if new_space.present? && (current_user.space_id = params[:space_id])
       @space = new_space
-      update_lab_session
-      new_sesh = LabSession.new(
-        user_id: current_user.id,
-        sign_in_time: Time.zone.now,
-        sign_out_time: Time.zone.now,
-        space_id: new_space.id
-      )
-      if new_sesh.save
-        flash[:notice] = 'Space changed successfully'
-      else
-        flash[:alert] = 'Something went wrong'
-      end
       flash[:notice] = 'Space changed successfully'
+      # update_lab_session
+      # new_sesh = LabSession.new(
+      #   user_id: current_user.id,
+      #   sign_in_time: Time.zone.now,
+      #   sign_out_time: Time.zone.now,
+      #   space_id: new_space.id
+      # )
+      # if new_sesh.save
+      #   flash[:notice] = 'Space changed successfully'
+      # else
+      #   flash[:alert] = 'Something went wrong'
+      # end
+      # flash[:notice] = 'Space changed successfully'
+    else
+      flash[:alert] = 'Something went wrong'
     end
     if params[:training].present? and params[:training] == 'true'
       redirect_to new_staff_training_session_path
+    elsif params[:questions].present? and params[:questions] == 'true'
+      redirect_to questions_path
     else
       redirect_to staff_dashboard_index_path
     end

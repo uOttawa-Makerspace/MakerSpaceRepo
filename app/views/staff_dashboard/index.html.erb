@@ -4,12 +4,14 @@
 
     <br>
 
+
     <div class="max_capacity_alert">
       <%= render :partial => 'max_capacity_warning', space: @space %>
     </div>
 
     <h2 class="text-center pt-2 mb-5">Welcome to
-      <strong><%= link_to "#{@space.name.capitalize}", staff_dashboard_index_path %></strong></h2>
+      <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "custom-select", :onchange => 'setSpace()' %></strong>
+    </h2>
 
     <div style="float:right;">
       <%= link_to 'Download Excel Template', asset_path('excel/ImportUsersTemplate.xlsx'), download: 'ImportUsersTemplate.xlsx', class: "btn btn-secondary" %>

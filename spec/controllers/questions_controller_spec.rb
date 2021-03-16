@@ -16,7 +16,8 @@ RSpec.describe QuestionsController, type: :controller do
       it 'should return 200 response' do
         get :index
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@questions).count).to eq(7)
+        expect(@controller.instance_variable_get(:@questions).count).to eq(0)
+        expect(Question.all.count).to eq(7)
       end
     end
 
