@@ -1,11 +1,12 @@
 <section class="page-contents">
   <div class="py-3 padding-10 text-center">
 
-    <h2 class="font-weight-bold">Questions</h2>
+    <h2 class="font-weight-bold">Questions for </h2>
 
     <%= link_to "New Question", new_question_path, :class=>"btn btn-primary m-5" %>
 
     <% if !@questions.blank? %>
+
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: category, description, ..." class="form-control mx-auto">
 
       <br />
