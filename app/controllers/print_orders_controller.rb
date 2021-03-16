@@ -188,8 +188,13 @@ class PrintOrdersController < ApplicationController
 
   def destroy
     @print_order = PrintOrder.find(params[:id])
-    user_id = @print_order.user_id
-    @print_order.destroy
+    if @user.staff? || @print_order.approved.nil?
+      user_id = @print_order.user_id
+      @print_order.destroy
+      flash[:notice] = "The print order has been cancelled."
+    else
+      flash[:alert] = "You cannot delete this print order. Please send an email to makerspace@uottawa.ca if you have any questions and add the order ID in the subject of the email."
+    end
     if @user.id == user_id
       redirect_to index_new_print_orders_path
     else
