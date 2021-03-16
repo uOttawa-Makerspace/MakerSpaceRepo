@@ -1,6 +1,7 @@
 require("select2");
 
 $(".user_dashboard_select").select2({
+    theme: "bootstrap",
     ajax: {
         url: "staff_dashboard/populate_users",
         type: "GET",
