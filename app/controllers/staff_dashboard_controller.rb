@@ -109,6 +109,8 @@ class StaffDashboardController < StaffAreaController
     end
     if params[:training].present? and params[:training] == 'true'
       redirect_to new_staff_training_session_path
+    elsif params[:questions].present? and params[:questions] == 'true'
+      redirect_to questions_path
     else
       redirect_to staff_dashboard_index_path
     end
