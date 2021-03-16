@@ -1,21 +1,21 @@
 <p>Search for users to sign them in or out of <%= @space.name.capitalize %>:</p>
-<div class="row" style="flex-direction: row; flex-wrap: nowrap">
-  <div style="flex-grow: 1">
+<div class="row">
+  <div class="col-md-9">
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
       <div class="form-group">
         <%= select_tag(:username, "", prompt: "Choose User...", :class => "user_dashboard_select form-control", :id => "user_dashboard_select") %>
       </div>
     <% end %>
   </div>
-  <div>
+  <div class="col-md-3">
     <div class="form-inline">
       <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: "sign_in_user_fastsearch", remote: true do %>
         <%= hidden_field_tag :added_users, "", { :id => "sign_in_user_fastsearch_username" } %>
-        <%= submit_tag "Sign In", class: 'btn btn-info btn-sm btn-block', style: "margin-left: 8px;" %>
+        <%= submit_tag "Sign In", class: 'btn btn-info btn-sm', style: 'margin-right: 16px;' %>
       <% end %>
       <%= form_tag staff_dashboard_user_profile_path, method: :get, id: "search_user_fastsearch" do %>
         <%= hidden_field_tag :username, "", { :id => "search_user_fastsearch_username" } %>
-        <%= submit_tag "Search", class: 'btn btn-info btn-sm btn-block', style: "margin-left: 16px;" %>
+        <%= submit_tag "Search", class: 'btn btn-info btn-sm' %>
       <% end %>
     </div>
   </div>

@@ -1,6 +1,9 @@
 <section class="page-contents">
   <div class="padding-10">
-    <h2><%= link_to "Welcome to #{@space.name.capitalize}", staff_dashboard_index_path%></h2>
+    <br>
+    <h2 class="text-center">Welcome to
+      <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "custom-select", :onchange => 'setSpace()' %></strong>
+    </h2>
     <%= render 'search' %>
     <br />
     <% if @users.any? %>

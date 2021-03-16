@@ -1,6 +1,5 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
 
-  <a class="navbar-brand" href="<%= staff_dashboard_index_path %>"> <strong><%= @space.name %></strong> Staff <strong>Area</strong></a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -15,7 +14,3 @@
       </ul>
   </div>
 </nav>
-
-<div class="pl-3 pr-3 pt-1 pb-3">
-  <%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: 'Change Space...', class: "form-control", id: "set_space_id", :onchange => 'setSpace()' %>
-</div>
