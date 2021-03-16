@@ -6,7 +6,8 @@ window.setSpace = function(){
         type: "PUT",
         data: {
             space_id: space_id,
-            training: document.URL.includes("training_sessions")
+            training: document.URL.includes("training_sessions"),
+            questions: document.URL.includes("questions")
         }
     })
 }

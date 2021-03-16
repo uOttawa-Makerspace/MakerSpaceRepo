@@ -6,11 +6,7 @@ class QuestionsController < StaffAreaController
   before_action :set_levels, :set_categories, only: %i[new edit remove_answer add_answer]
 
   def index
-    if params[:space].present? && Space.find(params[:space]).present?
-      @questions = Question.where(id: Question.joins(trainings: :spaces).merge(Space.where(id: params[:space])).uniq.pluck(:id)).order(created_at: :desc).paginate(page: params[:page], per_page: 50)
-    else
-      @questions = Question.where(id: Question.joins(trainings: :spaces).merge(Space.where(id: @space.id)).uniq.pluck(:id)).order(created_at: :desc).paginate(page: params[:page], per_page: 50)
-    end
+    @questions = Question.where(id: Question.joins(trainings: :spaces).merge(Space.where(id: @space.id)).uniq.pluck(:id)).order(created_at: :desc).paginate(page: params[:page], per_page: 50)
   end
 
   def new
