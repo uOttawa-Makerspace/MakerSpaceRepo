@@ -154,7 +154,7 @@ class RepositoriesController < SessionsController
     else
       flash[:alert] = 'Something went wrong.'
     end
-    redirect_back(fallback_location: root_path)
+    redirect_to repository_path(repository.user_username, repository.slug)
   end
 
   def add_owner
@@ -166,7 +166,7 @@ class RepositoriesController < SessionsController
     else
       flash[:alert] = 'Something went wrong.'
     end
-    redirect_back(fallback_location: root_path)
+    redirect_to repository_path(repository.user_username, repository.slug)
   end
 
   def remove_owner
@@ -178,7 +178,7 @@ class RepositoriesController < SessionsController
     else
       flash[:alert] = 'Something went wrong.'
     end
-    redirect_back(fallback_location: root_path)
+    redirect_to repository_path(repository.user_username, repository.slug)
   end
 
   private
