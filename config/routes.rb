@@ -413,6 +413,7 @@ Rails.application.routes.draw do
     collection do
       get ':id/download_files', :as => 'download_files', :action => 'download_files'
       get ':id/download', :as => 'download', :action => 'download'
+      get :populate_users
       patch :link_to_pp
       patch :add_owner
       patch :remove_owner

@@ -18,4 +18,32 @@ window.togglePass = function() {
 $(document).on("turbolinks:load", function() {
     $("#search_users_add").select2({});
     $("#search_users_remove").select2({});
+    $("#owner_select").select2({
+        theme: "bootstrap",
+        placeholder: "Select a user",
+        allowClear: true,
+        ajax: {
+            url: "populate_users",
+            type: "GET",
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    search: params.term
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: $.map(data.users, function (item) {
+                        return {
+                            text: item.name,
+                            id: item.username
+                        }
+                    })
+                };
+            },
+        },
+        minimumInputLength: 3,
+    });
 });
+
