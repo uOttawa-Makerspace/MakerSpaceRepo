@@ -46,6 +46,10 @@ end
 #   runner "MsrMailer.send_weekly_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com']).deliver_now"
 # end
 
+every '0 0 9 1 9 ? 2021/2' do
+  runner "MsrMailer.send_profile_update.deliver_now"
+end
+
 # At 7:30am of First day of every week
 every :monday, at: '7am' do
   runner "MsrMailer.send_training_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca']).deliver_now"
