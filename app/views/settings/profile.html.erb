@@ -1,6 +1,6 @@
 <% provide(:title, "Settings") %>
 
-<%= form_for @user, url: user_path(@user.username), method: :patch do |f| %>
+<%= form_for @user, url: user_path(@user.username), html: {class: 'form needs-validation', novalidate: true}, method: :patch do |f| %>
 
   <div class="edit-column">
     <div class="setting-title"><%= t('settings.profile.title') %></div>
@@ -30,7 +30,31 @@
     <%= f.text_field :name, class: "profile-text form-control", autofocus: true %>
     </div>
 
-    <% if @user.identity == "undergrad" or @user.identity == "grad" %>
+    <div class="form-group">
+      <%= f.label :identity, t('users.new.form.i_am'), required: true %>
+
+      <div class="custom-control custom-radio">
+        <%= f.radio_button :identity, 'undergrad', class: 'custom-control-input', 'data-show': '#students-only' %>
+        <%= f.label :identity, t('users.new.form.undergrad'), class: 'custom-control-label', value: 'undergrad' %>
+      </div>
+
+      <div class="custom-control custom-radio">
+        <%= f.radio_button :identity, 'grad', class: 'custom-control-input', 'data-show': '#students-only' %>
+        <%= f.label :identity, t('users.new.form.grad'), class: 'custom-control-label', value: 'grad' %>
+      </div>
+
+      <div class="custom-control custom-radio">
+        <%= f.radio_button :identity, 'faculty_member', class: 'custom-control-input', 'data-hide': '#students-only' %>
+        <%= f.label :identity, t('users.new.form.faculty_member'), class: 'custom-control-label', value: 'faculty_member' %>
+      </div>
+
+      <div class="custom-control custom-radio">
+        <%= f.radio_button :identity, 'community_member', class: 'custom-control-input', 'data-hide': '#students-only' %>
+        <%= f.label :identity, t('users.new.form.community_member'), class: 'custom-control-label', value: 'community_member' %>
+      </div>
+    </div>
+
+    <fieldset id="students-only">
       <div class="form-group">
         <%= f.label :faculty , t('settings.profile.faculty') , class: "profile-label" %>
         <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
@@ -42,7 +66,21 @@
         <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
         <%= f.select :program, @programs, { prompt: t('settings.profile.choose') }, { :class => "form-control", :id => "options" } %>
       </div>
-    <% end %>
+
+      <div class="form-group">
+        <%= f.label :student_id, t('users.new.form.student_number') %>
+        <%= f.text_field :student_id, class: 'form-control', required: true %>
+        <div class="invalid-feedback">
+          Please add your valid student ID
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :year_of_study, t('users.new.form.year_of_study') %>
+        <%= f.select :year_of_study, (1..10).to_a.map{|n| [n, n]}, {prompt: t('users.new.form.choose')}, class: 'form-control bootstrap-select', required: true %>
+        <%= content_tag :div, @user.errors[:year_of_study].first, class: 'invalid-feedback' %>
+      </div>
+    </fieldset>
 
     <% unless @user.read_and_accepted_waiver_form %>
       <div class="waiver">
