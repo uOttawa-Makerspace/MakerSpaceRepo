@@ -82,7 +82,9 @@ class RepositoriesController < SessionsController
       @user.increment!(:reputation, 25)
 
       if params[:owner].present?
-        @repository.users << User.find_by(username: params[:owner])
+        params[:owner].each do |owner|
+          @repository.users << User.find_by(username: owner)
+        end
         @repository.save
       end
 
