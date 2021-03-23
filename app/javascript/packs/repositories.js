@@ -21,6 +21,7 @@ $(document).on("turbolinks:load", function() {
     $("#owner_select").select2({
         theme: "bootstrap",
         placeholder: "Select a user",
+        multiple: true,
         allowClear: true,
         ajax: {
             url: "populate_users",
