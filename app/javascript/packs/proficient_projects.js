@@ -1,3 +1,5 @@
+require('select2');
+
 $(document).on("turbolinks:load", function () {
     var x = document.getElementsByClassName('pp-status-button');
     var i;
