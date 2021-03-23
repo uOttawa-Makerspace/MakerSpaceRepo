@@ -80,6 +80,14 @@ class RepositoriesController < SessionsController
 
     if @repository.save
       @user.increment!(:reputation, 25)
+
+      if params[:owner].present?
+        params[:owner].each do |owner|
+          @repository.users << User.find_by(username: owner)
+        end
+        @repository.save
+      end
+
       create_photos
       create_files
       create_categories
@@ -154,7 +162,7 @@ class RepositoriesController < SessionsController
     else
       flash[:alert] = 'Something went wrong.'
     end
-    redirect_back(fallback_location: root_path)
+    redirect_to repository_path(repository.user_username, repository.slug)
   end
 
   def add_owner
@@ -166,7 +174,7 @@ class RepositoriesController < SessionsController
     else
       flash[:alert] = 'Something went wrong.'
     end
-    redirect_back(fallback_location: root_path)
+    redirect_to repository_path(repository.user_username, repository.slug)
   end
 
   def remove_owner
@@ -178,7 +186,12 @@ class RepositoriesController < SessionsController
     else
       flash[:alert] = 'Something went wrong.'
     end
-    redirect_back(fallback_location: root_path)
+    redirect_to repository_path(repository.user_username, repository.slug)
+  end
+
+  def populate_users
+    json_data = User.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
+    render json: { users: json_data }
   end
 
   private

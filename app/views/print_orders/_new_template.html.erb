@@ -1,7 +1,9 @@
 <div class="content">
 
   <p style="font-size: 18px">ID #<%= prints.id %> | File : <%= prints.file.filename if prints.file.attached? %>
-    <%= link_to "-  <b>Action Required</b>".html_safe, "", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}" if prints.approved and prints.user_approval == nil %></p>
+    <%= link_to "-  <b>Action Required</b>".html_safe, "", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}" if prints.approved and prints.user_approval == nil %>
+    <%= link_to '| Cancel', print_order_path(prints), method: :delete, data: { confirm: 'Are you sure?' } if prints.approved == nil %>
+  </p>
 
 
   <ul class="progress-tracker progress-tracker--text progress-tracker--center progress-row">

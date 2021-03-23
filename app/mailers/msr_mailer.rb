@@ -32,6 +32,11 @@ class MsrMailer < ApplicationMailer
     mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
   end
 
+  def send_profile_update
+    all_users = User.active.pluck(:email)
+    mail(to: 'uottawa.makerepo@gmail.com', subject: 'CEED - Action Needed - Please update your profile information', bcc: all_users)
+  end
+
   def send_survey_ceed(email)
     mail(to: email, subject: 'Makerspace/Brunsfield Centre Survey - $25 Amazon gift card draw!')
   end

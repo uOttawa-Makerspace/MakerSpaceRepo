@@ -101,6 +101,13 @@
 
     <br>
 
+    <div class="form-group">
+      <%= label_tag(:owner, "Add a new owner / Ajouter un autre proprietaire") %>
+      <%= select_tag(:owner, "", prompt: "Choose User...", :class => "owner_select form-control", :id => "owner_select", multiple: true) %>
+    </div>
+
+    <br>
+
     <div id="share_option">
       <%= f.label :share_type, "Your project is..." %>
       <%= fa_icon('globe') %>

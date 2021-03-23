@@ -46,9 +46,13 @@ class Admin::SpacesController < AdminAreaController
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
-      raspis = PiReader.where(space_id: space.id)
-      raspis.update_all(space_id: nil)
-      flash[:notice] = 'Space deleted!' if space.destroy
+      if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
+        raspis = PiReader.where(space_id: space.id)
+        raspis.update_all(space_id: nil)
+        flash[:notice] = 'Space deleted!' if space.destroy
+      else
+        flash[:notice] = 'The destroy request has been submitted, a second admin will need to approve it for the space to be destroyed.' if space.update(destroy_admin_id: @user.id)
+      end
     else
       flash[:alert] = 'Invalid Input'
     end

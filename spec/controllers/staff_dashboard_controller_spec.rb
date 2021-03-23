@@ -69,7 +69,7 @@ RSpec.describe StaffDashboardController, type: :controller do
         lab1 = LabSession.create(user_id: @admin.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
         lab2 = LabSession.create(user_id: user.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
         put :sign_out_all_users
-        expect(response).to redirect_to staff_dashboard_index_path(space_id: @space.id)
+        expect(response).to redirect_to staff_dashboard_index_path(space_id: Space.first.id)
         expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
         expect(LabSession.find(lab2.id).sign_out_time < DateTime.now)
       end
@@ -87,7 +87,7 @@ RSpec.describe StaffDashboardController, type: :controller do
         lab1 = LabSession.create(user_id: @admin.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
         lab2 = LabSession.create(user_id: user.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
         put :sign_out_all_users
-        expect(response).to redirect_to staff_dashboard_index_path(space_id: @space.id)
+        expect(response).to redirect_to staff_dashboard_index_path(space_id: Space.first.id)
         expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
         expect(LabSession.find(lab2.id).sign_out_time < DateTime.now)
       end
@@ -118,7 +118,8 @@ RSpec.describe StaffDashboardController, type: :controller do
       it 'should change space' do
         lab1 = LabSession.create(user_id: @admin.id, space_id: @space.id, sign_in_time: 1.hour.ago, sign_out_time: DateTime.now.tomorrow)
         new_space = create(:space)
-        expect{ put :change_space, params: {space_id: new_space.id} }.to change(LabSession, :count).by(1)
+        expect{ put :change_space, params: {space_id: new_space.id} }.to change(LabSession, :count).by(0)
+        expect(@controller.instance_variable_get(:@space).id).to eq(new_space.id)
         expect(response).to redirect_to staff_dashboard_index_path
         expect(LabSession.last.sign_out_time < DateTime.now)
         expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
