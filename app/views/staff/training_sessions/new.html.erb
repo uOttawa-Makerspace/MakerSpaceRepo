@@ -1,7 +1,7 @@
 <section class="page-contents">
   <div class="text-center padding">
 
-    <h2 class="pt-2 mb-5">New <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name).where.not(id: @space.id), :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "custom-select", :onchange => 'setSpace()', style: 'width: 50%;' %></strong>
+    <h2 class="pt-2 mb-5">New <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name).where.not(id: @space.id), :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "custom-select", :onchange => 'setSpace()', style: 'width: 50%; padding: 2px;' %></strong>
       Training Session</h2>
 
     <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
