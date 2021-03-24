@@ -172,6 +172,16 @@
         <%= number_to_currency(@print_order.service_charge) %>
       </td>
     </tr>
+    <% if @print_order.clean_part == true %>
+      <tr class="item last">
+        <td>
+          Clean Part charge
+        </td>
+        <td>
+          <%= number_to_currency(@clean_part_price) %>
+        </td>
+      </tr>
+    <% end %>
     <% if @print_order.expedited == true %>
       <tr class="item last">
         <td>

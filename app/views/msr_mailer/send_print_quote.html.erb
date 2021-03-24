@@ -39,6 +39,9 @@
     <% end %>
   <% end %>
   <br>
+  <% if @print_order.clean_part == true %>
+    Clean Part service charge: <%= number_to_currency(@clean_part_price) %><br>
+  <% end %>
   <% if @print_order.expedited == true %>
     Expedited service charge: <%= number_to_currency(@expedited_price) %><br>
   <% end %>
