@@ -18,7 +18,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     context 'logged as regular user' do
       it 'should return 200' do
         get :index
-        expect(response).to have_http_status(:success)
+        expect(response).to redirect_to root_path
       end
     end
 

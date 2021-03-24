@@ -1,3 +1,5 @@
+require('select2');
+
 $(document).on('turbolinks:load', function () {
     'use strict';
     window.addEventListener('load', function() {

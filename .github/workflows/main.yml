@@ -60,6 +60,8 @@ jobs:
           bundle install --jobs 4 --retry 3
           mkdir certs && touch certs/saml.key && touch certs/saml.crt
           openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
+          wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb
+          sudo apt install ./wkhtmltox_0.12.6-1.focal_amd64.deb
           bundle exec rails db:prepare
           bundle exec rails db:migrate
           bundle exec rails spec

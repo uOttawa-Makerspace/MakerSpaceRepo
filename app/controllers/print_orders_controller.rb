@@ -4,6 +4,7 @@ class PrintOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in
   before_action :set_pricing, only: %i[new edit]
+  before_action :grant_access, only: ['index']
 
   def index
     # TODO: Too much logic in index.html.erb
@@ -205,7 +206,7 @@ class PrintOrdersController < ApplicationController
   def invoice
     @print_order = PrintOrder.find(params[:print_order_id])
     @expedited_price = 20
-    render pdf: 'file_name', template: 'print_orders/pdf.html.erb' if @print_order.printed == true
+    render pdf: 'file_name', template: 'print_orders/pdf.html.erb'
   end
 
   private
@@ -241,6 +242,13 @@ class PrintOrdersController < ApplicationController
                  ["M2 Fiberglass (per cm3)\t", prices[9], 10]
                ]
              end
+  end
+
+  def grant_access
+    unless current_user.staff? || current_user.admin?
+      flash[:alert] = 'You cannot access this area.'
+      redirect_to root_path
+    end
   end
 
 end
