@@ -1,3 +1,5 @@
+require('select2');
+
 $(document).on('turbolinks:load', function () {
     'use strict';
     $('#pictureInput').on('change', function(event) {

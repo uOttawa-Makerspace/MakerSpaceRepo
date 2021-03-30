@@ -15,7 +15,7 @@
       <% end %>
       <%= form_tag staff_dashboard_user_profile_path, method: :get, id: "search_user_fastsearch" do %>
         <%= hidden_field_tag :username, "", { :id => "search_user_fastsearch_username" } %>
-        <%= submit_tag "Search", class: 'btn btn-info btn-sm' %>
+        <%= button_tag "Search", onclick: 'searchForm()', class: 'btn btn-info btn-sm' %>
       <% end %>
     </div>
   </div>
@@ -63,3 +63,25 @@
     </div>
   </div>
 </div>
+
+<script type="text/javascript" charset="utf-8">
+    let currentQuery;
+    $(document).on('turbolinks:load', function () {
+        $('#user_dashboard_select').on('select2:closing', function () {
+            currentQuery = $('.select2-search input').prop('value');
+        });
+    });
+
+    window.searchForm = function () {
+        let form = document.getElementById('search_user_fastsearch');
+        console.log("|" + form.elements['username'].value + "|")
+        if (form.elements['username'].value == "" || form.elements['username'].value == null || form.elements['username'].value == undefined) {
+            var query = document.createElement("input");
+            query.type = "hidden";
+            query.value = currentQuery;
+            query.name = "query";
+            form.appendChild(query);
+        }
+        form.submit();
+    }
+</script>

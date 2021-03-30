@@ -63,7 +63,8 @@ class MsrMailer < ApplicationMailer
     mail(to: 'makerspace@uottawa.ca', subject: 'A new print order has been submitted')
   end
 
-  def send_print_quote(expedited_price, user, print_order, comments)
+  def send_print_quote(expedited_price, user, print_order, comments, clean_part_price)
+    @clean_part_price = clean_part_price
     @expedited_price = expedited_price
     @user = user
     @print_order = print_order

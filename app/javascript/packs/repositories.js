@@ -1,3 +1,5 @@
+require("select2");
+
 window.showPass = function() {
 	document.getElementById("password_repo_field").style.display = 'block'
 };

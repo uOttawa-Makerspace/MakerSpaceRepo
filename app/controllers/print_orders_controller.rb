@@ -4,6 +4,7 @@ class PrintOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in
   before_action :set_pricing, only: %i[new edit]
+  before_action :grant_access, only: ['index']
 
   def index
     # TODO: Too much logic in index.html.erb
@@ -75,9 +76,7 @@ class PrintOrdersController < ApplicationController
       end
     end
 
-    if params[:comments].present?
-      params[:print_order][:comments] = params[:print_order][:comments].split(",").join(" ")
-    end
+    params[:print_order][:comments] = params[:print_order][:comments].split(",").join(" ") if params[:comments].present?
 
     if params[:print_order][:material] && params[:print_order][:comments]
       unless (params[:print_order][:comments] == '1/8" MDF') || (params[:print_order][:comments] == '1/4" MDF')
@@ -87,9 +86,7 @@ class PrintOrdersController < ApplicationController
 
     params[:print_order][:sst] = 'true' if params[:print_order][:material] == 'SST'
 
-    if params[:print_order][:comments] && (params[:comments_box] != '')
-      params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:comments_box].to_s
-    end
+    params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:comments_box].to_s if params[:print_order][:comments] && (params[:comments_box] != '')
 
     if @print_order.update(print_order_params)
       flash[:notice] = "The print order has been updated!"
@@ -126,8 +123,8 @@ class PrintOrdersController < ApplicationController
   end
 
   def update
-    # Surcharge for expedited services
-    expedited_price = 20
+    expedited_price = 20 # Surcharge for expedited services
+    clean_part_price = 5 # Surcharge for cleaning the parts
 
     @print_order = PrintOrder.find(params[:id])
 
@@ -135,30 +132,26 @@ class PrintOrdersController < ApplicationController
 
     if params[:print_order][:price_per_hour] && params[:print_order][:material_cost] && params[:print_order][:service_charge]
       params[:print_order][:quote] = params[:print_order][:service_charge].to_f + params[:print_order][:price_per_hour].to_f + params[:print_order][:material_cost].to_f
-      if @print_order.expedited == true
-        params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
-      end
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f if @print_order.expedited == true
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + clean_part_price.to_f if @print_order.clean_part == true
     elsif params[:print_order][:price_per_hour] && params[:print_order][:hours] && params[:print_order][:service_charge]
       params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:price_per_hour].to_f * params[:print_order][:hours].to_f)
-      if @print_order.expedited == true
-        params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
-      end
-
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f if @print_order.expedited
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + clean_part_price.to_f if @print_order.clean_part == true
     elsif params[:print_order][:price_per_gram] && params[:print_order][:grams] && params[:print_order][:service_charge]
       if @print_order.material == 'M2 Onyx'
         params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f) + (params[:print_order][:grams_fiberglass].to_f * params[:print_order][:price_per_gram_fiberglass].to_f) + (params[:print_order][:grams_carbonfiber].to_f * params[:print_order][:price_per_gram_carbonfiber].to_f)
       else
         params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
       end
-      if @print_order.expedited == true
-        params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f
-      end
+
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f if @print_order.expedited
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + clean_part_price.to_f if @print_order.clean_part == true
     end
 
     if @print_order.update(print_order_params)
-
       if params[:print_order][:approved] == 'true'
-        MsrMailer.send_print_quote(expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments]).deliver_now
+        MsrMailer.send_print_quote(expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments], clean_part_price).deliver_now
       elsif params[:print_order][:approved] == 'false'
         MsrMailer.send_print_declined(@print_order.user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
       elsif params[:print_order][:user_approval] == 'true'
@@ -205,13 +198,14 @@ class PrintOrdersController < ApplicationController
   def invoice
     @print_order = PrintOrder.find(params[:print_order_id])
     @expedited_price = 20
-    render pdf: 'file_name', template: 'print_orders/pdf.html.erb' if @print_order.printed == true
+    @clean_part_price = 5
+    render pdf: 'file_name', template: 'print_orders/pdf.html.erb'
   end
 
   private
 
   def print_order_params
-    params.require(:print_order).permit(:user_id, :hours, :sst, :material, :grams, :service_charge, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited, :comments_for_staff, :grams_carbonfiber, :price_per_gram_carbonfiber, :price_per_gram_fiberglass, :grams_fiberglass, :payed, :picked_up, :pdf_form, final_file: [])
+    params.require(:print_order).permit(:user_id, :hours, :sst, :material, :grams, :service_charge, :clean_part, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited, :comments_for_staff, :grams_carbonfiber, :price_per_gram_carbonfiber, :price_per_gram_fiberglass, :grams_fiberglass, :payed, :picked_up, :pdf_form, final_file: [])
   end
 
   def set_pricing
@@ -241,6 +235,13 @@ class PrintOrdersController < ApplicationController
                  ["M2 Fiberglass (per cm3)\t", prices[9], 10]
                ]
              end
+  end
+
+  def grant_access
+    unless current_user.staff? || current_user.admin?
+      flash[:alert] = 'You cannot access this area.'
+      redirect_to root_path
+    end
   end
 
 end

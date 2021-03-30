@@ -36,29 +36,16 @@ require("flatpickr/dist/flatpickr")
 
 require("bootbox");
 require("packs/validation");
-require("packs/badges");
 require("packs/direct_uploads");
-require("packs/discount_codes");
 require("packs/effects");
-require("packs/exam_responses");
-require("packs/exams");
 require("packs/forms");
 require("packs/header");
 require("packs/page_jumping");
 require("packs/photo_gallery");
-require("packs/print_orders");
-require("packs/proficient_projects");
-require("packs/questions");
-require("packs/repositories");
 require("packs/requests");
 require("packs/settings");
 require("packs/sorting");
-require("packs/staff_area");
-require("packs/users");
 require("packs/vendor");
-require("packs/videos");
-require("packs/volunteer_hours");
-require("packs/volunteer_tasks");
 require("packs/accordion-load");
 
 import "bootstrap";
@@ -100,4 +87,18 @@ $(document).on('turbolinks:load', function () {
 
 window.clearEndDate = function() {
     document.getElementById("end_date").value = null;
+}
+
+window.setSpace = function(){
+    var space_id = document.getElementById("set_space_id").value;
+
+    $.ajax({
+        url: "/staff_dashboard/change_space",
+        type: "PUT",
+        data: {
+            space_id: space_id,
+            training: document.URL.includes("training_sessions"),
+            questions: document.URL.includes("questions")
+        }
+    })
 }

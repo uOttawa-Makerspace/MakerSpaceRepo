@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_03_16_160541) do
+ActiveRecord::Schema.define(version: 2021_03_24_185215) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -403,6 +403,7 @@ ActiveRecord::Schema.define(version: 2021_03_16_160541) do
     t.float "price_per_gram_carbonfiber", default: 0.0
     t.boolean "payed"
     t.boolean "picked_up"
+    t.boolean "clean_part"
   end
 
   create_table "printer_sessions", id: :serial, force: :cascade do |t|

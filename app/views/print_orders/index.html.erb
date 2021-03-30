@@ -14,7 +14,6 @@
   <div class="accordion">
     <% @order.each_with_index do |(order, order_string), index| %>
       <% if @print_order.where(order).present? %>
-
         <div class="card">
           <div class="card-header" data-toggle="collapse" data-target="#accordion-printorder-<%= index %>" aria-expanded="true">
             <h2 class="mb-0 text-center">
@@ -29,45 +28,32 @@
               <table class="table table-striped table-responsive print-order-table-<%= index %>">
 
                 <tr class="text-center">
-                  <th>User<span onclick="sortTable('print-order-table-<%= index %>', 0)"><%= fa_icon('arrow-down') %></span>
-                  </th>
-                  <th>Identity<span onclick="sortTable('print-order-table-<%= index %>', 1)"><%= fa_icon('arrow-down') %></span>
-                  </th>
-                  <th>Type<span onclick="sortTable('print-order-table-<%= index %>', 2)"><%= fa_icon('arrow-down') %></span>
-                  </th>
-                  <th>ID<span onclick="sortTable('print-order-table-<%= index %>', 3)"><%= fa_icon('arrow-down') %></span>
-                  </th>
-                  <th>Submitted
-                    on<span onclick="sortTable('print-order-table-<%= index %>', 4)"><%= fa_icon('arrow-down') %></span>
-                  </th>
-                  <th>Comments<span onclick="sortTable('print-order-table-<%= index %>', 5)"><%= fa_icon('arrow-down') %></span>
-                  </th>
+                  <th>User</th>
+                  <th>Identity</th>
+                  <th>Type</th>
+                  <th>ID</th>
+                  <th>Submitted on</th>
+                  <th>Comments</th>
                   <th>STL/SVG</th>
-                  <% if @user.admin? || @user.staff? %>
-                    <th>PDF for Teams</th>
-                    <th>GCode/PDF</th>
+                  <th>PDF for Teams</th>
+                  <th>GCode/PDF</th>
+                  <th>Expedited</th>
+                  <th>Clean Part</th>
+                  <% if index == 0 %>
+                    <th>Approved by admins?</th>
+                  <% elsif index == 2 %>
+                    <th>Approved by user?</th>
+                    <th>Staff Assigned</th>
+                  <% elsif index == 3 %>
+                    <th>Printed?</th>
+                    <th>Payed?</th>
+                    <th>Picked-Up?</th>
                   <% end %>
-                  <th>Expedited<span onclick="sortTable('print-order-table-<%= index %>', 8)"><%= fa_icon('arrow-down') %></span>
-                  </th>
-                  <th>Approved by admins
-                    ?<span onclick="sortTable('print-order-table-<%= index %>', 9)"><%= fa_icon('arrow-down') %></span>
-                  </th>
-                  <th>Approved by user
-                    ?<span onclick="sortTable('print-order-table-<%= index %>', 10)"><%= fa_icon('arrow-down') %></span>
-                  </th>
-                  <% if @user.admin? || @user.staff? %>
-                    <th>Staff
-                      Assigned<span onclick="sortTable('print-order-table-<%= index %>', 11)"><%= fa_icon('arrow-down') %></span>
-                    </th>
-                  <% end %>
-                  <th>Printed ?</th>
-                  <% if @user.admin? || @user.staff? %>
-                    <th>Payed ?</th>
-                    <th>Picked-Up ?</th>
+                  <% if index == 1 || index == 2 || index == 3 %>
+                    <th>Invoice</th>
                   <% end %>
                   <th>Action</th>
                 </tr>
-
 
                 <% @print_order.where(order).each do |prints| %>
 
@@ -77,11 +63,7 @@
                       <span><%= prints.user.email %></span>
                     </th>
 
-                    <% if (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") %>
-                      <td>Internal</td>
-                    <% else %>
-                      <td>External</td>
-                    <% end %>
+                    <td><%= (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") ? "Internal" : "External" %></td>
 
                     <% if prints.order_type == 0 and prints.grams %>
                       <td>3D Printing (<%= prints.grams %> g)</td>
@@ -95,13 +77,7 @@
 
                     <td><%= prints.id %></td>
 
-                    <td>
-                      <% if prints.created_at %>
-                        Submitted on <%= prints.created_at.to_formatted_s(:long_ordinal) %>
-                      <% else %>
-                        Approved
-                      <% end %>
-                    </td>
+                    <td><%= prints.created_at ? "Submitted on #{prints.created_at.to_formatted_s(:long_ordinal)}".html_safe : 'Approved' %></td>
 
                     <td><%= prints.comments %></td>
 
@@ -114,95 +90,55 @@
                         Not Available
                       <% end %>
                     </td>
-
-                    <% if @user.admin? || @user.staff? %>
-                      <td>
-                        <% if prints.pdf_form.attached? %>
-                          <%= link_to "Download", rails_blob_path(prints.pdf_form, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+                    <td>
+                      <% if prints.pdf_form.attached? %>
+                        <%= link_to "Download", rails_blob_path(prints.pdf_form, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+                        <br>
+                        <span style="word-break: break-all;"><%= prints.pdf_form.filename %></span>
+                      <% else %>
+                        Not Available
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if prints.final_file.attached? %>
+                        <%= link_to "Edit files", print_order_edit_approval_path(prints.id), class: "btn btn-sm btn-primary", style: "margin-bottom: 10px;" %>
+                        <% prints.final_file.each do |final_file| %>
+                          <%= link_to "Download", rails_blob_path(final_file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
                           <br>
-                          <span style="word-break: break-all;"><%= prints.pdf_form.filename %></span>
-                        <% else %>
-                          Not Available
+                          <span style="word-break: break-all;"><%= final_file.filename %></span>
                         <% end %>
-                      </td>
+                      <% else %>
+                        Not Available
+                      <% end %>
+                    </td>
+
+                    <td><%= prints.expedited == true ? '<b>Yes</b>'.html_safe : 'No' %></td>
+
+                    <td><%= prints.clean_part == true ? '<b>Yes</b>'.html_safe : 'No' %></td>
+
+                    <% if index == 0 %>
                       <td>
-                        <% if prints.final_file.attached? %>
-                          <%= link_to "Edit files", print_order_edit_approval_path(prints.id), class: "btn btn-sm btn-primary", style: "margin-bottom: 10px;" %>
-                          <% prints.final_file.each do |final_file| %>
-                            <%= link_to "Download", rails_blob_path(final_file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
-                            <br>
-                            <span style="word-break: break-all;"><%= final_file.filename %></span>
-                          <% end %>
+                        <% if prints.approved %>
+                          Approved
+                          <%= render 'comments_for_staff', prints: prints %>
+                        <% elsif prints.approved == false %>
+                          Declined
                         <% else %>
-                          Not Available
+                          <% if @user.admin? %>
+                            <%= render 'staff_approval', prints: prints %>
+                          <% end %>
                         <% end %>
                       </td>
-                    <% end %>
-
-                    <td>
-                      <% if prints.expedited == true %>
-                        <b>Yes</b>
-                      <% else %>
-                        No
-                      <% end %>
-                    </td>
-
-                    <td>
-                      <% if prints.approved %>
-                        Approved
-                        <% if @user.staff? %>
-                          <%= render 'comments_for_staff', prints: prints %>
-                        <% end %>
-                      <% elsif prints.approved == false %>
-                        Declined
-                      <% else %>
-                        <% if @user.admin? %>
-                          <%= render 'staff_approval', prints: prints %>
-                        <% end %>
-                      <% end %>
-                    </td>
-
-                    <% if (prints.user_id == @user.id and prints.approved) or (@user.admin? and prints.approved) %>
+                    <% elsif index == 2 %>
                       <td>
                         <% if prints.user_approval %>
-                          <% if prints.timestamp_approved %>
-                            Approved on <%= prints.timestamp_approved.to_formatted_s(:long_ordinal) %>
-                          <% else %>
-                            Approved
-                          <% end %>
+                          <%= prints.timestamp_approved ? "Approved on #{prints.timestamp_approved.to_formatted_s(:long_ordinal)}".html_safe : 'Approved' %>
                         <% elsif prints.user_approval == false %>
                           Declined
                         <% else %>
-                          <b>Quoted price : <%= number_to_currency(prints.quote) %>$</b>
-                          <br>
-                          <%= form_for prints, url: print_order_path(prints) do |f| %>
-                            <%= f.hidden_field :user_approval, :value => true %>
-                            <%= f.hidden_field :timestamp_approved, :value => DateTime.now %>
-                            <%= f.submit "I accept the quote", class: 'btn btn-primary', 'aria-label': "I accept the quote of #{prints.quote} $", data: {confirm: "#{"Here are the comments from the staff: " + prints.staff_comments + "." unless prints.staff_comments.empty? } Are you sure?"} %>
-                          <% end %>
-                          <br>
-                          <%= form_for prints, url: print_order_path(prints) do |f| %>
-                            <%= f.hidden_field :user_approval, :value => false %>
-                            <%= f.submit "I don't accept it", class: 'btn btn-danger', 'aria-label': "I DO NOT accept the quote of #{prints.quote} $", data: {confirm: "#{"Here are the comments from the staff: " + prints.staff_comments + "." unless prints.staff_comments.empty? } Are you sure?"} %>
-                          <% end %>
+                          Not Yet/Can't be
                         <% end %>
                       </td>
-                    <% else %>
-                      <% if prints.user_approval %>
-                        <% if prints.timestamp_approved %>
-                          <td>Approved on <%= prints.timestamp_approved.to_formatted_s(:long_ordinal) %></td>
-                        <% else %>
-                          <td>Approved</td>
-                        <% end %>
-                      <% elsif prints.user_approval == false %>
-                        <td>Declined</td>
-                      <% else %>
-                        <td>Not Yet/Can't be</td>
-                      <% end %>
-                    <% end %>
-
-                    <% if @user.admin? or @user.staff? %>
-
                       <% if prints.staff_id.present? %>
                         <% staff = User.find(prints.staff_id) %>
                         <td class="username">
@@ -218,106 +154,96 @@
                       <% else %>
                         <td>Not Yet</td>
                       <% end %>
-
-
+                    <% elsif index == 3 %>
                       <% if prints.approved == false %>
                         <td>Won't be printed</td>
-                      <% elsif prints.user_approval == false %>
-                        <td>Won't be printed</td>
-                      <% elsif prints.printed %>
-                        <td>Printed<br><%= link_to 'Invoice', print_order_invoice_url(prints), method: :get, class: "btn btn-primary", target: :_blank %>
-                        </td>
-                      <% elsif prints.printed == false %>
-                        <td>Not Printed</td>
-                      <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>
+                      <% elsif prints.approved.nil? %>
+                        <td>Not yet</td>
+                      <% else %>
                         <td>
-                          <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-printed-it-<%= prints.id %>">
-                            I printed it
-                          </button>
-                          <div class="modal fade" id="modal-printed-it-<%= prints.id %>" tabindex="-1" aria-labelledby="modal-printed-it-<%= prints.id %>" aria-hidden="true">
-                            <div class="modal-dialog modal-lg">
-                              <div class="modal-content">
-                                <div class="modal-header">
-                                  <h5 class="modal-title" id="exampleModalLabel">I printed it options</h5>
-                                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                  </button>
-                                </div>
-                                <div class="modal-body">
-                                  <div class="row">
-                                    <div class="text-center w-100">
-                                      <p class="text-center ml-3 mr-3">Until you click one of the buttons, the print
-                                        order will
-                                        appear as
-                                        <br> NOT Printed</p>
+                          <% if prints.user_approval == false %>
+                            Won't be printed
+                          <% elsif prints.printed %>
+                            Printed
+                          <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>
+                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-printed-it-<%= prints.id %>">
+                              I printed it
+                            </button>
+                            <div class="modal fade" id="modal-printed-it-<%= prints.id %>" tabindex="-1" aria-labelledby="modal-printed-it-<%= prints.id %>" aria-hidden="true">
+                              <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLabel">I printed it options</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                      <span aria-hidden="true">&times;</span>
+                                    </button>
+                                  </div>
+                                  <div class="modal-body">
+                                    <div class="row">
+                                      <div class="text-center w-100">
+                                        <p class="text-center ml-3 mr-3">Until you click one of the buttons, the print
+                                          order will
+                                          appear as
+                                          <br> NOT Printed</p>
+                                      </div>
+                                      <br>
+                                      <div class="col-md-12">
+                                        <%= form_for prints, url: print_order_path(prints), html: { id: "email-true-#{prints.id}" } do |f| %>
+
+                                          <div class="pr-5 pl-5 text-center">
+                                            <div class="text-left">
+                                              <input id="x-<%= prints.id %>" value="<div>Hi <%= prints.user.name %>, <br>Your print has completed and is now available for pickup! Your order ID is <%= prints.id %> and your quoted balance is <%= number_to_currency(prints.quote) %>. Please visit <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a> for information on how to pay for your job and email makerspace@uottawa.ca to arrange for the pick up of your part during weekdays between 9h-17h.<br><br></div><div>Best regards,<br>The Makerspace Team<br></div>" type="hidden" name="email_message">
+                                              <trix-editor input="x-<%= prints.id %>"></trix-editor>
+                                            </div>
+                                            <br>
+                                            <p>Send email to user</p>
+                                            <%= f.hidden_field :printed, :value => true, id: "printed-email-true-#{prints.id}" %>
+                                            <%= f.submit "I Printed it", class: "btn btn-primary" %>
+                                          </div>
+
+                                        <% end %>
+                                      </div>
+                                      <div class="col-md-12 text-center">
+                                        <p>Do not send email to user</p>
+                                        <%= form_for prints, url: print_order_path(prints), html: { id: "email-false-#{prints.id}" } do |f| %>
+                                          <%= f.hidden_field :printed, :value => true, id: "printed-email-false-#{prints.id}" %>
+                                          <%= hidden_field_tag :email_false, true %>
+                                          <%= f.submit "I Printed it", class: "btn btn-danger" %>
+                                        <% end %>
+                                      </div>
                                     </div>
                                     <br>
-                                    <div class="col-md-12">
-                                      <%= form_for prints, url: print_order_path(prints), html: { id: "email-true-#{prints.id}" } do |f| %>
-
-                                        <div class="pr-5 pl-5 text-center">
-                                          <div class="text-left">
-                                            <input id="x-<%= prints.id %>" value="<div>Hi <%= prints.user.name %>, <br>Your print has completed and is now available for pickup! Your order ID is <%= prints.id %> and your quoted balance is <%= number_to_currency(prints.quote) %>. Please visit <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a> for information on how to pay for your job and email makerspace@uottawa.ca to arrange for the pick up of your part during weekdays between 9h-17h.<br><br></div><div>Best regards,<br>The Makerspace Team<br></div>" type="hidden" name="email_message">
-                                            <trix-editor input="x-<%= prints.id %>"></trix-editor>
-                                          </div>
-                                          <br>
-                                          <p>Send email to user</p>
-                                          <%= f.hidden_field :printed, :value => true, id: "printed-email-true-#{prints.id}" %>
-                                          <%= f.submit "I Printed it", class: "btn btn-primary" %>
-                                        </div>
-
-                                      <% end %>
-                                    </div>
-                                    <div class="col-md-12 text-center">
-                                      <p>Do not send email to user</p>
-                                      <%= form_for prints, url: print_order_path(prints), html: { id: "email-false-#{prints.id}" } do |f| %>
-                                        <%= f.hidden_field :printed, :value => true, id: "printed-email-false-#{prints.id}" %>
-                                        <%= hidden_field_tag :email_false, true %>
-                                        <%= f.submit "I Printed it", class: "btn btn-danger" %>
-                                      <% end %>
-                                    </div>
+                                    <p class="text-center">In both cases, the invoice will be printed.</p>
                                   </div>
-                                  <br>
-                                  <p class="text-center">In both cases, the invoice will be printed.</p>
-                                </div>
-                                <div class="modal-footer">
-                                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                  <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          <% else %>
+                            Not Yet
+                          <% end %>
                         </td>
-                      <% else %>
-                        <td>Not Yet</td>
                       <% end %>
-                    <% else %>
-                      <% if prints.printed %>
-                        <td>Printed</td>
-                      <% elsif prints.printed == false %>
-                        <td>Not Printed</td>
-                      <% else %>
-                        <td>Not Yet/Won't be</td>
-                      <% end %>
-                    <% end %>
-                    <% if @user.staff? || @user.admin? %>
-                      <% if prints.payed? %>
-                        <td>Yes</td>
-                      <% else %>
-                        <td>
+                      <td>
+                        <% if prints.payed? %>
+                          Yes
+                        <% else %>
                           No
                           <br>
                           <% if prints.printed? %>
                             <%= form_for prints, url: print_order_path(prints) do |f| %>
                               <%= f.hidden_field :payed, :value => 'true' %>
-                              <%= f.submit 'Paid', class: "btn btn-primary", data: { confirm: "Are you sure the client paid ?" } %>
+                              <%= f.submit 'Paid?', class: "btn btn-primary", data: { confirm: "Are you sure the client paid ?" } %>
                             <% end %>
                           <% end %>
-                        </td>
-                      <% end %>
-                      <% if prints.picked_up? %>
-                        <td>Yes</td>
-                      <% else %>
-                        <td>
+                        <% end %>
+                      </td>
+                      <td>
+                        <% if prints.picked_up? %>
+                          Yes
+                        <% else %>
                           No
                           <br>
                           <% if prints.payed? %>
@@ -326,19 +252,23 @@
                               <%= f.submit 'Picked Up', class: "btn btn-primary", data: { confirm: "Are you sure the client picked-up the item?" } %>
                             <% end %>
                           <% end %>
-                        </td>
+                        <% end %>
+                      </td>
+                    <% end %>
+                    <% if index == 1 || index == 2 || index == 3 %>
+                      <td>
+                        <%= link_to 'Invoice', print_order_invoice_url(prints), method: :get, class: "btn btn-primary", target: :_blank %>
+                      </td>
+                    <% end %>
+                    <td>
+                      <% if @user.admin? %>
+                        <%= button_to 'Delete', print_order_path(prints), method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %>
+                      <% else %>
+                        Can not delete
                       <% end %>
-                    <% end %>
-                    <% if @user.admin? %>
-                      <td><%= button_to 'Delete', print_order_path(prints), method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %></td>
-                    <% elsif prints.staff_id.present? == false %>
-                      <td><%= button_to 'Delete', print_order_path(prints), method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %></td>
-                    <% else %>
-                      <td>Can not delete</td>
-                    <% end %>
-                  </tr>
-
+                    </td>
                 <% end %>
+                </tr>
               </table>
             </div>
           </div>

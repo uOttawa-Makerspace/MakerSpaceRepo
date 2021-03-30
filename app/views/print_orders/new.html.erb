@@ -104,6 +104,26 @@
             </div>
           </fieldset>
 
+          <fieldset class="form-group">
+            <div class="row">
+              <legend class="col-form-label col-sm-2 pt-0">Clean off Part, extra charge ($5 CAD)</legend>
+              <div class="col-sm-10">
+                <div class="form-check">
+                  <input type="radio" checked class="form-check-input" aria-label="Do not clean part (Free)" name="print_order[clean_part]" value="false">
+                  <label class="form-check-label" for="gridRadios3">
+                    No (Do not remove support)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" aria-label="Clean Part (5$ surcharge)" name="print_order[clean_part]" value="true">
+                  <label class="form-check-label" for="gridRadios3">
+                    Yes (Remove supports)
+                  </label>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
           <%= f.hidden_field :order_type, :value => 0 %>
 
         <% else %>
