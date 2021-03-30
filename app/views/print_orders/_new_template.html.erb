@@ -5,6 +5,8 @@
     <%= link_to '| Cancel', print_order_path(prints), method: :delete, data: { confirm: 'Are you sure?' } if prints.approved == nil %>
   </p>
 
+  <%= link_to 'Show Invoice', print_order_invoice_path(prints), class: 'btn btn-sm btn-primary', target: '_blank' if prints.approved == true %>
+
 
   <ul class="progress-tracker progress-tracker--text progress-tracker--center progress-row">
     <li class="progress-step is-complete">
