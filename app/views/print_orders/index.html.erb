@@ -63,7 +63,7 @@
                       <span><%= prints.user.email %></span>
                     </th>
 
-                    <td><%= (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") ? "Internal" : "External" %></td>
+                    <td><%= ((prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member")) ? "Internal" : "External" %></td>
 
                     <% if prints.order_type == 0 and prints.grams %>
                       <td>3D Printing (<%= prints.grams %> g)</td>
