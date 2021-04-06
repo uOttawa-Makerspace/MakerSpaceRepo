@@ -146,7 +146,7 @@ class PrintOrdersController < ApplicationController
       end
 
       params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f if @print_order.expedited
-      params[:print_order][:quote] = params[:print_order][:quote].to_f + clean_part_price.to_f if @print_order.clean_part == true
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + clean_part_price.to_f if ((@print_order.clean_part == true) && (params[:print_order][:clean_part] == true))
     end
 
     if @print_order.update(print_order_params)
