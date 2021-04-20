@@ -41,9 +41,12 @@
                   <th>Clean Part</th>
                   <% if index == 0 %>
                     <th>Approved by admins?</th>
+                  <% elsif index == 1 %>
+                    <th>Approved by user?</th>
                   <% elsif index == 2 %>
                     <th>Approved by user?</th>
                     <th>Staff Assigned</th>
+                    <th>Printed?</th>
                   <% elsif index == 3 %>
                     <th>Printed?</th>
                     <th>Payed?</th>
@@ -63,7 +66,7 @@
                       <span><%= prints.user.email %></span>
                     </th>
 
-                    <td><%= (prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member") ? "Internal" : "External" %></td>
+                    <td><%= ((prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member")) ? "Internal" : "External" %></td>
 
                     <% if prints.order_type == 0 and prints.grams %>
                       <td>3D Printing (<%= prints.grams %> g)</td>
@@ -129,6 +132,29 @@
                           <% end %>
                         <% end %>
                       </td>
+                    <% elsif index == 1 %>
+                      <td>
+                        <% if prints.user_approval %>
+                          <%= prints.timestamp_approved ? "Approved on #{prints.timestamp_approved.to_formatted_s(:long_ordinal)}".html_safe : 'Approved' %>
+                        <% elsif prints.user_approval == false %>
+                          Declined
+                        <% else %>
+                          <b>Quoted price : <%= number_to_currency(prints.quote) %>$</b>
+                          <% if @user.admin? %>
+                            <br>
+                            <%= form_for prints, url: print_order_path(prints) do |f| %>
+                              <%= f.hidden_field :user_approval, :value => true %>
+                              <%= f.hidden_field :timestamp_approved, :value => DateTime.now %>
+                              <%= f.submit "I accept the quote", class: 'btn btn-primary', 'aria-label': "I accept the quote of #{prints.quote} $", data: { confirm: "#{"Here are the comments from the staff: " + prints.staff_comments + "." unless prints.staff_comments.empty? } Are you sure?" } %>
+                            <% end %>
+                            <br>
+                            <%= form_for prints, url: print_order_path(prints) do |f| %>
+                              <%= f.hidden_field :user_approval, :value => false %>
+                              <%= f.submit "I don't accept it", class: 'btn btn-danger', 'aria-label': "I DO NOT accept the quote of #{prints.quote} $", data: { confirm: "#{"Here are the comments from the staff: " + prints.staff_comments + "." unless prints.staff_comments.empty? } Are you sure?" } %>
+                            <% end %>
+                          <% end %>
+                        <% end %>
+                      </td>
                     <% elsif index == 2 %>
                       <td>
                         <% if prints.user_approval %>
@@ -154,7 +180,6 @@
                       <% else %>
                         <td>Not Yet</td>
                       <% end %>
-                    <% elsif index == 3 %>
                       <% if prints.approved == false %>
                         <td>Won't be printed</td>
                       <% elsif prints.approved.nil? %>
@@ -226,6 +251,14 @@
                           <% end %>
                         </td>
                       <% end %>
+                    <% elsif index == 3 %>
+                      <td>
+                        <% if prints.user_approval == false %>
+                          Won't be printed
+                        <% elsif prints.printed %>
+                          Printed
+                        <% end %>
+                      </td>
                       <td>
                         <% if prints.payed? %>
                           Yes
