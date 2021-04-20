@@ -18,6 +18,12 @@
             <div class="form-group">
               <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
             </div>
+            <% if prints.clean_part == true %>
+              <div class="form-group form-inline">
+                <%= f.label :clean_part, "Clean Part", style: 'margin-right: 5px;' %>
+                <%= f.check_box :clean_part, class: 'custom-control custom-checkbox', :required => true %>
+              </div>
+            <% end %>
             <div class="row">
               <div class="col-md-6">
                 <%= f.label :quote, "Number of Grams (Or CM3)" %>
