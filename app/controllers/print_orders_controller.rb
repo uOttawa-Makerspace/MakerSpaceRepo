@@ -53,7 +53,11 @@ class PrintOrdersController < ApplicationController
     @comments = @print_order.comments.split(",")
 
     unless @print_order.approved.nil?
-      redirect_to index_new_print_orders_path, alert: 'The print order has already been approved by admins, you cannot modify your submission'
+      if @user.admin? || @user.staff?
+        redirect_to print_orders_path, alert: 'The print order has already been approved by admins, you cannot modify your submission'
+      else
+        redirect_to index_new_print_orders_path, alert: 'The print order has already been approved by admins, you cannot modify your submission'
+      end
     end
 
   end
@@ -61,7 +65,11 @@ class PrintOrdersController < ApplicationController
   def edit_approval
     @print_order = PrintOrder.find(params[:print_order_id])
     unless @user.admin? && @print_order.approved?
-      redirect_to index_new_print_orders_path, alert: 'You are not allowed on this page'
+      if @user.admin? || @user.staff?
+        redirect_to print_orders_path, alert: 'You are not allowed on this page'
+      else
+        redirect_to index_new_print_orders_path, alert: 'You are not allowed on this page'
+      end
     end
   end
 
@@ -95,7 +103,11 @@ class PrintOrdersController < ApplicationController
     end
 
     if @print_order.approved.nil?
-      redirect_to index_new_print_orders_path
+      if @user.admin? || @user.staff?
+        redirect_to print_orders_path
+      else
+        redirect_to index_new_print_orders_path
+      end
     else
       redirect_to print_orders_path
     end
@@ -115,7 +127,11 @@ class PrintOrdersController < ApplicationController
 
     @print_order = PrintOrder.create(print_order_params)
     if @print_order.id.nil? || @print_order.id == 0
-      redirect_to index_new_print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting and PDF for the team drawing !'
+      if @user.admin? || @user.staff?
+        redirect_to print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting and PDF for the team drawing !'
+      else
+        redirect_to index_new_print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting and PDF for the team drawing !'
+      end
     else
       MsrMailer.send_print_to_makerspace(@print_order.id).deliver_now
       redirect_to index_new_print_orders_path, notice: 'The print order has been sent for admin approval, you will receive an email in the next few days, once the admins made a decision.'
@@ -172,7 +188,11 @@ class PrintOrdersController < ApplicationController
       flash[:alert] = 'There has been an error, please make sure the file type is one that is accepted. You can try again later or contact: uottawa.makerepo@gmail.com'
     end
     if @user.id == @print_order.user_id
-      redirect_to index_new_print_orders_path
+      if @user.admin? || @user.staff?
+        redirect_to print_orders_path
+      else
+        redirect_to index_new_print_orders_path
+      end
     else
       redirect_to print_orders_path
     end

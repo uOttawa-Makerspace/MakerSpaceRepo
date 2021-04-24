@@ -1,8 +1,8 @@
 <div class="content">
 
-  <p style="font-size: 18px">ID #<%= prints.id %> | File : <%= prints.file.filename if prints.file.attached? %>
-    <%= link_to "-  <b>Action Required</b>".html_safe, "", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}" if prints.approved and prints.user_approval == nil %>
-    <%= link_to '| Cancel', print_order_path(prints), method: :delete, data: { confirm: 'Are you sure?' } if prints.approved == nil %>
+  <p style="font-size: 18px">ID #<%= prints.id %> | File : <%= prints.file.filename if prints.file.attached? %> |
+    <%= link_to " <b>Action Required</b>".html_safe, "", "data-toggle": "modal", "data-target": "#modal-approve-#{prints.id}" if prints.approved and prints.user_approval == nil %>
+    <%= link_to 'Cancel Order', print_order_path(prints), class: 'btn btn-danger btn-sm', method: :delete, data: { confirm: 'Are you sure?' } if prints.approved == nil %>
   </p>
 
   <%= link_to 'Show Invoice', print_order_invoice_path(prints), class: 'btn btn-sm btn-primary', target: '_blank' if prints.approved == true %>
@@ -37,7 +37,7 @@
                 </button>
               </div>
               <div class="modal-body">
-                <b>Quoted price : <%= prints.quote %>$</b>
+                <b>Quoted price : <%= number_to_currency(prints.quote) %>$</b>
                 <%= "<p>Staff comments: #{prints.staff_comments}</p>".html_safe unless prints.staff_comments.empty? %>
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
                   <%= f.hidden_field :user_approval, :value => true %>
@@ -107,3 +107,5 @@
   </ul>
 
 </div>
+
+<hr/>
