@@ -6,6 +6,9 @@
 </div>
 
 <div class="padding-10">
+
+  <hr/>
+
 <% @order.each do |order, files| %>
 
   <% if @print_order.where(order).present? %>
@@ -31,6 +34,10 @@
 
 <div class="collapse" id="collapse">
   <br>
+
+  <hr>
+
+
   <% @order_old.each do |order, files| %>
 
     <% if @print_order.where(order).present? %>
@@ -47,3 +54,12 @@
 </div>
 
 </div>
+
+<style>
+  hr {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      border: 0;
+      border-top: 2px solid rgba(0, 0, 0, 0.5);
+  }
+</style>
