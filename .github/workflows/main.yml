@@ -65,7 +65,7 @@ jobs:
           bundle exec rails db:prepare
           bundle exec rails db:migrate
           bundle exec rails spec
-      - uses: miloserdow/capistrano-deploy@master
+      - uses: miloserdow/capistrano-deploy@v2.2
         if: github.ref == 'refs/heads/staging'
         with:
           target: staging
