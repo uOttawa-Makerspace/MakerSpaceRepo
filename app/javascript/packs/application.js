@@ -78,13 +78,6 @@ $(document).on('turbolinks:load', function () {
     });
 });
 
-$(document).on('turbolinks:load', function () {
-
-    var clipboard = new Clipboard('.clipboard-btn');
-    console.log(clipboard);
-
-});
-
 window.clearEndDate = function() {
     document.getElementById("end_date").value = null;
 }
