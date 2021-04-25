@@ -17,7 +17,8 @@ window.togglePass = function() {
     }
 }
 
-$(document).on("turbolinks:load", function() {
+require("select2");
+document.addEventListener("turbolinks:load", function() {
     $("#search_users_add").select2({});
     $("#search_users_remove").select2({});
     $("#owner_select").select2({
@@ -49,4 +50,3 @@ $(document).on("turbolinks:load", function() {
         minimumInputLength: 3,
     });
 });
-

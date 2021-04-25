@@ -114,7 +114,7 @@
       <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline-flex; vertical-align:middle; margin-right: 4px;", :onclick => "hidePass();", required: true) %><%= f.label('share_type_public', "Public", :id => "type", :style => "display:inline") %>
       <div id="description"> Anyone can see this repository</div>
       <%= fa_icon('lock') %>
-      <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline-flex; vertical-align:middle; margin-right: 4px;", :onclick => "showPass();") %><%= f.label('share_type_private', "Private", :id => "type", :style => "display:inline") %>
+      <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline-flex; vertical-align:middle; margin-right: 4px;", :onclick => "showPass();") %><%= f.label('share_type_private', "Private / Privé", :id => "type", :style => "display:inline") %>
       <div id="description"> Only those with the url and password can view this repository</div>
 
       <div id="pass" class="form-group">

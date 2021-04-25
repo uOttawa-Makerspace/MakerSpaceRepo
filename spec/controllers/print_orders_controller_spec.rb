@@ -102,7 +102,7 @@ RSpec.describe PrintOrdersController, type: :controller do
         session[:user_id] = @admin.id
         create(:print_order, user_id: @user.id)
         get :edit_approval, params: {print_order_id: PrintOrder.last.id}
-        expect(response).to redirect_to index_new_print_orders_path
+        expect(response).to redirect_to print_orders_path
         expect(flash[:alert]).to eq('You are not allowed on this page')
       end
 

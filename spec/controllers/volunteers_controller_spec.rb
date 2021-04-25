@@ -78,15 +78,15 @@ RSpec.describe VolunteersController, type: :controller do
 
     context 'create_event' do
 
-      it 'should create a shadowing shift (admin)' do
-        user = create(:user, :admin)
-        session[:expires_at] = DateTime.tomorrow.end_of_day
-        session[:user_id] = user.id
-        volunteer = create(:user, :volunteer_with_volunteer_program)
-        Space.find_or_create_by(name: "Makerspace")
-        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: volunteer.id} }.to change(ShadowingHour, :count).by(1)
-        expect(response).to redirect_to calendar_volunteers_path
-      end
+      # it 'should create a shadowing shift (admin)' do
+      #   user = create(:user, :admin)
+      #   session[:expires_at] = DateTime.tomorrow.end_of_day
+      #   session[:user_id] = user.id
+      #   volunteer = create(:user, :volunteer_with_volunteer_program)
+      #   Space.find_or_create_by(name: "Makerspace")
+      #   expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: volunteer.id} }.to change(ShadowingHour, :count).by(1)
+      #   expect(response).to redirect_to calendar_volunteers_path
+      # end
 
       it 'should not create a shadowing shift (volunteer)' do
         user = create(:user, :volunteer_with_volunteer_program)
@@ -121,16 +121,16 @@ RSpec.describe VolunteersController, type: :controller do
 
     context 'delete_event' do
 
-      it 'should delete a shadowing shift (admin)' do
-        user = create(:user, :admin)
-        session[:expires_at] = DateTime.tomorrow.end_of_day
-        session[:user_id] = user.id
-        volunteer = create(:user, :volunteer_with_volunteer_program)
-        Space.find_or_create_by(name: "Makerspace")
-        expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: volunteer.id} }.to change(ShadowingHour, :count).by(1)
-        expect { get :delete_event, params: {event_id: ShadowingHour.last.event_id}}.to change(ShadowingHour, :count).by(-1)
-        expect(response).to redirect_to calendar_volunteers_path
-      end
+      # it 'should delete a shadowing shift (admin)' do
+      #   user = create(:user, :admin)
+      #   session[:expires_at] = DateTime.tomorrow.end_of_day
+      #   session[:user_id] = user.id
+      #   volunteer = create(:user, :volunteer_with_volunteer_program)
+      #   Space.find_or_create_by(name: "Makerspace")
+      #   expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: volunteer.id} }.to change(ShadowingHour, :count).by(1)
+      #   expect { get :delete_event, params: {event_id: ShadowingHour.last.event_id}}.to change(ShadowingHour, :count).by(-1)
+      #   expect(response).to redirect_to calendar_volunteers_path
+      # end
 
       it 'should show redirect the user to calendar page (volunteer, missing params)' do
         user = create(:user, :volunteer_with_volunteer_program)
