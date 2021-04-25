@@ -89,4 +89,7 @@
     $('.popover-dismiss').popover({
         trigger: 'focus'
     })
+    $(document).on('turbolinks:load', function () {
+        let clipboard = new Clipboard('.clipboard-btn');
+    });
 </script>
