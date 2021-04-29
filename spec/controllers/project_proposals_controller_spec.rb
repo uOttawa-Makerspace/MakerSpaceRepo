@@ -147,7 +147,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         session[:user_id] = @admin.id
         project_proposal = ProjectProposal.first
         post :approve, params: {id: project_proposal.id}
-        expect(response).to redirect_to project_proposal_path(project_proposal.id)
+        expect(response).to redirect_to project_proposals_url
         expect(flash[:notice]).to eq('Project Proposal Approved')
         expect(ProjectProposal.last.approved?).to be_truthy
       end
@@ -160,7 +160,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         session[:user_id] = @admin.id
         project_proposal = ProjectProposal.first
         post :decline, params: {id: project_proposal.id}
-        expect(response).to redirect_to project_proposal_path(project_proposal.id)
+        expect(response).to redirect_to project_proposals_url
         expect(flash[:notice]).to eq('Project Proposal Declined')
         expect(project_proposal.approved?).to be_falsey
       end
