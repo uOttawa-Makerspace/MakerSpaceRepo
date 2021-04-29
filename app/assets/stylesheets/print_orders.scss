@@ -12,6 +12,10 @@
   margin: 30px auto;
 }
 
+.progress-marker::after {
+  background-color: #d08c33!important;
+}
+
 .label-size {
   font-size: 13.5px;
 }

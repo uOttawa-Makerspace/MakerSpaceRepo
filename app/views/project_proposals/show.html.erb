@@ -25,30 +25,17 @@
       <%= link_to "Decline/Désapprouver ", decline_project_proposals_path(id: @project_proposal.id), method: :post,
                   class: "btn btn-danger", data: {confirm: 'Are you sure? This will decline the project.'} %>
     <% end %>
-    <% if @project_proposal.description.present? %>
-      <div class="repo-desc">
-        <div class="titlepp">DESCRIPTION</div>
-        <div class="description"><%= @project_proposal.description.html_safe %></div>
-      </div>
-    <% end %>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
     <div>
+      <br>
       <b>Possible technologies involved / Technologies possibles impliquées</b>: <%= @project_proposal.equipments %>
       <br>
-      <b>Type de projet / Project Type</b>: <%= @project_proposal.project_type %>
+      <b>Project Type / Type de projet</b> : <%= @project_proposal.project_type %>
       <br>
-      <b>Expected project / Coût prévu du projet
+      <b>Expected project cost / Coût prévu du projet
         cost</b>: <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : "Not available" %>
       <br>
       <% if !@project_proposal.past_experiences.nil?  %>
-        <b>Experiences passées / Past attempts:</b>
+        <b>Past attempts / Experiences passées :</b>
         <% if @project_proposal.past_experiences.split("|")[0] != "" %>
           <%= @project_proposal.past_experiences.split("|")[0] %><br>
         <% end %>
@@ -59,17 +46,15 @@
         <% end %>
       <% end %>
     </div>
+    <% if @project_proposal.description.present? %>
+      <div class="repo-desc">
+        <div class="titlepp">DESCRIPTION</div>
+        <div class="description"><%= @project_proposal.description.html_safe %></div>
+      </div>
+    <% end %>
+    <br>
 
     <div class="repo-desc">
-      <br><br>
-      <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
-      <% if @project_join.present? %>
-        <%= link_to "Leave Project / Partir du projet", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
-                    class: "btn btn-danger", data: {confirm: 'Are you sure that you want to join this project?'} %>
-      <% elsif @user.id.present? %>
-        <%= link_to "Join Project / Se joindre au projet", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
-                    class: "btn btn-primary", data: {confirm: 'Are you sure that you want to join this project?'} %>
-      <% end %>
       <br><br>
       <% if @project_proposal.project_joins.present? %>
         <div>Users that joined this project / Utilisateurs qui ont joins le projet:</div>
@@ -86,11 +71,11 @@
         <div class="jumbotron text-center word-break">
           <b>Client:</b> <%= @project_proposal.client %>
           <br/>
-          <b>Type de client / Client type:</b> <%= @project_proposal.client_type %>
+          <b>Client type / Type de client :</b> <%= @project_proposal.client_type %>
           <br/>
-          <b>Client interest / Interets du client:</b> <%= @project_proposal.client_interest %>
+          <b>Client interest / Interets du client :</b> <%= @project_proposal.client_interest %>
           <br/>
-          <b>Client Background / Contexte du client:</b> <%= @project_proposal.client_background.html_safe %>
+          <b>Client Background / Contexte du client :</b> <%= @project_proposal.client_background.html_safe %>
           <br>
         </div>
 
@@ -182,11 +167,21 @@
       <% end %>
       <% if @user.id.present? %>
         <div class="repo-info-item">
-          <%= link_to "Créer un projet / Create Repository", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
+          <%= link_to "Document Project / Documenter un projet", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
                       class: "btn btn-success",
                       data: {confirm: 'This action will create a repository related to this project proposal'} %>
         </div>
       <% end %>
+      <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
+      <div class="repo-info-item">
+        <% if @project_join.present? %>
+          <%= link_to "Leave Project / Partir du projet", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
+                      class: "btn btn-danger", data: {confirm: 'Are you sure that you want to join this project?'} %>
+        <% elsif @user.id.present? %>
+          <%= link_to "Join Project / Se joindre au projet", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
+                      class: "btn btn-primary", data: {confirm: 'Are you sure that you want to join this project?'} %>
+        <% end %>
+      </div>
       <div class="repo-info-item">
         <div class="report">
           <%= link_to fa_icon('flag', text: 'Report inapropriate / Reporter comme inapproprié'), report_repository_path(@project_proposal.id), class: 'repository_report' %>
