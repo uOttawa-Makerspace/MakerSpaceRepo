@@ -1,4 +1,4 @@
-require("select2");
+require('select2');
 
 window.showPass = function() {
 	document.getElementById("password_repo_field").style.display = 'block'
@@ -17,36 +17,8 @@ window.togglePass = function() {
     }
 }
 
-require("select2");
 document.addEventListener("turbolinks:load", function() {
     $("#search_users_add").select2({});
     $("#search_users_remove").select2({});
-    $("#owner_select").select2({
-        theme: "bootstrap",
-        placeholder: "Select a user",
-        multiple: true,
-        allowClear: true,
-        ajax: {
-            url: "populate_users",
-            type: "GET",
-            dataType: 'json',
-            delay: 250,
-            data: function (params) {
-                return {
-                    search: params.term
-                };
-            },
-            processResults: function (data) {
-                return {
-                    results: $.map(data.users, function (item) {
-                        return {
-                            text: item.name,
-                            id: item.username
-                        }
-                    })
-                };
-            },
-        },
-        minimumInputLength: 3,
-    });
 });
+
