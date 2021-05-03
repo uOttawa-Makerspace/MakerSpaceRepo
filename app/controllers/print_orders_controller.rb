@@ -67,7 +67,7 @@ class PrintOrdersController < ApplicationController
 
   def edit_approval
     @print_order = PrintOrder.find(params[:print_order_id])
-    unless @user.admin? && @print_order.approved?
+    unless @user.admin? && @print_order.approved? && !@print_order.user_approval
       if @user.admin? || @user.staff?
         redirect_to print_orders_path, alert: 'You are not allowed on this page'
       else
