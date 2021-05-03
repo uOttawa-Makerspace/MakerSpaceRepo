@@ -4,17 +4,110 @@
 
       <p><%= link_to "Back to Print Order Home", print_orders_path, class: "btn btn-primary" %></p>
       <br>
-      <h2>Edit Print Order Print Files</h2>
-      <p>Since the user already received the quote, you can only modify the files.</p>
+      <h2>Edit Print Order Print Quote (#<%= @print_order.id %>)</h2>
 
       <ul class="list-group">
         <% @print_order.final_file.each do |files| %>
-          <li class="list-group-item" id="<%= files.filename %>"><%= files.filename %> <button class="float-right btn btn-danger" data-file="<%= files.filename %>" onclick="refresh_fileList(this)">X</button> </li>
+          <li class="list-group-item" id="<%= files.filename %>"><%= files.filename %>
+            <button class="float-right btn btn-danger" data-file="<%= files.filename %>" onclick="refresh_fileList(this)">X</button>
+          </li>
         <% end %>
       </ul>
       <br>
 
-      <%= form_for @print_order, multipart: true, url: {controller: "print_orders", action: "update_submission"} do |f| %>
+      <%= form_for @print_order, multipart: true, url: { controller: "print_orders", action: "update_submission" } do |f| %>
+        <% if @print_order.order_type == 0 and (@print_order.sst != true) %>
+          <%= f.label :quote, "Service Charges (In CAD) " %>
+          <div class="form-group">
+            <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
+          </div>
+          <% if @print_order.clean_part == true %>
+            <div class="form-group form-inline">
+              <%= f.label :clean_part, "Clean Part", style: 'margin-right: 5px;' %>
+              <%= f.check_box :clean_part, class: 'custom-control custom-checkbox', :required => true %>
+            </div>
+          <% end %>
+          <div class="row">
+            <div class="col-md-6">
+              <%= f.label :quote, "Number of Grams (Or CM3)" %>
+              <div class="form-group">
+                <%= f.number_field :grams, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <%= f.label :quote, "Price Per Gram (In CAD) " %>
+              <div class="form-group">
+                <%= f.number_field :price_per_gram, step: "0.01", placeholder: "0.08", class: "form-control", :required => true %>
+              </div>
+            </div>
+            <% if @print_order.material == "M2 Onyx" %>
+              <div class="col-md-6">
+                <%= f.label :grams_fiberglass, "CM3 Fiberglass" %>
+                <div class="form-group">
+                  <%= f.number_field :grams_fiberglass, step: "0.01", value: 0, class: "form-control", :required => true %>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <%= f.label :price_per_gram_fiberglass, "Price Per Gram (Fiberglass) " %>
+                <div class="form-group">
+                  <%= f.number_field :price_per_gram_fiberglass, step: "0.01", value: 0, class: "form-control", :required => true %>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <%= f.label :grams_carbonfiber, "CM3 Carbon fiber" %>
+                <div class="form-group">
+                  <%= f.number_field :grams_carbonfiber, step: "0.01", value: 0, class: "form-control", :required => true %>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <%= f.label :price_per_gram_carbonfiber, "Price Per Gram (Carbonfiber) " %>
+                <div class="form-group">
+                  <%= f.number_field :price_per_gram_carbonfiber, step: "0.01", value: 0, class: "form-control", :required => true %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% elsif @print_order.sst == true %>
+          <%= f.label :quote, "Service Charges (In CAD) " %>
+          <div class="form-group">
+            <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
+          </div>
+          <%= f.label :quote, "Hours (In CAD) " %>
+          <div class="form-group">
+            <%= f.number_field :hours, step: "0.01", placeholder: "10", class: "form-control", :required => true %>
+          </div>
+          <%= f.label :quote, "Price Per Hour (In CAD) " %>
+          <div class="form-group">
+            <%= f.number_field :price_per_hour, step: "0.01", placeholder: "30.00", class: "form-control", :required => true %>
+          </div>
+        <% else %>
+          <%= f.label :quote, "Service Charges (In CAD) " %>
+          <div class="form-group">
+            <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <%= f.label :quote, "Material Cost (In CAD) " %>
+              <div class="form-group">
+                <%= f.number_field :material_cost, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <%= f.label :quote, "Price For Hours Worked (In CAD) " %>
+              <div class="form-group">
+                <%= f.number_field :price_per_hour, step: "0.01", placeholder: "15.00", class: "form-control", :required => true %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+        <div class="form-group">
+          <%= f.label :staff_comments, "Comments for the user" %>
+          <%= f.text_field :staff_comments, placeholder: "I will need to add supports", class: "form-control" %>
+        </div>
+        <div class="form-group">
+          <%= f.label :comments_for_staff, "Comments for the staff members" %>
+          <%= f.text_field :comments_for_staff, placeholder: "Use the Raise 3D", class: "form-control" %>
+        </div>
 
         <%= hidden_field_tag :id, @print_order.id %>
         <%= hidden_field_tag :remove_files, "", id: "remove_files" %>
@@ -26,11 +119,11 @@
         </div>
 
         <div class="form-group">
-          <button class="btn btn-primary" type="submit">Edit Request</button>
+          <%= f.submit "Edit Request", class: 'btn btn-primary', data: {confirm: 'Are you sure you want to submit the updated quoted? This will send an updated quote email to the client.'} %>
         </div>
       <% end %>
-    </div>
-  </div>
+      </div>
+</div>
 </div>
 
 

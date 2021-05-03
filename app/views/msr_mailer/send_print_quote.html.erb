@@ -3,7 +3,13 @@
 </p>
 
 <p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">
-  Your print "<%= @print_order.file.filename %>" has been approved!
+  <% if @resend == true %>
+    Your print "<%= @print_order.file.filename %>" has been re-approved!
+    <br>
+    <b>This means the quote has been updated</b>, please make sure that you still agree with the new quote by checking this current email or the MakerRepo page.
+  <% else %>
+    Your print "<%= @print_order.file.filename %>" has been approved!
+  <% end %>
 </p>
 
 <p style="font: 400 1.0em 'Raleway', sans-serif; color: #555;">

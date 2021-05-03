@@ -63,12 +63,13 @@ class MsrMailer < ApplicationMailer
     mail(to: 'makerspace@uottawa.ca', subject: 'A new print order has been submitted')
   end
 
-  def send_print_quote(expedited_price, user, print_order, comments, clean_part_price)
+  def send_print_quote(expedited_price, user, print_order, comments, clean_part_price, resend)
     @clean_part_price = clean_part_price
     @expedited_price = expedited_price
     @user = user
     @print_order = print_order
     @comments = comments
+    @resend = resend
     mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', bcc: 'uottawa.makerepo@gmail.com', subject: "Your print \"#{@print_order.file.filename}\" has been approved!")
   end
 
