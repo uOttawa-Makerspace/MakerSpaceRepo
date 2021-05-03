@@ -103,8 +103,8 @@
                       <% end %>
                     </td>
                     <td>
+                      <%= link_to "Edit Quote", print_order_edit_approval_path(prints.id), class: "btn btn-sm btn-primary", style: "margin-bottom: 10px;" if prints.approved? %>
                       <% if prints.final_file.attached? %>
-                        <%= link_to "Edit files", print_order_edit_approval_path(prints.id), class: "btn btn-sm btn-primary", style: "margin-bottom: 10px;" %>
                         <% prints.final_file.each do |final_file| %>
                           <%= link_to "Download", rails_blob_path(final_file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
                           <br>

@@ -6,6 +6,9 @@ class PrintOrdersController < ApplicationController
   before_action :set_pricing, only: %i[new edit]
   before_action :grant_access, only: ['index']
 
+  $expedited_price = 20 # Surcharge for expedited services
+  $clean_part_price = 5 # Surcharge for cleaning the parts
+
   def index
     # TODO: Too much logic in index.html.erb
     @order = {
@@ -84,6 +87,8 @@ class PrintOrdersController < ApplicationController
       end
     end
 
+    create_update_quote
+
     params[:print_order][:comments] = params[:print_order][:comments].split(",").join(" ") if params[:comments].present?
 
     if params[:print_order][:material] && params[:print_order][:comments]
@@ -92,11 +97,10 @@ class PrintOrdersController < ApplicationController
       end
     end
 
-    params[:print_order][:sst] = 'true' if params[:print_order][:material] == 'SST'
-
     params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:comments_box].to_s if params[:print_order][:comments] && (params[:comments_box] != '')
 
     if @print_order.update(print_order_params)
+      MsrMailer.send_print_quote($expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments], $clean_part_price, true).deliver_now
       flash[:notice] = "The print order has been updated!"
     else
       flash[:alert] = "An error as occured when updating the print order..."
@@ -119,8 +123,6 @@ class PrintOrdersController < ApplicationController
       params[:print_order][:comments] = params[:print_order][:material].to_s + ', ' + params[:print_order][:comments].to_s
     end
 
-    params[:print_order][:sst] = 'true' if params[:print_order][:material] == 'SST'
-
     if params[:print_order][:comments] && (params[:print_order][:comments_box] != '')
       params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:print_order][:comments_box].to_s
     end
@@ -139,35 +141,15 @@ class PrintOrdersController < ApplicationController
   end
 
   def update
-    expedited_price = 20 # Surcharge for expedited services
-    clean_part_price = 5 # Surcharge for cleaning the parts
-
     @print_order = PrintOrder.find(params[:id])
 
     params[:print_order][:timestamp_approved] = DateTime.now if params[:print_order][:timestamp_approved]
 
-    if params[:print_order][:price_per_hour] && params[:print_order][:material_cost] && params[:print_order][:service_charge]
-      params[:print_order][:quote] = params[:print_order][:service_charge].to_f + params[:print_order][:price_per_hour].to_f + params[:print_order][:material_cost].to_f
-      params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f if @print_order.expedited == true
-      params[:print_order][:quote] = params[:print_order][:quote].to_f + clean_part_price.to_f if @print_order.clean_part == true
-    elsif params[:print_order][:price_per_hour] && params[:print_order][:hours] && params[:print_order][:service_charge]
-      params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:price_per_hour].to_f * params[:print_order][:hours].to_f)
-      params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f if @print_order.expedited
-      params[:print_order][:quote] = params[:print_order][:quote].to_f + clean_part_price.to_f if @print_order.clean_part == true
-    elsif params[:print_order][:price_per_gram] && params[:print_order][:grams] && params[:print_order][:service_charge]
-      if @print_order.material == 'M2 Onyx'
-        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f) + (params[:print_order][:grams_fiberglass].to_f * params[:print_order][:price_per_gram_fiberglass].to_f) + (params[:print_order][:grams_carbonfiber].to_f * params[:print_order][:price_per_gram_carbonfiber].to_f)
-      else
-        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
-      end
-
-      params[:print_order][:quote] = params[:print_order][:quote].to_f + expedited_price.to_f if @print_order.expedited
-      params[:print_order][:quote] = params[:print_order][:quote].to_f + clean_part_price.to_f if ((@print_order.clean_part == true) && (params[:print_order][:clean_part] == true))
-    end
+    create_update_quote
 
     if @print_order.update(print_order_params)
       if params[:print_order][:approved] == 'true'
-        MsrMailer.send_print_quote(expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments], clean_part_price).deliver_now
+        MsrMailer.send_print_quote($expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments], $clean_part_price, false).deliver_now
       elsif params[:print_order][:approved] == 'false'
         MsrMailer.send_print_declined(@print_order.user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
       elsif params[:print_order][:user_approval] == 'true'
@@ -187,12 +169,9 @@ class PrintOrdersController < ApplicationController
     else
       flash[:alert] = 'There has been an error, please make sure the file type is one that is accepted. You can try again later or contact: uottawa.makerepo@gmail.com'
     end
-    if @user.id == @print_order.user_id
-      if @user.admin? || @user.staff?
-        redirect_to print_orders_path
-      else
-        redirect_to index_new_print_orders_path
-      end
+
+    if (@user.id == @print_order.user_id) && !(@user.admin? || @user.staff?)
+      redirect_to index_new_print_orders_path
     else
       redirect_to print_orders_path
     end
@@ -261,6 +240,29 @@ class PrintOrdersController < ApplicationController
     unless current_user.staff? || current_user.admin?
       flash[:alert] = 'You cannot access this area.'
       redirect_to root_path
+    end
+  end
+
+  def create_update_quote
+    params[:print_order][:sst] = 'true' if params[:print_order][:material] == 'SST'
+
+    if params[:print_order][:price_per_hour] && params[:print_order][:material_cost] && params[:print_order][:service_charge]
+      params[:print_order][:quote] = params[:print_order][:service_charge].to_f + params[:print_order][:price_per_hour].to_f + params[:print_order][:material_cost].to_f
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + $expedited_price.to_f if @print_order.expedited == true
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + $clean_part_price.to_f if @print_order.clean_part == true
+    elsif params[:print_order][:price_per_hour] && params[:print_order][:hours] && params[:print_order][:service_charge]
+      params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:price_per_hour].to_f * params[:print_order][:hours].to_f)
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + $expedited_price.to_f if @print_order.expedited
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + $clean_part_price.to_f if @print_order.clean_part == true
+    elsif params[:print_order][:price_per_gram] && params[:print_order][:grams] && params[:print_order][:service_charge]
+      if @print_order.material == 'M2 Onyx'
+        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f) + (params[:print_order][:grams_fiberglass].to_f * params[:print_order][:price_per_gram_fiberglass].to_f) + (params[:print_order][:grams_carbonfiber].to_f * params[:print_order][:price_per_gram_carbonfiber].to_f)
+      else
+        params[:print_order][:quote] = params[:print_order][:service_charge].to_f + (params[:print_order][:grams].to_f * params[:print_order][:price_per_gram].to_f)
+      end
+
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + $expedited_price.to_f if @print_order.expedited
+      params[:print_order][:quote] = params[:print_order][:quote].to_f + $clean_part_price.to_f if ((@print_order.clean_part == true) && (params[:print_order][:clean_part] == true))
     end
   end
 
