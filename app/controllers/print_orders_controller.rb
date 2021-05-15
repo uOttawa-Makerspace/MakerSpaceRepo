@@ -119,6 +119,7 @@ class PrintOrdersController < ApplicationController
   end
 
   def create
+
     if params[:print_order][:material] && params[:print_order][:comments]
       params[:print_order][:comments] = params[:print_order][:material].to_s + ', ' + params[:print_order][:comments].to_s
     end
@@ -128,6 +129,9 @@ class PrintOrdersController < ApplicationController
     end
 
     @print_order = PrintOrder.create(print_order_params)
+
+    @print_order.update(sst: true) if params[:print_order][:material] == 'SST'
+
     if @print_order.id.nil? || @print_order.id == 0
       if @user.admin? || @user.staff?
         redirect_to print_orders_path, alert: 'The upload as failed ! Make sure the file types are STL for 3D Printing or SVG and PDF for Laser Cutting and PDF for the team drawing !'
@@ -144,6 +148,7 @@ class PrintOrdersController < ApplicationController
     @print_order = PrintOrder.find(params[:id])
 
     params[:print_order][:timestamp_approved] = DateTime.now if params[:print_order][:timestamp_approved]
+    params[:print_order][:timestamp_printed] = DateTime.now if params[:print_order][:printed]
 
     create_update_quote
 
@@ -204,7 +209,7 @@ class PrintOrdersController < ApplicationController
   private
 
   def print_order_params
-    params.require(:print_order).permit(:user_id, :hours, :sst, :material, :grams, :service_charge, :clean_part, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited, :comments_for_staff, :grams_carbonfiber, :price_per_gram_carbonfiber, :price_per_gram_fiberglass, :grams_fiberglass, :payed, :picked_up, :pdf_form, final_file: [])
+    params.require(:print_order).permit(:user_id, :hours, :sst, :material, :grams, :service_charge, :clean_part, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited, :comments_for_staff, :grams_carbonfiber, :price_per_gram_carbonfiber, :price_per_gram_fiberglass, :grams_fiberglass, :payed, :picked_up, :pdf_form, :timestamp_printed, final_file: [])
   end
 
   def set_pricing
