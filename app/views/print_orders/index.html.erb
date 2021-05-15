@@ -58,6 +58,8 @@
                   <th>Action</th>
                 </tr>
 
+                <% @print_order = @print_order.order(timestamp_printed: :asc) if index == 3 %>
+
                 <% @print_order.where(order).each do |prints| %>
 
                   <tr class="text-center">
@@ -69,7 +71,7 @@
                     <td><%= ((prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member")) ? "Internal" : "External" %></td>
 
                     <% if prints.order_type == 0 and prints.grams %>
-                      <td>3D Printing (<%= prints.grams %> g)</td>
+                      <td>3D Printing (<%= prints.grams %> <%= prints.sst? ? "h" : "g" %>)</td>
                     <% elsif prints.order_type == 0 %>
                       <td>3D Printing</td>
                     <% elsif prints.order_type == 1 %>
@@ -256,7 +258,8 @@
                         <% if prints.user_approval == false %>
                           Won't be printed
                         <% elsif prints.printed %>
-                          Printed
+                          <%= prints.timestamp_printed ? "Printed on #{prints.timestamp_printed.to_formatted_s(:long_ordinal)}".html_safe : 'Printed' %>
+                          <%=  %>
                         <% end %>
                       </td>
                       <td>
