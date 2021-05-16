@@ -100,7 +100,7 @@ class PrintOrdersController < ApplicationController
     params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:comments_box].to_s if params[:print_order][:comments] && (params[:comments_box] != '')
 
     if @print_order.update(print_order_params)
-      MsrMailer.send_print_quote($expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments], $clean_part_price, true).deliver_now
+      MsrMailer.send_print_quote($expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments], $clean_part_price, true).deliver_now if @print_order.approved?
       flash[:notice] = "The print order has been updated!"
     else
       flash[:alert] = "An error as occured when updating the print order..."
