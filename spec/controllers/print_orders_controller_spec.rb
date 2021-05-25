@@ -236,7 +236,7 @@ RSpec.describe PrintOrdersController, type: :controller do
       it 'should return render a pdf' do
         print_order = create(:print_order)
         print_order.printed = true
-        get :invoice, params: {print_order_id: print_order.id, format: :pdf}
+        get :show, params: {id: print_order.id, format: :pdf}
         expect(response).to have_http_status(:success)
       end
     end

@@ -10,7 +10,6 @@ class PrintOrdersController < ApplicationController
   $clean_part_price = 5 # Surcharge for cleaning the parts
 
   def index
-    # TODO: Too much logic in index.html.erb
     @order = {
       'approved is NULL' => 'Waiting for Staff Approval',
       'user_approval is NULL and approved is TRUE' => 'Waiting for user Approval',
@@ -53,7 +52,6 @@ class PrintOrdersController < ApplicationController
 
   def edit
     @print_order = PrintOrder.find(params[:id])
-    @comments = @print_order.comments.split(",")
 
     unless @print_order.approved.nil?
       if @user.admin? || @user.staff?
@@ -89,16 +87,6 @@ class PrintOrdersController < ApplicationController
 
     create_update_quote
 
-    params[:print_order][:comments] = params[:print_order][:comments].split(",").join(" ") if params[:comments].present?
-
-    if params[:print_order][:material] && params[:print_order][:comments]
-      unless (params[:print_order][:comments] == '1/8" MDF') || (params[:print_order][:comments] == '1/4" MDF')
-        params[:print_order][:comments] = params[:print_order][:material].to_s + ', ' + params[:print_order][:comments].to_s
-      end
-    end
-
-    params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:comments_box].to_s if params[:print_order][:comments] && (params[:comments_box] != '')
-
     if @print_order.update(print_order_params)
       MsrMailer.send_print_quote($expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments], $clean_part_price, true).deliver_now if @print_order.approved?
       flash[:notice] = "The print order has been updated!"
@@ -119,15 +107,6 @@ class PrintOrdersController < ApplicationController
   end
 
   def create
-
-    if params[:print_order][:material] && params[:print_order][:comments]
-      params[:print_order][:comments] = params[:print_order][:material].to_s + ', ' + params[:print_order][:comments].to_s
-    end
-
-    if params[:print_order][:comments] && (params[:print_order][:comments_box] != '')
-      params[:print_order][:comments] = params[:print_order][:comments].to_s + ', ' + params[:print_order][:comments_box].to_s
-    end
-
     @print_order = PrintOrder.create(print_order_params)
 
     @print_order.update(sst: true) if params[:print_order][:material] == 'SST'
@@ -153,13 +132,13 @@ class PrintOrdersController < ApplicationController
     create_update_quote
 
     if @print_order.update(print_order_params)
-      if params[:print_order][:approved] == 'true'
+      if @print_order.approved? == true
         MsrMailer.send_print_quote($expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments], $clean_part_price, false).deliver_now
-      elsif params[:print_order][:approved] == 'false'
+      elsif @print_order.approved? == false
         MsrMailer.send_print_declined(@print_order.user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
-      elsif params[:print_order][:user_approval] == 'true'
+      elsif @print_order.user_approval? == true
         MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
-      elsif params[:print_order][:printed] == 'true'
+      elsif @print_order.printed? == true
         if params[:email_false].blank?
           if params[:email_message].present?
             message = params[:email_message].html_safe
@@ -199,17 +178,15 @@ class PrintOrdersController < ApplicationController
     end
   end
 
-  def invoice
-    @print_order = PrintOrder.find(params[:print_order_id])
-    @expedited_price = 20
-    @clean_part_price = 5
+  def show
+    @print_order = PrintOrder.find(params[:id])
     render pdf: 'file_name', template: 'print_orders/pdf.html.erb'
   end
 
   private
 
   def print_order_params
-    params.require(:print_order).permit(:user_id, :hours, :sst, :material, :grams, :service_charge, :clean_part, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited, :comments_for_staff, :grams_carbonfiber, :price_per_gram_carbonfiber, :price_per_gram_fiberglass, :grams_fiberglass, :payed, :picked_up, :pdf_form, :timestamp_printed, final_file: [])
+    params.require(:print_order).permit(:user_id, :hours, :sst, :material, :grams, :comments_box, :service_charge, :clean_part, :price_per_gram, :price_per_hour, :material_cost, :timestamp_approved, :order_type, :comments, :approved, :printed, :file, :quote, :user_approval, :staff_comments, :staff_id, :expedited, :comments_for_staff, :grams_carbonfiber, :price_per_gram_carbonfiber, :price_per_gram_fiberglass, :grams_fiberglass, :payed, :picked_up, :pdf_form, :timestamp_printed, final_file: [])
   end
 
   def set_pricing

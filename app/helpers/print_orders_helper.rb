@@ -11,7 +11,7 @@ module PrintOrdersHelper
   end
 
   def return_checked_other(value)
-    if (value != 'PLA') && (value != 'ABS') && (value != 'SST') && (value != 'M2 Onyx') && (value != ' Low Quality') && (value != ' Medium Quality') && (value != ' High Quality')
+    if (value != 'PLA') && (value != 'ABS') && (value != 'SST') && (value != 'M2 Onyx') && (value != 'Low Quality') && (value != 'Medium Quality') && (value != 'High Quality')
       'checked'
     end
   end

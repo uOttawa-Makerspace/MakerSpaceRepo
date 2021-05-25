@@ -45,8 +45,7 @@ Rails.application.routes.draw do
   get '/saml/metadata' => 'saml_idp#metadata'
   post '/saml/auth' => 'saml_idp#auth'
 
-  resources :print_orders, only: %i[index create update new destroy edit] do
-    get :invoice
+  resources :print_orders, only: %i[index create update new destroy edit show] do
     get :edit_approval
     collection do
       get :index_new
