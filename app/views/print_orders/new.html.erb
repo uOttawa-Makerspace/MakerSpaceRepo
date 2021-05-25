@@ -153,6 +153,11 @@
                   <input type="radio" id="Acrylic" class="form-check-input" name="print_order[comments]" value='1/4" Acrylic' aria-label="1/4 inch Acrylic" onclick="change_color(this)">
                   1/4" Acrylic<br>
                 </div>
+                <div class="form-check">
+                  <input type="radio" class="form-check-input" id="own_material" name="print_order[comments]" aria-label="Own Material" value="Own Material">I will bring my own material
+                  <input type="hidden" id="own_material_hidden" class="form-check-input" name="print_order[material]" aria-label="Own Material" value=''><br>
+                  <input id="input_own_material" class="form-control" type="text" placeholder="Own Material" onchange="changeToOwnMaterial()"/>
+                </div>
               </div>
             </div>
           </fieldset>

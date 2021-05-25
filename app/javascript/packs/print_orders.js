@@ -10,6 +10,11 @@ window.changeOtherFilament = function() {
     other2.value = document.getElementById("input_other_filament").value;
 };
 
+window.changeToOwnMaterial = function() {
+    document.getElementById("own_material").checked = true;
+    document.getElementById("own_material_hidden").value = document.getElementById("input_own_material").value;
+};
+
 window.change_color = function(radio) {
     if (radio.checked && radio.id === "Acrylic") {
         document.getElementById("color_form").style.display = 'block';
