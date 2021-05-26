@@ -132,13 +132,13 @@ class PrintOrdersController < ApplicationController
     create_update_quote
 
     if @print_order.update(print_order_params)
-      if @print_order.approved? == true
+      if params[:print_order][:approved] == 'true'
         MsrMailer.send_print_quote($expedited_price, @print_order.user, @print_order, params[:print_order][:staff_comments], $clean_part_price, false).deliver_now
-      elsif @print_order.approved? == false
+      elsif params[:print_order][:approved] == 'false'
         MsrMailer.send_print_declined(@print_order.user, params[:print_order][:staff_comments], @print_order.file.filename).deliver_now
-      elsif @print_order.user_approval? == true
+      elsif params[:print_order][:user_approval] == 'true'
         MsrMailer.send_print_user_approval_to_makerspace(@print_order.id).deliver_now
-      elsif @print_order.printed? == true
+      elsif params[:print_order][:printed] == 'true'
         if params[:email_false].blank?
           if params[:email_message].present?
             message = params[:email_message].html_safe

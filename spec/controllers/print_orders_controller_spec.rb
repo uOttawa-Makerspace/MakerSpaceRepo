@@ -125,7 +125,7 @@ RSpec.describe PrintOrdersController, type: :controller do
         patch :update_submission, params: {id: PrintOrder.last.id, print_order: {comments: "abc1234", file: fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')}}
         expect(response).to redirect_to index_new_print_orders_path
         expect(flash[:notice]).to eq("The print order has been updated!")
-        expect(PrintOrder.last.comments).to eq("abc1234, ")
+        expect(PrintOrder.last.comments).to eq("abc1234")
         expect(PrintOrder.last.file.filename).to eq("#{PrintOrder.last.id}_RepoFile1.pdf")
       end
 
