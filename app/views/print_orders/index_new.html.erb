@@ -42,7 +42,7 @@
 
     <% if @print_order.where(order).present? %>
 
-      <% @print_order.where(order).each do |prints| %>
+      <% @print_order.includes([:file_attachment]).where(order).each do |prints| %>
 
         <%= render 'new_template', prints: prints, files: files %>
 

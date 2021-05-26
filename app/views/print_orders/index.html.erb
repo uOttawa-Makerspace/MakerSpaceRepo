@@ -84,7 +84,13 @@
 
                     <td><%= prints.created_at ? "Submitted on #{prints.created_at.to_formatted_s(:long_ordinal)}".html_safe : 'Approved' %></td>
 
-                    <td><%= prints.comments %></td>
+                    <td>
+                      <%= prints.material %>
+                      <%= "<br>".html_safe if prints.comments.present? %>
+                      <%= prints.comments %>
+                      <%= "<br>".html_safe if prints.comments_box.present? %>
+                      <%= prints.comments_box %>
+                    </td>
 
                     <td>
                       <% if prints.file.attached? %>
@@ -105,7 +111,7 @@
                       <% end %>
                     </td>
                     <td>
-                      <%= link_to "Edit Quote", print_order_edit_approval_path(prints.id), class: "btn btn-sm btn-primary", style: "margin-bottom: 10px;" if (prints.approved? && !prints.user_approval?) %>
+                      <%= link_to "Edit Quote", print_order_edit_approval_path(prints.id), class: "btn btn-sm btn-primary", style: "margin-bottom: 10px;" + "<br>".html_safe if (prints.approved? && !prints.user_approval?) %>
                       <% if prints.final_file.attached? %>
                         <% prints.final_file.each do |final_file| %>
                           <%= link_to "Download", rails_blob_path(final_file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
@@ -293,7 +299,7 @@
                     <% end %>
                     <% if index == 1 || index == 2 || index == 3 %>
                       <td>
-                        <%= link_to 'Invoice', print_order_invoice_url(prints), method: :get, class: "btn btn-primary", target: :_blank %>
+                        <%= link_to 'Invoice', print_order_path(prints), method: :get, class: "btn btn-primary", target: :_blank %>
                       </td>
                     <% end %>
                     <td>
