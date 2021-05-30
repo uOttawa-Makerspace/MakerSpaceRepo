@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_05_14_225659) do
+ActiveRecord::Schema.define(version: 2021_05_16_202233) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -405,6 +405,7 @@ ActiveRecord::Schema.define(version: 2021_05_14_225659) do
     t.boolean "picked_up"
     t.boolean "clean_part"
     t.datetime "timestamp_printed"
+    t.string "comments_box"
   end
 
   create_table "printer_sessions", id: :serial, force: :cascade do |t|
