@@ -24,4 +24,21 @@ class VolunteerTaskRequest < ApplicationRecord
     user_id = self.user_id
     volunteer_task.volunteer_task_joins.where(user_id: user_id, active: true).last
   end
+
+  def self.filter_by_attribute(value)
+    if value
+      if value == 'search_pending=' || value == 'search_processed='
+        all
+      else
+        value = value.split('=').last.gsub('+', ' ').gsub('%20', ' ')
+        puts(value)
+        where("LOWER(users.name) like LOWER(?) OR
+                 LOWER(volunteer_tasks.title) like LOWER(?)",
+              "%#{value}%", "%#{value}%")
+      end
+    else
+      all
+    end
+  end
+
 end
