@@ -1,0 +1,62 @@
+
+<div class="table-responsive">
+    <table class="table sessions-table">
+
+        <tr>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Date Updated <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+            <th>CC/Hours<span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Task<span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+            <th>User<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+            <% if current_user.staff? %>
+            <th class="action-header">Action</th>
+            <% end %>
+        </tr>
+
+        <tbody>
+        <%= will_paginate @pending_volunteer_task_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+        <% @pending_volunteer_task_requests.each do |vtr| %>
+        <tr>
+            <td>
+                <%= vtr.created_at.strftime("%Y-%m-%d") %>
+                <br>
+                <%= vtr.created_at.strftime("%I:%M %p").downcase() %>
+            </td>
+
+            <td>
+                <%= vtr.updated_at.strftime("%Y-%m-%d") %>
+                <br>
+                <%= vtr.updated_at.strftime("%I:%M %p").downcase() %>
+            </td>
+
+            <td>
+                <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
+                <%= vtr.volunteer_task.cc %>
+                <br/>
+                <%= vtr.volunteer_task.hours %> hours
+            </td>
+
+            <td class="username">
+                <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id) %>
+            </td>
+
+            <td class="username">
+                <%= link_to vtr.user.name, user_path(vtr.user.username) %>
+            </td>
+
+            <td>
+                Waiting for approval
+            </td>
+            <% if current_user.staff? %>
+            <td class="action-cell">
+                <%= link_to (fa_icon('times')), { controller: :volunteer_task_requests, action: :update_approval, id: vtr.id, approval: false }, method: :put, class: 'x-button' %>
+                <%= link_to (fa_icon('check')), { controller: :volunteer_task_requests, action: :update_approval, id: vtr.id, approval: true }, method: :put, class: 'check-button' %>
+            </td>
+            <% end %>
+
+        </tr>
+        <% end %>
+        </tbody>
+    </table>
+</div>

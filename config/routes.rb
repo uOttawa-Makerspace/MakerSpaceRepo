@@ -355,6 +355,8 @@ Rails.application.routes.draw do
     collection do
       get :create_request
       put :update_approval
+      get :search_pending
+      get :search_processed
     end
   end
 
