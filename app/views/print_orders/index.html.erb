@@ -265,7 +265,6 @@
                           Won't be printed
                         <% elsif prints.printed %>
                           <%= prints.timestamp_printed ? "Printed on #{prints.timestamp_printed.to_formatted_s(:long_ordinal)}".html_safe : 'Printed' %>
-                          <%=  %>
                         <% end %>
                       </td>
                       <td>
@@ -275,6 +274,7 @@
                           No
                           <br>
                           <% if prints.printed? %>
+                            Price : <%= number_to_currency(prints.quote) %>
                             <%= form_for prints, url: print_order_path(prints) do |f| %>
                               <%= f.hidden_field :payed, :value => 'true' %>
                               <%= f.submit 'Paid?', class: "btn btn-primary", data: { confirm: "Are you sure the client paid ?" } %>
