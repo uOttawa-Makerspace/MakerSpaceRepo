@@ -76,7 +76,7 @@
         <div class="files-show">
         <% @files.each do |f| %>
           <div class="file-item-show">
-            <u><%= fa_icon "file-text-o" %> <%= link_to f.file.filename, rails_blob_path(f.file) %></u><span><%= f.file.byte_size/1000 %> KB</span>
+            <u><%= fa_icon "file-text-o" %> <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank' %></u><span><%= f.file.byte_size/1000 %> KB</span>
           </div>
         <% end %>
         </div>
