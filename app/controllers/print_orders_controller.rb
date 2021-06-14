@@ -154,12 +154,20 @@ class PrintOrdersController < ApplicationController
       flash[:alert] = 'There has been an error, please make sure the file type is one that is accepted. You can try again later or contact: uottawa.makerepo@gmail.com'
     end
 
-    if (@user.id == @print_order.user_id) && !(@user.admin? || @user.staff?)
-      redirect_to index_new_print_orders_path
-    else
-      redirect_to print_orders_path
+    respond_to do |format|
+      format.html {
+        if (@user.id == @print_order.user_id) && !(@user.admin? || @user.staff?)
+          redirect_to index_new_print_orders_path
+        else
+          redirect_to print_orders_path
+        end
+      }
+      format.js {
+        @table_id = params[:table_id]
+        @index = params[:index]
+        render 'print_orders/update'
+      }
     end
-
   end
 
   def destroy
