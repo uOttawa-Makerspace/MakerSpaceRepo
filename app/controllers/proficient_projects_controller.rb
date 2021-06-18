@@ -37,6 +37,8 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def create
+    badge_template_id = BadgeTemplate.where(training_id: params[:proficient_project][:training_id], training_level: params[:proficient_project][:level]).first
+    badge_template_id.present? ? (params[:proficient_project][:badge_template_id] = badge_template_id.id) : (params[:proficient_project][:badge_template_id] = nil)
     @proficient_project = ProficientProject.new(proficient_project_params)
     if @proficient_project.save
       if params[:badge_requirements_id].present?
@@ -69,6 +71,9 @@ class ProficientProjectsController < DevelopmentProgramsController
     if params[:badge_requirements_id].present?
       @proficient_project.create_badge_requirements(params[:badge_requirements_id])
     end
+
+    badge_template_id = BadgeTemplate.where(training_id: params[:proficient_project][:training_id], training_level: params[:proficient_project][:level]).first
+    badge_template_id.present? ? (params[:proficient_project][:badge_template_id] = badge_template_id.id) : (params[:proficient_project][:badge_template_id] = nil)
 
     if @proficient_project.update(proficient_project_params)
       update_photos
@@ -160,6 +165,15 @@ class ProficientProjectsController < DevelopmentProgramsController
       flash[:error] = 'An error has occurred, please try again later.'
     end
     redirect_to requests_proficient_projects_path
+  end
+
+  def generate_acquired_badge
+    badge = BadgeTemplate.where(training_id: params[:training_id], training_level: params[:level]).first
+    if badge.present?
+      render plain: "#{badge.badge_name}"
+    else
+      render plain: "No badges will be acquired"
+    end
   end
 
   private
@@ -286,3 +300,4 @@ class ProficientProjectsController < DevelopmentProgramsController
     @drop_off_location = DropOffLocation.all.order(name: :asc)
   end
 end
+

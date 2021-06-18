@@ -1,13 +1,6 @@
 # frozen_string_literal: true
 
 Rails.application.configure do
-  config.after_initialize do
-    Bullet.enable        = true
-    Bullet.bullet_logger = true
-    Bullet.console       = true
-    Bullet.rails_logger  = true
-    Bullet.add_footer    = true
-  end
 
   $n_exams_question = 3
   # Settings specified here will take precedence over those in config/application.rb.
