@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_05_16_202233) do
+ActiveRecord::Schema.define(version: 2021_06_18_165708) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -87,6 +87,7 @@ ActiveRecord::Schema.define(version: 2021_05_16_202233) do
     t.string "image_url"
     t.string "list_of_skills"
     t.bigint "training_id"
+    t.string "training_level"
     t.index ["training_id"], name: "index_badge_templates_on_training_id"
   end
 
