@@ -37,7 +37,7 @@
       <% if @repository.description.present? %>
       <div class="repo-desc">
         <div class="title">DESCRIPTION</div>
-        <div style="word-break: break-all;" class="description"><%= @repository.description.html_safe %></div>
+        <div style="word-break: break-word;" class="description"><%= @repository.description.html_safe %></div>
       </div>
     <% end %>
   </section>
