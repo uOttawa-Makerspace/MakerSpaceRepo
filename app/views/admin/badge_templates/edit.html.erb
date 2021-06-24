@@ -13,6 +13,12 @@
                   <%= f.select(:training_id, options_for_select(Training.all.pluck(:name, :id), selected: f.object.training_id), {:include_blank => true}, {:class => "form-control"}) %>
                 </div>
               </div>
+              <div class="col-md-12">
+                <div class="form-group text-center">
+                  <%= f.label :training_level, "Training related to the badge templates" %>
+                  <%= f.select(:training_level, options_for_select(['Beginner', 'Intermediate', 'Advanced'], selected: f.object.training_level), {:include_blank => true}, {:class => "form-control"}) %>
+                </div>
+              </div>
               <div class="col-lg-12 text-center">
                 <%= f.submit "Update Badge Template", class: "btn btn-secondary btn-xl" %>
                 <br><br>

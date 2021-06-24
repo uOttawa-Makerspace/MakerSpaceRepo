@@ -9,6 +9,7 @@
         <tr>
           <th>Badge Name</th>
           <th>Related training</th>
+          <th>Training level</th>
           <th class="action-header">Action</th>
         </tr>
 
@@ -17,6 +18,7 @@
             <tr>
               <td><%= bt.badge_name %></td>
               <td><%= bt.training.present? ? bt.training.name : "No related trainings" %></td>
+              <td><%= bt.training_level.present? ? bt.training_level : "No training level" %></td>
               <td class="action-cell"><%=link_to "Edit", edit_admin_badge_template_path(bt.id), class:"btn btn-primary btn-block btn-sm mb-1 mt-0" %></td>
             </tr>
           <% end %>

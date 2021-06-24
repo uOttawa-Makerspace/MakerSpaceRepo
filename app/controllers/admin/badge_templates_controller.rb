@@ -24,7 +24,7 @@ class Admin::BadgeTemplatesController < AdminAreaController
   private
 
   def badge_template_params
-    params.require(:badge_template).permit(:training_id)
+    params.require(:badge_template).permit(:training_id, :training_level)
   end
 
 end
