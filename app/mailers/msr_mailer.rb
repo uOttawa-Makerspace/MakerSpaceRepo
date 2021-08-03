@@ -56,7 +56,7 @@ class MsrMailer < ApplicationMailer
   def send_print_user_approval_to_makerspace(id)
     @print_id = id
     if PrintOrder.find(id).expedited?
-      mail(to: 'makerspace@uottawa.ca', subject: 'A user has approved a print order', 'Importance': 'high', 'X-Priority': '1')
+      mail(to: 'makerspace@uottawa.ca', subject: 'EXPEDITED: A user has approved a print order', 'Importance': 'high', 'X-Priority': '1')
     else
       mail(to: 'makerspace@uottawa.ca', subject: 'A user has approved a print order')
     end
@@ -65,7 +65,7 @@ class MsrMailer < ApplicationMailer
   def send_print_to_makerspace(id)
     @print_id = id
     if PrintOrder.find(id).expedited?
-      mail(to: 'makerspace@uottawa.ca', subject: 'A new print order has been submitted', 'Importance': 'high', 'X-Priority': '1')
+      mail(to: 'makerspace@uottawa.ca', subject: 'EXPEDITED: A new print order has been submitted', 'Importance': 'high', 'X-Priority': '1')
     else
       mail(to: 'makerspace@uottawa.ca', subject: 'A new print order has been submitted')
     end
