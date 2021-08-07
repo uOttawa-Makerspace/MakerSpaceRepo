@@ -58,7 +58,7 @@
                   <th>Action</th>
                 </tr>
 
-                <% @print_order = @print_order.order(timestamp_printed: :asc) if index == 3 %>
+                <% @print_order = @print_order.except(:order).order('timestamp_printed IS NOT NULL, timestamp_printed ASC, created_at ASC') if index == 3 %>
 
                 <% @print_order.where(order).each_with_index do |prints| %>
                   <tr class="text-center" id="print-<%= prints.id %>">
