@@ -1062,7 +1062,7 @@ GEM
     factory_bot_rails (6.1.0)
       factory_bot (~> 6.1.0)
       railties (>= 5.0.0)
-    faker (2.0)
+    faker (2.0.0)
       i18n (>= 0.7)
     faraday (0.17.3)
       multipart-post (>= 1.2, < 3)
@@ -1527,7 +1527,7 @@ DEPENDENCIES
   zip-zip
 
 RUBY VERSION
-   ruby 2.5.3p105
+   ruby 2.7.2p137
 
 BUNDLED WITH
    2.1.4

@@ -6,3 +6,4 @@ role :db,  %w[deploy@server.makerepo.com]
 
 set :branch, 'staging'
 set :deploy_to, '/var/www/makerrepo-staging'
+set :keep_releases, 3
