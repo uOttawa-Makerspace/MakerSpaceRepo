@@ -7,3 +7,4 @@ role :db,  %w[deploy@server.makerepo.com]
 set :branch, 'master'
 set :deploy_to, '/var/www/makerrepo'
 set :keep_releases, 3
+set :rbenv_ruby, '2.7.2'
