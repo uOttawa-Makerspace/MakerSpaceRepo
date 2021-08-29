@@ -53,10 +53,10 @@
             </div>
 
             <% if @project_proposal.supervisor_background.present? %>
-              <div class="title">Supervisor Background:</div>
-              <div class="jumbotron text-center" style="word-break: break-word">
+              <b>Supervisor Background:</b>
+              <span class="text-center" style="word-break: break-word">
                 <%= @project_proposal.supervisor_background.html_safe %>
-              </div>
+              </span>
             <% end %>
           </div>
         </div>
