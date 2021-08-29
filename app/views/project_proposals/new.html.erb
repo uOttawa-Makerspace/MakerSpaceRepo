@@ -88,17 +88,18 @@
       </div>
     </div>
     <br/>
-    <div class="form-group">
+<!--    <div class="form-group">-->
       <!--<div class = 'checkbox-list'>-->
       <!--<%= f.collection_check_boxes :area, AreaOption.show_options, :name, :name do |b| %>-->
         <!--<%= b.label { b.check_box + b.text } %>-->
         <!--
       <% end %>-->
       <!--</div>-->
-      <br>
-    </div>
+<!--      <br>-->
+<!--    </div>-->
     <div class="form-group required">
       <%= f.label :description, "Description / La Description", class: "control-label" %>
+      <div></div>
       <div style="width: 420px;">
         <%= f.hidden_field :description, id: :project_proposal_description, class: "form-control", required: true %>
         <trix-editor input="project_proposal_description" style="min-height: 100px;"></trix-editor>
@@ -110,17 +111,22 @@
 
     <br>
 
-    <%= label_tag :file, "Project files / Fichiers de Projet" %>
+    <%= label_tag :file, "Project files<br>Fichiers du Projet".html_safe %>
+    <div class="form-group"></div>
     <div class="input-group mb-3">
       <div class="custom-file">
         <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'custom-file-input', aria_label: 'Project Files / Fichiers du projet' %>
         <label class="custom-file-label m-0" for="files_">Choose file</label>
       </div>
     </div>
+
     <div id="file-container"></div>
-    <br/>
-    <%= label_tag :photo, "Gallery / Galerie", class: 'control-label' %>
-    <div class="mx-auto repo-image">
+
+    <%= label_tag :photo, "*Gallery/Galerie" %>
+    <div>A maximum of five photos can be uploaded per repository.<br>Un maximum de cinq photos peuvent être téléchargés
+      par répertoire.
+    </div>
+    <div class="repo-image">
       <div id="dragndrop">
         <br>
         <%= fa_icon 'cloud-upload' %>
@@ -131,7 +137,6 @@
         <label class="custom-file-label m-0" for="images_">Choose an image...</label>
       </div>
     </div>
-    <div id="image-container" class="mx-auto"></div>
 
     <br>
     <div class="form-group">
@@ -147,7 +152,7 @@
     <br>
     <div class="form-group">
       <%= f.label :past_experiences, "Past experiences / Experiences passées", class: "control-label" %>
-      <%= f.text_area :past_experiences, class: 'form-control', value: "There has been no previous attempt to solving this problem." %>
+      <%= f.text_area :past_experiences, class: 'form-control', value: "There has been no previous attempt to solving this problem. / Il n'y a pas de tentatives précédentes pour résoudre ce problème." %>
 
       <div id="linkRef">
         <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link</button>
@@ -179,7 +184,7 @@
         <%= f.radio_button :project_type, 'General', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
         <%= f.label 'project_type_general', 'General', :id => 'type', :style => 'display:inline' %>
         <br>
-        <%= f.radio_button :project_type, 'Client Specific', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.radio_button :project_type, 'Spécifique au client / Client Specific', :class => 'show_extra', :style => 'display:inline' %>
         <%= f.label 'project_type_client_specific', 'Client Specific / Spécifique au client', :id => 'type', :style => 'display:inline' %>
         <br>
         <%= f.radio_button :project_type, 'N/A | S/O', :class => 'show_extra', :style => 'display:inline' %>

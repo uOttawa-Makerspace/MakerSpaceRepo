@@ -71,6 +71,7 @@ questions:update_attachment
 restart
 secret
 shopify_api:graphql:dump
+slugs_for_project_proposals:create
 spec
 spec:config
 spec:controllers
