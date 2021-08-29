@@ -60,7 +60,7 @@
               </td>
               <% end %>
               <td>
-              <%= link_to 'Show', project_proposal, class: "btn btn-success btn-block btn-sm" %>
+              <%= link_to 'Show', project_proposals_url(project_proposal.slug), class: "btn btn-success btn-block btn-sm" %>
               <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "btn btn-primary btn-block btn-sm" %>
               <%= link_to 'Delete', project_proposal, method: :delete,
                                                   class: "btn btn-danger btn-block btn-sm", data: { confirm: 'Are you sure?' } %>
