@@ -75,7 +75,8 @@ class ProjectProposalsController < ApplicationController
         format.json { render json: {redirect_uri: project_proposal_url(@project_proposal.slug).to_s} }
         MsrMailer.send_new_project_proposals.deliver_now
       else
-        format.html { render :new }
+        flash[:alert] = 'An error occurred while creating the project proposal, try again later.'
+        format.html { render :new, status: :unprocessable_entity }
         format.json { render json: @project_proposal.errors, status: :unprocessable_entity }
       end
     end
@@ -93,7 +94,8 @@ class ProjectProposalsController < ApplicationController
         format.html { redirect_to project_proposal_url(@project_proposal.slug), notice: 'Project proposal was successfully updated.' }
         format.json { render json: {redirect_uri: project_proposal_url(@project_proposal.slug).to_s} }
       else
-        format.html { render :edit }
+        flash[:alert] = 'An error occurred while updating the project proposal, try again later.'
+        format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: @project_proposal.errors, status: :unprocessable_entity }
       end
     end
