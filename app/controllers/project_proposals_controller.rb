@@ -71,8 +71,8 @@ class ProjectProposalsController < ApplicationController
         create_photos
         create_files
         create_categories
-        format.html { redirect_to project_proposal_url(@project_proposal.slug), notice: 'Project proposal was successfully created.' }
-        format.json { render json: {redirect_uri: project_proposal_url(@project_proposal.slug).to_s} }
+        format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully created.' }
+        format.json { render json: {redirect_uri: project_proposal_path(@project_proposal.slug).to_s} }
         MsrMailer.send_new_project_proposals.deliver_now
       else
         flash[:alert] = 'An error occurred while creating the project proposal, try again later.'
@@ -91,8 +91,8 @@ class ProjectProposalsController < ApplicationController
         update_photos
         update_files
         create_categories
-        format.html { redirect_to project_proposal_url(@project_proposal.slug), notice: 'Project proposal was successfully updated.' }
-        format.json { render json: {redirect_uri: project_proposal_url(@project_proposal.slug).to_s} }
+        format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully updated.' }
+        format.json { render json: {redirect_uri: project_proposal_path(@project_proposal.slug).to_s} }
       else
         flash[:alert] = 'An error occurred while updating the project proposal, try again later.'
         format.html { render :edit, status: :unprocessable_entity }
@@ -131,10 +131,10 @@ class ProjectProposalsController < ApplicationController
     @project_join.user_id = @user.id
     if @project_join.save
       flash[:notice] = 'You joined this project.'
-      redirect_to project_proposal_url(@project_proposal.slug)
+      redirect_to project_proposal_path(@project_proposal.slug)
     else
       flash[:alert] = 'You already joined this project or something went wrong.'
-      redirect_to project_proposal_url(@project_proposal.slug)
+      redirect_to project_proposal_path(@project_proposal.slug)
     end
   end
 
@@ -143,10 +143,10 @@ class ProjectProposalsController < ApplicationController
     @project_join = ProjectJoin.find(params[:project_join_id])
     if @project_join.delete
       flash[:notice] = 'You unjoined this project.'
-      redirect_to project_proposal_url(@project_proposal.slug)
+      redirect_to project_proposal_path(@project_proposal.slug)
     else
       flash[:alert] = 'Something went wrong.'
-      redirect_to project_proposal_url(@project_proposal.slug)
+      redirect_to project_proposal_path(@project_proposal.slug)
     end
   end
 
