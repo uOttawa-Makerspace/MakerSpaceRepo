@@ -82,7 +82,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       it 'should create a project proposal' do
         project_proposal_params = FactoryBot.attributes_for(:project_proposal, :normal)
         expect { post :create, params: {project_proposal: project_proposal_params} }.to change(ProjectProposal, :count).by(1)
-        expect(response).to redirect_to project_proposal_path(ProjectProposal.last)
+        expect(response).to redirect_to project_proposal_path(ProjectProposal.last.slug)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(flash[:notice]).to eq('Project proposal was successfully created.')
       end
@@ -90,7 +90,8 @@ RSpec.describe ProjectProposalsController, type: :controller do
       it 'should fail creating a project proposal' do
         project_proposal_params = FactoryBot.attributes_for(:project_proposal, :broken)
         expect { post :create, params: {project_proposal: project_proposal_params} }.to change(ProjectProposal, :count).by(0)
-        expect(response).to have_http_status(:success)
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(flash[:alert]).to eq('An error occurred while creating the project proposal, try again later.' )
         expect(ActionMailer::Base.deliveries.count).to eq(0)
       end
 
@@ -108,15 +109,16 @@ RSpec.describe ProjectProposalsController, type: :controller do
     context 'Update project proposal' do
       it 'should update the project proposal' do
         project_proposal = ProjectProposal.first
-        patch :update, params: {id: project_proposal.id, project_proposal: {title: "abc123"}}
-        expect(response).to redirect_to project_proposal_path(project_proposal)
+        patch :update, params: {id: project_proposal.id, project_proposal: {title: "abcd1234"}}
+        expect(response).to redirect_to project_proposal_url(ProjectProposal.first.slug)
         expect(flash[:notice]).to eq('Project proposal was successfully updated.')
       end
 
       it 'should update the project proposal' do
         project_proposal = ProjectProposal.first
         patch :update, params: {id: project_proposal.id, project_proposal: {title: "abc$123"}}
-        expect(response).to have_http_status(:success)
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(flash[:alert]).to eq('An error occurred while updating the project proposal, try again later.')
       end
 
       it 'should update the project proposal with photos and files' do
@@ -125,6 +127,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
         expect(flash[:notice]).to eq('Project proposal was successfully updated.')
+        expect(response).to redirect_to project_proposal_path(ProjectProposal.last.slug)
       end
     end
   end
@@ -172,7 +175,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       it 'should join the project proposal' do
         project_proposal = ProjectProposal.first
         get :join_project_proposal, params: {project_proposal_id: project_proposal.id}
-        expect(response).to redirect_to project_proposal_path(project_proposal.id)
+        expect(response).to redirect_to project_proposal_path(project_proposal.slug)
         expect(flash[:notice]).to eq('You joined this project.')
       end
 
@@ -180,7 +183,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         project_proposal = ProjectProposal.first
         get :join_project_proposal, params: {project_proposal_id: project_proposal.id}
         get :join_project_proposal, params: {project_proposal_id: project_proposal.id}
-        expect(response).to redirect_to project_proposal_path(project_proposal.id)
+        expect(response).to redirect_to project_proposal_path(project_proposal.slug)
         expect(flash[:alert]).to eq('You already joined this project or something went wrong.')
       end
     end
@@ -192,7 +195,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         project_proposal = ProjectProposal.first
         get :join_project_proposal, params: {project_proposal_id: project_proposal.id}
         get :unjoin_project_proposal, params: {project_proposal_id: project_proposal.id, project_join_id: ProjectJoin.last.id}
-        expect(response).to redirect_to project_proposal_path(project_proposal.id)
+        expect(response).to redirect_to project_proposal_path(project_proposal.slug)
         expect(flash[:notice]).to eq('You unjoined this project.')
       end
     end

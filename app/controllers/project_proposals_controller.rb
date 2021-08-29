@@ -8,9 +8,14 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals
   # GET /project_proposals.json
   def index
-    @pending_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: nil).paginate(per_page: 15, page: params[:page_pending])
-    @approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
-    @not_approved_project_proposals = ProjectProposal.all.order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
+    @pending_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: nil).paginate(per_page: 15, page: params[:page_pending])
+    @approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
+    @not_approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
+
+    respond_to do |format|
+      format.js
+      format.html
+    end
   end
 
   def user_projects
@@ -66,11 +71,12 @@ class ProjectProposalsController < ApplicationController
         create_photos
         create_files
         create_categories
-        format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully created.' }
-        format.json { render :show, status: :created, location: @project_proposal }
+        format.html { redirect_to project_proposal_url(@project_proposal.slug), notice: 'Project proposal was successfully created.' }
+        format.json { render json: {redirect_uri: project_proposal_url(@project_proposal.slug).to_s} }
         MsrMailer.send_new_project_proposals.deliver_now
       else
-        format.html { render :new }
+        flash[:alert] = 'An error occurred while creating the project proposal, try again later.'
+        format.html { render :new, status: :unprocessable_entity }
         format.json { render json: @project_proposal.errors, status: :unprocessable_entity }
       end
     end
@@ -85,10 +91,11 @@ class ProjectProposalsController < ApplicationController
         update_photos
         update_files
         create_categories
-        format.html { redirect_to @project_proposal, notice: 'Project proposal was successfully updated.' }
-        format.json { render :show, status: :ok, location: @project_proposal }
+        format.html { redirect_to project_proposal_url(@project_proposal.slug), notice: 'Project proposal was successfully updated.' }
+        format.json { render json: {redirect_uri: project_proposal_url(@project_proposal.slug).to_s} }
       else
-        format.html { render :edit }
+        flash[:alert] = 'An error occurred while updating the project proposal, try again later.'
+        format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: @project_proposal.errors, status: :unprocessable_entity }
       end
     end
@@ -124,10 +131,10 @@ class ProjectProposalsController < ApplicationController
     @project_join.user_id = @user.id
     if @project_join.save
       flash[:notice] = 'You joined this project.'
-      redirect_to @project_proposal
+      redirect_to project_proposal_url(@project_proposal.slug)
     else
       flash[:alert] = 'You already joined this project or something went wrong.'
-      redirect_to @project_proposal
+      redirect_to project_proposal_url(@project_proposal.slug)
     end
   end
 
@@ -136,10 +143,10 @@ class ProjectProposalsController < ApplicationController
     @project_join = ProjectJoin.find(params[:project_join_id])
     if @project_join.delete
       flash[:notice] = 'You unjoined this project.'
-      redirect_to @project_proposal
+      redirect_to project_proposal_url(@project_proposal.slug)
     else
       flash[:alert] = 'Something went wrong.'
-      redirect_to @project_proposal
+      redirect_to project_proposal_url(@project_proposal.slug)
     end
   end
 
