@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_06_18_165708) do
+ActiveRecord::Schema.define(version: 2021_08_29_024044) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -492,10 +492,11 @@ ActiveRecord::Schema.define(version: 2021_06_18_165708) do
     t.string "client_interest"
     t.string "client_background"
     t.string "supervisor_background"
-    t.text "equipments", default: "Not informed."
+    t.text "equipments", default: "Not informed / Pas informé"
     t.string "project_type"
     t.integer "project_cost"
     t.string "past_experiences"
+    t.string "slug"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|

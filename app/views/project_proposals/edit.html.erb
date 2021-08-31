@@ -36,11 +36,11 @@
       <%= f.label :client_type, "Client Type/Type de Client", class: "control-label" %>
       <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
       <div class='checkbox-list'>
-        <%= f.radio_button :client_type, 'Organization', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_type_organization', 'Organization', :id => 'type', :style => 'display:inline' %>
+        <%= f.radio_button :client_type, 'Organization / Organisation', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label 'client_type_organization', 'Organization / Organisation', :id => 'type', :style => 'display:inline' %>
         <br>
-        <%= f.radio_button :client_type, 'Individual', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_type_individual', 'Individual', :id => 'type', :style => 'display:inline' %>
+        <%= f.radio_button :client_type, 'Individual / Individuel', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label 'client_type_individual', 'Individual / Individuel', :id => 'type', :style => 'display:inline' %>
       </div>
     </div>
     <br>
@@ -57,14 +57,14 @@
       <%= f.label :client_interest, "Client Level of Interest/Niveau d'intérêt du Client", class: "control-label" %>
       <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
       <div class='checkbox-list'>
-        <%= f.radio_button :client_interest, 'Low', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_interest_low', 'Low', :id => 'type', :style => 'display:inline', class: "control-label" %>
+        <%= f.radio_button :client_interest, 'Low / Faible', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label 'client_interest_low', 'Low / Faible', :id => 'type', :style => 'display:inline', class: "control-label" %>
         <br>
-        <%= f.radio_button :client_interest, 'Medium', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_interest_medium', 'Medium', :id => 'type', :style => 'display:inline', class: "control-label" %>
+        <%= f.radio_button :client_interest, 'Medium / Moyen', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label 'client_interest_medium', 'Medium / Moyen', :id => 'type', :style => 'display:inline', class: "control-label" %>
         <br>
-        <%= f.radio_button :client_interest, 'High', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_interest_high', 'High', :id => 'type', :style => 'display:inline', class: "control-label" %>
+        <%= f.radio_button :client_interest, 'High / Élevé', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label 'client_interest_high', 'High / Élevé', :id => 'type', :style => 'display:inline', class: "control-label" %>
       </div>
     </div>
     <br/>
@@ -88,7 +88,7 @@
     </div>
     <br>
     <div class="form-group required">
-      <%= f.label :description, "Description", class: "control-label" %>
+      <%= f.label :description, "Project background / Contexte du projet", class: "control-label" %>
       <div>Donnez une description a la proposition<br>Give a description to the proposal</div>
       <div style="width: 420px;">
         <%= f.hidden_field :description, id: :project_proposal_description, class: "form-control", required: true %>
@@ -158,7 +158,7 @@
     <%= f.text_field :youtube_link, class: 'repo' %>
     <br>
     <div class="form-group">
-      <%= f.label :past_experiences, "Experiences passées / Past experiences", class: "control-label" %>
+      <%= f.label :past_experiences, "Past experiences / Tentatives précédentes", class: "control-label" %>
       <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split("|")[0] : f.object.past_experiences %>
 
       <div id="linkRef">
@@ -170,15 +170,15 @@
 
     <br>
     <div class="form-group required">
-      <%= f.label :project_cost, "Coût attendu du projet / Expected cost of the project", class: "control-label" %>
-      <div>Coût attendu du projet / Expected cost of the project</div>
+      <%= f.label :project_cost, "Expected cost of the project / Coût prévu du projet", class: "control-label" %>
+      <div>Expected cost of the project / Coût attendu du projet</div>
       <div class="input-group mb-3">
         <div class="input-group-prepend">
           <span class="input-group-text" id="basic-addon1">$</span>
         </div>
         <%= f.number_field :project_cost, class: 'form-control', required: true, value: f.object.project_cost.present? ? f.object.project_cost : 0 %>
         <div class="invalid-feedback">
-          Veuillez entrer le coût attendu du projet / Please enter the expected project cost
+          Please enter the expected project cost / Veuillez entrer le coût prévu du projet
         </div>
       </div>
     </div>
@@ -190,7 +190,7 @@
         <%= f.radio_button :project_type, 'General', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
         <%= f.label 'project_type_general', 'General', :id => 'type', :style => 'display:inline' %>
         <br>
-        <%= f.radio_button :project_type, 'Client Specific', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.radio_button :project_type, 'Spécifique au client / Client Specific', :class => 'show_extra', :style => 'display:inline' %>
         <%= f.label 'project_type_client_specific', 'Spécifique au client / Client Specific', :id => 'type', :style => 'display:inline' %>
         <br>
         <%= f.radio_button :project_type, 'S/O | N/A', :class => 'show_extra', :style => 'display:inline' %>
@@ -209,7 +209,7 @@
     <br>
     <br>
     <br>
-    <%= f.submit "Update Project Proposal/Modifier la proposition de projet", class: "btn btn-primary", id: "waiting-save-button", data: {disable_with: false} %>
+    <%= f.submit "Update Project Proposal/Modifier la proposition de projet", class: "btn btn-primary", data: {disable_with: false} %>
     <span id="status-save"></span>
     <% if flash[:alert] %>
       <div id="alert"><%= flash[:alert] %></div>

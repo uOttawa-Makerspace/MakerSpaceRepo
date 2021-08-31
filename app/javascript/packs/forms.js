@@ -516,27 +516,27 @@ function load() {
         for (let i = 0; i < instructableFiles.length; i++) {
             form.append("files[]", instructableFiles[i]);
         }
-        ;
+
 
         for (let i = 0; i < videoFiles.length; i++) {
             form.append("videos[]", videoFiles[i]);
         }
-        ;
+
 
         for (let i = 0; i < photoFiles.length; i++) {
             form.append("images[]", photoFiles[i]);
         }
-        ;
+
 
         for (let i = 0; i < categoryArray.length; i++) {
             form.append("categories[]", categoryArray[i]);
         }
-        ;
+
 
         for (let i = 0; i < equipmentArray.length; i++) {
             form.append("equipments[]", equipmentArray[i]);
         }
-        ;
+
 
         if (validate) {
             document.getElementById("status-save").innerHTML = "<img src='/assets/loader-65526d2bb686aee87b0257dcbc756449cffeebf62d6646ba9a9979de8b51111a.gif' height='15px'> Saving project...";
@@ -614,7 +614,7 @@ function load() {
                 processData: false,
                 contentType: false
             }).done(function (e) {
-                window.location.href = '/project_proposals'
+                window.location.href = e.redirect_uri
             })
                 .fail(function (e) {
                     if (e.responseText === "not signed in") {
