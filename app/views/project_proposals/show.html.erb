@@ -25,14 +25,21 @@
       <%= link_to "Decline/Désapprouver ", decline_project_proposals_path(id: @project_proposal.id), method: :post,
                   class: "btn btn-danger", data: { confirm: 'Are you sure? This will decline the project.' } %>
     <% end %>
-    <div>
-      <br>
-      <b>Possible technologies involved / Technologies possibles impliquées</b>: <%= @project_proposal.equipments %>
-      <br>
-      <b>Project Type / Type de projet</b> : <%= @project_proposal.project_type %>
-      <br>
-      <b>Expected project cost / Coût prévu du projet
-        cost</b>: <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : "Not available" %>
+
+    <br><br>
+
+    <div class="card">
+      <div class="card-header">
+        Project Information / Information sur le projet
+      </div>
+      <div class="card-body">
+        <b>Possible technologies involved / Technologies possibles impliquées</b>: <%= @project_proposal.equipments %>
+        <br>
+        <b>Project Type / Type de projet</b> : <%= @project_proposal.project_type %>
+        <br>
+        <b>Expected project cost / Coût prévu du projet
+          cost</b>: <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : "Not available" %>
+      </div>
     </div>
 
     <div class="repo-desc">
@@ -69,7 +76,7 @@
       <% if @project_proposal.description.present? %>
         <div class="card">
           <div class="card-header">
-            Description
+            Project background / Contexte du projet
           </div>
           <div class="card-body">
             <div style="word-break: break-word;"><%= @project_proposal.description.html_safe %></div>

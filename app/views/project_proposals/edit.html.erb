@@ -39,8 +39,8 @@
         <%= f.radio_button :client_type, 'Organization / Organisation', :class => 'show_extra', :style => 'display:inline' %>
         <%= f.label 'client_type_organization', 'Organization / Organisation', :id => 'type', :style => 'display:inline' %>
         <br>
-        <%= f.radio_button :client_type, 'Individual / Particulier', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_type_individual', 'Individual / Particulier', :id => 'type', :style => 'display:inline' %>
+        <%= f.radio_button :client_type, 'Individual / Individuel', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.label 'client_type_individual', 'Individual / Individuel', :id => 'type', :style => 'display:inline' %>
       </div>
     </div>
     <br>
@@ -88,7 +88,7 @@
     </div>
     <br>
     <div class="form-group required">
-      <%= f.label :description, "Description", class: "control-label" %>
+      <%= f.label :description, "Project background / Contexte du projet", class: "control-label" %>
       <div>Donnez une description a la proposition<br>Give a description to the proposal</div>
       <div style="width: 420px;">
         <%= f.hidden_field :description, id: :project_proposal_description, class: "form-control", required: true %>
