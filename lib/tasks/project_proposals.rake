@@ -30,7 +30,16 @@ namespace :project_proposals do
       when "Organization"
         pp.update(client_type: "Organization / Organisation")
       when "Individual"
-        pp.update(client_type: "Individual / Particulier")
+        pp.update(client_type: "Individual / Individuel")
+      end
+    end
+  end
+
+  desc 'Change Wording for french client type'
+  task change_wording_fr_client_type: :environment do
+    ProjectProposal.all.each do |pp|
+      if pp.client_type == "Individual / Particulier"
+        pp.update(client_type: "Individual / Individuel")
       end
     end
   end
