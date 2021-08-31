@@ -67,11 +67,13 @@ paperclip:refresh:missing_styles
 paperclip:refresh:thumbnails
 popular_hours:calculate_popular_hours
 print_order_notifications:two_weeks_reminder
+project_proposals:create_slugs
+project_proposals:translate_client_type
+project_proposals:translate_level_of_interest
 questions:update_attachment
 restart
 secret
 shopify_api:graphql:dump
-slugs_for_project_proposals:create
 spec
 spec:config
 spec:controllers

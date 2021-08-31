@@ -8,7 +8,7 @@
       </h2>
     </div>
 
-    <div id="page_pending" class="collapse">
+    <div id="page_pending" class="collapse <%= "show" if params[:search] != "" && params[:search] != "search="  && @pending_project_proposals.count > 0 %>">
       <div class="card-body">
         <%= render :partial => 'listing', :locals => {:title => "Pending Project Proposals", :project_proposals => @pending_project_proposals, param_name: "page_pending"} %>
       </div>
@@ -23,7 +23,7 @@
       </button>
     </h2>
   </div>
-  <div id="page_approved" class="collapse">
+  <div id="page_approved" class="collapse <%= "show" if params[:search] != "" && params[:search] != "search=" && @approved_project_proposals.count > 0 %>">
     <div class="card-body">
       <%= render :partial => 'listing', :locals => {:title => "Approved Project Proposals", :project_proposals => @approved_project_proposals, param_name: "page_approved"} %>
     </div>
@@ -37,7 +37,7 @@
       </button>
     </h2>
   </div>
-  <div id="page_not_approved" class="collapse">
+  <div id="page_not_approved" class="collapse <%= "show" if params[:search] != "" && params[:search] != "search=" && @not_approved_project_proposals.count > 0 %>">
     <div class="card-body">
       <%= render :partial => 'listing', :locals => {:title => "Project Proposals not approved", :project_proposals => @not_approved_project_proposals, param_name: "page_not_approved"} if @user.admin? %>      </div>
   </div>
