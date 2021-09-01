@@ -90,6 +90,7 @@ tmp:clear
 tmp:create
 training_sessions:populate_course_name_id
 update_mailer:send_email
+update_profile:send_emails[removed_emails]
 users_without_waiver:send_emails
 webpacker
 webpacker:binstubs
