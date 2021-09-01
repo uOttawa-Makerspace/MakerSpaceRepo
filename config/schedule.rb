@@ -48,7 +48,7 @@ end
 
 every '0 11 1 9 *' do
   if Time.now.year % 2 != 0
-    runner "MsrMailer.send_profile_update.deliver_now"
+    rake 'send_update_profile:send_emails'
   end
 end
 
