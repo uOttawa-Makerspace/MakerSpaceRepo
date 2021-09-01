@@ -48,7 +48,7 @@ end
 
 every '0 11 1 9 *' do
   if Time.now.year % 2 != 0
-    rake 'send_update_profile:send_emails'
+    rake 'update_profile:send_emails'
   end
 end
 

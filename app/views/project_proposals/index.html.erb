@@ -1,49 +1,55 @@
 <div>
   <% provide(:title, "Project Proposals") %>
 
-  <div class="accordion">
-    <div class="card">
-      <div class="card-header" data-toggle="collapse" data-target="#page_pending" aria-expanded="true" aria-controls="collapseOne">
-        <h2 class="mb-0">
-          <button class="btn btn-link btn-block text-left text-center" type="button" >
-            Pending Project Proposals
-          </button>
-        </h2>
+  <div class="by-5">
+    <%= form_tag(project_proposals_path, method: :get) do %>
+      <div class="d-flex justify-content-center">
+        <%= fa_icon 'search', class: "fa-2x pr-2" %>
+        <%= text_field_tag(:search, "", placeholder: "Search", class: 'form-control col-md-4 search_bar') %>
       </div>
+    <% end %>
+  </div>
 
-      <div id="page_pending" class="collapse">
-        <div class="card-body">
-          <%= render :partial => 'listing', :locals => {:title => "Pending Project Proposals", :project_proposals => @pending_project_proposals, param_name: "page_pending"} %>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header" data-toggle="collapse" data-target="#page_approved">
-        <h2 class="mb-0">
-          <button class="btn btn-link btn-block text-left collapsed text-center" type="button">
-            Approved Project Proposals
-          </button>
-        </h2>
-      </div>
-      <div id="page_approved" class="collapse">
-        <div class="card-body">
-          <%= render :partial => 'listing', :locals => {:title => "Approved Project Proposals", :project_proposals => @approved_project_proposals, param_name: "page_approved"} %>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header" data-toggle="collapse" data-target="#page_not_approved" aria-controls="collapseThree">
-        <h2 class="mb-0">
-          <button class="btn btn-link btn-block text-left collapsed text-center" type="button">
-            Project Proposals not approved
-          </button>
-        </h2>
-      </div>
-      <div id="page_not_approved" class="collapse">
-        <div class="card-body">
-          <%= render :partial => 'listing', :locals => {:title => "Project Proposals not approved", :project_proposals => @not_approved_project_proposals, param_name: "page_not_approved"} if @user.admin? %>      </div>
-      </div>
+  <br>
+
+  <div class="accordion">
+    <div class="project_proposals_listing">
+      <%= render 'project_proposal_listing' %>
     </div>
   </div>
 
 </div>
+
+
+<script type="text/javascript" charset="utf-8">
+
+    window.debounce = function(func, wait, immediate) {
+        let timeout;
+        return function() {
+            const context = this, args = arguments;
+            const later = function () {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            const callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    };
+
+    $('.search_bar').on('keyup', debounce(function (e) {
+        $.ajax({
+            url: '/project_proposals',
+            data: {search: $(this).serialize()},
+            format: 'js'
+        });
+    }, 100));
+
+    // $(function() {
+    //     $(".badge_list th a, .badge_list .pagination a").on("click", function(){
+    //         $.getScript(this.href);
+    //         return false;
+    //     });
+    // });
+</script>
