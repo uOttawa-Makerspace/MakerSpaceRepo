@@ -81,7 +81,7 @@ group :development do
   gem 'capistrano', "~> 3.10", require: false
   gem 'capistrano-rails', "~> 1.6", require: false
   gem 'capistrano-bundler'
-  gem 'capistrano-passenger', '>= 0.1.1'
+  gem 'capistrano-passenger', '>= 0.2.1'
   gem 'capistrano-rbenv', '~> 2.1'
 
   gem 'letter_opener' # Open emails in development

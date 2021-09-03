@@ -46,9 +46,9 @@ end
 #   runner "MsrMailer.send_weekly_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com']).deliver_now"
 # end
 
-every '0 9 1 9 *' do
+every '0 11 1 9 *' do
   if Time.now.year % 2 != 0
-    runner "MsrMailer.send_profile_update.deliver_now"
+    rake 'update_profile:send_emails'
   end
 end
 
