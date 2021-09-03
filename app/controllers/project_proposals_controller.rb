@@ -71,6 +71,7 @@ class ProjectProposalsController < ApplicationController
         create_photos
         create_files
         create_categories
+        @project_proposal.save # This creates the slug with ID since the ID is not created before create
         format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully created.' }
         format.json { render json: {redirect_uri: project_proposal_path(@project_proposal.slug).to_s} }
         MsrMailer.send_new_project_proposals.deliver_now
