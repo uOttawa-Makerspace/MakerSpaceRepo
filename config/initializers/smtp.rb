@@ -1,5 +1,5 @@
 Rails.application.configure do
-  smtp_provider = :sendgrid # :sendinblue or :sendgrid (Send in blue limit is really low)
+  smtp_provider = :amazon_ses # :sendinblue or :sendgrid (Send in blue limit is really low)
   smtp_credentials = Rails.application.credentials[Rails.env.to_sym][:smtp][smtp_provider]
 
   break if smtp_credentials.nil?
@@ -9,7 +9,8 @@ Rails.application.configure do
     port: smtp_credentials[:port],
     user_name: smtp_credentials[:user_name],
     password: smtp_credentials[:password],
-    authentication: :plain
+    authentication: :plain,
+    enable_starttls_auto: true
   }
 
   config.action_mailer.default_url_options = { host: 'makerepo.com' }
