@@ -26,21 +26,18 @@ class StaticPagesController < SessionsController
   def development_program_info; end
 
   def reset_password
-    @user = User.find_by(email: params[:email])
-
-    begin
-      random_password = Array.new(10).map { rand(65..122).chr }.join
-      @user.pword = random_password
-
-      if @user.save!
-        MsrMailer.reset_password_email(@user.email, random_password).deliver_now
-        flash[:notice] = 'Check your email for your new password.'
-        redirect_to root_path
-      end
-    rescue StandardError
-      flash[:alert] = 'Something went wrong, try again.'
-      redirect_to forgot_password_path
+    if params[:email].present?
+        if User.find_by_email(params[:email]).present?
+          @user = User.find_by(email: params[:email])
+          user_hash = Rails.application.message_verifier(:user).generate(@user.id)
+          expiry_date_hash = Rails.application.message_verifier(:user).generate(1.day.from_now)
+          MsrMailer.forgot_password(params[:email], user_hash, expiry_date_hash).deliver_now
+        end
+        flash[:notice] = "A reset link email has been sent to the email if the account exists."
+    else
+      flash[:alert] = "There was a problem with, please try again."
     end
+    redirect_to root_path
   end
 
   def report_repository

@@ -21,6 +21,11 @@ class MsrMailer < ApplicationMailer
     mail(to: old_email, subject: 'Makerepo | Email has changed')
   end
 
+  def confirm_password_change(user)
+    @user = user
+    mail(to: @user.email, subject: 'MakerRepo | Your password has been changed')
+  end
+
   def welcome_email(user)
     @user = user
     @url  = 'http://makerepo.com/login'
@@ -146,10 +151,17 @@ class MsrMailer < ApplicationMailer
     mail(from: user.email, to: 'uottawa.makerepo@gmail.com', subject: "Repository #{repository.title} reported")
   end
 
-  def reset_password_email(email, newpassword)
-    @user = User.find_by email: email
-    @password = newpassword
-    mail(to: email, subject: 'New password for MakerRepo')
+  # THIS IS DEPRECATED
+  # def reset_password_email(email, newpassword)
+  #   @user = User.find_by email: email
+  #   @password = newpassword
+  #   mail(to: email, subject: 'New password for MakerRepo')
+  # end
+
+  def forgot_password(email, user_hash, expiry_date_hash)
+    @user_hash = user_hash
+    @expiry_date_hash = expiry_date_hash
+    mail(to: email, subject: 'Reset your MakerRepo password')
   end
 
   def send_training_report(to)

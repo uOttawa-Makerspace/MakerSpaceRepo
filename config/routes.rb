@@ -395,6 +395,8 @@ Rails.application.routes.draw do
     collection do
       get :resend_confirmation
       get :confirm_edited_email
+      get :reset_password_form
+      patch :reset_password_confirmation
       get :confirm
       post :change_programs
       post :create, path: '/new'
