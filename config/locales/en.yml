@@ -66,6 +66,7 @@ en:
     help: "Help"
     copyright_html: 'Copyright &copy; %s <a href="https://engineering.uottawa.ca/CEED">Centre for Entrepreneurship and Engineering Design</a> and <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">MakerRepo Contributors</a>'
   users:
+    reset_password: "Reset password"
     new:
       sign_up: "Create an account"
       required_info: "Required fields are marked by an asterisk"

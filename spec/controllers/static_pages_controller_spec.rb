@@ -74,13 +74,22 @@ RSpec.describe StaticPagesController, type: :controller do
 
   describe "GET /reset_password" do
     context 'logged as regular user' do
-      it 'should reset password' do
+      it 'should send reset password email' do
         user = create(:user, :regular_user)
-        old_pass = user.pword
+        old_pass = user.pword.to_s
         patch :reset_password, params: { email: user.email }
         expect(ActionMailer::Base.deliveries.count).to eq(1)
-        expect(User.find(user.id).pword).not_to eq(old_pass)
-        expect(flash[:notice]).to eq('Check your email for your new password.')
+        expect(User.find(user.id).pword.to_s).to eq(old_pass)
+        expect(flash[:notice]).to eq('A reset link email has been sent to the email if the account exists.')
+        expect(response).to redirect_to root_path
+      end
+    end
+
+    context 'trying a not working email' do
+      it 'should reset not password' do
+        patch :reset_password, params: { email: "abc123@jdjjsgjjdsj.ca" }
+        expect(ActionMailer::Base.deliveries.count).to eq(0)
+        expect(flash[:notice]).to eq('A reset link email has been sent to the email if the account exists.')
         expect(response).to redirect_to root_path
       end
     end
