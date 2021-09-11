@@ -149,7 +149,8 @@ class UsersController < SessionsController
     if @user.update(user_params)
       @user.pword = @user.password
       @user.save
-      redirect_to settings_admin_path, notice: 'Password changed successfully'
+      MsrMailer.confirm_password_change(@user).deliver_now
+      redirect_to settings_admin_path, notice: 'Password changed successfully, an email will be sent to confirm.'
     else
       render 'settings/admin', layout: 'setting'
     end
