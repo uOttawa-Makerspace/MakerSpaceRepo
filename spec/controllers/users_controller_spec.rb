@@ -271,12 +271,14 @@ RSpec.describe UsersController, type: :controller do
         patch :change_password, params: { username: User.last.username, user: { old_password: 'asa32A353#', password: 'Password2', password_confirmation: 'Password2' } }
         @newpass = User.find(User.last.id).password
         expect(@oldpass).not_to be(@newpass)
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(response).to redirect_to settings_admin_path
-        expect(flash[:notice]).to eq('Password changed successfully')
+        expect(flash[:notice]).to eq('Password changed successfully, an email will be sent to confirm.')
       end
 
       it 'shouldn\'t change password (Wrong password)' do
         patch :change_password, params: { username: User.last.username, user: { old_password: 'Password1', password: 'Password2', password_confirmation: 'Password2' } }
+        expect(ActionMailer::Base.deliveries.count).to eq(0)
         expect(response).to have_http_status(:success)
         expect(flash[:alert]).to eq('Incorrect old password.')
       end
@@ -285,6 +287,7 @@ RSpec.describe UsersController, type: :controller do
         @oldpass = User.last.password
         patch :change_password, params: { username: User.last.username, user: { old_password: 'asa32A353#', password: 'Password2', password_confirmation: 'Password3' } }
         @newpass = User.find(User.last.id).password
+        expect(ActionMailer::Base.deliveries.count).to eq(0)
         expect(@oldpass).not_to be(@newpass)
         expect(response).to have_http_status(:success)
       end

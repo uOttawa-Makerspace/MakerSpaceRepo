@@ -2,8 +2,8 @@
 
 class UsersController < SessionsController
   skip_before_action :session_expiry, only: [:create]
-  before_action :current_user, except: %i[create new resend_confirmation]
-  before_action :signed_in, except: %i[new create show resend_confirmation confirm]
+  before_action :current_user, except: %i[create new resend_confirmation reset_password_confirmation reset_password_form]
+  before_action :signed_in, except: %i[new create show resend_confirmation confirm reset_password_confirmation reset_password_form]
 
   def create
     @new_user = User.new(user_params)
@@ -149,7 +149,8 @@ class UsersController < SessionsController
     if @user.update(user_params)
       @user.pword = @user.password
       @user.save
-      redirect_to settings_admin_path, notice: 'Password changed successfully'
+      MsrMailer.confirm_password_change(@user).deliver_now
+      redirect_to settings_admin_path, notice: 'Password changed successfully, an email will be sent to confirm.'
     else
       render 'settings/admin', layout: 'setting'
     end
@@ -173,6 +174,38 @@ class UsersController < SessionsController
       flash[:alert] = "There was a problem with the email, please try sending the email again."
     end
     redirect_to settings_admin_path
+  end
+
+  def reset_password_form; end
+
+  def reset_password_confirmation
+    @user_token = params[:user_token]
+    @expiry_date_token = params[:expiry_date_token]
+    @user_verifier = Rails.application.message_verifier(:user)
+    if @user_verifier.valid_message?(@user_token) && @user_verifier.valid_message?(@expiry_date_token)
+      if params[:password] == params[:password_confirmation]
+        user_id = @user_verifier.verify(@user_token)
+        expiry_date = @user_verifier.verify(@expiry_date_token)
+        puts(expiry_date)
+        if User.find(user_id).present? && Time.now <= expiry_date
+          @user = User.find(user_id)
+          @user.pword = params[:password]
+          if @user.save!
+            MsrMailer.confirm_password_change(@user).deliver_now
+            flash[:notice] = "Your password has been updated, an email will be sent to confirm!"
+          else
+            flash[:alert] = "An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com"
+          end
+        else
+          flash[:alert] = "Something went wrong. You might have tried to change your password more than 24h after the email was sent. Try to access the page again or send us an email at uottawa.makerepo@gmail.com."
+        end
+      else
+        flash[:alert] = "Your password and password confirmation do not match."
+      end
+    else
+      flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+    end
+    redirect_to root_path
   end
 
   def change_programs
