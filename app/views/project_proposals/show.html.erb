@@ -87,22 +87,49 @@
       <br>
 
       <% unless @project_proposal.past_experiences.nil? %>
-      <div class="card">
-            <div class="card-header">
-              Past attempts / Tentatives précédentes
-            </div>
-        <div class="card-body">
-          <%  if @project_proposal.past_experiences.split("|")[0] != ""  %>
-          <%=  @project_proposal.past_experiences.split("|")[0]  %><br>
-          <%  end  %>
-          <%  if @project_proposal.past_experiences.split("|")[1].present?  %>
-          <%  @project_proposal.past_experiences.split("|")[1].split(",").each do |links|  %>
-          <%=  link_to links, links  %> <br>
-          <%  end  %>
-          <%  end  %>
+        <div class="card">
+          <div class="card-header">
+            Past attempts / Tentatives précédentes
+          </div>
+          <div class="card-body">
+            <% if @project_proposal.past_experiences.split("|")[0] != "" %>
+              <%= @project_proposal.past_experiences.split("|")[0] %><br>
+            <% end %>
+            <% if @project_proposal.past_experiences.split("|")[1].present? %>
+              <% @project_proposal.past_experiences.split("|")[1].split(",").each do |links| %>
+                <%= link_to links, links %> <br>
+              <% end %>
+            <% end %>
+          </div>
         </div>
-      </div>
-      <%  end %>
+      <% end %>
+
+      <% unless @linked_pp.nil? %>
+        <br>
+        <div class="card">
+          <div class="card-header">
+            Linked Project proposal / Proposition de projet liée
+          </div>
+          <div class="card-body">
+            <%= link_to "Check out the linked proposition / Aller voir la proposition liée", project_proposal_path(@linked_pp.slug), class: "btn btn-primary" %>
+          </div>
+        </div>
+      <% end %>
+
+      <% if @revisions.present? %>
+        <br>
+        <div class="card">
+          <div class="card-header">
+            Revision(s) of the project proposal / Revision(s) de la proposition de projet
+          </div>
+          <div class="card-body">
+            <% @revisions.each do |revision| %>
+              <%= link_to revision.title, project_proposal_path(revision.slug), style: "hover {text-decoration: underline}" %>
+              <br>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
 
       <br>
 
@@ -201,6 +228,11 @@
           <%= link_to "Document Project / Documenter un projet", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
                       class: "btn btn-success",
                       data: { confirm: 'This action will create a repository related to this project proposal' } %>
+        </div>
+      <% end %>
+      <% if @user.admin? %>
+        <div class="repo-info-item">
+          <%= link_to "Create Revision / Créer une révision", create_revision_project_proposals_path(old_project_proposal_id: @project_proposal.id), method: :post, class: "btn btn-success" %>
         </div>
       <% end %>
       <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
