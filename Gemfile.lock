@@ -1048,6 +1048,9 @@ GEM
     database_cleaner-active_record (1.8.0)
       activerecord
       database_cleaner (~> 1.8.0)
+    ddtrace (0.52.0)
+      ffi (~> 1.0)
+      msgpack
     declarative (0.0.20)
     declarative-option (0.1.0)
     diff-lcs (1.4.4)
@@ -1259,7 +1262,7 @@ GEM
     rb-fsevent (0.10.4)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
-    rdoc (6.2.1)
+    rdoc (6.3.2)
     recaptcha (5.7.0)
       json
     redis (4.2.1)
@@ -1462,6 +1465,7 @@ DEPENDENCIES
   coffee-rails (= 5.0.0)
   concurrent-ruby (~> 1.1, >= 1.1.6)
   database_cleaner-active_record
+  ddtrace
   ed25519 (~> 1.2)
   excon
   factory_bot_rails

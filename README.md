@@ -7,7 +7,7 @@ A website where makers can publish projects. An initiative by the University of 
 [![Build Status](https://travis-ci.com/uOttawa-Makerspace/MakerSpaceRepo.svg?branch=master)](https://travis-ci.com/uOttawa-Makerspace/MakerSpaceRepo)
 
 ## New Developer Setup
-You must have Git and Ruby 2.5.3 installed. See [the Ruby website](https://www.ruby-lang.org/) for more information.
+You must have Git and Ruby 2.7.2 installed. See [the Ruby website](https://www.ruby-lang.org/) for more information.
 If you are on Linux or macOS, we recommend that you use [rbenv](https://github.com/rbenv/rbenv) to manage Ruby installations on your computer.
 
 ### Windows
@@ -38,6 +38,7 @@ Coming soon.
    ```bash
    $ bundle install
    ```
+   
    
 5. Create X.509 certificates for SAML:
    ```
