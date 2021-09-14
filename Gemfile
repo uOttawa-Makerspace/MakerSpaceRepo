@@ -64,6 +64,7 @@ gem 'googleauth', '~> 0.15.0'
 gem 'google-api-client', require: ['google/apis/calendar_v3']
 gem 'faraday', '~> 0.17.0'
 gem "recaptcha"
+gem 'ddtrace', require: 'ddtrace/auto_instrument'
 
 group :development, :test do
   gem 'byebug', platform: :mri
