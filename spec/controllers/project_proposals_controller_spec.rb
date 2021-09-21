@@ -105,6 +105,26 @@ RSpec.describe ProjectProposalsController, type: :controller do
     end
   end
 
+  describe "POST #create_revision" do
+    context 'Create revision' do
+
+      it 'should fail creating the revision' do
+        expect {post :create_revision, params: {old_project_proposal_id: 723757}}.to change(ProjectProposal, :count).by(0)
+        expect(flash[:alert]).to eq("An error occured while trying to create a project proposal revision, please try again later.")
+        expect(response).to have_http_status(302)
+      end
+
+      it 'should create the revision' do
+        project_proposal = ProjectProposal.first
+        expect {post :create_revision, params: {old_project_proposal_id: project_proposal.id}}.to change(ProjectProposal, :count).by(1)
+        expect(flash[:notice]).to eq("The project proposal revision has been successfully created.")
+        expect(response).to redirect_to project_proposal_path(ProjectProposal.last.slug)
+        expect(project_proposal.slug).not_to eq(ProjectProposal.last.slug)
+        expect(ProjectProposal.last.title).to eq("Revision of #{project_proposal.title}")
+      end
+    end
+  end
+
   describe 'PATCH #update' do
     context 'Update project proposal' do
       it 'should update the project proposal' do
