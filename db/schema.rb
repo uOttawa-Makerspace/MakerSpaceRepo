@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_08_29_024044) do
+ActiveRecord::Schema.define(version: 2021_09_20_213929) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -497,6 +497,8 @@ ActiveRecord::Schema.define(version: 2021_08_29_024044) do
     t.integer "project_cost"
     t.string "past_experiences"
     t.string "slug"
+    t.bigint "linked_project_proposal_id"
+    t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
@@ -693,6 +695,7 @@ ActiveRecord::Schema.define(version: 2021_08_29_024044) do
     t.string "flag_message", default: ""
     t.boolean "confirmed", default: false
     t.bigint "space_id"
+    t.datetime "last_signed_in_time"
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 

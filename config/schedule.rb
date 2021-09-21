@@ -76,6 +76,7 @@ end
 
 every :day, at: '9am' do
   rake 'print_order_notifications:two_weeks_reminder'
+  rake 'users_inactive:check'
 end
 # Checklist Reminder
 
