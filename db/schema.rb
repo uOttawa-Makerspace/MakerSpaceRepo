@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_14_145034) do
+ActiveRecord::Schema.define(version: 2021_09_20_213929) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -695,6 +695,7 @@ ActiveRecord::Schema.define(version: 2021_09_14_145034) do
     t.string "flag_message", default: ""
     t.boolean "confirmed", default: false
     t.bigint "space_id"
+    t.datetime "last_signed_in_time"
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
