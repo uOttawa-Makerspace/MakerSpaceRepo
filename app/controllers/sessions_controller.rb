@@ -12,6 +12,7 @@ class SessionsController < ApplicationController
     respond_to do |format|
       if @user
         if @user.confirmed?
+          @user.update(last_signed_in_time: DateTime.now)
           if request.env['HTTP_REFERER'] == login_authentication_url
             format.html { redirect_to root_path }
           else

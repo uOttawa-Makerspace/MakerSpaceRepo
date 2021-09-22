@@ -19,7 +19,7 @@ class ProjectProposalsController < ApplicationController
   end
 
   def user_projects
-    @project_proposals_joined = ProjectProposal.all.joins(:project_joins).where(project_joins: {user: current_user}).order(created_at: :desc).paginate(per_page: 15, page: params[:page])
+    @project_proposals_joined = ProjectProposal.all.joins(:project_joins).where(project_joins: { user: current_user }).order(created_at: :desc).paginate(per_page: 15, page: params[:page])
     @user_pending_project_proposals = current_user.project_proposals.where(approved: nil).order(created_at: :desc).paginate(per_page: 15, page: params[:page])
     @approved_project_proposals = current_user.project_proposals.order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
   end
@@ -32,6 +32,8 @@ class ProjectProposalsController < ApplicationController
     @photos = photo_hash
     @project_photos = @project_proposal.photos.joins(:image_attachment)&.first(5) || []
     @project_files = @project_proposal.repo_files.joins(:file_attachment)
+    @linked_pp = @project_proposal.linked_project_proposal
+    @revisions = ProjectProposal.where(linked_project_proposal_id: @project_proposal.id)
   end
 
   # GET /project_proposals/new
@@ -49,11 +51,11 @@ class ProjectProposalsController < ApplicationController
 
   def projects_assigned
     @assigned_project_proposals = ProjectProposal.joins(:project_joins)
-                                      .joins('LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id)')
-                                      .where('repositories.id IS NULL')
-                                      .where(approved: 1)
-                                      .distinct.order(created_at: :desc)
-                                      .paginate(per_page: 15, page: params[:page])
+                                                 .joins('LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id)')
+                                                 .where('repositories.id IS NULL')
+                                                 .where(approved: 1)
+                                                 .distinct.order(created_at: :desc)
+                                                 .paginate(per_page: 15, page: params[:page])
   end
 
   def projects_completed
@@ -73,7 +75,7 @@ class ProjectProposalsController < ApplicationController
         create_categories
         @project_proposal.save # This creates the slug with ID since the ID is not created before create
         format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully created.' }
-        format.json { render json: {redirect_uri: project_proposal_path(@project_proposal.slug).to_s} }
+        format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
         MsrMailer.send_new_project_proposals.deliver_now
       else
         flash[:alert] = 'An error occurred while creating the project proposal, try again later.'
@@ -81,6 +83,61 @@ class ProjectProposalsController < ApplicationController
         format.json { render json: @project_proposal.errors, status: :unprocessable_entity }
       end
     end
+  end
+
+  def create_revision
+    if params[:old_project_proposal_id] && ProjectProposal.where(id: params[:old_project_proposal_id]).present?
+      @old_project_proposal = ProjectProposal.find(params[:old_project_proposal_id])
+      values = @old_project_proposal.attributes.except("id", "user_id", "admin_id", "approved", "slug")
+      values["title"] = "Revision of #{values["title"]}"
+      values["linked_project_proposal_id"] = params[:old_project_proposal_id]
+
+      @project_proposal = ProjectProposal.new(values)
+      @project_proposal.user_id = @user.try(:id)
+      @project_proposal.save!
+
+      if @old_project_proposal.photos.present? && @old_project_proposal.photos.first.image.attached?
+        @old_project_proposal.photos.each do |photo|
+          Photo.create(project_proposal_id: @project_proposal.id, width: photo.width, height: photo.height)
+          photo.image.blob.open do |temp_photo|
+            Photo.last.image.attach({
+                                      io: temp_photo,
+                                      filename: photo.image.blob.filename,
+                                      content_type: photo.image.blob.content_type
+                                    })
+          end
+        end
+      end
+
+      if @old_project_proposal.repo_files.present? && @old_project_proposal.repo_files.first.file.attached?
+        @old_project_proposal.repo_files.each do |file|
+          RepoFile.create(project_proposal_id: @project_proposal.id)
+          file.file.blob.open do |temp_file|
+            RepoFile.last.file.attach({
+                                      io: temp_file,
+                                      filename: file.file.blob.filename,
+                                      content_type: file.file.blob.content_type
+                                    })
+          end
+        end
+      end
+
+      @old_project_proposal.categories.each do |category|
+        Category.create(name: category.name, project_proposal_id: @project_proposal.id)
+      end
+
+      respond_to do |format|
+        if @project_proposal.save! # This creates the slug with ID since the ID is not created before create
+          format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'The project proposal revision has been successfully created.' }
+          format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
+        else
+          format.html { redirect_to project_proposal_path(@old_project_proposal.slug), alert: 'An error occured while creating the Project proposal revision, please try again later.' }
+        end
+      end
+    else
+      redirect_back(fallback_location: root_path, alert: "An error occured while trying to create a project proposal revision, please try again later.")
+    end
+
   end
 
   # PATCH/PUT /project_proposals/1
@@ -93,7 +150,7 @@ class ProjectProposalsController < ApplicationController
         update_files
         create_categories
         format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully updated.' }
-        format.json { render json: {redirect_uri: project_proposal_path(@project_proposal.slug).to_s} }
+        format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
       else
         flash[:alert] = 'An error occurred while updating the project proposal, try again later.'
         format.html { render :edit, status: :unprocessable_entity }
@@ -217,7 +274,7 @@ class ProjectProposalsController < ApplicationController
     params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description,
                                              :youtube_link, :username, :email, :client, :client_type,
                                              :client_interest, :client_background, :supervisor_background, :equipments,
-                                             :project_type, :project_cost, :past_experiences, area: [])
+                                             :project_type, :project_cost, :past_experiences, :linked_project_proposal_id, area: [])
   end
 
   def create_categories

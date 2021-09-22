@@ -8,6 +8,8 @@ class ProjectProposal < ApplicationRecord
   has_many :repositories
   has_many :photos, dependent: :destroy
   has_many :repo_files, dependent: :destroy
+  has_many :project_proposals, class_name: 'ProjectProposal', foreign_key: 'linked_project_proposal_id'
+  belongs_to :linked_project_proposal, class_name: 'ProjectProposal', foreign_key: 'linked_project_proposal_id'
 
   scope :approved, -> { where(approved: 1) }
 

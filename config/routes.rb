@@ -55,6 +55,7 @@ Rails.application.routes.draw do
 
   resources :project_proposals do
     collection do
+      post :create_revision
       post :approve
       post :decline
       get :join_project_proposal

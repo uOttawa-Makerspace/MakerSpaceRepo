@@ -164,6 +164,11 @@ class MsrMailer < ApplicationMailer
     mail(to: email, subject: 'Reset your MakerRepo password')
   end
 
+  def send_inactive_email(user)
+    @user = user
+    mail(to: @user.email, subject: 'Inactive MakerRepo password')
+  end
+
   def send_training_report(to)
     start_date = 1.week.ago.beginning_of_week
     end_date = 1.week.ago.end_of_week
