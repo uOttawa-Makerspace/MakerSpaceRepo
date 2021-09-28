@@ -72,6 +72,7 @@ Rails.application.configure do
   # Use letter opener to open emails in development mode
   config.action_mailer.delivery_method = :letter_opener
   config.action_mailer.default_url_options = { host: 'staging.makerepo.com' }
+  config.action_mailer.asset_host = 'http://localhost:3000'
   config.action_mailer.perform_deliveries = true
   config.action_mailer.perform_caching = false
 
