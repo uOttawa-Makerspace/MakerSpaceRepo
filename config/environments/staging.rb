@@ -91,6 +91,7 @@ Rails.application.configure do
 
   # SMTP settings
   config.action_mailer.default_url_options = { host: 'staging.makerepo.com' }
+  config.action_mailer.asset_host = 'https://staging.makerepo.com'
 
   config.paperclip_defaults = {
     storage: :s3,

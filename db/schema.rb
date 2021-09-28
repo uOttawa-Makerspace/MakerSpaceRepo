@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_20_213929) do
+ActiveRecord::Schema.define(version: 2021_09_28_194709) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -363,6 +363,13 @@ ActiveRecord::Schema.define(version: 2021_09_20_213929) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "expired_at"
+  end
+
+  create_table "print_order_messages", force: :cascade do |t|
+    t.text "name"
+    t.text "message"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "print_orders", id: :serial, force: :cascade do |t|

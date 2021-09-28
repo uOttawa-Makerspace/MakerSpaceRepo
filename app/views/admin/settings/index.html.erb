@@ -83,6 +83,16 @@
       <% end %>
       <br><br>
     </div>
+    <div class="col-md-6">
+      <h5>I Printed It default email</h5><hr>
+      <p>[QUOTED_BALANCE] = Balance given to user, [PRINT_ID] = Print Order ID</p>
+      <br>
+      <%= form_for @i_printed_it, url: {controller: "admin/settings", action: "update_i_printed_it"} do |f| %>
+        <%= f.trix_editor :message, class: 'repo form-control', style: "height: auto!important;" %>
+        <%= f.submit "Update", class: 'btn btn-primary' %>
+      <% end %>
+      <br><br>
+    </div>
   </div>
 
 </section>
