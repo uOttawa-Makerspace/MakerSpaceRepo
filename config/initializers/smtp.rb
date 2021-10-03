@@ -13,5 +13,6 @@ Rails.application.configure do
     enable_starttls_auto: true
   }
 
+  config.action_mailer.default_charset = "utf-8"
   config.action_mailer.default_url_options = { host: 'makerepo.com' }
 end
