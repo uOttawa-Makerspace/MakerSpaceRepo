@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_20_213929) do
+ActiveRecord::Schema.define(version: 2021_10_05_174716) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -365,6 +365,13 @@ ActiveRecord::Schema.define(version: 2021_09_20_213929) do
     t.datetime "expired_at"
   end
 
+  create_table "print_order_messages", force: :cascade do |t|
+    t.text "name"
+    t.text "message"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
   create_table "print_orders", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.boolean "approved"
@@ -608,6 +615,16 @@ ActiveRecord::Schema.define(version: 2021_09_20_213929) do
     t.datetime "updated_at", precision: 6, null: false
   end
 
+  create_table "space_staff_hours", force: :cascade do |t|
+    t.time "start_time"
+    t.time "end_time"
+    t.integer "day"
+    t.bigint "space_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["space_id"], name: "index_space_staff_hours_on_space_id"
+  end
+
   create_table "spaces", id: :serial, force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -619,6 +636,25 @@ ActiveRecord::Schema.define(version: 2021_09_20_213929) do
   create_table "spaces_trainings", id: false, force: :cascade do |t|
     t.integer "space_id", null: false
     t.integer "training_id", null: false
+  end
+
+  create_table "staff_availabilities", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "day"
+    t.time "start_time"
+    t.time "end_time"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
+  end
+
+  create_table "staff_spaces", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "space_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["space_id"], name: "index_staff_spaces_on_space_id"
+    t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end
 
   create_table "training_sessions", id: :serial, force: :cascade do |t|
@@ -789,6 +825,10 @@ ActiveRecord::Schema.define(version: 2021_09_20_213929) do
   add_foreign_key "rfids", "users"
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
+  add_foreign_key "space_staff_hours", "spaces"
+  add_foreign_key "staff_availabilities", "users"
+  add_foreign_key "staff_spaces", "spaces"
+  add_foreign_key "staff_spaces", "users"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"

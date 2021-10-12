@@ -1,0 +1,28 @@
+<div class="text-center">
+  <br />
+  <h2 class="font-weight-bold">Staff availabilities</h2>
+
+  <%= link_to "New Staff Availability", new_staff_availability_path, class: "btn btn-primary m-1", style: 'color: #fff;' %>
+
+  <br><br>
+
+  <h3>My calendar</h3>
+  <div id="user_availabilities_calendar"></div>
+
+  <% if !@user_availabilities.blank?  %>
+    <h3>My availabilities</h3>
+    <%= render 'staff_availabilities/staff_table', availabilities: @user_availabilities %>
+  <% else %>
+    <div class="m-5">
+      You did not add any availabilities. Create one <%= link_to "here", new_staff_availability_url %>
+    </div>
+    <br>
+  <% end %>
+
+  <% if @user.admin? && @staff_availabilities.present?  %>
+    <h3>Staff availabilities</h3>
+    <%= render 'staff_availabilities/staff_table', availabilities: @staff_availabilities %>
+  <% end %>
+</div>
+
+<%= javascript_pack_tag 'staff_availability_calendar' %>

@@ -186,6 +186,14 @@ Rails.application.routes.draw do
 
       collection do
         post :update_max_capacity
+        post :add_space_hours
+        delete :delete_space_hour
+      end
+    end
+
+    resources :shifts, only: %i[index] do
+      collection do
+        get :get_availabilities
       end
     end
 
@@ -336,6 +344,12 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :staff_availabilities, except: :show do
+    collection do
+      get :get_availabilities
+    end
+  end
+
   resources :exams, only: %i[index create show destroy] do
     collection do
       get :finish_exam
@@ -381,6 +395,13 @@ Rails.application.routes.draw do
   resources :require_trainings, only: [:create] do
     collection do
       post :remove_trainings
+    end
+  end
+
+
+  resources :staff_spaces do
+    collection do
+      post :change_space_list
     end
   end
 
