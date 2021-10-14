@@ -51,11 +51,6 @@ require("packs/accordion-load");
 import "bootstrap";
 require("packs/toastr");
 
-import Alpine from 'alpinejs'
-window.Alpine = Alpine
-Alpine.start()
-
-
 document.addEventListener("turbolinks:load", () => {
     $('[data-toggle="tooltip"]').tooltip()
     $('[data-toggle="popover"]').popover()

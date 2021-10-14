@@ -18,7 +18,7 @@ class Admin::ShiftsController < AdminAreaController
 
     StaffAvailability.where(user_id: StaffSpace.where(space_id: default_space_id).pluck(:user_id)).each do |staff|
       event = {}
-      event['title'] = "#{staff.user.name} is available"
+      event['title'] = "#{staff.user.name} is unavailable"
       event['id'] = staff.id
       event['daysOfWeek'] = [staff.day]
       event['startTime'] = staff.start_time.strftime("%H:%M")

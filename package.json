@@ -12,7 +12,6 @@
     "@rails/webpacker": "5.2.1",
     "@shopify/buy-button-js": "^2.1.7",
     "activestorage": "^5.2.4-3",
-    "alpinejs": "^3.4.2",
     "boostrap": "^2.0.0",
     "bootbox": "^5.4.0",
     "bootstrap": "^4.5.2",

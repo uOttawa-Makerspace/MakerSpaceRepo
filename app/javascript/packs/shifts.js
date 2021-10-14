@@ -12,8 +12,15 @@ let calendar = new Calendar(calendarEl, {
     plugins: [ interactionPlugin, timeGridPlugin, listPlugin ],
     headerToolbar: {
         left: 'prev,today,next',
-        center: 'title',
+        center: '',
         right: 'timeGridWeek,timeGridDay'
+    },
+    views: {
+        timeGridWeek: {
+            dayHeaderFormat: {
+                weekday: 'long',
+            },
+        },
     },
     allDaySlot: false,
     timeZone: 'America/New_York',

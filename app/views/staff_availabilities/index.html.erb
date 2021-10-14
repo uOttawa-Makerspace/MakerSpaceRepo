@@ -1,13 +1,18 @@
 <div class="text-center">
   <br />
-  <h2 class="font-weight-bold">Staff availabilities</h2>
+  <h2 class="font-weight-bold">Staff unavailabilities</h2>
 
-  <%= link_to "New Staff Availability", new_staff_availability_path, class: "btn btn-primary m-1", style: 'color: #fff;' %>
-
-  <br><br>
+  <p>Please input all the hours where you are <b>NOT</b> available.</p>
+  <br>
 
   <h3>My calendar</h3>
   <div id="user_availabilities_calendar"></div>
+
+  <br>
+
+  <%= link_to "New Staff Unavailability", new_staff_availability_path, class: "btn btn-primary m-1", style: 'color: #fff;' %>
+
+  <br><br>
 
   <% if !@user_availabilities.blank?  %>
     <h3>My availabilities</h3>
@@ -20,7 +25,7 @@
   <% end %>
 
   <% if @user.admin? && @staff_availabilities.present?  %>
-    <h3>Staff availabilities</h3>
+    <h3>Staff unavailabilities</h3>
     <%= render 'staff_availabilities/staff_table', availabilities: @staff_availabilities %>
   <% end %>
 </div>

@@ -9,21 +9,14 @@ class StaffAvailabilitiesController < StaffAreaController
   end
 
   def get_availabilities
-    # date = Date.today.beginning_of_week(:sunday).prev_occurring(:saturday)
     staff_availabilities = []
     @user.staff_availabilities.each do |a|
       event = {}
-      event['title'] = "Available"
+      event['title'] = "Unavailable"
       event['id'] = a.id
       event['daysOfWeek'] = [a.day]
       event['startTime'] = a.start_time.strftime("%H:%M")
       event['endTime'] = a.end_time.strftime("%H:%M")
-      # [%w[start start_time], %w[end end_time]].each do |time|
-      #   needed_date = date.next_occurring(:"#{Date::DAYNAMES[a['day'].to_i].downcase}")
-      #   event[time[0]] = Time.zone.local(needed_date.year, needed_date.month,
-      #                                    needed_date.day, a[time[1]].hour,
-      #                                    a[time[1]].min)
-      #end
       staff_availabilities << event
     end
 
@@ -53,7 +46,7 @@ class StaffAvailabilitiesController < StaffAreaController
 
     respond_to do |format|
       if @staff_availability.save
-        format.html { redirect_to staff_availabilities_path, notice: 'The staff availabilities were successfully created.' }
+        format.html { redirect_to staff_availabilities_path, notice: 'The staff unavailabilities were successfully created.' }
         format.json { render json: { id: @staff_availability.id } }
       else
         format.html { render :new }
@@ -66,7 +59,7 @@ class StaffAvailabilitiesController < StaffAreaController
     if params[:staff_availability].present?
       respond_to do |format|
         if @staff_availability.update(staff_availability_params)
-          format.html { redirect_to staff_availabilities_path, notice: 'The staff availability was successfully updated.' }
+          format.html { redirect_to staff_availabilities_path, notice: 'The staff unavailability was successfully updated.' }
           format.json { render :index, status: :ok }
         else
           format.html { render :edit }
@@ -78,7 +71,7 @@ class StaffAvailabilitiesController < StaffAreaController
       end_date = DateTime.parse(params[:end_date])
       respond_to do |format|
         if @staff_availability.update(start_time: start_date.strftime("%H:%M"), end_time: end_date.strftime("%H:%M"), day: start_date.wday)
-          format.html { redirect_to staff_availabilities_path, notice: 'The staff availability was successfully updated.' }
+          format.html { redirect_to staff_availabilities_path, notice: 'The staff unavailability was successfully updated.' }
           format.json { render json: { "status": "ok" }, status: :ok }
         else
           format.html { render :edit }
@@ -96,7 +89,7 @@ class StaffAvailabilitiesController < StaffAreaController
   def destroy
     @staff_availability.destroy
     respond_to do |format|
-      format.html { redirect_to staff_availabilities_path, notice: 'The staff availability was successfully deleted.' }
+      format.html { redirect_to staff_availabilities_path, notice: 'The staff unavailability was successfully deleted.' }
       format.json { head :no_content }
     end
   end

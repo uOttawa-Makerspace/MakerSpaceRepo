@@ -10,8 +10,15 @@ let calendar = new Calendar(calendarEl, {
     plugins: [ interactionPlugin, timeGridPlugin, listPlugin ],
     headerToolbar: {
         left: 'prev,today,next',
-        center: 'title',
+        center: '',
         right: 'timeGridWeek,timeGridDay'
+    },
+    views: {
+        timeGridWeek: {
+            dayHeaderFormat: {
+                weekday: 'long',
+            },
+        },
     },
     allDaySlot: false,
     timeZone: 'America/New_York',
@@ -58,7 +65,7 @@ let createEvent = (arg) => {
     }).then(response => response.json()).then(
         data => {
             calendar.addEvent({
-                title: "Available",
+                title: "Unavailable",
                 start: arg.start,
                 end: arg.end,
                 allDay: arg.allDay,
