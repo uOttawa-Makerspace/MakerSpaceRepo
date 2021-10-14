@@ -38,7 +38,7 @@ class User < ApplicationRecord
   has_many :project_kits, dependent: :destroy
   has_many :learning_module_tracks
   has_many :shadowing_hours
-  has_many :staff_spaces
+  has_many :staff_spaces, dependent: :destroy
   has_many :staff_availabilities
 
   validates :avatar, file_content_type: {
