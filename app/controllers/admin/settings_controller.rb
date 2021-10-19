@@ -7,6 +7,7 @@ class Admin::SettingsController < AdminAreaController
     @equip_option = EquipmentOption.new
     @cat_option = CategoryOption.new
     @pi_option = PiReader.new
+    @i_printed_it = PrintOrderMessage.find_by(name: 'I_Printed_It')
     @area_option = AreaOption.new
     @printer = Printer.new
   end
@@ -138,6 +139,16 @@ class Admin::SettingsController < AdminAreaController
       flash[:notice] = 'Card reader removed successfully!'
     else
       flash[:alert] = 'Please select a card reader.'
+    end
+    redirect_to admin_settings_path
+  end
+
+  def update_i_printed_it
+    if params[:print_order_message].present? && params[:print_order_message][:message].present?
+      PrintOrderMessage.find_by(name: "I_Printed_It").update(message: params[:print_order_message][:message])
+      flash[:notice] = 'Message updated successfully!'
+    else
+      flash[:alert] = 'Please enter a message.'
     end
     redirect_to admin_settings_path
   end
