@@ -1,5 +1,10 @@
 {
   "dependencies": {
+    "@fullcalendar/core": "^5.9.0",
+    "@fullcalendar/daygrid": "^5.9.0",
+    "@fullcalendar/interaction": "^5.9.0",
+    "@fullcalendar/list": "^5.9.0",
+    "@fullcalendar/timegrid": "^5.9.0",
     "@rails/actioncable": "^6.0.3-2",
     "@rails/actiontext": "^6.0.3-4",
     "@rails/activestorage": "^6.0.3-2",
@@ -24,6 +29,7 @@
     "justifiedGallery": "^3.8.1",
     "lightgallery": "^1.7.2",
     "moment": "^2.29.1",
+    "moment-timezone": "^0.5.31",
     "node": "^14.14.0",
     "node-sass": "^4.14.1",
     "photoswipe": "^4.1.3",
@@ -35,6 +41,7 @@
     "select2": "^4.0.13",
     "select2-bootstrap-theme": "^0.1.0-beta.10",
     "tempusdominus-bootstrap-4": "^5.39.0",
+    "tempusdominus-core": "5.19.0",
     "toastr": "^2.1.4",
     "trix": "^1.2.0",
     "turbolinks": "^5.2.0",
