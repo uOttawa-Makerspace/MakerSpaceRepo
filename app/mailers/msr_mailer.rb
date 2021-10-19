@@ -32,18 +32,18 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: 'Welcome to MakerRepo')
   end
 
-  def send_survey
-    all_users = User.active.pluck(:email)
-    mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
-  end
+  # def send_survey
+  #   all_users = User.active.pluck(:email)
+  #   mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
+  # end
 
   def send_profile_update(bcc_emails)
     mail(to: 'uottawa.makerepo@gmail.com', subject: 'CEED - Action Needed - Please update your profile information', bcc: bcc_emails)
   end
 
-  def send_survey_ceed(email)
-    mail(to: email, subject: 'Makerspace/Brunsfield Centre Survey - $25 Amazon gift card draw!')
-  end
+  # def send_survey_ceed(email)
+  #   mail(to: email, subject: 'Makerspace/Brunsfield Centre Survey - $25 Amazon gift card draw!')
+  # end
 
   def send_cc_money_email(email, cc, hash)
     @cc = cc
@@ -75,6 +75,7 @@ class MsrMailer < ApplicationMailer
     end
   end
 
+  # TODO: Change design of this email
   def send_print_quote(expedited_price, user, print_order, comments, clean_part_price, resend)
     @clean_part_price = clean_part_price
     @expedited_price = expedited_price
@@ -92,6 +93,7 @@ class MsrMailer < ApplicationMailer
   def send_print_declined(user, comments, filename)
     @user = user
     @comments = comments
+    @filename = filename
     mail(to: @user.email, reply_to: 'makerspace@uottawa.ca', bcc: 'uottawa.makerepo@gmail.com', subject: "Your print \"#{filename}\" has been denied")
   end
 
@@ -137,13 +139,13 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: 'Your Proficient Project Results')
   end
 
-  def send_ommic
-    all_users = User.where('email like ? and length(email) = 19', '%@uottawa.ca').pluck(:email).uniq
-    attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
-    attachments['ommic2.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic2.jpg")
-    attachments['ommic1.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic3.jpg")
-    mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students', bcc: all_users)
-  end
+  # def send_ommic
+  #   all_users = User.where('email like ? and length(email) = 19', '%@uottawa.ca').pluck(:email).uniq
+  #   attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
+  #   attachments['ommic2.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic2.jpg")
+  #   attachments['ommic1.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic3.jpg")
+  #   mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students', bcc: all_users)
+  # end
 
   def repo_report(repository, user)
     @repository = repository
@@ -202,10 +204,11 @@ class MsrMailer < ApplicationMailer
     mail(to: 'makerspace@uottawa.ca', subject: 'Weekly Reports', bcc: to)
   end
 
-  def send_checklist_reminder(email, master_email)
-    @email = email
-    mail(to: email, subject: 'Checklist Reminder', bcc: master_email)
-  end
+  # Not in use currently
+  # def send_checklist_reminder(email, master_email)
+  #   @email = email
+  #   mail(to: email, subject: 'Checklist Reminder', bcc: master_email)
+  # end
 
   def waiver_reminder_email(email)
     mail(to: email, subject: 'Please Sign The Release Agreement!')
@@ -224,7 +227,7 @@ class MsrMailer < ApplicationMailer
     @user = user
     @training_session = training_session
     email = @user.email
-    mail(to: email, subject: 'Exam was sent to you')
+    mail(to: email, subject: 'An exam was sent to you')
   end
 
   def finishing_exam(user, exam)
