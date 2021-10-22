@@ -52,14 +52,16 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                    "id": sa1.id,
                                    "daysOfWeek": [sa1.day],
                                    "startTime": sa1.start_time.strftime("%H:%M"),
-                                   "endTime": sa1.end_time.strftime("%H:%M")
+                                   "endTime": sa1.end_time.strftime("%H:%M"),
+                                   "color": "#" + "%06x" % (sa1.user.id.hash & 0xffffff)
                                  },
                                  {
                                    "title": "#{sa2.user.name} is unavailable",
                                    "id": sa2.id,
                                    "daysOfWeek": [sa2.day],
                                    "startTime": sa2.start_time.strftime("%H:%M"),
-                                   "endTime": sa2.end_time.strftime("%H:%M")
+                                   "endTime": sa2.end_time.strftime("%H:%M"),
+                                   "color": "#" + "%06x" % (sa2.user.id.hash & 0xffffff)
                                  },
                                ].to_json)
       end
