@@ -119,6 +119,7 @@ Rails.application.routes.draw do
     get 'logout'
     get 'login'
     get 'resend_email_confirmation'
+    get 'check_signed_in'
   end
 
   # GITHUB
