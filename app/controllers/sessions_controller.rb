@@ -37,6 +37,14 @@ class SessionsController < ApplicationController
     end
   end
 
+  def check_signed_in
+    if signed_in?
+      render json: {"signed_in": "true"}
+    else
+      render json: {"signed_in": "false"}
+    end
+  end
+
   def login
     if signed_in?
       flash[:alert] = 'You are already logged in.'
