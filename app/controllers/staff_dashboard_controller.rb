@@ -4,7 +4,7 @@ class StaffDashboardController < StaffAreaController
 
   def index
     @users = User.order(id: :desc).limit(10)
-    @certifications_on_space = Proc.new { |user, space_id| user.certifications.joins(:training, training: :spaces).where(trainings: {spaces: {id: space_id} }) }
+    @certifications_on_space = Proc.new { |user, space_id| user.certifications.joins(:training, training: :spaces).where(trainings: { spaces: { id: space_id } }) }
     @all_user_certs = Proc.new { |user| user.certifications }
   end
 
@@ -28,10 +28,10 @@ class StaffDashboardController < StaffAreaController
         user = User.where("lower(email) = ? OR lower(name) = ? OR lower(username) = ?", user_data, user_data, user_data)
         faulty_users += 1 and faulty_user_data << user_data and next if user.blank?
         LabSession.create(
-            user: user.last,
-            space_id: @space.id,
-            sign_in_time: Time.zone.now,
-            sign_out_time: Time.zone.now + 8.hours
+          user: user.last,
+          space_id: @space.id,
+          sign_in_time: Time.zone.now,
+          sign_out_time: Time.zone.now + 8.hours
         )
       end
       flash[:notice] = "The file has been processed and users have been signed in ! "
@@ -54,6 +54,7 @@ class StaffDashboardController < StaffAreaController
     respond_to do |format|
       format.html
       format.js
+      format.json { render json: { "status": "ok" } }
     end
   end
 
@@ -63,7 +64,10 @@ class StaffDashboardController < StaffAreaController
       lab_session = LabSession.where(user_id: user.id)
       lab_session.update_all(sign_out_time: Time.zone.now)
     end
-    redirect_to staff_dashboard_index_path(space_id: @space.id)
+    respond_to do |format|
+      format.html { redirect_to staff_dashboard_index_path(space_id: @space.id) }
+      format.json { render json: { "status": "ok" } }
+    end
   end
 
   def sign_in_users
@@ -80,8 +84,9 @@ class StaffDashboardController < StaffAreaController
       end
     end
     respond_to do |format|
-      format.html {redirect_to staff_dashboard_index_path(space_id: @space.id)}
+      format.html { redirect_to staff_dashboard_index_path(space_id: @space.id) }
       format.js
+      format.json { render json: { "status": "ok" } }
     end
   end
 
@@ -107,12 +112,17 @@ class StaffDashboardController < StaffAreaController
     else
       flash[:alert] = 'Something went wrong'
     end
-    if params[:training].present? and params[:training] == 'true'
-      redirect_to new_staff_training_session_path
-    elsif params[:questions].present? and params[:questions] == 'true'
-      redirect_to questions_path
-    else
-      redirect_to staff_dashboard_index_path
+    respond_to do |format|
+      format.html {
+        if params[:training].present? and params[:training] == 'true'
+          redirect_to new_staff_training_session_path
+        elsif params[:questions].present? and params[:questions] == 'true'
+          redirect_to questions_path
+        else
+          redirect_to staff_dashboard_index_path
+        end
+      }
+      format.json { render json: { "status": "ok" } }
     end
   end
 
@@ -150,19 +160,24 @@ class StaffDashboardController < StaffAreaController
   end
 
   def search
-    if params[:query].blank? and params[:username].blank?
-      flash[:alert] = 'No search parameters.'
-      redirect_to staff_dashboard_index_path
-    elsif params[:username].present?
-      @users = User.where("username = ?", params[:username])
-    else
-      @query = params[:query]
-      @users = User.where('LOWER(name) like LOWER(?) OR
+    respond_to do |format|
+      if params[:query].blank? and params[:username].blank?
+        flash[:alert] = 'No search parameters.'
+        format.html { redirect_to staff_dashboard_index_path }
+        format.json { render json: { "error": "no params" } }
+      elsif params[:username].present?
+        @users = User.where("username = ?", params[:username])
+      else
+        @query = params[:query]
+        @users = User.where('LOWER(name) like LOWER(?) OR
                            LOWER(email) like LOWER(?) OR
                            LOWER(username) like LOWER(?)',
-                          "%#{@query}%", "%#{@query}%", "%#{@query}%")
-                   .includes(:lab_sessions)
-                   .order(:updated_at)
+                            "%#{@query}%", "%#{@query}%", "%#{@query}%")
+                     .includes(:lab_sessions)
+                     .order(:updated_at)
+      end
+      format.html
+      format.json { render json: @users.as_json }
     end
   end
 
@@ -174,18 +189,18 @@ class StaffDashboardController < StaffAreaController
   end
 
   def populate_users
-    json_data = User.where('LOWER(name) like LOWER(?)', "%#{params[:search]}%").map(&:as_json)
+    json_data = User.where('LOWER(name) like LOWER(?) OR LOWER(username) like LOWER(?)', "%#{params[:search]}%", "%#{params[:search]}%").map(&:as_json)
     render json: { users: json_data }
   end
 
   private
 
-    def update_lab_session
-      current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
-      if current_sesh.present?
-        current_sesh.sign_out_time = Time.zone.now
-        current_sesh.save
-      end
+  def update_lab_session
+    current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
+    if current_sesh.present?
+      current_sesh.sign_out_time = Time.zone.now
+      current_sesh.save
     end
+  end
 
- end
+end

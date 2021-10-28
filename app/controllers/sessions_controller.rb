@@ -15,8 +15,10 @@ class SessionsController < ApplicationController
           @user.update(last_signed_in_time: DateTime.now)
           if request.env['HTTP_REFERER'] == login_authentication_url
             format.html { redirect_to root_path }
+            format.json { render json: {user: @user.as_json}}
           else
             format.html { redirect_back(fallback_location: root_path) }
+            format.json { render json: {user: @user.as_json}}
           end
         else
           flash.now[:alert] = "Please confirm your account before logging in, you can resend the email #{view_context.link_to 'here', resend_email_confirmation_path(email: params[:username_email]), class: 'text-primary'}".html_safe
@@ -32,6 +34,14 @@ class SessionsController < ApplicationController
         format.html { render :login }
         format.json { render json: @user.errors, status: :unprocessable_entity }
       end
+    end
+  end
+
+  def check_signed_in
+    if signed_in?
+      render json: {"signed_in": "true"}
+    else
+      render json: {"signed_in": "false"}
     end
   end
 
@@ -57,7 +67,10 @@ class SessionsController < ApplicationController
   def logout
     sign_out
     @user = User.new
-    redirect_to root_path
+    respond_to do |format|
+      format.html { redirect_to root_path }
+      format.json { render json: {"logout": "true"} }
+    end
   end
 
   def session_expiry
