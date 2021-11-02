@@ -64,7 +64,7 @@ document.addEventListener("turbolinks:load", () => {
     for(let i=0;i<links.length;i++){
         const link = links[i];
         const href = link.getAttribute('href');
-        if(href.match(/^((https?:\/\/)|(www\.))/)) {
+        if(href !== undefined && href.match(/^((https?:\/\/)|(www\.))/)) {
             link.setAttribute('target','_blank');
             link.setAttribute('rel', "noopener noreferrer")
         }

@@ -2,17 +2,28 @@
 <html>
 <head>
   <title>Admin Area | <%= page_title(yield(:title)) %></title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <%= favicon_link_tag 'site-icon.jpg' %>
-    <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
-    <%= javascript_include_tag "vendor",      :debug => false %>
-    <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
-    <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
-    <%= stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
-    <%= csrf_meta_tags %>
-  <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.2/css/bootstrap-select.min.css">
+  <%= favicon_link_tag 'site-icon.jpg' %>
+  <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
+  <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+  <%= stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.2/js/bootstrap-select.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.2/css/bootstrap-select.min.css">
+  <%= csrf_meta_tags %>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="MakerRepo is the uOttawa Makerspace's platform. Share and download projects for 3D printers, CNCs, Arduino and much more!" />
+  <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400,600,500' rel='stylesheet' type='text/css'>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-176144772-1"></script>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-176144772-1');
+  </script>
+  <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
+  <noscript>Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></noscript>
 </head>
 <body>
 	<%= render 'layouts/header' %>

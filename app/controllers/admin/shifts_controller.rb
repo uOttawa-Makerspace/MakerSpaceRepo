@@ -8,9 +8,24 @@ class Admin::ShiftsController < AdminAreaController
   def index
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @colors = {}
+
     StaffSpace.where(space_id: @default_space_id).each do |staff|
-      @colors[staff.user.name] = "#" + "%06x" % (staff.user.id.hash & 0xffffff)
+      @colors[staff.user.name] = [staff.id, staff.color]
     end
+  end
+
+  def update_color
+    if params[:id].present? && StaffSpace.find(params[:id]).present? && params[:color].present?
+      staff_space = StaffSpace.find(params[:id])
+      if staff_space.update(color: params[:color])
+        flash[:notice] = 'Color updated successfully'
+      else
+        flash[:alert] = 'Color could not be updated'
+      end
+    else
+      flash[:alert] = "An error occurred, try again later."
+    end
+    redirect_to admin_shifts_path
   end
 
   def get_availabilities
@@ -23,7 +38,7 @@ class Admin::ShiftsController < AdminAreaController
       event['daysOfWeek'] = [staff.day]
       event['startTime'] = staff.start_time.strftime("%H:%M")
       event['endTime'] = staff.end_time.strftime("%H:%M")
-      event['color'] = "#" + "%06x" % (staff.user.id.hash & 0xffffff)
+      event['color'] = staff.user.staff_spaces.find_by(space_id: @default_space_id).color
       staff_availabilities << event
     end
 

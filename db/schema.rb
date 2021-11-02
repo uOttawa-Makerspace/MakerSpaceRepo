@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_10_05_174716) do
+ActiveRecord::Schema.define(version: 2021_10_30_015023) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -434,6 +434,13 @@ ActiveRecord::Schema.define(version: 2021_10_05_174716) do
     t.string "rfid"
   end
 
+  create_table "procedures", force: :cascade do |t|
+    t.integer "version_number"
+    t.string "comments"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
     t.integer "training_id"
     t.string "title"
@@ -653,6 +660,7 @@ ActiveRecord::Schema.define(version: 2021_10_05_174716) do
     t.bigint "space_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "color"
     t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end

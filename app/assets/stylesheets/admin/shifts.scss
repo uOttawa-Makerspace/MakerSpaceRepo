@@ -1,4 +1,12 @@
-.box {
-  height: 20px;
-  width: 20px;
+.form-control-color {
+  width: 2.5rem!important;
+  height: auto;
+  padding: 0.25rem;
+}
+.form-control-color:not(:disabled):not([readonly]) {
+  cursor: pointer;
+}
+.form-control-color::-webkit-color-swatch {
+  height: 1.25em;
+  border-radius: 0.25rem;
 }
