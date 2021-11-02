@@ -30,6 +30,7 @@ require("@shopify/buy-button-js");
 global.PhotoSwipe = require('photoswipe');
 global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
 var Clipboard = require("clipboard");
+import moment from 'moment'
 // window.Cookies = require("js-cookie");
 require("@rails/actiontext")
 require("flatpickr/dist/flatpickr")
@@ -50,10 +51,6 @@ require("packs/accordion-load");
 
 import "bootstrap";
 require("packs/toastr");
-import { Calendar } from '@fullcalendar/core';
-import interactionPlugin from '@fullcalendar/interaction';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import listPlugin from '@fullcalendar/list';
 
 document.addEventListener("turbolinks:load", () => {
     $('[data-toggle="tooltip"]').tooltip()
@@ -64,7 +61,7 @@ document.addEventListener("turbolinks:load", () => {
     for(let i=0;i<links.length;i++){
         const link = links[i];
         const href = link.getAttribute('href');
-        if(href !== undefined && href.match(/^((https?:\/\/)|(www\.))/)) {
+        if(href !== null && href.match(/^((https?:\/\/)|(www\.))/)) {
             link.setAttribute('target','_blank');
             link.setAttribute('rel', "noopener noreferrer")
         }
