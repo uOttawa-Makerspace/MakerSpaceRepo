@@ -195,6 +195,7 @@ Rails.application.routes.draw do
     resources :shifts, only: %i[index] do
       collection do
         get :get_availabilities
+        post :update_color
       end
     end
 
