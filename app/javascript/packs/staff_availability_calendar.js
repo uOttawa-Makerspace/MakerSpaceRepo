@@ -4,55 +4,58 @@ import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 
-let calendarEl = document.getElementById('user_availabilities_calendar');
+document.addEventListener('turbolinks:load', function() {
 
-let calendar = new Calendar(calendarEl, {
-    plugins: [ interactionPlugin, timeGridPlugin, listPlugin ],
-    headerToolbar: {
-        left: 'prev,today,next',
-        center: '',
-        right: 'timeGridWeek,timeGridDay'
-    },
-    views: {
-        timeGridWeek: {
-            dayHeaderFormat: {
-                weekday: 'long',
+    let calendarEl = document.getElementById('user_availabilities_calendar');
+
+    let calendar = new Calendar(calendarEl, {
+        plugins: [interactionPlugin, timeGridPlugin, listPlugin],
+        headerToolbar: {
+            left: 'prev,today,next',
+            center: '',
+            right: 'timeGridWeek,timeGridDay'
+        },
+        views: {
+            timeGridWeek: {
+                dayHeaderFormat: {
+                    weekday: 'long',
+                },
             },
         },
-    },
-    allDaySlot: false,
-    timeZone: 'America/New_York',
-    initialView: 'timeGridWeek',
-    navLinks: true,
-    selectable: true,
-    selectMirror: true,
-    eventTimeFormat: {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-    },
-    editable: true,
-    dayMaxEvents: true,
-    eventSources: [
-        {
-            url: '/staff_availabilities/get_availabilities',
+        allDaySlot: false,
+        timeZone: 'America/New_York',
+        initialView: 'timeGridWeek',
+        navLinks: true,
+        selectable: true,
+        selectMirror: true,
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        },
+        editable: true,
+        dayMaxEvents: true,
+        eventSources: [
+            {
+                url: '/staff_availabilities/get_availabilities',
+            }
+        ],
+        select: function (arg) {
+            createEvent(arg);
+        },
+        eventClick: function (arg) {
+            removeEvent(arg);
+        },
+        eventDrop: function (arg) {
+            modifyEvent(arg);
+        },
+        eventResize: function (arg) {
+            modifyEvent(arg);
         }
-    ],
-    select: function(arg) {
-        createEvent(arg);
-    },
-    eventClick: function(arg) {
-        removeEvent(arg);
-    },
-    eventDrop: function(arg) {
-        modifyEvent(arg);
-    },
-    eventResize: function(arg) {
-        modifyEvent(arg);
-    }
-});
+    });
+    calendar.render();
 
-calendar.render();
+});
 
 let createEvent = (arg) => {
     fetch("/staff_availabilities", {

@@ -31,7 +31,7 @@
             </td>
 
             <td class="trainer-cell" style="horizontal-alginment:center;">
-              <%= link_to sesh.user.name, user_url(sesh.user.username) %>
+              <%= link_to sesh.user.name, user_path(sesh.user.username) %>
             </td>
 
             <td class="space-cell">
@@ -57,7 +57,7 @@
                   <div id="sesh-users" style="display:inline">
                     <% sesh.users.each do |user| %>
                       <div class="clickable-username">
-                        <%=link_to user.name, user_url(user.username), class: "user-link" %> <br>
+                        <%= link_to user.name, user_path(user.username), class: "user-link" %> <br>
                       </div>
                     <% end %>
                   </div>
@@ -67,7 +67,7 @@
 
             <td class="action-cell">
             <br>
-              <%=link_to "Visit", staff_training_session_url(sesh), class:"btn btn-success btn-sm btn-block" %>
+              <%=link_to "Visit", staff_training_session_path(sesh), class:"btn btn-success btn-sm btn-block" %>
               <%=link_to "Download",
                         training_report_staff_training_session_path(id:sesh.id, format: "xlsx" ),
                         action: :training_report,
