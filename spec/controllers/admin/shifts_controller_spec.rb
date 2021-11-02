@@ -39,8 +39,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
         space1 =  create(:space)
         space2 = create(:space)
 
-        StaffSpace.create(space_id: space1.id, user_id: sa1.user_id)
-        StaffSpace.create(space_id: space1.id, user_id: sa2.user_id)
+        ss1 = StaffSpace.create(space_id: space1.id, user_id: sa1.user_id)
+        ss2 = StaffSpace.create(space_id: space1.id, user_id: sa2.user_id)
         StaffSpace.create(space_id: space2.id, user_id: sa2.user_id)
         StaffSpace.create(space_id: space2.id, user_id: sa3.user_id)
 
@@ -53,7 +53,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                    "daysOfWeek": [sa1.day],
                                    "startTime": sa1.start_time.strftime("%H:%M"),
                                    "endTime": sa1.end_time.strftime("%H:%M"),
-                                   "color": "#" + "%06x" % (sa1.user.id.hash & 0xffffff)
+                                   "color": ss1.color
                                  },
                                  {
                                    "title": "#{sa2.user.name} is unavailable",
@@ -61,7 +61,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                    "daysOfWeek": [sa2.day],
                                    "startTime": sa2.start_time.strftime("%H:%M"),
                                    "endTime": sa2.end_time.strftime("%H:%M"),
-                                   "color": "#" + "%06x" % (sa2.user.id.hash & 0xffffff)
+                                   "color": ss2.color
                                  },
                                ].to_json)
       end
