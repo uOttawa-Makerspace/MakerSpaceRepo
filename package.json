@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@babel/plugin-proposal-private-methods": "^7.16.0",
     "@fullcalendar/core": "5.9.0",
     "@fullcalendar/daygrid": "5.9.0",
     "@fullcalendar/interaction": "5.9.0",
