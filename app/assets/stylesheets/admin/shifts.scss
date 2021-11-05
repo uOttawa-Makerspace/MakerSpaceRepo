@@ -1,12 +1,12 @@
 .form-control-color {
   width: 2.5rem!important;
-  height: auto;
-  padding: 0.25rem;
+  height: auto!important;
+  padding: 0.25rem!important;
 }
 .form-control-color:not(:disabled):not([readonly]) {
-  cursor: pointer;
+  cursor: pointer!important;
 }
 .form-control-color::-webkit-color-swatch {
-  height: 1.25em;
-  border-radius: 0.25rem;
+  height: 1.25em!important;
+  border-radius: 0.25rem!important;
 }
