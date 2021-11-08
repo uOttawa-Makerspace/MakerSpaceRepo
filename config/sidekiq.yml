@@ -9,3 +9,5 @@ production:
   :concurrency: 25
 staging:
   :concurrency: 15
+dev_server:
+  :concurrency: 15

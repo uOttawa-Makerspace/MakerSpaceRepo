@@ -20,3 +20,7 @@ production:
 staging:
   <<: *default
   database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
+
+dev_server:
+  <<: *default
+  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
