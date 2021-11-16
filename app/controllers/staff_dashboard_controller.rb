@@ -61,7 +61,7 @@ class StaffDashboardController < StaffAreaController
     respond_to do |format|
       format.html
       format.js
-      format.json { render json: {"status": "ok"} }
+      format.json { render json: { "status": "ok" } }
     end
   end
 
@@ -129,7 +129,7 @@ class StaffDashboardController < StaffAreaController
           redirect_to staff_dashboard_index_path
         end
       }
-      format.json { render json: {"status": "ok"}}
+      format.json { render json: { "status": "ok" } }
     end
   end
 
@@ -184,7 +184,7 @@ class StaffDashboardController < StaffAreaController
                      .order(:updated_at)
       end
       format.html
-      format.json {render json: @users.as_json}
+      format.json { render json: @users.as_json }
     end
   end
 
