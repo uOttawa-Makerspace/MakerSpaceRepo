@@ -22,6 +22,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
 
     context 'logged as admin' do
       it 'should return 200' do
+        Space.find_or_create_by(name: 'Makerspace')
         get :index
         expect(response).to have_http_status(:success)
       end
@@ -53,7 +54,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                    "daysOfWeek": [sa1.day],
                                    "startTime": sa1.start_time.strftime("%H:%M"),
                                    "endTime": sa1.end_time.strftime("%H:%M"),
-                                   "color": ss1.color
+                                   "color": "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)"
                                  },
                                  {
                                    "title": "#{sa2.user.name} is unavailable",
@@ -61,9 +62,30 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                    "daysOfWeek": [sa2.day],
                                    "startTime": sa2.start_time.strftime("%H:%M"),
                                    "endTime": sa2.end_time.strftime("%H:%M"),
-                                   "color": ss2.color
+                                   "color": "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)"
                                  },
                                ].to_json)
+
+        get :get_availabilities, params: {space_id: space1.id, transparent: true}
+        expect(response).to have_http_status(:success)
+        expect(response.body).to eq([
+                                      {
+                                        "title": "#{sa1.user.name} is unavailable",
+                                        "id": sa1.id,
+                                        "daysOfWeek": [sa1.day],
+                                        "startTime": sa1.start_time.strftime("%H:%M"),
+                                        "endTime": sa1.end_time.strftime("%H:%M"),
+                                        "color": "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)"
+                                      },
+                                      {
+                                        "title": "#{sa2.user.name} is unavailable",
+                                        "id": sa2.id,
+                                        "daysOfWeek": [sa2.day],
+                                        "startTime": sa2.start_time.strftime("%H:%M"),
+                                        "endTime": sa2.end_time.strftime("%H:%M"),
+                                        "color": "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)"
+                                      },
+                                    ].to_json)
       end
 
     end
