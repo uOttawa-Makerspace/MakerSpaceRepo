@@ -1,0 +1,84 @@
+<div>
+  <br>
+  <div class="d-flex justify-content-center">
+    <%= form_tag shifts_admin_shifts_path, method: :get do %>
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <%= label_tag :space_id, "Space", class: 'input-group-text' %>
+        </div>
+        <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: (params[:space_id].present? ? params[:space_id] : Space.find_by(name: 'Makerspace').id)), class: "custom-select" %>
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" type="submit">Go</button>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="row">
+    <div class="col-md-2">
+
+      <button id="hide-show-unavailabilities" class="btn btn-primary">Hide/Show Unavailabilities</button>
+      <br><br>
+
+      <% @colors.each do |staff_name, array| %>
+        <%= form_tag(update_color_admin_shifts_path, method: :post) do %>
+          <label><%= staff_name %></label>
+          <br>
+          <div class="form-inline">
+            <input type="color" name="color" class="form-control form-control-color" value="<%= array[1] %>" title="Choose your color">
+            <%= hidden_field_tag :id, array[0] %>
+            <button type="submit" class="btn btn-primary btn-sm ml-1">Update color</button>
+          </div>
+        <% end %>
+        <br>
+      <% end %>
+    </div>
+    <div class="col-md-10">
+      <div id="calendar"></div>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="modal fade" id="shiftModal" tabindex="-1" role="dialog" aria-labelledby="shiftModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">New Shift</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group text-center">
+            <label for="start-datetime">Start Date</label>
+            <input id="start-datetime" autocomplete="false" class="form-control">
+            <br>
+            <label for="end-datetime">End Date</label>
+            <input id="end-datetime" autocomplete="false" class="form-control">
+            <br>
+            <%= label_tag :user_id, "User to select" %>
+            <%= select_tag :user_id, options_for_select(@staff), { class: "form-control", id: 'modalUserId'} %>
+            <br>
+            <label for="modal-reason">Reason</label>
+            <input type="text" class="form-control" id="modalReason">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="shiftCancel" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" id="shiftSave" class="btn btn-primary">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%= javascript_pack_tag 'admin_shifts' %>
+</div>
+
+<style>
+    .container {
+        max-width: 100%!important;
+        padding-left: 3%;
+        padding-right: 3%;
+    }
+</style>

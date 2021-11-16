@@ -26,6 +26,7 @@ let calendar = new Calendar(calendarEl, {
     timeZone: 'America/New_York',
     initialView: 'timeGridWeek',
     navLinks: true,
+    slotEventOverlap: false,
     eventTimeFormat: {
         hour: '2-digit',
         minute: '2-digit',
