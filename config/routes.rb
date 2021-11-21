@@ -192,9 +192,11 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :shifts, only: %i[index] do
+    resources :shifts, except: %i[new show] do
       collection do
+        get :shifts
         get :get_availabilities
+        get :get_shifts
         post :update_color
       end
     end

@@ -33,6 +33,7 @@ let calendar = new Calendar(calendarEl, {
     },
     editable: true,
     dayMaxEvents: true,
+    slotEventOverlap: false,
     eventSources: [
         {
             url: '/staff_availabilities/get_availabilities',

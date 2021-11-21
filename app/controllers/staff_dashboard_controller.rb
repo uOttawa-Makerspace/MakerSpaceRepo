@@ -35,10 +35,10 @@ class StaffDashboardController < StaffAreaController
         user = User.where("lower(email) = ? OR lower(name) = ? OR lower(username) = ?", user_data, user_data, user_data)
         faulty_users += 1 and faulty_user_data << user_data and next if user.blank?
         LabSession.create(
-            user: user.last,
-            space_id: @space.id,
-            sign_in_time: Time.zone.now,
-            sign_out_time: Time.zone.now + 8.hours
+          user: user.last,
+          space_id: @space.id,
+          sign_in_time: Time.zone.now,
+          sign_out_time: Time.zone.now + 8.hours
         )
       end
       flash[:notice] = "The file has been processed and users have been signed in ! "
@@ -61,7 +61,7 @@ class StaffDashboardController < StaffAreaController
     respond_to do |format|
       format.html
       format.js
-      format.json { render json: {"status": "ok"} }
+      format.json { render json: { "status": "ok" } }
     end
   end
 
@@ -72,10 +72,9 @@ class StaffDashboardController < StaffAreaController
       lab_session.update_all(sign_out_time: Time.zone.now)
     end
     respond_to do |format|
-      format.html {redirect_to staff_dashboard_index_path(space_id: @space.id)}
-      format.json { render json: {"status": "ok"} }
+      format.html { redirect_to staff_dashboard_index_path(space_id: @space.id) }
+      format.json { render json: { "status": "ok" } }
     end
-
   end
 
   def sign_in_users
@@ -92,7 +91,7 @@ class StaffDashboardController < StaffAreaController
       end
     end
     respond_to do |format|
-      format.html {redirect_to staff_dashboard_index_path(space_id: @space.id)}
+      format.html { redirect_to staff_dashboard_index_path(space_id: @space.id) }
       format.js
       format.json { render json: {"status": "ok"} }
     end
@@ -130,7 +129,7 @@ class StaffDashboardController < StaffAreaController
           redirect_to staff_dashboard_index_path
         end
       }
-      format.json { render json: {"status": "ok"}}
+      format.json { render json: { "status": "ok" } }
     end
   end
 
@@ -185,7 +184,7 @@ class StaffDashboardController < StaffAreaController
                      .order(:updated_at)
       end
       format.html
-      format.json {render json: @users.as_json}
+      format.json { render json: @users.as_json }
     end
   end
 
@@ -203,12 +202,12 @@ class StaffDashboardController < StaffAreaController
 
   private
 
-    def update_lab_session
-      current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
-      if current_sesh.present?
-        current_sesh.sign_out_time = Time.zone.now
-        current_sesh.save
-      end
+  def update_lab_session
+    current_sesh = current_user.lab_sessions.where('sign_out_time > ?', Time.zone.now).last
+    if current_sesh.present?
+      current_sesh.sign_out_time = Time.zone.now
+      current_sesh.save
     end
+  end
 
- end
+end

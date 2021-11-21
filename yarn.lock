@@ -924,6 +924,14 @@
     "@fullcalendar/common" "~5.9.0"
     tslib "^2.1.0"
 
+"@fullcalendar/google-calendar@5.9.0":
+  version "5.9.0"
+  resolved "https://registry.yarnpkg.com/@fullcalendar/google-calendar/-/google-calendar-5.9.0.tgz#8eb4b83889afa53cdfecbf704cd3f8585f3e0252"
+  integrity sha512-Q31TWfH39eUeFJBG1Susyz28H3blDAfFqKfaUVoGXtHgghYcTQccuaLsHrYDzqM3N+7guu3B8A8/oha/MLGxGQ==
+  dependencies:
+    "@fullcalendar/common" "~5.9.0"
+    tslib "^2.1.0"
+
 "@fullcalendar/interaction@5.9.0":
   version "5.9.0"
   resolved "https://registry.yarnpkg.com/@fullcalendar/interaction/-/interaction-5.9.0.tgz#7211f89074cc89b9234a9333fc8ec346bd4ff3f3"

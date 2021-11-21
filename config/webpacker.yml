@@ -87,6 +87,12 @@ staging:
   extract_css: true
   cache_manifest: true
 
+dev_server:
+  <<: *default
+  compile: false
+  extract_css: true
+  cache_manifest: true
+
 production:
   <<: *default
 
