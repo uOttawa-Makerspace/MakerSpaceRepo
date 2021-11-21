@@ -15,7 +15,7 @@
             <div class="form-group col-md-6 text-center">
               <%= f.label :start_time, 'Start Time (24h format)' %>
               <div class="input-group">
-                <%= f.text_field "start_time", id: 'start_time', autocomplete: 'off', class: "form-control", required: true, value: f.object.start_time %>
+                <%= f.text_field "start_time", id: 'start_time', autocomplete: 'off', class: "form-control", required: true, value: f.object.start_time.strftime("%H:%M") %>
                 <div class="input-group-append">
                   <button class="btn btn-outline-danger" id="start_time_clear" type="button">
                     <i class="fa fa-times"></i>
@@ -26,7 +26,7 @@
             <div class="col-md-6">
               <%= f.label :end_time, 'End Time (24h format)' %>
               <div class="input-group">
-                <%= f.text_field "end_time", id: 'end_time', autocomplete: 'off', class: "form-control", required: true, value: f.object.end_time %>
+                <%= f.text_field "end_time", id: 'end_time', autocomplete: 'off', class: "form-control", required: true, value: f.object.end_time.strftime("%H:%M") %>
                 <div class="input-group-append">
                   <button class="btn btn-outline-danger" id="end_time_clear" type="button">
                     <i class="fa fa-times"></i>

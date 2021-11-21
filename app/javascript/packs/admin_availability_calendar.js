@@ -9,7 +9,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const space_id = urlParams.get('space_id')
 
 let calendar = new Calendar(calendarEl, {
-    plugins: [ interactionPlugin, timeGridPlugin, listPlugin ],
+    plugins: [interactionPlugin, timeGridPlugin, listPlugin],
     headerToolbar: {
         left: 'prev,today,next',
         center: '',
@@ -33,7 +33,7 @@ let calendar = new Calendar(calendarEl, {
         hour12: false,
     },
     dayMaxEvents: true,
-    eventClick: function(info) {
+    eventClick: function (info) {
         alert('Event: ' + info.event.title);
     },
     eventSources: [

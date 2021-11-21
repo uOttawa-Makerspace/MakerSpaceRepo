@@ -55,7 +55,7 @@ class Admin::ShiftsController < AdminAreaController
       respond_to do |format|
         if @shift.update(shift_params)
           format.html { redirect_to shifts_admin_shifts_path, notice: 'The shift has been successfully updated.' }
-          format.json { render json: {"status": "ok"}}
+          format.json { render json: { "status": "ok" } }
         else
           format.html { render :edit }
           format.json { render json: @shift.errors, status: :unprocessable_entity }
@@ -64,6 +64,7 @@ class Admin::ShiftsController < AdminAreaController
     elsif params[:start_datetime].present? && params[:end_datetime].present?
       start_date = DateTime.parse(params[:start_datetime])
       end_date = DateTime.parse(params[:end_datetime])
+
       respond_to do |format|
         if @shift.update(start_time: start_date, end_time: end_date)
           format.html { redirect_to shifts_admin_shifts_path, notice: 'The shift has been successfully updated.' }
@@ -141,9 +142,9 @@ class Admin::ShiftsController < AdminAreaController
 
   def set_default_space
     @default_space_id = if params[:space_id].present? && params[:space_id] != 'null' && Space.find(params[:space_id]).present?
-                         params[:space_id]
-                       else
-                         Space.find_by(name: 'Makerspace').id
+                          params[:space_id]
+                        else
+                          Space.find_by(name: 'Makerspace').id
                         end
   end
 
@@ -157,7 +158,7 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def shift_params
-    params.require(:shift).permit(:start_datetime, :end_datetime, :reason , :user_id, :space_id)
+    params.require(:shift).permit(:start_datetime, :end_datetime, :reason, :user_id, :space_id)
   end
 
 end

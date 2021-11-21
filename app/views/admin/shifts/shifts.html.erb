@@ -19,6 +19,8 @@
 
       <button id="hide-show-unavailabilities" class="btn btn-primary">Hide/Show Unavailabilities</button>
       <br><br>
+      <button id="hide-show-google-events" class="btn btn-primary">Hide/Show Events</button>
+      <br><br>
 
       <% @colors.each do |staff_name, array| %>
         <%= form_tag(update_color_admin_shifts_path, method: :post) do %>
