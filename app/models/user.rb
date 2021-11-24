@@ -38,6 +38,9 @@ class User < ApplicationRecord
   has_many :project_kits, dependent: :destroy
   has_many :learning_module_tracks
   has_many :shadowing_hours
+  has_many :staff_spaces, dependent: :destroy
+  has_many :staff_availabilities, dependent: :destroy
+  has_many :shifts, dependent: :destroy
 
   validates :avatar, file_content_type: {
       allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],
@@ -154,6 +157,10 @@ class User < ApplicationRecord
 
   def dev_program?
     programs.pluck(:program_type).include?(Program::DEV_PROGRAM)
+  end
+
+  def staff_in_space?
+    staff_spaces.count > 0
   end
 
   def self.to_csv(attributes)

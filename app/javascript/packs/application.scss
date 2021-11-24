@@ -16,6 +16,7 @@ $table-accent-bg: #d6ebeb;
 @import "~progress-tracker/src/styles/progress-tracker";
 @import 'toastr/build/toastr.min';
 @import "~flatpickr/dist/flatpickr";
+@import "~@fullcalendar/common/main";
 
 .progress-step {
   &.is-declined {

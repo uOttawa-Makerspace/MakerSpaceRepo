@@ -186,3 +186,6 @@ div.form-error{
   @extend .button-color;
 }
 
+.fc th {
+  width: inherit;
+}

@@ -20,6 +20,7 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def edit
+    @space_staff_hours = SpaceStaffHour.where(space: params[:id])
     @new_training = Training.new
     unless @space = Space.find(params[:id])
       flash[:alert] = 'Not Found'
@@ -41,6 +42,20 @@ class Admin::SpacesController < AdminAreaController
       flash[:notice] = 'Space Capacity updated !'
       redirect_back(fallback_location: root_path)
     end
+  end
+
+  def add_space_hours
+    unless params[:space_id].present? && params[:day].present? && params[:start_time].present? && params[:end_time].present? && SpaceStaffHour.create(space_id: params[:space_id], day: params[:day], start_time: params[:start_time], end_time: params[:end_time])
+      flash[:notice] = 'Make sure you sent all the information and try again.'
+    end
+    redirect_back(fallback_location: root_path)
+  end
+
+  def delete_space_hour
+    unless params[:space_staff_hour_id] && SpaceStaffHour.find(params[:space_staff_hour_id]).present? && SpaceStaffHour.find(params[:space_staff_hour_id]).destroy
+      flash[:notice] = 'An issue occurred while deleting the slot.'
+    end
+    redirect_back(fallback_location: root_path)
   end
 
   def destroy
