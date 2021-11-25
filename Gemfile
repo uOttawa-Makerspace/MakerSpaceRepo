@@ -36,7 +36,7 @@ gem 'saml_idp', '~> 0.9.0'
 gem 'sass-rails', '~> 5.0.7'
 gem 'sdoc', '~> 1.1.0', group: :doc
 gem 'select2-rails'
-gem 'shopify_app', '9.0.4'
+gem 'shopify_app', '~> 18.0.2'
 gem 'sidekiq', '~> 6.1.1'
 gem 'simplecov'
 gem 'thin'
@@ -68,7 +68,7 @@ gem "rack-cors"
 
 group :development, :test do
   gem 'byebug', platform: :mri
-  gem 'rspec-rails'
+  gem 'rspec-rails', '~> 5.0.0'
   gem 'faker', '~> 2.0.0'
   gem 'railroady'
   gem "factory_bot_rails"
