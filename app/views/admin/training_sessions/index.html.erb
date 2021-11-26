@@ -16,13 +16,4 @@
   </div>
 </section>
 
-<script type="text/javascript" charset="utf-8">
-
-    $('.training_session_searchbar').on('keyup', debounce(function (e) {
-        $.ajax({
-            url: '/admin/training_sessions',
-            data: {search: $(this).serialize()},
-            format: 'js'
-        });
-    }, 100));
-</script>
+<%= javascript_pack_tag 'admin_training_sessions' %>

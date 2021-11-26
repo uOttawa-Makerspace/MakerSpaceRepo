@@ -7,6 +7,14 @@ RSpec.describe 'SamlConfig', type: :configuration do
       'wiki.makerepo.com' => {
         metadata_url: 'https://wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com',
         response_hosts: %w(en.wiki.makerepo.com fr.wiki.makerepo.com staff.makerepo.com)
+      },
+      'rooms.makerepo.com' => {
+        metadata_url: 'https://rooms.makerepo.com/users/auth/saml/metadata',
+        response_hosts: %w(rooms.makerepo.com)
+      },
+      'print.makerepo.com' => {
+        metadata_url: 'https://print.makerepo.com/saml/metadata',
+        response_hosts: %w(print.makerepo.com localhost)
       }
     }
 
@@ -23,12 +31,13 @@ RSpec.describe 'SamlConfig', type: :configuration do
     principal = FactoryBot.create(:user)
 
     attributes = {
-      :email_address => principal.email,
-      :transient => principal.username,
-      :persistent => principal.id
+      persistent: principal.id,
+      transient: principal.username,
+      email_address: principal.email
     }
 
-    expect(SamlIdp.config.name_id.formats.keys.sort).to eq(attributes.keys.sort)
+    # we want a specific order here
+    expect(SamlIdp.config.name_id.formats.keys).to eq(attributes.keys)
 
     SamlIdp.config.name_id.formats.each do |key, lambda|
       value = lambda.call(principal)
@@ -41,12 +50,14 @@ RSpec.describe 'SamlConfig', type: :configuration do
     principal = FactoryBot.create(:user)
 
     attributes = {
-      :username => principal.username,
-      :email_address => principal.email,
-      :name => principal.name,
-      :is_staff => principal.staff?,
-      :is_admin => principal.admin?,
-      :is_volunteer => principal.volunteer?
+      username: principal.username,
+      email_address: principal.email,
+      name: principal.name,
+      is_staff: principal.staff?,
+      is_admin: principal.admin?,
+      is_volunteer: principal.volunteer?,
+      avatar_transient_url: principal.avatar.attachment.url,
+      avatar_content_type: principal.avatar.attachment.content_type
     }
 
     expect(SamlIdp.config.attributes.keys.sort).to eq(attributes.keys.sort)
