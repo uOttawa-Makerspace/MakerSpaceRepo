@@ -56,8 +56,9 @@ RSpec.describe 'SamlConfig', type: :configuration do
       is_staff: principal.staff?,
       is_admin: principal.admin?,
       is_volunteer: principal.volunteer?,
-      avatar_transient_url: principal.avatar.attachment.url,
-      avatar_content_type: principal.avatar.attachment.content_type
+      role: principal.role,
+      avatar_transient_url: principal.avatar.attachment&.service_url,
+      avatar_content_type: principal.avatar.attachment&.content_type
     }
 
     expect(SamlIdp.config.attributes.keys.sort).to eq(attributes.keys.sort)
