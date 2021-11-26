@@ -34,7 +34,7 @@ class StaffAvailabilitiesController < StaffAreaController
   def create
     if params[:staff_availability].present?
       @staff_availability = StaffAvailability.new(staff_availability_params.merge(user_id: @selected_user.id))
-    elsif params[:start_date].present? && params[:end_date]
+    elsif params[:start_date].present? && params[:end_date].present?
       start_date = DateTime.parse(params[:start_date])
       end_date = DateTime.parse(params[:end_date])
       @staff_availability = StaffAvailability.new(user_id: @selected_user.id, day: start_date.wday, start_time: start_date.strftime("%H:%M"), end_time: end_date.strftime("%H:%M"))
@@ -46,7 +46,7 @@ class StaffAvailabilitiesController < StaffAreaController
     end
 
     respond_to do |format|
-      if @staff_availability.save
+      if @staff_availability.save!
         format.html { redirect_to staff_availabilities_path, notice: 'The staff unavailabilities were successfully created.' }
         format.json { render json: { id: @staff_availability.id } }
       else
@@ -114,11 +114,11 @@ class StaffAvailabilitiesController < StaffAreaController
 
   def set_selected_user
     if @user.admin?
-      @selected_user = if params[:user_id].present? && params[:user_id] != 'null' && User.find(params[:user_id]).present?
-                       User.find(params[:user_id])
-                     else
-                       @user
-                     end
+      if params[:staff_id].present? && params[:staff_id] != 'null' && User.find(params[:staff_id]).present?
+        @selected_user = User.find(params[:staff_id])
+      else
+        @selected_user = @user
+      end
     else
       @selected_user = @user
     end

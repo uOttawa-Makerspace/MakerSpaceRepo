@@ -6,7 +6,7 @@ import listPlugin from '@fullcalendar/list';
 
 let calendarEl = document.getElementById('user_availabilities_calendar');
 const urlParams = new URLSearchParams(window.location.search);
-const user_id = urlParams.get('user_id')
+const staff_id = urlParams.get('staff_id')
 
 let calendar = new Calendar(calendarEl, {
     plugins: [interactionPlugin, timeGridPlugin, listPlugin],
@@ -38,7 +38,7 @@ let calendar = new Calendar(calendarEl, {
     slotEventOverlap: false,
     eventSources: [
         {
-            url: `/staff_availabilities/get_availabilities?user_id=${user_id}`,
+            url: `/staff_availabilities/get_availabilities?staff_id=${staff_id}`,
         }
     ],
     select: function (arg) {
@@ -64,7 +64,7 @@ let createEvent = (arg) => {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({start_date: arg.start, end_date: arg.end, format: 'json'})
+        body: JSON.stringify({staff_id: staff_id, start_date: arg.start, end_date: arg.end, format: 'json'})
     }).then(response => response.json()).then(
         data => {
             calendar.addEvent({
