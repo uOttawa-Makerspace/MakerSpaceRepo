@@ -7,7 +7,6 @@ environment.plugins.append("Provide",
         $: 'jquery',
         jQuery: 'jquery',
         Popper: ['popper.js', 'default']
-
 }));
 
 environment.config.set('resolve.alias', {

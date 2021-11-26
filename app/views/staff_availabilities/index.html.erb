@@ -1,0 +1,50 @@
+<div class="text-center">
+  <br />
+  <h2 class="font-weight-bold">Staff unavailabilities</h2>
+
+  <p>Please input all the hours where you are <b>NOT</b> available.</p>
+  <br>
+
+  <% if @user.admin? %>
+    <div class="d-flex justify-content-center">
+      <%= form_tag staff_availabilities_path, method: :get do %>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <%= label_tag :staff_id, "User", class: 'input-group-text' %>
+          </div>
+          <%= select_tag :staff_id, options_for_select(StaffSpace.all.joins(:user).distinct.pluck('users.name', 'users.id'), selected: (params[:staff_id].present? ? params[:staff_id] : @user.id)), class: "custom-select" %>
+          <div class="input-group-append">
+            <button class="btn btn-outline-secondary" type="submit">Go</button>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <h2>My calendar</h2>
+  <% end %>
+
+  <div id="user_availabilities_calendar"></div>
+
+  <br>
+
+  <%= link_to "New Staff Unavailability", new_staff_availability_path, class: "btn btn-primary m-1", style: 'color: #fff;' %>
+
+  <br><br>
+
+  <% if !@user_availabilities.blank?  %>
+    <h3>My availabilities</h3>
+    <%= render 'staff_availabilities/staff_table', availabilities: @user_availabilities %>
+  <% else %>
+    <div class="m-5">
+      You did not add any availabilities. Create one <%= link_to "here", new_staff_availability_url %>
+    </div>
+    <br>
+  <% end %>
+
+  <% if @user.admin? && @staff_availabilities.present?  %>
+    <h3>Staff unavailabilities</h3>
+    <%= render 'staff_availabilities/staff_table', availabilities: @staff_availabilities %>
+  <% end %>
+</div>
+
+<%= javascript_pack_tag 'staff_availability_calendar', 'data-turbolinks-track': 'reload' %>

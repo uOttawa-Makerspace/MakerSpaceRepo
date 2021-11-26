@@ -261,6 +261,8 @@ class UsersController < SessionsController
     @proficient_projects_awarded = Proc.new { |training| training.proficient_projects.where(id: @repo_user.order_items.awarded.pluck(:proficient_project_id)) }
     @learning_modules_completed = Proc.new { |training| training.learning_modules.where(id: @repo_user.learning_module_tracks.completed.pluck(:learning_module_id)) }
     @recomended_hours = Proc.new { |training, levels| training.learning_modules.where(level: levels).count + training.proficient_projects.where(level: levels).count }
+    @space_list = Space.all
+    @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
   end
 
   def likes

@@ -93,7 +93,7 @@ class StaffDashboardController < StaffAreaController
     respond_to do |format|
       format.html { redirect_to staff_dashboard_index_path(space_id: @space.id) }
       format.js
-      format.json { render json: { "status": "ok" } }
+      format.json { render json: {"status": "ok"} }
     end
   end
 
@@ -170,8 +170,8 @@ class StaffDashboardController < StaffAreaController
     respond_to do |format|
       if params[:query].blank? and params[:username].blank?
         flash[:alert] = 'No search parameters.'
-        format.html { redirect_to staff_dashboard_index_path }
-        format.json { render json: { "error": "no params" } }
+        format.html {redirect_to staff_dashboard_index_path}
+        format.json {render json: {"error": "no params"}}
       elsif params[:username].present?
         @users = User.where("username = ?", params[:username])
       else

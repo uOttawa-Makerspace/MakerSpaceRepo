@@ -1,0 +1,42 @@
+<div class="table-responsive">
+  <table class="table">
+
+    <tr>
+      <th>User</th>
+      <th>Day</th>
+      <th>Start Time</th>
+      <th>End Time</th>
+      <th>Action</th>
+    </tr>
+
+    <tbody>
+    <% availabilities.each do |a| %>
+      <tr>
+        <td>
+          <%= link_to a.user.name, user_path(a.user.username) %>
+        </td>
+
+        <td>
+          <%= a.week_day %>
+        </td>
+
+        <td>
+          <%= a.start_time.strftime("%H:%M") %>
+        </td>
+
+        <td>
+          <%= a.end_time.strftime("%H:%M") %>
+        </td>
+
+        <td class="action-cell">
+          <%=link_to "Edit", edit_staff_availability_path(a.id), class:"btn btn-primary btn-block btn-sm mb-1 mt-0" %>
+          <%=link_to "Delete", { controller: :staff_availabilities ,action: :destroy, id: a.id }, method: :delete,
+                     data: { confirm: 'Are you sure that you want to delete this availability?' },
+                     class:"btn btn-danger btn-sm btn-block mb-1 mr-0" %>
+        </td>
+
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+</div>
