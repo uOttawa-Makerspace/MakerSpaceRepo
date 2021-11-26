@@ -56,6 +56,7 @@ RSpec.describe 'SamlConfig', type: :configuration do
       is_staff: principal.staff?,
       is_admin: principal.admin?,
       is_volunteer: principal.volunteer?,
+      role: principal.role,
       avatar_transient_url: principal.avatar.attachment&.service_url,
       avatar_content_type: principal.avatar.attachment&.content_type
     }
