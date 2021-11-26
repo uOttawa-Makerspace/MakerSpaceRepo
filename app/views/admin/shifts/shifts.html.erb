@@ -63,7 +63,13 @@
             <%= select_tag :user_id, options_for_select(@staff), { class: "form-control", id: 'modalUserId'} %>
             <br>
             <label for="modal-reason">Reason</label>
-            <input type="text" class="form-control" id="modalReason">
+            <select id="modalReason" class="custom-select">
+              <option value="Shift">Shift</option>
+              <option value="Training">Training</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Project">Project</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
