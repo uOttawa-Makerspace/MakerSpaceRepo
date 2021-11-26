@@ -5,6 +5,8 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 
 let calendarEl = document.getElementById('user_availabilities_calendar');
+const urlParams = new URLSearchParams(window.location.search);
+const user_id = urlParams.get('user_id')
 
 let calendar = new Calendar(calendarEl, {
     plugins: [interactionPlugin, timeGridPlugin, listPlugin],
@@ -36,7 +38,7 @@ let calendar = new Calendar(calendarEl, {
     slotEventOverlap: false,
     eventSources: [
         {
-            url: '/staff_availabilities/get_availabilities',
+            url: `/staff_availabilities/get_availabilities?user_id=${user_id}`,
         }
     ],
     select: function (arg) {
