@@ -236,7 +236,7 @@ modalSave.addEventListener('click', () => {
 })
 
 window.toggleVisibility = (className) => {
-    document.getElementsByClassName(className).forEach((item) => {
+    Array.from(document.getElementsByClassName(className)).forEach((item) => {
         if (item.style.display === "none") {
             item.style.display = "block";
         } else {
