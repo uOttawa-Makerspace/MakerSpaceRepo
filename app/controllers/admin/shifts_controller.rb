@@ -42,7 +42,7 @@ class Admin::ShiftsController < AdminAreaController
     respond_to do |format|
       if @shift.save
         format.html { redirect_to shifts_admin_shifts_path, notice: 'The shift has been successfully created.' }
-        format.json { render json: { id: @shift.id, name: "#{@shift.reason} for #{@shift.user.name}", color: @shift.user.staff_spaces.find_by(space_id: @default_space_id).color, start: @shift.start_datetime, end: @shift.end_datetime } }
+        format.json { render json: { id: @shift.id, name: "#{@shift.reason} for #{@shift.user.name}", color: @shift.user.staff_spaces.find_by(space_id: @default_space_id).color, start: @shift.start_datetime, end: @shift.end_datetime, className: @shift.user.name.strip.downcase.gsub(' ', '-') } }
       else
         format.html { render :new }
         format.json { render json: @shift.errors, status: :unprocessable_entity }
@@ -116,6 +116,7 @@ class Admin::ShiftsController < AdminAreaController
       event['startTime'] = staff.start_time.strftime("%H:%M")
       event['endTime'] = staff.end_time.strftime("%H:%M")
       event['color'] = hex_color_to_rgba(staff.user.staff_spaces.find_by(space_id: @default_space_id).color, opacity)
+      event['className'] = staff.user.name.strip.downcase.gsub(' ', '-')
       staff_availabilities << event
     end
 
@@ -129,9 +130,10 @@ class Admin::ShiftsController < AdminAreaController
       event = {}
       event['title'] = "#{shift.reason} for #{shift.user.name}"
       event['id'] = shift.id
-      event['start'] = shift.start_datetime -= shift.start_datetime.utc_offset
-      event['end'] = shift.end_datetime -= shift.end_datetime.utc_offset
+      event['start'] = shift.start_datetime
+      event['end'] = shift.end_datetime
       event['color'] = hex_color_to_rgba(shift.user.staff_spaces.find_by(space_id: @default_space_id).color, 1)
+      event['className'] = shift.user.name.strip.downcase.gsub(' ', '-')
       shifts << event
     end
 

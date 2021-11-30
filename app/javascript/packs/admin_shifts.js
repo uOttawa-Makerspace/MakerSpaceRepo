@@ -110,7 +110,8 @@ let createCalendarEvent = () => {
                 end: data.end,
                 allDay: false,
                 id: data['id'],
-                color: data.color
+                color: data.color,
+                className: data.className
             }, "shifts")
             calendar.unselect();
             closeModal();
@@ -233,3 +234,13 @@ modalClose.addEventListener("click", closeModal);
 modalSave.addEventListener('click', () => {
     createCalendarEvent();
 })
+
+window.toggleVisibility = (className) => {
+    document.getElementsByClassName(className).forEach((item) => {
+        if (item.style.display === "none") {
+            item.style.display = "block";
+        } else {
+            item.style.display = "none";
+        }
+    });
+}

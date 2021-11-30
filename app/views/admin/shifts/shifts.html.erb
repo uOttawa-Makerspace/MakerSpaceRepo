@@ -30,6 +30,7 @@
             <input type="color" name="color" class="form-control form-control-color" value="<%= array[1] %>" title="Choose your color">
             <%= hidden_field_tag :id, array[0] %>
             <button type="submit" class="btn btn-primary btn-sm ml-1">Update color</button>
+            <button type="button" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ml-1">Hide/Show</button>
           </div>
         <% end %>
         <br>
