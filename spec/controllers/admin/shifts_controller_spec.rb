@@ -73,7 +73,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                         "daysOfWeek": [sa1.day],
                                         "startTime": sa1.start_time.strftime("%H:%M"),
                                         "endTime": sa1.end_time.strftime("%H:%M"),
-                                        "color": "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)"
+                                        "color": "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                                        "className": sa1.user.name.strip.downcase.gsub(' ', '-')
                                       },
                                       {
                                         "title": "#{sa2.user.name} is unavailable",
@@ -81,7 +82,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                         "daysOfWeek": [sa2.day],
                                         "startTime": sa2.start_time.strftime("%H:%M"),
                                         "endTime": sa2.end_time.strftime("%H:%M"),
-                                        "color": "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)"
+                                        "color": "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                                        "className": sa2.user.name.strip.downcase.gsub(' ', '-')
                                       },
                                     ].to_json)
 
@@ -94,7 +96,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                         "daysOfWeek": [sa1.day],
                                         "startTime": sa1.start_time.strftime("%H:%M"),
                                         "endTime": sa1.end_time.strftime("%H:%M"),
-                                        "color": "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)"
+                                        "color": "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
+                                        "className": sa1.user.name.strip.downcase.gsub(' ', '-')
                                       },
                                       {
                                         "title": "#{sa2.user.name} is unavailable",
@@ -102,7 +105,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                         "daysOfWeek": [sa2.day],
                                         "startTime": sa2.start_time.strftime("%H:%M"),
                                         "endTime": sa2.end_time.strftime("%H:%M"),
-                                        "color": "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)"
+                                        "color": "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
+                                        "className": sa2.user.name.strip.downcase.gsub(' ', '-')
                                       },
                                     ].to_json)
       end
@@ -131,16 +135,18 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                       {
                                         "title": "#{s1.reason} for #{s1.user.name}",
                                         "id": s1.id,
-                                        "start": s1.start_datetime -= s1.start_datetime.utc_offset,
-                                        "end": s1.end_datetime -= s1.end_datetime.utc_offset,
-                                        "color": "rgba(#{s1.user.staff_spaces.find_by(space_id: s1.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)"
+                                        "start": s1.start_datetime,
+                                        "end": s1.end_datetime,
+                                        "color": "rgba(#{s1.user.staff_spaces.find_by(space_id: s1.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                                        "className": s1.user.name.strip.downcase.gsub(' ', '-')
                                       },
                                       {
                                         "title": "#{s3.reason} for #{s3.user.name}",
                                         "id": s3.id,
-                                        "start": s3.start_datetime -= s3.start_datetime.utc_offset,
-                                        "end": s3.end_datetime -= s3.end_datetime.utc_offset,
-                                        "color": "rgba(#{s3.user.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)"
+                                        "start": s3.start_datetime,
+                                        "end": s3.end_datetime,
+                                        "color": "rgba(#{s3.user.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                                        "className": s3.user.name.strip.downcase.gsub(' ', '-')
                                       },
                                     ].to_json)
         end
