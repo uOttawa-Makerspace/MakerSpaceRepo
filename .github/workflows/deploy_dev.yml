@@ -1,5 +1,5 @@
 name: Deploy Dev
-on: [push, pull_request]
+on: [push]
 
 env:
   RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
@@ -31,22 +31,5 @@ jobs:
           ssh-add config/deploy_id_rsa
           gem install capistrano
           BRANCH=${{ steps.extract_branch.outputs.branch }} bundle exec cap dev_server deploy
-      - uses: ravsamhq/notify-slack-action@master
-        if: always()
-        with:
-          status: ${{ job.status }}
-          notify_when: 'success,failure,warnings' # default is 'success,failure,warnings'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      - uses: toko-bifrost/ms-teams-deploy-card@master
-        if: always()
-        with:
-          github-token: ${{ github.token }}
-          webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-          timezone: "America/Montreal"
-          show-on-start: false
-
-
-
 
 
