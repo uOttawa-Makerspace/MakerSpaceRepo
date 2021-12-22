@@ -77,7 +77,7 @@ jobs:
           gem install capistrano
           bundle exec cap staging deploy
       - name: Deploy Master
-        if: github.ref == "refs/heads/master"
+        if: github.ref == 'refs/heads/master'
         env:
           DEPLOY_ENC_KEY: ${{ secrets.DEPLOY_ENC_KEY }}
         run: |
