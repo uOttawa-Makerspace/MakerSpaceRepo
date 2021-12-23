@@ -20,6 +20,8 @@ Rails.application.routes.draw do
   end
   mount Sidekiq::Web => '/sidekiq'
 
+  mount StripeEvent::Engine, at: '/stripe/webhooks'
+
   resources :project_kits, only: [:index, :new, :create, :destroy] do
     get :mark_delivered
     collection do
