@@ -19,7 +19,7 @@ class StaffSpace < ApplicationRecord
   def generate_color
     not_available_colors = StaffSpace.all.where(space: space).pluck(:color)
     if ($color_list - not_available_colors).empty?
-      "#" + "%06x" % (staff.user.id.hash & 0xffffff)
+      "#" + "%06x" % (self.user_id.hash & 0xffffff)
     else
       ($color_list - not_available_colors)[0]
     end

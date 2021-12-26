@@ -30,6 +30,7 @@
             <input type="color" name="color" class="form-control form-control-color" value="<%= array[1] %>" title="Choose your color">
             <%= hidden_field_tag :id, array[0] %>
             <button type="submit" class="btn btn-primary btn-sm ml-1">Update color</button>
+            <button type="button" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ml-1">Hide/Show</button>
           </div>
         <% end %>
         <br>
@@ -63,7 +64,13 @@
             <%= select_tag :user_id, options_for_select(@staff), { class: "form-control", id: 'modalUserId'} %>
             <br>
             <label for="modal-reason">Reason</label>
-            <input type="text" class="form-control" id="modalReason">
+            <select id="modalReason" class="custom-select">
+              <option value="Shift">Shift</option>
+              <option value="Training">Training</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Project">Project</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">

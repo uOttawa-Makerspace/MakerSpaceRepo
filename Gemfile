@@ -65,6 +65,7 @@ gem 'google-api-client', require: ['google/apis/calendar_v3']
 gem 'faraday', '~> 0.17.0'
 gem "recaptcha"
 gem "rack-cors"
+gem 'stripe_event', '~> 2.3', '>= 2.3.1'
 
 group :development, :test do
   gem 'byebug', platform: :mri
