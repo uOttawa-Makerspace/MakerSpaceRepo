@@ -11,7 +11,6 @@ module AvatarTestHelper
   private
 
   def upload(name, type)
-    file_path = Rails.root.join('spec', 'support', 'assets', name)
-    fixture_file_upload(file_path, type)
+    Rack::Test::UploadedFile.new("spec/support/assets/#{name}", type)
   end
 end

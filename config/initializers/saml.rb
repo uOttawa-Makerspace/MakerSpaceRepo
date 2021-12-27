@@ -49,7 +49,7 @@ SamlIdp.configure do |config|
       getter: ->(principal) { principal.role }
     },
     avatar_transient_url: {
-      getter: ->(principal) { principal.avatar.attachment&.service_url },
+      getter: ->(principal) { principal.avatar.attachment&.url },
     },
     avatar_content_type: {
       getter: ->(principal) { principal.avatar.attachment&.content_type }

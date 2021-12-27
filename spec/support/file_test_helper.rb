@@ -1,6 +1,6 @@
 module FilesTestHelper
   extend self
-  extend ActionDispatch::TestProcess
+  include ActionDispatch::TestProcess::FixtureFile
 
   def stl_name; 'test.stl' end
   def stl; upload(stl_name, 'model/x.stl-binary') end
@@ -17,7 +17,6 @@ module FilesTestHelper
   private
 
   def upload(name, type)
-    file_path = Rails.root.join('spec', 'support', 'assets', name)
-    fixture_file_upload(file_path, type)
+    Rack::Test::UploadedFile.new("spec/support/assets/#{name}", type)
   end
 end
