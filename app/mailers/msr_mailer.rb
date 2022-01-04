@@ -292,12 +292,12 @@ class MsrMailer < ApplicationMailer
     mail(to: email_volunteer, subject: "Your request was updated: #{@volunteer_task.title.capitalize}")
   end
 
-  def send_email_for_stripe_transfer(transfer_id, date, amount)
+  def send_email_for_stripe_transfer(transfer_id, date, amount, bank, routing_number)
     @transfer_id = transfer_id
     @date = date
     @amount = amount
-    @bank = Rails.application.credentials[Rails.env.to_sym][:stripe][:bank]
-    @routing_number = Rails.application.credentials[Rails.env.to_sym][:stripe][:routing_number]
+    @bank = bank
+    @routing_number = routing_number
     @faculty_of_eng_number = Rails.application.credentials[Rails.env.to_sym][:stripe][:faculty_of_eng_number]
     mail(to: Rails.application.credentials[Rails.env.to_sym][:stripe][:to_email], cc: Rails.application.credentials[Rails.env.to_sym][:stripe][:cc_email], subject: "STRIPE TRANSFER MAKERSPACE: #{date}")
   end
