@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 ruby '2.7.2'
-gem 'rails', '~> 6.0.3.2'
+gem 'rails', '~> 6.1.4.1'
 
 gem 'webpacker'
 gem 'aws-sdk', '~> 3.0.1'
@@ -16,7 +16,7 @@ gem 'clipboard-rails'
 gem 'coffee-rails', '5.0.0'
 gem 'excon'
 gem 'fastimage', '~> 1.7.0'
-gem 'font-awesome-rails'
+gem 'font-awesome-rails', "~> 4.7.0.7"
 gem 'jbuilder'
 gem 'jquery-rails'
 gem 'jquery-ui-rails'
@@ -25,7 +25,7 @@ gem 'mocha'
 gem 'octokit', '~> 4.0'
 gem 'paperclip'
 gem 'paperclip-av-transcoder'
-gem 'pg', '~> 0.18.2'
+gem 'pg', '~> 1.1'
 # gem 'photoswipe-rails', '~> 4.0.8a'
 gem 'progress_bar', '~> 1.0.3'
 gem 'pry', '~> 0.10.4'
@@ -36,7 +36,7 @@ gem 'saml_idp', '~> 0.9.0'
 gem 'sass-rails', '~> 5.0.7'
 gem 'sdoc', '~> 1.1.0', group: :doc
 gem 'select2-rails'
-gem 'shopify_app', '9.0.4'
+gem 'shopify_app', '~> 18.0.2'
 gem 'sidekiq', '~> 6.1.1'
 gem 'simplecov'
 gem 'thin'
@@ -54,7 +54,7 @@ gem 'bootsnap', require: false
 # gem 'actiontext', github: 'kobaltz/actiontext', branch: 'archive', require: 'action_text'
 gem 'image_processing'
 gem 'file_validators'
-gem 'trix-rails', require: 'trix'
+gem 'trix-rails', '~> 2.3.0', require: 'trix'
 gem 'zip-zip'
 gem 'concurrent-ruby', '~> 1.1', '>= 1.1.6'
 gem 'net-ssh'
@@ -69,7 +69,7 @@ gem 'stripe_event', '~> 2.3', '>= 2.3.1'
 
 group :development, :test do
   gem 'byebug', platform: :mri
-  gem 'rspec-rails'
+  gem 'rspec-rails', '~> 5.0.0'
   gem 'faker', '~> 2.0.0'
   gem 'railroady'
   gem "factory_bot_rails"

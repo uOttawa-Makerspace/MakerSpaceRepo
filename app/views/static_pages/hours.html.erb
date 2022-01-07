@@ -7,33 +7,30 @@
 
       <% @contact_info.each do |space| %>
       <div class="col-md-6">
-        <div class="spc"><%= space.name %></div>
-        <div class="label">Registered students and faculty members</div>
-        <ul>
-          <li>
+        <div class="card" style="width: 100%;">
+          <div class="card-body">
+            <h4 class="card-title"><%= space.name %></h4>
+          </div>
+          <div class="card-body pt-0">
+            <p><b>Registered students and faculty members</b></p>
             <%= space.opening_hour.students.html_safe %>
-          </li>
-        </ul>
-        <div class="label">General Public</div>
-        <ul>
-          <li>
+          </div>
+          <div class="card-body pt-0">
+            <p><b>General Public</b></p>
+            <%= space.opening_hour.students.html_safe %>
+          </div>
+          <div class="card-body pt-0">
+            <p><b>Registered students and faculty members</b></p>
             <%= space.opening_hour.public.html_safe %>
-          </li>
-        </ul>
-        <div class="label">Summer Hours</div>
-        <ul>
-          <li>
-            <%= space.opening_hour.summer.html_safe %>
-          </li>
-        </ul>
-        <br>
+          </div>
+        </div>
       </div>
       <% end %>
     </div>
   </div>
   <br>
   <div class="container">
-    <li><i class="fa fa-asterisk li" aria-hidden="true"></i> Schedules are subject to change at any time, without notice.</li>
+    <p><i class="fa fa-asterisk li" aria-hidden="true"></i> Schedules are subject to change at any time, without notice.</p>
   </div>
 
   </div>

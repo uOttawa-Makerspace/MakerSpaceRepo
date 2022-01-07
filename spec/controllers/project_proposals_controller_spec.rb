@@ -143,7 +143,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
 
       it 'should update the project proposal with photos and files' do
         create(:project_proposal, :with_repo_files)
-        patch :update, params: {id: ProjectProposal.last.id, project_proposal: {files: [fixture_file_upload(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [fixture_file_upload(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')], deleteimages: [Photo.last.image.filename.to_s], deletefiles: [RepoFile.last.file.id.to_s]}}
+        patch :update, params: {id: ProjectProposal.last.id, project_proposal: {files: [Rack::Test::UploadedFile.new(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf')], images: [Rack::Test::UploadedFile.new(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png')], deleteimages: [Photo.last.image.filename.to_s], deletefiles: [RepoFile.last.file.id.to_s]}}
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
         expect(flash[:notice]).to eq('Project proposal was successfully updated.')
