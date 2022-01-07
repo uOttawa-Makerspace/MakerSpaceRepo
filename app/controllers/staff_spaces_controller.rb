@@ -1,10 +1,10 @@
 class StaffSpacesController < StaffAreaController
 
   def change_space_list
-    if params[:space].present? && params[:user_id].present? && User.find(params[:user_id]).present? && User.find(params[:user_id]).staff?
+    if params[:user_id].present? && User.find(params[:user_id]).present? && User.find(params[:user_id]).staff?
 
       repo_user = User.find(params[:user_id])
-      space_list = params[:space]
+      space_list = params[:space].present? ? params[:space] : []
 
       space_list.each do |space|
         StaffSpace.find_or_create_by(space_id: space, user: repo_user)
