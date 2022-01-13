@@ -50,6 +50,7 @@ require("packs/vendor");
 require("packs/accordion-load");
 
 import "bootstrap";
+import "tom-select";
 require("packs/toastr");
 
 import { Calendar } from '@fullcalendar/core';

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_11_26_195310) do
+ActiveRecord::Schema.define(version: 2022_01_11_225321) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -626,14 +626,19 @@ ActiveRecord::Schema.define(version: 2021_11_26_195310) do
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
     t.bigint "space_id"
-    t.bigint "user_id"
     t.datetime "start_datetime"
     t.datetime "end_datetime"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "google_event_id"
     t.index ["space_id"], name: "index_shifts_on_space_id"
-    t.index ["user_id"], name: "index_shifts_on_user_id"
+  end
+
+  create_table "shifts_users", id: false, force: :cascade do |t|
+    t.bigint "shift_id", null: false
+    t.bigint "user_id", null: false
+    t.index ["shift_id"], name: "index_shifts_users_on_shift_id"
+    t.index ["user_id"], name: "index_shifts_users_on_user_id"
   end
 
   create_table "skills", force: :cascade do |t|
@@ -855,7 +860,6 @@ ActiveRecord::Schema.define(version: 2021_11_26_195310) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
-  add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_spaces", "spaces"

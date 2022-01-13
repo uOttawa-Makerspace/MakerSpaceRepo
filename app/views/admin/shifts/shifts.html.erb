@@ -61,7 +61,7 @@
             <input id="end-datetime" autocomplete="false" class="form-control">
             <br>
             <%= label_tag :user_id, "User to select" %>
-            <%= select_tag :user_id, options_for_select(@staff), { class: "form-control", id: 'modalUserId'} %>
+            <%= select_tag :user_id, options_for_select(@staff), { id: 'modalUserId', autocomplete: 'off', multiple: true} %>
             <br>
             <label for="modal-reason">Reason</label>
             <select id="modalReason" class="custom-select">

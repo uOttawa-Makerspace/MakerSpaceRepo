@@ -125,28 +125,31 @@ RSpec.describe Admin::ShiftsController, type: :controller do
         s2 = create(:shift)
         s3 = create(:shift, space_id: space.id)
 
-        StaffSpace.create(user_id: s1.user_id, space_id: s1.space_id)
-        StaffSpace.create(user_id: s2.user_id, space_id: s2.space_id)
-        StaffSpace.create(user_id: s3.user_id, space_id: s3.space_id)
+        s1.users << create(:user, :staff)
+
+        StaffSpace.create(user_id: s1.users.first.id, space_id: s1.space_id)
+        StaffSpace.create(user_id: s1.users.second.id, space_id: s1.space_id)
+        StaffSpace.create(user_id: s2.users.first.id, space_id: s2.space_id)
+        StaffSpace.create(user_id: s3.users.first.id, space_id: s3.space_id)
 
         get :get_shifts, params: {space_id: space.id}
         expect(response).to have_http_status(:success)
         expect(response.body).to eq([
                                       {
-                                        "title": "#{s1.reason} for #{s1.user.name}",
+                                        "title": "#{s1.reason} for #{s1.users.first.name}, #{s1.users.second.name}",
                                         "id": s1.id,
                                         "start": s1.start_datetime,
                                         "end": s1.end_datetime,
-                                        "color": "rgba(#{s1.user.staff_spaces.find_by(space_id: s1.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-                                        "className": s1.user.name.strip.downcase.gsub(' ', '-')
+                                        "color": "rgba(#{s1.users.first.staff_spaces.find_by(space_id: s1.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                                        "className": s1.users.first.name.strip.downcase.gsub(' ', '-')
                                       },
                                       {
-                                        "title": "#{s3.reason} for #{s3.user.name}",
+                                        "title": "#{s3.reason} for #{s3.users.first.name}",
                                         "id": s3.id,
                                         "start": s3.start_datetime,
                                         "end": s3.end_datetime,
-                                        "color": "rgba(#{s3.user.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-                                        "className": s3.user.name.strip.downcase.gsub(' ', '-')
+                                        "color": "rgba(#{s3.users.first.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                                        "className": s3.users.first.name.strip.downcase.gsub(' ', '-')
                                       },
                                     ].to_json)
         end
