@@ -12,7 +12,16 @@ class HelpController < SessionsController
     @subject = params[:subject]
     @comments = params[:comments]
     MsrMailer.issue_email(@name, @email, @subject, @comments).deliver_now
-    flash[:notice] = 'Email successfuly send. You will be contacted soon.'
-    redirect_to help_path
+    respond_to do |format|
+      format.html {
+        flash[:notice] = 'Email successfully sent. You will be contacted soon.'
+        redirect_to help_path
+      }
+      format.json {
+        render json: {
+          status: 'success'
+        }
+      }
+    end
   end
 end
