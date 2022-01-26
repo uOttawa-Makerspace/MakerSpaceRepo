@@ -263,6 +263,11 @@ class UsersController < SessionsController
     @recomended_hours = Proc.new { |training, levels| training.learning_modules.where(level: levels).count + training.proficient_projects.where(level: levels).count }
     @space_list = Space.all
     @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
+
+    respond_to do |format|
+      format.html
+      format.json { render json: {user: @repo_user.as_json, programs: @programs.as_json, certifications: @certifications.as_json, remaining_trainings: @remaining_trainings.as_json}}
+    end
   end
 
   def likes
