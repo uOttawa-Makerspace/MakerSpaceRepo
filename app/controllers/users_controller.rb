@@ -266,7 +266,7 @@ class UsersController < SessionsController
 
     respond_to do |format|
       format.html
-      format.json { render json: {user: @repo_user.as_json, programs: @programs.as_json, certifications: @certifications.as_json, remaining_trainings: @remaining_trainings.as_json}}
+      format.json { render json: {user: @repo_user.as_json, programs: @programs.as_json, certifications: @certifications.as_json(include: :training), remaining_trainings: @remaining_trainings.as_json}}
     end
   end
 
