@@ -295,7 +295,7 @@ class MsrMailer < ApplicationMailer
   def send_email_for_stripe_transfer(transfer_id, date, amount, bank, routing_number)
     @transfer_id = transfer_id
     @date = date
-    @amount = amount/100
+    @amount = amount.to_f/100 # Amount is given in cents for some reason
     @bank = bank
     @routing_number = routing_number
     @faculty_of_eng_number = Rails.application.credentials[Rails.env.to_sym][:stripe][:faculty_of_eng_number]
