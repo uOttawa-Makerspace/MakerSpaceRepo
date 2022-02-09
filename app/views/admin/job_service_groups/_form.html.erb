@@ -1,0 +1,63 @@
+<section>
+  <%= form_for([:admin, @job_service_group]) do |f| %>
+    <% if @job_service_group.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(@job_service_group.errors.count, "error") %> prohibited this service group from being saved:</h2>
+
+        <ul>
+          <% @job_service_group.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="text-center">
+      <div class="col-lg-6 text-center mx-auto">
+        <%= f.label :name, 'Name of the Service Group' %>
+        <%= f.text_field :name, class: "form-control", required: true %>
+      </div>
+      <br>
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :description, 'Description' %>
+        <%= f.text_area :description, class: "form-control" %>
+      </div>
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :job_type_id, 'Job Type' %>
+        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name), {}, class: "form-control" %>
+      </div>
+
+      <div>
+        <%= f.label :multiple, "Accept multiple service selection in group", required: true %>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :multiple, false, class: 'custom-control-input' %>
+          <%= f.label :multiple, 'No', class: 'custom-control-label', value: false %>
+        </div>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :multiple, true, class: 'custom-control-input' %>
+          <%= f.label :multiple, 'Yes', class: 'custom-control-label', value: true %>
+        </div>
+      </div>
+
+      <div>
+        <%= f.label :text_field, "Accept text-field input (This will be the only choice)", required: true %>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :text_field, false, class: 'custom-control-input' %>
+          <%= f.label :text_field, 'No', class: 'custom-control-label', value: false %>
+        </div>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :text_field, true, class: 'custom-control-input' %>
+          <%= f.label :text_field, 'Yes', class: 'custom-control-label', value: true %>
+        </div>
+      </div>
+
+      <br>
+      <%= f.submit class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+</section>

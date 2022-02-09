@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_11_26_195310) do
+ActiveRecord::Schema.define(version: 2022_02_08_224225) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -246,6 +246,124 @@ ActiveRecord::Schema.define(version: 2021_11_26_195310) do
     t.integer "score"
     t.integer "training_session_id"
     t.datetime "expired_at"
+  end
+
+  create_table "job_options", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.boolean "need_files", default: false, null: false
+    t.decimal "fee", precision: 10, scale: 2, null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "job_options_orders", id: false, force: :cascade do |t|
+    t.bigint "job_order_id", null: false
+    t.bigint "job_option_id", null: false
+    t.index ["job_option_id"], name: "index_job_options_orders_on_job_option_id"
+    t.index ["job_order_id"], name: "index_job_options_orders_on_job_order_id"
+  end
+
+  create_table "job_options_types", id: false, force: :cascade do |t|
+    t.bigint "job_type_id", null: false
+    t.bigint "job_option_id", null: false
+    t.index ["job_option_id"], name: "index_job_options_types_on_job_option_id"
+    t.index ["job_type_id"], name: "index_job_options_types_on_job_type_id"
+  end
+
+  create_table "job_order_quote_options", force: :cascade do |t|
+    t.bigint "job_option_id", null: false
+    t.integer "amount", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_option_id"], name: "index_job_order_quote_options_on_job_option_id"
+  end
+
+  create_table "job_order_quote_services", force: :cascade do |t|
+    t.bigint "job_service_id", null: false
+    t.decimal "amount", precision: 10, scale: 2, null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_service_id"], name: "index_job_order_quote_services_on_job_service_id"
+  end
+
+  create_table "job_order_quotes", force: :cascade do |t|
+    t.decimal "service_fee", precision: 10, scale: 2, null: false
+    t.bigint "job_order_quote_service_id", null: false
+    t.bigint "job_order_quote_option_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_order_quote_option_id"], name: "index_job_order_quotes_on_job_order_quote_option_id"
+    t.index ["job_order_quote_service_id"], name: "index_job_order_quotes_on_job_order_quote_service_id"
+  end
+
+  create_table "job_order_statuses", force: :cascade do |t|
+    t.bigint "job_status_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_status_id"], name: "index_job_order_statuses_on_job_status_id"
+  end
+
+  create_table "job_orders", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "job_type_id"
+    t.bigint "job_order_quote_id"
+    t.bigint "job_order_status_id"
+    t.text "staff_comments"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
+    t.index ["job_order_status_id"], name: "index_job_orders_on_job_order_status_id"
+    t.index ["job_type_id"], name: "index_job_orders_on_job_type_id"
+    t.index ["user_id"], name: "index_job_orders_on_user_id"
+  end
+
+  create_table "job_orders_services", id: false, force: :cascade do |t|
+    t.bigint "job_order_id", null: false
+    t.bigint "job_service_id", null: false
+    t.index ["job_order_id"], name: "index_job_orders_services_on_job_order_id"
+    t.index ["job_service_id"], name: "index_job_orders_services_on_job_service_id"
+  end
+
+  create_table "job_service_groups", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.boolean "multiple", default: false
+    t.boolean "text_field", default: false
+    t.bigint "job_type_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_type_id"], name: "index_job_service_groups_on_job_type_id"
+  end
+
+  create_table "job_services", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.string "unit", null: false
+    t.boolean "required", default: false, null: false
+    t.decimal "internal_price", precision: 10, scale: 2, null: false
+    t.decimal "external_price", precision: 10, scale: 2, null: false
+    t.bigint "job_service_group_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.bigint "job_order_id"
+    t.index ["job_order_id"], name: "index_job_services_on_job_order_id"
+    t.index ["job_service_group_id"], name: "index_job_services_on_job_service_group_id"
+  end
+
+  create_table "job_statuses", force: :cascade do |t|
+    t.string "name", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "job_types", force: :cascade do |t|
+    t.string "name", null: false
+    t.boolean "multiple_files", default: false, null: false
+    t.string "file_label", default: "File"
+    t.text "file_description"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "lab_sessions", id: :serial, force: :cascade do |t|
@@ -626,14 +744,19 @@ ActiveRecord::Schema.define(version: 2021_11_26_195310) do
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
     t.bigint "space_id"
-    t.bigint "user_id"
     t.datetime "start_datetime"
     t.datetime "end_datetime"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "google_event_id"
     t.index ["space_id"], name: "index_shifts_on_space_id"
-    t.index ["user_id"], name: "index_shifts_on_user_id"
+  end
+
+  create_table "shifts_users", id: false, force: :cascade do |t|
+    t.bigint "shift_id", null: false
+    t.bigint "user_id", null: false
+    t.index ["shift_id"], name: "index_shifts_users_on_shift_id"
+    t.index ["user_id"], name: "index_shifts_users_on_user_id"
   end
 
   create_table "skills", force: :cascade do |t|
@@ -833,6 +956,14 @@ ActiveRecord::Schema.define(version: 2021_11_26_195310) do
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
+  add_foreign_key "job_order_quote_options", "job_options"
+  add_foreign_key "job_order_quote_services", "job_services"
+  add_foreign_key "job_order_quotes", "job_order_quote_options"
+  add_foreign_key "job_order_quotes", "job_order_quote_services"
+  add_foreign_key "job_order_statuses", "job_statuses"
+  add_foreign_key "job_service_groups", "job_types"
+  add_foreign_key "job_services", "job_orders"
+  add_foreign_key "job_services", "job_service_groups"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "learning_module_tracks", "learning_modules"
   add_foreign_key "learning_module_tracks", "users"
@@ -855,7 +986,6 @@ ActiveRecord::Schema.define(version: 2021_11_26_195310) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
-  add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_spaces", "spaces"

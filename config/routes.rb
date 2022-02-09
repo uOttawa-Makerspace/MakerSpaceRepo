@@ -55,6 +55,13 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :job_orders, only: %i[index create update new destroy edit] do
+    collection do
+      get :admin
+      get :settings
+    end
+  end
+
   resources :project_proposals do
     collection do
       post :create_revision
@@ -161,6 +168,10 @@ Rails.application.routes.draw do
     resources :announcements
 
     resources :badge_templates, only: %i[index edit update]
+
+    resources :job_service_groups, only: %i[index new create edit update delete]
+    resources :job_services, only: %i[index new create edit update delete]
+    resources :job_options, only: %i[index new create edit update delete]
 
     get 'manage_badges'
 

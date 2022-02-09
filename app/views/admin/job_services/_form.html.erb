@@ -1,0 +1,66 @@
+<section>
+  <%= form_for([:admin, @job_service]) do |f| %>
+    <% if @job_service.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(@job_service.errors.count, "error") %> prohibited this service from being saved:</h2>
+
+        <ul>
+          <% @job_service.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="text-center">
+      <div class="col-lg-6 text-center mx-auto">
+        <%= f.label :name, 'Name of the Service' %>
+        <%= f.text_field :name, class: "form-control", required: true %>
+      </div>
+      <br>
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :description, 'Description' %>
+        <%= f.text_area :description, class: "form-control" %>
+      </div>
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :job_service_group_id, 'Job Service Group' %>
+        <%= f.select :job_service_group_id, options_from_collection_for_select(JobServiceGroup.all, :id, :name), {}, class: "form-control" %>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto">
+        <%= f.label :unit, 'Unit (g, cm3, h ...)' %>
+        <%= f.text_field :unit, class: "form-control", required: true %>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto">
+        <%= f.label :internal_price, 'Internal Price per unit' %>
+        <%= f.number_field :internal_price, class: "form-control", required: true %>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto">
+        <%= f.label :external_price, 'External Price per unit' %>
+        <%= f.number_field :external_price, class: "form-control", required: true %>
+      </div>
+
+      <br>
+
+      <div>
+        <%= f.label :required, "Required? (ex: Onyx for MarkForged)", required: true %>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :required, false, class: 'custom-control-input' %>
+          <%= f.label :required, 'No', class: 'custom-control-label', value: false %>
+        </div>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :required, true, class: 'custom-control-input' %>
+          <%= f.label :required, 'Yes', class: 'custom-control-label', value: true %>
+        </div>
+      </div>
+
+      <br>
+      <%= f.submit class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+</section>

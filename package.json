@@ -45,6 +45,7 @@
     "tempusdominus-bootstrap-4": "^5.39.0",
     "tempusdominus-core": "5.19.0",
     "toastr": "^2.1.4",
+    "tom-select": "^2.0.0",
     "trix": "^1.2.0",
     "turbolinks": "^5.2.0",
     "webpack": "^4.44.1",

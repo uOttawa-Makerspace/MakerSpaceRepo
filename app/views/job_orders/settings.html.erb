@@ -1,0 +1,101 @@
+<section class="padding">
+  <div class="text-center pb-4">
+    <h2 class="py-3 font-weight-bold">Job Order Admin Settings</h2>
+
+    <h3>Job Service Group</h3>
+
+    <p class="text-center"><%= link_to "New Service Group", new_admin_job_service_group_path, class: "btn btn-secondary" %></p>
+    <table class="table table-striped mb-5">
+      <tr class="text-center">
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Text Field?</th>
+        <th>Multiple choices?</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+
+      <% @service_groups.each do |sg| %>
+        <tr>
+          <td><%= sg.name %></td>
+          <td><%= sg.job_type.name %></td>
+          <td><%= sg.description %></td></td>
+          <td><%= sg.text_field ? "Yes" : "No" %></td>
+          <td><%= sg.multiple ? "Yes" : "No" %></td>
+          <td><%= link_to "Edit", edit_admin_job_service_group_path(sg.id), class:"btn btn-primary" %></td>
+          <td><%= link_to "Delete", admin_job_service_group_path(sg.id, method: :delete), class:"btn btn-danger" %></td>
+        </tr>
+      <% end %>
+    </table>
+
+    <br>
+
+    <h3>Job Service</h3>
+
+    <p class="text-center"><%= link_to "New Service", new_admin_job_service_path, class: "btn btn-secondary" %></p>
+    <table class="table table-striped mb-5">
+      <tr class="text-center">
+        <th>Name</th>
+        <th>Description</th>
+        <th>Job Service Group</th>
+        <th>Required</th>
+        <th>Unit</th>
+        <th>Internal Pricing</th>
+        <th>External Pricing</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+
+      <% @services.each do |s| %>
+        <tr>
+          <td><%= s.name %></td>
+          <td><%= s.description %></td>
+          <td><%= s.required ? "Yes" : "No" %></td></td>
+          <td><%= s.job_service_group.name %></td>
+          <td><%= s.unit %></td>
+          <td>$<%= s.internal_price %></td>
+          <td>$<%= s.external_price %></td>
+          <td><%= link_to "Edit", edit_admin_job_service_path(s.id), class:"btn btn-primary" %></td>
+          <td><%= link_to "Delete", admin_job_service_path(s.id, method: :delete), class:"btn btn-danger" %></td>
+        </tr>
+      <% end %>
+    </table>
+
+    <br>
+
+    <h3>Job Options</h3>
+
+    <p class="text-center"><%= link_to "New Option", new_admin_job_option_path, class: "btn btn-secondary" %></p>
+    <table class="table table-striped mb-5">
+      <tr class="text-center">
+        <th>Name</th>
+        <th>Description</th>
+        <th>Type(s)</th>
+        <th>Fee</th>
+        <th>Need Files?</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+
+      <% @options.each do |o| %>
+        <tr>
+          <td><%= o.name %></td>
+          <td><%= o.description %></td>
+          <td>
+            <ul>
+              <% o.job_types.each do |jt| %>
+                <li><%= jt.name %></li>
+              <% end %>
+            </ul>
+          </td>
+          <td>$<%= o.fee %></td>
+          <td><%= o.need_files ? "Yes" : "No" %></td></td>
+          <td><%= link_to "Edit", edit_admin_job_option_path(o.id), class:"btn btn-primary" %></td>
+          <td><%= link_to "Delete", admin_job_option_path(o.id, method: :delete), class:"btn btn-danger" %></td>
+        </tr>
+      <% end %>
+    </table>
+
+  </div>
+</section>

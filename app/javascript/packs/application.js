@@ -52,6 +52,8 @@ require("packs/accordion-load");
 import "bootstrap";
 require("packs/toastr");
 
+import {TomSelect} from "tom-select";
+window.TomSelect = require('tom-select');
 import { Calendar } from '@fullcalendar/core';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
