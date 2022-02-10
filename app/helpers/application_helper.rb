@@ -5,9 +5,7 @@ module ApplicationHelper
 
   def sign_in(username, password)
     user = User.authenticate(username, password)
-
     session[:user_id] = user.id unless user.nil?
-
     user
   end
 
@@ -27,7 +25,25 @@ module ApplicationHelper
   end
 
   def signed_in?
-    session[:user_id].present?
+    session[:user_id].present? || has_valid_jwt?
+  end
+
+  def has_valid_jwt?
+    auth_header = request.headers['Authorization']
+    if auth_header
+      user_token = auth_header.split(" ")[1]
+      begin
+        decoded_token = JWT.decode(user_token, Rails.application.credentials.secret_key_base, true,{algorithm: 'HS256'})
+        session[:user_id] = decoded_token[0]["user_id"]
+        return true
+      rescue JWT::ExpiredSignature
+        return false
+      rescue JWT::DecodeError
+        return false
+      end
+    end
+
+    false
   end
 
   def github?
