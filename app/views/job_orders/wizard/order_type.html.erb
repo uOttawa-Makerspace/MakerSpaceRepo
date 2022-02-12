@@ -1,0 +1,19 @@
+<section>
+  <%= form_for(@job_order, url: {controller: "job_orders", action: "new"}, :html => {:method => :get}) do |f| %>
+
+    <div class="text-center">
+
+      <h2>New Job Order</h2>
+
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :job_type_id, 'Job Type' %>
+        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name), {}, {class: "form-control"} %>
+      </div>
+
+      <br>
+      <%= hidden_field_tag :step, 2 %>
+      <%= f.submit "Next Step", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+</section>

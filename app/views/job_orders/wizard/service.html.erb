@@ -1,0 +1,29 @@
+<%= @job_order.as_json %>
+
+<br>
+
+<%= @service_groups.as_json %>
+
+<br>
+
+<section>
+  <%= form_for(@job_order, url: {controller: "job_orders", action: "new"}, :html => {:method => :get}) do |f| %>
+
+    <div class="text-center">
+
+      <h2>New Job Order (Step 2)</h2>
+
+      <div class="form-group col-lg-6 mx-auto">
+        <div class="custom-file">
+          <p><%= @job_type.file_description %></p>
+          <%= f.file_field :user_files, multiple: @job_type.multiple_files, class: "custom-file-input" %>
+          <%= f.label :user_files, @job_type.file_label, class: 'custom-file-label' %>
+        </div>
+      </div>
+
+      <%= hidden_field_tag :step, 3 %>
+      <%= f.submit "Next Step", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+</section>

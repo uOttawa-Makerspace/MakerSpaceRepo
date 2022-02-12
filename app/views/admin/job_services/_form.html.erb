@@ -34,12 +34,22 @@
 
       <div class="col-lg-6 text-center mx-auto">
         <%= f.label :internal_price, 'Internal Price per unit' %>
-        <%= f.number_field :internal_price, class: "form-control", required: true %>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text">$</span>
+          </div>
+          <%= f.number_field :internal_price, class: "form-control", required: true %>
+        </div>
       </div>
 
       <div class="col-lg-6 text-center mx-auto">
         <%= f.label :external_price, 'External Price per unit' %>
-        <%= f.number_field :external_price, class: "form-control", required: true %>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text">$</span>
+          </div>
+          <%= f.number_field :external_price, class: "form-control", required: true %>
+        </div>
       </div>
 
       <br>
