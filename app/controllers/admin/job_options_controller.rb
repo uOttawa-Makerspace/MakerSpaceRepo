@@ -28,7 +28,7 @@ class Admin::JobOptionsController < AdminAreaController
     redirect_to settings_job_orders_path
   end
 
-  def delete
+  def destroy
     if @job_option.destroy
       flash[:notice] = 'The option has been deleted successfully'
     else

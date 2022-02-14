@@ -4,8 +4,7 @@ class JobOrder < ApplicationRecord
   has_one :job_order_quote
   has_and_belongs_to_many :job_options
   has_and_belongs_to_many :job_services
-  has_many :job_order_status
-  has_many :job_services
+  has_and_belongs_to_many :job_statuses
 
   has_many_attached :user_files
   has_many_attached :staff_files

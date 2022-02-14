@@ -4,7 +4,6 @@ class CreateJobOrders < ActiveRecord::Migration[6.1]
       t.references :user
       t.references :job_type
       t.references :job_order_quote
-      t.references :job_order_status
       t.text :staff_comments
       t.timestamps
     end
@@ -17,6 +16,11 @@ class CreateJobOrders < ActiveRecord::Migration[6.1]
     create_join_table :job_orders, :job_services do |t|
       t.index :job_order_id
       t.index :job_service_id
+    end
+
+    create_join_table :job_orders, :job_statuses do |t|
+      t.index :job_order_id
+      t.index :job_status_id
     end
   end
 end

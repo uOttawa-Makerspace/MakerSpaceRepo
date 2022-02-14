@@ -59,6 +59,8 @@ Rails.application.routes.draw do
     collection do
       get :admin
       get :settings
+      post '/new' => "job_orders#new"
+      patch '/new' => "job_orders#new"
     end
   end
 
@@ -169,9 +171,9 @@ Rails.application.routes.draw do
 
     resources :badge_templates, only: %i[index edit update]
 
-    resources :job_service_groups, only: %i[index new create edit update delete]
-    resources :job_services, only: %i[index new create edit update delete]
-    resources :job_options, only: %i[index new create edit update delete]
+    resources :job_service_groups, only: %i[index new create edit update destroy]
+    resources :job_services, only: %i[index new create edit update destroy]
+    resources :job_options, only: %i[index new create edit update destroy]
 
     get 'manage_badges'
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_02_08_224225) do
+ActiveRecord::Schema.define(version: 2022_02_13_221950) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -297,23 +297,16 @@ ActiveRecord::Schema.define(version: 2022_02_08_224225) do
     t.index ["job_order_quote_service_id"], name: "index_job_order_quotes_on_job_order_quote_service_id"
   end
 
-  create_table "job_order_statuses", force: :cascade do |t|
-    t.bigint "job_status_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.index ["job_status_id"], name: "index_job_order_statuses_on_job_status_id"
-  end
-
   create_table "job_orders", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "job_type_id"
     t.bigint "job_order_quote_id"
-    t.bigint "job_order_status_id"
     t.text "staff_comments"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.bigint "job_service_group_id"
     t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
-    t.index ["job_order_status_id"], name: "index_job_orders_on_job_order_status_id"
+    t.index ["job_service_group_id"], name: "index_job_orders_on_job_service_group_id"
     t.index ["job_type_id"], name: "index_job_orders_on_job_type_id"
     t.index ["user_id"], name: "index_job_orders_on_user_id"
   end
@@ -323,6 +316,13 @@ ActiveRecord::Schema.define(version: 2022_02_08_224225) do
     t.bigint "job_service_id", null: false
     t.index ["job_order_id"], name: "index_job_orders_services_on_job_order_id"
     t.index ["job_service_id"], name: "index_job_orders_services_on_job_service_id"
+  end
+
+  create_table "job_orders_statuses", id: false, force: :cascade do |t|
+    t.bigint "job_order_id", null: false
+    t.bigint "job_status_id", null: false
+    t.index ["job_order_id"], name: "index_job_orders_statuses_on_job_order_id"
+    t.index ["job_status_id"], name: "index_job_orders_statuses_on_job_status_id"
   end
 
   create_table "job_service_groups", force: :cascade do |t|
@@ -339,20 +339,22 @@ ActiveRecord::Schema.define(version: 2022_02_08_224225) do
   create_table "job_services", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.string "unit", null: false
+    t.string "unit"
     t.boolean "required", default: false, null: false
-    t.decimal "internal_price", precision: 10, scale: 2, null: false
-    t.decimal "external_price", precision: 10, scale: 2, null: false
+    t.decimal "internal_price", precision: 10, scale: 2
+    t.decimal "external_price", precision: 10, scale: 2
     t.bigint "job_service_group_id", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "job_order_id"
+    t.boolean "user_created", default: false
     t.index ["job_order_id"], name: "index_job_services_on_job_order_id"
     t.index ["job_service_group_id"], name: "index_job_services_on_job_service_group_id"
   end
 
   create_table "job_statuses", force: :cascade do |t|
     t.string "name", null: false
+    t.text "description"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end
@@ -960,7 +962,7 @@ ActiveRecord::Schema.define(version: 2022_02_08_224225) do
   add_foreign_key "job_order_quote_services", "job_services"
   add_foreign_key "job_order_quotes", "job_order_quote_options"
   add_foreign_key "job_order_quotes", "job_order_quote_services"
-  add_foreign_key "job_order_statuses", "job_statuses"
+  add_foreign_key "job_orders", "job_service_groups"
   add_foreign_key "job_service_groups", "job_types"
   add_foreign_key "job_services", "job_orders"
   add_foreign_key "job_services", "job_service_groups"

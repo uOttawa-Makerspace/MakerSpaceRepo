@@ -28,7 +28,7 @@ class Admin::JobServicesController < AdminAreaController
     redirect_to settings_job_orders_path
   end
 
-  def delete
+  def destroy
     if @job_service.destroy
       flash[:notice] = 'The Service has been deleted successfully'
     else

@@ -38,7 +38,7 @@
           <div class="input-group-prepend">
             <span class="input-group-text">$</span>
           </div>
-          <%= f.number_field :internal_price, class: "form-control", required: true %>
+          <%= f.number_field :internal_price, class: "form-control", required: true, step: '.01' %>
         </div>
       </div>
 
@@ -48,7 +48,7 @@
           <div class="input-group-prepend">
             <span class="input-group-text">$</span>
           </div>
-          <%= f.number_field :external_price, class: "form-control", required: true %>
+          <%= f.number_field :external_price, class: "form-control", required: true, step: '.01' %>
         </div>
       </div>
 

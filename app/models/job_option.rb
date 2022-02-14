@@ -6,4 +6,8 @@ class JobOption < ApplicationRecord
   validates :fee, presence: true
 
   has_many_attached :files
+
+  def name_with_description
+    "#{name} #{"(#{description})" if description.present?}"
+  end
 end

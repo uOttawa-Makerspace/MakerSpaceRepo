@@ -9,16 +9,35 @@ class JobOrdersController < ApplicationController
   end
 
   def new
-    @job_order = JobOrder.new
-    @job_order.assign_attributes(params[:job_order].present? ? job_order_params : {})
+    # After step 2 or more
+    if params[:job_order].present? && params[:job_order][:id].present? && JobOrder.find(params[:job_order][:id]).user == @user
+      @job_order = JobOrder.find(params[:job_order][:id])
+
+      if params[:job_service_name].present?
+        @job_order.job_services << JobService.create!(name: params[:job_service_name], job_service_group_id: @job_order.job_service_group_id, user_created: true)
+      end
+
+      @job_order.update(job_order_params)
+    # After step 1
+    elsif params[:job_order].present?
+      @job_order = JobOrder.new(job_order_params)
+      @job_order.job_statuses << JobStatus.find_by(name: 'Partially created')
+      @job_order.user = @user
+      @job_order.save
+    # Step 0
+    else
+      @job_order = JobOrder.new
+    end
+
     case @step
     when 1
       render 'job_orders/wizard/order_type'
     when 2
       @job_type = JobType.find(@job_order.job_type_id)
-      @service_groups = JobServiceGroup.find_by(job_type: @job_order.job_type)
+      @service_groups = JobServiceGroup.all.where(job_type: @job_order.job_type)
       render 'job_orders/wizard/service'
     when 3
+      @options = JobOption.all.joins(:job_types).where(job_types: {id: @job_order.job_type_id})
       render 'job_orders/wizard/options'
     when 4
       render 'job_orders/wizard/submission'
@@ -54,7 +73,7 @@ class JobOrdersController < ApplicationController
   private
 
   def job_order_params
-    params.require(:job_order).permit(:user_id, :job_type_id, user_files: [])
+    params.require(:job_order).permit(:user_id, :job_type_id, :job_service_group_id, :job_service_ids, job_type_id: [], user_files: [])
   end
 
   def grant_access
