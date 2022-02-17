@@ -9,13 +9,13 @@ class JobOrder < ApplicationRecord
   has_many_attached :user_files
   validates :user_files, file_content_type: {
     allow: ['application/pdf', 'image/svg+xml', 'text/html', 'model/stl', 'application/vnd.ms-pki.stl', 'application/octet-stream', 'text/plain', "model/x.stl-binary", 'model/x.stl-binary', 'text/x.gcode', 'image/vnd.dxf', 'image/x-dxf', 'model/x.stl-ascii'],
-    if: -> {user_files.attached?},
+    if: -> { user_files.attached? },
   }
 
   has_many_attached :staff_files
   validates :staff_files, file_content_type: {
     allow: ['application/pdf', 'image/svg+xml', 'text/html', 'model/stl', 'application/vnd.ms-pki.stl', 'application/octet-stream', 'text/plain', "model/x.stl-binary", 'model/x.stl-binary', 'text/x.gcode', 'image/vnd.dxf', 'image/x-dxf', 'model/x.stl-ascii'],
-    if: -> {staff_files.attached?},
+    if: -> { staff_files.attached? },
   }
 
   def add_options(params)
@@ -25,16 +25,18 @@ class JobOrder < ApplicationRecord
 
     params.to_h.each do |key, value|
       if key.include?('options_id_')
-        option = JobOrderOption.create(job_order_id: id, job_option_id: value)
-        if params['options_file_' + value].present?
-          option.option_file.attach(params['options_file_' + value])
+        unless job_order_options.where(id: value).present?
+          option = JobOrderOption.create(job_order_id: id, job_option_id: value)
+          if params['options_file_' + value].present?
+            option.option_file.attach(params['options_file_' + value])
+            unless save
+              success = true
+            end
+          end
+          job_order_options << option
           unless save
             success = true
           end
-        end
-        job_order_options << option
-        unless save
-          success = true
         end
       end
     end

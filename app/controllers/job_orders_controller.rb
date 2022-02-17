@@ -120,7 +120,7 @@ class JobOrdersController < ApplicationController
   end
 
   def allow_edit
-    @job_order.status.last == 'Draft'
+    @job_order.job_statuses.last == 'Draft'
   end
 
   def job_order_params
