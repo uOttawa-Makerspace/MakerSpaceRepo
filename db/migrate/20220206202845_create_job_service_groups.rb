@@ -16,6 +16,9 @@ class CreateJobServiceGroups < ActiveRecord::Migration[6.1]
         JobServiceGroup.create(name: 'Dimension SST', description: '', job_type: JobType.find_by(name: '3D Print'), multiple: false, text_field: false)
         JobServiceGroup.create(name: 'Markforged', description: '', job_type: JobType.find_by(name: '3D Print'), multiple: true, text_field: false)
         JobServiceGroup.create(name: 'Other', description: '', job_type: JobType.find_by(name: '3D Print'), multiple: false, text_field: true)
+        JobServiceGroup.create(name: 'MDF', description: '', job_type: JobType.find_by(name: 'Laser Cut'), multiple: false, text_field: false)
+        JobServiceGroup.create(name: '1/8" Acrylic', description: '', job_type: JobType.find_by(name: 'Laser Cut'), multiple: false, text_field: false)
+        JobServiceGroup.create(name: '1/4" Acrylic', description: '', job_type: JobType.find_by(name: 'Laser Cut'), multiple: false, text_field: false)
       end
     end
   end

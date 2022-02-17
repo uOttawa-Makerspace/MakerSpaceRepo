@@ -1,9 +1,17 @@
-<%= @job_order.as_json %>
+<section>
+  <%= form_for(@job_order, url: {controller: "job_orders", action: "steps"}) do |f| %>
 
-<%= @job_order.user_files %>
+    <div class="text-center">
 
-<br>
+      <h2>New Job Order (Step 4/4)</h2>
 
-4
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :comments, "Additional Comments" %>
+        <%= f.text_area :comments, class: 'form-control' %>
+      </div>
 
-<%= link_to 'Next', next_step %>
+      <%= link_to "Delete Current Order", new_job_orders_path(step: 1), class: "btn btn-secondary", data: {confirm: 'Are you sure you want to delete the current order?'} %>
+      <%= f.submit "Submit", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</section>

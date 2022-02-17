@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_02_13_221950) do
+ActiveRecord::Schema.define(version: 2022_02_15_223213) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -257,18 +257,20 @@ ActiveRecord::Schema.define(version: 2022_02_13_221950) do
     t.datetime "updated_at", precision: 6, null: false
   end
 
-  create_table "job_options_orders", id: false, force: :cascade do |t|
-    t.bigint "job_order_id", null: false
-    t.bigint "job_option_id", null: false
-    t.index ["job_option_id"], name: "index_job_options_orders_on_job_option_id"
-    t.index ["job_order_id"], name: "index_job_options_orders_on_job_order_id"
-  end
-
   create_table "job_options_types", id: false, force: :cascade do |t|
     t.bigint "job_type_id", null: false
     t.bigint "job_option_id", null: false
     t.index ["job_option_id"], name: "index_job_options_types_on_job_option_id"
     t.index ["job_type_id"], name: "index_job_options_types_on_job_type_id"
+  end
+
+  create_table "job_order_options", force: :cascade do |t|
+    t.bigint "job_order_id", null: false
+    t.bigint "job_option_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_option_id"], name: "index_job_order_options_on_job_option_id"
+    t.index ["job_order_id"], name: "index_job_order_options_on_job_order_id"
   end
 
   create_table "job_order_quote_options", force: :cascade do |t|
@@ -305,6 +307,7 @@ ActiveRecord::Schema.define(version: 2022_02_13_221950) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "job_service_group_id"
+    t.text "comments"
     t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
     t.index ["job_service_group_id"], name: "index_job_orders_on_job_service_group_id"
     t.index ["job_type_id"], name: "index_job_orders_on_job_type_id"
@@ -958,6 +961,8 @@ ActiveRecord::Schema.define(version: 2022_02_13_221950) do
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
+  add_foreign_key "job_order_options", "job_options"
+  add_foreign_key "job_order_options", "job_orders"
   add_foreign_key "job_order_quote_options", "job_options"
   add_foreign_key "job_order_quote_services", "job_services"
   add_foreign_key "job_order_quotes", "job_order_quote_options"

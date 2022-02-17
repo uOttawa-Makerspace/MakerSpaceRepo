@@ -1,30 +1,38 @@
 <section>
-  <%= form_for(@job_order, url: {controller: "job_orders", action: "new"}) do |f| %>
+  <%= form_for(@job_order, url: {controller: "job_orders", action: "steps"}, html: { :multipart => true }) do |f| %>
 
     <div class="text-center">
 
       <h2>New Job Order (Step 3/4)</h2>
 
       <div class="form-group col-lg-6 mx-auto">
-        <%= f.collection_check_boxes :job_option_ids, @options, :id, :name_with_description do |b| %>
+        <% @options.each do |o| %>
           <div class="custom-control custom-checkbox">
-            <%= b.check_box class: 'custom-control-input' %>
-            <%= b.label class: 'custom-control-label' %>
+            <%= check_box_tag "options_id_#{o.id}", o.id, false, {multiple: true, class: 'custom-control-input'} %>
+            <%= label_tag "options_id_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'custom-control-label' %>
+            <% if o.description.present? %>
+              <p><%= o.description %></p>
+            <% end %>
           </div>
 
           <% if o.need_files %>
             <div class="custom-file">
-              <%= f.file_field :options_file, class: "custom-file-input" %>
-              <%= f.label :options_file, "File", class: 'custom-file-label' %>
+              <%= file_field_tag "options_file_#{o.id}", class: "custom-file-input" %>
+              <%= label_tag "options_file_#{o.id}", "File", class: 'custom-file-label' %>
             </div>
           <% end %>
+        <% end %>
+
+        <% if @options.count == 0 %>
+          <div class="alert alert-warning">
+            There are not options available to you right now. Please continue to the next step.
+          </div>
         <% end %>
       </div>
 
       <%= hidden_field_tag :step, 4 %>
-      <%= f.hidden_field :id, value: @job_order.id %>
+      <%= link_to "Delete Current Order", new_job_orders_path(step: 1), class: "btn btn-secondary", data: {confirm: 'Are you sure you want to delete the current order?'} %>
       <%= f.submit "Next Step", class: "btn btn-primary" %>
     </div>
   <% end %>
-
 </section>

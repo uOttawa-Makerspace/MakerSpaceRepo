@@ -55,7 +55,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :job_orders, only: %i[index create update new destroy edit] do
+  resources :job_orders, only: %i[index create update new destroy] do
+    get :steps
+    patch :steps
     collection do
       get :admin
       get :settings

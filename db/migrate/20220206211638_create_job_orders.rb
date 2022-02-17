@@ -8,11 +8,6 @@ class CreateJobOrders < ActiveRecord::Migration[6.1]
       t.timestamps
     end
 
-    create_join_table :job_orders, :job_options do |t|
-      t.index :job_order_id
-      t.index :job_option_id
-    end
-
     create_join_table :job_orders, :job_services do |t|
       t.index :job_order_id
       t.index :job_service_id
