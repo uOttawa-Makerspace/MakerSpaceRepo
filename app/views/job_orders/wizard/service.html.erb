@@ -1,4 +1,4 @@
-<section x-data="{service_group_id: <%= @job_order.job_service_group_id.present? ? @job_order.job_service_group_id : '' %>}">
+<section x-data="{service_group_id: <%= @job_order.job_service_group_id.present? ? @job_order.job_service_group_id : "''" %>}">
   <%= form_for(@job_order, url: { controller: "job_orders", action: "steps" }) do |f| %>
 
     <div class="text-center">
