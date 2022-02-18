@@ -51,6 +51,7 @@
       </div>
 
       <%= hidden_field_tag :step, 4 %>
+      <%= link_to "Previous Step", job_order_steps_path(step: 2), class: "btn btn-primary" %>
       <%= link_to "Delete Current Order", new_job_orders_path(step: 1), class: "btn btn-secondary", data: {confirm: 'Are you sure you want to delete the current order?'} %>
       <%= f.submit "Next Step", class: "btn btn-primary" %>
     </div>

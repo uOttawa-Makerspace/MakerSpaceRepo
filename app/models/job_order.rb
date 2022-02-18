@@ -52,7 +52,7 @@ class JobOrder < ApplicationRecord
 
   def max_step
     if job_type_id.present? && user_id.present?
-      if job_service_group_id.present? && job_services.present? && user_files.first.present? && user_files.attached?
+      if job_service_group_id.present? && job_services.present? && user_files.attached?
         4
       else
         2

@@ -59,6 +59,7 @@ class JobOrdersController < ApplicationController
       redirect_to job_order_steps_path(@job_order, step: (params[:step].to_i - 1))
       flash[:alert] = "An error occurred while saving the job order step. make sure that you uploaded the right file types. Please try again."
     else
+      @step = @job_order.max_step if (@job_order.max_step < @step)
       case @step
       when 1
         render 'job_orders/wizard/order_type'
@@ -143,8 +144,6 @@ class JobOrdersController < ApplicationController
   def wizard
     @step = params[:step].to_i
     @step ||= 1
-    @step = @job_order.max_step if (@job_order.max_step < @step)
-    puts @step
   end
 
 end
