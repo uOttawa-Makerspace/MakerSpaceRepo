@@ -31,6 +31,12 @@ class JobOrdersController < ApplicationController
 
     if @job_order.present? && @job_order.user == @user
 
+      if params[:keep_files].present?
+        (@job_order.user_files.pluck(:id) - params[:keep_files].map(&:to_i)).each do |file_id|
+          @job_order.user_files.find(file_id).purge
+        end
+      end
+
       if params[:job_order].present?
 
         if params[:job_service_name].present?

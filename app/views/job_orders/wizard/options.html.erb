@@ -20,12 +20,32 @@
               <%= file_field_tag "options_file_#{o.id}", class: "custom-file-input" %>
               <%= label_tag "options_file_#{o.id}", "File", class: 'custom-file-label' %>
             </div>
+
+            <% if @job_order.job_order_options.where(job_option_id: o.id).present? && @job_order.job_order_options.where(job_option_id: o.id).first.option_file.attached? %>
+              <div class="text-left pt-2">
+                <ul class="list-group">
+                  <li class="list-group-item text-center text-muted">
+                    (By Un-Checking, you will delete this file)
+                  </li>
+                  <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
+                    <div class="form-check">
+                      <%= check_box_tag "options_keep_file_#{o.id}", true, true, {class: 'form-check-input'} %>
+                      <%= label_tag "options_keep_file_#{o.id}", @job_order.job_order_options.where(job_option_id: o.id).first.option_file.filename, class: "form-check-label" %>
+                    </div>
+
+                    <div class="text-right">
+                      <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(@job_order.job_order_options.where(job_option_id: o.id).first.option_file, disposition: 'attachment') %>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            <% end %>
           <% end %>
         <% end %>
 
         <% if @options.count == 0 %>
           <div class="alert alert-warning">
-            There are not options available to you right now. Please continue to the next step.
+            There are no options available to you right now. Please continue to the next step.
           </div>
         <% end %>
       </div>

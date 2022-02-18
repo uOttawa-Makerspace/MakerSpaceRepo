@@ -25,7 +25,13 @@ class JobOrder < ApplicationRecord
 
     params.to_h.each do |key, value|
       if key.include?('options_id_')
-        unless job_order_options.where(id: value).present?
+        if job_order_options.where(job_option_id: value).present?
+          if JobOption.find(value).need_files?
+            unless params['options_keep_file_' + value].present?
+              job_order_options.where(job_option_id: value).first.option_file.purge
+            end
+          end
+        else
           option = JobOrderOption.create(job_order_id: id, job_option_id: value)
           if params['options_file_' + value].present?
             option.option_file.attach(params['options_file_' + value])

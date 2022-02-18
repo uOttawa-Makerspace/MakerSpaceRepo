@@ -8,11 +8,34 @@
       <div class="form-group col-lg-6 mx-auto">
         <div class="custom-file">
           <p><%= @job_type.file_description %></p>
-          <%= f.file_field :user_files, multiple: @job_type.multiple_files, class: "custom-file-input", required: true, name: 'job_order[user_files][]' %>
+          <%= f.file_field :user_files, multiple: @job_type.multiple_files, class: "custom-file-input", required: !@job_order.user_files.attached?, name: 'job_order[user_files][]' %>
           <%= f.label :user_files, @job_type.file_label, class: 'custom-file-label' %>
         </div>
+
+        <% if @job_order.user_files.attached? %>
+          <br><br>
+          <h4>Current Uploaded Files</h4>
+          <p class="mt-0">Un-Check to delete the file</p>
+          <div class="text-left">
+            <ul class="list-group">
+              <% @job_order.user_files.each do |file| %>
+                <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
+                  <div class="form-check">
+                    <%= check_box_tag 'keep_files[]', file.id, true, {multiple: true, class: 'form-check-input'} %>
+                    <%= label_tag 'keep_files[]', file.filename, class: "form-check-label" %>
+                  </div>
+
+                  <div class="text-right">
+                    <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(file, disposition: 'attachment') %>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
       </div>
 
+      <h4>Services</h4>
       <div class="form-group col-lg-6 mx-auto">
         <div class="text-left">
           <% @service_groups.each do |sg| %>
