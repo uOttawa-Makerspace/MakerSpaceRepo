@@ -1,0 +1,44 @@
+<div class="col-md-6">
+  <div class="card">
+    <div class="card-header">
+      <h5 class="card-title m-0 d-flex justify-content-between">
+        <div>
+          Order #<%= jo.id %> - <%= jo.job_order_statuses.last.job_status.name %>
+        </div>
+        <div>
+          <% if jo.allow_edit? %>
+            <%= link_to "Edit", job_order_steps_path(job_order_id: jo.id), class: 'btn btn-outline-dark' %>
+          <% else %>
+            <span class="d-inline-block" tabindex="0" data-toggle="popover" data-trigger="focus" data-content="Cannot edit this order." data-placement="bottom">
+              <button class="btn btn-primary" style="pointer-events: none;" type="button" disabled>Edit</button>
+            </span>
+          <% end %>
+        </div>
+      </h5>
+    </div>
+    <div class="card-body">
+      <ul class="timeline">
+        <% jo.job_order_statuses.order(created_at: :desc).each do |jos| %>
+          <li>
+            <div class="d-flex justify-content-between">
+              <p><%= jos.job_status.name %></p>
+              <p class="float-right"><%= jos.created_at.strftime("%b %e %Y at %H:%M") %></p>
+            </div>
+            <p><%= jos.job_status.description %></p>
+            <% if jo.job_order_statuses.last == jos %>
+              <% if jos.job_status == JobStatus::USER_APPROVAL %>
+                <div class="alert alert-warning">
+                  <p><b>Action Required - Total Quote: $25.24 - <a href="/invoice">See Invoice</a></b></p>
+                  <div class="d-flex justify-content-between">
+                    <a href="/" class="btn btn-primary">Approve</a>
+                    <a href="/" class="btn btn-danger">Deny</a>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</div>

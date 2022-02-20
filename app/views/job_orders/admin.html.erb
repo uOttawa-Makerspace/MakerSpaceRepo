@@ -1,0 +1,90 @@
+<div class="px-2">
+  <h1 class="text-center">List of Job Orders</h1>
+  <div class="text-center">
+    <%= link_to "New Job Order", new_job_orders_path, {class: 'btn btn-primary'} %>
+    <%= link_to "Client Page", job_orders_path, {class: 'btn btn-primary'} %>
+  </div>
+
+  <div class="py-1">
+    <%= form_with(url: admin_job_orders_path, method: "get", class: "form-inline") do %>
+      <label class="my-1 mr-2" for="start_date">Filter by date</label>
+      <%= select_tag(:query_date, options_for_select([['All', 0], ['1 Month', 30], ['3 Months', 90], ['6 Months', 180], ['12 Months', 365]], :selected => session[:query_date]), { :class => 'form-control' }) %>
+      <%= submit_tag("Search", class: "btn btn-primary") %>
+    <% end %>
+  </div>
+
+  <table class="table table-responsive">
+    <thead>
+    <tr class="text-center">
+      <th>User</th>
+      <th>Identity</th>
+      <th>ID</th>
+      <th>Submitted on</th>
+      <th>Type</th>
+      <th>Options</th>
+      <th>Comments</th>
+      <th>User's Files</th>
+      <th>Staff Files</th>
+      <th>Current Status</th>
+      <th>Invoice</th>
+      <th>Delete</th>
+    </tr>
+    <tbody>
+    <% @job_orders.each do |jo| %>
+      <tr>
+        <td>
+          <%= link_to jo.user.name, user_path(jo.user.username) %>
+          <%= jo.user.email %>
+        </td>
+        <td><%= jo.user.internal? ? "Internal" : "External" %></td>
+        <td><%= jo.id %></td>
+        <td><%= jo.created_at.to_formatted_s(:long_ordinal) %></td></td>
+        <td>
+          <%= jo.job_service_group.name %>
+          <% jo.job_services.each do |service| %>
+            <li><%= service.name %></li>
+          <% end %>
+        </td>
+        <td>
+          <% jo.job_order_options.each do |option| %>
+            <li><%= option.job_option.name %></li>
+          <% end %>
+        </td>
+        <td><%= jo.comments %></td>
+        <td>
+          <% if jo.user_files.attached? %>
+            <% jo.user_files.each do |file| %>
+              <%= link_to "Download", rails_blob_path(file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+              <br>
+              <span style="word-break: break-all;"><%= file.filename %></span>
+            <% end %>
+          <% else %>
+            Not Available
+          <% end %>
+        </td>
+        <td>
+          <% if jo.staff_files.attached? %>
+            <% jo.staff_files.each do |file| %>
+              <%= link_to "Download", rails_blob_path(file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+              <br>
+              <span style="word-break: break-all;"><%= file.filename %></span>
+            <% end %>
+          <% else %>
+            Not Available
+          <% end %>
+        </td>
+        <td><%= jo.job_order_statuses.last.job_status.name %></td>
+        <td>Invoice Link</td>
+        <td>
+          <% if @user.admin? %>
+            <%= button_to 'Delete', job_order_path(jo), method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %>
+          <% else %>
+            Can not delete
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+    </tbody>
+    </thead>
+  </table>
+</div>

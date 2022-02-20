@@ -164,6 +164,10 @@ class User < ApplicationRecord
     staff_spaces.count > 0
   end
 
+  def internal?
+    identity == 'faculty_member' || identity == 'grad' || identity == 'undergrad'
+  end
+
   def self.to_csv(attributes)
     CSV.generate do |csv|
       attributes.each do |row|

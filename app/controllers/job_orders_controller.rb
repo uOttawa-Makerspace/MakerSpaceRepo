@@ -1,25 +1,24 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in
-  before_action :grant_access, only: %w[index new steps edit create update destroy]
-  before_action :set_job_order, only: %w[steps edit destroy]
+  before_action :grant_access, only: %w[admin settings]
+  before_action :set_job_order, only: %w[steps destroy]
   before_action :wizard, only: %w[steps]
   before_action :allow_edit, only: %w[steps]
 
-  # Statuses for DB
-  $statuses = {
-    'draft' => 'Draft',
-    'staff_approval' => 'Waiting for Staff Approval',
-    'user_approval' => 'Waiting for User Approval',
-    'waiting_processed' => 'Waiting to be Processed',
-    'processed' => 'Processed',
-    'paid' => 'Paid',
-    'picked_up' => 'Picked-Up',
-    'declined' => 'Declined',
-  }
-
   def index
-    @job_orders = @user.job_orders
+    @job_orders = []
+    @archived_job_orders = []
+    @drafts = []
+    @user.job_orders.each do |jo|
+      if jo.job_order_statuses.last.job_status == JobStatus::DRAFT
+        @drafts << jo
+      elsif jo.job_order_statuses.last.job_status == JobStatus::DECLINED || jo.job_order_statuses.last.job_status == JobStatus::PICKED_UP
+        @archived_job_orders << jo
+      else
+        @job_orders << jo
+      end
+    end
   end
 
   def new
@@ -72,6 +71,14 @@ class JobOrdersController < ApplicationController
         render 'job_orders/wizard/options'
       when 4
         render 'job_orders/wizard/submission'
+      when 5
+        if @job_order.job_order_statuses.last != JobStatus::STAFF_APPROVAL
+          @job_order.job_order_statuses << JobOrderStatus.create!(job_order: @job_order, job_status: JobStatus::STAFF_APPROVAL)
+          flash[:notice] = "Your job order has been submitted for staff approval!"
+        else
+          flash[:notice] = "Your job order has been updated!"
+        end
+        redirect_to job_orders_path
       else
         redirect_to job_orders_path
       end
@@ -81,9 +88,14 @@ class JobOrdersController < ApplicationController
   def create
     @job_order = JobOrder.new(job_order_params)
     @job_order.user = @user
-    @job_order.job_statuses << JobStatus.find_by(name: $statuses['draft'])
     if @job_order.save
-      redirect_to job_order_steps_path(job_order_id: @job_order.id, step: 2)
+      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::DRAFT)
+      if @job_order.save
+        redirect_to job_order_steps_path(job_order_id: @job_order.id, step: 2)
+      else
+        @job_order.destroy
+        redirect_to new_job_orders_path
+      end
     else
       flash[:alert] = 'An error occurred while trying to create the job order. Please try again.'
       render 'new'
@@ -99,7 +111,16 @@ class JobOrdersController < ApplicationController
   end
 
   def admin
-    @job_orders = JobOrder.all
+    if params[:query_date].present?
+      session[:query_date] = params[:query_date].to_i
+    end
+
+    if !session[:query_date].present? || session[:query_date] == 0
+      session[:query_date] = 0
+      @job_orders = JobOrder.all.without_drafts
+    else
+      @job_orders = JobOrder.all.without_drafts.where(created_at: session[:query_date].days.ago..)
+    end
   end
 
   def settings
@@ -123,11 +144,10 @@ class JobOrdersController < ApplicationController
       flash[:alert] = 'You do not have permission to view this job order.'
       redirect_to new_job_orders_path
     end
-
   end
 
   def allow_edit
-    @job_order.job_statuses.last == 'Draft'
+    @job_order.allow_edit? || @user.admin?
   end
 
   def job_order_params
@@ -142,7 +162,7 @@ class JobOrdersController < ApplicationController
   end
 
   def wizard
-    @step = params[:step].to_i
+    @step =
     @step ||= 1
   end
 

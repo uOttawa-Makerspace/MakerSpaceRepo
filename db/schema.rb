@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_02_15_223213) do
+ActiveRecord::Schema.define(version: 2022_02_19_214048) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -299,6 +299,14 @@ ActiveRecord::Schema.define(version: 2022_02_15_223213) do
     t.index ["job_order_quote_service_id"], name: "index_job_order_quotes_on_job_order_quote_service_id"
   end
 
+  create_table "job_order_statuses", force: :cascade do |t|
+    t.bigint "job_order_id"
+    t.bigint "job_status_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_order_id"], name: "index_job_order_statuses_on_job_order_id"
+  end
+
   create_table "job_orders", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "job_type_id"
@@ -319,13 +327,6 @@ ActiveRecord::Schema.define(version: 2022_02_15_223213) do
     t.bigint "job_service_id", null: false
     t.index ["job_order_id"], name: "index_job_orders_services_on_job_order_id"
     t.index ["job_service_id"], name: "index_job_orders_services_on_job_service_id"
-  end
-
-  create_table "job_orders_statuses", id: false, force: :cascade do |t|
-    t.bigint "job_order_id", null: false
-    t.bigint "job_status_id", null: false
-    t.index ["job_order_id"], name: "index_job_orders_statuses_on_job_order_id"
-    t.index ["job_status_id"], name: "index_job_orders_statuses_on_job_status_id"
   end
 
   create_table "job_service_groups", force: :cascade do |t|
@@ -967,6 +968,8 @@ ActiveRecord::Schema.define(version: 2022_02_15_223213) do
   add_foreign_key "job_order_quote_services", "job_services"
   add_foreign_key "job_order_quotes", "job_order_quote_options"
   add_foreign_key "job_order_quotes", "job_order_quote_services"
+  add_foreign_key "job_order_statuses", "job_orders"
+  add_foreign_key "job_order_statuses", "job_statuses"
   add_foreign_key "job_orders", "job_service_groups"
   add_foreign_key "job_service_groups", "job_types"
   add_foreign_key "job_services", "job_orders"

@@ -12,10 +12,5 @@ class CreateJobOrders < ActiveRecord::Migration[6.1]
       t.index :job_order_id
       t.index :job_service_id
     end
-
-    create_join_table :job_orders, :job_statuses do |t|
-      t.index :job_order_id
-      t.index :job_status_id
-    end
   end
 end

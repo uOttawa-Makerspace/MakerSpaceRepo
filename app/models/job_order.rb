@@ -1,10 +1,18 @@
 class JobOrder < ApplicationRecord
   belongs_to :user
   belongs_to :job_type
+  belongs_to :job_service_group
   belongs_to :job_order_quote, dependent: :destroy
   has_many :job_order_options, dependent: :destroy
+  has_many :job_order_statuses, dependent: :destroy
   has_and_belongs_to_many :job_services
-  has_and_belongs_to_many :job_statuses
+
+  scope :without_drafts, -> {
+    joins(:job_order_statuses)
+      .where('job_order_statuses.created_at = (SELECT MAX(job_order_statuses.created_at) FROM job_order_statuses WHERE job_order_statuses.job_order_id = job_orders.id)')
+      .where.not(job_order_statuses: {job_status: JobStatus::DRAFT})
+      .group('job_orders.id')
+  }
 
   has_many_attached :user_files
   validates :user_files, file_content_type: {
@@ -17,6 +25,10 @@ class JobOrder < ApplicationRecord
     allow: ['application/pdf', 'image/svg+xml', 'text/html', 'model/stl', 'application/vnd.ms-pki.stl', 'application/octet-stream', 'text/plain', "model/x.stl-binary", 'model/x.stl-binary', 'text/x.gcode', 'image/vnd.dxf', 'image/x-dxf', 'model/x.stl-ascii'],
     if: -> { staff_files.attached? },
   }
+
+  def allow_edit?
+    job_order_statuses.last.job_status == JobStatus::DRAFT || job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL
+  end
 
   def add_options(params)
     success = true
@@ -53,7 +65,7 @@ class JobOrder < ApplicationRecord
   def max_step
     if job_type_id.present? && user_id.present?
       if job_service_group_id.present? && job_services.present? && user_files.attached?
-        4
+        5
       else
         2
       end

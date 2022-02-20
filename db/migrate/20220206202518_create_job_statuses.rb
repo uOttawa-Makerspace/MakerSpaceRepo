@@ -9,7 +9,7 @@ class CreateJobStatuses < ActiveRecord::Migration[6.1]
     reversible do |change|
       change.up do
         JobStatus.create(name: 'Draft', description: 'The job is a draft and has not yet be sent for approval.')
-        JobStatus.create(name: 'Waiting for Staff Approval', description: 'Waiting for Staff Approval')
+        JobStatus.create(name: 'Waiting for Staff Approval', description: 'The job has been sent for Staff Approval')
         JobStatus.create(name: 'Waiting for User Approval', description: 'Currently waiting for the user to approve the job.')
         JobStatus.create(name: 'Waiting to be Processed', description: 'Waiting for the job to be processed or sent to manufacturing.')
         JobStatus.create(name: 'Processed', description: 'The job has been processed')
