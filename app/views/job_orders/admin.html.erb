@@ -1,4 +1,4 @@
-<div class="px-2">
+<div class="px-2" data-controller="launch-modal">
   <h1 class="text-center">List of Job Orders</h1>
   <div class="text-center">
     <%= link_to "New Job Order", new_job_orders_path, {class: 'btn btn-primary'} %>
@@ -26,6 +26,7 @@
       <th>User's Files</th>
       <th>Staff Files</th>
       <th>Current Status</th>
+      <th>Action</th>
       <th>Invoice</th>
       <th>Delete</th>
     </tr>
@@ -50,7 +51,7 @@
             <li><%= option.job_option.name %></li>
           <% end %>
         </td>
-        <td><%= jo.comments %></td>
+        <td><button class="btn btn-secondary btn-sm" data-action="click->launch-modal#launchCommentsModal" data-id="<%= jo.id %>" data-comments="<%= jo.comments %>">See Comments</button></td>
         <td>
           <% if jo.user_files.attached? %>
             <% jo.user_files.each do |file| %>
@@ -74,6 +75,21 @@
           <% end %>
         </td>
         <td><%= jo.job_order_statuses.last.job_status.name %></td>
+        <td>
+          <% if jo.job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL %>
+            Quote
+          <% elsif jo.job_order_statuses.last.job_status == JobStatus::USER_APPROVAL %>
+            Approve/Decline
+          <% elsif jo.job_order_statuses.last.job_status == JobStatus::WAITING_PROCESSED %>
+            Process
+          <% elsif jo.job_order_statuses.last.job_status == JobStatus::PROCESSED %>
+            Paid?
+          <% elsif jo.job_order_statuses.last.job_status == JobStatus::PAID %>
+            Picked-Up?
+          <% else %>
+            Not action available
+          <% end %>
+        </td>
         <td>Invoice Link</td>
         <td>
           <% if @user.admin? %>
@@ -87,4 +103,24 @@
     </tbody>
     </thead>
   </table>
+
+  <!-- Comments Modal -->
+  <div class="modal" tabindex="-1" data-controller="comments-modal" data-launch-modal-target="modal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Comments for Job Order #<span data-comments-modal-target="id"></span></h5>
+          <button type="button" class="close" data-action="click->comments-modal#close" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p><span data-comments-modal-target="comments"></span></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="click->comments-modal#close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

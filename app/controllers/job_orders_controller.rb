@@ -72,7 +72,7 @@ class JobOrdersController < ApplicationController
       when 4
         render 'job_orders/wizard/submission'
       when 5
-        if @job_order.job_order_statuses.last != JobStatus::STAFF_APPROVAL
+        if @job_order.job_order_statuses.last.job_status != JobStatus::STAFF_APPROVAL
           @job_order.job_order_statuses << JobOrderStatus.create!(job_order: @job_order, job_status: JobStatus::STAFF_APPROVAL)
           flash[:notice] = "Your job order has been submitted for staff approval!"
         else
@@ -162,8 +162,7 @@ class JobOrdersController < ApplicationController
   end
 
   def wizard
-    @step =
-    @step ||= 1
+    @step = params[:step].present? ? params[:step].to_i : 1
   end
 
 end
