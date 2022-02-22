@@ -1,8 +1,8 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in
-  before_action :grant_access, only: %w[admin settings]
-  before_action :set_job_order, only: %w[steps destroy]
+  before_action :grant_access, only: %w[admin settings processed paid picked_up]
+  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up]
   before_action :wizard, only: %w[steps]
   before_action :allow_edit, only: %w[steps]
 
@@ -102,8 +102,45 @@ class JobOrdersController < ApplicationController
     end
   end
 
-  def update
+  def user_approval
+    if update_status(params[:approved], JobStatus::USER_APPROVAL, JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED)
+      flash[:notice] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
+    else
+      flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
+    end
 
+    if @job_order.user == @user
+      redirect_to job_orders_path
+    else
+      redirect_to admin_job_orders_path
+    end
+  end
+
+  def processed
+    if update_status(params[:processed], JobStatus::WAITING_PROCESSED, JobStatus::PROCESSED, false)
+      flash[:notice] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
+    else
+      flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
+    end
+    redirect_to admin_job_orders_path
+  end
+
+  def paid
+    if update_status(params[:paid], JobStatus::PROCESSED, JobStatus::PAID, false)
+      flash[:notice] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
+    else
+      flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
+    end
+    redirect_to admin_job_orders_path
+  end
+
+  def picked_up
+    if update_status(params[:picked_up], JobStatus::PAID, JobStatus::PICKED_UP, false)
+      flash[:notice] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
+    else
+      flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
+    end
+    redirect_to admin_job_orders_path
   end
 
   def destroy
@@ -163,6 +200,28 @@ class JobOrdersController < ApplicationController
 
   def wizard
     @step = params[:step].present? ? params[:step].to_i : 1
+  end
+
+  def update_status(param, current_status, true_status, need_false_status, false_status = nil)
+    error = false
+
+    if @job_order.job_order_statuses.last.job_status != current_status
+      error = true
+    elsif param.present? && param == "true"
+      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: true_status)
+      unless @job_order.save
+        error = true
+      end
+    elsif param.present? && param == "false" && need_false_status
+      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: false_status)
+      unless @job_order.save
+        error = true
+      end
+    else
+      error = true
+    end
+
+    !error
   end
 
 end

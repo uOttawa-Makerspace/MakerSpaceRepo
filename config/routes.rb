@@ -58,6 +58,10 @@ Rails.application.routes.draw do
   resources :job_orders, only: %i[index create update new destroy] do
     get :steps
     patch :steps
+    patch :user_approval
+    patch :processed
+    patch :paid
+    patch :picked_up
     collection do
       get :admin
       get :settings

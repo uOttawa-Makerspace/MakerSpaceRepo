@@ -79,21 +79,22 @@
           <% if jo.job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL %>
             Quote
           <% elsif jo.job_order_statuses.last.job_status == JobStatus::USER_APPROVAL %>
-            Approve/Decline
+            <%= link_to "Approve", job_order_user_approval_path(jo, approved: true), method: :patch, class: "btn btn-primary btn-sm btn-block", data: {confirm: "Are you sure you want to approve the Job Order?"} %>
+            <%= link_to "Reject", job_order_user_approval_path(jo, approved: false), method: :patch, class: "btn btn-danger btn-sm btn-block", data: {confirm: "Are you sure you want to decline the Job Order?"} %>
           <% elsif jo.job_order_statuses.last.job_status == JobStatus::WAITING_PROCESSED %>
-            Process
+            <%= link_to "Processed?", job_order_processed_path(jo, processed: true), method: :patch, class: "btn btn-primary btn-sm btn-block", data: {confirm: "Are you sure you want set the Job Order as processed?"} %>
           <% elsif jo.job_order_statuses.last.job_status == JobStatus::PROCESSED %>
-            Paid?
+            <%= link_to "Paid?", job_order_paid_path(jo, paid: true), method: :patch, class: "btn btn-primary btn-sm btn-block", data: {confirm: "AAre you sure you want set the Job Order as paid?"} %>
           <% elsif jo.job_order_statuses.last.job_status == JobStatus::PAID %>
-            Picked-Up?
+            <%= link_to "Picked-Up?", job_order_picked_up_path(jo, picked_up: true), method: :patch, class: "btn btn-primary btn-sm btn-block", data: {confirm: "Are you sure you want set the Job Order as Picked-Up?"} %>
           <% else %>
             Not action available
           <% end %>
         </td>
-        <td>Invoice Link</td>
+        <td><a class="btn btn-secondary btn-sm" href="/invoice"><i class="fa fa-download"></i> Invoice</a></td>
         <td>
           <% if @user.admin? %>
-            <%= button_to 'Delete', job_order_path(jo), method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %>
+            <%= button_to 'Delete', job_order_path(jo), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger btn-sm" %>
           <% else %>
             Can not delete
           <% end %>
