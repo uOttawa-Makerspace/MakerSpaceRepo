@@ -32,7 +32,7 @@ class Admin::JobServicesController < AdminAreaController
     if @job_service.destroy
       flash[:notice] = 'The Service has been deleted successfully'
     else
-      flash[:alert] = 'An error occurred while deleting the Service Group.'
+      flash[:alert] = 'An error occurred while deleting the Service.'
     end
     redirect_to settings_job_orders_path
   end

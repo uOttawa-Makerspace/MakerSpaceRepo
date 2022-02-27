@@ -13,7 +13,7 @@
               <button class="btn btn-primary" style="pointer-events: none;" type="button" disabled>Edit</button>
             </span>
           <% end %>
-          <a class="btn btn-secondary" href="/invoice"><i class="fa fa-download"></i> Invoice</a>
+          <%= link_to "<i class='fa fa-download'></i> Invoice".html_safe, job_order_invoice_path(job_order_id: jo.id), method: :get, target: '_blank', class: 'btn btn-secondary' if jo.job_order_quote.present? %>
         </div>
       </h5>
     </div>
@@ -29,10 +29,14 @@
             <% if jo.job_order_statuses.last == jos %>
               <% if jos.job_status == JobStatus::USER_APPROVAL %>
                 <div class="alert alert-warning">
-                  <p><b>Action Required - Total Quote: $25.24 - <a href="/invoice">See Invoice</a></b></p>
+                  <p><b>Action Required - Total Quote: <%= number_to_currency(jo.total_price) %></b></p>
                   <div class="d-flex justify-content-between">
-                    <a href="/" class="btn btn-primary">Approve</a>
-                    <a href="/" class="btn btn-danger">Deny</a>
+                    <%= form_tag job_order_user_approval_path(job_order_id: jo.id, approved: true), method: :patch do %>
+                      <%= submit_tag 'Approve', class: 'btn btn-primary' %>
+                    <% end %>
+                    <%= form_tag job_order_user_approval_path(job_order_id: jo.id, approved: false), method: :patch do %>
+                      <%= submit_tag 'Deny', class: 'btn btn-primary' %>
+                    <% end %>
                   </div>
                 </div>
               <% end %>

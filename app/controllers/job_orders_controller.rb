@@ -1,8 +1,8 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in
-  before_action :grant_access, only: %w[admin settings processed paid picked_up]
-  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up]
+  before_action :grant_access, only: %w[admin settings processed paid picked_up quote_modal timeline_modal quote]
+  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up quote_modal timeline_modal quote invoice]
   before_action :wizard, only: %w[steps]
   before_action :allow_edit, only: %w[steps]
 
@@ -74,6 +74,7 @@ class JobOrdersController < ApplicationController
       when 5
         if @job_order.job_order_statuses.last.job_status != JobStatus::STAFF_APPROVAL
           @job_order.job_order_statuses << JobOrderStatus.create!(job_order: @job_order, job_status: JobStatus::STAFF_APPROVAL)
+          JobOrderMailer.send_job_submitted(@job_order.id).deliver_now
           flash[:notice] = "Your job order has been submitted for staff approval!"
         else
           flash[:notice] = "Your job order has been updated!"
@@ -103,44 +104,81 @@ class JobOrdersController < ApplicationController
   end
 
   def user_approval
-    if update_status(params[:approved], JobStatus::USER_APPROVAL, JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED)
+    redirect_link = @job_order.user == @user ? job_orders_path : admin_job_orders_path
+    update_status(params[:approved], JobStatus::USER_APPROVAL, JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED, redirect_link)
+  end
+
+  def quote_modal
+    render layout: false
+  end
+
+  def timeline_modal
+    render layout: false
+  end
+
+  def quote
+    error = false
+    if params[:approved].present? && params[:approved] == "true"
+      if @job_order.update(job_order_params)
+        quote = JobOrderQuote.create(service_fee: params[:service_fee])
+        if @job_order.save
+          params.permit!
+          params.to_h.each do |key, value|
+            if key.include?('quote_service_amount_')
+              id = +key.delete_prefix("quote_service_amount_").to_i
+              JobOrderQuoteService.create!(job_service_id: id, job_order_quote: quote, quantity: value, per_unit: params["quote_service_per_unit_#{id}"]) if params["quote_service_per_unit_#{id}"].present?
+            end
+
+            if key.include?('quote_option_amount_')
+              id = +key.delete_prefix("quote_option_amount_").to_i
+              JobOrderQuoteOption.create!(job_option_id: id, job_order_quote: quote, amount: value)
+            end
+
+            unless @job_order.update(job_order_quote: quote)
+              error = true
+            end
+          end
+
+          @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::USER_APPROVAL) unless error
+          unless @job_order.save
+            error = true
+          end
+        else
+          error = true
+        end
+      else
+        error = true
+      end
+    elsif params[:approved].present? &&  params[:approved] == "false"
+      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::DECLINED)
+      unless @job_order.save
+        error = true
+      end
+    else
+      error = true
+    end
+
+    if !error
       flash[:notice] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
     else
       flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
     end
-
-    if @job_order.user == @user
-      redirect_to job_orders_path
-    else
-      redirect_to admin_job_orders_path
+    respond_to do |format|
+      format.html { redirect_to admin_job_orders_path }
+      format.js { render 'admin_row' }
     end
   end
 
   def processed
-    if update_status(params[:processed], JobStatus::WAITING_PROCESSED, JobStatus::PROCESSED, false)
-      flash[:notice] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
-    else
-      flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
-    end
-    redirect_to admin_job_orders_path
+    update_status(params[:processed], JobStatus::WAITING_PROCESSED, JobStatus::PROCESSED, false)
   end
 
   def paid
-    if update_status(params[:paid], JobStatus::PROCESSED, JobStatus::PAID, false)
-      flash[:notice] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
-    else
-      flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
-    end
-    redirect_to admin_job_orders_path
+    update_status(params[:paid], JobStatus::PROCESSED, JobStatus::PAID, false)
   end
 
   def picked_up
-    if update_status(params[:picked_up], JobStatus::PAID, JobStatus::PICKED_UP, false)
-      flash[:notice] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
-    else
-      flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
-    end
-    redirect_to admin_job_orders_path
+    update_status(params[:picked_up], JobStatus::PAID, JobStatus::PICKED_UP, false)
   end
 
   def destroy
@@ -148,6 +186,15 @@ class JobOrdersController < ApplicationController
   end
 
   def admin
+    @statuses = [
+      {name: "Waiting for Staff Approval", status: JobStatus::STAFF_APPROVAL},
+      {name: "Waiting for User Approval", status: JobStatus::USER_APPROVAL},
+      {name: "Waiting to be processed", status: JobStatus::WAITING_PROCESSED},
+      {name: "Waiting for Payment", status: JobStatus::PROCESSED},
+      {name: "Waiting for Pick-Up", status: JobStatus::PAID},
+      {name: "Archived", status: JobStatus::PICKED_UP || JobStatus::DECLINED},
+    ]
+
     if params[:query_date].present?
       session[:query_date] = params[:query_date].to_i
     end
@@ -164,6 +211,11 @@ class JobOrdersController < ApplicationController
     @service_groups = JobServiceGroup.all.order(:job_type_id)
     @services = JobService.all.order(:job_service_group_id)
     @options = JobOption.all
+    @job_types = JobType.all
+  end
+
+  def invoice
+    render pdf: 'invoice', template: 'job_orders/invoice.html.erb'
   end
 
   private
@@ -184,11 +236,14 @@ class JobOrdersController < ApplicationController
   end
 
   def allow_edit
-    @job_order.allow_edit? || @user.admin?
+    unless @job_order.allow_edit? || @user.admin?
+      flash[:alert] = 'You cannot edit this Job Order. Please contact makerspace@uottawa.ca for assistance.'
+      redirect_to job_orders_path
+    end
   end
 
   def job_order_params
-    params.require(:job_order).permit(:user_id, :job_type_id, :job_service_group_id, :job_service_ids, :comments, job_service_ids: [], job_type_id: [], user_files: [])
+    params.require(:job_order).permit(:user_id, :job_type_id, :job_service_group_id, :job_service_ids, :comments, :user_comments, :staff_comments, job_service_ids: [], job_type_id: [], user_files: [])
   end
 
   def grant_access
@@ -202,7 +257,7 @@ class JobOrdersController < ApplicationController
     @step = params[:step].present? ? params[:step].to_i : 1
   end
 
-  def update_status(param, current_status, true_status, need_false_status, false_status = nil)
+  def update_status(param, current_status, true_status, need_false_status, false_status = nil, redirect_link = admin_job_orders_path)
     error = false
 
     if @job_order.job_order_statuses.last.job_status != current_status
@@ -221,7 +276,15 @@ class JobOrdersController < ApplicationController
       error = true
     end
 
-    !error
+    if !error
+      flash[:notice] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
+    else
+      flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
+    end
+    respond_to do |format|
+      format.html { redirect_to redirect_link }
+      format.js { render 'admin_row' }
+    end
   end
 
 end

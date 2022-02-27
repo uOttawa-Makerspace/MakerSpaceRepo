@@ -1,0 +1,67 @@
+<div id="quote-modal-rendered">
+
+
+  <%= form_for(@job_order, url: job_order_quote_url(@job_order), html: { multipart: true }) do |f| %>
+    <div class="modal-body">
+      <%= hidden_field_tag :approved, true %>
+
+      <div class="form-group">
+        <%= label_tag :service_fee, "Service Charges (In CAD) " %>
+        <%= number_field_tag :service_fee, @job_order.job_type.service_fee, {step: "0.01", class: "form-control", required: true} %>
+      </div>
+
+      <% @job_order.job_services.each do |service| %>
+        <div class="row">
+          <div class="col-md-12">
+            <p><b><%= service.name %></b></p>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <%= label_tag "quote_service_amount_#{service.id}", "Number of #{service.unit}" %>
+              <%= number_field_tag "quote_service_amount_#{service.id}", "", step: "0.01", placeholder: "100", class: "form-control", required: true %>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <%= label_tag "quote_service_per_unit_#{service.id}", "Price per #{service.unit} (In CAD) " %>
+              <%= number_field_tag "quote_service_per_unit_#{service.id}", @user.internal? ? service.internal_price : service.external_price, { step: "0.01", placeholder: "0.25", class: "form-control", required: true } %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <% @job_order.job_order_options.each do |option| %>
+        <div class="row">
+          <div class="col-md-12">
+            <p><b><%= option.job_option.name %></b></p>
+          </div>
+          <div class="col-md-12">
+            <div class="form-group">
+              <%= label_tag "quote_option_amount_#{option.job_option_id}", "Price (In CAD) " %>
+              <%= number_field_tag "quote_option_amount_#{option.job_option_id}", option.job_option.fee, { step: "0.01", placeholder: "0.25", class: "form-control", required: true } %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="form-group">
+        <%= f.label :staff_files, "Staff Files (GCode/PDF..)" %>
+        <%= f.file_field :staff_files, style: "display: block!important;", multiple: true %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :user_comments, "Comments for the user" %>
+        <%= f.text_field :user_comments, placeholder: "I will need to add supports", class: "form-control" %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :staff_comments, "Comments for the staff members" %>
+        <%= f.text_field :staff_comments, placeholder: "Use the Raise 3D", class: "form-control" %>
+      </div>
+
+      <%= f.submit "Approve", class: 'btn btn-primary' %>
+    </div>
+  <% end %>
+
+
+</div>

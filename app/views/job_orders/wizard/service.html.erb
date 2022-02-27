@@ -8,8 +8,8 @@
       <div class="form-group col-lg-6 mx-auto">
         <div class="custom-file">
           <p><%= @job_type.file_description %></p>
-          <%= f.file_field :user_files, multiple: @job_type.multiple_files, class: "custom-file-input", required: !@job_order.user_files.attached?, name: 'job_order[user_files][]' %>
-          <%= f.label :user_files, @job_type.file_label, class: 'custom-file-label' %>
+          <%= f.label :user_files, @job_type.file_label %>
+          <%= f.file_field :user_files, multiple: @job_type.multiple_files, required: !@job_order.user_files.attached?, name: 'job_order[user_files][]' %>
         </div>
 
         <% if @job_order.user_files.attached? %>
@@ -56,7 +56,7 @@
                     <% sg.job_services.where(required: true).each do |r| %>
                       <%= f.hidden_field :job_service_ids, value: r.id, multiple: true %>
                     <% end %>
-                    <%= f.collection_check_boxes :job_service_ids, sg.job_services, :id, :name, disabled: sg.job_services.where(required: true).pluck(:id), checked: (sg.job_services.where(required: true).pluck(:id) + @job_order.job_services.pluck(:id)) do |b| %>
+                    <%= f.collection_check_boxes :job_service_ids, sg.job_services, :id, (@user.internal? ? :name_with_internal_price : :name_with_external_price), disabled: sg.job_services.where(required: true).pluck(:id), checked: (sg.job_services.where(required: true).pluck(:id) + @job_order.job_services.pluck(:id)) do |b| %>
                       <div class="custom-control custom-checkbox">
                         <%= b.check_box class: 'custom-control-input' %>
                         <%= b.label class: 'custom-control-label' %>
@@ -66,7 +66,7 @@
                     <% sg.job_services.each do |s| %>
                       <div class="custom-control custom-radio">
                         <%= f.radio_button :job_service_ids, s.id, class: 'custom-control-input', checked: @job_order.job_services.present? ? @job_order.job_services.pluck(:id).include?(s.id) : false %>
-                        <%= f.label :job_service_ids, s.name, class: 'custom-control-label', value: s.id %>
+                        <%= f.label :job_service_ids, (@user.internal? ? s.name_with_internal_price : s.name_with_external_price), class: 'custom-control-label', value: s.id %>
                       </div>
                     <% end %>
                   <% end %>
@@ -75,6 +75,13 @@
             </template>
           <% end %>
         </div>
+
+        <% if @job_type.comments.present? %>
+          <br>
+          <div class="alert alert-warning">
+            <i class="fa fa-warning"></i> <%= sanitize @job_type.comments %>
+          </div>
+        <% end %>
       </div>
 
       <%= hidden_field_tag :step, 3 %>

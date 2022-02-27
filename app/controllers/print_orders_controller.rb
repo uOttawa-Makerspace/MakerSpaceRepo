@@ -47,7 +47,8 @@ class PrintOrdersController < ApplicationController
   end
 
   def new
-    @print_order = PrintOrder.new
+    # @print_order = PrintOrder.new
+    redirect_to new_job_orders_path
   end
 
   def edit

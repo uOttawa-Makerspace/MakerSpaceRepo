@@ -13,100 +13,56 @@
     <% end %>
   </div>
 
-  <table class="table table-responsive">
-    <thead>
-    <tr class="text-center">
-      <th>User</th>
-      <th>Identity</th>
-      <th>ID</th>
-      <th>Submitted on</th>
-      <th>Type</th>
-      <th>Options</th>
-      <th>Comments</th>
-      <th>User's Files</th>
-      <th>Staff Files</th>
-      <th>Current Status</th>
-      <th>Action</th>
-      <th>Invoice</th>
-      <th>Delete</th>
-    </tr>
-    <tbody>
-    <% @job_orders.each do |jo| %>
-      <tr>
-        <td>
-          <%= link_to jo.user.name, user_path(jo.user.username) %>
-          <%= jo.user.email %>
-        </td>
-        <td><%= jo.user.internal? ? "Internal" : "External" %></td>
-        <td><%= jo.id %></td>
-        <td><%= jo.created_at.to_formatted_s(:long_ordinal) %></td></td>
-        <td>
-          <%= jo.job_service_group.name %>
-          <% jo.job_services.each do |service| %>
-            <li><%= service.name %></li>
-          <% end %>
-        </td>
-        <td>
-          <% jo.job_order_options.each do |option| %>
-            <li><%= option.job_option.name %></li>
-          <% end %>
-        </td>
-        <td><button class="btn btn-secondary btn-sm" data-action="click->launch-modal#launchCommentsModal" data-id="<%= jo.id %>" data-comments="<%= jo.comments %>">See Comments</button></td>
-        <td>
-          <% if jo.user_files.attached? %>
-            <% jo.user_files.each do |file| %>
-              <%= link_to "Download", rails_blob_path(file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
-              <br>
-              <span style="word-break: break-all;"><%= file.filename %></span>
-            <% end %>
-          <% else %>
-            Not Available
-          <% end %>
-        </td>
-        <td>
-          <% if jo.staff_files.attached? %>
-            <% jo.staff_files.each do |file| %>
-              <%= link_to "Download", rails_blob_path(file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
-              <br>
-              <span style="word-break: break-all;"><%= file.filename %></span>
-            <% end %>
-          <% else %>
-            Not Available
-          <% end %>
-        </td>
-        <td><%= jo.job_order_statuses.last.job_status.name %></td>
-        <td>
-          <% if jo.job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL %>
-            Quote
-          <% elsif jo.job_order_statuses.last.job_status == JobStatus::USER_APPROVAL %>
-            <%= link_to "Approve", job_order_user_approval_path(jo, approved: true), method: :patch, class: "btn btn-primary btn-sm btn-block", data: {confirm: "Are you sure you want to approve the Job Order?"} %>
-            <%= link_to "Reject", job_order_user_approval_path(jo, approved: false), method: :patch, class: "btn btn-danger btn-sm btn-block", data: {confirm: "Are you sure you want to decline the Job Order?"} %>
-          <% elsif jo.job_order_statuses.last.job_status == JobStatus::WAITING_PROCESSED %>
-            <%= link_to "Processed?", job_order_processed_path(jo, processed: true), method: :patch, class: "btn btn-primary btn-sm btn-block", data: {confirm: "Are you sure you want set the Job Order as processed?"} %>
-          <% elsif jo.job_order_statuses.last.job_status == JobStatus::PROCESSED %>
-            <%= link_to "Paid?", job_order_paid_path(jo, paid: true), method: :patch, class: "btn btn-primary btn-sm btn-block", data: {confirm: "AAre you sure you want set the Job Order as paid?"} %>
-          <% elsif jo.job_order_statuses.last.job_status == JobStatus::PAID %>
-            <%= link_to "Picked-Up?", job_order_picked_up_path(jo, picked_up: true), method: :patch, class: "btn btn-primary btn-sm btn-block", data: {confirm: "Are you sure you want set the Job Order as Picked-Up?"} %>
-          <% else %>
-            Not action available
-          <% end %>
-        </td>
-        <td><a class="btn btn-secondary btn-sm" href="/invoice"><i class="fa fa-download"></i> Invoice</a></td>
-        <td>
-          <% if @user.admin? %>
-            <%= button_to 'Delete', job_order_path(jo), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger btn-sm" %>
-          <% else %>
-            Can not delete
-          <% end %>
-        </td>
-      </tr>
+  <div class="accordion">
+    <% @statuses.each_with_index do |status, i| %>
+      <% if @job_orders.last_status(status[:status]).present? %>
+        <div class="card">
+          <div class="card-header" data-toggle="collapse" data-target="#accordion-job-order-<%= i %>" aria-expanded="true">
+            <h2 class="mb-0 text-center">
+              <button class="btn btn-link" type="button">
+                <%= status[:name] %>
+              </button>
+            </h2>
+          </div>
+          <div id="accordion-job-order-<%= i %>" class="collapse" aria-labelledby="#job-order-<%= i %>">
+            <div class="card-body">
+              <table class="table table-responsive">
+                <thead>
+                  <tr class="text-center">
+                    <th>User</th>
+                    <th>Identity</th>
+                    <th>ID</th>
+                    <th>Submitted on</th>
+                    <th>Type</th>
+                    <th>Options</th>
+                    <th>Comments</th>
+                    <th>User's Files</th>
+                    <th>Staff Files</th>
+                    <th>Current Status</th>
+                    <th>Timeline</th>
+                    <th>Action</th>
+                    <th>Quote</th>
+                    <th>Invoice</th>
+                    <th>Delete</th>
+                  </tr>
+                </thead>
+                <tbody>
+                <% @job_orders.last_status(status[:status]).each do |jo| %>
+                  <tr id="job-order-row-<%= jo.id %>">
+                    <%= render 'admin_row', jo: jo %>
+                  </tr>
+                <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      <% end %>
     <% end %>
-    </tbody>
-    </thead>
-  </table>
+  </div>
 
   <!-- Comments Modal -->
-  <div class="modal" tabindex="-1" data-controller="comments-modal" data-launch-modal-target="modal">
+  <div class="modal" tabindex="-1" data-controller="comments-modal" data-launch-modal-target="commentsModal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
@@ -124,4 +80,45 @@
       </div>
     </div>
   </div>
+
+  <!-- Quote Modal -->
+  <div class="modal" tabindex="-1" data-controller="quote-modal" data-launch-modal-target="quoteModal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Quote for Job Order #<span data-quote-modal-target="id"></span></h5>
+          <button type="button" class="close" data-action="click->quote-modal#close" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id="quote-body">
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="click->quote-modal#close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline Modal -->
+  <div class="modal" tabindex="-1" data-controller="timeline-modal" data-launch-modal-target="timelineModal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Status Timeline for Job Order #<span data-timeline-modal-target="id"></span></h5>
+          <button type="button" class="close" data-action="click->timeline-modal#close" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id="timeline-body">
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="click->timeline-modal#close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

@@ -57,6 +57,10 @@ Rails.application.routes.draw do
 
   resources :job_orders, only: %i[index create update new destroy] do
     get :steps
+    get :quote_modal
+    get :timeline_modal
+    get :invoice
+    patch :quote
     patch :steps
     patch :user_approval
     patch :processed
@@ -180,6 +184,7 @@ Rails.application.routes.draw do
     resources :job_service_groups, only: %i[index new create edit update destroy]
     resources :job_services, only: %i[index new create edit update destroy]
     resources :job_options, only: %i[index new create edit update destroy]
+    resources :job_types, only: %i[index new create edit update]
 
     get 'manage_badges'
 

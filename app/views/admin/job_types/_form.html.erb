@@ -1,0 +1,42 @@
+<section>
+  <%= form_for([:admin, @job_type]) do |f| %>
+    <% if @job_type.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(@job_type.errors.count, "error") %> prohibited this service from being saved:</h2>
+
+        <ul>
+          <% @job_type.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="text-center">
+      <div class="col-lg-6 text-center mx-auto">
+        <%= f.label :name, 'Name of the Job Type' %>
+        <%= f.text_field :name, class: "form-control", required: true %>
+      </div>
+      <br>
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :comments, 'Comments (To be shown at the bottom of the page)' %>
+        <div class="text-left">
+          <%= f.trix_editor :comments, class: 'form-control', style: "height: auto!important;" %>
+        </div>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto">
+        <%= f.label :service_fee, 'Service Fee' %>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text">$</span>
+          </div>
+          <%= f.number_field :service_fee, class: "form-control", required: true, step: '.01' %>
+        </div>
+      </div>
+      <br>
+      <%= f.submit class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+</section>

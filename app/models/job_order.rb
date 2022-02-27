@@ -14,6 +14,13 @@ class JobOrder < ApplicationRecord
       .group('job_orders.id')
   }
 
+  scope :last_status, ->(status) {
+    joins(:job_order_statuses)
+      .where('job_order_statuses.created_at = (SELECT MAX(job_order_statuses.created_at) FROM job_order_statuses WHERE job_order_statuses.job_order_id = job_orders.id)')
+      .where(job_order_statuses: {job_status: status})
+      .group('job_orders.id')
+  }
+
   has_many_attached :user_files
   validates :user_files, file_content_type: {
     allow: ['application/pdf', 'image/svg+xml', 'text/html', 'model/stl', 'application/vnd.ms-pki.stl', 'application/octet-stream', 'text/plain', "model/x.stl-binary", 'model/x.stl-binary', 'text/x.gcode', 'image/vnd.dxf', 'image/x-dxf', 'model/x.stl-ascii'],
@@ -35,8 +42,11 @@ class JobOrder < ApplicationRecord
 
     params.permit!
 
+    ids = []
+
     params.to_h.each do |key, value|
       if key.include?('options_id_')
+        ids << value
         if job_order_options.where(job_option_id: value).present?
           if JobOption.find(value).need_files?
             unless params['options_keep_file_' + value].present?
@@ -56,6 +66,7 @@ class JobOrder < ApplicationRecord
             success = true
           end
         end
+        job_order_options.where.not(job_option_id: ids).destroy_all
       end
     end
 
@@ -72,5 +83,13 @@ class JobOrder < ApplicationRecord
     else
       1
     end
+  end
+
+  def total_price
+    job_order_quote.total_price
+  end
+
+  def expedited?
+    job_order_options.joins(:job_option).where(job_option: {name: "Expedited"}).present?
   end
 end

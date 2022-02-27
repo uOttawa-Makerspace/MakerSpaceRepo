@@ -97,5 +97,34 @@
       <% end %>
     </table>
 
+    <br>
+
+    <h3>Job Types</h3>
+
+    <p class="text-center"><%= link_to "New Job Type", new_admin_job_type_path, class: "btn btn-secondary" %></p>
+    <table class="table table-striped mb-5">
+      <tr class="text-center">
+        <th>Name</th>
+        <th>Comments</th>
+        <th>Service Fee</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+
+      <% @job_types.each do |t| %>
+        <tr>
+          <td><%= t.name %></td>
+          <td><%= sanitize t.comments %></td>
+          <td><%= number_to_currency(t.service_fee) %></td>
+          <td><%= link_to "Edit", edit_admin_job_type_path(t.id), class:"btn btn-primary" %></td>
+          <td>
+            <span class="d-inline-block" tabindex="0" data-toggle="popover" data-trigger="focus" data-content="Cannot delete a Job Type. Please contact Admins." data-placement="bottom">
+              <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled>Delete</button>
+            </span>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+
   </div>
 </section>

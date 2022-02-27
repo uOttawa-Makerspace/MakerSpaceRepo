@@ -8,17 +8,17 @@
       <div class="form-group col-lg-6 mx-auto">
         <% @options.each do |o| %>
           <div class="custom-control custom-checkbox">
-            <%= check_box_tag "options_id_#{o.id}", o.id, @job_order.job_order_options.pluck(:job_option_id).include?(o.id), {multiple: true, class: 'custom-control-input'} %>
-            <%= label_tag "options_id_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'custom-control-label' %>
             <% if o.description.present? %>
               <p><%= o.description %></p>
             <% end %>
+            <%= check_box_tag "options_id_#{o.id}", o.id, @job_order.job_order_options.pluck(:job_option_id).include?(o.id), {multiple: true, class: 'custom-control-input'} %>
+            <%= label_tag "options_id_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'custom-control-label' %>
           </div>
 
           <% if o.need_files %>
             <div class="custom-file">
-              <%= file_field_tag "options_file_#{o.id}", class: "custom-file-input" %>
-              <%= label_tag "options_file_#{o.id}", "File", class: 'custom-file-label' %>
+              <%= label_tag "options_file_#{o.id}", "File" %>
+              <%= file_field_tag "options_file_#{o.id}" %>
             </div>
 
             <% if @job_order.job_order_options.where(job_option_id: o.id).present? && @job_order.job_order_options.where(job_option_id: o.id).first.option_file.attached? %>

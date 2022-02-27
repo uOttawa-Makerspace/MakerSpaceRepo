@@ -1,0 +1,11 @@
+<ul class="timeline">
+  <% @job_order.job_order_statuses.order(created_at: :desc).each do |jos| %>
+    <li>
+      <div class="d-flex justify-content-between">
+        <p><%= jos.job_status.name %></p>
+        <p class="float-right"><%= jos.created_at.strftime("%b %e %Y at %H:%M") %></p>
+      </div>
+      <p><%= jos.job_status.description %></p>
+    </li>
+  <% end %>
+</ul>

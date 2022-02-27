@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_02_19_214048) do
+ActiveRecord::Schema.define(version: 2022_02_27_212104) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -278,25 +278,26 @@ ActiveRecord::Schema.define(version: 2022_02_19_214048) do
     t.integer "amount", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.bigint "job_order_quote_id"
     t.index ["job_option_id"], name: "index_job_order_quote_options_on_job_option_id"
+    t.index ["job_order_quote_id"], name: "index_job_order_quote_options_on_job_order_quote_id"
   end
 
   create_table "job_order_quote_services", force: :cascade do |t|
     t.bigint "job_service_id", null: false
-    t.decimal "amount", precision: 10, scale: 2, null: false
+    t.decimal "quantity", precision: 10, scale: 2, null: false
+    t.decimal "per_unit", precision: 10, scale: 2, null: false
+    t.bigint "job_order_quote_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_order_quote_id"], name: "index_job_order_quote_services_on_job_order_quote_id"
     t.index ["job_service_id"], name: "index_job_order_quote_services_on_job_service_id"
   end
 
   create_table "job_order_quotes", force: :cascade do |t|
     t.decimal "service_fee", precision: 10, scale: 2, null: false
-    t.bigint "job_order_quote_service_id", null: false
-    t.bigint "job_order_quote_option_id", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["job_order_quote_option_id"], name: "index_job_order_quotes_on_job_order_quote_option_id"
-    t.index ["job_order_quote_service_id"], name: "index_job_order_quotes_on_job_order_quote_service_id"
   end
 
   create_table "job_order_statuses", force: :cascade do |t|
@@ -316,6 +317,7 @@ ActiveRecord::Schema.define(version: 2022_02_19_214048) do
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "job_service_group_id"
     t.text "comments"
+    t.text "user_comments"
     t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
     t.index ["job_service_group_id"], name: "index_job_orders_on_job_service_group_id"
     t.index ["job_type_id"], name: "index_job_orders_on_job_type_id"
@@ -368,8 +370,10 @@ ActiveRecord::Schema.define(version: 2022_02_19_214048) do
     t.boolean "multiple_files", default: false, null: false
     t.string "file_label", default: "File"
     t.text "file_description"
+    t.decimal "service_fee", precision: 10, scale: 2
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.text "comments"
   end
 
   create_table "lab_sessions", id: :serial, force: :cascade do |t|
@@ -965,9 +969,9 @@ ActiveRecord::Schema.define(version: 2022_02_19_214048) do
   add_foreign_key "job_order_options", "job_options"
   add_foreign_key "job_order_options", "job_orders"
   add_foreign_key "job_order_quote_options", "job_options"
+  add_foreign_key "job_order_quote_options", "job_order_quotes"
+  add_foreign_key "job_order_quote_services", "job_order_quotes"
   add_foreign_key "job_order_quote_services", "job_services"
-  add_foreign_key "job_order_quotes", "job_order_quote_options"
-  add_foreign_key "job_order_quotes", "job_order_quote_services"
   add_foreign_key "job_order_statuses", "job_orders"
   add_foreign_key "job_order_statuses", "job_statuses"
   add_foreign_key "job_orders", "job_service_groups"
