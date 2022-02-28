@@ -88,14 +88,11 @@ group :development do
 
   gem 'rubocop-rails'
   gem 'web-console'
+  gem 'letter_opener' # Open emails in development
 
   # ssh deploymentque
   gem 'bcrypt_pbkdf', '~> 1.0'
   gem 'ed25519', '~> 1.2'
-end
-
-group :development, :dev_server do
-  gem 'letter_opener' # Open emails in development
 end
 
 group :test do
