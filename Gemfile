@@ -78,7 +78,7 @@ group :development, :test do
   gem 'spring-watcher-listen', '~> 2.0.0'
 end
 
-group :development, :dev_server do
+group :development do
   # Capistrano deployment stuff
   gem 'capistrano', "~> 3.10", require: false
   gem 'capistrano-rails', "~> 1.6", require: false
@@ -86,13 +86,16 @@ group :development, :dev_server do
   gem 'capistrano-passenger', '>= 0.2.1'
   gem 'capistrano-rbenv', '~> 2.1'
 
-  gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
   gem 'web-console'
 
   # ssh deploymentque
   gem 'bcrypt_pbkdf', '~> 1.0'
   gem 'ed25519', '~> 1.2'
+end
+
+group :development, :dev_server do
+  gem 'letter_opener' # Open emails in development
 end
 
 group :test do
