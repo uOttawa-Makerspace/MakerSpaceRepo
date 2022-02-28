@@ -90,6 +90,7 @@ Rails.application.configure do
   end
 
   # SMTP settings
+  config.action_mailer.delivery_method = :letter_opener
   config.action_mailer.default_url_options = { host: 'dev.makerepo.com' }
   config.action_mailer.asset_host = 'https://dev.makerepo.com'
 

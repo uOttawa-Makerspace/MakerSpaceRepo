@@ -78,7 +78,7 @@ group :development, :test do
   gem 'spring-watcher-listen', '~> 2.0.0'
 end
 
-group :development do
+group :development, :dev_server do
   # Capistrano deployment stuff
   gem 'capistrano', "~> 3.10", require: false
   gem 'capistrano-rails', "~> 1.6", require: false
