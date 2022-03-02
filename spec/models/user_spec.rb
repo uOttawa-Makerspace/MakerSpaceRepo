@@ -53,6 +53,10 @@ RSpec.describe User, type: :model do
       it { should have_many(:project_kits) }
       it { should have_many(:learning_module_tracks) }
       it { should have_many(:shadowing_hours) }
+      it { should have_many(:staff_spaces) }
+      it { should have_many(:staff_availabilities) }
+      it { should have_many(:shifts) }
+      it { should have_many(:job_orders) }
     end
   end
 
@@ -400,6 +404,18 @@ RSpec.describe User, type: :model do
       it 'should return true' do
         user = create(:user, :volunteer_with_dev_program)
         expect(user.dev_program?).to be_truthy
+      end
+    end
+
+    context "#internal?" do
+      it 'should return false' do
+        user = create(:user, :regular_user)
+        expect(user.internal?).to be_falsey
+      end
+
+      it 'should return true' do
+        user = create(:user, :student)
+        expect(user.internal?).to be_truthy
       end
     end
 
