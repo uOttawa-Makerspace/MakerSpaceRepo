@@ -16,9 +16,9 @@
           </div>
 
           <% if o.need_files %>
-            <div class="custom-file">
-              <%= label_tag "options_file_#{o.id}", "File" %>
-              <%= file_field_tag "options_file_#{o.id}" %>
+            <div class="custom-file mt-2">
+              <%= label_tag "options_file_#{o.id}", "File", class: "custom-file-label" %>
+              <%= file_field_tag "options_file_#{o.id}", class: 'custom-file-input' %>
             </div>
 
             <% if @job_order.job_order_options.where(job_option_id: o.id).present? && @job_order.job_order_options.where(job_option_id: o.id).first.option_file.attached? %>
@@ -52,7 +52,7 @@
 
       <%= hidden_field_tag :step, 4 %>
       <%= link_to "Previous Step", job_order_steps_path(step: 2), class: "btn btn-primary" %>
-      <%= link_to "Delete Current Order", new_job_orders_path(step: 1), class: "btn btn-secondary", data: {confirm: 'Are you sure you want to delete the current order?'} %>
+      <%= link_to('Delete Current Order', job_order_path(@job_order), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger") %>
       <%= f.submit "Next Step", class: "btn btn-primary" %>
     </div>
   <% end %>

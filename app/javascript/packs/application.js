@@ -51,6 +51,7 @@ require("packs/vendor");
 require("packs/accordion-load");
 
 import "bootstrap";
+import bsCustomFileInput from 'bs-custom-file-input'
 require("packs/toastr");
 
 import {TomSelect} from "tom-select";
@@ -96,6 +97,8 @@ $(document).on('turbolinks:load', function () {
     $('.bootstrap-select').selectpicker({
         windowPadding: [80, 0, 0, 0]
     });
+
+    bsCustomFileInput.init()
 });
 
 window.clearEndDate = function() {

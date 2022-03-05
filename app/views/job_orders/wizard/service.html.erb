@@ -8,8 +8,8 @@
       <div class="form-group col-lg-6 mx-auto">
         <div class="custom-file">
           <p><%= @job_type.file_description %></p>
-          <%= f.label :user_files, @job_type.file_label %>
-          <%= f.file_field :user_files, multiple: @job_type.multiple_files, required: !@job_order.user_files.attached?, name: 'job_order[user_files][]' %>
+          <%= f.label :user_files, @job_type.file_label, class: 'custom-file-label' %>
+          <%= f.file_field :user_files, multiple: @job_type.multiple_files, required: !@job_order.user_files.attached?, name: 'job_order[user_files][]', class: 'custom-file-input' %>
         </div>
 
         <% if @job_order.user_files.attached? %>
@@ -86,7 +86,7 @@
 
       <%= hidden_field_tag :step, 3 %>
       <%= link_to "Previous Step", job_order_steps_path(step: 1), class: "btn btn-primary" %>
-      <%= link_to "Delete Current Order", new_job_orders_path(step: 1), class: "btn btn-secondary", data: {confirm: 'Are you sure you want to delete the current order?'} %>
+      <%= link_to('Delete Current Order', job_order_path(@job_order), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger") %>
       <%= f.submit "Next Step", class: "btn btn-primary" %>
     </div>
   <% end %>

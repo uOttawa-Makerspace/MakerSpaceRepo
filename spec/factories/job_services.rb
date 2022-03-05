@@ -7,5 +7,13 @@ FactoryBot.define do
     internal_price { Faker::Number.decimal()}
     external_price { Faker::Number.decimal()}
     association :job_service_group
+
+    trait :with_files do
+      files { [FilesTestHelper.stl] }
+    end
+
+    trait :with_invalid_files do
+      files { [FilesTestHelper.png] }
+    end
   end
 end

@@ -72,7 +72,7 @@
 </td>
 <td>
   <% if @user.admin? %>
-    <%= button_to 'Delete', job_order_path(jo), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger btn-sm" %>
+    <%= link_to('Delete', job_order_path(jo), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger btn-sm") %>
   <% else %>
     Can not delete
   <% end %>

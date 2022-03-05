@@ -182,7 +182,12 @@ class JobOrdersController < ApplicationController
   end
 
   def destroy
-    @print_order.destroy
+    @job_order.destroy
+    if @user.admin?
+      redirect_to admin_job_orders_path
+    else
+      redirect_to job_orders_path
+    end
   end
 
   def admin
@@ -221,8 +226,8 @@ class JobOrdersController < ApplicationController
   private
 
   def set_job_order
-    if JobOrder.where(id: params[:job_order_id]).present?
-      jo = JobOrder.find(params[:job_order_id])
+    if JobOrder.where(id: params[:job_order_id]).present? || JobOrder.where(id: params[:id]).present?
+      jo = JobOrder.find(params[:job_order_id].present? ? params[:job_order_id] : params[:id])
       if @user.admin? || @user.id == jo.user_id
         @job_order = jo
       else

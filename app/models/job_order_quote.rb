@@ -6,7 +6,7 @@ class JobOrderQuote < ApplicationRecord
   def total_price
     total = service_fee.to_f
     job_order_quote_services.each do |s|
-      total += (s.quantity.to_f * s.per_unit.to_f)
+      total += (s.cost.to_f)
     end
     job_order_quote_options.each do |o|
       total += o.amount.to_f
