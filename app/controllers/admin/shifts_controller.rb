@@ -28,7 +28,10 @@ class Admin::ShiftsController < AdminAreaController
   def create
     if params[:shift].present?
       @shift = Shift.new(shift_params.merge(space_id: @default_space_id))
-    elsif params[:start_datetime].present? && params[:start_datetime].present? && params[:user_id].present?
+      params[:user_id].each do |user_id|
+        @shift.users << User.find(user_id)
+      end
+    elsif params[:start_datetime].present? && params[:start_datetime].present?
       start_date = DateTime.parse(params[:start_datetime])
       end_date = DateTime.parse(params[:start_datetime])
       @shift = Shift.new(user_id: params[:user_id], space_id: @default_space_id, start_datetime: start_date, end_datetime: end_date, reason: params[:reason])
@@ -42,7 +45,7 @@ class Admin::ShiftsController < AdminAreaController
     respond_to do |format|
       if @shift.save
         format.html { redirect_to shifts_admin_shifts_path, notice: 'The shift has been successfully created.' }
-        format.json { render json: { id: @shift.id, name: "#{@shift.reason} for #{@shift.user.name}", color: @shift.user.staff_spaces.find_by(space_id: @default_space_id).color, start: @shift.start_datetime, end: @shift.end_datetime, className: @shift.user.name.strip.downcase.gsub(' ', '-') } }
+        format.json { render json: { id: @shift.id, name: @shift.return_event_title, color: @shift.users.first.staff_spaces.find_by(space_id: @default_space_id).color, start: @shift.start_datetime, end: @shift.end_datetime, className: @shift.users.first.name.strip.downcase.gsub(' ', '-') } }
       else
         format.html { render :new }
         format.json { render json: @shift.errors, status: :unprocessable_entity }
@@ -126,14 +129,14 @@ class Admin::ShiftsController < AdminAreaController
   def get_shifts
     shifts = []
 
-    Shift.where(user_id: StaffSpace.where(space_id: @default_space_id).pluck(:user_id), space_id: @default_space_id).each do |shift|
+    Shift.includes(:users).where('users.id': StaffSpace.where(space_id: @default_space_id).pluck(:user_id), space_id: @default_space_id).each do |shift|
       event = {}
-      event['title'] = "#{shift.reason} for #{shift.user.name}"
+      event['title'] = shift.return_event_title
       event['id'] = shift.id
       event['start'] = shift.start_datetime
       event['end'] = shift.end_datetime
-      event['color'] = hex_color_to_rgba(shift.user.staff_spaces.find_by(space_id: @default_space_id).color, 1)
-      event['className'] = shift.user.name.strip.downcase.gsub(' ', '-')
+      event['color'] = hex_color_to_rgba(shift.users.first.staff_spaces.find_by(space_id: @default_space_id).color, 1)
+      event['className'] = shift.users.first.name.strip.downcase.gsub(' ', '-')
       shifts << event
     end
 
@@ -160,7 +163,7 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def shift_params
-    params.require(:shift).permit(:start_datetime, :end_datetime, :reason, :user_id, :space_id)
+    params.require(:shift).permit(:start_datetime, :end_datetime, :reason, :space_id, user_id: [])
   end
 
 end

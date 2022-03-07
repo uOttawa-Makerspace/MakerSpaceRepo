@@ -130,6 +130,11 @@ class Admin::UsersController < AdminAreaController
     @user = User.find(params[:id])
     @user.role = params[:role]
     @user.save
+
+    if params[:role] == "regular_user"
+      @user.staff_spaces.destroy_all
+    end
+
     redirect_back(fallback_location: root_path)
   end
 

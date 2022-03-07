@@ -4,6 +4,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import googleCalendarPlugin from '@fullcalendar/google-calendar';
+import TomSelect from 'tom-select';
 
 let calendarEl = document.getElementById('calendar');
 const urlParams = new URLSearchParams(window.location.search);
@@ -95,13 +96,19 @@ let createEvent = (arg = undefined) => {
 }
 
 let createCalendarEvent = () => {
+    let selected_users = [];
+    for (let option of modalUserId.options) {
+        if (option.selected) {
+            selected_users.push(option.value);
+        }
+    }
     fetch("/admin/shifts", {
         method: "POST",
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({start_datetime: start_datetime.value, end_datetime: end_datetime.value, format: 'json', user_id: modalUserId.value, reason: modalReason.value})
+        body: JSON.stringify({start_datetime: start_datetime.value, end_datetime: end_datetime.value, format: 'json', user_id: selected_users, reason: modalReason.value})
     }).then(response => response.json()).then(
         data => {
             calendar.addEvent({

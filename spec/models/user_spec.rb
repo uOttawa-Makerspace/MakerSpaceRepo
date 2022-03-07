@@ -26,6 +26,7 @@ RSpec.describe User, type: :model do
       it { should have_and_belong_to_many(:repositories) }
       it { should have_and_belong_to_many(:training_sessions) }
       it { should have_and_belong_to_many(:proficient_projects) }
+      it { should have_and_belong_to_many(:shifts) }
     end
 
     context 'has_many' do
@@ -55,7 +56,6 @@ RSpec.describe User, type: :model do
       it { should have_many(:shadowing_hours) }
       it { should have_many(:staff_spaces) }
       it { should have_many(:staff_availabilities) }
-      it { should have_many(:shifts) }
       it { should have_many(:job_orders) }
     end
   end
