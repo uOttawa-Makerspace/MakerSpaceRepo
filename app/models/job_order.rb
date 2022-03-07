@@ -10,15 +10,23 @@ class JobOrder < ApplicationRecord
   scope :without_drafts, -> {
     joins(:job_order_statuses)
       .where('job_order_statuses.created_at = (SELECT MAX(job_order_statuses.created_at) FROM job_order_statuses WHERE job_order_statuses.job_order_id = job_orders.id)')
-      .where.not(job_order_statuses: {job_status: JobStatus::DRAFT})
+      .where.not(job_order_statuses: { job_status: JobStatus::DRAFT })
       .group('job_orders.id')
   }
 
   scope :last_status, ->(status) {
     joins(:job_order_statuses)
       .where('job_order_statuses.created_at = (SELECT MAX(job_order_statuses.created_at) FROM job_order_statuses WHERE job_order_statuses.job_order_id = job_orders.id)')
-      .where(job_order_statuses: {job_status: status})
-      .group('job_orders.id')
+      .where(job_order_statuses: { job_status: status })
+      .uniq
+  }
+
+  scope :order_by_expedited, -> {
+    left_joins(:job_order_options).order(
+      Arel.sql("
+        job_option_id = '#{JobOption.find_by(name: 'Expedited').id}'
+      "))
+    .group('job_order_options.job_option_id')
   }
 
   has_many_attached :user_files
@@ -66,9 +74,9 @@ class JobOrder < ApplicationRecord
             success = true
           end
         end
-        job_order_options.where.not(job_option_id: ids).destroy_all
       end
     end
+    job_order_options.where.not(job_option_id: ids).destroy_all
 
     success
   end
@@ -90,6 +98,6 @@ class JobOrder < ApplicationRecord
   end
 
   def expedited?
-    job_order_options.joins(:job_option).where(job_option: {name: "Expedited"}).present?
+    job_order_options.joins(:job_option).where(job_option: { name: "Expedited" }).present?
   end
 end

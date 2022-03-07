@@ -26,7 +26,7 @@
       <br>
       <div class="form-group col-lg-6 mx-auto">
         <%= f.label :job_type_ids, 'Job Type' %>
-        <%= f.select :job_type_ids, options_from_collection_for_select(JobType.all, :id, :name), {}, {class: "form-control", multiple: true, id: "job_type_ids_option"} %>
+        <%= f.select :job_type_ids, options_from_collection_for_select(JobType.all, :id, :name, @job_option.job_type_ids.present? ? @job_option.job_type_ids : ''), {}, {class: "form-control", multiple: true, id: "job_type_ids_option"} %>
       </div>
 
       <div class="col-lg-6 text-center mx-auto">

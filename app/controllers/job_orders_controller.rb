@@ -1,8 +1,8 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in
-  before_action :grant_access, only: %w[admin settings processed paid picked_up quote_modal timeline_modal quote]
-  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up quote_modal timeline_modal quote invoice]
+  before_action :grant_access, only: %w[admin settings processed paid picked_up quote_modal timeline_modal quote resend_quote_email]
+  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up quote_modal timeline_modal quote invoice resend_quote_email]
   before_action :wizard, only: %w[steps]
   before_action :allow_edit, only: %w[steps]
 
@@ -47,8 +47,10 @@ class JobOrdersController < ApplicationController
         end
       end
 
-      unless @job_order.add_options(params)
-        error = true
+      if params[:change_options].present? && params[:change_options] == "true"
+        unless @job_order.add_options(params)
+          error = true
+        end
       end
     else
       error = true
@@ -105,7 +107,14 @@ class JobOrdersController < ApplicationController
 
   def user_approval
     redirect_link = @job_order.user == @user ? job_orders_path : admin_job_orders_path
-    update_status(params[:approved], JobStatus::USER_APPROVAL, JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED, redirect_link)
+    if update_status(params[:approved], JobStatus::USER_APPROVAL, JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED, nil) && params[:approved] == 'true'
+      JobOrderMailer.send_job_user_approval(@job_order.id).deliver_now
+    end
+
+    respond_to do |format|
+      format.html { redirect_to redirect_link }
+      format.js { render 'admin_row' }
+    end
   end
 
   def quote_modal
@@ -140,7 +149,9 @@ class JobOrdersController < ApplicationController
           end
 
           @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::USER_APPROVAL) unless error
-          unless @job_order.save
+          if @job_order.save
+            JobOrderMailer.send_job_quote(@job_order.id).deliver_now
+          else
             error = true
           end
         else
@@ -151,7 +162,9 @@ class JobOrdersController < ApplicationController
       end
     elsif params[:approved].present? &&  params[:approved] == "false"
       @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::DECLINED)
-      unless @job_order.save
+      if @job_order.save
+        JobOrderMailer.send_job_declined(@job_order.id).deliver_now
+      else
         error = true
       end
     else
@@ -170,7 +183,14 @@ class JobOrdersController < ApplicationController
   end
 
   def processed
-    update_status(params[:processed], JobStatus::WAITING_PROCESSED, JobStatus::PROCESSED, false)
+    if update_status(params[:processed], JobStatus::WAITING_PROCESSED, JobStatus::PROCESSED, false, nil, nil) && params[:processed] == 'true'
+      JobOrderMailer.send_job_processed(@job_order.id).deliver_now
+    end
+
+    respond_to do |format|
+      format.html { redirect_to admin_job_orders_path }
+      format.js { render 'admin_row' }
+    end
   end
 
   def paid
@@ -179,6 +199,14 @@ class JobOrdersController < ApplicationController
 
   def picked_up
     update_status(params[:picked_up], JobStatus::PAID, JobStatus::PICKED_UP, false)
+  end
+
+  def resend_quote_email
+    JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now
+    respond_to do |format|
+      format.html { redirect_to admin_job_orders_path }
+      format.js { render 'admin_row' }
+    end
   end
 
   def destroy
@@ -197,7 +225,7 @@ class JobOrdersController < ApplicationController
       {name: "Waiting to be processed", status: JobStatus::WAITING_PROCESSED},
       {name: "Waiting for Payment", status: JobStatus::PROCESSED},
       {name: "Waiting for Pick-Up", status: JobStatus::PAID},
-      {name: "Archived", status: JobStatus::PICKED_UP || JobStatus::DECLINED},
+      {name: "Archived", status: [JobStatus::PICKED_UP, JobStatus::DECLINED]},
     ]
 
     if params[:query_date].present?
@@ -206,9 +234,9 @@ class JobOrdersController < ApplicationController
 
     if !session[:query_date].present? || session[:query_date] == 0
       session[:query_date] = 0
-      @job_orders = JobOrder.all.without_drafts
+      @job_orders = JobOrder.all.without_drafts.order_by_expedited
     else
-      @job_orders = JobOrder.all.without_drafts.where(created_at: session[:query_date].days.ago..)
+      @job_orders = JobOrder.all.without_drafts.where(created_at: session[:query_date].days.ago..).order_by_expedited
     end
   end
 
@@ -286,9 +314,14 @@ class JobOrdersController < ApplicationController
     else
       flash[:alert] = "An error occurred while updating the Job Order Status. Please try again later."
     end
-    respond_to do |format|
-      format.html { redirect_to redirect_link }
-      format.js { render 'admin_row' }
+
+    if redirect_link == nil
+      !error
+    else
+      respond_to do |format|
+        format.html { redirect_to redirect_link }
+        format.js { render 'admin_row' }
+      end
     end
   end
 

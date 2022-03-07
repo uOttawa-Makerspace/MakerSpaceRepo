@@ -7,7 +7,12 @@
 
       <div class="form-group">
         <%= label_tag :service_fee, "Service Charges (In CAD) " %>
-        <%= number_field_tag :service_fee, @job_order.job_type.service_fee, {step: "0.01", class: "form-control", required: true} %>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text">$</span>
+          </div>
+          <%= number_field_tag :service_fee, @job_order.job_type.service_fee, {step: "0.01", class: "form-control", required: true} %>
+        </div>
       </div>
 
       <% @job_order.job_services.each do |service| %>
@@ -18,13 +23,23 @@
           <div class="col-md-6">
             <div class="form-group">
               <%= label_tag "quote_service_amount_#{service.id}", "Number of #{service.unit}" %>
-              <%= number_field_tag "quote_service_amount_#{service.id}", "", step: "0.01", placeholder: "100", class: "form-control", required: true %>
+              <div class="input-group mb-3">
+                <%= number_field_tag "quote_service_amount_#{service.id}", "", step: "0.01", placeholder: "100", class: "form-control", required: true %>
+                <div class="input-group-append">
+                  <span class="input-group-text"><%= service.unit %></span>
+                </div>
+              </div>
             </div>
           </div>
           <div class="col-md-6">
             <div class="form-group">
               <%= label_tag "quote_service_per_unit_#{service.id}", "Price per #{service.unit} (In CAD) " %>
-              <%= number_field_tag "quote_service_per_unit_#{service.id}", @user.internal? ? service.internal_price : service.external_price, { step: "0.01", placeholder: "0.25", class: "form-control", required: true } %>
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">$</span>
+                </div>
+                <%= number_field_tag "quote_service_per_unit_#{service.id}", @user.internal? ? service.internal_price : service.external_price, { step: "0.01", placeholder: "0.25", class: "form-control", required: true } %>
+              </div>
             </div>
           </div>
         </div>

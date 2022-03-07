@@ -66,6 +66,7 @@ Rails.application.routes.draw do
     patch :processed
     patch :paid
     patch :picked_up
+    patch :resend_quote_email
     collection do
       get :admin
       get :settings

@@ -1,4 +1,4 @@
-<ul class="timeline">
+<ul class="timeline" id="timeline-modal-rendered">
   <% @job_order.job_order_statuses.order(created_at: :desc).each do |jos| %>
     <li>
       <div class="d-flex justify-content-between">

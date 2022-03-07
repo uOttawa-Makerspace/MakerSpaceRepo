@@ -24,7 +24,7 @@
       </div>
       <div class="form-group col-lg-6 mx-auto">
         <%= f.label :job_service_group_id, 'Job Service Group' %>
-        <%= f.select :job_service_group_id, options_from_collection_for_select(JobServiceGroup.all, :id, :name), {}, class: "form-control" %>
+        <%= f.select :job_service_group_id, options_from_collection_for_select(JobServiceGroup.all, :id, :name, @job_service.job_service_group_id.present? ? @job_service.job_service_group_id : ''), {}, class: "form-control" %>
       </div>
 
       <div class="col-lg-6 text-center mx-auto">

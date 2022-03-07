@@ -96,7 +96,7 @@
   </style>
 </head>
 <body class="" style="background-color: #f6f6f6; font-family: sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.4; margin: 0; padding: 0; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;">
-<span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">Makerepo - Job Order Approval</span>
+<span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">Makerepo - Job Order Declined</span>
 <table role="presentation" class="body" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #f6f6f6; width: 100%;" width="100%" bgcolor="#f6f6f6">
   <tr>
     <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">&nbsp;</td>
@@ -116,23 +116,20 @@
                     <br>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-                      A user has created a Job order with ID <%= @job_order.id %>. Check the <a href="https://makerepo.com/job_orders/admin">Job Order page</a> for details.
+                      Admins have declined a Job order with ID #<%= @job_order.id %>.
                     </p>
-                    <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
-                      <tbody>
-                      <tr>
-                        <td align="left" style="font-family: sans-serif; font-size: 14px; vertical-align: top; padding-bottom: 15px;" valign="top">
-                          <table role="presentation" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: auto;">
-                            <tbody>
-                            <tr>
-                              <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff"> <a href="https://makerepo.com/job_orders/admin" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">See order</a> </td>
-                            </tr>
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
-                      </tbody>
-                    </table>
+
+                    <% if @job_order.user_comments.present? %>
+                      <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+                        Please see for the following comments from admins for more details.<br/>
+                        <span style="font-style: italic"><%= @job_order.user_comments %></span>
+                      </p>
+                    <% end %>
+
+                    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+                      If you require any further assistance or have question about the current declined order, please contact us at <a href="mailto:makerspace@uottawa.ca">makerspace@uottawa.ca</a>. Please include the Job Order ID #<%= @job_order.id %> in your email.
+                    </p>
+
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                       Thank you,<br>
                       <b>The MakerRepo Team</b>
@@ -153,7 +150,7 @@
             <tr>
               <td class="content-block" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; color: #999999; font-size: 12px; text-align: center;" valign="top" align="center">
                 <span class="apple-link" style="color: #999999; font-size: 12px; text-align: center;">CEED, 150 Louis Pasteur, Ottawa ON Canada K1N 6N5</span>
-                <p style="font-family: sans-serif; font-weight: normal; margin: 0; margin-bottom: 15px; color: #999999; font-size: 12px; text-align: center;">You have received this email because a new Job Order has been approved on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.</p>
+                <p style="font-family: sans-serif; font-weight: normal; margin: 0; margin-bottom: 15px; color: #999999; font-size: 12px; text-align: center;">You have received this email because a new Job Order has been declined on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.</p>
               </td>
             </tr>
           </table>

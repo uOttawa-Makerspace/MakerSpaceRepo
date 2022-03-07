@@ -178,7 +178,7 @@
     <% @job_order.job_order_quote.job_order_quote_services.each do |s| %>
       <tr class="item last">
         <td>
-          <%= s.job_service.job_service_group.name %> - <%= s.job_service.name %>
+          <%= s.job_service.job_service_group.name %> - <%= s.job_service.name %> (<%= "#{s.quantity} #{s.job_service.unit}" %>)
         </td>
         <td>
           <%= number_to_currency(s.cost) %>
