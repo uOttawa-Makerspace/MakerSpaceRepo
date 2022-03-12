@@ -3,8 +3,8 @@
 module ApplicationHelper
   attr_accessor :github
 
-  def sign_in(username, password)
-    user = User.authenticate(username, password)
+  def sign_in(username_email, password)
+    user = User.authenticate(username_email, password)
     session[:user_id] = user.id unless user.nil?
     user
   end
