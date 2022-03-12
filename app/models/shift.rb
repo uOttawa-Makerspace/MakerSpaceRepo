@@ -1,5 +1,5 @@
 class Shift < ApplicationRecord
-  belongs_to :user
+  has_and_belongs_to_many :users
   belongs_to :space
 
   validates :start_datetime, presence: true
@@ -7,6 +7,10 @@ class Shift < ApplicationRecord
 
   before_save :set_or_update_google_event
   before_destroy :delete_google_event
+
+  def return_event_title
+    "#{self.reason} for #{self.users.pluck(:name).join(", ")}"
+  end
 
   private
 
@@ -50,10 +54,15 @@ class Shift < ApplicationRecord
 
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
-    attendees = !Rails.env.test? ? [Google::Apis::CalendarV3::EventAttendee.new(email: shift.user.email)] : []
+    attendees = []
+    unless Rails.env.test?
+      shift.users.each do |user|
+        attendees << Google::Apis::CalendarV3::EventAttendee.new(email: user.email)
+      end
+    end
 
     event = Google::Apis::CalendarV3::Event.new(
-      summary: "#{shift.reason} for #{shift.user.name}",
+      summary: shift.return_event_title,
       start: Google::Apis::CalendarV3::EventDateTime.new(
         date_time: shift.start_datetime.to_datetime.rfc3339,
         time_zone: 'America/Toronto'

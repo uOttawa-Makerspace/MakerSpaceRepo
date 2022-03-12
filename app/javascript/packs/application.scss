@@ -17,6 +17,7 @@ $table-accent-bg: #d6ebeb;
 @import 'toastr/build/toastr.min';
 @import "~flatpickr/dist/flatpickr";
 @import "~@fullcalendar/common/main";
+@import "~tom-select/dist/css/tom-select.bootstrap4";
 
 .progress-step {
   &.is-declined {
