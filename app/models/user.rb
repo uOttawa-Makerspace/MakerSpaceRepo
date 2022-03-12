@@ -105,6 +105,9 @@ class User < ApplicationRecord
   scope :students, -> { where(identity: ['undergrad', 'grad']) }
   scope :volunteers, -> { joins(:programs).where(programs: { program_type: Program::VOLUNTEER }) }
 
+  def token(exp = 14.days.from_now.to_i)
+    JWT.encode({user_id: id, exp: exp}, Rails.application.credentials.secret_key_base, 'HS256')
+  end
 
   def display_avatar
     avatar.attached? ? avatar : "default-avatar.png"
