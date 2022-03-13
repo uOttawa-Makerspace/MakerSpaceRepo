@@ -86,7 +86,7 @@ group :development do
   gem 'capistrano-bundler'
   gem 'capistrano-passenger', '>= 0.2.1'
   gem 'capistrano-rbenv', '~> 2.1'
-
+  gem 'capistrano-maintenance', '~> 1.2', require: false
   gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
   gem 'web-console'
