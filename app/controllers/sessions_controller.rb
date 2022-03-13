@@ -15,11 +15,12 @@ class SessionsController < ApplicationController
           @user.update(last_signed_in_time: DateTime.now)
           if request.env['HTTP_REFERER'] == login_authentication_url
             format.html { redirect_to root_path }
-            format.json { render json: {user: @user.as_json}}
           else
             format.html { redirect_back(fallback_location: root_path) }
-            format.json { render json: {user: @user.as_json}}
           end
+          format.json {
+            render json: {user: @user.as_json, signed_in: true, token: @user.token}
+          }
         else
           flash.now[:alert] = "Please confirm your account before logging in, you can resend the email #{view_context.link_to 'here', resend_email_confirmation_path(email: params[:username_email]), class: 'text-primary'}".html_safe
           @user = User.new
@@ -32,14 +33,14 @@ class SessionsController < ApplicationController
         @user = User.new
         flash.now[:alert] = 'Incorrect username or password.'
         format.html { render :login }
-        format.json { render json: @user.errors, status: :unprocessable_entity }
+        format.json { render json: {'error': 'Incorrect username or password.'}, status: :unprocessable_entity }
       end
     end
   end
 
   def check_signed_in
     if signed_in?
-      render json: {"signed_in": "true"}
+      render json: {"signed_in": "true", user: @user.as_json, token: @user.token}
     else
       render json: {"signed_in": "false"}
     end

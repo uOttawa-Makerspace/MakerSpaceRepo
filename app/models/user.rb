@@ -105,6 +105,9 @@ class User < ApplicationRecord
   scope :students, -> { where(identity: ['undergrad', 'grad']) }
   scope :volunteers, -> { joins(:programs).where(programs: { program_type: Program::VOLUNTEER }) }
 
+  def token(exp = 14.days.from_now.to_i)
+    JWT.encode({user_id: id, exp: exp}, Rails.application.credentials.secret_key_base, 'HS256')
+  end
 
   def display_avatar
     avatar.attached? ? avatar : "default-avatar.png"
@@ -116,8 +119,7 @@ class User < ApplicationRecord
   end
 
   def self.username_or_email(username_email)
-    a = arel_table
-    where(a[:username].eq(username_email).or(a[:email].eq(username_email))).first
+    User.where('lower(username) = ?', username_email.downcase).or(User.where('lower(email) = ?', username_email.downcase)).first
   end
 
   def pword

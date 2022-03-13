@@ -1009,6 +1009,8 @@ GEM
       sshkit (>= 1.9.0)
     capistrano-bundler (2.0.1)
       capistrano (~> 3.1)
+    capistrano-maintenance (1.2.1)
+      capistrano (>= 3.0)
     capistrano-passenger (0.2.1)
       capistrano (~> 3.0)
     capistrano-rails (1.6.1)
@@ -1474,6 +1476,7 @@ DEPENDENCIES
   byebug
   capistrano (~> 3.10)
   capistrano-bundler
+  capistrano-maintenance (~> 1.2)
   capistrano-passenger (>= 0.2.1)
   capistrano-rails (~> 1.6)
   capistrano-rbenv (~> 2.1)
@@ -1532,6 +1535,7 @@ DEPENDENCIES
   simplecov
   spring (~> 2.1.0)
   spring-watcher-listen (~> 2.0.0)
+  stripe
   stripe_event (~> 2.3, >= 2.3.1)
   thin
   toastr-rails

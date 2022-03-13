@@ -16,7 +16,7 @@ RSpec.describe HelpController, type: :controller do
         put :send_email, params: {name: "John", email: "john@doe.com", subject: "HELP", message: "HELP !!!"}
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq("john@doe.com")
-        expect(flash[:notice]).to eq("Email successfuly send. You will be contacted soon.")
+        expect(flash[:notice]).to eq("Email successfully sent. You will be contacted soon.")
         expect(response).to redirect_to help_path
       end
     end

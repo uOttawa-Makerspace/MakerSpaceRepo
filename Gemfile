@@ -66,6 +66,7 @@ gem 'faraday', '~> 0.17.0'
 gem "recaptcha"
 gem "rack-cors"
 gem 'stripe_event', '~> 2.3', '>= 2.3.1'
+gem 'stripe'
 
 group :development, :test do
   gem 'byebug', platform: :mri
@@ -85,7 +86,7 @@ group :development do
   gem 'capistrano-bundler'
   gem 'capistrano-passenger', '>= 0.2.1'
   gem 'capistrano-rbenv', '~> 2.1'
-
+  gem 'capistrano-maintenance', '~> 1.2', require: false
   gem 'letter_opener' # Open emails in development
   gem 'rubocop-rails'
   gem 'web-console'
