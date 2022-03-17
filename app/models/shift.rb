@@ -9,7 +9,7 @@ class Shift < ApplicationRecord
   before_destroy :delete_google_event
 
   def return_event_title
-    "#{self.reason} for #{self.users.pluck(:name).join(", ")}"
+    "#{self.reason} for #{self.users.map(&:name).join(", ")}"
   end
 
   private
