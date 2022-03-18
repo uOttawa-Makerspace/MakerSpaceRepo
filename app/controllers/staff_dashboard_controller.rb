@@ -176,9 +176,9 @@ class StaffDashboardController < StaffAreaController
         @users = User.where("username = ?", params[:username])
       else
         @query = params[:query]
-        @users = User.where('LOWER(name) like LOWER(?) OR
-                           LOWER(email) like LOWER(?) OR
-                           LOWER(username) like LOWER(?)',
+        @users = User.where('LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR
+                           LOWER(UNACCENT(email)) like LOWER(UNACCENT(?)) OR
+                           LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))',
                             "%#{@query}%", "%#{@query}%", "%#{@query}%")
                      .includes(:lab_sessions)
                      .order(:updated_at)
@@ -196,7 +196,7 @@ class StaffDashboardController < StaffAreaController
   end
 
   def populate_users
-    json_data = User.where('LOWER(name) like LOWER(?) OR LOWER(username) like LOWER(?)', "%#{params[:search]}%", "%#{params[:search]}%").map(&:as_json)
+    json_data = User.where('LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))', "%#{params[:search]}%", "%#{params[:search]}%").map(&:as_json)
     render json: { users: json_data }
   end
 
