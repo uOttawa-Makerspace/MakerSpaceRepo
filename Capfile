@@ -12,6 +12,7 @@ require 'capistrano/rbenv'
 require 'capistrano/rails'
 require 'capistrano/passenger'
 require 'whenever/capistrano'
+require 'capistrano/maintenance'
 
 install_plugin Capistrano::SCM::Git
 

@@ -10,10 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_02_27_212104) do
+ActiveRecord::Schema.define(version: 2022_03_18_222011) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+  enable_extension "unaccent"
 
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
@@ -567,13 +568,6 @@ ActiveRecord::Schema.define(version: 2022_02_27_212104) do
     t.string "availability", default: "true"
     t.string "color", default: "FF0000"
     t.string "rfid"
-  end
-
-  create_table "procedures", force: :cascade do |t|
-    t.integer "version_number"
-    t.string "comments"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|

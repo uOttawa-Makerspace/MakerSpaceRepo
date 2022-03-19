@@ -251,3 +251,7 @@ window.toggleVisibility = (className) => {
         }
     });
 }
+
+new TomSelect("#modalUserId",{
+    maxItems: 3
+});

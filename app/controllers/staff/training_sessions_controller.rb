@@ -7,10 +7,29 @@ class Staff::TrainingSessionsController < StaffDashboardController
   before_action :verify_ownership, except: %i[new create index]
   before_action :set_courses_and_levels, only: %i[new show]
 
-  def index; end
+  def index
+    respond_to do |format|
+      format.html {}
+      format.json { render json: TrainingSession.where(user_id: @user.id).as_json(include: [:training, :space, :certifications]) }
+    end
+  end
 
   def new
-    @new_training_session = TrainingSession.new
+    respond_to do |format|
+      format.html {
+        @new_training_session = TrainingSession.new
+      }
+      format.json {
+        render json: {
+          trainings: @space.trainings.pluck(:id, :name).as_json,
+          level: @levels.as_json,
+          course_names: @course_names.as_json,
+          admins: User.where(role: %w[staff admin]).pluck(:id, :name).as_json,
+          users: @space.signed_in_users.pluck(:id, :name, :email).as_json
+        }
+      }
+    end
+
   end
 
   def create
@@ -18,10 +37,16 @@ class Staff::TrainingSessionsController < StaffDashboardController
     course_name = CourseName.find_by(name: @new_training_session.course)
     @new_training_session.course_name = course_name if course_name.present?
     if @new_training_session.save
-      redirect_to staff_training_session_path(@new_training_session.id)
+      respond_to do |format|
+        format.html { redirect_to staff_training_session_path(@new_training_session.id) }
+        format.json { render json: { id: @new_training_session.id, created: true } }
+      end
     else
       flash[:alert] = 'Something went wrong. Please try again.'
-      redirect_back(fallback_location: root_path)
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: root_path) }
+        format.json { render json: {created: false } }
+      end
     end
   end
 
@@ -64,12 +89,19 @@ class Staff::TrainingSessionsController < StaffDashboardController
   end
 
   def certify_trainees
+    error = false
     @current_training_session.users.each do |graduate|
       certification = Certification.new(user_id: graduate.id, training_session_id: @current_training_session.id)
-      flash[:alert] = "#{graduate.username}'s certification not saved properly!" unless certification.save
+      unless certification.save
+        error = true
+        flash[:alert] = "#{graduate.username}'s certification not saved properly!"
+      end
     end
     flash[:notice] = 'Training Session Completed Successfully'
-    redirect_to staff_dashboard_index_path
+    respond_to do |format|
+      format.html { redirect_to staff_dashboard_index_path }
+      format.json { render json: { certified: !error } }
+    end
   end
 
   def revoke_certification
