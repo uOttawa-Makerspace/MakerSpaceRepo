@@ -102,7 +102,7 @@ let createCalendarEvent = () => {
             selected_users.push(option.value);
         }
     }
-    fetch("/admin/shifts", {
+    fetch(`/admin/shifts?space_id=${space_id}`, {
         method: "POST",
         headers: {
             'Accept': 'application/json',
@@ -139,7 +139,7 @@ let openModal = (arg) => {
 
 }
 let closeModal = () => {
-    modalUserId.value = "";
+    modalUserIdSelect.clear();
     modalReason.value = "";
     start_picker.clear();
     end_picker.clear();
@@ -252,6 +252,6 @@ window.toggleVisibility = (className) => {
     });
 }
 
-new TomSelect("#modalUserId",{
+let modalUserIdSelect = new TomSelect("#modalUserId",{
     maxItems: 3
 });

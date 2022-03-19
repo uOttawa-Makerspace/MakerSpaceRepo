@@ -26,15 +26,16 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def create
-    if params[:shift].present?
+    if params[:shift].present? && params[:user_id].present?
       @shift = Shift.new(shift_params.merge(space_id: @default_space_id))
       params[:user_id].each do |user_id|
         @shift.users << User.find(user_id)
       end
-    elsif params[:start_datetime].present? && params[:start_datetime].present?
+    elsif params[:start_datetime].present? && params[:start_datetime].present? && params[:user_id].present?
       start_date = DateTime.parse(params[:start_datetime])
       end_date = DateTime.parse(params[:start_datetime])
-      @shift = Shift.new(user_id: params[:user_id], space_id: @default_space_id, start_datetime: start_date, end_datetime: end_date, reason: params[:reason])
+      @shift = Shift.new(space_id: @default_space_id, start_datetime: start_date, end_datetime: end_date, reason: params[:reason])
+      @shift.users << User.where(id: params[:user_id])
     else
       respond_to do |format|
         format.html { render :new }
