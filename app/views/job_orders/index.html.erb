@@ -41,9 +41,11 @@
 
       <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
         <div class="card-body">
-          <% @archived_job_orders.each do |jo| %>
-            <%= render 'order_card', jo: jo %>
-          <% end %>
+          <div class="row col-lg-10 mx-auto">
+            <% @archived_job_orders.each do |jo| %>
+              <%= render 'order_card', jo: jo %>
+            <% end %>
+          </div>
         </div>
       </div>
     </div>
