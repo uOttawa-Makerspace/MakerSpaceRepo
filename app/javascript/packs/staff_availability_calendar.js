@@ -28,6 +28,8 @@ let calendar = new Calendar(calendarEl, {
     navLinks: true,
     selectable: true,
     selectMirror: true,
+    slotMinTime: "07:00:00",
+    slotMaxTime: "22:00:00",
     eventTimeFormat: {
         hour: '2-digit',
         minute: '2-digit',
