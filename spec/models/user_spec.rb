@@ -209,8 +209,8 @@ RSpec.describe User, type: :model do
     end
 
     context '#created_at_month' do
-      it 'should return 16' do
-        expect(User.created_at_month(Date.today.month).count).to eq(16)
+      it 'should return 12' do
+        expect(User.created_at_month(Date.today.month).count).to eq(12)
       end
     end
 
