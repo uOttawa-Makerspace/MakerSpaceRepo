@@ -570,6 +570,13 @@ ActiveRecord::Schema.define(version: 2022_03_18_222011) do
     t.string "rfid"
   end
 
+  create_table "procedures", force: :cascade do |t|
+    t.integer "version_number"
+    t.string "comments"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
     t.integer "training_id"
     t.string "title"
@@ -748,12 +755,14 @@ ActiveRecord::Schema.define(version: 2022_03_18_222011) do
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
     t.bigint "space_id"
+    t.bigint "user_id"
     t.datetime "start_datetime"
     t.datetime "end_datetime"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "google_event_id"
     t.index ["space_id"], name: "index_shifts_on_space_id"
+    t.index ["user_id"], name: "index_shifts_on_user_id"
   end
 
   create_table "shifts_users", id: false, force: :cascade do |t|
@@ -994,6 +1003,7 @@ ActiveRecord::Schema.define(version: 2022_03_18_222011) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
+  add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_spaces", "spaces"
