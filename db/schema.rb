@@ -307,6 +307,7 @@ ActiveRecord::Schema.define(version: 2022_03_18_222011) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["job_order_id"], name: "index_job_order_statuses_on_job_order_id"
+    t.index ["job_status_id"], name: "index_job_order_statuses_on_job_status_id"
   end
 
   create_table "job_orders", force: :cascade do |t|
