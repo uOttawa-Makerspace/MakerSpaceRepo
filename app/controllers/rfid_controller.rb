@@ -1,6 +1,22 @@
 # frozen_string_literal: true
+include ActionView::Helpers::DateHelper
 
 class RfidController < SessionsController
+  before_action :signed_in, only: %i[get_unset_rfids]
+  before_action :grant_access, only: %i[get_unset_rfids]
+
+  def get_unset_rfids
+    rfids = []
+
+    Rfid.recent_unset.first(5).each do |card|
+      rfids << {
+        cardNumber: card.card_number,
+        tappedAt: "Tapped at #{PiReader.find_by(pi_mac_address: card.mac_address).space.name} #{time_ago_in_words(card.updated_at) + " ago"}",
+      }
+    end
+    render json: rfids
+  end
+
   def card_number
     unless PiReader.find_by(pi_mac_address: params[:mac_address])
       new_reader = PiReader.new(pi_mac_address: params[:mac_address])
@@ -50,5 +66,14 @@ class RfidController < SessionsController
     new_session = rfid.user.lab_sessions.new(sign_in_time: sign_in, sign_out_time: sign_out, mac_address: params[:mac_address], space_id: new_location.space.id)
     new_session.save
     render json: { success: 'RFID sign in' }, status: :ok
+  end
+
+  private
+
+  def grant_access
+    unless current_user.staff? || current_user.admin?
+      flash[:alert] = 'You cannot access this area.'
+      redirect_to root_path
+    end
   end
 end

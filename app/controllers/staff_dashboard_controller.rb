@@ -134,15 +134,28 @@ class StaffDashboardController < StaffAreaController
   end
 
   def link_rfid
+    status = true
+
     if params[:user_id].present? && params[:card_number].present?
       rfid = Rfid.find_by(card_number: params[:card_number])
       rfid.user_id = params[:user_id]
-      rfid.save
+      if rfid.save
+        flash[:notice] = 'RFID linked successfully'
+      else
+        flash[:alert] = 'Something went wrong while linking the RFID, please try again later.'
+        status = false
+      end
     end
-    redirect_back(fallback_location: root_path)
+
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: root_path) }
+      format.json { render json: { "status": status ? "ok" : "error" } }
+    end
   end
 
   def unlink_rfid
+    status = true
+
     if params[:card_number].present?
       rfid = Rfid.find_by(card_number: params[:card_number])
       rfid.user_id = nil
@@ -150,10 +163,18 @@ class StaffDashboardController < StaffAreaController
         new_mac = pi.pi_mac_address
         rfid.mac_address = new_mac
       end
-      rfid.save
+      if rfid.save
+        flash[:notice] = 'RFID linked successfully'
+      else
+        flash[:alert] = 'Something went wrong while linking the RFID, please try again later.'
+        status = false
+      end
     end
-    redirect_back(fallback_location: root_path)
-  end
+
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: root_path) }
+      format.json { render json: { "status": status ? "ok" : "error" } }
+    end  end
 
   def user_profile
     if params[:username].present? and User.find_by(username: params[:username]).present?
