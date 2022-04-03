@@ -94,6 +94,7 @@ Rails.application.routes.draw do
 
   # RFID
   namespace :rfid do
+    get :get_unset_rfids
     post 'card_number'
   end
 
