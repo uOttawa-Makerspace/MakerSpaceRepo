@@ -148,7 +148,7 @@ class StaffDashboardController < StaffAreaController
     end
 
     respond_to do |format|
-      format.html { redirect_to redirect_back(fallback_location: root_path) }
+      format.html { redirect_back(fallback_location: root_path) }
       format.json { render json: { "status": status ? "ok" : "error" } }
     end
   end
@@ -172,7 +172,7 @@ class StaffDashboardController < StaffAreaController
     end
 
     respond_to do |format|
-      format.html { redirect_to redirect_back(fallback_location: root_path) }
+      format.html { redirect_back(fallback_location: root_path) }
       format.json { render json: { "status": status ? "ok" : "error" } }
     end  end
 
