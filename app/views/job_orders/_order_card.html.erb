@@ -7,9 +7,9 @@
         </div>
         <div>
           <% if jo.allow_edit? %>
-            <%= link_to "Edit", job_order_steps_path(job_order_id: jo.id), class: 'btn btn-outline-dark' %>
+            <%= link_to "Edit", job_order_steps_path(job_order_id: jo.id), class: 'btn btn-outline-dark mb-1' %>
           <% else %>
-            <span class="d-inline-block" tabindex="0" data-toggle="popover" data-trigger="focus" data-content="Cannot edit this order." data-placement="bottom">
+            <span class="d-inline-block mb-1" tabindex="0" data-toggle="popover" data-trigger="focus" data-content="Cannot edit this order." data-placement="bottom">
               <button class="btn btn-primary" style="pointer-events: none;" type="button" disabled>Edit</button>
             </span>
           <% end %>
@@ -35,7 +35,7 @@
                       <%= submit_tag 'Approve', class: 'btn btn-primary' %>
                     <% end %>
                     <%= form_tag job_order_user_approval_path(job_order_id: jo.id, approved: false), method: :patch do %>
-                      <%= submit_tag 'Deny', class: 'btn btn-primary' %>
+                      <%= submit_tag 'Deny', class: 'btn btn-danger' %>
                     <% end %>
                   </div>
                 </div>

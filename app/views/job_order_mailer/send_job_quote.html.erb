@@ -125,7 +125,7 @@
 
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                       Your Job Order with ID #<%= @job_order.id %> has been approved. Check the
-                      <a href="https://makerepo.com/job_orders">Job Order page</a> to approve or deny the quote.
+                      <%=  %><a href="<%= user_magic_approval_job_orders_url(token: @hash) %>">Job Order page</a> to approve or deny the quote.
                     </p>
 
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
@@ -161,7 +161,7 @@
                             <tbody>
                             <tr>
                               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                                <a href="https://makerepo.com/job_orders" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">See
+                                <a href="<%= user_magic_approval_job_orders_url(token: @hash) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">See
                                   order</a></td>
                             </tr>
                             </tbody>

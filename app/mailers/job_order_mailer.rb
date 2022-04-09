@@ -12,6 +12,7 @@ class JobOrderMailer < ApplicationMailer
   def send_job_quote(job_order_id, reminder=false)
     JobOrder.where(id: job_order_id).present? ? @job_order = JobOrder.find(job_order_id) : return
     @reminder = reminder
+    @hash = Rails.application.message_verifier(:job_order_id).generate(job_order_id)
     mail(to: @job_order.user.email, reply_to: 'makerspace@uottawa.ca', bcc: 'uottawa.makerepo@gmail.com', subject: "Your job ##{@job_order.id} (#{@job_order.user_files.first.filename}) has been #{"re-" if @job_order.job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).count > 1}approved!")
   end
 

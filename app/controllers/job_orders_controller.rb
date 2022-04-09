@@ -1,6 +1,6 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
-  before_action :signed_in
+  before_action :signed_in, except: [:user_magic_approval, :user_magic_approval_confirmation]
   before_action :grant_access, only: %w[admin settings processed paid picked_up quote_modal timeline_modal quote resend_quote_email]
   before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up quote_modal timeline_modal quote invoice resend_quote_email]
   before_action :wizard, only: %w[steps]
@@ -100,8 +100,36 @@ class JobOrdersController < ApplicationController
         redirect_to new_job_orders_path
       end
     else
-      flash[:alert] = 'An error occurred while trying to create the job order. Please try again.'
+      flash[:alert] = 'An error occurred while trying to create the Job Order. Please try again.'
       render 'new'
+    end
+  end
+
+  def user_magic_approval
+    @token = params[:token]
+    verifier = Rails.application.message_verifier(:job_order_id)
+    if verifier.valid_message?(@token) && JobOrder.find(verifier.verify(@token)).job_order_statuses.last.job_status == JobStatus::USER_APPROVAL
+      @job_order = JobOrder.find(verifier.verify(@token))
+      render 'job_orders/magic_approval'
+    else
+      flash[:alert] = 'The following Job Order Approval link is invalid or has expired. Please Sign In to look at the Job Order Page.'
+      redirect_to job_orders_path
+    end
+  end
+
+  def user_magic_approval_confirmation
+    verifier = Rails.application.message_verifier(:job_order_id)
+    if verifier.valid_message?(params[:token])
+      @job_order = JobOrder.find(verifier.verify(params[:token]))
+      if update_status(params[:approved], JobStatus::USER_APPROVAL, JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED, nil)
+        @status = true
+      else
+        @status = false
+      end
+      render 'job_orders/magic_approval_confirmation'
+    else
+      flash[:alert] = 'An error occurred while trying to accept or deny the Job Order. Please try again.'
+      redirect_to job_orders_path
     end
   end
 

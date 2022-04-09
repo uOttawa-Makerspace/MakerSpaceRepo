@@ -70,6 +70,8 @@ Rails.application.routes.draw do
     collection do
       get :admin
       get :settings
+      get :user_magic_approval
+      patch :user_magic_approval_confirmation
       post '/new' => "job_orders#new"
       patch '/new' => "job_orders#new"
     end

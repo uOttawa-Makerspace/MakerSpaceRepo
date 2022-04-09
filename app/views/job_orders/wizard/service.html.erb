@@ -50,7 +50,7 @@
                   <% if sg.text_field %>
                     <div class="form-group">
                       <%= label_tag :job_service_name, "Enter the material name " %>
-                      <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : "", class: 'form-control' %>
+                      <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : "", class: 'form-control', required: true %>
                     </div>
                   <% elsif sg.multiple %>
                     <% sg.job_services.where(required: true).each do |r| %>
