@@ -31,8 +31,7 @@ class SessionsController < ApplicationController
         format.json { render json: { role: :guest }, status: :ok }
       else
         @user = User.new
-        flash.now[:alert] = 'Incorrect username or password.'
-        format.html { render :login }
+        format.html { render :login, alert: 'Incorrect username or password.' }
         format.json { render json: {'error': 'Incorrect username or password.'}, status: :unprocessable_entity }
       end
     end

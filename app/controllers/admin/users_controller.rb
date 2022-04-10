@@ -95,7 +95,7 @@ class Admin::UsersController < AdminAreaController
   def update
     @edit_admin_user.certifications.destroy_all
     @edit_admin_user.update!(user_params)
-    if params[:user][:rfid].present? && rfid = Rfid.where('id = ?', params[:user][:rfid]).first
+    if params[:user][:rfid].present? && (rfid = Rfid.where('id = ?', params[:user][:rfid]).first)
       @edit_admin_user.rfid&.destroy!
       rfid.user = @edit_admin_user
       rfid.save!
@@ -104,7 +104,6 @@ class Admin::UsersController < AdminAreaController
       create_certifications
       render json: { redirect_uri: edit_admin_user_path(@edit_admin_user).to_s }
       flash[:notice] = 'User information updated!'
-
     end
   end
 
