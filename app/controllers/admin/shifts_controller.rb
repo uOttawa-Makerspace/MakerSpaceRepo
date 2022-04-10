@@ -144,6 +144,21 @@ class Admin::ShiftsController < AdminAreaController
     render json: shifts
   end
 
+  def get_staff_needed
+    staff_needed = []
+
+    SpaceStaffHour.where(space_id: @default_space_id).each do |shift|
+      event = {}
+      event['title'] = 'Staff Needed'
+      event['daysOfWeek'] = [shift.day]
+      event['startTime'] = shift.start_time.strftime("%H:%M")
+      event['endTime'] = shift.end_time.strftime("%H:%M")
+      staff_needed << event
+    end
+
+    render json: staff_needed
+  end
+
   private
 
   def set_default_space

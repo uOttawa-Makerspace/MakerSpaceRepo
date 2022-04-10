@@ -16,7 +16,11 @@ let modalSave = document.getElementById("shiftSave");
 let modalClose = document.getElementById("shiftCancel");
 let modalUserId = document.getElementById("modalUserId");
 let modalReason = document.getElementById("modalReason");
-let sourceShow = "none";
+let sourceShow = {
+    google: "none",
+    transparent: "none",
+    staffNeeded: "none",
+};
 
 let calendar = new Calendar(calendarEl, {
     plugins: [interactionPlugin, timeGridPlugin, listPlugin, googleCalendarPlugin],
@@ -65,7 +69,13 @@ let calendar = new Calendar(calendarEl, {
             googleCalendarId: 'c_d7liojb08eadntvnbfa5na9j98@group.calendar.google.com',
             color: 'rgba(255,31,31,0.4)',
             editable: false,
-        }
+        },
+        {
+            id: 'staffNeeded',
+            url: `/admin/shifts/get_staff_needed?space_id=${space_id}`,
+            color: 'rgba(40,40,40,0.4)',
+            editable: false,
+        },
     ],
     select: (arg) => {
         createEvent(arg);
@@ -194,34 +204,32 @@ let removeEvent = (arg) => {
     }
 }
 
-document.getElementById("hide-show-unavailabilities").addEventListener("click", () => {
+const hideShowEvents = (eventName, toggleId, text) => {
     let allEvents = calendar.getEvents();
     for (let ev of allEvents) {
-        if (ev.source.id === "transparent") {
-            ev.setProp("display", sourceShow);
+        if (ev.source.id === eventName) {
+            ev.setProp("display", sourceShow[eventName]);
+            document.getElementById(toggleId).innerText = `${ sourceShow[eventName] === "block" ? 'Hide' : 'Show' } ${text}`;
         }
     }
 
-    if (sourceShow === "none") {
-        sourceShow = "block";
+    if (sourceShow[eventName] === "none") {
+        sourceShow[eventName] = "block";
     } else {
-        sourceShow = "none";
+        sourceShow[eventName] = "none";
     }
+}
+
+document.getElementById("hide-show-unavailabilities").addEventListener("click", () => {
+    hideShowEvents("transparent", "hide-show-unavailabilities", "Unavailabilities");
 })
 
 document.getElementById("hide-show-google-events").addEventListener("click", () => {
-    let allEvents = calendar.getEvents();
-    for (let ev of allEvents) {
-        if (ev.source.id === "google") {
-            ev.setProp("display", sourceShow);
-        }
-    }
+    hideShowEvents("google", "hide-show-google-events", "Event");
+})
 
-    if (sourceShow === "none") {
-        sourceShow = "block";
-    } else {
-        sourceShow = "none";
-    }
+document.getElementById("hide-show-staff-needed").addEventListener("click", () => {
+    hideShowEvents("staffNeeded", "hide-show-staff-needed", "Staff Needed");
 })
 
 const start_picker = start_datetime.flatpickr({
@@ -244,12 +252,14 @@ modalSave.addEventListener('click', () => {
     createCalendarEvent();
 })
 
-window.toggleVisibility = (className) => {
-    Array.from(document.getElementsByClassName(className)).forEach((item) => {
+window.toggleVisibility = (name) => {
+    Array.from(document.getElementsByClassName(name)).forEach((item) => {
         if (item.style.display === "none") {
             item.style.display = "block";
+            document.getElementById(name).innerText = "Hide";
         } else {
             item.style.display = "none";
+            document.getElementById(name).innerText = "Show";
         }
     });
 }

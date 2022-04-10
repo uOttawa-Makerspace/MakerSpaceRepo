@@ -17,9 +17,11 @@
   <div class="row">
     <div class="col-md-2">
 
-      <button id="hide-show-unavailabilities" class="btn btn-primary">Hide/Show Unavailabilities</button>
+      <button id="hide-show-unavailabilities" class="btn btn-primary">Hide Unavailabilities</button>
       <br><br>
-      <button id="hide-show-google-events" class="btn btn-primary">Hide/Show Events</button>
+      <button id="hide-show-google-events" class="btn btn-primary">Hide Events</button>
+      <br><br>
+      <button id="hide-show-staff-needed" class="btn btn-primary">Hide Staff Needed</button>
       <br><br>
 
       <% @colors.each do |staff_name, array| %>
@@ -30,7 +32,7 @@
             <input type="color" name="color" class="form-control form-control-color" value="<%= array[1] %>" title="Choose your color">
             <%= hidden_field_tag :id, array[0] %>
             <button type="submit" class="btn btn-primary btn-sm ml-1">Update color</button>
-            <button type="button" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ml-1">Hide/Show</button>
+            <button type="button" id="<%= staff_name.strip.downcase.gsub(' ', '-') %>" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ml-1">Hide</button>
           </div>
         <% end %>
         <br>

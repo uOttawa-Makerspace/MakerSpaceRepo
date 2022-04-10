@@ -101,7 +101,7 @@ window.clearEndDate = function() {
 }
 
 window.setSpace = function(){
-    var space_id = document.getElementById("set_space_id").value;
+    let space_id = document.getElementById("set_space_id").value;
 
     $.ajax({
         url: "/staff_dashboard/change_space",
@@ -109,7 +109,8 @@ window.setSpace = function(){
         data: {
             space_id: space_id,
             training: document.URL.includes("training_sessions"),
-            questions: document.URL.includes("questions")
+            questions: document.URL.includes("questions"),
+            shifts: document.URL.includes("shifts"),
         }
     })
 }
