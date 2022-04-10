@@ -22,17 +22,21 @@ class SessionsController < ApplicationController
             render json: {user: @user.as_json, signed_in: true, token: @user.token}
           }
         else
-          flash.now[:alert] = "Please confirm your account before logging in, you can resend the email #{view_context.link_to 'here', resend_email_confirmation_path(email: params[:username_email]), class: 'text-primary'}".html_safe
           @user = User.new
           session[:user_id] = nil
-          format.html { render :login }
+          format.html {
+            flash.now[:alert] = "Please confirm your account before logging in, you can resend the email #{view_context.link_to 'here', resend_email_confirmation_path(email: params[:username_email]), class: 'text-primary'}".html_safe
+            render :login
+          }
           format.json { render json: "Account not confirmed", status: :unprocessable_entity }
         end
         format.json { render json: { role: :guest }, status: :ok }
       else
         @user = User.new
-        flash.now[:alert] = 'Incorrect username or password.'
-        format.html { render :login }
+        format.html {
+          flash[:alert] = "Incorrect username or password."
+          render :login
+        }
         format.json { render json: {'error': 'Incorrect username or password.'}, status: :unprocessable_entity }
       end
     end
