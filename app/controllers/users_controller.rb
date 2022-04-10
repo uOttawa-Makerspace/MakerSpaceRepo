@@ -266,7 +266,13 @@ class UsersController < SessionsController
 
     respond_to do |format|
       format.html
-      format.json { render json: {user: @repo_user.as_json, programs: @programs.as_json, certifications: @certifications.as_json(include: :training), remaining_trainings: @remaining_trainings.as_json}}
+      format.json {
+        if @user.staff? || @user.admin? || @repo_user == @user
+          render json: {user: @repo_user.as_json(include: :rfid), programs: @programs.as_json, certifications: @certifications.as_json(include: :training), remaining_trainings: @remaining_trainings.as_json}
+        else
+          render json: "This page has restricted access. If you think you need this access, please contact uottawa.makerepo@gmail.com"
+        end
+      }
     end
   end
 

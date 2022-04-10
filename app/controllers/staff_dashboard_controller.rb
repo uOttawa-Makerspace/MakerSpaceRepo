@@ -78,6 +78,7 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_in_users
+    alert = []
     if params[:added_users].present?
       users = User.where(username: params[:added_users])
       users.each do |user|
@@ -87,11 +88,14 @@ class StaffDashboardController < StaffAreaController
           sign_in_time: Time.zone.now,
           sign_out_time: Time.zone.now + 8.hours
         )
-        flash[:alert] = "Error signing #{user.name} in" unless lab_session.save
+        alert << user.name unless lab_session.save
       end
     end
     respond_to do |format|
-      format.html { redirect_to staff_dashboard_index_path(space_id: @space.id) }
+      format.html {
+        flash[:alert] = "Error signing #{alert.join(', ')} in" unless alert.length > 0
+        redirect_to staff_dashboard_index_path(space_id: @space.id)
+      }
       format.js
       format.json { render json: {"status": "ok"} }
     end
@@ -100,27 +104,16 @@ class StaffDashboardController < StaffAreaController
   def change_space
     new_space = Space.find_by(id: params[:space_id])
     current_user.update(space_id: new_space.id)
+    status = true
     if new_space.present? && (current_user.space_id = params[:space_id])
       @space = new_space
-      flash[:notice] = 'Space changed successfully'
-      # update_lab_session
-      # new_sesh = LabSession.new(
-      #   user_id: current_user.id,
-      #   sign_in_time: Time.zone.now,
-      #   sign_out_time: Time.zone.now,
-      #   space_id: new_space.id
-      # )
-      # if new_sesh.save
-      #   flash[:notice] = 'Space changed successfully'
-      # else
-      #   flash[:alert] = 'Something went wrong'
-      # end
-      # flash[:notice] = 'Space changed successfully'
     else
-      flash[:alert] = 'Something went wrong'
+      status = false
     end
     respond_to do |format|
       format.html {
+        status ? flash[:notice] = 'Space changed successfully' : flash[:alert] = 'Something went wrong'
+
         if params[:training].present? and params[:training] == 'true'
           redirect_to new_staff_training_session_path
         elsif params[:questions].present? and params[:questions] == 'true'
@@ -134,15 +127,28 @@ class StaffDashboardController < StaffAreaController
   end
 
   def link_rfid
+    status = true
+
     if params[:user_id].present? && params[:card_number].present?
       rfid = Rfid.find_by(card_number: params[:card_number])
       rfid.user_id = params[:user_id]
-      rfid.save
+      unless rfid.save
+        status = false
+      end
     end
-    redirect_back(fallback_location: root_path)
+
+    respond_to do |format|
+      format.html {
+        status ? flash[:notice] = 'RFID linked successfully' : flash[:alert] = 'Something went wrong while linking the RFID, please try again later.'
+        redirect_back(fallback_location: root_path)
+      }
+      format.json { render json: { "status": status ? "ok" : "error" } }
+    end
   end
 
   def unlink_rfid
+    status = true
+
     if params[:card_number].present?
       rfid = Rfid.find_by(card_number: params[:card_number])
       rfid.user_id = nil
@@ -150,10 +156,18 @@ class StaffDashboardController < StaffAreaController
         new_mac = pi.pi_mac_address
         rfid.mac_address = new_mac
       end
-      rfid.save
+      unless rfid.save
+        status = false
+      end
     end
-    redirect_back(fallback_location: root_path)
-  end
+
+    respond_to do |format|
+      format.html {
+        status ? flash[:notice] = 'RFID unlinked successfully' : flash[:alert] = 'Something went wrong while unlinking the RFID, please try again later.'
+        redirect_back(fallback_location: root_path)
+      }
+      format.json { render json: { "status": status ? "ok" : "error" } }
+    end  end
 
   def user_profile
     if params[:username].present? and User.find_by(username: params[:username]).present?
@@ -169,8 +183,7 @@ class StaffDashboardController < StaffAreaController
   def search
     respond_to do |format|
       if params[:query].blank? and params[:username].blank?
-        flash[:alert] = 'No search parameters.'
-        format.html {redirect_to staff_dashboard_index_path}
+        format.html {redirect_to staff_dashboard_index_path, alert: 'No search parameters.'}
         format.json {render json: {"error": "no params"}}
       elsif params[:username].present?
         @users = User.where("username = ?", params[:username])
