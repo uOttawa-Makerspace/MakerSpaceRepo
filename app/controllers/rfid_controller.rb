@@ -7,8 +7,9 @@ class RfidController < SessionsController
 
   def get_unset_rfids
     rfids = []
+    mac_addresses = PiReader.where(space: @user.space || Space.all).pluck(:pi_mac_address)
 
-    Rfid.recent_unset.first(5).each do |card|
+    Rfid.recent_unset.where(mac_address: mac_addresses).first(5).each do |card|
       rfids << {
         cardNumber: card.card_number,
         tappedAt: "Tapped at #{PiReader.find_by(pi_mac_address: card.mac_address).space.name} #{time_ago_in_words(card.updated_at) + " ago"}",
