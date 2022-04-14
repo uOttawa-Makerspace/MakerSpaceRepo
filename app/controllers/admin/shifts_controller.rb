@@ -10,31 +10,31 @@ class Admin::ShiftsController < AdminAreaController
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @colors = {}
 
-    StaffSpace.where(space_id: @default_space_id).each do |staff|
+    StaffSpace.where(space_id: @space_id).each do |staff|
       @colors[staff.user.name] = [staff.id, staff.color]
     end
   end
 
   def shifts
-    @staff = User.where(id: StaffSpace.where(space_id: @default_space_id).pluck(:user_id)).pluck(:name, :id)
+    @staff = User.where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id)).pluck(:name, :id)
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @colors = {}
 
-    StaffSpace.where(space_id: @default_space_id).each do |staff|
+    StaffSpace.where(space_id: @space_id).each do |staff|
       @colors[staff.user.name] = [staff.id, staff.color]
     end
   end
 
   def create
     if params[:shift].present? && params[:user_id].present?
-      @shift = Shift.new(shift_params.merge(space_id: @default_space_id))
+      @shift = Shift.new(shift_params.merge(space_id: @space_id))
       params[:user_id].each do |user_id|
         @shift.users << User.find(user_id)
       end
     elsif params[:start_datetime].present? && params[:start_datetime].present? && params[:user_id].present?
       start_date = DateTime.parse(params[:start_datetime])
       end_date = DateTime.parse(params[:start_datetime])
-      @shift = Shift.new(space_id: @default_space_id, start_datetime: start_date, end_datetime: end_date, reason: params[:reason])
+      @shift = Shift.new(space_id: @space_id, start_datetime: start_date, end_datetime: end_date, reason: params[:reason])
       @shift.users << User.where(id: params[:user_id])
     else
       respond_to do |format|
@@ -46,7 +46,7 @@ class Admin::ShiftsController < AdminAreaController
     respond_to do |format|
       if @shift.save
         format.html { redirect_to shifts_admin_shifts_path, notice: 'The shift has been successfully created.' }
-        format.json { render json: { id: @shift.id, name: @shift.return_event_title, color: @shift.users.first.staff_spaces.find_by(space_id: @default_space_id).color, start: @shift.start_datetime, end: @shift.end_datetime, className: @shift.users.first.name.strip.downcase.gsub(' ', '-') } }
+        format.json { render json: { id: @shift.id, name: @shift.return_event_title, color: @shift.color(@space_id), start: @shift.start_datetime, end: @shift.end_datetime, className: @shift.users.first.name.strip.downcase.gsub(' ', '-') } }
       else
         format.html { render :new }
         format.json { render json: @shift.errors, status: :unprocessable_entity }
@@ -105,21 +105,21 @@ class Admin::ShiftsController < AdminAreaController
     else
       flash[:alert] = "An error occurred, try again later."
     end
-    redirect_to admin_shifts_path
+    redirect_to params[:shifts].present? ? shifts_admin_shifts_path : admin_shifts_path
   end
 
   def get_availabilities
     opacity = params[:transparent].present? ? 0.25 : 1
     staff_availabilities = []
 
-    StaffAvailability.where(user_id: StaffSpace.where(space_id: @default_space_id).pluck(:user_id)).each do |staff|
+    StaffAvailability.where(user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id)).each do |staff|
       event = {}
       event['title'] = "#{staff.user.name} is unavailable"
       event['id'] = staff.id
       event['daysOfWeek'] = [staff.day]
       event['startTime'] = staff.start_time.strftime("%H:%M")
       event['endTime'] = staff.end_time.strftime("%H:%M")
-      event['color'] = hex_color_to_rgba(staff.user.staff_spaces.find_by(space_id: @default_space_id).color, opacity)
+      event['color'] = hex_color_to_rgba(staff.user.staff_spaces.find_by(space_id: @space_id).color, opacity)
       event['className'] = staff.user.name.strip.downcase.gsub(' ', '-')
       staff_availabilities << event
     end
@@ -130,13 +130,13 @@ class Admin::ShiftsController < AdminAreaController
   def get_shifts
     shifts = []
 
-    Shift.includes(:users).where('users.id': StaffSpace.where(space_id: @default_space_id).pluck(:user_id), space_id: @default_space_id).each do |shift|
+    Shift.includes(:users).where('users.id': StaffSpace.where(space_id: @space_id).pluck(:user_id), space_id: @space_id).each do |shift|
       event = {}
       event['title'] = shift.return_event_title
       event['id'] = shift.id
       event['start'] = shift.start_datetime
       event['end'] = shift.end_datetime
-      event['color'] = hex_color_to_rgba(shift.users.first.staff_spaces.find_by(space_id: @default_space_id).color, 1)
+      event['color'] = hex_color_to_rgba(shift.color(@space_id), 1)
       event['className'] = shift.users.first.name.strip.downcase.gsub(' ', '-')
       shifts << event
     end
@@ -147,7 +147,7 @@ class Admin::ShiftsController < AdminAreaController
   def get_staff_needed
     staff_needed = []
 
-    SpaceStaffHour.where(space_id: @default_space_id).each do |shift|
+    SpaceStaffHour.where(space_id: @space_id).each do |shift|
       event = {}
       event['title'] = 'Staff Needed'
       event['daysOfWeek'] = [shift.day]
@@ -162,11 +162,7 @@ class Admin::ShiftsController < AdminAreaController
   private
 
   def set_default_space
-    @default_space_id = if params[:space_id].present? && params[:space_id] != 'null' && Space.find(params[:space_id]).present?
-                          params[:space_id]
-                        else
-                          Space.find_by(name: 'Makerspace').id
-                        end
+    @space_id = @user.space_id || Space.first.id
   end
 
   def set_shifts

@@ -8,7 +8,6 @@ import TomSelect from 'tom-select';
 
 let calendarEl = document.getElementById('calendar');
 const urlParams = new URLSearchParams(window.location.search);
-const space_id = urlParams.get('space_id');
 let modal = document.getElementById('shiftModal');
 let start_datetime = document.getElementById("start-datetime");
 let end_datetime = document.getElementById("end-datetime");
@@ -56,12 +55,12 @@ let calendar = new Calendar(calendarEl, {
     eventSources: [
         {
             id: 'transparent',
-            url: `/admin/shifts/get_availabilities?transparent=true&space_id=${space_id}`,
+            url: '/admin/shifts/get_availabilities?transparent=true',
             editable: false,
         },
         {
             id: 'shifts',
-            url: `/admin/shifts/get_shifts?space_id=${space_id}`,
+            url: '/admin/shifts/get_shifts',
         },
         {
             id: 'google',
@@ -72,7 +71,7 @@ let calendar = new Calendar(calendarEl, {
         },
         {
             id: 'staffNeeded',
-            url: `/admin/shifts/get_staff_needed?space_id=${space_id}`,
+            url: '/admin/shifts/get_staff_needed',
             color: 'rgba(40,40,40,0.4)',
             editable: false,
         },
@@ -114,7 +113,7 @@ let createCalendarEvent = () => {
             selected_users.push(option.value);
         }
     }
-    fetch(`/admin/shifts?space_id=${space_id}`, {
+    fetch('/admin/shifts', {
         method: "POST",
         headers: {
             'Accept': 'application/json',
