@@ -9,7 +9,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def index
     respond_to do |format|
-      format.html {}
+      format.html
       format.json { render json: TrainingSession.where(user_id: @user.id).as_json(include: [:training, :space, :certifications]) }
     end
   end
@@ -42,9 +42,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
         format.json { render json: { id: @new_training_session.id, created: true } }
       end
     else
-      flash[:alert] = 'Something went wrong. Please try again.'
       respond_to do |format|
-        format.html { redirect_back(fallback_location: root_path) }
+        format.html { redirect_back(fallback_location: root_path, alert: 'Something went wrong. Please try again.') }
         format.json { render json: {created: false } }
       end
     end
@@ -97,9 +96,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
         flash[:alert] = "#{graduate.username}'s certification not saved properly!"
       end
     end
-    flash[:notice] = 'Training Session Completed Successfully'
     respond_to do |format|
-      format.html { redirect_to staff_dashboard_index_path }
+      format.html { redirect_to staff_dashboard_index_path, notice: 'Training Session Completed Successfully' }
       format.json { render json: { certified: !error } }
     end
   end
