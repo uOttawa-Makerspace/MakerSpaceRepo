@@ -12,7 +12,35 @@ class Shift < ApplicationRecord
     "#{self.reason} for #{self.users.map(&:name).join(", ")}"
   end
 
+  def color(space_id)
+    if users.count == 1
+      users.first.staff_spaces.find_by(space_id: space_id).color
+    else
+      color = users.first.staff_spaces.find_by(space_id: space_id).color
+      users.each do |user, i|
+        unless i == 0
+          color = blend_colors(color, user.staff_spaces.find_by(space_id: space_id).color)
+        end
+      end
+      ('#'+color)
+    end
+  end
+
   private
+
+  def to_hex(c)
+    n = c.to_i.to_s(16)
+    n = '0' + n unless n.length > 1 # 2 characters
+    n
+  end
+
+  def blend_colors(color1, color2)
+    colors = 3.times.map do |i| # R, G, B
+      (color2[i*2,2].to_i(16) * 0.5) + (color1[i*2,2].to_i(16) * 0.5)
+    end
+
+    colors.map { |a| to_hex(a) }.join
+  end
 
   def set_or_update_google_event
     if self.google_event_id.present?
@@ -147,8 +175,10 @@ class Shift < ApplicationRecord
   end
 
   def self.return_space_calendar(space)
-    if space.name == "MTC"
-      "c_d7liojb08eadntvnbfa5na9j98@group.calendar.google.com" # MTC
+    if Rails.env.test?
+      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com" # Test Calendar
+    elsif space.name == "MTC"
+      "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com" # MTC
     else
       "c_g1bk6ctpenjeko2dourrr0h6pc@group.calendar.google.com" # Makerspace
     end

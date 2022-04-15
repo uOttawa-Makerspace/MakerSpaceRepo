@@ -1,5 +1,6 @@
 import 'jquery'
 import 'flatpickr'
+import TomSelect from "tom-select";
 
 const start_time = jQuery('#start_time').flatpickr({
     enableTime: true,
@@ -33,3 +34,5 @@ start_time.config.onClose = [() => {
 end_time.config.onClose = [() => {
     start_time.set("maxDate", end_time.selectedDates[0]);
 }];
+
+new TomSelect("#userId");
