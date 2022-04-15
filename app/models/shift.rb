@@ -175,7 +175,9 @@ class Shift < ApplicationRecord
   end
 
   def self.return_space_calendar(space)
-    if space.name == "MTC"
+    if Rails.env.test?
+      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com" # Test Calendar
+    elsif space.name == "MTC"
       "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com" # MTC
     else
       "c_g1bk6ctpenjeko2dourrr0h6pc@group.calendar.google.com" # Makerspace
