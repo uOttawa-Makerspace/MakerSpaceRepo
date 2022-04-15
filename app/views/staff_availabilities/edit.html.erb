@@ -1,5 +1,5 @@
 <div class="padding-10">
-  <h2 class="text-center pt-2 mb-5 font-weight-bold">Create a new availability</h2>
+  <h2 class="text-center pt-2 mb-5 font-weight-bold">Edit a availability</h2>
   <div class="container my-5">
     <div class="row">
       <div class="col-lg-12">
@@ -7,8 +7,12 @@
           <div class="row">
             <div class="col-md-12">
               <div class="form-group text-center">
+                <%= f.label :user_id, "User to select" %>
+                <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id), selected: f.object.user_id), {}, id: 'userId', autocomplete: 'off', required: true, class: "form-control" %>
+              </div>
+              <div class="form-group text-center">
                 <%= f.label :day, "Day of the week" %>
-                <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), {selected: f.object.day}, class: "form-control" %>
+                <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])], selected: f.object.day), {}, class: "form-control" %>
               </div>
             </div>
 

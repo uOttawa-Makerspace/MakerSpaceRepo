@@ -200,6 +200,7 @@ Rails.application.routes.draw do
         get :shifts
         get :get_availabilities
         get :get_shifts
+        get :get_staff_needed
         post :update_color
       end
     end

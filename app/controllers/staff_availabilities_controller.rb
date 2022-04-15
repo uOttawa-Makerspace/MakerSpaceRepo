@@ -26,9 +26,11 @@ class StaffAvailabilitiesController < StaffAreaController
 
   def new
     @staff_availability = StaffAvailability.new
+    @staffs = User.all.where(id: StaffSpace.all.map(&:user_id).uniq)
   end
 
   def edit
+    @staffs = User.all.where(id: StaffSpace.all.map(&:user_id).uniq)
   end
 
   def create
@@ -109,7 +111,7 @@ class StaffAvailabilitiesController < StaffAreaController
   end
 
   def staff_availability_params
-    params.require(:staff_availability).permit(:day, :start_time, :end_time)
+    params.require(:staff_availability).permit(:day, :start_time, :end_time, :user_id)
   end
 
   def set_selected_user

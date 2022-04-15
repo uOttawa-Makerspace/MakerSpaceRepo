@@ -27,6 +27,8 @@ let calendar = new Calendar(calendarEl, {
     initialView: 'timeGridWeek',
     navLinks: true,
     slotEventOverlap: false,
+    slotMinTime: "07:00:00",
+    slotMaxTime: "22:00:00",
     eventTimeFormat: {
         hour: '2-digit',
         minute: '2-digit',

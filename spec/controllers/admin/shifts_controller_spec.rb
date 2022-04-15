@@ -59,6 +59,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
         space1 =  create(:space)
         space2 = create(:space)
 
+        User.find(@admin.id).update(space_id: space1.id)
+
         ss1 = StaffSpace.create(space_id: space1.id, user_id: sa1.user_id)
         ss2 = StaffSpace.create(space_id: space1.id, user_id: sa2.user_id)
         StaffSpace.create(space_id: space2.id, user_id: sa2.user_id)
@@ -125,6 +127,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
         s2 = create(:shift)
         s3 = create(:shift, space_id: space.id)
 
+        User.find(@admin.id).update(space_id: space.id)
+
         s1.users << create(:user, :staff)
 
         StaffSpace.create(user_id: s1.users.first.id, space_id: s1.space_id)
@@ -132,7 +136,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
         StaffSpace.create(user_id: s2.users.first.id, space_id: s2.space_id)
         StaffSpace.create(user_id: s3.users.first.id, space_id: s3.space_id)
 
-        get :get_shifts, params: {space_id: space.id}
+        get :get_shifts
         expect(response).to have_http_status(:success)
         expect(response.body).to eq([
                                       {
@@ -140,7 +144,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                                         "id": s1.id,
                                         "start": s1.start_datetime,
                                         "end": s1.end_datetime,
-                                        "color": "rgba(#{s1.users.first.staff_spaces.find_by(space_id: s1.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                                        "color": "rgba(#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
                                         "className": s1.users.first.name.strip.downcase.gsub(' ', '-')
                                       },
                                       {
