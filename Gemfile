@@ -36,7 +36,7 @@ gem 'saml_idp', '~> 0.9.0'
 gem 'sass-rails', '~> 5.0.7'
 gem 'sdoc', '~> 1.1.0', group: :doc
 gem 'select2-rails'
-gem 'shopify_app', '~> 18.0.2'
+gem 'shopify_app', '~> 18.1.2'
 gem 'sidekiq', '~> 6.2.1'
 gem 'simplecov'
 gem 'thin'
