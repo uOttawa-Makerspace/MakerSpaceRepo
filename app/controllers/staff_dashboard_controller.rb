@@ -93,7 +93,7 @@ class StaffDashboardController < StaffAreaController
     end
     respond_to do |format|
       format.html {
-        flash[:alert] = "Error signing #{alert.join(', ')} in" unless alert.length > 0
+        flash[:alert] = "Error signing #{alert.join(', ')} in" if alert.length > 0
         redirect_to staff_dashboard_index_path(space_id: @space.id)
       }
       format.js
@@ -211,7 +211,7 @@ class StaffDashboardController < StaffAreaController
   end
 
   def populate_users
-    json_data = User.where('LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))', "%#{params[:search]}%", "%#{params[:search]}%").map(&:as_json)
+    json_data = User.where('LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))', "%#{params[:search]}%", "%#{params[:search]}%").as_json(only: [:name, :username])
     render json: { users: json_data }
   end
 
