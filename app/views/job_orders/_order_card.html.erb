@@ -1,11 +1,11 @@
 <div class="col-md-6 my-3">
   <div class="card">
     <div class="card-header">
-      <h5 class="card-title m-0 d-flex justify-content-between">
+      <h5 class="card-title m-0 d-flex justify-content-md-between flex-md-row flex-column">
         <div>
           Order #<%= jo.id %> - <%= jo.job_order_statuses.last.job_status.name %>
         </div>
-        <div>
+        <div class="pt-2 pt-md-0">
           <% if jo.allow_edit? %>
             <%= link_to "Edit", job_order_steps_path(job_order_id: jo.id), class: 'btn btn-outline-dark mb-1' %>
           <% else %>
