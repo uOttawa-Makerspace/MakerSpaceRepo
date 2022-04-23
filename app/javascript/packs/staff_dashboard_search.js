@@ -1,32 +1,26 @@
-require("select2");
+import TomSelect from 'tom-select';
 
-$(".user_dashboard_select").select2({
-    theme: "bootstrap",
-    ajax: {
-        url: "populate_users",
-        type: "GET",
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                search: params.term
-            };
-        },
-        processResults: function (data) {
-            return {
-                results: $.map(data.users, function (item) {
-                    return {
-                        text: item.name,
-                        id: item.username
-                    }
-                })
-            };
-        },
+new TomSelect('#user_dashboard_select', {
+    valueField: 'username',
+    labelField: 'name',
+    searchField: 'name',
+    load: function(query, callback) {
+        fetch(`staff_dashboard/populate_users?search=${query}`)
+            .then(response => response.json())
+            .then(json => {
+                callback(json.users);
+            }).catch(()=>{
+            callback();
+        });
     },
-    minimumInputLength: 3,
+    render: {
+        option: function (item, escape) {
+            return `<div>${item.name} (${item.username})</div>`;
+        }
+    }
 });
 
-var form = document.getElementById('sign_in_user_fastsearch');
+let form = document.getElementById('sign_in_user_fastsearch');
 form.onsubmit = function(){
     document.getElementById('sign_in_user_fastsearch_username').value = [document.getElementById('user_dashboard_select').value];
     form.submit();

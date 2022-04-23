@@ -197,7 +197,7 @@ RSpec.describe StaffDashboardController, type: :controller do
       it 'should get the users that has been searched' do
         user = create(:user, :regular_user)
         get :populate_users, params: {search: user.name}
-        expect(JSON.parse(response.body)['users'][0]['id']).to eq(user.id)
+        expect(JSON.parse(response.body)['users'][0]['name']).to eq(user.name)
       end
 
     end

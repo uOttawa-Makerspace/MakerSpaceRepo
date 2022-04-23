@@ -5,11 +5,25 @@ class PrintersController < StaffAreaController
 
   def staff_printers
     @printers = Printer.all
-    @list_users = User.joins(lab_sessions: :space).where('lab_sessions.sign_out_time > ? AND spaces.name = ?', Time.zone.now, 'Makerspace').order('lab_sessions.sign_out_time DESC').pluck(:name, :id)
-    @last_session_ultimaker = Printer.get_last_model_session('Ultimaker 2+')
-    @last_session_ultimaker3 = Printer.get_last_model_session('Ultimaker 3')
-    @last_session_replicator2 = Printer.get_last_model_session('Replicator 2')
-    @last_session_dremel = Printer.get_last_model_session('Dremel')
+    @list_users = User.joins(lab_sessions: :space).where('lab_sessions.sign_out_time > ? AND spaces.name = ?', Time.zone.now, 'Makerspace').order('lab_sessions.sign_out_time DESC').uniq.pluck(:name, :id)
+    @printer_types = [
+      {
+        name: 'Ultimaker 2+',
+        id: 'ultimaker2p'
+      },
+      {
+        name: 'Ultimaker 3',
+        id: 'ultimaker3'
+      },
+      {
+        name: 'Replicator 2',
+        id: 'replicator2'
+      },
+      {
+        name: 'Dremel',
+        id: 'dremel'
+      }
+    ]
   end
 
   def staff_printers_updates
@@ -17,6 +31,7 @@ class PrintersController < StaffAreaController
     @ultimaker3_printer_ids = Printer.get_printer_ids('Ultimaker 3')
     @replicator2_printer_ids = Printer.get_printer_ids('Replicator 2')
     @dremel_printer_ids = Printer.get_printer_ids('Dremel')
+    @printer_types = ['Ultimaker 2+', 'Ultimaker 3', 'Replicator 2', 'Dremel']
   end
 
   def link_printer_to_user
