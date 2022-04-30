@@ -1,0 +1,53 @@
+<% if @drafts.count > 0 %>
+  <div class="alert alert-warning alert-dismissible fade show col-md-12 text-center">
+    <i class="fa fa-warning"></i>
+    <p class="font-weight-bold">The following Job Orders have been partly created, but haven't been submitted yet.</p>
+    <% @drafts.each do |draft| %>
+      <p><%= link_to "Order ##{draft.id}", job_order_steps_path(job_order_id: draft.id, step: 1) %></p>
+    <% end %>
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+  </div>
+<% end %>
+
+<div class="text-center">
+  <h2>My Job Orders</h2>
+  <%= link_to "Create a new Job Order", new_job_orders_path, class: 'btn btn-primary' %>
+  <br><br>
+</div>
+<% if @job_orders.count > 0 %>
+  <div class="row col-lg-10 mx-auto">
+    <% @job_orders.each do |jo| %>
+      <%= render 'order_card', jo: jo %>
+    <% end %>
+  </div>
+<% else %>
+  <div class="text-center">
+    <div class="alert alert-info col-lg-6 mx-auto" role="alert">
+      You do not have any Job Orders currently. You can can create one <%= link_to "here", new_job_orders_path, class: 'alert-link' %>.
+    </div>
+  </div>
+<% end %>
+
+<% if @archived_job_orders.count > 0 %>
+  <div class="accordion" id="accordionExample">
+    <div class="card">
+      <div class="card-header" id="headingOne">
+        <h2 class="mb-0">
+          <button class="btn btn-link btn-block text-center" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+            Archived Orders
+          </button>
+        </h2>
+      </div>
+
+      <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
+        <div class="card-body">
+          <div class="row col-lg-10 mx-auto">
+            <% @archived_job_orders.each do |jo| %>
+              <%= render 'order_card', jo: jo %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

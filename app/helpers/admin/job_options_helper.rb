@@ -1,0 +1,2 @@
+module Admin::JobOptionsHelper
+end

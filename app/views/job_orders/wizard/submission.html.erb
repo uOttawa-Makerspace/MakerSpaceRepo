@@ -1,0 +1,21 @@
+<section>
+  <%= form_for(@job_order, url: {controller: "job_orders", action: "steps"}) do |f| %>
+
+    <div class="text-center">
+
+      <h2>New Job Order (Step 4/4)</h2>
+
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :comments, "Additional Comments" %>
+        <%= f.text_area :comments, class: 'form-control' %>
+      </div>
+
+      <%= hidden_field_tag :step, 5 %>
+      <div class="text-center">
+        <%= link_to "Previous Step", job_order_steps_path(step: 3), class: "btn btn-primary mb-1" %>
+        <%= link_to('Delete Current Order', job_order_path(@job_order), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger mb-1") %>
+        <%= f.submit "Submit", class: "btn btn-primary mb-1" %>
+      </div>
+    </div>
+  <% end %>
+</section>

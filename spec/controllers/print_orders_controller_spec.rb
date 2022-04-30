@@ -52,7 +52,7 @@ RSpec.describe PrintOrdersController, type: :controller do
     context 'logged as regular user' do
       it 'should return a 200' do
         get :new
-        expect(response).to have_http_status(:success)
+        expect(response).to redirect_to new_job_orders_path
       end
     end
 

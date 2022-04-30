@@ -55,6 +55,28 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :job_orders, only: %i[index create update new destroy] do
+    get :steps
+    get :quote_modal
+    get :timeline_modal
+    get :invoice
+    patch :quote
+    patch :steps
+    patch :user_approval
+    patch :processed
+    patch :paid
+    patch :picked_up
+    patch :resend_quote_email
+    collection do
+      get :admin
+      get :settings
+      get :user_magic_approval
+      patch :user_magic_approval_confirmation
+      post '/new' => "job_orders#new"
+      patch '/new' => "job_orders#new"
+    end
+  end
+
   resources :project_proposals do
     collection do
       post :create_revision
@@ -162,6 +184,11 @@ Rails.application.routes.draw do
     resources :announcements
 
     resources :badge_templates, only: %i[index edit update]
+
+    resources :job_service_groups, only: %i[index new create edit update destroy]
+    resources :job_services, only: %i[index new create edit update destroy]
+    resources :job_options, only: %i[index new create edit update destroy]
+    resources :job_types, only: %i[index new create edit update]
 
     get 'manage_badges'
 

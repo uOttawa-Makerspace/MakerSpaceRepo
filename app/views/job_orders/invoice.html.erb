@@ -1,0 +1,213 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Job Order Invoice</title>
+
+  <style>
+      .invoice-box {
+          max-width: 800px;
+          margin: auto;
+          padding: 30px;
+          border: 1px solid #eee;
+          box-shadow: 0 0 10px rgba(0, 0, 0, .15);
+          font-size: 16px;
+          line-height: 24px;
+          font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+          color: #555;
+      }
+
+      .invoice-box table {
+          width: 100%;
+          line-height: inherit;
+          text-align: left;
+      }
+
+      .invoice-box table td {
+          padding: 5px;
+          vertical-align: top;
+      }
+
+      .invoice-box table tr td:nth-child(2) {
+          text-align: right;
+      }
+
+      .invoice-box table tr.top table td {
+          padding-bottom: 20px;
+      }
+
+      .invoice-box table tr.top table td.title {
+          font-size: 45px;
+          line-height: 45px;
+          color: #333;
+      }
+
+      .invoice-box table tr.information table td {
+          padding-bottom: 40px;
+      }
+
+      .invoice-box table tr.heading td {
+          background: #eee;
+          border-bottom: 1px solid #ddd;
+          font-weight: bold;
+      }
+
+      .invoice-box table tr.details td {
+          padding-bottom: 20px;
+      }
+
+      .invoice-box table tr.item td {
+          border-bottom: 1px solid #eee;
+      }
+
+      .invoice-box table tr.item.last td {
+          border-bottom: none;
+      }
+
+      .invoice-box table tr.total td:nth-child(2) {
+          border-top: 2px solid #eee;
+          font-weight: bold;
+      }
+
+      @media only screen and (max-width: 600px) {
+          .invoice-box table tr.top table td {
+              width: 100%;
+              display: block;
+              text-align: center;
+          }
+
+          .invoice-box table tr.information table td {
+              width: 100%;
+              display: block;
+              text-align: center;
+          }
+      }
+
+      /** RTL **/
+      .rtl {
+          direction: rtl;
+          font-family: Tahoma, 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+      }
+
+      .rtl table {
+          text-align: right;
+      }
+
+      .rtl table tr td:nth-child(2) {
+          text-align: left;
+      }
+  </style>
+</head>
+
+<body>
+<div class="invoice-box">
+  <table>
+    <tr class="top">
+      <td colspan="2">
+        <table>
+          <tr>
+            <td class="title">
+              <%= wicked_pdf_image_tag "ceed-makerspace-logo-250.jpg" %>
+            </td>
+
+            <td>
+              Invoice #<%= @job_order.id %>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr class="information">
+      <td colspan="2">
+        <table>
+          <tr>
+            <td>
+              University Of Ottawa Richard L'Abbé Makerspace<br>
+              STM 107<br>
+              150 Louis Pasteur<br>
+              Ottawa, ON K1N 6N5
+            </td>
+
+            <td>
+              Client : <%= @job_order.user.name %>
+              <br>
+              Date : <%= @job_order.job_order_statuses.last.created_at.strftime("%Y/%m/%d") %>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr class="heading">
+      <td>
+        Payment Method
+      </td>
+      <td></td>
+    </tr>
+
+    <tr class="details">
+      <td>
+        Please see
+        <a href="https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order">https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a>
+        for payment details
+      </td>
+      <td></td>
+    </tr>
+
+    <tr class="heading">
+      <td>
+        Item
+      </td>
+
+      <td>
+        Price
+      </td>
+    </tr>
+
+    <tr class="item last">
+      <td>
+        Service charges
+      </td>
+
+      <td>
+        <%= number_to_currency(@job_order.job_order_quote.service_fee) %>
+      </td>
+    </tr>
+
+    <% @job_order.job_order_quote.job_order_quote_services.each do |s| %>
+      <tr class="item last">
+        <td>
+          <%= s.job_service.job_service_group.name %> - <%= s.job_service.name %> (<%= "#{s.quantity} #{s.job_service.unit}" %>)
+        </td>
+        <td>
+          <%= number_to_currency(s.cost) %>
+        </td>
+      </tr>
+    <% end %>
+
+    <% @job_order.job_order_quote.job_order_quote_options.each do |o| %>
+      <tr class="item last">
+        <td>
+          <%= o.job_option.name %> (Option)
+        </td>
+        <td>
+          <%= number_to_currency(o.amount) %>
+        </td>
+      </tr>
+    <% end %>
+
+    <tr class="total">
+      <td></td>
+
+      <td>
+        Total: <%= number_to_currency(@job_order.total_price) %>
+      </td>
+    </tr>
+  </table>
+  <% if @job_order.staff_comments.present? %>
+    <p>Comments to the user : <%= @job_order.staff_comments %></p>
+  <% end %>
+</div>
+</body>
+</html>
