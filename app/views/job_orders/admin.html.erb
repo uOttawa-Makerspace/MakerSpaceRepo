@@ -8,9 +8,9 @@
 
   <div class="py-1">
     <%= form_with(url: admin_job_orders_path, method: "get", class: "form-inline") do %>
-      <label class="my-1 mr-2" for="start_date">Filter by date</label>
-      <%= select_tag(:query_date, options_for_select([['All', 0], ['1 Month', 30], ['3 Months', 90], ['6 Months', 180], ['12 Months', 365]], :selected => session[:query_date]), { :class => 'form-control' }) %>
-      <%= submit_tag("Search", class: "btn btn-primary") %>
+      <label class="my-1 mr-1" for="start_date">Filter by date</label>
+      <%= select_tag(:query_date, options_for_select([['All', 0], ['1 Month', 30], ['3 Months', 90], ['6 Months', 180], ['12 Months', 365]], :selected => session[:query_date]), { :class => 'form-control mr-1' }) %>
+      <%= submit_tag("Search", class: "btn btn-primary mt-1 mt-md-0") %>
     <% end %>
   </div>
 
@@ -41,7 +41,7 @@
                     <th>User's Files</th>
                     <th>Staff Files</th>
                     <th>Current Status</th>
-                    <th>Timeline</th>
+                    <th>Extra Info</th>
                     <th>Action</th>
                     <th>Quote</th>
                     <th>Invoice</th>

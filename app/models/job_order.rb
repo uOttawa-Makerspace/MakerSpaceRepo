@@ -29,6 +29,10 @@ class JobOrder < ApplicationRecord
     .group('job_order_options.job_option_id')
   }
 
+  scope :not_deleted, -> {
+    where(is_deleted: false)
+  }
+
   has_many_attached :user_files
   validates :user_files, file_content_type: {
     allow: ['application/pdf', 'image/svg+xml', 'text/html', 'model/stl', 'application/vnd.ms-pki.stl', 'application/octet-stream', 'text/plain', "model/x.stl-binary", 'model/x.stl-binary', 'text/x.gcode', 'image/vnd.dxf', 'image/x-dxf', 'model/x.stl-ascii'],

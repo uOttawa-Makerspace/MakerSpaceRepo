@@ -54,12 +54,15 @@
 <td><%= jo.job_order_statuses.last.job_status.name %></td>
 <td>
   <button class="btn btn-secondary btn-sm" data-action="click->launch-modal#launchTimelineModal" data-id="<%= jo.id %>">Timeline</button>
+  <% if jo.staff_comments %>
+    <a class="btn btn-primary btn-sm mt-1" data-action="click->launch-modal#launchCommentsModal" data-id="<%= jo.id %>" data-comments="<%= jo.staff_comments %>">Staff Msg</a>
+  <% end %>
 </td>
 <td>
   <% if jo.job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL %>
     <button class="btn btn-primary btn-sm btn-block" data-action="click->launch-modal#launchQuoteModal" data-id="<%= jo.id %>">Approve</button>
     <%= link_to "Reject", job_order_quote_path(jo, approved: false), method: :patch, remote: true, format: :js, class: "btn btn-danger btn-sm btn-block", data: { confirm: "Are you sure you want to decline the Job Order?" } %>
-  <% elsif jo.job_order_statuses.last.job_status == JobStatus::USER_APPROVAL %>
+  <% elsif [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(jo.job_order_statuses.last.job_status) %>
     <%= link_to "Approve", job_order_user_approval_path(jo, approved: true), method: :patch, remote: true, format: :js, class: "btn btn-primary btn-sm btn-block", data: { confirm: "Are you sure you want to approve the Job Order on behalf of the user?" } %>
     <%= link_to "Reject", job_order_user_approval_path(jo, approved: false), method: :patch, remote: true, format: :js, class: "btn btn-danger btn-sm btn-block", data: { confirm: "Are you sure you want to decline the Job Order on behalf of the user?" } %>
     <%= link_to "Reminder", job_order_resend_quote_email_path(jo), method: :patch, remote: true, format: :js, class: "btn btn-info btn-sm btn-block", data: { confirm: "Are you sure you want to resend a quote reminder email?" } %>

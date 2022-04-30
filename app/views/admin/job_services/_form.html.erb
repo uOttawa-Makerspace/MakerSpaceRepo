@@ -13,26 +13,26 @@
     <% end %>
 
     <div class="text-center">
-      <div class="col-lg-6 text-center mx-auto">
+      <div class="col-lg-6 text-center mx-auto mb-3">
         <%= f.label :name, 'Name of the Service' %>
         <%= f.text_field :name, class: "form-control", required: true %>
       </div>
-      <br>
-      <div class="form-group col-lg-6 mx-auto">
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :description, 'Description' %>
         <%= f.text_area :description, class: "form-control" %>
       </div>
-      <div class="form-group col-lg-6 mx-auto">
+      <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :job_service_group_id, 'Job Service Group' %>
         <%= f.select :job_service_group_id, options_from_collection_for_select(JobServiceGroup.all, :id, :name, @job_service.job_service_group_id.present? ? @job_service.job_service_group_id : ''), {}, class: "form-control" %>
       </div>
 
-      <div class="col-lg-6 text-center mx-auto">
+      <div class="col-lg-6 text-center mx-auto mb-3">
         <%= f.label :unit, 'Unit (g, cm3, h ...)' %>
         <%= f.text_field :unit, class: "form-control", required: true %>
       </div>
 
-      <div class="col-lg-6 text-center mx-auto">
+      <div class="col-lg-6 text-center mx-auto mb-3">
         <%= f.label :internal_price, 'Internal Price per unit' %>
         <div class="input-group mb-3">
           <div class="input-group-prepend">
@@ -42,7 +42,7 @@
         </div>
       </div>
 
-      <div class="col-lg-6 text-center mx-auto">
+      <div class="col-lg-6 text-center mx-auto mb-3">
         <%= f.label :external_price, 'External Price per unit' %>
         <div class="input-group mb-3">
           <div class="input-group-prepend">
@@ -52,9 +52,7 @@
         </div>
       </div>
 
-      <br>
-
-      <div>
+      <div class="mb-3">
         <%= f.label :required, "Required? (ex: Onyx for MarkForged)", required: true %>
 
         <div class="custom-control custom-radio custom-control-inline">
@@ -68,7 +66,6 @@
         </div>
       </div>
 
-      <br>
       <%= f.submit class: "btn btn-primary" %>
     </div>
   <% end %>

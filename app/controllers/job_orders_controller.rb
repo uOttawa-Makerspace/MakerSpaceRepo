@@ -10,7 +10,7 @@ class JobOrdersController < ApplicationController
     @job_orders = []
     @archived_job_orders = []
     @drafts = []
-    @user.job_orders.each do |jo|
+    @user.job_orders.not_deleted.each do |jo|
       if jo.job_order_statuses.last.job_status == JobStatus::DRAFT
         @drafts << jo
       elsif jo.job_order_statuses.last.job_status == JobStatus::DECLINED || jo.job_order_statuses.last.job_status == JobStatus::PICKED_UP
@@ -96,7 +96,7 @@ class JobOrdersController < ApplicationController
       if @job_order.save
         redirect_to job_order_steps_path(job_order_id: @job_order.id, step: 2)
       else
-        @job_order.destroy
+        @job_order.update(is_deleted: true)
         redirect_to new_job_orders_path
       end
     else
@@ -108,8 +108,8 @@ class JobOrdersController < ApplicationController
   def user_magic_approval
     @token = params[:token]
     verifier = Rails.application.message_verifier(:job_order_id)
-    if verifier.valid_message?(@token) && JobOrder.find(verifier.verify(@token)).job_order_statuses.last.job_status == JobStatus::USER_APPROVAL
-      @job_order = JobOrder.find(verifier.verify(@token))
+    if verifier.valid_message?(@token) && JobOrder.where(id: verifier.verify(@token), is_deleted: false).present? && [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(JobOrder.where(id: verifier.verify(@token), is_deleted: false).first.job_order_statuses.last.job_status)
+      @job_order = JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
       render 'job_orders/magic_approval'
     else
       flash[:alert] = 'The following Job Order Approval link is invalid or has expired. Please Sign In to look at the Job Order Page.'
@@ -118,10 +118,11 @@ class JobOrdersController < ApplicationController
   end
 
   def user_magic_approval_confirmation
+    @token = params[:token]
     verifier = Rails.application.message_verifier(:job_order_id)
     if verifier.valid_message?(params[:token])
-      @job_order = JobOrder.find(verifier.verify(params[:token]))
-      if update_status(params[:approved], JobStatus::USER_APPROVAL, JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED, nil)
+      @job_order = JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
+      if update_status(params[:approved], [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER], JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED, nil)
         @status = true
       else
         @status = false
@@ -135,7 +136,7 @@ class JobOrdersController < ApplicationController
 
   def user_approval
     redirect_link = @job_order.user == @user ? job_orders_path : admin_job_orders_path
-    if update_status(params[:approved], JobStatus::USER_APPROVAL, JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED, nil) && params[:approved] == 'true'
+    if update_status(params[:approved], [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER], JobStatus::WAITING_PROCESSED, true, JobStatus::DECLINED, nil) && params[:approved] == 'true'
       JobOrderMailer.send_job_user_approval(@job_order.id).deliver_now
     end
 
@@ -230,7 +231,10 @@ class JobOrdersController < ApplicationController
   end
 
   def resend_quote_email
-    JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now
+    @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::SENT_REMINDER)
+    if @job_order.save
+      JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now
+    end
     respond_to do |format|
       format.html { redirect_to admin_job_orders_path }
       format.js { render 'admin_row' }
@@ -238,7 +242,7 @@ class JobOrdersController < ApplicationController
   end
 
   def destroy
-    @job_order.destroy
+    @job_order.update(is_deleted: true)
     if @user.admin?
       redirect_to admin_job_orders_path
     else
@@ -250,6 +254,7 @@ class JobOrdersController < ApplicationController
     @statuses = [
       {name: "Waiting for Staff Approval", status: JobStatus::STAFF_APPROVAL},
       {name: "Waiting for User Approval", status: JobStatus::USER_APPROVAL},
+      {name: "Sent a Quote Reminder", status: JobStatus::SENT_REMINDER},
       {name: "Waiting to be processed", status: JobStatus::WAITING_PROCESSED},
       {name: "Waiting for Payment", status: JobStatus::PROCESSED},
       {name: "Waiting for Pick-Up", status: JobStatus::PAID},
@@ -282,8 +287,8 @@ class JobOrdersController < ApplicationController
   private
 
   def set_job_order
-    if JobOrder.where(id: params[:job_order_id]).present? || JobOrder.where(id: params[:id]).present?
-      jo = JobOrder.find(params[:job_order_id].present? ? params[:job_order_id] : params[:id])
+    if JobOrder.where(id: params[:job_order_id], is_deleted: false).present? || JobOrder.where(id: params[:id], is_deleted: false).present?
+      jo = JobOrder.where(id: params[:job_order_id].present? ? params[:job_order_id] : params[:id], is_deleted: false).first
       if @user.admin? || @user.id == jo.user_id
         @job_order = jo
       else
@@ -304,7 +309,7 @@ class JobOrdersController < ApplicationController
   end
 
   def job_order_params
-    params.require(:job_order).permit(:user_id, :job_type_id, :job_service_group_id, :job_service_ids, :comments, :user_comments, :staff_comments, job_service_ids: [], job_type_id: [], user_files: [])
+    params.require(:job_order).permit(:user_id, :job_type_id, :job_service_group_id, :job_service_ids, :comments, :user_comments, :staff_comments, job_service_ids: [], job_type_id: [], user_files: [], staff_files: [])
   end
 
   def grant_access
@@ -321,7 +326,7 @@ class JobOrdersController < ApplicationController
   def update_status(param, current_status, true_status, need_false_status, false_status = nil, redirect_link = admin_job_orders_path)
     error = false
 
-    if @job_order.job_order_statuses.last.job_status != current_status
+    if current_status.is_a?(Array) ? !current_status.include?(@job_order.job_order_statuses.last.job_status) : @job_order.job_order_statuses.last.job_status != current_status
       error = true
     elsif param.present? && param == "true"
       @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: true_status)

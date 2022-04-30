@@ -27,7 +27,7 @@
             </div>
             <p><%= jos.job_status.description %></p>
             <% if jo.job_order_statuses.last == jos %>
-              <% if jos.job_status == JobStatus::USER_APPROVAL %>
+              <% if [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(jos.job_status) %>
                 <div class="alert alert-warning">
                   <p><b>Action Required - Total Quote: <%= number_to_currency(jo.total_price) %></b></p>
                   <div class="d-flex justify-content-between">

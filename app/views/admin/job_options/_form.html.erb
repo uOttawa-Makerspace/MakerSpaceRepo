@@ -13,23 +13,22 @@
     <% end %>
 
     <div class="text-center">
-      <div class="col-lg-6 text-center mx-auto">
+      <div class="col-lg-6 text-center mx-auto mb-3">
         <%= f.label :name, 'Name of the Service Group' %>
         <%= f.text_field :name, class: "form-control", required: true %>
       </div>
-      <br>
-      <div class="form-group col-lg-6 mx-auto">
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :description, 'Description' %>
         <%= f.text_area :description, class: "form-control" %>
       </div>
 
-      <br>
-      <div class="form-group col-lg-6 mx-auto">
+      <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :job_type_ids, 'Job Type' %>
         <%= f.select :job_type_ids, options_from_collection_for_select(JobType.all, :id, :name, @job_option.job_type_ids.present? ? @job_option.job_type_ids : ''), {}, {class: "form-control", multiple: true, id: "job_type_ids_option"} %>
       </div>
 
-      <div class="col-lg-6 text-center mx-auto">
+      <div class="col-lg-6 text-center mx-auto mb-3">
         <%= f.label :fee, 'Fees ($)' %>
         <div class="input-group mb-3">
           <div class="input-group-prepend">
@@ -39,7 +38,7 @@
         </div>
       </div>
 
-      <div>
+      <div class="mb-3">
         <%= f.label :need_files, "Need files?", required: true %>
 
         <div class="custom-control custom-radio custom-control-inline">
@@ -53,7 +52,6 @@
         </div>
       </div>
 
-      <br>
       <%= f.submit class: "btn btn-primary" %>
     </div>
   <% end %>

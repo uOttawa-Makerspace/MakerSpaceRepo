@@ -13,19 +13,19 @@
     <% end %>
 
     <div class="text-center">
-      <div class="col-lg-6 text-center mx-auto">
+      <div class="col-lg-6 text-center mx-auto mb-3">
         <%= f.label :name, 'Name of the Job Type' %>
         <%= f.text_field :name, class: "form-control", required: true %>
       </div>
-      <br>
-      <div class="form-group col-lg-6 mx-auto">
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :comments, 'Comments (To be shown at the bottom of the page)' %>
         <div class="text-left">
           <%= f.trix_editor :comments, class: 'form-control', style: "height: auto!important;" %>
         </div>
       </div>
 
-      <div class="col-lg-6 text-center mx-auto">
+      <div class="col-lg-6 text-center mx-auto mb-3">
         <%= f.label :service_fee, 'Service Fee' %>
         <div class="input-group mb-3">
           <div class="input-group-prepend">
@@ -34,7 +34,7 @@
           <%= f.number_field :service_fee, class: "form-control", required: true, step: '.01' %>
         </div>
       </div>
-      <br>
+
       <%= f.submit class: "btn btn-primary" %>
     </div>
   <% end %>
