@@ -119,7 +119,7 @@ class User < ApplicationRecord
   end
 
   def self.username_or_email(username_email)
-    User.where('lower(username) = ?', username_email.downcase).or(User.where('lower(email) = ?', username_email.downcase)).first
+    User.where(username: username_email).or(User.where('lower(email) = ?', username_email.downcase)).first
   end
 
   def pword

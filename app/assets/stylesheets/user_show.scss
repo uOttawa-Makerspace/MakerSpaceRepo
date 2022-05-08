@@ -246,7 +246,7 @@ section#repositories-container{
 
 		div.repo-display-wrapper{
 			position: relative;
-		  background-size: cover;
+		    background-size: cover;
 			height: 225px;
 			background-color: black;
 			a.link{
@@ -329,20 +329,6 @@ div.empty-repo{
 	text-align: center;
 	font-size: 2rem;
 	color: #333;
-}
-
-a.edit-repo, a.delete-repo{
-	@include transition(100ms);
-  float: right;
-  margin: 5px 2.5px;
-  background-color: #008080;
-  color: #eee;
-  padding: 3px;
-  display: none;
-
-  &:hover{
-  	background-color: #366;
-  }
 }
 
 /*a.delete-repo{
