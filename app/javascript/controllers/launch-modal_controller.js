@@ -1,14 +1,13 @@
 import { Controller } from "stimulus";
 
 export default class extends Controller {
-    static targets = ["commentsModal", "quoteModal", "timelineModal"];
+    static targets = ["commentsModal", "quoteModal", "timelineModal", "completedEmailModal"];
 
     launchCommentsModal(event) {
         let commentsModalController = this.application.getControllerForElementAndIdentifier(
             this.commentsModalTarget,
             "comments-modal"
         );
-        console.log(this.commentsModalTarget);
         commentsModalController.setCoHostContent(event.currentTarget.dataset);
         commentsModalController.open();
     }
@@ -29,5 +28,14 @@ export default class extends Controller {
         );
         timelineModalController.setCoHostContent(event.currentTarget.dataset);
         timelineModalController.open();
+    }
+
+    launchCompletedEmailModal(event) {
+        let completedEmailModalController = this.application.getControllerForElementAndIdentifier(
+            this.completedEmailModalTarget,
+            "completed-email-modal"
+        );
+        completedEmailModalController.setCoHostContent(event.currentTarget.dataset);
+        completedEmailModalController.open();
     }
 }

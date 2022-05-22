@@ -370,13 +370,14 @@ ActiveRecord::Schema.define(version: 2022_04_30_010656) do
 
   create_table "job_types", force: :cascade do |t|
     t.string "name", null: false
+    t.text "description"
+    t.text "comments"
     t.boolean "multiple_files", default: false, null: false
     t.string "file_label", default: "File"
     t.text "file_description"
     t.decimal "service_fee", precision: 10, scale: 2
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.text "comments"
   end
 
   create_table "lab_sessions", id: :serial, force: :cascade do |t|

@@ -30,9 +30,16 @@ class JobOrderMailer < ApplicationMailer
     end
   end
 
-  def send_job_processed(job_order_id)
+  def send_job_completed(job_order_id, message)
     JobOrder.where(id: job_order_id).present? ? @job_order = JobOrder.find(job_order_id) : return
-    mail(to: @job_order.user.email, reply_to: 'makerspace@uottawa.ca', bcc: 'uottawa.makerepo@gmail.com', subject: "Your Job Order ##{@job_order.id} is available for pickup")
+
+    @message = if message.present?
+       message.html_safe
+    else
+      "Your Job Order ##{@job_order.id} has now been processed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders/admin'>Job Order page</a> for details.".html_safe
+    end
+
+    mail(to: @job_order.user.email, reply_to: 'makerspace@uottawa.ca', bcc: 'uottawa.makerepo@gmail.com', subject: "Your Job Order ##{@job_order.id} has been completed")
   end
 
   # def send_print_reminder(email, id)
