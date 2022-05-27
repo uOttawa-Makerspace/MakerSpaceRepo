@@ -59,6 +59,7 @@ Rails.application.routes.draw do
     get :steps
     get :quote_modal
     get :timeline_modal
+    get :completed_email_modal
     get :invoice
     patch :quote
     patch :steps

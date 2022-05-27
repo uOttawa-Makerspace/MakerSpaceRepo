@@ -7,40 +7,42 @@
 
       <div class="form-group col-lg-6 mx-auto">
         <% @options.each do |o| %>
-          <div class="custom-control custom-checkbox">
-            <% if o.description.present? %>
-              <p><%= o.description %></p>
-            <% end %>
-            <%= check_box_tag "options_id_#{o.id}", o.id, @job_order.job_order_options.pluck(:job_option_id).include?(o.id), {multiple: true, class: 'custom-control-input'} %>
-            <%= label_tag "options_id_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'custom-control-label' %>
-          </div>
-
-          <% if o.need_files %>
-            <div class="custom-file mt-2">
-              <%= label_tag "options_file_#{o.id}", "File", class: "custom-file-label" %>
-              <%= file_field_tag "options_file_#{o.id}", class: 'custom-file-input option-file', data: {file: o.id} %>
+          <div class="my-3 card p-2">
+            <div class="custom-control custom-checkbox">
+              <% if o.description.present? %>
+                <p><%= o.description %></p>
+              <% end %>
+              <%= check_box_tag "options_id_#{o.id}", o.id, @job_order.job_order_options.pluck(:job_option_id).include?(o.id), {multiple: true, class: 'custom-control-input option-checkbox', data: {'file-required': o.need_files, 'option-id': o.id}} %>
+              <%= label_tag "options_id_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'custom-control-label' %>
             </div>
 
-            <% if @job_order.job_order_options.where(job_option_id: o.id).present? && @job_order.job_order_options.where(job_option_id: o.id).first.option_file.attached? %>
-              <div class="text-left pt-2">
-                <ul class="list-group">
-                  <li class="list-group-item text-center text-muted">
-                    (By Un-Checking, you will delete this file)
-                  </li>
-                  <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
-                    <div class="form-check">
-                      <%= check_box_tag "options_keep_file_#{o.id}", true, true, {class: 'form-check-input'} %>
-                      <%= label_tag "options_keep_file_#{o.id}", @job_order.job_order_options.where(job_option_id: o.id).first.option_file.filename, class: "form-check-label" %>
-                    </div>
-
-                    <div class="text-right">
-                      <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(@job_order.job_order_options.where(job_option_id: o.id).first.option_file, disposition: 'attachment') %>
-                    </div>
-                  </li>
-                </ul>
+            <% if o.need_files %>
+              <div class="custom-file mt-2">
+                <%= label_tag "options_file_#{o.id}", "File", class: "custom-file-label" %>
+                <%= file_field_tag "options_file_#{o.id}", class: 'custom-file-input option-file', data: {file: o.id} %>
               </div>
+
+              <% if @job_order.job_order_options.where(job_option_id: o.id).present? && @job_order.job_order_options.where(job_option_id: o.id).first.option_file.attached? %>
+                <div class="text-left pt-2">
+                  <ul class="list-group">
+                    <li class="list-group-item text-center text-muted">
+                      (By Un-Checking, you will delete this file)
+                    </li>
+                    <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
+                      <div class="form-check">
+                        <%= check_box_tag "options_keep_file_#{o.id}", true, true, {class: 'form-check-input'} %>
+                        <%= label_tag "options_keep_file_#{o.id}", @job_order.job_order_options.where(job_option_id: o.id).first.option_file.filename, class: "form-check-label" %>
+                      </div>
+
+                      <div class="text-right">
+                        <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(@job_order.job_order_options.where(job_option_id: o.id).first.option_file, disposition: 'attachment') %>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              <% end %>
             <% end %>
-          <% end %>
+          </div>
         <% end %>
 
         <% if @options.count == 0 %>
@@ -66,5 +68,14 @@
     input.addEventListener('change', () => {
       document.getElementById("options_id_" + input.getAttribute('data-file')).checked = true;
     });
+  });
+
+  document.getElementsByClassName("option-checkbox").forEach((input) => {
+      if (input.getAttribute('data-file-required') === 'true') {
+        input.addEventListener('change', () => {
+            const el = document.getElementById(`options_file_${input.getAttribute('data-option-id')}`)
+            el.required = input.checked === true;
+        });
+      }
   });
 </script>

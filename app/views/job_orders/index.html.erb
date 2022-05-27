@@ -11,7 +11,8 @@
 
 <div class="text-center">
   <h2>My Job Orders</h2>
-  <%= link_to "Create a new Job Order", new_job_orders_path, class: 'btn btn-primary' %>
+  <%= link_to "Create a new Job Order", new_job_orders_path, class: 'btn btn-primary mb-1' %>
+  <%= link_to "Admin Page", admin_job_orders_path, class: 'btn btn-primary mb-1' if @user.staff? %>
   <br><br>
 </div>
 <% if @job_orders.count > 0 %>

@@ -116,7 +116,7 @@
                     <br>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-                      Your Job Order #<%= @job_order.id %> has now been processed. You can now pay for you order online by following <a href="https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order">these instructions</a>. You can check the <a href="https://makerepo.com/job_orders/admin">Job Order page</a> for details.
+                      <%= @message.html_safe %>
                     </p>
                     <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
                       <tbody>

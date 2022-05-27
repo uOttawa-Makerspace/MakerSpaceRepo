@@ -1,8 +1,8 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in, except: [:user_magic_approval, :user_magic_approval_confirmation]
-  before_action :grant_access, only: %w[admin settings processed paid picked_up quote_modal timeline_modal quote resend_quote_email]
-  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up quote_modal timeline_modal quote invoice resend_quote_email]
+  before_action :grant_access, only: %w[admin settings processed paid picked_up quote_modal timeline_modal completed_email_modal quote resend_quote_email]
+  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up quote_modal timeline_modal completed_email_modal quote invoice resend_quote_email]
   before_action :wizard, only: %w[steps]
   before_action :allow_edit, only: %w[steps]
 
@@ -34,6 +34,10 @@ class JobOrdersController < ApplicationController
         (@job_order.user_files.pluck(:id) - params[:keep_files].map(&:to_i)).each do |file_id|
           @job_order.user_files.find(file_id).purge
         end
+      elsif params[:should_delete_user_files] && !params[:keep_files].present?
+        (@job_order.user_files.pluck(:id)).each do |file_id|
+          @job_order.user_files.find(file_id).purge
+        end
       end
 
       if params[:job_order].present?
@@ -42,6 +46,9 @@ class JobOrdersController < ApplicationController
           @job_order.job_services << JobService.create!(name: params[:job_service_name], job_service_group_id: params[:job_order][:job_service_group_id], user_created: true, job_order_id: @job_order.id)
         end
 
+        if params[:job_order][:job_service_ids] == "custom"
+          params[:job_order][:job_service_ids] = @job_order.job_services.last.id
+        end
         unless @job_order.update(job_order_params)
           error = true
         end
@@ -66,7 +73,7 @@ class JobOrdersController < ApplicationController
         render 'job_orders/wizard/order_type'
       when 2
         @job_type = JobType.find(@job_order.job_type_id)
-        @service_groups = JobServiceGroup.all.where(job_type: @job_order.job_type)
+        @service_groups = JobServiceGroup.all.where(job_type: @job_order.job_type).order(:id)
         render 'job_orders/wizard/service'
       when 3
         @options = JobOption.all.joins(:job_types).where(job_types: {id: @job_order.job_type_id})
@@ -154,6 +161,11 @@ class JobOrdersController < ApplicationController
     render layout: false
   end
 
+  def completed_email_modal
+    @message = "Your Job Order ##{@job_order.id} has now been processed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders/admin'>Job Order page</a> for details."
+    render layout: false
+  end
+
   def quote
     error = false
     if params[:approved].present? && params[:approved] == "true"
@@ -212,8 +224,10 @@ class JobOrdersController < ApplicationController
   end
 
   def processed
-    if update_status(params[:processed], JobStatus::WAITING_PROCESSED, JobStatus::PROCESSED, false, nil, nil) && params[:processed] == 'true'
-      JobOrderMailer.send_job_processed(@job_order.id).deliver_now
+    if update_status(params[:completed], JobStatus::WAITING_PROCESSED, JobStatus::COMPLETED, false, nil, nil) && params[:completed] == 'true'
+      if params[:send_email].present? && params[:send_email] == 'true'
+        JobOrderMailer.send_job_completed(@job_order.id, params[:message]).deliver_now
+      end
     end
 
     respond_to do |format|
@@ -223,7 +237,7 @@ class JobOrdersController < ApplicationController
   end
 
   def paid
-    update_status(params[:paid], JobStatus::PROCESSED, JobStatus::PAID, false)
+    update_status(params[:paid], JobStatus::COMPLETED, JobStatus::PAID, false)
   end
 
   def picked_up
@@ -256,7 +270,7 @@ class JobOrdersController < ApplicationController
       {name: "Waiting for User Approval", status: JobStatus::USER_APPROVAL},
       {name: "Sent a Quote Reminder", status: JobStatus::SENT_REMINDER},
       {name: "Waiting to be processed", status: JobStatus::WAITING_PROCESSED},
-      {name: "Waiting for Payment", status: JobStatus::PROCESSED},
+      {name: "Waiting for Payment", status: JobStatus::COMPLETED},
       {name: "Waiting for Pick-Up", status: JobStatus::PAID},
       {name: "Archived", status: [JobStatus::PICKED_UP, JobStatus::DECLINED]},
     ]

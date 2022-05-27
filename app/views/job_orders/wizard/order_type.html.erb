@@ -1,4 +1,4 @@
-<section>
+<section x-data="{job_type_id: <%= @job_order.job_type_id.present? ? @job_order.job_type_id : JobType.first.id %>}">
   <%= form_for(@job_order, url: {controller: "job_orders", action: "steps"}) do |f| %>
 
     <div class="text-center">
@@ -7,8 +7,16 @@
 
       <div class="form-group col-lg-6 mx-auto">
         <%= f.label :job_type_id, 'Job Type' %>
-        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_order.job_type_id.present? ? @job_order.job_type_id : ''), {}, {class: "form-control"} %>
+        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_order.job_type_id.present? ? @job_order.job_type_id : ''), {}, {class: "form-control", 'x-model': 'job_type_id'} %>
       </div>
+
+      <% JobType.all.each do |jo| %>
+        <template x-if="job_type_id == <%= jo.id %>">
+          <div class="alert alert-info my-2 col-lg-6 mx-auto">
+            <%= jo.description %>
+          </div>
+        </template>
+      <% end %>
 
       <%= hidden_field_tag :step, 2 %>
       <div class="text-center">

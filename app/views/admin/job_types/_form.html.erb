@@ -18,6 +18,11 @@
         <%= f.text_field :name, class: "form-control", required: true %>
       </div>
 
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :description, 'Description of the Job Type' %>
+        <%= f.text_field :description, class: "form-control" %>
+      </div>
+
       <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :comments, 'Comments (To be shown at the bottom of the page)' %>
         <div class="text-left">
