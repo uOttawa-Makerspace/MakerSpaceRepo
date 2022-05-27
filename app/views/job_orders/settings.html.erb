@@ -23,7 +23,15 @@
             <td><%= sg.job_type.name %></td>
             <td><%= sg.description %></td>
             </td>
-            <td><%= sg.text_field ? "Yes" : "No" %></td>
+            <td>
+              <% if sg.text_field_false? %>
+                No
+              <% elsif sg.text_field_true? %>
+                Yes
+              <% else %>
+                Optional
+              <% end %>
+            </td>
             <td><%= sg.multiple ? "Yes" : "No" %></td>
             <td><%= link_to "Edit", edit_admin_job_service_group_path(sg.id), class: "btn btn-primary" %></td>
             <td><%= link_to "Delete", admin_job_service_group_path(sg.id), method: :delete, class: "btn btn-danger" %></td>

@@ -46,6 +46,9 @@ class JobOrdersController < ApplicationController
           @job_order.job_services << JobService.create!(name: params[:job_service_name], job_service_group_id: params[:job_order][:job_service_group_id], user_created: true, job_order_id: @job_order.id)
         end
 
+        if params[:job_order][:job_service_ids] == "custom"
+          params[:job_order][:job_service_ids] = @job_order.job_services.last.id
+        end
         unless @job_order.update(job_order_params)
           error = true
         end
@@ -70,7 +73,7 @@ class JobOrdersController < ApplicationController
         render 'job_orders/wizard/order_type'
       when 2
         @job_type = JobType.find(@job_order.job_type_id)
-        @service_groups = JobServiceGroup.all.where(job_type: @job_order.job_type)
+        @service_groups = JobServiceGroup.all.where(job_type: @job_order.job_type).order(:id)
         render 'job_orders/wizard/service'
       when 3
         @options = JobOption.all.joins(:job_types).where(job_types: {id: @job_order.job_type_id})

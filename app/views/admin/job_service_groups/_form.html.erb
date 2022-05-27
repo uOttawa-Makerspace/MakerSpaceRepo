@@ -43,16 +43,21 @@
       </div>
 
       <div class="mb-3">
-        <%= f.label :text_field, "Accept text-field input (This will be the only choice)", required: true %>
+        <%= f.label :text_field, "Accept text-field input", required: true %>
 
         <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :text_field, false, class: 'custom-control-input' %>
-          <%= f.label :text_field, 'No', class: 'custom-control-label', value: false %>
+          <%= f.radio_button :text_field, 'false', class: 'custom-control-input' %>
+          <%= f.label :text_field, 'No', class: 'custom-control-label', value: 'false' %>
         </div>
 
         <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :text_field, true, class: 'custom-control-input' %>
-          <%= f.label :text_field, 'Yes', class: 'custom-control-label', value: true %>
+          <%= f.radio_button :text_field, 'true', class: 'custom-control-input' %>
+          <%= f.label :text_field, 'Yes', class: 'custom-control-label', value: 'true' %>
+        </div>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :text_field, 'option', class: 'custom-control-input' %>
+          <%= f.label :text_field, 'Option', class: 'custom-control-label', value: 'option' %>
         </div>
       </div>
 

@@ -51,7 +51,7 @@
               <template x-if="service_group_id == <%= sg.id %>">
                 <div class="card">
                   <div class="card-body">
-                    <% if sg.text_field %>
+                    <% if sg.text_field_true? %>
                       <div class="form-group">
                         <%= label_tag :job_service_name, "Enter the material name " %>
                         <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : "", class: 'form-control', required: true %>
@@ -68,11 +68,18 @@
                         </div>
                       <% end %>
                     <% else %>
-                      <% sg.job_services.order(created_at: :asc).each do |s| %>
+                      <% sg.job_services.where(user_created: false).order(created_at: :asc).each do |s| %>
                         <div class="custom-control custom-radio">
                           <%= f.radio_button :job_service_ids, s.id, class: 'custom-control-input', checked: @job_order.job_services.present? ? @job_order.job_services.pluck(:id).include?(s.id) : false, required: true %>
                           <%= f.label :job_service_ids, (@user.internal? ? s.name_with_internal_price : s.name_with_external_price), class: 'custom-control-label', value: s.id %>
                           <%= f.label :job_service_ids, s.description %>
+                        </div>
+                      <% end %>
+                      <% if sg.text_field_option? %>
+                        <div class="custom-control custom-radio">
+                          <%= f.radio_button :job_service_ids, 'custom', class: 'custom-control-input', checked: @job_order.job_services.present? ? !@job_order.job_services.pluck(:id).include?(sg.job_service_ids) && @job_order.job_services.where(user_created: true).present? : false, required: true %>
+                          <%= f.label :job_service_ids, 'Enter the custom settings', class: 'custom-control-label', value: 'custom' %>
+                          <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : "", class: 'form-control', id: 'custom-settings-field' %>
                         </div>
                       <% end %>
                     <% end %>
