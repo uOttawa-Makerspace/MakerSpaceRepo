@@ -8,6 +8,7 @@ set :linked_files, %w{config/master.key}
 set :linked_files, fetch(:linked_files, []).push('config/database.yml', 'config/secrets.yml')
 set :linked_dirs, fetch(:linked_dirs, []).push('log', 'tmp/pids', 'tmp/cache', 'tmp/sockets', 'vendor/bundle', 'public/system', 'certs', 'node_modules', 'public/packs')
 set :default_env, { 'PASSENGER_INSTANCE_REGISTRY_DIR' => '/var/passenger_instance_registry' }
+after :finished, 'airbrake:deploy'
 
 # before "deploy:assets:precompile", "deploy:yarn_install"
 # namespace :deploy do

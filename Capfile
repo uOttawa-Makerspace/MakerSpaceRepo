@@ -13,6 +13,7 @@ require 'capistrano/rails'
 require 'capistrano/passenger'
 require 'whenever/capistrano'
 require 'capistrano/maintenance'
+require 'airbrake/capistrano'
 
 install_plugin Capistrano::SCM::Git
 
