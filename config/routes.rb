@@ -447,7 +447,7 @@ Rails.application.routes.draw do
   resources :repositories, path: '/:user_username', param: :id, except: :index do
     post 'add_like', on: :member
     collection do
-      get ':id/download_files', :as => 'download_files', :action => 'download_files'
+      get ':id/download_files', :as => 'download_files', :action => 'download_files', constraints: { id: /[^\/]+/ }
       get ':id/download', :as => 'download', :action => 'download'
       get :populate_users
       patch :link_to_pp
