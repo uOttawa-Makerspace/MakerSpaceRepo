@@ -43,14 +43,13 @@ class RepositoriesController < SessionsController
     end
 
     @files.each do |file|
-
       File.delete("#{Rails.root}/public/tmp/#{file.file.filename}")
-
     end
 
-    cookies[:downloadStarted] = { value: 1, expires: 60.seconds.from_now }
-    redirect_to "/tmp/makerepo_file_#{@repository.id.to_s}.zip"
-
+    File.open(file_location, 'r') do |f|
+      send_data f.read, type: "application/zip", filename: "makerepo_file_#{@repository.id.to_s}.zip"
+    end
+    File.delete(file_location)
   end
 
   def new
