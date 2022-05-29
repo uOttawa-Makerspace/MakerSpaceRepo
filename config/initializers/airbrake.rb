@@ -38,7 +38,6 @@ if (project_id = ENV['AIRBRAKE_PROJECT_ID']) &&
     # option work.
     # https://github.com/airbrake/airbrake-ruby#environment
     c.environment = Rails.env
-
     c.performance_stats = true
 
     # Setting this option allows Airbrake to filter exceptions occurring in
