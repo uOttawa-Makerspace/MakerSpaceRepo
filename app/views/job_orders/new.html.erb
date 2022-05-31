@@ -20,11 +20,13 @@
         <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name), {}, {class: "form-control", 'x-model': 'job_type_id'} %>
       </div>
 
-      <% JobType.all.each do |jo| %>
-        <template x-if="job_type_id == <%= jo.id %>">
-          <div class="alert alert-info my-2 col-lg-6 mx-auto">
-            <%= jo.description %>
-          </div>
+      <% JobType.all.each do |jt| %>
+        <template x-if="job_type_id == <%= jt.id %>">
+          <% if jt.description.present? %>
+            <div class="alert alert-info my-2 col-lg-6 mx-auto">
+              <%= jt.description %>
+            </div>
+          <% end %>
         </template>
       <% end %>
 
