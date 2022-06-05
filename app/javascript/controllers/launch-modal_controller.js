@@ -1,7 +1,7 @@
 import { Controller } from "stimulus";
 
 export default class extends Controller {
-    static targets = ["commentsModal", "quoteModal", "timelineModal", "completedEmailModal"];
+    static targets = ["commentsModal", "quoteModal", "timelineModal", "completedEmailModal", "declineModal"];
 
     launchCommentsModal(event) {
         let commentsModalController = this.application.getControllerForElementAndIdentifier(
@@ -37,5 +37,14 @@ export default class extends Controller {
         );
         completedEmailModalController.setCoHostContent(event.currentTarget.dataset);
         completedEmailModalController.open();
+    }
+
+    launchDeclineModal(event) {
+        let declineModalController = this.application.getControllerForElementAndIdentifier(
+            this.declineModalTarget,
+            "decline-modal"
+        );
+        declineModalController.setCoHostContent(event.currentTarget.dataset);
+        declineModalController.open();
     }
 }

@@ -1,8 +1,8 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in, except: [:user_magic_approval, :user_magic_approval_confirmation]
-  before_action :grant_access, only: %w[admin settings processed paid picked_up quote_modal timeline_modal completed_email_modal quote resend_quote_email]
-  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up quote_modal timeline_modal completed_email_modal quote invoice resend_quote_email]
+  before_action :grant_access, only: %w[admin settings processed paid picked_up quote_modal timeline_modal decline_modal completed_email_modal quote resend_quote_email]
+  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up quote_modal timeline_modal decline_modal completed_email_modal quote invoice resend_quote_email]
   before_action :wizard, only: %w[steps]
   before_action :allow_edit, only: %w[steps]
 
@@ -161,6 +161,10 @@ class JobOrdersController < ApplicationController
     render layout: false
   end
 
+  def decline_modal
+    render layout: false
+  end
+
   def completed_email_modal
     @message = "Your Job Order ##{@job_order.id} has now been processed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders/admin'>Job Order page</a> for details."
     render layout: false
@@ -201,10 +205,14 @@ class JobOrdersController < ApplicationController
       else
         error = true
       end
-    elsif params[:approved].present? &&  params[:approved] == "false"
-      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::DECLINED)
-      if @job_order.save
-        JobOrderMailer.send_job_declined(@job_order.id).deliver_now
+    elsif params[:approved].present? && params[:approved] == "false"
+      if @job_order.update(job_order_params)
+        @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::DECLINED)
+        if @job_order.save
+          JobOrderMailer.send_job_declined(@job_order.id).deliver_now
+        else
+          error = true
+        end
       else
         error = true
       end
@@ -281,15 +289,15 @@ class JobOrdersController < ApplicationController
 
     if !session[:query_date].present? || session[:query_date] == 0
       session[:query_date] = 0
-      @job_orders = JobOrder.all.without_drafts.order_by_expedited
+      @job_orders = JobOrder.all.not_deleted.without_drafts.order_by_expedited
     else
-      @job_orders = JobOrder.all.without_drafts.where(created_at: session[:query_date].days.ago..).order_by_expedited
+      @job_orders = JobOrder.all.not_deleted.without_drafts.where(created_at: session[:query_date].days.ago..).order_by_expedited
     end
   end
 
   def settings
     @service_groups = JobServiceGroup.all.order(:job_type_id)
-    @services = JobService.all.order(:job_service_group_id)
+    @services = JobService.all.not_user_created.order(:job_service_group_id)
     @options = JobOption.all
     @job_types = JobType.all
   end

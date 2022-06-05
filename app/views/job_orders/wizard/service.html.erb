@@ -72,14 +72,14 @@
                         <div class="custom-control custom-radio">
                           <%= f.radio_button :job_service_ids, s.id, class: 'custom-control-input', checked: @job_order.job_services.present? ? @job_order.job_services.pluck(:id).include?(s.id) : false, required: true %>
                           <%= f.label :job_service_ids, (@user.internal? ? s.name_with_internal_price : s.name_with_external_price), class: 'custom-control-label', value: s.id %>
-                          <%= f.label :job_service_ids, s.description %>
+                          <%= f.label :job_service_ids, s.description if s.description %>
                         </div>
                       <% end %>
                       <% if sg.text_field_option? %>
                         <div class="custom-control custom-radio">
-                          <%= f.radio_button :job_service_ids, 'custom', class: 'custom-control-input', checked: @job_order.job_services.present? ? !@job_order.job_services.pluck(:id).include?(sg.job_service_ids) && @job_order.job_services.where(user_created: true).present? : false, required: true %>
+                          <%= f.radio_button :job_service_ids, 'custom', class: 'custom-control-input custom-service-radio', checked: @job_order.job_services.present? ? !@job_order.job_services.pluck(:id).include?(sg.job_service_ids) && @job_order.job_services.where(user_created: true).present? : false, required: true %>
                           <%= f.label :job_service_ids, 'Enter the custom settings', class: 'custom-control-label', value: 'custom' %>
-                          <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : "", class: 'form-control', id: 'custom-settings-field' %>
+                          <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : "", class: 'form-control', id: 'custom-settings-field', '@change': 'handleCustomQualityChange()' %>
                         </div>
                       <% end %>
                     <% end %>
@@ -107,3 +107,10 @@
     </div>
   <% end %>
 </section>
+
+<script>
+    const handleCustomQualityChange = () => {
+        const el = document.getElementsByClassName('custom-service-radio')[0];
+        el.checked = !el.checked;
+    }
+</script>
