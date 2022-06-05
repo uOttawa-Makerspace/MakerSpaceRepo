@@ -10,7 +10,7 @@
           <div class="my-3 card p-2">
             <div class="custom-control custom-checkbox">
               <% if o.description.present? %>
-                <p><%= o.description %></p>
+                <p><%= o.description.html_safe %></p>
               <% end %>
               <%= check_box_tag "options_id_#{o.id}", o.id, @job_order.job_order_options.pluck(:job_option_id).include?(o.id), {multiple: true, class: 'custom-control-input option-checkbox', data: {'file-required': o.need_files, 'option-id': o.id}} %>
               <%= label_tag "options_id_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'custom-control-label' %>

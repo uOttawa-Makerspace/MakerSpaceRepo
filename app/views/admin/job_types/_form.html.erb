@@ -30,6 +30,20 @@
         </div>
       </div>
 
+      <div class="mb-3">
+        <%= f.label :multiple_files, "Accept multiple files", required: true %>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :multiple_files, false, class: 'custom-control-input' %>
+          <%= f.label :multiple_files, 'No', class: 'custom-control-label', value: false %>
+        </div>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :multiple_files, true, class: 'custom-control-input' %>
+          <%= f.label :multiple_files, 'Yes', class: 'custom-control-label', value: true %>
+        </div>
+      </div>
+
       <div class="col-lg-6 text-center mx-auto mb-3">
         <%= f.label :service_fee, 'Service Fee' %>
         <div class="input-group mb-3">

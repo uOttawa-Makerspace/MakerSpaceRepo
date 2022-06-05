@@ -1,9 +1,10 @@
 <div class="col-md-6 my-3">
   <div class="card">
     <div class="card-header">
-      <h5 class="card-title m-0 d-flex justify-content-md-between flex-md-row flex-column">
+      <div class="card-title m-0 d-flex justify-content-md-between flex-md-row flex-column">
         <div>
-          Order #<%= jo.id %> - <%= jo.job_order_statuses.last.job_status.name %>
+          <h5>Order #<%= jo.id %> - <%= jo.job_order_statuses.last.job_status.name %></h5>
+          <p class="mb-0"><%= (jo.user_files.map {|f| f.filename}).join(", ") %></p>
         </div>
         <div class="pt-2 pt-md-0">
           <% if jo.allow_edit? %>
@@ -15,7 +16,7 @@
           <% end %>
           <%= link_to "<i class='fa fa-download'></i> Invoice".html_safe, job_order_invoice_path(job_order_id: jo.id), method: :get, target: '_blank', class: 'btn btn-secondary' if jo.job_order_quote.present? %>
         </div>
-      </h5>
+      </div>
     </div>
     <div class="card-body">
       <ul class="timeline">

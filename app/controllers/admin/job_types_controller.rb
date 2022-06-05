@@ -40,7 +40,7 @@ class Admin::JobTypesController < AdminAreaController
   private
 
   def job_type_params
-    params.require(:job_type).permit(:name, :comments, :service_fee)
+    params.require(:job_type).permit(:name, :comments, :service_fee, :multiple_files)
   end
 
   def set_job_type

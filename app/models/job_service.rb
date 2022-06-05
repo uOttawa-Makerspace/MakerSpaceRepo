@@ -10,6 +10,8 @@ class JobService < ApplicationRecord
     if: -> {files.attached?},
   }
 
+  scope :not_user_created, -> { where(user_created: false) }
+
   def name_with_internal_price
     "#{name} ($#{internal_price}/#{unit})"
   end
