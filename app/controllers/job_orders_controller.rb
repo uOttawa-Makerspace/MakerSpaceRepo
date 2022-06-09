@@ -1,8 +1,8 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in, except: [:user_magic_approval, :user_magic_approval_confirmation]
-  before_action :grant_access, only: %w[admin settings processed paid picked_up quote_modal timeline_modal decline_modal completed_email_modal quote resend_quote_email]
-  before_action :set_job_order, only: %w[steps destroy user_approval processed paid picked_up quote_modal timeline_modal decline_modal completed_email_modal quote invoice resend_quote_email]
+  before_action :grant_access, only: %w[admin settings start_processing processed paid picked_up quote_modal timeline_modal decline_modal completed_email_modal quote resend_quote_email]
+  before_action :set_job_order, only: %w[steps destroy user_approval start_processing processed paid picked_up quote_modal timeline_modal decline_modal completed_email_modal quote invoice resend_quote_email]
   before_action :wizard, only: %w[steps]
   before_action :allow_edit, only: %w[steps]
 
@@ -166,7 +166,7 @@ class JobOrdersController < ApplicationController
   end
 
   def completed_email_modal
-    @message = "Your Job Order ##{@job_order.id} has now been processed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders/admin'>Job Order page</a> for details."
+    @message = "Your Job Order ##{@job_order.id} has now been completed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders'>Job Order page</a> for details."
     render layout: false
   end
 
@@ -231,8 +231,12 @@ class JobOrdersController < ApplicationController
     end
   end
 
+  def start_processing
+    update_status(params[:start_processing], JobStatus::WAITING_PROCESSED, JobStatus::BEING_PROCESSED, false)
+  end
+
   def processed
-    if update_status(params[:completed], JobStatus::WAITING_PROCESSED, JobStatus::COMPLETED, false, nil, nil) && params[:completed] == 'true'
+    if update_status(params[:completed], JobStatus::BEING_PROCESSED, JobStatus::COMPLETED, false, nil, nil) && params[:completed] == 'true'
       if params[:send_email].present? && params[:send_email] == 'true'
         JobOrderMailer.send_job_completed(@job_order.id, params[:message]).deliver_now
       end
@@ -278,6 +282,7 @@ class JobOrdersController < ApplicationController
       {name: "Waiting for User Approval", status: JobStatus::USER_APPROVAL},
       {name: "Sent a Quote Reminder", status: JobStatus::SENT_REMINDER},
       {name: "Waiting to be processed", status: JobStatus::WAITING_PROCESSED},
+      {name: "Currently being processed", status: JobStatus::BEING_PROCESSED},
       {name: "Waiting for Payment", status: JobStatus::COMPLETED},
       {name: "Waiting for Pick-Up", status: JobStatus::PAID},
       {name: "Archived", status: [JobStatus::PICKED_UP, JobStatus::DECLINED]},

@@ -36,7 +36,7 @@ class JobOrderMailer < ApplicationMailer
     @message = if message.present?
        message.html_safe
     else
-      "Your Job Order ##{@job_order.id} has now been processed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders/admin'>Job Order page</a> for details.".html_safe
+      "Your Job Order ##{@job_order.id} has now been completed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders'>Job Order page</a> for details.".html_safe
     end
 
     mail(to: @job_order.user.email, reply_to: 'makerspace@uottawa.ca', bcc: 'uottawa.makerepo@gmail.com', subject: "Your Job Order ##{@job_order.id} has been completed")
