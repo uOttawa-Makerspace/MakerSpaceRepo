@@ -65,6 +65,7 @@ Rails.application.routes.draw do
     patch :quote
     patch :steps
     patch :user_approval
+    patch :start_processing
     patch :processed
     patch :paid
     patch :picked_up

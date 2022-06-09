@@ -7,6 +7,7 @@ class JobStatus < ApplicationRecord
   USER_APPROVAL = JobStatus.find_by(name: 'Waiting for User Approval')
   SENT_REMINDER = JobStatus.find_by(name: 'Sent a Quote Reminder')
   WAITING_PROCESSED = JobStatus.find_by(name: 'Waiting to be Processed')
+  BEING_PROCESSED = JobStatus.find_by(name: 'Currently being Processed')
   COMPLETED = JobStatus.find_by(name: 'Completed')
   PAID = JobStatus.find_by(name: 'Paid')
   PICKED_UP = JobStatus.find_by(name: 'Picked-Up')
