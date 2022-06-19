@@ -42,6 +42,7 @@ class User < ApplicationRecord
   has_many :staff_availabilities, dependent: :destroy
   has_and_belongs_to_many :shifts, dependent: :destroy
   has_many :job_orders, dependent: :destroy
+  has_many :job_order_statuses
 
   validates :avatar, file_content_type: {
       allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],

@@ -45,6 +45,20 @@
         </div>
       <% end %>
 
+      <% @job_type_extras.each do |extra| %>
+        <div class="row">
+          <div class="col-md-12">
+            <p><b><%= extra.name %></b></p>
+          </div>
+          <div class="col-md-12">
+            <div class="form-group">
+              <%= label_tag "quote_extra_amount_#{extra.id}", "Price (In CAD) " %>
+              <%= number_field_tag "quote_extra_amount_#{extra.id}", extra.price, { step: "0.01", placeholder: "0.25", class: "form-control", required: true } %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
       <% @job_order.job_order_options.each do |option| %>
         <div class="row">
           <div class="col-md-12">

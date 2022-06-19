@@ -11,7 +11,7 @@
           <p><%= @job_type.file_description %></p>
           <%= f.label :user_files, @job_type.file_label, class: 'custom-file-label' %>
           <%= f.file_field :user_files, multiple: @job_type.multiple_files, required: !@job_order.user_files.attached?, name: 'job_order[user_files][]', class: 'custom-file-input' %>
-          <p>You can input <%= @job_type.multiple_files ? 'multiple files' : 'one file'%> in this form.</p>
+          <p>You can input <%= @job_type.multiple_files ? 'multiple files' : 'one file' %> in this form.</p>
         </div>
 
         <% if @job_order.user_files.attached? %>
@@ -23,7 +23,7 @@
               <% @job_order.user_files.each do |file| %>
                 <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
                   <div class="form-check">
-                    <%= check_box_tag 'keep_files[]', file.id, true, {multiple: true, class: 'form-check-input'} %>
+                    <%= check_box_tag 'keep_files[]', file.id, true, { multiple: true, class: 'form-check-input' } %>
                     <%= label_tag 'keep_files[]', file.filename, class: "form-check-label" %>
                   </div>
 
@@ -88,15 +88,17 @@
               </template>
             <% end %>
           </div>
-
-          <% if @job_type.comments.present? %>
-            <br>
-            <div class="alert alert-warning">
-              <i class="fa fa-warning"></i> <%= sanitize @job_type.comments %>
-            </div>
-          <% end %>
         </div>
-    <% end %>
+      <% end %>
+
+      <% if @job_type.comments.present? %>
+        <div class="form-group col-lg-6 mx-auto">
+          <br>
+          <div class="alert alert-warning">
+            <i class="fa fa-warning"></i> <%= sanitize @job_type.comments %>
+          </div>
+        </div>
+      <% end %>
 
       <%= hidden_field_tag :step, 3 %>
       <div class="text-center">

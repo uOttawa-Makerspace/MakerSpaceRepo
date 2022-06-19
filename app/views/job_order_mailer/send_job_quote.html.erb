@@ -130,20 +130,25 @@
 
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                       Pricing: <br>
-                      Service charges: <%= number_to_currency(@job_order.job_order_quote.service_fee) %> <br>
+                      Service charges: CAD <%= number_to_currency(@job_order.job_order_quote.service_fee) %> <br>
 
                       <% @job_order.job_order_quote.job_order_quote_services.each do |s| %>
                         <%= s.job_service.job_service_group.name %> - <%= s.job_service.name %>
-                        (<%= "#{s.quantity} #{s.job_service.unit}" %>) : <%= number_to_currency(s.cost) %>
+                        (<%= "#{s.quantity} #{s.job_service.unit}" %>) : CAD <%= number_to_currency(s.cost) %>
+                        <br>
+                      <% end %>
+
+                      <% @job_order.job_order_quote.job_order_quote_type_extras.each do |e| %>
+                        <%= e.job_type_extra.name %> : CAD <%= number_to_currency(e.price) %>
                         <br>
                       <% end %>
 
                       <% @job_order.job_order_quote.job_order_quote_options.each do |o| %>
-                        <%= o.job_option.name %> (Option) : <%= number_to_currency(o.amount) %>
+                        <%= o.job_option.name %> (Option) : CAD <%= number_to_currency(o.amount) %>
                         <br>
                       <% end %>
 
-                      <strong>Grand Total:</strong> <%= number_to_currency(@job_order.total_price) %>
+                      <strong>Grand Total:</strong> CAD <%= number_to_currency(@job_order.total_price) %>
                     </p>
 
                     <% if @job_order.user_comments.present? %>
