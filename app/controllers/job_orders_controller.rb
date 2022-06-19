@@ -82,7 +82,7 @@ class JobOrdersController < ApplicationController
         render 'job_orders/wizard/submission'
       when 5
         if @job_order.job_order_statuses.last.job_status != JobStatus::STAFF_APPROVAL
-          @job_order.job_order_statuses << JobOrderStatus.create!(job_order: @job_order, job_status: JobStatus::STAFF_APPROVAL)
+          @job_order.job_order_statuses << JobOrderStatus.create!(job_order: @job_order, job_status: JobStatus::STAFF_APPROVAL, user: @user)
           JobOrderMailer.send_job_submitted(@job_order.id).deliver_now
           flash[:notice] = "Your job order has been submitted for staff approval!"
         else
@@ -99,7 +99,7 @@ class JobOrdersController < ApplicationController
     @job_order = JobOrder.new(job_order_params)
     @job_order.user = @user
     if @job_order.save
-      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::DRAFT)
+      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::DRAFT, user: @user)
       if @job_order.save
         redirect_to job_order_steps_path(job_order_id: @job_order.id, step: 2)
       else
@@ -154,6 +154,7 @@ class JobOrdersController < ApplicationController
   end
 
   def quote_modal
+    @job_type_extras = JobTypeExtra.where(job_type: @job_order.job_type)
     render layout: false
   end
 
@@ -188,12 +189,17 @@ class JobOrdersController < ApplicationController
               JobOrderQuoteOption.create!(job_option_id: id, job_order_quote: quote, amount: value)
             end
 
+            if key.include?('quote_extra_amount_')
+              id = +key.delete_prefix("quote_extra_amount_").to_i
+              JobOrderQuoteTypeExtra.create!(job_type_extra_id: id, job_order_quote: quote, price: value)
+            end
+
             unless @job_order.update(job_order_quote: quote)
               error = true
             end
           end
 
-          @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::USER_APPROVAL) unless error
+          @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::USER_APPROVAL, user: @user) unless error
           if @job_order.save
             JobOrderMailer.send_job_quote(@job_order.id).deliver_now
           else
@@ -207,7 +213,7 @@ class JobOrdersController < ApplicationController
       end
     elsif params[:approved].present? && params[:approved] == "false"
       if @job_order.update(job_order_params)
-        @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::DECLINED)
+        @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::DECLINED, user: @user)
         if @job_order.save
           JobOrderMailer.send_job_declined(@job_order.id).deliver_now
         else
@@ -257,7 +263,7 @@ class JobOrdersController < ApplicationController
   end
 
   def resend_quote_email
-    @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::SENT_REMINDER)
+    @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: JobStatus::SENT_REMINDER, user: @user)
     if @job_order.save
       JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now
     end
@@ -305,6 +311,7 @@ class JobOrdersController < ApplicationController
     @services = JobService.all.not_user_created.order(:job_service_group_id)
     @options = JobOption.all
     @job_types = JobType.all
+    @job_type_extras = JobTypeExtra.all
   end
 
   def invoice
@@ -356,12 +363,12 @@ class JobOrdersController < ApplicationController
     if current_status.is_a?(Array) ? !current_status.include?(@job_order.job_order_statuses.last.job_status) : @job_order.job_order_statuses.last.job_status != current_status
       error = true
     elsif param.present? && param == "true"
-      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: true_status)
+      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: true_status, user: @user)
       unless @job_order.save
         error = true
       end
     elsif param.present? && param == "false" && need_false_status
-      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: false_status)
+      @job_order.job_order_statuses << JobOrderStatus.create(job_order: @job_order, job_status: false_status, user: @user)
       unless @job_order.save
         error = true
       end

@@ -191,6 +191,7 @@ Rails.application.routes.draw do
     resources :job_service_groups, only: %i[index new create edit update destroy]
     resources :job_services, only: %i[index new create edit update destroy]
     resources :job_options, only: %i[index new create edit update destroy]
+    resources :job_type_extras, only: %i[index new create edit update destroy]
     resources :job_types, only: %i[index new create edit update]
 
     get 'manage_badges'

@@ -171,7 +171,7 @@
       </td>
 
       <td>
-        <%= number_to_currency(@job_order.job_order_quote.service_fee) %>
+        CAD <%= number_to_currency(@job_order.job_order_quote.service_fee) %>
       </td>
     </tr>
 
@@ -181,7 +181,18 @@
           <%= s.job_service.job_service_group.name %> - <%= s.job_service.name %> (<%= "#{s.quantity} #{s.job_service.unit}" %>)
         </td>
         <td>
-          <%= number_to_currency(s.cost) %>
+          CAD <%= number_to_currency(s.cost) %>
+        </td>
+      </tr>
+    <% end %>
+
+    <% @job_order.job_order_quote.job_order_quote_type_extras.each do |e| %>
+      <tr class="item last">
+        <td>
+          <%= e.job_type_extra.name %>
+        </td>
+        <td>
+          CAD <%= number_to_currency(e.price) %>
         </td>
       </tr>
     <% end %>
@@ -192,7 +203,7 @@
           <%= o.job_option.name %> (Option)
         </td>
         <td>
-          <%= number_to_currency(o.amount) %>
+          CAD <%= number_to_currency(o.amount) %>
         </td>
       </tr>
     <% end %>
@@ -201,7 +212,7 @@
       <td></td>
 
       <td>
-        Total: <%= number_to_currency(@job_order.total_price) %>
+        Total: CAD <%= number_to_currency(@job_order.total_price) %>
       </td>
     </tr>
   </table>

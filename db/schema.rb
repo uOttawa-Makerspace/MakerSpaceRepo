@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_05_27_200209) do
+ActiveRecord::Schema.define(version: 2022_06_19_030602) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -295,6 +295,16 @@ ActiveRecord::Schema.define(version: 2022_05_27_200209) do
     t.index ["job_service_id"], name: "index_job_order_quote_services_on_job_service_id"
   end
 
+  create_table "job_order_quote_type_extras", force: :cascade do |t|
+    t.bigint "job_type_extra_id"
+    t.bigint "job_order_quote_id"
+    t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_order_quote_id"], name: "index_job_order_quote_type_extras_on_job_order_quote_id"
+    t.index ["job_type_extra_id"], name: "index_job_order_quote_type_extras_on_job_type_extra_id"
+  end
+
   create_table "job_order_quotes", force: :cascade do |t|
     t.decimal "service_fee", precision: 10, scale: 2, null: false
     t.datetime "created_at", precision: 6, null: false
@@ -306,8 +316,10 @@ ActiveRecord::Schema.define(version: 2022_05_27_200209) do
     t.bigint "job_status_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.bigint "user_id"
     t.index ["job_order_id"], name: "index_job_order_statuses_on_job_order_id"
     t.index ["job_status_id"], name: "index_job_order_statuses_on_job_status_id"
+    t.index ["user_id"], name: "index_job_order_statuses_on_user_id"
   end
 
   create_table "job_orders", force: :cascade do |t|
@@ -366,6 +378,15 @@ ActiveRecord::Schema.define(version: 2022_05_27_200209) do
     t.text "description"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "job_type_extras", force: :cascade do |t|
+    t.bigint "job_type_id"
+    t.string "name"
+    t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["job_type_id"], name: "index_job_type_extras_on_job_type_id"
   end
 
   create_table "job_types", force: :cascade do |t|
@@ -980,12 +1001,16 @@ ActiveRecord::Schema.define(version: 2022_05_27_200209) do
   add_foreign_key "job_order_quote_options", "job_order_quotes"
   add_foreign_key "job_order_quote_services", "job_order_quotes"
   add_foreign_key "job_order_quote_services", "job_services"
+  add_foreign_key "job_order_quote_type_extras", "job_order_quotes"
+  add_foreign_key "job_order_quote_type_extras", "job_type_extras"
   add_foreign_key "job_order_statuses", "job_orders"
   add_foreign_key "job_order_statuses", "job_statuses"
+  add_foreign_key "job_order_statuses", "users"
   add_foreign_key "job_orders", "job_service_groups"
   add_foreign_key "job_service_groups", "job_types"
   add_foreign_key "job_services", "job_orders"
   add_foreign_key "job_services", "job_service_groups"
+  add_foreign_key "job_type_extras", "job_types"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "learning_module_tracks", "learning_modules"
   add_foreign_key "learning_module_tracks", "users"

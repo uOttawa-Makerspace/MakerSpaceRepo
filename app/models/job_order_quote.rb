@@ -1,6 +1,7 @@
 class JobOrderQuote < ApplicationRecord
   has_many :job_order_quote_options
   has_many :job_order_quote_services
+  has_many :job_order_quote_type_extras
   has_one :job_order
 
   def total_price
@@ -10,6 +11,9 @@ class JobOrderQuote < ApplicationRecord
     end
     job_order_quote_options.each do |o|
       total += o.amount.to_f
+    end
+    job_order_quote_type_extras.each do |o|
+      total += o.price.to_f
     end
     total
   end

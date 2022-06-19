@@ -11,7 +11,8 @@
 <td><%= jo.id %></td>
 <td><%= jo.created_at.to_formatted_s(:long_ordinal) %></td></td>
 <td>
-  <%= jo.job_service_group.name %>
+  <%= jo.job_type.name %>
+  <%= jo.job_service_group.name if jo.job_service_group.present? %>
   <% jo.job_services.each do |service| %>
     <li><%= service.name %></li>
   <% end %>
