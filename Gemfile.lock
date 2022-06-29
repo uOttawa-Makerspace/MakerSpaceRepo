@@ -70,6 +70,10 @@ GEM
       zeitwerk (~> 2.3)
     addressable (2.8.0)
       public_suffix (>= 2.0.2, < 5.0)
+    airbrake (13.0.2)
+      airbrake-ruby (~> 6.0)
+    airbrake-ruby (6.1.0)
+      rbtree3 (~> 0.5)
     airbrussh (1.4.0)
       sshkit (>= 1.6.1, != 1.7.0)
     ast (2.4.1)
@@ -1272,6 +1276,7 @@ GEM
     rb-fsevent (0.10.4)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
+    rbtree3 (0.7.0)
     rdoc (6.3.2)
     recaptcha (5.7.0)
       json
@@ -1465,6 +1470,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  airbrake
   aws-sdk (~> 3.0.1)
   aws-sdk-s3
   bcrypt (~> 3.1.10)
