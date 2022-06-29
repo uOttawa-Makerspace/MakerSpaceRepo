@@ -1,0 +1,36 @@
+<section x-data="{job_type_id: <%= @job_order.job_type_id.present? ? @job_order.job_type_id : JobType.first.id %>}">
+  <%= form_for(@job_order, url: {controller: "job_orders", action: "create"}) do |f| %>
+
+    <div class="text-center">
+
+      <h2>New Job Order (Step 1/4)</h2>
+
+      <div class="alert alert-info text-center">
+        <i class="fa fa-warning"></i>
+        The old Print order system is now deprecated. You can now use this new Job Order System.
+        <i class="fa fa-warning"></i>
+
+        <br><br>
+
+        You will still be able to access old Print Orders, but you will not be able to create new ones. To see old ones, please click <%= link_to "here", index_new_print_orders_path %>.
+      </div>
+
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :job_type_id, 'Job Type' %>
+        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name), {}, {class: "form-control", 'x-model': 'job_type_id'} %>
+      </div>
+
+      <% JobType.all.each do |jt| %>
+        <template x-if="job_type_id == <%= jt.id %>">
+          <% if jt.description.present? %>
+            <div class="alert alert-info my-2 col-lg-6 mx-auto">
+              <%= jt.description %>
+            </div>
+          <% end %>
+        </template>
+      <% end %>
+
+      <%= f.submit "Next Step", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</section>

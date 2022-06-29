@@ -1,0 +1,63 @@
+<section>
+  <%= form_for([:admin, @job_option]) do |f| %>
+    <% if @job_option.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(@job_option.count, "error") %> prohibited this option from being saved:</h2>
+
+        <ul>
+          <% @job_option.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="text-center">
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :name, 'Name of the Service Group' %>
+        <%= f.text_field :name, class: "form-control", required: true %>
+      </div>
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
+        <%= f.label :description, 'Description' %>
+        <%= f.text_area :description, class: "form-control" %>
+      </div>
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
+        <%= f.label :job_type_ids, 'Job Type' %>
+        <%= f.select :job_type_ids, options_from_collection_for_select(JobType.all, :id, :name, @job_option.job_type_ids.present? ? @job_option.job_type_ids : ''), {}, {class: "form-control", multiple: true, id: "job_type_ids_option"} %>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :fee, 'Fees ($)' %>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text">$</span>
+          </div>
+          <%= f.number_field :fee, class: "form-control", required: true %>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <%= f.label :need_files, "Need files?", required: true %>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :need_files, false, class: 'custom-control-input' %>
+          <%= f.label :need_files, 'No', class: 'custom-control-label', value: false %>
+        </div>
+
+        <div class="custom-control custom-radio custom-control-inline">
+          <%= f.radio_button :need_files, true, class: 'custom-control-input' %>
+          <%= f.label :need_files, 'Yes', class: 'custom-control-label', value: true %>
+        </div>
+      </div>
+
+      <%= f.submit class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+</section>
+
+<script type="text/javascript" charset="utf-8">
+  new TomSelect("#job_type_ids_option", {});
+</script>

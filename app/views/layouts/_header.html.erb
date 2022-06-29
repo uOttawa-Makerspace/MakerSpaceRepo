@@ -78,6 +78,8 @@
             <%= link_to(t('navbar.user.volunteer_area'), volunteers_path, class: "dropdown-item") if (@user.volunteer? || @user.staff? || @user.admin?) %>
             <%= link_to(t('navbar.user.development_program'), development_programs_path, class: "dropdown-item") if (@user.dev_program? || @user.staff? || @user.admin?) %>
             <%= link_to(t('navbar.user.exams'), exams_path, class: "dropdown-item") if (!@user.exams.blank?) %>
+            <a class="dropdown-item" href="<%= job_orders_path %>"><%= t('navbar.user.joborder') %></a>
+            <%= link_to(t('navbar.user.joborder_admin'), admin_job_orders_path, class: "dropdown-item") if (@user.staff? || @user.admin?) %>
             <a class="dropdown-item" href="<%= index_new_print_orders_path %>"><%= t('navbar.user.printorder') %></a>
             <%= link_to(t('navbar.user.printorder_admin'), print_orders_path, class: "dropdown-item") if (@user.staff? || @user.admin?) %>
             <a class="dropdown-item" href="<%= help_path %>"><%= t('navbar.user.help') %></a>
@@ -107,6 +109,6 @@
 
 <%= render 'static_pages/login_modal' if !signed_in? %>
 
-<div class="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
+<div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
   <%= render 'layouts/flash' %>
 </div>

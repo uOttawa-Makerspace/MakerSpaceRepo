@@ -19,6 +19,7 @@ import 'regenerator-runtime/runtime'
 require("@rails/ujs").start();
 require("turbolinks").start();
 require("@rails/activestorage").start();
+import "controllers"
 require("jquery");
 require("jquery-ui")
 require("justifiedGallery")
@@ -50,9 +51,11 @@ require("packs/vendor");
 require("packs/accordion-load");
 
 import "bootstrap";
-import "tom-select";
+import bsCustomFileInput from 'bs-custom-file-input'
 require("packs/toastr");
 
+import {TomSelect} from "tom-select";
+window.TomSelect = require('tom-select');
 import { Calendar } from '@fullcalendar/core';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -94,6 +97,8 @@ $(document).on('turbolinks:load', function () {
     $('.bootstrap-select').selectpicker({
         windowPadding: [80, 0, 0, 0]
     });
+
+    bsCustomFileInput.init()
 });
 
 window.clearEndDate = function() {

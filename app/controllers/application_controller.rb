@@ -37,7 +37,7 @@ class ApplicationController < ActionController::Base
     return if signed_in?
 
     respond_to do |format|
-      format.html { redirect_to login_path }
+      format.html { redirect_to login_path(back_to: request.fullpath) }
       format.js   { render js: "window.location.href = '#{login_path}'" }
       format.json { render json: 'redirect' }
     end

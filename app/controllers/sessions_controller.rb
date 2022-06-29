@@ -52,7 +52,6 @@ class SessionsController < ApplicationController
 
   def login
     if signed_in?
-      flash[:alert] = 'You are already logged in.'
       redirect_to root_path
     end
     @user = User.new

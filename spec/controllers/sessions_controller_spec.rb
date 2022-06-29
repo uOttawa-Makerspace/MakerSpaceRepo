@@ -49,7 +49,6 @@ RSpec.describe SessionsController, type: :controller do
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = @user.id
         get :login
-        expect(flash[:alert]).to eq('You are already logged in.')
         expect(response).to redirect_to root_path
       end
 
