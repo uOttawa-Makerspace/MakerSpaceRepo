@@ -27,7 +27,7 @@
 		      	<%= link_to 'Account Settings', settings_admin_path %>
 		      </li>
 		      <li>
-		      <%= link_to "View Profile", user_path(@user.username) if current_page?(action: 'profile', controller: 'settings') %>
+		      <%= link_to "View Profile", user_path(@user.username) if current_page?(action: 'profile', controller: 'settings') || current_page?(action: 'admin', controller: 'settings')%>
 		      </li>
 				</ul>
 			</div>

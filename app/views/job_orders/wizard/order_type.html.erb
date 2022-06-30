@@ -1,0 +1,28 @@
+<section x-data="{job_type_id: <%= @job_order.job_type_id.present? ? @job_order.job_type_id : JobType.first.id %>}">
+  <%= form_for(@job_order, url: {controller: "job_orders", action: "steps"}) do |f| %>
+
+    <div class="text-center">
+
+      <h2>New Job Order (Step 1/4)</h2>
+
+      <div class="form-group col-lg-6 mx-auto">
+        <%= f.label :job_type_id, 'Job Type' %>
+        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_order.job_type_id.present? ? @job_order.job_type_id : ''), {}, {class: "form-control", 'x-model': 'job_type_id'} %>
+      </div>
+
+      <% JobType.all.each do |jo| %>
+        <template x-if="job_type_id == <%= jo.id %>">
+          <div class="alert alert-info my-2 col-lg-6 mx-auto">
+            <%= jo.description %>
+          </div>
+        </template>
+      <% end %>
+
+      <%= hidden_field_tag :step, 2 %>
+      <div class="text-center">
+        <%= link_to('Delete Current Order', job_order_path(@job_order), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger mb-1") %>
+        <%= f.submit "Next Step", class: "btn btn-primary mb-1" %>
+      </div>
+    </div>
+  <% end %>
+</section>
