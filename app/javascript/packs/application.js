@@ -59,8 +59,8 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 
 document.addEventListener("turbolinks:load", () => {
-    $('[data-toggle="tooltip"]').tooltip()
-    $('[data-toggle="popover"]').popover()
+    $('[data-bs-toggle="tooltip"]').tooltip()
+    $('[data-bs-toggle="popover"]').popover()
 
     const links = document.getElementsByTagName('a');
 

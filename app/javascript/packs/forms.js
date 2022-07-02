@@ -123,7 +123,7 @@ $(document).on("turbolinks:load", function () {
     $('body').on('click', 'button.link-list', function () {
         let id = $('.main_ul')[0].childElementCount - 1;
         $('.main_ul').append(
-            $('<li><div class="form-group"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div></li>')
+            $('<li><div class="mb-3"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text"></div></li>')
         );
     });
 

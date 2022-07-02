@@ -1,3 +1,3 @@
 $(document).ready(function(){
-    $('[data-toggle="popover"]').popover();
+    $('[data-bs-toggle="popover"]').popover();
 });

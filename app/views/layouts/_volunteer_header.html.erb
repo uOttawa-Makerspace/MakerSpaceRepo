@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-
+<div class="container-fluid">
   <a class="navbar-brand" href="<%= volunteers_path %>">Volunteer <strong>Program</strong></a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navbarSupportedContent2">
@@ -14,7 +14,7 @@
         <li class="nav-item"><%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'Requests', volunteer_task_requests_path, class: "nav-link" %></li>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="calendar" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" id="calendar" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Calendar
           </a>
           <div class="dropdown-menu" aria-labelledby="calendar">
@@ -29,7 +29,7 @@
         <li class="nav-item"><%= link_to 'My Stats', my_stats_volunteers_path, class: "nav-link" %></li>
         <li class="nav-item"><%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: "nav-link" %></li>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="calendar" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" id="calendar" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Calendar
           </a>
           <div class="dropdown-menu" aria-labelledby="calendar">
@@ -42,7 +42,7 @@
       <ul class="navbar-nav mx-auto">
         <li class="nav-item"><%= link_to 'Requests', volunteer_task_requests_path, class: "nav-link" %></li>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Tasks
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -51,7 +51,7 @@
           </div>
         </li>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Announcements
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -60,7 +60,7 @@
           </div>
         </li>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Lists
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -70,5 +70,6 @@
         </li>
       </ul>
     <% end %>
+  </div>
   </div>
 </nav>

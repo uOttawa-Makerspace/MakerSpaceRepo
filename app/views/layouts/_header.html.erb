@@ -1,27 +1,26 @@
 <nav class="navbar navbar-expand-xl navbar-light fixed-top <%= controller_name %> <%= action_name %> bg-light">
+<div class="container-fluid">
   <a class="navbar-brand" href="/">Maker<strong>Repo</strong></a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
-    <form class="form-inline form-search" action="/search" method="get">
+    <form class="w-auto d-inline-block form-search" action="/search" method="get">
       <div class="input-group">
         <input class="form-control" name="q" id="q" placeholder="<%= t('navbar.search') %>" aria-label="Search">
-        <div class="input-group-append">
-          <button class="btn btn-primary" type="submit" style="height: auto" aria-label="Search">
-            <i class="fa fa-search"></i>
-          </button>
-        </div>
+        <button class="btn btn-primary" type="submit" style="height: auto" aria-label="Search">
+          <i class="fa fa-search"></i>
+        </button>
       </div>
     </form>
 
-    <ul class="navbar-nav mr-auto align-items-xl-baseline">
+    <ul class="navbar-nav me-auto align-items-xl-baseline">
       <li class="nav-item">
         <a class="nav-link" href="/explore"><%= t('navbar.explore') %></a>
       </li>
 
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="/project_proposals" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" href="/project_proposals" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <%= t('navbar.project_proposals') %>
         </a>
         <div class="dropdown-menu">
@@ -36,7 +35,7 @@
       </li>
 
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="/project_proposals" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" href="/project_proposals" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <%= t('navbar.more') %>
         </a>
 
@@ -51,10 +50,10 @@
       </li>
     </ul>
 
-    <ul class="navbar-nav ml-auto align-items-xl-baseline">
-
+    <ul class="navbar-nav ms-auto align-items-xl-baseline">
+    
       <% unless signed_in? %>
-        <li class="nav-item"><a class="nav-link" data-toggle="modal" data-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
         <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
       <% else %>
         <li class="nav-item">
@@ -65,7 +64,7 @@
         </li>
 
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar' %>
             <%= @user.username %>
           </a>
@@ -102,6 +101,7 @@
         </li>
       <% end %>
     </ul>
+  </div>
   </div>
 </nav>
 

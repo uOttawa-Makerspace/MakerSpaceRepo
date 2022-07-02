@@ -12,24 +12,24 @@
   </div>
   <div class="issue-report">
     <%= form_tag send_email_path, method: :put do %>
-      <div class="form-group">
-      <%= label_tag :name , "Full Name" %>
+      <div class="mb-3">
+      <%= label_tag :name , "Full Name", class:"form-label" %>
       <%= text_field_tag :name,'', autofocus: true, :required => true, :class => 'form-control' %>
       </div>
-      <div class="form-group">
-      <%= label_tag :email %>
+      <div class="mb-3">
+      <%= label_tag :email, class:"form-label" %>
       <%= email_field_tag :email,'', :required => true, :class => 'form-control' %>
       </div>
-      <div class="form-group">
-      <%= label_tag :subject %>
+      <div class="mb-3">
+      <%= label_tag :subject, class:"form-label" %>
       <%= text_field_tag :subject,'', :required => true, :class => 'form-control' %>
       </div>
-      <div class="form-group">
-      <%= label_tag :comments %>
+      <div class="mb-3">
+      <%= label_tag :comments, class:"form-label" %>
       <%= text_area_tag :comments,'', :required => true, placeholder: "Please explain your issue.", :class => 'form-control' %>
       </div>
 
-      <div class="form-group">
+      <div class="mb-3">
         <%= recaptcha_tags %>
       </div>
 

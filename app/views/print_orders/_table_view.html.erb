@@ -134,7 +134,7 @@
       <% elsif prints.printed %>
         Printed
       <% elsif prints.user_approval and prints.approved and prints.staff_id.present? and (@user.admin? or @user.id == prints.staff_id) %>
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-printed-it-<%= prints.id %>">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-printed-it-<%= prints.id %>">
           I printed it
         </button>
         <div class="modal fade" id="modal-printed-it-<%= prints.id %>" tabindex="-1" aria-labelledby="modal-printed-it-<%= prints.id %>" aria-hidden="true">
@@ -149,7 +149,7 @@
               <div class="modal-body">
                 <div class="row">
                   <div class="text-center w-100">
-                    <p class="text-center ml-3 mr-3">Until you click one of the buttons, the print
+                    <p class="text-center ms-3 me-3">Until you click one of the buttons, the print
                       order will
                       appear as
                       <br> NOT Printed</p>
@@ -158,8 +158,8 @@
                   <div class="col-md-12">
                     <%= form_for prints, url: print_order_path(prints), html: { id: "email-true-#{prints.id}" } do |f| %>
 
-                      <div class="pr-5 pl-5 text-center">
-                        <div class="text-left">
+                      <div class="ps-5 ps-5 text-center">
+                        <div class="text-start">
                           <input id="x-<%= prints.id %>" value="<%= PrintOrderMessage.find_by(name: "I_Printed_It").retrieve_message(prints.id) %>" type="hidden" name="email_message">
                           <trix-editor input="x-<%= prints.id %>"></trix-editor>
                         </div>

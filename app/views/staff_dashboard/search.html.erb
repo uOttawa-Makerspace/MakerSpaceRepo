@@ -2,7 +2,7 @@
   <div class="padding-10">
     <br>
     <h2 class="text-center">Welcome to
-      <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "custom-select", :onchange => 'setSpace()' %></strong>
+      <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "form-select", :onchange => 'setSpace()' %></strong>
     </h2>
     <%= render 'search' %>
     <br />

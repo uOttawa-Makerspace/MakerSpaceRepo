@@ -6,19 +6,20 @@
       <div class="col-md-12">
         <% @skills.each do |skill| %>
 
-          <div class="accordion">
-            <div class="card">
-              <div class="card-header" type="button" data-toggle="collapse" data-target="#trainings-<%= skill.id %>">
-                <h6 class="my-auto py-2"><%= skill.name %></h6>
+          <div class="accordion" id="accordion-<%= skill.id %>">
+            <div class="accordion-item">
+              <h6 class="accordion-header" id="header-<%= skill.id %>">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panel-<%= skill.id %>" aria-expanded="false" aria-controls="panel-<%= skill.id %>">
+                <%= skill.name %></h6>
               </div>
-              <div id="trainings-<%= skill.id %>" class="collapse">
-
-                <% skill.trainings.each do |training| %>
-                  <div class="accordion">
-                    <div class="card">
-                      <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
-                        <div class="row">
-                          <div class="col-4 float-right"></div>
+              <div id="panel-<%= skill.id %>" class="accordion-collapse collapse" aria-labelledby="header-<%= skill.id %>" data-bs-parent="accordion-<%= skill.id %>">
+                <div class="accordion-body">
+                  <% skill.trainings.each do |training| %>
+                    <div class="accordion" id="accordion-<%= training.id %>">
+                      <div class="accordion-item">
+                      <div class="accordion-header" id="header-<%= training.id %>">
+                        <div class="row" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>">
+                          <div class="col-4 float-end"></div>
                           <div class="col-4">
                             <button class="btn btn-link" type="button"><%= training.name %></button>
                           </div>
@@ -27,11 +28,10 @@
                           </div>
                         </div>
                       </div>
-
-                      <div id="training-<%= training.id %>" class="collapse">
-                        <div class="card-body">
+                      <div id="training-<%= training.id %>" class="accordion-collapse collapse" aria-labelledby="header-<%= training.id %>" data-bs-parent="accordion-<%= training.id %>">
+                        <div class="accordion-body">
                           <% if training.description.present? %>
-                            <div class="jumbotron text-center text-wrap">
+                            <div class="jumbotron card bg-light text-center text-wrap">
                               <%= training.description %>
                             </div>
                           <% end %>
@@ -57,6 +57,7 @@
                     </div>
                   </div>
                 <% end %>
+              </div>
               </div>
             </div>
           </div>

@@ -1,8 +1,8 @@
 <% provide(:title, "Learning Area") %>
 <section class="card w3-card-2 <%= return_border_color(@learning_module.level) %>">
   <div>
-    <%=link_to 'Delete', learning_area_path, method: :delete, class: "btn btn-danger float-left ml-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
-    <%=link_to "Edit", edit_learning_area_path(@learning_module.id), class:"btn btn-primary float-right mr-5 mt-5", style: "opacity: 0.5" if current_user.admin?%>
+    <%=link_to 'Delete', learning_area_path, method: :delete, class: "btn btn-danger float-start ms-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
+    <%=link_to "Edit", edit_learning_area_path(@learning_module.id), class:"btn btn-primary float-end me-5 mt-5", style: "opacity: 0.5" if current_user.admin?%>
   </div>
   <div class="col-lg-7 mx-auto">
     <br />
@@ -31,7 +31,7 @@
       <br />
       <div class="row">
         <div class="col-lg-12">
-          <div class="jumbotron text-center text-wrap">
+          <div class="jumbotron card bg-light text-center text-wrap">
             <%= @learning_module.description.html_safe %>
           </div>
           <div id="show-photo">
@@ -67,8 +67,8 @@
 <% end %>
 
 <% @files.each do |f| %>
-  <div class="embed-responsive embed-responsive-16by9">
-    <iframe class="embed-responsive-item" src="<%= url_for(f.file) %>" allowfullscreen></iframe>
+  <div class="ratio ratio-16x9">
+    <iframe src="<%= url_for(f.file) %>" allowfullscreen></iframe>
     <br />
   </div>
 <% end %>

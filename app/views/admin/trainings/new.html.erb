@@ -1,6 +1,6 @@
 <section>
   <br>
-    <h2 class="text-center font-weight-bold">New Training</h2>
+    <h2 class="text-center fw-bold">New Training</h2>
     <%= form_for @new_training, url: {controller: "admin/trainings", action: "create"} do |f| %>
       <div class="container">
         <div class="row text-center">
@@ -21,7 +21,7 @@
           <br><br>
 
           <div class="col-md-12 form-group">
-            <%= f.label(:skill_id, "Skill Type") %>
+            <%= f.label(:skill_id, "Skill Type", class:"form-label") %>
             <%= f.select :skill_id, options_for_select(@skills), {include_blank: true}, {class: "form-control"} %>
           </div>
 

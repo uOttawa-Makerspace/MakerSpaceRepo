@@ -7,7 +7,7 @@
       <div class="col-lg-12 text-center">
 
         <h5>Proficient Projects</h5>
-        <div class="form-group">
+        <div class="mb-3">
           <%= form_for @new_video do |f| %>
             <%= f.select :proficient_project_id, options_for_select(@proficient_projects),{:include_blank => 'Choose a Project...'}, class: "form-control", id: "select_proficient_id", :onchange => 'setProficientProject()', required: true %>
             <p id="proficient_project"></p>
@@ -23,7 +23,7 @@
         <hr />
 
         <h5>Learning Modules</h5>
-        <div class="form-group">
+        <div class="mb-3">
           <%= form_for @new_video do |f| %>
             <%= f.select :learning_module_id, options_for_select(@learning_modules),{:include_blank => 'Choose a Module...'}, class: "form-control", id: "select_module_id", :onchange => 'setLearningModule()', required: true %>
             <p id="learning_module"></p>

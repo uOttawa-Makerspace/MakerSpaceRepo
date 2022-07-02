@@ -38,7 +38,7 @@ form2.onsubmit = function(){
     form2.submit();
 };
 
-document.querySelector('.custom-file-input-excel').addEventListener('change',function(e){
+document.querySelector('.form-control-input-excel').addEventListener('change',function(e){
     var fileName = document.getElementById("excel-input").files[0].name;
     var nextSibling = e.target.nextElementSibling
     nextSibling.innerText = fileName

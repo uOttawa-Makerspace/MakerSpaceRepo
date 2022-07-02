@@ -67,12 +67,12 @@
 
             <td class="action-cell">
             <br>
-              <%=link_to "Visit", staff_training_session_path(sesh), class:"btn btn-success btn-sm btn-block" %>
+              <%=link_to "Visit", staff_training_session_path(sesh), class:"btn btn-success btn-sm d-block w-100" %>
               <%=link_to "Download",
                         training_report_staff_training_session_path(id:sesh.id, format: "xlsx" ),
                         action: :training_report,
-                        class:"btn btn-info btn-sm btn-block" %>
-              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"btn btn-sm btn-danger btn-block"%>
+                        class:"btn btn-info btn-sm d-block w-100" %>
+              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"btn btn-sm btn-danger d-block w-100"%>
             <br></br>
             </td>
           </tr>

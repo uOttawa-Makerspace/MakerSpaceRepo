@@ -1,8 +1,8 @@
 <section class="page-contents">
   <div class="py-3 padding-10 text-center">
 
-    <h2 class="font-weight-bold">Questions for
-      <strong><strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name).where.not(id: @space.id), :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "custom-select", :onchange => 'setSpace()', :style => "padding: 2px;" %></strong></strong>
+    <h2 class="fw-bold">Questions for
+      <strong><strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name).where.not(id: @space.id), :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "form-select", :onchange => 'setSpace()', :style => "padding: 2px;" %></strong></strong>
     </h2>
 
     <%= link_to "New Question", new_question_path, :class=>"btn btn-primary m-5" %>
@@ -50,11 +50,11 @@
               <td class = "username"><%= link_to q.user.name.capitalize, user_path(q.user.username) %></td>
 
               <td class="action-cell">
-                <%=link_to "Edit", edit_question_path(q.id), class:"btn-block btn btn-primary btn-sm" %>
-                <%=link_to "Show", question_path(q.id), class:"btn-block btn btn-info btn-sm" %>
+                <%=link_to "Edit", edit_question_path(q.id), class:"d-block w-100 btn btn-primary btn-sm" %>
+                <%=link_to "Show", question_path(q.id), class:"d-block w-100 btn btn-info btn-sm" %>
                 <%=link_to "Delete", { controller: :questions ,action: :destroy, id: q.id }, method: :delete,
                            data: { confirm: 'Are you sure that you want to delete this question?' },
-                           class:"btn-block btn-sm btn btn-danger"%>
+                           class:"d-block w-100 btn-sm btn btn-danger"%>
               </td>
 
             </tr>

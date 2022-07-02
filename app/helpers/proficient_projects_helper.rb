@@ -26,7 +26,7 @@ module ProficientProjectsHelper
   def training_status(training_id, user_id)
     user = User.find(user_id)
     level = Certification.joins(:user, :training_session).where(training_sessions: { training_id: training_id }, user: user ).pluck(:level)
-    div = Proc.new{ |color, level| "<span class='float-right' style='color: #{color}'>#{level}</span>" }
+    div = Proc.new{ |color, level| "<span class='float-end' style='color: #{color}'>#{level}</span>" }
     if level.include?("Advanced")
       div.call('red', '🦅 Advanced')
     elsif level.include?("Intermediate")

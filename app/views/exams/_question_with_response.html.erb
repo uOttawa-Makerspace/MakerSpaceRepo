@@ -1,4 +1,4 @@
-<div class=" text-left word-break">
+<div class=" text-start word-break">
   <h2><b><%= question.description %></b></h2>
 </div>
 
@@ -12,7 +12,7 @@
   <% end %>
 </div>
 <hr>
-<div class="text-left">
+<div class="text-start">
   <% question.answers.randomize_answers.each do |a| %>
     <% if response.answer.eql?(a) %>
       <div class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">

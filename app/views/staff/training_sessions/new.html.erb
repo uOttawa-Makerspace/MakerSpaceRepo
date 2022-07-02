@@ -1,25 +1,25 @@
 <section class="page-contents">
   <div class="text-center padding">
 
-    <h2 class="pt-2 mb-5">New <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name).where.not(id: @space.id), :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "custom-select", :onchange => 'setSpace()', style: 'width: 50%; padding: 2px;' %></strong>
+    <h2 class="pt-2 mb-5">New <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name).where.not(id: @space.id), :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "form-select", :onchange => 'setSpace()', style: 'width: 50%; padding: 2px;' %></strong>
       Training Session</h2>
 
     <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
-      <div class="form-group">
-        <% label_tag 'training_id' %>
+      <div class="mb-3">
+        <% label_tag 'training_id', class:"form-label" %>
         <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name ASC'), 'id', 'name'), prompt: 'Select training', class: "form-control", required: true %><br>
       </div>
-      <div class="form-group">
-        <% label_tag 'level' %>
+      <div class="mb-3">
+        <% label_tag 'level', class:"form-label" %>
         <%= select_tag 'level', options_for_select(@levels), prompt: 'Select level', class: "form-control", required: true %><br>
       </div>
-      <div class="form-group">
-        <% label_tag 'course' %>
+      <div class="mb-3">
+        <% label_tag 'course', class:"form-label" %>
         <%= select_tag 'course', options_for_select(@course_names), prompt: 'Select course', class: "form-control", required: true %><br>
       </div>
       <% if @user.admin? %>
-        <% label_tag 'user_id' %>
+        <% label_tag 'user_id', class:"form-label" %>
         <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']).order('name ASC'), 'id', 'name'), prompt: 'Select instructor', class: "form-control", required: true %><br>
       <% end %>
     <br />

@@ -1,5 +1,5 @@
 <section>
-  <h2 class="font-weight-bold py-3 text-center"><%= link_to "Spaces Manager", admin_spaces_path %></h2>
+  <h2 class="fw-bold py-3 text-center"><%= link_to "Spaces Manager", admin_spaces_path %></h2>
   <br>
 
   <h2>Select a Space To Edit </h2>
@@ -11,7 +11,7 @@
   <br>
   <h3>Create a new space by giving it a unique name </h3>
   <%= form_for admin_spaces_path, :url => {:action => "create", controller: 'admin/spaces'} do |f| %>
-    <div class="form-group">
+    <div class="mb-3">
       <%= text_field_tag 'space_params[name]', nil, placeholder: 'Enter a unique name', class: "form-control" %>
     </div>
     <%= submit_tag "Create", class: "btn btn-primary" %>

@@ -1,6 +1,6 @@
 <div class="text-center">
   <br />
-  <h2 class="font-weight-bold">Staff unavailabilities</h2>
+  <h2 class="fw-bold">Staff unavailabilities</h2>
 
   <p>Please input all the hours where you are <b>NOT</b> available.</p>
   <br>
@@ -9,13 +9,9 @@
     <div class="d-flex justify-content-center">
       <%= form_tag staff_availabilities_path, method: :get do %>
         <div class="input-group mb-3">
-          <div class="input-group-prepend">
-            <%= label_tag :staff_id, "User", class: 'input-group-text' %>
-          </div>
-          <%= select_tag :staff_id, options_for_select(StaffSpace.all.joins(:user).order('users.name ASC').distinct.pluck('users.name', 'users.id'), selected: (params[:staff_id].present? ? params[:staff_id] : @user.id)), class: "custom-select" %>
-          <div class="input-group-append">
-            <button class="btn btn-outline-secondary" type="submit">Go</button>
-          </div>
+          <%= label_tag :staff_id, "User", class: 'input-group-text' %>
+          <%= select_tag :staff_id, options_for_select(StaffSpace.all.joins(:user).order('users.name ASC').distinct.pluck('users.name', 'users.id'), selected: (params[:staff_id].present? ? params[:staff_id] : @user.id)), class: "form-select" %>
+          <button class="btn btn-outline-secondary" type="submit">Go</button>
         </div>
       <% end %>
     </div>

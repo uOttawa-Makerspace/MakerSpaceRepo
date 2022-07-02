@@ -13,7 +13,7 @@
               <h5 class="card-title"><%= discount_code.price_rule.title %></h5>
               <p class="card-text">
                 Use code : <span id="coupon-<%= discount_code.id %>"><%= discount_code.code %></span>
-                <button class="clipboard-btn btn btn-info float-right" data-toggle="popover" data-trigger="focus" data-content="Copied !" data-placement="left" data-clipboard-action="copy" data-clipboard-target="#coupon-<%= discount_code.id %>">Copy</button>
+                <button class="clipboard-btn btn btn-info float-end" data-bs-toggle="popover" data-trigger="focus" data-content="Copied !" data-placement="left" data-clipboard-action="copy" data-clipboard-target="#coupon-<%= discount_code.id %>">Copy</button>
             </div>
           </div>
         </div>

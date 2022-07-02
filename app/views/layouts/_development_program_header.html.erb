@@ -1,14 +1,14 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-
+<div class="container-fluid">
   <a class="navbar-brand" href="<%= development_programs_path %>">Development<strong>Program</strong></a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navbarSupportedContent2">
     <ul class="navbar-nav mx-auto">
       <% if current_user.admin? %>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Learning
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -18,7 +18,7 @@
           </div>
         </li>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Proficient Projects
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdo wn2">
@@ -37,7 +37,7 @@
         </li>
       <% end %>
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Skills/Badge
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -55,7 +55,7 @@
       </li>
       <% if current_user.admin? %>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Kits
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -69,7 +69,7 @@
         </li>
       <% end %>
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Coupons
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -82,7 +82,7 @@
       </li>
       <% if current_user.admin? %>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Videos
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -92,11 +92,11 @@
         </li>
       <% end %>
     </ul>
-    <ul class="navbar-nav ml-auto mr-1">
+    <ul class="navbar-nav ms-auto me-1">
       <li class="nav-link" aria-label="cart">
         <%= render 'layouts/cart_text' %>
       </li>
     </ul>
   </div>
-
+</div>
 </nav>

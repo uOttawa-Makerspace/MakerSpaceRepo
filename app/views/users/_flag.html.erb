@@ -15,7 +15,7 @@
         </div>
         <%= form_tag(flag_users_path, :method => "post") do %>
           <%= hidden_field_tag :flagged_user, nil, value: @repo_user.id %>
-          <div class="form-group">
+          <div class="mb-3">
             <%= text_field_tag :flag_message, nil, placeholder: "Message", class: "form-control" %>
           </div>
           <button type="submit" class="btn btn-success">Add flag</button>

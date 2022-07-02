@@ -15,7 +15,7 @@
     <% if params[:p] == "signed_in_users" %>
       <table>
         <td><h2>Users currently signed in</h2></td>
-        <td class="right"><%= link_to "Show new users", :p => "new_users" %></td>
+        <td class="end"><%= link_to "Show new users", :p => "new_users" %></td>
       </table>
 
       <div class="locations">
@@ -41,7 +41,7 @@
     <% elsif params[:p] == "new_users" || params[:p].nil? %>
       <table>
         <td><h2>Newest users</h2></td>
-        <td class="right"><%= link_to "Show users currently signed in", :p => "signed_in_users" %></td>
+        <td class="end"><%= link_to "Show users currently signed in", :p => "signed_in_users" %></td>
       </table>
     <% end %>
     <%= form_tag bulk_add_certifications_admin_users_path, method: :post do %>

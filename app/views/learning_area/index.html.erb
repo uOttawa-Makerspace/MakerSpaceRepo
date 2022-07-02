@@ -3,19 +3,18 @@
   <div class="text-center">
     <div class="row mx-auto">
 
-      <div class="col-md-12">
+      <div class="accordion col-md-12" id="training-accordion">
         <% @skills.each do |skill| %>
           <% next unless skill.trainings.present? %>
           <% skill.trainings.each do |training| %>
             <% next unless training.learning_modules.present? %>
-
-            <div class="accordion">
-              <div class="card">
-
-                <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
+              <div class="accordion-item">
+                <div class="accordion-header" id="header-<%= training.id %>">
                   <div class="row">
                     <div class="col-4">
-                      <button class="btn btn-link float-left" type="button"><%= training.name %></button>
+                      <button class="accordion-button btn btn-link float-start" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>">
+                        <%= training.name %>
+                      </button>
                     </div>
                     <div class="col-4">
                       <span class="mx-auto">
@@ -31,35 +30,25 @@
                     </div>
                   </div>
                 </div>
-
-                <div id="training-<%= training.id %>" class="collapse">
-
-                  <div class="card-body">
-
-                    <div class="row">
+                <div id="training-<%= training.id %>" class="accordion-collapse collapse" aria-labelledby="header-<%= training.id %>" data-bs-parent="accordion-<%= training.id %>">
+                  <div class="accordion-body">
+                    <div class="row acordion" id="accordion-<%= training.id %>">
                       <% all_learning_modules = @all_learning_modules.call(training) %>
-
                       <% levels_ordered(training).each do |level| %>
                         <% learning_modules_by_level = all_learning_modules.where(level: level) %>
-
-                        <div class="col-md-12">
-                          <div class="card">
-
-                            <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>-<%= level %>">
-                              <button class="btn btn-link float-left" type="button"><%= level %></button>
-                              <span class="float-right">
+                        <div class="accordion item col-md-12">
+                            <div class="accordion-header" id="header-<%= training.id%>-<%=level%>">
+                              <button class="btn btn-link float-start accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>-<%= level %>" aria-expanded="false" aria-controls="training-<%= training.id %>-<%= level %>"><%= level %></button>
+                              <span class="float-end">
                                 <span class="<%= return_text_color(level) %>">
                                   <%= @learning_modules_completed.call(training, level).count %>/<%= @total_learning_modules_per_level.call(training, level).count %>
                                 </span>
                               </span>
                             </div>
-
-                            <div id="training-<%= training.id %>-<%= level %>" class="collapse">
+                            <div id="training-<%= training.id %>-<%= level %>" class="accordion-collapse collapse" aria-labelledby="header-<%= training.id%>-<%=level%>" data-bs-parent="#accordion-<%= training.id %>">
                               <div class="row m-2">
-
                                 <% learning_modules_by_level.each do |learning_module| %>
-
-                                  <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %> <%= return_border_color(learning_module.level) %>" style="border-width:2px !important;">
+                                  <div class="col-md-4 mb-5 mt-3 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %> <%= return_border_color(learning_module.level) %>" style="border-width:2px !important;">
                                     <form class="py-3">
                                       <div class="row">
                                         <div class="col-4">
@@ -68,7 +57,7 @@
                                         <div class="col-4">
                                           <p><h6 class="text-center my-auto"><strong><%= learning_module.training.name %></strong></h6></p>
                                         </div>
-                                        <div class="col-4 float-right">
+                                        <div class="col-4 float-end">
                                           <%=link_to 'Delete', learning_area_path(learning_module.id), method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Learning Module.'} if current_user.admin?%>
                                         </div>
                                       </div>
@@ -79,7 +68,7 @@
                                     </a>
                                     <div>
                                       <br />
-                                      <h6 class="font-weight-bold text-center"><strong><%= learning_module.title %></strong></h6>
+                                      <h6 class="fw-bold text-center"><strong><%= learning_module.title %></strong></h6>
                                       <p><%= learning_module.level %></p>
                                     </div>
                                     <div>

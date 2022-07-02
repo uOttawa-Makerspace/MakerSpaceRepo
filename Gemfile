@@ -47,7 +47,7 @@ gem 'unicorn-worker-killer', '~> 0.4.3'
 gem 'whenever', require: false
 gem 'wicked_pdf'
 gem 'will_paginate', '~> 3.3.0'
-gem 'will_paginate-bootstrap4'
+gem 'will_paginate-bootstrap-style'
 gem 'wkhtmltopdf-binary'
 gem 'youtube_id'
 gem 'bootsnap', require: false

@@ -9,7 +9,7 @@
     </div>
 
     <h2 class="text-center pt-2 mb-5">
-      Welcome to <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name).where.not(id: @space.id), :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "custom-select", :onchange => 'setSpace()', :style => "padding: 2px;" %></strong>
+      Welcome to <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name).where.not(id: @space.id), :id, :name), prompt: @space.name.capitalize, id: "set_space_id", :class => "form-select", :onchange => 'setSpace()', :style => "padding: 2px;" %></strong>
     </h2>
 
     <div style="float:right;">
@@ -62,7 +62,7 @@
             <td>
               <%= render 'staff_dashboard/flag', staff_dashboard_user: user %>
               <% if user.flagged? %>
-                <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#flag_message_<%= user.id %>">
+                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#flag_message_<%= user.id %>">
                   See Flag
                 </button>
               <% else %>

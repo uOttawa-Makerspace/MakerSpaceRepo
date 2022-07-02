@@ -4,11 +4,11 @@
     <h2><b>Get a free kit to a user</b></h2>
   </div>
   <%= form_for(@kit) do |f| %>
-    <div class="form-group">
-      <%= f.label :user_id, "User" %>
+    <div class="mb-3">
+      <%= f.label :user_id, "User", class:"form-label" %>
       <%= f.select(:user_id, "", {prompt: "Choose User..."}, {:class => "kit_user_select form-control", :id => "kit_user_select"}) %>
       <br>
-      <%= f.label :proficient_project_id, "Related Proficient Project" %>
+      <%= f.label :proficient_project_id, "Related Proficient Project", class:"form-label" %>
       <%= f.select(:proficient_project_id, options_for_select(@proficient_projects), {:include_blank => true}, class: "form-control") %>
     </div>
     <div class="text-center">

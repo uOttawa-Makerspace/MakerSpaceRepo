@@ -23,7 +23,7 @@ html.saml-login {
       height: auto;
     }
 
-    @include media-breakpoint-down(xs) {
+    @include media-breakpoint-down(sm) {
       height: auto;
     }
 
@@ -40,7 +40,7 @@ html.saml-login {
         }
       }
 
-      @include media-breakpoint-down(xs) {
+      @include media-breakpoint-down(sm) {
         display: block;
 
         &::before {
@@ -71,7 +71,7 @@ html.saml-login {
       font-size: 3rem;
     }
 
-    @include media-breakpoint-down(xs) {
+    @include media-breakpoint-down(sm) {
       font-size: 3rem;
     }
   }

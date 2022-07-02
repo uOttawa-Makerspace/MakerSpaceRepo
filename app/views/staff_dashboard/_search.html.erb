@@ -2,23 +2,23 @@
 <div class="row m-0 mb-2 align-items-center">
   <div class="col-md-9 p-1">
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
-      <div class="form-group mb-0">
+      <div class="mb-3 mb-0">
         <%= select_tag(:username, "", prompt: "Choose User...", :class => "form-control", :id => "user_dashboard_select") %>
       </div>
     <% end %>
   </div>
   <div class="col-md-3 p-1">
-    <div class="form-inline d-flex">
-       <div class="flex-grow-1 pr-1">
+    <div class="w-auto d-inline-block d-flex">
+       <div class="flex-grow-1 pe-1">
          <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: "sign_in_user_fastsearch", remote: true do %>
            <%= hidden_field_tag :added_users, "", { :id => "sign_in_user_fastsearch_username" } %>
-           <%= submit_tag "Sign In", class: 'btn btn-info btn-sm btn-block' %>
+           <%= submit_tag "Sign In", class: 'btn btn-info btn-sm d-block w-100' %>
          <% end %>
        </div>
-       <div class="flex-grow-1 pl-1">
+       <div class="flex-grow-1 ps-1">
          <%= form_tag staff_dashboard_user_profile_path, method: :get, id: "search_user_fastsearch" do %>
            <%= hidden_field_tag :username, "", { :id => "search_user_fastsearch_username" } %>
-           <%= button_tag "Search", onclick: 'searchForm()', class: 'btn btn-info btn-block btn-sm' %>
+           <%= button_tag "Search", onclick: 'searchForm()', class: 'btn btn-info d-block w-100 btn-sm' %>
          <% end %>
        </div>
     </div>
@@ -26,25 +26,23 @@
 </div>
 
 <div class="accordion" id="accordionLogin">
-  <div class="card">
-    <div class="card-header text-center" id="accordionLoginHeader">
+  <div class="accordion-item">
+    <div class="accordion-header text-center" id="accordionLoginHeader">
       <h5 class="mb-0">
-        <button class="btn btn-link collapsed" data-toggle="collapse" data-target="#advancedLoginCollapse" aria-expanded="false" aria-controls="advancedLoginCollapse">
+        <button class="accordion-button btn btn-link collapsed" data-bs-toggle="collapse" data-bs-target="#advancedLoginCollapse" aria-expanded="false" aria-controls="advancedLoginCollapse">
           Advanced Search / Sign In
         </button>
       </h5>
     </div>
-    <div class="collapse" id="advancedLoginCollapse" data-parent="#accordionLogin" aria-labelledby="accordionLoginHeader">
-      <div class="card-body">
+    <div class="accordion-collapse collapse" id="advancedLoginCollapse" data-bs-parent="#accordionLogin" aria-labelledby="accordionLoginHeader">
+      <div class="accordion-body">
         <p>Search for users:</p>
         <div class="row" style="flex-direction: row; flex-wrap: nowrap">
           <div style="flex-grow: 1">
             <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
               <div class="input-group mb-3">
                 <%= text_field_tag(:query, "", placeholder: "Name, email, username", :class => "form-control", 'aria-describedby': "button-addon2", style: "font-size: inherit;") %>
-                <div class="input-group-append">
-                  <button class="btn btn-primary" type="submit" id="button-addon2">Search</button>
-                </div>
+                <button class="btn btn-primary" type="submit" id="button-addon2">Search</button>
               </div>
             <% end %>
           </div>
@@ -53,13 +51,11 @@
           <%= form_tag staff_dashboard_import_excel_path, method: :post, :multipart => true, class: "w-100" do %>
             <p>Upload Excel File to log in users (Emails, names and usernames, first column only)</p>
             <div class="input-group mb-3">
-              <div class="custom-file">
-                <%= file_field_tag :file, style: "display: inline;", class: "custom-file-input custom-file-input-excel", id: "excel-input" %>
-                <%= label_tag(:file, "Choose Excel file", class: "custom-file-label custom-file-label-excel") %>
+              <div class="form-control">
+                <%= file_field_tag :file, style: "display: inline;", class: "form-control-input form-control-input-excel", id: "excel-input" %>
+                <%= label_tag(:file, "Choose Excel file", class: "form-label form-label-excel") %>
               </div>
-              <div class="input-group-append">
-                <%= submit_tag "Import File", class: "btn btn-primary" %>
-              </div>
+              <%= submit_tag "Import File", class: "btn btn-primary" %>
             </div>
           <% end %>
         </div>
