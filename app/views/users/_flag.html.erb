@@ -3,9 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLabel"><b><%= @repo_user.name %></b> Flags</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         Flags:
@@ -22,7 +20,7 @@
         <% end %>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         <%= form_tag(unflag_users_path, :method => "post") do %>
           <%= hidden_field_tag :flagged_user, nil, value: @repo_user.id %>
           <%= submit_tag "Remove Flags", class: "btn btn-danger" %>

@@ -15,6 +15,14 @@
 
  */
 
+ $primary: #497979;
+ $navbar-light-color: rgba(0, 0, 0, 0.7);
+$navbar-light-hover-color: rgba(0, 0, 0, 1.0);
+$navbar-dark-color: rgba(255, 255, 255, 0.7);
+$navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
+$body-top-padding: 6rem; // equivalent to navbar height
+$input-border-radius: .25rem !default;
+@import "bootstrap/scss/bootstrap";
 @import "toastr";
 @import './shared/variables';
 @import "trix";
@@ -23,7 +31,6 @@
 @import "lib";
 @import "font-awesome";
 @import "select2-bootstrap";
-
 $enable-negative-margins: true;
 
 html {
@@ -201,4 +208,7 @@ div.form-error{
   .container {
       max-width: 1140px;
   }
+}
+.accordion-button{
+  background-color: rgba(0,0,0,.03) !important;
 }

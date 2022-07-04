@@ -9,14 +9,14 @@
           <% skill.trainings.each do |training| %>
             <% next unless training.learning_modules.present? %>
               <div class="accordion-item">
-                <div class="accordion-header" id="header-<%= training.id %>">
-                  <div class="row">
+                <div class="accordion-header" id="header-training-training-<%= training.id %>">
+                  <div class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#training-training-<%= training.id %>">
                     <div class="col-4">
-                      <button class="accordion-button btn btn-link float-start" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>">
+                      <button class="btn btn-link float-start">
                         <%= training.name %>
                       </button>
                     </div>
-                    <div class="col-4">
+                    <div class="col-4 text-center">
                       <span class="mx-auto">
                         <% levels_ordered(training).each do |level| %>
                           <span class="<%= return_text_color(level) %> p-3">
@@ -30,23 +30,24 @@
                     </div>
                   </div>
                 </div>
-                <div id="training-<%= training.id %>" class="accordion-collapse collapse" aria-labelledby="header-<%= training.id %>" data-bs-parent="accordion-<%= training.id %>">
+                <div id="training-training-<%= training.id %>" class="accordion-collapse collapse" aria-labelledby="header-training-training-<%= training.id %>" data-bs-parent="accordion-<%= training.id %>">
                   <div class="accordion-body">
                     <div class="row acordion" id="accordion-<%= training.id %>">
                       <% all_learning_modules = @all_learning_modules.call(training) %>
                       <% levels_ordered(training).each do |level| %>
                         <% learning_modules_by_level = all_learning_modules.where(level: level) %>
                         <div class="accordion item col-md-12">
-                            <div class="accordion-header" id="header-<%= training.id%>-<%=level%>">
-                              <button class="btn btn-link float-start accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>-<%= level %>" aria-expanded="false" aria-controls="training-<%= training.id %>-<%= level %>"><%= level %></button>
-                              <span class="float-end">
+                            <div class="accordion-header accordion-button" id="header-<%= training.id%>-<%=level%>" data-bs-toggle="collapse" data-bs-target="#training-training-<%= training.id %>-<%= level %>" aria-expanded="false" aria-controls="training-training-<%= training.id %>-<%= level %>">
+                              <span class="btn-link col-4" type="button"><%= level %>
+                              </span>
+                                                          <span class="col-4 float-end text-center">
                                 <span class="<%= return_text_color(level) %>">
                                   <%= @learning_modules_completed.call(training, level).count %>/<%= @total_learning_modules_per_level.call(training, level).count %>
                                 </span>
                               </span>
                             </div>
-                            <div id="training-<%= training.id %>-<%= level %>" class="accordion-collapse collapse" aria-labelledby="header-<%= training.id%>-<%=level%>" data-bs-parent="#accordion-<%= training.id %>">
-                              <div class="row m-2">
+                            <div id="training-training-<%= training.id %>-<%= level %>" class="accordion-collapse collapse" aria-labelledby="header-<%= training.id%>-<%=level%>" data-bs-parent="#accordion-<%= training.id %>">
+                              <div class="row md-2">
                                 <% learning_modules_by_level.each do |learning_module| %>
                                   <div class="col-md-4 mb-5 mt-3 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %> <%= return_border_color(learning_module.level) %>" style="border-width:2px !important;">
                                     <form class="py-3">
@@ -88,9 +89,6 @@
 
                     </div>
                     <br />
-                  </div>
-
-                </div>
               </div>
             </div>
           <% end %>

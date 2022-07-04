@@ -10,12 +10,12 @@
           <p class="lead mb-4"><%= t('home.welcome_desc_html') %></p>
           <% if signed_in? %>
             <p><%= link_to t('home.my_profile'), user_path(current_user.username), class: "btn btn-primary btn-lg" %></p>
-            <hr class="my-5"/>
+            <hr class="my-3"/>
             <%= render :partial => 'programs', locals: {status: current_user.return_program_status} %>
 
           <% else  %>
             <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
-            <hr class="my-5"/>
+            <hr class="my-3"/>
             <%= render :partial => 'interested_volunteer' %>
             <hr />
             <%= render :partial => 'interested_dev_program' %>

@@ -4,7 +4,8 @@ $(document).on('turbolinks:load', function () {
     if ((storage != undefined) && (storage != "")) {
         storage = storage.split(",");
         storage.forEach(function (item) {
-            document.getElementById(item).classList.toggle("show");
+            let accordion_load_item = document.getElementById(item);
+            if (accordion_load_item){accordion_load_item.classList.toggle("show");}
         });
     }
 
