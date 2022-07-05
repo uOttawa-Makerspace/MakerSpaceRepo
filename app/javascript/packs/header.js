@@ -21,6 +21,9 @@
     var cc_image_white = document.getElementById("myCcWhite");
     var cc_image_black = document.getElementById("myCcBlack");
     function doTransition(dark, animate) {
+        if (!(nav.classList.contains('static_pages') && nav.classList.contains('home'))){
+            return;
+        }
         if (typeof animate === 'undefined' || animate === true) {
             nav.classList.add('transition');
         }
@@ -58,7 +61,7 @@
 
     // When we scroll past the 10px deadzone, we want to change the navbar to dark mode
     window.addEventListener('scroll', () => {
-        doTransition((nav.classList.contains('static_pages') && nav.classList.contains('home')) && window.scrollY <= 10 && ((window.matchMedia('(max-width: 1200px)').matches && navbarSupportedContent.clientHeight == 0) || window.matchMedia('(min-width: 1200px)').matches), true);
+        doTransition(window.scrollY <= 10 && ((window.matchMedia('(max-width: 1200px)').matches && navbarSupportedContent.clientHeight == 0) || window.matchMedia('(min-width: 1200px)').matches), true);
         if (window.scrollY <= 10 && chevron) {
             chevron.style.opacity = 1;
         }
