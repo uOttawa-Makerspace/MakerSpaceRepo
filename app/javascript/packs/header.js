@@ -12,10 +12,11 @@
  */ 
 
 
-document.addEventListener('turbolinks:load', function() {
+ document.addEventListener('turbolinks:load', function() {
     
-    var nav = document.getElementById('header-navbar');
-    var navToggler = document.getElementById('navbar-toggle-button');
+    var nav = document.getElementsByClassName('navbar')[0];
+    var navToggler = document.getElementsByClassName('navbar-toggler')[0];
+    var navbarSupportedContent = document.getElementById('navbarSupportedContent');
     var chevron = document.getElementsByClassName("down-indicator")[0];
     var cc_image_white = document.getElementById("myCcWhite");
     var cc_image_black = document.getElementById("myCcBlack");
@@ -47,12 +48,6 @@ document.addEventListener('turbolinks:load', function() {
         }
     }
 
-    if (!nav.classList.contains('static_pages') && !nav.classList.contains('home') && ((window.matchMedia('(max-width: 1200px)').matches && navToggler.classList.contains('collapsed')) || window.matchMedia('(min-width: 1200px)').matches)) {
-        // If we start on the homepage with a small sreen and collapsed nav or large screen, we want to start dark
-        doTransition(false, false);
-    }else{
-        doTransition(true, false);
-    }
 
     //Not sure if this is necessary anymore, was legacy code when I refactored. 
     nav.addEventListener('transitionend', () => {nav.classList.remove('transition');});
@@ -63,7 +58,7 @@ document.addEventListener('turbolinks:load', function() {
 
     // When we scroll past the 10px deadzone, we want to change the navbar to dark mode
     window.addEventListener('scroll', () => {
-        doTransition((nav.classList.contains('static_pages') && nav.classList.contains('home')) && window.scrollY <= 10 && ((window.matchMedia('(max-width: 1200px)').matches && navToggler.classList.contains('collapsed')) || window.matchMedia('(min-width: 1200px)').matches), true);
+        doTransition((nav.classList.contains('static_pages') && nav.classList.contains('home')) && window.scrollY <= 10 && ((window.matchMedia('(max-width: 1200px)').matches && navbarSupportedContent.clientHeight == 0) || window.matchMedia('(min-width: 1200px)').matches), true);
         if (window.scrollY <= 10 && chevron) {
             chevron.style.opacity = 1;
         }
@@ -73,7 +68,7 @@ document.addEventListener('turbolinks:load', function() {
     }); 
 
     navToggler.addEventListener('click', () => {
-        if (!navToggler.classList.contains('collapsed')) {
+        if (navbarSupportedContent.clientHeight == 0) {
             doTransition(false, false);
         }else{
             window.scrollY < 10 ? doTransition(true,false) : doTransition(false, false);
@@ -81,12 +76,19 @@ document.addEventListener('turbolinks:load', function() {
     });
 
     window.addEventListener('resize', () => {
-        if (window.matchMedia('(max-width: 1200px)').matches && (nav.classList.contains('static_pages') && nav.classList.contains('home')) ) {
+        if (window.matchMedia('(max-width: 1200px)').matches && navbarSupportedContent.clientHeight > 0) {
             doTransition(false, false);
+            return;
         }
-        else if (window.matchMedia('(min-width: 1200px)').matches && (nav.classList.contains('static_pages') && nav.classList.contains('home')) ) {
-            window.scrollY < 10 ? doTransition(true,false) : doTransition(false, false);
-        }
+        window.scrollY < 10 ? doTransition(true,false) : doTransition(false, false);
     });
-
+    if (!nav.classList.contains('static_pages') && !nav.classList.contains('home')){
+        console.log("navbarSupportedContent.clientHeight > 0");
+        doTransition(false, false);
+    }else if(window.matchMedia('(max-width: 1200px)').matches && navbarSupportedContent.clientHeight > 0){
+        console.log("navbarSupportedContent.clientHeight > 0");
+        doTransition(false, false);
+    }else{
+        doTransition(true, false);
+    }
 });
