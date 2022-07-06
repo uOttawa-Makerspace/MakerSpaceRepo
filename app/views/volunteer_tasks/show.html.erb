@@ -126,7 +126,7 @@
 <!--          <p>Add Required Certifications for this Task:</p>-->
           <%#= form_for @new_required_training, url: {controller: "require_trainings", action: "create"} do |f| %>
             <%#= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%#= f.select :training_id, @trainings, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+            <%#= f.select :training_id, @trainings, {prompt: "Choose Training"}, {class: 'form-control form-select', 'data-live-search': 'true'} %>
 <!--            <br />-->
 <!--            <br />-->
             <%#= f.submit "Add Required Certification", class: "btn btn-primary mb-5" %>
@@ -137,7 +137,7 @@
 <!--          <p>Remove Required Certifications for this Task:</p>-->
           <%#= form_for @new_required_training, url: {controller: "require_trainings", action: "remove_trainings"} do |f| %>
             <%#= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%#= f.select :training_id, @trainings_already_added, {prompt: "Choose Training"}, {class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+            <%#= f.select :training_id, @trainings_already_added, {prompt: "Choose Training"}, {class: 'form-control form-select', 'data-live-search': 'true'} %>
 <!--            <br />-->
 <!--            <br />-->
             <%#= f.submit "Remove Required Certification", class: "btn btn-danger mb-5" %>

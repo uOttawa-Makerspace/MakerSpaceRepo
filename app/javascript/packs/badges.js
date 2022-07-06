@@ -1,82 +1,72 @@
-require('select2');
+window.TomSelect = require('tom-select');
 
-$(document).on("turbolinks:load", function() {
-    $(".link_pp").select2({});
-});
-
-$(document).on("turbolinks:load", function() {
-    $("#user_select").on('change', function () {
-        $.ajax({
-            url: "populate_badge_list",
-            type: "GET",
-            data: {user_id: $(this).val()},
-            success: function(data) {
-                $("#badge_select").children().remove();
-                let option;
-                let dropdown = document.getElementById('badge_select');
-                for (let i = 0; i < data['badges'].length; i++) {
-                    option = document.createElement('option');
-                    option.text = data['badges'][i].badge_template.badge_name;
-                    option.value = data['badges'][i].acclaim_badge_id;
-                    dropdown.add(option);
+document.addEventListener("turbolinks:load", () => {
+    let linkPP = document.querySelectorAll(".link-pp")
+    linkPP.forEach(link => {
+        new TomSelect(link, {});
+    });
+    let userSelect = document.getElementById("revoke_user_select");
+    userSelect.addEventListener('change', function () {
+        let userId = userSelect.value;
+        let xhr = new XMLHttpRequest();
+        xhr.open('GET', "/populate_badge_list?user_id" + userId, false);
+        xhr.send();
+        xhr.onreadystatechange = function () {
+            if (xhr.status == 200) {
+                let badgeSelect = document.getElementById("badge_select");
+                while (badgeSelect.firstChild) {
+                    badgeSelect.removeChild(badgeSelect.firstChild);
                 }
+                let badges = JSON.parse(xhr.responseText);
+                badges.forEach(badge => {
+                    let option = document.createElement("option");
+                    option.text = badge.badge_template.badge_name
+                    option.value = badge.acclaim_badge_id
+                    badgeSelect.add(option);
+                });
             }
-        })
+        }
     });
-});
 
-$(document).on("turbolinks:load", function() {
 
-    $(".grant_user_select").select2({
-        ajax: {
-            url: "populate_grant_users",
-            type: "GET",
-            dataType: 'json',
-            delay: 250,
-            data: function (params) {
-                return {
-                    search: params.term
-                };
-            },
-            processResults: function (data) {
-                return {
-                    results: $.map(data.users, function (item) {
-                        return {
-                            text: item.name,
-                            id: item.id
-                        }
-                    })
-                };
-            },
+    new TomSelect(document.getElementById("grant_user_select"), {
+        searchField: ['name'],
+        valueField: 'id',
+        labelField: 'name',
+        options: [],
+        maxOptions: 5,
+        searchPlaceholder: 'Choose User...',
+        searchOnKeyUp: true,
+        load: function (type,callback) {
+            if (type.length < 2) { return; } else {
+                let url = "/badges/populate_grant_users?search=" + type;
+                fetch(url).then(response => response.json()).then(data => {
+                    callback(data.users.map(user => {return {id: user.id, name: user.name}}));
+                });
+            }
         },
-        minimumInputLength: 3,
+        shouldLoad: function (type) {
+            return type.length > 2;
+        }
     });
-});
-
-$(document).on("turbolinks:load", function() {
-
-    $(".revoke_user_select").select2({
-        ajax: {
-            url: "populate_revoke_users",
-            type: "GET",
-            dataType: 'json',
-            delay: 250,
-            data: function (params) {
-                return {
-                    search: params.term
-                };
-            },
-            processResults: function (data) {
-                return {
-                    results: $.map(data.users, function (item) {
-                        return {
-                            text: item.name,
-                            id: item.id
-                        }
-                    })
-                };
-            },
+    new TomSelect(document.getElementById("revoke_user_select"), {
+        searchField: ['name'],
+        valueField: 'id',
+        labelField: 'name',
+        options: [],
+        maxOptions: 5,
+        searchPlaceholder: 'Choose User...',
+        searchOnKeyUp: true,
+        load: function (type,callback) {
+            if (type.length < 2) { return; } else {
+                let url = "/badges/populate_revoke_users?search=" + type;
+                fetch(url).then(response => response.json()).then(data => {
+                    callback(data.users.map(user => {return {id: user.id, name: user.name}}));
+                });
+            }
         },
-        minimumInputLength: 3,
+        shouldLoad: function (type) {
+            return type.length > 2;
+        }
     });
 });

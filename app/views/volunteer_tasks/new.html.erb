@@ -95,12 +95,12 @@
               </div>
               <div class="col-md-6">
                 <%= label_tag :staff_id, "Add Staff Responsible for the Task:", class: 'form-label fw-bold' %>
-                <%= select_tag :staff_id, options_from_collection_for_select(User.all.staff, 'id', 'name'), {prompt: "Choose Staff", class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+                <%= select_tag :staff_id, options_from_collection_for_select(User.all.staff, 'id', 'name'), {prompt: "Choose Staff", class: 'form-control form-select', 'data-live-search': 'true'} %>
               </div>
 
               <div class="col-md-6">
                   <%= label_tag :volunteer_id, 'Add Volunteer to this Task:', class: 'form-label fw-bold' %>
-                  <%= select_tag :volunteer_id, options_from_collection_for_select(User.all.volunteers, 'id', 'name'), {prompt: "Choose Volunteer", class: 'form-control bootstrap-select', 'data-live-search': 'true'} %>
+                  <%= select_tag :volunteer_id, options_from_collection_for_select(User.all.volunteers, 'id', 'name'), {prompt: "Choose Volunteer", class: 'form-control form-select', 'data-live-search': 'true'} %>
               </div>
 
 

@@ -13,19 +13,19 @@
   <div class="issue-report">
     <%= form_tag send_email_path, method: :put do %>
       <div class="mb-3">
-      <%= label_tag :name , "Full Name", class:"form-label" %>
+      <%= label_tag :name, "Full Name", class:"form-label" %>
       <%= text_field_tag :name,'', autofocus: true, :required => true, :class => 'form-control' %>
       </div>
       <div class="mb-3">
-      <%= label_tag :email, class:"form-label" %>
+      <%= label_tag :email, "Email", class: "form-check-label"%>
       <%= email_field_tag :email,'', :required => true, :class => 'form-control' %>
       </div>
       <div class="mb-3">
-      <%= label_tag :subject, class:"form-label" %>
+      <%= label_tag :subject, "Subject", class: "form-check-label"%>
       <%= text_field_tag :subject,'', :required => true, :class => 'form-control' %>
       </div>
       <div class="mb-3">
-      <%= label_tag :comments, class:"form-label" %>
+      <%= label_tag :comments, "Comments", class: "form-check-label"%>
       <%= text_area_tag :comments,'', :required => true, placeholder: "Please explain your issue.", :class => 'form-control' %>
       </div>
 

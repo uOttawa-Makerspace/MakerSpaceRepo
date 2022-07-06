@@ -234,10 +234,10 @@
                   <div class="field form-group">
                     <div class="checkbox-inline">
                       <%= hidden_field_tag :user_id, @repo_user.id %>
-                      <%= check_box_tag :dev_program, '1', @programs.include?(Program::DEV_PROGRAM) %>
+                      <%= check_box_tag :dev_program, '1', @programs.include?(Program::DEV_PROGRAM), class:"form-check-input" %>
                       <%= label_tag :dev_program, Program::DEV_PROGRAM, class:"form-label" %>
                       <br>
-                      <%= check_box_tag :volunteer, '1', @programs.include?(Program::VOLUNTEER) %>
+                      <%= check_box_tag :volunteer, '1', @programs.include?(Program::VOLUNTEER), class:"form-check-input" %>
                       <%= label_tag :volunteer, Program::VOLUNTEER, class:"form-label" %>
                     </div>
                   </div>
@@ -256,24 +256,23 @@
           <div class="col-md-12">
             <% @skills.each do |skill| %>
 
-              <div class="accordion" id="accordion-<%=skill.name%>">
+              <div class="accordion" id="accordion-skill-<%=skill.name%>">
                 <div class="accordion-item">
-                <h6 class="accordion-header" id="header-<%= skill.name %>">
-                  <button class="accordion-header" type="button" data-bs-toggle="collapse" data-bs-target="#trainings-<%= skill.id %>" aria-expanded="false" aria-controls="trainings-<%= skill.id %>">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#trainings-skill-<%= skill.id %>" aria-expanded="false" aria-controls="trainings-<%= skill.id %>">
+                <h6 id="header-skill-<%= skill.name %>">
                     <%= skill.name %>
                   </button>
                   </h6>
-                  <div id="trainings-<%= skill.id %>" class="accordion-collapse collapse">
-                  <div class="accordion-body">
+                  <div id="trainings-skill-<%= skill.id %>" class="accordion-collapse collapse">
                     <% skill.trainings.each do |training| %>
 
                       <div class="accordion" id="accordion-<% training.name%>">
                         <div class="accordion-item">
-                          <div class="accordion-header" id="header-<% training.name%>" type="button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>"">
+                          <div class="accordion-header" id="header-training-<% training.name%>" type="button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>"">
                             <div class="row">
                               <div class="col-4"></div>
                               <div class="col-4 text-center">
-                                <button class="accordion-button btn btn-link"><%= training.name %></button>
+                                <button class="btn btn-link"><%= training.name %></button>
                               </div>
                               <div class="col-4">
                                 <%= training_status(training.id, @repo_user.id).html_safe %>
@@ -315,7 +314,6 @@
                         </div>
                       </div>
                     <% end %>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -383,11 +381,11 @@
               <div class="col-md-6 float-end">
                 <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
                   <%= radio_button_tag :role, "admin" %>
-                  <%= label_tag "Admin", class:"form-label" %> <br/>
+                  <%= label_tag :role_admin, "Admin", class:"form-label" %> <br/>
                   <%= radio_button_tag :role, "staff" %>
-                  <%= label_tag "Staff", class:"form-label" %> <br/>
+                  <%= label_tag :role_staff,"Staff", class:"form-label" %> <br/>
                   <%= radio_button_tag :role, "regular_user" %>
-                  <%= label_tag "Regular", class:"form-label" %> <br/>
+                  <%= label_tag :role_regular, "Regular", class:"form-label" %> <br/>
                   <%= submit_tag "Update", class: "btn btn-primary" %>
                 <% end %>
               </div>

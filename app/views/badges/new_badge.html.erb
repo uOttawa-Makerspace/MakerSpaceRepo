@@ -26,7 +26,7 @@
   <%= form_for(@badges, url: {controller: "badges", action: "revoke_badge"}, :html => {:method => :get}) do |f| %>
     <div class="mb-3">
       <%= label :user_id, "User", class:"form-label"  %>
-      <%= f.select(:user_id, "" , {prompt: "Choose User..."} , {:class => "link_pp revoke_user_select form-control", :id => "user_select"}) %>
+      <%= f.select(:user_id, "" , {prompt: "Choose User..."} , {:class => "link_pp revoke_user_select form-control", :id => "revoke_user_select"}) %>
       <br>
       <%= f.label :acclaim_badge_id, "Badge that will be revoked", class:"form-label" %>
       <%= f.select(:acclaim_badge_id, options_for_select(@badge_templates), {:include_blank => true}, {:class => "form-control", :id => "badge_select"}) %>

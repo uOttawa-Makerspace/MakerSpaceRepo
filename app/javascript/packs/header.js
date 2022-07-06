@@ -82,7 +82,7 @@
     });
     if (!nav.classList.contains('static_pages') && !nav.classList.contains('home')){
         doTransition(false, false);
-    }else if(navbarSupportedContent.clientHeight > 0){
+    }else if(navbarSupportedContent.clientHeight > 0 && window.matchMedia('(max-width: 1200px)').matches){
         doTransition(false, false);
     }else{
         doTransition(true, false);
