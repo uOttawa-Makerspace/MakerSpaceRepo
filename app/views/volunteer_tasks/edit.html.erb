@@ -90,7 +90,7 @@
               </div>
               <div class="col-md-12 text-center">
                 <%= label :certifications_id, "Certifications", class:"form-label"  %>
-                <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name', :selected => (@volunteer_task.require_trainings.pluck(:training_id) if @volunteer_task.require_trainings.present?)), {:multiple => true, :id => "task_certifications", :class => "form-control task_certifications select2"} %>
+                <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name', :selected => (@volunteer_task.require_trainings.pluck(:training_id) if @volunteer_task.require_trainings.present?)), {:multiple => true, :id => "task_certifications", :class => "form-control task_certifications"} %>
                 <br><br>
               </div>
               <div class="col-md-6">

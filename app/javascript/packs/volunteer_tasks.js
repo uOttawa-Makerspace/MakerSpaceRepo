@@ -1,7 +1,5 @@
-require('select2');
-
-$(document).on('turbolinks:load', function () {
-    'use strict';
+import TomSelect from 'tom-select';
+document.addEventListener("turbolinks:load", () => {
     window.addEventListener('load', function() {
         var forms = document.getElementsByClassName('needs-validation');
         var validation = Array.prototype.filter.call(forms, function(form) {
@@ -14,8 +12,8 @@ $(document).on('turbolinks:load', function () {
             }, false);
         });
     }, false);
-});
-
-$(document).on("turbolinks:load", function() {
-    $(".task_certifications").select2({});
+        new TomSelect("#task_certifications",{
+            plugins: ['remove_button'],
+            maxItems:null
+        })
 });

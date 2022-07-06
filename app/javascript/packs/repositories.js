@@ -1,12 +1,12 @@
-require('select2');
+import TomSelect from 'tom-select';
 
 window.showPass = function() {
 	document.getElementById("password_repo_field").style.display = 'block'
 };
 
 window.hidePass = function() {
-    $("#change_pass").hide();
-	document.getElementById("password_repo_field").style.display = 'none'
+    document.getElementById("change_pass").style.display = 'none';
+	document.getElementById("password_repo_field").style.display = 'none';
 };
 window.togglePass = function() {
     var x = document.getElementById("password_repo_field")
@@ -18,7 +18,23 @@ window.togglePass = function() {
 }
 
 document.addEventListener("turbolinks:load", function() {
-    $("#search_users_add").select2({});
-    $("#search_users_remove").select2({});
+    // $("#search_users_add").select2({});
+    new TomSelect("#search_users",{
+        searchField: ['name'],
+        valueField: 'id',
+        labelField: 'name',
+        options: [],
+        maxOptions: 5,
+        searchOnKeyUp: true,
+    })
+    new TomSelect("#search_users_remove",{
+        searchField: ['name'],
+        valueField: 'id',
+        labelField: 'name',
+        options: [],
+        maxOptions: 5,
+        searchOnKeyUp: true,
+    })
+    // $("#search_users_remove").select2({});
 });
 

@@ -1,6 +1,6 @@
 import 'jquery'
 import 'flatpickr'
-import TomSelect from "tom-select";
+import TomSelect from 'tom-select';
 
 const start_time = jQuery('#start_time').flatpickr({
     enableTime: true,

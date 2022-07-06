@@ -1,8 +1,12 @@
-require('select2');
+import TomSelect from 'tom-select';
 
-$(document).on('turbolinks:load', function () {
-    'use strict';
-    $('#pictureInput').on('change', function(event) {
+document.addEventListener('turbolinks:load', function() {
+    new TomSelect("#questions_trainings", {
+        plugins: {
+            "clear_button":{title:"Clear"}
+        },
+    });
+    document.getElementById("pictureInput").addEventListener('change', function (event){
         var files = event.target.files;
         var image = files;
         for(var i = 0; i < files.length; i++){
@@ -14,23 +18,13 @@ $(document).on('turbolinks:load', function () {
             }
             reader.readAsDataURL(image[i]);
         }
-        // var editImage = document.getElementById("edit-image");
-        // if(editImage){
-        //  editImage.style.display = "none";
-        // }
     });
 });
-
-$(document).on("turbolinks:load", function () {
-    $("#questions_trainings").select2({
-        allowClear: true,
-        multiple: true
-    });
-
-    $("#questionImageGallery").justifiedGallery({
-        rowHeight: 250,
-        lastRow: 'center'
-    });
-
-});
+// No replacement for JustifiedGallery yet, relies on jQuery.
+// $(document).on("turbolinks:load", function () {
+//     $("#questionImageGallery").justifiedGallery({
+//         rowHeight: 250,
+//         lastRow: 'center'
+//     });
+// });
 

@@ -58,26 +58,21 @@ document.addEventListener("DOMContentLoaded", function(event) {
   });
 
 
-   $("div#filter-header").click(function(){
-    $('ul.filter').slideDown(100, function(){
-      $(document).click(function(){
-         $('ul.filter').slideUp(100);
-         $(this).off('click');
-      });
-    });
-  });
-  document.getElementById("filter-header").addEventListener("click", function(event){
-    document.getElementsByClassName("filter").forEach(function(element){
-      element.animate([
-        { transform: 'translateY(-100%)', offset: 0 },
-        { transform: 'translateY(0%)', offset: 1 }
-      ],100);
-      element.addEventListener("click", function(event){
+  let filterHeader = document.getElementById("filter-header")
+  if (filterHeader){
+    document.getElementById("filter-header").addEventListener("click", function(event){
+      document.getElementsByClassName("filter").forEach(function(element){
         element.animate([
-          { transform: 'translateY(100%)', offset: 0 },
+          { transform: 'translateY(-100%)', offset: 0 },
           { transform: 'translateY(0%)', offset: 1 }
         ],100);
+        element.addEventListener("click", function(event){
+          element.animate([
+            { transform: 'translateY(100%)', offset: 0 },
+            { transform: 'translateY(0%)', offset: 1 }
+          ],100);
+        });
       });
     });
-  });
+  }
 });

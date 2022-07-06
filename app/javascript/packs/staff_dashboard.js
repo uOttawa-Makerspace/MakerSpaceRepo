@@ -1,31 +1,3 @@
-require("select2");
-
-$(".user_dashboard_select").select2({
-    theme: "bootstrap",
-    ajax: {
-        url: "staff_dashboard/populate_users",
-        type: "GET",
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                search: params.term
-            };
-        },
-        processResults: function (data) {
-            return {
-                results: $.map(data.users, function (item) {
-                    return {
-                        text: item.name,
-                        id: item.username
-                    }
-                })
-            };
-        },
-    },
-    minimumInputLength: 3,
-});
-
 var form = document.getElementById('sign_in_user_fastsearch');
 form.onsubmit = function(){
     document.getElementById('sign_in_user_fastsearch_username').value = [document.getElementById('user_dashboard_select').value];
@@ -44,12 +16,12 @@ document.querySelector('.form-control-input-excel').addEventListener('change',fu
     nextSibling.innerText = fileName
 })
 
-$(document).on('turbolinks:load', function () {
+
+document.addEventListener("turbolinks:load", () => {
     setInterval(refreshCapacity, 60000)
 });
-
+refreshCapacity();
 function refreshCapacity() {
-    $.ajax({
-        url: "/staff_dashboard/refresh_capacity"
-    })
+    let url = "/staff_dashboard/refresh_capacity";
+    fetch(url).then(response => response.text()).then(data => {document.getElementsByClassName("max_capacity_alert")[0].innerText = data});
 }

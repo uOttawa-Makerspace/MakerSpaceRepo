@@ -41,7 +41,7 @@
               <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id), :selected => f.object.drop_off_location_id), {:include_blank => "No Location"}, {:class => "form-control"}) %>
               <br />
               <%= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)", class:"form-label"  %>
-              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => true, :id => "badge_requirements", :class => "form-control select2"} %>
+              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => true, :id => "badge_requirements", :class => "form-control"} %>
               <br>
               <%= f.label :badge_template_id, "Badge that will be acquired", class:"form-label" %>
               <p class="alert alert-secondary" id="badge-acquired-text">No badge will be acquired</p>              <br>

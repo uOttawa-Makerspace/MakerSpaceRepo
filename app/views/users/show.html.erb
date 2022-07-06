@@ -380,11 +380,11 @@
               </div>
               <div class="col-md-6 float-end">
                 <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
-                  <%= radio_button_tag :role, "admin" %>
+                  <%= radio_button_tag :role, "admin", @repo_user.admin?, class: "form-check-input" %>
                   <%= label_tag :role_admin, "Admin", class:"form-label" %> <br/>
-                  <%= radio_button_tag :role, "staff" %>
+                  <%= radio_button_tag :role, "staff", @repo_user.staff? && !@repo_user.admin?, class: "form-check-input" %>
                   <%= label_tag :role_staff,"Staff", class:"form-label" %> <br/>
-                  <%= radio_button_tag :role, "regular_user" %>
+                  <%= radio_button_tag :role, "regular_user", !(@repo_user.staff? || @repo_user.admin?), class: "form-check-input" %>
                   <%= label_tag :role_regular, "Regular", class:"form-label" %> <br/>
                   <%= submit_tag "Update", class: "btn btn-primary" %>
                 <% end %>
@@ -399,7 +399,7 @@
                   <div class="checkbox-inline">
                     <%= hidden_field_tag :user_id, @repo_user.id %>
                     <% @space_list.each do |space| %>
-                      <%= check_box_tag "space[]", space.id, @staff_spaces.include?(space.id) %>
+                      <%= check_box_tag "space[]", space.id, @staff_spaces.include?(space.id), class:"form-check-input" %>
                       <%= label_tag "space[]", space.name %>
                       <br>
                     <% end %>

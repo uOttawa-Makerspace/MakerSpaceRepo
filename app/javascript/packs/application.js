@@ -28,6 +28,7 @@ global.Chart = require("chart.js");
 require("trix");
 require("@shopify/buy-button-js");
 global.PhotoSwipe = require('photoswipe');
+global.TomSelect = require("tom-select");
 global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
 import "clipboard";
 import moment from 'moment'
@@ -49,10 +50,15 @@ require("packs/sorting");
 require("packs/vendor");
 require("packs/accordion-load");
 require("packs/clipboard");
+//Shouldn't be necessary, remove when controllers load properly.
+require("packs/proficient_projects");
+require("packs/volunteer_tasks");
+
 
 window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
-import "tom-select";
+window.TomSelect = require("tom-select");
 require("packs/toastr");
+
 
 import { Calendar } from '@fullcalendar/core';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -109,14 +115,11 @@ window.clearEndDate = function() {
 
 window.setSpace = function(){
     let space_id = document.getElementById("set_space_id").value;
-    let xhr = new XMLHttpRequest();
-    let params = new FormData();
-    params.append("space_id", space_id);
-    params.append("training", document.URL.includes("training_sessions"));
-    params.append("questions", document.URL.includes("questions"));
-    params.append("shifts", document.URL.includes("shifts"));
-    xhr.open("POST", "/staff_dashboard/change_space")
-    xhr.send(params);
+    let url = "/staff_dashboard/change_space?space_id=" + space_id + "&training=" + document.URL.includes("training_sessions") + "&questions=" + document.URL.includes("questions") + "&shifts=" + document.URL.includes("shifts");
+    fetch(url, {
+        method: "PUT",
+    }).then(response => response.text()).then(data => {console.log(data)}).catch(error => console.log(error))
+
 }
 
 window.debounce = function(func, wait, immediate) {
