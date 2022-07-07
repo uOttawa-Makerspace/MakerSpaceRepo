@@ -1,5 +1,4 @@
 require("justifiedGallery");
-console.log("Hello World!");
 
 // jQuery( document ).ready(function( $ ) {
 //     //Use this inside your document ready jQuery

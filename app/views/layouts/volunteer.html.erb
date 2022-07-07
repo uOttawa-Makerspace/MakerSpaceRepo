@@ -30,5 +30,6 @@
   </section>
 
   <%= render 'layouts/footer' %>
+  <%= javascript_pack_tag controller_name if File.exists?("#{Rails.root}/app/javascript/packs/#{controller_name}.js") %>
 </body>
 </html>

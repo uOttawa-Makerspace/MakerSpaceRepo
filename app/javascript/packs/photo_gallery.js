@@ -1,32 +1,32 @@
 var photoArray = [];
 
-$(document).on('turbolinks:load', function(){
-
+document.addEventListener('turbolinks:load', function () {
     photoArray = [];
-    var gallery = photoSwipe();
-
-    $("div#photo-slide").children().each(function(){
-        var img = $(this);
-        photoArray.push({
-            src: img.attr('src'),
-            w: img.data().width,
-            h: img.data().height
+    let gallery = photoSwipe();
+    let photoSlide = document.getElementById('photo-slide');
+    if (photoSlide) {
+        photoSlide.childNodes.forEach(function (node) {
+            let img = node;
+            photoArray.push({
+                src: img.getAttribute('src'),
+                w: img.getAttribute('data-width'),
+                h: img.getAttribute('data-height')
+            });
+            img.addEventListener('click', function () {
+                gallery.options.index = img.index();
+                gallery.init();
+            });
         });
-
-        img.click(function(){
-            gallery.options.index = img.index();
+    }
+    let showPhoto = document.getElementById('show-photo');
+    if (showPhoto) {
+        showPhoto.addEventListener('click', function () {
             gallery.init();
         });
-    });
-
-
-    $("div#show-photo").click(function(){
-        gallery.init();
-    });
-
+    }
 });
 
-function photoSwipe(){
+function photoSwipe() {
     var pswpElement = document.querySelectorAll('.pswp')[0];
 
     var items = photoArray;
@@ -34,7 +34,7 @@ function photoSwipe(){
         index: 0
     };
 
-    var gallery = new PhotoSwipe( pswpElement, PhotoSwipeUI_Default, items, options);
+    var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, options);
     return gallery;
 }
 

@@ -51,8 +51,6 @@ require("packs/vendor");
 require("packs/accordion-load");
 require("packs/clipboard");
 //Shouldn't be necessary, remove when controllers load properly.
-require("packs/proficient_projects");
-require("packs/volunteer_tasks");
 
 
 window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
@@ -115,11 +113,26 @@ window.clearEndDate = function() {
 
 window.setSpace = function(){
     let space_id = document.getElementById("set_space_id").value;
-    let url = "/staff_dashboard/change_space?space_id=" + space_id + "&training=" + document.URL.includes("training_sessions") + "&questions=" + document.URL.includes("questions") + "&shifts=" + document.URL.includes("shifts");
+    let url = "/staff_dashboard/change_space";
     fetch(url, {
         method: "PUT",
-    }).then(response => response.text()).then(data => {console.log(data)}).catch(error => console.log(error))
-
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body:JSON.stringify({
+            space_id: space_id,
+            training: document.URL.includes("training_sessions"),
+            questions: document.URL.includes("questions"),
+            shifts: document.URL.includes("shifts"),
+        }),
+    }).then(response => response.json()).then(data => {
+        if (data.redirect){
+            Turbolinks.clearCache()
+            Turbolinks.visit(data.redirect, {"action":"replace"})
+        }
+    }).catch(error => {console.log(error)})
 }
 
 window.debounce = function(func, wait, immediate) {
