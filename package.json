@@ -30,7 +30,7 @@
     "js-cookie": "^2.2.1",
     "justifiedGallery": "^3.8.1",
     "lightgallery": "^1.7.2",
-    "moment": "^2.29.2",
+    "moment": "^2.29.4",
     "moment-timezone": "^0.5.31",
     "node": "^14.14.0",
     "node-sass": "^4.14.1",
