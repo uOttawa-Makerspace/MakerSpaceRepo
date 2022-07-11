@@ -40,7 +40,7 @@ class Admin::JobTypeExtrasController < AdminAreaController
   private
 
   def job_type_extra_params
-    params.require(:job_type_extra).permit(:name, :amount, :job_type_id)
+    params.require(:job_type_extra).permit(:name, :description, :price, :job_type_id)
   end
 
   def set_job_type_extra

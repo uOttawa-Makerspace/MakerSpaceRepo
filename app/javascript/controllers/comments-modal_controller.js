@@ -5,7 +5,7 @@ export default class extends Controller {
 
     setCoHostContent(data) {
         this.idTarget.innerHTML = data.id;
-        this.commentsTarget.innerHTML = data.comments;
+        this.commentsTarget.innerHTML = data.comments.replace(/\n/g,'<br />');
     }
 
     open() {

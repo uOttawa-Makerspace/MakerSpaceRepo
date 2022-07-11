@@ -38,6 +38,38 @@
         <% end %>
       </div>
 
+      <% if @job_type.service_fee.present? || @job_type_extras.present? %>
+        <h4>Fees</h4>
+        <div class="col-lg-6 mx-auto">
+          <div class="table-responsive">
+            <table class="table sessions-table">
+              <tr>
+                <th>Name</th>
+                <th>Fee</th>
+              </tr>
+              <tbody>
+              <% if @job_type.service_fee.present? %>
+                <tr>
+                  <td>Service Fee</td>
+                  <td><%= number_to_currency(@job_type.service_fee) %></td>
+                </tr>
+              <% end %>
+              <% @job_type_extras.each do |extra| %>
+                <tr>
+                  <td><%= extra.name %></td>
+                  <td><%= if extra.price.present?
+                            number_to_currency(extra.price)
+                          else
+                            extra.description.present? ? extra.description : "To be determined"
+                          end %></td>
+                </tr>
+              <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+
       <% if @service_groups.count > 0 %>
         <h4>Services</h4>
         <div class="form-group col-lg-6 mx-auto">
