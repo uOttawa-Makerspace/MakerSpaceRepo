@@ -43,12 +43,13 @@ RSpec.describe RepositoriesController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10000
-        repo = create(:repository, :with_repo_files)
-        get :download_files, params: {id: Repository.last.id, user_username: Repository.last.user_username}
+        create(:repository, :with_repo_files)
 
-        expected_file_path = "#{Rails.root}/public/tmp/makerepo_file_#{repo.id.to_s}.zip"
-        expect(File).to be_file(expected_file_path)
-        File.delete(expected_file_path) # clean up
+        expect(@controller).to receive(:send_data) {
+          @controller.render plain: 'OK' # to prevent a 'missing template' error
+        }
+
+        get :download_files, params: {id: Repository.last.id, user_username: Repository.last.user_username}
       end
 
     end
