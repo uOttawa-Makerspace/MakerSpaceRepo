@@ -19,6 +19,11 @@
       </div>
 
       <div class="form-group col-lg-6 mx-auto mb-3">
+        <%= f.label :description, 'Description (To be used if price is not available)' %>
+        <%= f.text_area :description, class: "form-control" %>
+      </div>
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :price, 'Price (optional)' %>
         <%= f.number_field :price, class: "form-control" %>
       </div>

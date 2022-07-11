@@ -73,6 +73,7 @@ class JobOrdersController < ApplicationController
         render 'job_orders/wizard/order_type'
       when 2
         @job_type = JobType.find(@job_order.job_type_id)
+        @job_type_extras = JobTypeExtra.where(job_type_id: @job_order.job_type_id)
         @service_groups = JobServiceGroup.all.where(job_type: @job_order.job_type).order(:id)
         render 'job_orders/wizard/service'
       when 3
