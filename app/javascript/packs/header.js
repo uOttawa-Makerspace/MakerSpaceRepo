@@ -9,6 +9,7 @@
  *  - Checking the media query width. As of writing its 1200px (window.matchMedia('(max-width: 1200px)').matches) and (window.matchMedia('(min-width: 1200px)').matches)
  *  - Checking the height of the collapsable navbar (navbarSupportedContent.clientHeight)
  * The transition function has 2 parameters whether we're setting it to dark mode and whether to animate the transition or not. 
+ * 
  */ 
 
 
@@ -71,6 +72,8 @@
     }); 
 
     navToggler.addEventListener('click', () => {
+        //Clicked while the navbar is transitioning
+        if (navbarSupportedContent.classList.contains('collapsing')){ return;}
         if (navbarSupportedContent.clientHeight == 0) {
             doTransition(false, false);
         }else{
