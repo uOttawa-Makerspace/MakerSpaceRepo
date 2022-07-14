@@ -12,7 +12,7 @@ new TomSelect("#user_dashboard_select",{
         if (type.length < 2) { return; } else {
             let url = "/staff_dashboard/populate_users?search=" + type;
             fetch(url).then(response => response.json()).then(data => {
-                callback(data.users.map(user => {return {id: user.id, name: user.name}}));
+                callback(data.users.map(user => {return {id: user.username, name: user.name}}));
             });
         }
     },

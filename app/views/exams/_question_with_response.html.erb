@@ -12,16 +12,20 @@
   <% end %>
 </div>
 <hr>
-<div class="text-start">
+<form class="form-check text-start">
   <% question.answers.randomize_answers.each do |a| %>
+    <div class="form-check">
+
     <% if response.answer.eql?(a) %>
-      <div class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
-        <%= a.description %>
-      </div>
+    <input name=<%=question.id%> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)" checked=true>
+    <label for=<%= a.id %> class="form-check-label d-block">
+    <%= a.description %>
+    </label>
     <% else %>
-      <div class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
-        <%= a.description %>
-      </div>
+    <input name=<%=question.id%> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+    <label for=<%= a.id %> class="form-check-label">
+    <%= a.description %>
     <% end %>
+      </div>
   <% end %>
-</div>
+    </form>

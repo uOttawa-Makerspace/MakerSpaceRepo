@@ -20,11 +20,5 @@ document.addEventListener('turbolinks:load', function() {
         }
     });
 });
-// No replacement for JustifiedGallery yet, relies on jQuery.
-// $(document).on("turbolinks:load", function () {
-//     $("#questionImageGallery").justifiedGallery({
-//         rowHeight: 250,
-//         lastRow: 'center'
-//     });
-// });
+
 

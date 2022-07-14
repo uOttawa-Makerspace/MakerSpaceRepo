@@ -140,7 +140,7 @@
           <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
             <div class="mb-3">
               <%= f.hidden_field :repository_id, value: @repository.id %>
-              <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
+              <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "form-control", :id => "search_project_proposals"}) %>
               <br> </br>
               <%= f.submit "Link", class: "btn btn-primary" %>
             </div>

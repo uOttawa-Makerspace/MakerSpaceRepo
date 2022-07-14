@@ -21,8 +21,6 @@ require("turbolinks").start();
 require("@rails/activestorage").start();
 // require("jquery");
 // require("jquery-ui")
-require("justifiedGallery")
-// require("select2");
 global.toastr = require("toastr");
 global.Chart = require("chart.js");
 require("trix");
@@ -147,3 +145,15 @@ window.debounce = function(func, wait, immediate) {
         if (callNow) func.apply(context, args);
     };
 };
+window.examResponse = function(exam_id, answer_id){
+    fetch('/exam_responses#create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            exam_id: exam_id,
+            answer_id: answer_id
+        })
+    })
+}
