@@ -50,7 +50,7 @@ class MakesController < SessionsController
   def create_photos
     if params[:images].present?
       params[:images].each do |img|
-        dimension = FastImage.size(img.tempfile,:raise_on_failure=>true)
+        dimension = FastImage.size(img.tempfile,raise_on_failure: true)
         Photo.create(image: img, repository_id: @repo.id, width: dimension.first, height: dimension.last)
       end
       end

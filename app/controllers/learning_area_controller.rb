@@ -87,7 +87,7 @@ class LearningAreaController < DevelopmentProgramsController
     def create_photos
       if params['images'].present?
         params['images'].each do |img|
-          dimension = FastImage.size(img.tempfile,:raise_on_failure=>true)
+          dimension = FastImage.size(img.tempfile,raise_on_failure: true)
           Photo.create(image: img, learning_module_id: @learning_module.id, width: dimension.first, height: dimension.last)
         end
       end
@@ -134,7 +134,7 @@ class LearningAreaController < DevelopmentProgramsController
 
       if params['images'].present?
         params['images'].each do |img|
-          dimension = FastImage.size(img.tempfile,:raise_on_failure=>true)
+          dimension = FastImage.size(img.tempfile,raise_on_failure: true)
           Photo.create(image: img, learning_module_id: @learning_module.id, width: dimension.first, height: dimension.last)
         end
       end
