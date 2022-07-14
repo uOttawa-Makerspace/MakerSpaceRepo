@@ -44,10 +44,18 @@ class ProficientProjectsController < DevelopmentProgramsController
       if params[:badge_requirements_id].present?
         @proficient_project.create_badge_requirements(params[:badge_requirements_id])
       end
-      create_photos
-      create_files
-      flash[:notice] = 'Proficient Project successfully created.'
-      render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
+      begin
+        create_photos
+      rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+        flash[:alert] = 'Something went wrong while uploading photos, try uploading them again later.'
+        @proficient_project.destroy
+        render json: {redirect_uri: request.path}
+
+      else
+        create_files
+        flash[:notice] = 'Proficient Project successfully created.'
+        render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
+      end
     else
       flash[:alert] = 'Something went wrong'
       render json: @proficient_project.errors['title'].first, status: :unprocessable_entity
@@ -76,11 +84,17 @@ class ProficientProjectsController < DevelopmentProgramsController
     badge_template_id.present? ? (params[:proficient_project][:badge_template_id] = badge_template_id.id) : (params[:proficient_project][:badge_template_id] = nil)
 
     if @proficient_project.update(proficient_project_params)
-      update_photos
       update_files
       update_videos
-      flash[:notice] = 'Proficient Project successfully updated.'
-      render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
+      begin
+        update_photos
+      rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+        flash[:alert_yellow] = 'Something went wrong while uploading photos, try again later. Other changes have been saved.'
+        render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
+      else
+        flash[:notice] = 'Proficient Project successfully updated.'
+        render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
+      end
     else
       flash[:alert] = 'Unable to apply the changes.'
       render json: @proficient_project.errors['title'].first, status: :unprocessable_entity
@@ -201,7 +215,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   def create_photos
     if params['images'].present?
       params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size("img.tempfile",:raise_on_failure=>true)
         Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
       end
     end
@@ -244,7 +258,7 @@ class ProficientProjectsController < DevelopmentProgramsController
 
     if params['images'].present?
       params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size("img.tempfile",:raise_on_failure=>true)
         Photo.create(image: img, proficient_project_id: @proficient_project.id, width: dimension.first, height: dimension.last)
       end
     end

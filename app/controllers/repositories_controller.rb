@@ -86,12 +86,19 @@ class RepositoriesController < SessionsController
         end
         @repository.save
       end
-
-      create_photos
-      create_files
-      create_categories
-      create_equipments
-      render json: {redirect_uri: repository_path(@user.username, @repository.slug).to_s}
+      begin 
+        create_photos
+      rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+        Airbrake.notify(e)
+        flash[:alert] = 'Something went wrong while uploading photos, please try again later.'
+        @repository.destroy
+        render json: {redirect_uri: request.path}
+      else
+        create_files
+        create_categories
+        create_equipments
+        render json: {redirect_uri: repository_path(@user.username, @repository.slug).to_s}
+      end
     else
       render json: @repository.errors['title'].first, status: :unprocessable_entity
     end
@@ -103,12 +110,19 @@ class RepositoriesController < SessionsController
     update_password
 
     if @repository.update(repository_params)
-      update_photos
       update_files
       create_categories
       create_equipments
-      flash[:notice] = 'Project updated successfully!'
-      render json: {redirect_uri: repository_path(@repository.user_username, @repository.slug).to_s}
+      begin
+        update_photos
+      rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+        Airbrake.notify(e)
+        flash[:alert_yellow] = 'Something went wrong while uploading photos, try uploading them again later. Other changes have been saved.'
+        render json: {redirect_uri: repository_path(@repository.user_username, @repository.slug).to_s}
+      else
+        flash[:notice] = 'Project updated successfully!'
+        render json: {redirect_uri: repository_path(@repository.user_username, @repository.slug).to_s}
+      end
     else
       flash[:alert] = 'Unable to apply the changes.'
       render json: @repository.errors['title'].first, status: :unprocessable_entity
@@ -236,7 +250,7 @@ class RepositoriesController < SessionsController
   def create_photos
     if params[:images].present?
       params[:images].first(5).each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size("img.tempfile",:raise_on_failure=>true)
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end
     end
@@ -262,7 +276,7 @@ class RepositoriesController < SessionsController
 
     if params['images'].present?
       params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size("img.tempfile",:raise_on_failure=>true)
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end
     end
