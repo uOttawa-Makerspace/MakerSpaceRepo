@@ -231,7 +231,7 @@ class ProjectProposalsController < ApplicationController
   def create_photos
     if params[:images].present?
       params[:images].first(5).each do |img|
-        dimension = FastImage.size("img.tempfile",:raise_on_failure=>true)
+        dimension = FastImage.size(img.tempfile,:raise_on_failure=>true)
         Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
       end
     end
@@ -257,7 +257,7 @@ class ProjectProposalsController < ApplicationController
 
     if params['images'].present?
       params['images'].each do |img|
-        dimension = FastImage.size("img.tempfile",:raise_on_failure=>true)
+        dimension = FastImage.size(img.tempfile,:raise_on_failure=>true)
         Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
       end
     end
