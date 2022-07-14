@@ -111,22 +111,7 @@ class StaffDashboardController < StaffAreaController
       status = false
     end
     status ? flash[:notice] = 'Space changed successfully' : flash[:alert] = 'Something went wrong'
-    redirectPath = ""
-    if params[:training].present? and params[:training] == 'true'
-      redirectPath = new_staff_training_session_path
-    elsif params[:questions].present? and params[:questions] == 'true'
-      redirectPath = questions_path
-    elsif params[:shifts].present? and params[:shifts] == 'true'
-      redirectPath = shifts_admin_shifts_path
-    else
-      redirectPath = staff_dashboard_index_path
-    end
-    respond_to do |format|
-      format.html {
-        redirect_to redirectPath
-      }
-      format.json { render json: { "status": "ok", :redirect => redirectPath} }
-    end
+    render json: { "status": "ok"}
   end
 
   def link_rfid

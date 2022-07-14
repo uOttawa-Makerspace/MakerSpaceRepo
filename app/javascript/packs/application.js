@@ -128,10 +128,8 @@ window.setSpace = function(){
             shifts: document.URL.includes("shifts"),
         }),
     }).then(response => response.json()).then(data => {
-        if (data.redirect){
-            Turbolinks.clearCache()
-            Turbolinks.visit(data.redirect, {"action":"replace"})
-        }
+        Turbolinks.clearCache()
+        Turbolinks.visit(window.location, {"action":"replace"})
     }).catch(error => {console.log(error)})
 }
 

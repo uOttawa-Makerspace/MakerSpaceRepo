@@ -2,11 +2,11 @@
   <h2><b><%= question.description %></b></h2>
 </div>
 
-<div id="questionImageGallery" class="text-center justified-gallery">
+<div class="text-center col-12 justified-gallery">
   <% if question.images.attached? %>
   <% question.images.each do |img| %>
       <a href="#">
-        <%= image_tag(img, alt: 'Image related to the question') %>
+        <%= image_tag(img, alt: 'Image related to the question', class:"d-inline-block mx-auto") %>
       </a>
   <% end %>
 <% end %>

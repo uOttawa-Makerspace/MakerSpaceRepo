@@ -214,3 +214,13 @@ div.form-error{
 .dropdown-item:hover:not(:active) {
   background-color: $primary-light;
 }
+.justified-gallery{
+  height: 250px;
+  overflow-x: scroll;
+  overflow-y: hidden;  
+  white-space: nowrap;
+}
+.justified-gallery img{
+  height:250px;
+  width:auto;
+}

@@ -23,5 +23,5 @@ document.addEventListener("turbolinks:load", () => {
 refreshCapacity();
 function refreshCapacity() {
     let url = "/staff_dashboard/refresh_capacity";
-    fetch(url).then(response => response.text()).then(data => {document.getElementsByClassName('max_capacity_alert')[0].innerHTML = data.replace("\"","")});
+    fetch(url).then(response => response.text()).then(data => {if (document.getElementsByClassName('max_capacity_alert')[0])document.getElementsByClassName('max_capacity_alert')[0].innerHTML = data.replace("\"","")});
 }
