@@ -19,13 +19,24 @@ window.togglePass = function () {
 
 document.addEventListener("DOMContentLoaded", function () {
     if (document.getElementById("search_users_add")) {
-        console.log("Solved;")
         new TomSelect("#search_users_add", {
             searchField: ['name'],
             valueField: 'id',
             labelField: 'name',
             maxOptions: 5,
+            searchPlaceholder: 'Add Owner...',
             searchOnKeyUp: true,
+            load: function (type,callback) {
+                if (type.length < 2) { return; } else {
+                    let url = "/repositories/populate_users?search=" + type;
+                    fetch(url).then(response => response.json()).then(data => {
+                        callback(data.users.map(user => {return {id: user.id, name: user.name}}));
+                    });
+                }
+            },
+            shouldLoad: function (type) {
+                return type.length > 2;
+            }
         })
     }
     if (document.getElementById("search_users_remove")) {
