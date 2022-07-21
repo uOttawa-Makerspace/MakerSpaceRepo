@@ -70,13 +70,23 @@ class ProjectProposalsController < ApplicationController
 
     respond_to do |format|
       if verify_recaptcha(model: @project_proposal) && @project_proposal.save
-        create_photos
-        create_files
-        create_categories
-        @project_proposal.save # This creates the slug with ID since the ID is not created before create
-        format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully created.' }
-        format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
-        MsrMailer.send_new_project_proposals.deliver_now
+        begin
+          create_photos
+        rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+          Airbrake.notify(e)
+          flash[:alert] = 'Something went wrong while uploading photos, try again later.'
+          @project_proposal.destroy
+          format.json {render json: {redirect_uri: request.path}}
+          format.html {redirect_back fallback_location: request.path}
+
+        else
+          create_files
+          create_categories
+          @project_proposal.save # This creates the slug with ID since the ID is not created before create
+          format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully created.' }
+          format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
+          MsrMailer.send_new_project_proposals.deliver_now
+        end
       else
         flash[:alert] = 'An error occurred while creating the project proposal, try again later.'
         format.html { render :new, status: :unprocessable_entity }
@@ -146,11 +156,19 @@ class ProjectProposalsController < ApplicationController
     @project_proposal.categories.destroy_all
     respond_to do |format|
       if @project_proposal.update(project_proposal_params)
-        update_photos
         update_files
         create_categories
-        format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully updated.' }
-        format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
+        begin 
+          update_photos
+        rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+          Airbrake.notify(e)
+          flash[:alert_yellow] = 'Something went wrong while uploading photos, try again later. Other changes have been saved. '
+          format.json {render json: {redirect_uri: request.path}}
+          format.html {redirect_back fallback_location: request.path}
+        else
+          format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully updated.' }
+          format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
+        end
       else
         flash[:alert] = 'An error occurred while updating the project proposal, try again later.'
         format.html { render :edit, status: :unprocessable_entity }
@@ -213,7 +231,7 @@ class ProjectProposalsController < ApplicationController
   def create_photos
     if params[:images].present?
       params[:images].first(5).each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size(img.tempfile,raise_on_failure: true)
         Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
       end
     end
@@ -239,7 +257,7 @@ class ProjectProposalsController < ApplicationController
 
     if params['images'].present?
       params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size(img.tempfile,raise_on_failure: true)
         Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
       end
     end

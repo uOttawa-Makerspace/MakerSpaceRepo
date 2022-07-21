@@ -25,10 +25,17 @@ class LearningAreaController < DevelopmentProgramsController
   def create
     @learning_module = LearningModule.new(learning_modules_params)
     if @learning_module.save
-      create_photos
-      create_files
-      flash[:notice] = 'Learning Module has been successfully created.'
-      render json: {redirect_uri: learning_area_path(@learning_module.id).to_s}
+      begin
+        create_photos
+      rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+        flash[:alert] = 'Something went wrong while uploading photos, try again later.'
+        @learning_module.destroy
+        render json: {redirect_uri: request.path}
+      else
+        create_files
+        flash[:notice] = 'Learning Module has been successfully created.'
+        render json: {redirect_uri: learning_area_path(@learning_module.id).to_s}
+      end
     else
       flash[:alert] = 'Something went wrong'
       render json: @learning_module.errors['title'].first, status: :unprocessable_entity
@@ -47,11 +54,17 @@ class LearningAreaController < DevelopmentProgramsController
 
   def update
     if @learning_module.update(learning_modules_params)
-      update_photos
       update_files
       update_videos
-      flash[:notice] = 'Learning module successfully updated.'
-      render json: {redirect_uri: learning_area_path(@learning_module.id).to_s}
+      begin
+        update_photos
+      rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+        flash[:alert_yellow] = 'Something went wrong while uploading photos, try again later. Other changes have been saved.'
+        render json: {redirect_uri: learning_area_path(@learning_module.id).to_s}
+      else
+        flash[:notice] = 'Learning module successfully updated.'
+        render json: {redirect_uri: learning_area_path(@learning_module.id).to_s}
+      end
     else
       flash[:alert] = 'Unable to apply the changes.'
       render json: @learning_module.errors['title'].first, status: :unprocessable_entity
@@ -74,7 +87,7 @@ class LearningAreaController < DevelopmentProgramsController
     def create_photos
       if params['images'].present?
         params['images'].each do |img|
-          dimension = FastImage.size(img.tempfile)
+          dimension = FastImage.size(img.tempfile,raise_on_failure: true)
           Photo.create(image: img, learning_module_id: @learning_module.id, width: dimension.first, height: dimension.last)
         end
       end
@@ -121,7 +134,7 @@ class LearningAreaController < DevelopmentProgramsController
 
       if params['images'].present?
         params['images'].each do |img|
-          dimension = FastImage.size(img.tempfile)
+          dimension = FastImage.size(img.tempfile,raise_on_failure: true)
           Photo.create(image: img, learning_module_id: @learning_module.id, width: dimension.first, height: dimension.last)
         end
       end

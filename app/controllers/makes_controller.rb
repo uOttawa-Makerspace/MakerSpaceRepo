@@ -18,14 +18,22 @@ class MakesController < SessionsController
     end
 
     if @repo.save
-      @repo.update(slug: @repo.id.to_s + '.' + @repo.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-'))
-      create_photos
-      copy_categories_and_equipment
-      @repository.increment!(:make)
-      render json: { redirect_uri: repository_path(@user.username, @repo.slug).to_s }
-      @user.increment!(:reputation, 15)
+      begin
+        create_photos
+      rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e  
+        flash[:alert] = 'Something went wrong while uploading photos, but the make was created. Try uploading them again later.'
+        @repo.destroy
+        render json: {redirect_uri: request.path}
+      else
+        @repo.update(slug: @repo.id.to_s + '.' + @repo.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-'))
+        copy_categories_and_equipment
+        @repository.increment!(:make)
+        render json: { redirect_uri: repository_path(@user.username, @repo.slug).to_s }
+        @user.increment!(:reputation, 15)
+      end
     else
-      render :new, alert: 'Something went wrong'
+      flash[:alert] = 'Something went wrong'
+      render json: @repo.errors['title'].first, status: :unprocessable_entity
     end
   end
 
@@ -42,7 +50,7 @@ class MakesController < SessionsController
   def create_photos
     if params[:images].present?
       params[:images].each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size(img.tempfile,raise_on_failure: true)
         Photo.create(image: img, repository_id: @repo.id, width: dimension.first, height: dimension.last)
       end
       end
