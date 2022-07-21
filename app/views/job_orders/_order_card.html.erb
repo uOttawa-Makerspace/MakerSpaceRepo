@@ -1,0 +1,50 @@
+<div class="col-md-6 my-3">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title m-0 d-flex justify-content-md-between flex-md-row flex-column">
+        <div>
+          <h5>Order #<%= jo.id %> - <%= jo.job_order_statuses.last.job_status.name %></h5>
+          <p class="mb-0"><%= (jo.user_files.map {|f| f.filename}).join(", ") %></p>
+        </div>
+        <div class="pt-2 pt-md-0">
+          <% if jo.allow_edit? %>
+            <%= link_to "Edit", job_order_steps_path(job_order_id: jo.id), class: 'btn btn-outline-dark mb-1' %>
+          <% else %>
+            <span class="d-inline-block mb-1" tabindex="0" data-toggle="popover" data-trigger="focus" data-content="Cannot edit this order." data-placement="bottom">
+              <button class="btn btn-primary" style="pointer-events: none;" type="button" disabled>Edit</button>
+            </span>
+          <% end %>
+          <%= link_to "<i class='fa fa-download'></i> Invoice".html_safe, job_order_invoice_path(job_order_id: jo.id), method: :get, target: '_blank', class: 'btn btn-secondary' if jo.job_order_quote.present? %>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <ul class="timeline">
+        <% jo.job_order_statuses.order(created_at: :desc).each do |jos| %>
+          <li>
+            <div class="d-flex justify-content-between">
+              <p><%= jos.job_status.name %></p>
+              <p class="float-right"><%= jos.created_at.strftime("%b %e %Y at %H:%M") %></p>
+            </div>
+            <p><%= jos.job_status.description %></p>
+            <% if jo.job_order_statuses.last == jos %>
+              <% if [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(jos.job_status) %>
+                <div class="alert alert-warning">
+                  <p><b>Action Required - Total Quote: <%= number_to_currency(jo.total_price) %></b></p>
+                  <div class="d-flex justify-content-between">
+                    <%= form_tag job_order_user_approval_path(job_order_id: jo.id, approved: true), method: :patch do %>
+                      <%= submit_tag 'Approve', class: 'btn btn-primary' %>
+                    <% end %>
+                    <%= form_tag job_order_user_approval_path(job_order_id: jo.id, approved: false), method: :patch do %>
+                      <%= submit_tag 'Deny', class: 'btn btn-danger' %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</div>

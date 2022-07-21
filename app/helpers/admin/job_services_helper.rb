@@ -1,0 +1,2 @@
+module Admin::JobServicesHelper
+end

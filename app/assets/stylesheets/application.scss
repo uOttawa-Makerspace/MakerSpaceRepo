@@ -223,4 +223,14 @@ div.form-error{
 .justified-gallery img{
   height:250px;
   width:auto;
+.padding-responsive {
+  padding-left: 20%;
+  padding-right: 20%;
+}
+
+@media screen and (max-width: 700px){
+  .padding-responsive {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
 }

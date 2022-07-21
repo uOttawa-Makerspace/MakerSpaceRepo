@@ -53,6 +53,8 @@ require("packs/clipboard");
 
 window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
 window.TomSelect = require("tom-select");
+import "bootstrap";
+import bsCustomFileInput from 'bs-custom-file-input'
 require("packs/toastr");
 
 
@@ -104,6 +106,7 @@ document.addEventListener("turbolinks:load", () => {
 //         windowPadding: [80, 0, 0, 0]
 //     });
 // });
+
 
 window.clearEndDate = function() {
     document.getElementById("end_date").value = null;

@@ -30,6 +30,8 @@ fr:
       exams: "Examens"
       printorder: "Commander une impression/découpe laser"
       printorder_admin: "Administrateurs commander une impression"
+      joborder: "Demande de commande"
+      joborder_admin: "Administrateur de commande"
       help: "Aide"
       sign_out: "Déconnexion"
   home:
