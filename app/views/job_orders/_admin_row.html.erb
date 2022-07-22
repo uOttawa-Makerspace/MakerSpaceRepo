@@ -28,7 +28,7 @@
   <% end %>
 </td>
 <td>
-  <a class="link-dark" data-action="click->launch-modal#launchCommentsModal" data-id="<%= jo.id %>" data-comments="<%= jo.comments %>"><%= simple_format(jo.comments.truncate(40)) %></a>
+  <a class="link-dark" data-action="click->launch-modal#launchCommentsModal" data-id="<%= jo.id %>" data-comments="<%= simple_format(jo.comments) %>"><%= simple_format(jo.comments.truncate(40)) %></a>
 </td>
 <td>
   <% if jo.user_files.attached? %>
