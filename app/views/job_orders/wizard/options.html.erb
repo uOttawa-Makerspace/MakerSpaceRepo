@@ -8,18 +8,17 @@
       <div class="form-group col-lg-6 mx-auto">
         <% @options.each do |o| %>
           <div class="my-3 card p-2">
-            <div class="custom-control custom-checkbox">
+            <div class="form-check-inline">
               <% if o.description.present? %>
                 <p><%= o.description.html_safe %></p>
               <% end %>
-              <%= check_box_tag "options_id_#{o.id}", o.id, @job_order.job_order_options.pluck(:job_option_id).include?(o.id), {multiple: true, class: 'custom-control-input option-checkbox', data: {'file-required': o.need_files, 'option-id': o.id}} %>
-              <%= label_tag "options_id_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'custom-control-label' %>
+              <%= check_box_tag "options_id_#{o.id}", o.id, @job_order.job_order_options.pluck(:job_option_id).include?(o.id), {multiple: true, class: 'form-check-input option-checkbox', data: {'file-required': o.need_files, 'option-id': o.id}} %>
+              <%= label_tag "options_id_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'form-check-label' %>
             </div>
 
             <% if o.need_files %>
               <div class="custom-file mt-2">
-                <%= label_tag "options_file_#{o.id}", "File", class: "custom-file-label" %>
-                <%= file_field_tag "options_file_#{o.id}", class: 'custom-file-input option-file', data: {file: o.id} %>
+                <%= file_field_tag "options_file_#{o.id}", class: 'form-control option-file', data: {file: o.id} %>
               </div>
 
               <% if @job_order.job_order_options.where(job_option_id: o.id).present? && @job_order.job_order_options.where(job_option_id: o.id).first.option_file.attached? %>
@@ -70,7 +69,7 @@
     });
   });
 
-  document.getElementsByClassName("option-checkbox").forEach((input) => {
+  [...document.getElementsByClassName("option-checkbox")].forEach((input) => {
       if (input.getAttribute('data-file-required') === 'true') {
         input.addEventListener('change', () => {
             const el = document.getElementById(`options_file_${input.getAttribute('data-option-id')}`)

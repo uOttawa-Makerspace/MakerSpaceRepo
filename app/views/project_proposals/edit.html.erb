@@ -35,11 +35,11 @@
     <div class="mb-3 required">
       <%= f.label :client_type, "Client Type/Type de Client", class: "form-label" %>
       <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
-      <div class='checkbox-list'>
-        <%= f.radio_button :client_type, 'Organization / Organisation', :class => 'show_extra', :style => 'display:inline' %>
+      <div class='checkbox-list form-check'>
+        <%= f.radio_button :client_type, 'Organization / Organisation', :class => 'show_extra form-check-input', :style => 'display:inline' %>
         <%= f.label 'client_type_organization', 'Organization / Organisation', :id => 'type', :style => 'display:inline', class:"form-label" %>
         <br>
-        <%= f.radio_button :client_type, 'Individual / Individuel', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.radio_button :client_type, 'Individual / Individuel', :class => 'show_extra form-check-input', :style => 'display:inline' %>
         <%= f.label 'client_type_individual', 'Individual / Individuel', :id => 'type', :style => 'display:inline', class:"form-label" %>
       </div>
     </div>
@@ -56,14 +56,14 @@
     <div class="mb-3 required">
       <%= f.label :client_interest, "Client Level of Interest/Niveau d'intérêt du Client", class: "form-label" %>
       <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
-      <div class='checkbox-list'>
-        <%= f.radio_button :client_interest, 'Low / Faible', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
+      <div class='checkbox-list form-check'>
+        <%= f.radio_button :client_interest, 'Low / Faible', :checked => true, :class => 'show_extra form-check-input', :style => 'display:inline' %>
         <%= f.label 'client_interest_low', 'Low / Faible', :id => 'type', :style => 'display:inline', class: "form-label" %>
         <br>
-        <%= f.radio_button :client_interest, 'Medium / Moyen', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.radio_button :client_interest, 'Medium / Moyen', :class => 'show_extra form-check-input', :style => 'display:inline' %>
         <%= f.label 'client_interest_medium', 'Medium / Moyen', :id => 'type', :style => 'display:inline', class: "form-label" %>
         <br>
-        <%= f.radio_button :client_interest, 'High / Élevé', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.radio_button :client_interest, 'High / Élevé', :class => 'show_extra form-check-input', :style => 'display:inline' %>
         <%= f.label 'client_interest_high', 'High / Élevé', :id => 'type', :style => 'display:inline', class: "form-label" %>
       </div>
     </div>
@@ -184,14 +184,14 @@
     <div class="mb-3 required">
       <%= f.label :project_type, "Type de projet / Project Type", class: "form-label" %>
       <div></div>
-      <div class='checkbox-list'>
-        <%= f.radio_button :project_type, 'General', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
+      <div class='checkbox-list form-check'>
+        <%= f.radio_button :project_type, 'General', :checked => true, :class => 'show_extra form-check-input', :style => 'display:inline' %>
         <%= f.label 'project_type_general', 'General', :id => 'type', :style => 'display:inline', class:"form-label" %>
         <br>
-        <%= f.radio_button :project_type, 'Spécifique au client / Client Specific', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.radio_button :project_type, 'Spécifique au client / Client Specific', :class => 'show_extra form-check-input', :style => 'display:inline' %>
         <%= f.label 'project_type_client_specific', 'Spécifique au client / Client Specific', :id => 'type', :style => 'display:inline', class:"form-label" %>
         <br>
-        <%= f.radio_button :project_type, 'S/O | N/A', :class => 'show_extra', :style => 'display:inline' %>
+        <%= f.radio_button :project_type, 'S/O | N/A', :class => 'show_extra form-check-input', :style => 'display:inline' %>
         <%= f.label 'project_type_na__so', 'S/O | N/A', :id => 'type', :style => 'display:inline', class:"form-label" %>
       </div>
     </div>

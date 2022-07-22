@@ -67,6 +67,7 @@ gem "rack-cors"
 gem 'stripe_event', '~> 2.3', '>= 2.3.1'
 gem 'stripe'
 gem 'airbrake'
+gem 'stimulus-rails'
 
 group :development, :test do
   gem 'byebug', platform: :mri

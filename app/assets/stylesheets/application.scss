@@ -17,7 +17,6 @@
 
  $primary: #497979;
  $primary-light: rgba(59, 147, 147, 0.5);
- $primary-lighter: rgba(73,121,121,0.5);
  $navbar-light-color: rgba(0, 0, 0, 0.7);
 $navbar-light-hover-color: rgba(0, 0, 0, 1.0);
 $navbar-dark-color: rgba(255, 255, 255, 0.7);
@@ -223,6 +222,7 @@ div.form-error{
 .justified-gallery img{
   height:250px;
   width:auto;
+}
 .padding-responsive {
   padding-left: 20%;
   padding-right: 20%;

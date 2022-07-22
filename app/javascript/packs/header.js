@@ -67,8 +67,7 @@
 
     navToggler.addEventListener('click', () => {
         //Clicked while the navbar is transitioning
-        if (navbarSupportedContent.classList.contains('collapsing')){ return;}
-        if (navbarSupportedContent.clientHeight == 0) {
+        if (navbarSupportedContent.clientHeight != 0) {
             doTransition(false, false);
         }else{
             window.scrollY < 10 ? doTransition(true,false) : doTransition(false, false);

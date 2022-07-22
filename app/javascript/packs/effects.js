@@ -1,26 +1,26 @@
-function fadeOut(element, duration){
+function fadeOut(element, duration) {
   let periods = duration / 100;
   let opacity = 1;
   let interval = setInterval(() => {
     opacity -= 0.01;
     element.style.opacity = opacity;
-    if(opacity <= 0){
+    if (opacity <= 0) {
       clearInterval(interval);
     }
   }, periods);
 }
-function fadeIn(element, duration){
+function fadeIn(element, duration) {
   let periods = duration / 100;
   let opacity = 0;
   let interval = setInterval(() => {
     opacity += 0.01;
     element.style.opacity = opacity;
-    if(opacity >= 1){
+    if (opacity >= 1) {
       clearInterval(interval);
     }
   }, periods);
 }
-document.addEventListener("DOMContentLoaded", function(event) {
+document.addEventListener("turbolinks:load", function (event) {
 
   // Can't find any references to this class other than this file and CSS. I can't tell where/if it gets assigned.
   // document.getElementsByClassName("select-styled").forEach(function(element){
@@ -32,26 +32,26 @@ document.addEventListener("DOMContentLoaded", function(event) {
   // });
 
 
-  document.getElementsByClassName("repository-container").forEach(function(element){
-    element.addEventListener("mouseenter", function(event){
+  [...document.getElementsByClassName("repository-container")].forEach(function (element) {
+    element.addEventListener("mouseenter", function (event) {
       let wrapper = element.firstElementChild;
-      if (wrapper.children.length >= 2){
-        fadeIn(wrapper.children[0],100);
-        fadeIn(wrapper.children[1],100);
+      if (wrapper.children.length >= 2) {
+        fadeIn(wrapper.children[0], 100);
+        fadeIn(wrapper.children[1], 100);
       }
     });
-      element.addEventListener("mouseleave", function(event){
-        let wrapper = element.firstElementChild;
-        if (wrapper.children.length >= 2){
-          fadeIn(wrapper.children[0],100);
-          fadeIn(wrapper.children[1],100);
-        }
+    element.addEventListener("mouseleave", function (event) {
+      let wrapper = element.firstElementChild;
+      if (wrapper.children.length >= 2) {
+        fadeIn(wrapper.children[0], 100);
+        fadeIn(wrapper.children[1], 100);
+      }
     });
   });
 
-  document.getElementsByClassName("repository_report").forEach(function(element){
-    element.addEventListener("click", function(event){
-      document.getElementsByClassName("spinner").forEach(function(element){
+  [...document.getElementsByClassName("repository_report")].forEach(function (element) {
+    element.addEventListener("click", function (event) {
+      [...document.getElementsByClassName("spinner")].forEach(function (element) {
         element.style.display = "inline-block";
       });
     });
@@ -59,19 +59,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
 
   let filterHeader = document.getElementById("filter-header")
-  if (filterHeader){
-    document.getElementById("filter-header").addEventListener("click", function(event){
-      document.getElementsByClassName("filter").forEach(function(element){
-        element.animate([
-          { transform: 'translateY(-100%)', offset: 0 },
-          { transform: 'translateY(0%)', offset: 1 }
-        ],100);
-        element.addEventListener("click", function(event){
-          element.animate([
-            { transform: 'translateY(100%)', offset: 0 },
-            { transform: 'translateY(0%)', offset: 1 }
-          ],100);
-        });
+  if (filterHeader) {
+    document.getElementById("filter-header").addEventListener("click", function (event) {
+      [...document.getElementsByClassName("filter")].forEach(function (element) {
+        if (element.style.display == "none" || element.style.display == "") {
+          element.style.display = "block";
+        } else {
+          element.style.display = "none";
+        }
       });
     });
   }

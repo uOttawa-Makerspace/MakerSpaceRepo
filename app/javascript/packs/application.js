@@ -49,12 +49,12 @@ require("packs/vendor");
 require("packs/accordion-load");
 require("packs/clipboard");
 //Shouldn't be necessary, remove when controllers load properly.
+import "../controllers" 
 
-
-window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
+// window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
 window.TomSelect = require("tom-select");
 import "bootstrap";
-import bsCustomFileInput from 'bs-custom-file-input'
+// import bsCustomFileInput from 'bs-custom-file-input'
 require("packs/toastr");
 
 

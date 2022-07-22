@@ -1404,6 +1404,8 @@ GEM
     sshkit (1.21.0)
       net-scp (>= 1.1.2)
       net-ssh (>= 2.8.0)
+    stimulus-rails (1.1.0)
+      railties (>= 6.0.0)
     stripe (5.42.0)
     stripe_event (2.3.1)
       activesupport (>= 3.1)
@@ -1538,6 +1540,7 @@ DEPENDENCIES
   simplecov
   spring (~> 2.1.0)
   spring-watcher-listen (~> 2.0.0)
+  stimulus-rails
   stripe
   stripe_event (~> 2.3, >= 2.3.1)
   thin

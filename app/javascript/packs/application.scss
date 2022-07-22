@@ -12,17 +12,17 @@ $table-accent-bg: #d6ebeb;
 @import "~bootstrap/scss/bootstrap";
 @import "~photoswipe/src/css/main";
 @import "~photoswipe/src/css/default-skin/default-skin";
-@import "~progress-tracker/src/styles/progress-tracker";
+// @import "~progress-tracker/src/styles/progress-tracker";
 @import 'toastr/build/toastr.min';
 @import "~flatpickr/dist/flatpickr";
 @import "~@fullcalendar/common/main";
 @import "~tom-select/dist/css/tom-select.bootstrap4";
 
-.progress-step {
-  &.is-declined {
-    @include progress-state(#FF4F37);
-  }
-}
+// .progress-step {
+//   &.is-declined {
+//     @include progress-state(#FF4F37);
+//   }
+// }
 
 .turbolinks-progress-bar {
     background-color: var(--primary);

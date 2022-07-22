@@ -18,7 +18,7 @@
     <% @statuses.each_with_index do |status, i| %>
       <% if @job_orders.last_status(status[:status]).present? %>
         <div class="card">
-          <div class="card-header" data-toggle="collapse" data-target="#accordion-job-order-<%= i %>" aria-expanded="true">
+          <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-job-order-<%= i %>" aria-expanded="true">
             <h2 class="mb-0 text-center">
               <button class="btn btn-link" type="button">
                 <%= status[:name] %>
@@ -26,8 +26,8 @@
             </h2>
           </div>
           <div id="accordion-job-order-<%= i %>" class="collapse" aria-labelledby="#job-order-<%= i %>">
-            <div>
-              <table class="table table-responsive">
+            <div class="table-responsive">
+              <table class="table table-striped job-order-table">
                 <thead>
                   <tr class="text-center">
                     <th></th>

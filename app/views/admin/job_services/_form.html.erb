@@ -55,14 +55,14 @@
       <div class="mb-3">
         <%= f.label :required, "Required? (ex: Onyx for MarkForged)", required: true %>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :required, false, class: 'custom-control-input' %>
-          <%= f.label :required, 'No', class: 'custom-control-label', value: false %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :required, false, class: 'form-check-input' %>
+          <%= f.label :required, 'No', class: 'form-check-label', value: false %>
         </div>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :required, true, class: 'custom-control-input' %>
-          <%= f.label :required, 'Yes', class: 'custom-control-label', value: true %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :required, true, class: 'form-check-input' %>
+          <%= f.label :required, 'Yes', class: 'form-check-label', value: true %>
         </div>
       </div>
 

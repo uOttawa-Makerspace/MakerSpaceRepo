@@ -11,7 +11,7 @@ document.addEventListener('turbolinks:load', function() {
             if (accordion_load_item){accordion_load_item.classList.toggle("show");}
         });
     }
-    let collapseElements = document.getElementsByClassName('collapse');
+    let collapseElements = [...document.getElementsByClassName('collapse')];
     collapseElements.forEach(function (collapseElement) {
         collapseElement.addEventListener('show.bs.collapse', function () {
             storeid(location.pathname);
