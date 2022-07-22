@@ -26,7 +26,7 @@ class JobOrdersController < ApplicationController
   end
 
   def steps
-    error = false
+    error = []
 
     if @job_order.present? && @job_order.user == @user
 
@@ -50,22 +50,22 @@ class JobOrdersController < ApplicationController
           params[:job_order][:job_service_ids] = @job_order.job_services.last.id
         end
         unless @job_order.update(job_order_params)
-          error = true
+          error << "Please make sure you have a uploaded a valid filetype."
         end
       end
 
       if params[:change_options].present? && params[:change_options] == "true"
         unless @job_order.add_options(params)
-          error = true
+          error = "The options have not successfully been saved."
         end
       end
     else
-      error = true
+      error << "The Job Order hasn't been found."
     end
 
-    if error
+    if error.length > 0
       redirect_to job_order_steps_path(@job_order, step: (params[:step].to_i - 1))
-      flash[:alert] = "An error occurred while saving the job order step. make sure that you uploaded the right file types. Please try again."
+      flash[:alert] = "An error occurred while saving the job order step. " + error.join(", ")
     else
       @step = @job_order.max_step if (@job_order.max_step < @step)
       case @step

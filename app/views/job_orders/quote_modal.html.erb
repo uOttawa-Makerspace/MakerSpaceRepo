@@ -11,7 +11,7 @@
           <div class="input-group-prepend">
             <span class="input-group-text">$</span>
           </div>
-          <%= number_field_tag :service_fee, @job_order.job_type.service_fee, {step: "0.01", class: "form-control", required: true} %>
+          <%= number_field_tag :service_fee, @job_order.job_type.service_fee, {step: "0.01", class: "form-control money-input", required: true} %>
         </div>
       </div>
 
@@ -38,7 +38,7 @@
                 <div class="input-group-prepend">
                   <span class="input-group-text">$</span>
                 </div>
-                <%= number_field_tag "quote_service_per_unit_#{service.id}", @user.internal? ? service.internal_price : service.external_price, { step: "0.01", placeholder: "0.25", class: "form-control", required: true } %>
+                <%= number_field_tag "quote_service_per_unit_#{service.id}", @user.internal? ? service.internal_price : service.external_price, { step: "0.01", placeholder: "0.25", class: "form-control money-input", required: true } %>
               </div>
             </div>
           </div>
@@ -53,7 +53,7 @@
           <div class="col-md-12">
             <div class="form-group">
               <%= label_tag "quote_extra_amount_#{extra.id}", "Price (In CAD) " %>
-              <%= number_field_tag "quote_extra_amount_#{extra.id}", extra.price, { step: "0.01", placeholder: "0.25", class: "form-control", required: true } %>
+              <%= number_field_tag "quote_extra_amount_#{extra.id}", extra.price, { step: "0.01", placeholder: "0.25", class: "form-control money-input", required: true } %>
             </div>
           </div>
         </div>
@@ -64,10 +64,11 @@
           <div class="col-md-12">
             <p><b><%= option.job_option.name %></b></p>
           </div>
+          </div>
           <div class="col-md-12">
             <div class="form-group">
               <%= label_tag "quote_option_amount_#{option.job_option_id}", "Price (In CAD) " %>
-              <%= number_field_tag "quote_option_amount_#{option.job_option_id}", option.job_option.fee, { step: "0.01", placeholder: "0.25", class: "form-control", required: true } %>
+              <%= number_field_tag "quote_option_amount_#{option.job_option_id}", option.job_option.fee, { step: "0.01", placeholder: "0.25", class: "form-control money-input", required: true } %>
             </div>
           </div>
         </div>
@@ -93,4 +94,11 @@
   <% end %>
 
 
+  <script type="text/javascript" charset="utf-8">
+      Array.from(document.getElementsByClassName("money-input")).map((el) => {
+          el.addEventListener('change', () => {
+              el.value = Number(el.value).toFixed(2);
+          })
+      })
+  </script>
 </div>
