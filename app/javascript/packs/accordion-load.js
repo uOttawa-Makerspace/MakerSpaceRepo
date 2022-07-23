@@ -3,21 +3,35 @@
  */
 
 document.addEventListener('turbolinks:load', () => {
-    let storage = localStorage.getItem(location.pathname);
-    if (storage) {
-        storage = storage.split(",");
-        storage.forEach(function (item) {
-            let accordion_load_item = document.getElementById(item);
-            if (accordion_load_item){accordion_load_item.classList.toggle("show");}
+    let storageString = localStorage.getItem(location.pathname);
+    if (storageString) {
+        try{storage = JSON.parse(storageString);}catch(e){storage = {};}
+        Object.keys(storage).forEach(function (item) {
+            if (storage[item] === true) {
+                if (document.getElementById(item)){document.getElementById(item).classList.add("show");}
+            }else if (storage[item] === false){
+                if (document.getElementById(item)){document.getElementById(item).classList.remove("show");}
+            }
         });
     }
     const collapseElements = [...document.getElementsByClassName('collapse')];
     collapseElements.forEach((collapseElement) => {
         collapseElement.addEventListener('show.bs.collapse', (event) => {
-            localStorage.setItem(location.pathname, localStorage.getItem(location.pathname) ? [...localStorage.getItem(location.pathname).split(","), event.target.id].toString() : [event.target.id]);
+            let storageString = localStorage.getItem(location.pathname);
+            if (storageString) {
+                try{storage = JSON.parse(storageString);}catch{storage = {};}
+                storage[event.target.id] = true;
+                localStorage.setItem(location.pathname, JSON.stringify(storage));
+            }
         });
         collapseElement.addEventListener('hide.bs.collapse', (event) => {
-            localStorage.setItem(location.pathname, localStorage.getItem(location.pathname) ? localStorage.getItem(location.pathname).split(",").filter(el => el !== event.target.id).toString() : []);
+            let storageString = localStorage.getItem(location.pathname);
+            if (storageString) {
+                try{storage = JSON.parse(storageString);}catch{storage = {};}
+                storage[event.target.id] = false;
+                localStorage.setItem(location.pathname, JSON.stringify(storage));
+            }
+
         });
     });
 });
