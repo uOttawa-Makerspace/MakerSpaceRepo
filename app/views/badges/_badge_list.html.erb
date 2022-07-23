@@ -21,11 +21,11 @@
       </p>
 
       <% if badges.badge_url.present? %>
-        <a style="width: inherit" target="_blank" href="<%= badges.badge_url %>">
-          <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", alt: "Badge image: #{badges.badge_template.badge_name}") %>
+        <a style="width: 150px;" target="_blank" href="<%= badges.badge_url %>">
+          <%= image_tag(badges.badge_template.image_url, :style => "width: inherit;display:block; margin:0 auto;", alt: "Badge image: #{badges.badge_template.badge_name}") %>
         </a>
       <% else %>
-        <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", "data-bs-toggle" => "tooltip", :title => badges.issued_to + " didn't accept the badge yet", :alt => badges.issued_to + " didn't accept the badge yet") %>
+        <%= image_tag(badges.badge_template.image_url, :style => "width: 150px; display:block; margin:0 auto;", "data-bs-toggle" => "tooltip", :title => badges.issued_to + " didn't accept the badge yet", :alt => badges.issued_to + " didn't accept the badge yet") %>
       <% end %>
     </div>
 

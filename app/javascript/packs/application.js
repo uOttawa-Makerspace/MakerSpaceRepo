@@ -53,7 +53,7 @@ import "../controllers"
 
 // window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
 window.TomSelect = require("tom-select");
-import "bootstrap";
+window.bootstrap = require("bootstrap");
 // import bsCustomFileInput from 'bs-custom-file-input'
 require("packs/toastr");
 
