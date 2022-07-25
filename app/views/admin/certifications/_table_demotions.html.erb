@@ -14,7 +14,7 @@
     <tbody>
     <% @demotions.each do |demotion| %>
       <tr>
-        <td class="username"><%= link_to demotion.user.name.capitalize, user_path(demotion.user.username) %></td>
+        <td class="username"><%= link_to demotion.user.name.titleize, user_path(demotion.user.username) %></td>
         <td>
           <%= link_to demotion.training.name, staff_training_session_path(demotion.training_session) %>
           <br/>

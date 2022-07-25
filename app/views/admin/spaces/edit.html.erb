@@ -48,7 +48,7 @@
         <div class="col-md-12">
           <div class="mb-3 text-center">
             <%= label_tag :day, "Day of the week", class:"form-label" %>
-            <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), { class: "form-control"} %>
+            <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), { class: "form-control form-select"} %>
           </div>
         </div>
 

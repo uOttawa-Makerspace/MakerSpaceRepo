@@ -1,5 +1,5 @@
 <p>Search for users to sign them in or out of <%= @space.name.capitalize %>:</p>
-<div class="row m-0 mb-2 align-items-center">
+<div class="row m-0 mb-2 gx-3 align-items-center input-group">
   <div class="col-md-9 p-1">
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
       <div class="mb-3 mb-0">
@@ -7,22 +7,19 @@
       </div>
     <% end %>
   </div>
-  <div class="col-md-3 p-1">
-    <div class="w-auto d-inline-block d-flex">
-       <div class="flex-grow-1 pe-1">
+  <div class="col-auto p-1 mb-auto">
          <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: "sign_in_user_fastsearch", remote: true do %>
            <%= hidden_field_tag :added_users, "", { :id => "sign_in_user_fastsearch_username" } %>
-           <%= submit_tag "Sign In", class: 'btn btn-info btn-sm d-block w-100' %>
+           <%= submit_tag "Sign In", class: 'btn btn-primary form-control ' %>
          <% end %>
-       </div>
-       <div class="flex-grow-1 ps-1">
+         </div>
+  <div class="col-auto p-1 mb-auto">
          <%= form_tag staff_dashboard_user_profile_path, method: :get, id: "search_user_fastsearch" do %>
            <%= hidden_field_tag :username, "", { :id => "search_user_fastsearch_username" } %>
-           <%= button_tag "Search", onclick: 'searchForm()', class: 'btn btn-info d-block w-100 btn-sm' %>
+           <%= button_tag "Search", onclick: 'searchForm()', class: 'btn btn-primary form-control' %>
          <% end %>
-       </div>
-    </div>
-  </div>
+         </div>
+
 </div>
 
 <div class="accordion" id="accordionLogin">

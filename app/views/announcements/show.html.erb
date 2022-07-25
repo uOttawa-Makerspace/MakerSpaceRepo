@@ -16,7 +16,7 @@
       <br />
     </div>
     <div class="col-6">
-      <b>Created By:</b> <%= link_to @announcement.user.name.capitalize, user_path(@announcement.user.username), class: "username" %>
+      <b>Created By:</b> <%= link_to @announcement.user.name.titleize, user_path(@announcement.user.username), class: "username" %>
       <br />
       <br />
     </div>

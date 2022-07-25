@@ -76,7 +76,7 @@
               <td class = "username">
                 <% vt.volunteer_task_joins.active.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
                                                  "Staff", "Admin").find_each do |staff_joins| %>
-                  <%= link_to staff_joins.user.name.capitalize, user_path(staff_joins.user.username) %>
+                  <%= link_to staff_joins.user.name.titleize, user_path(staff_joins.user.username) %>
                   <br />
                 <% end %>
               </td>
@@ -84,7 +84,7 @@
               <td class = "username">
                 <% if !vt.volunteer_task_joins.blank? %>
                   <% vt.volunteer_task_joins.active.where(user_type: "Volunteer").find_each do |volunteer_joins| %>
-                    <%= link_to volunteer_joins.user.name.capitalize, user_path(volunteer_joins.user.username) %>
+                    <%= link_to volunteer_joins.user.name.titleize, user_path(volunteer_joins.user.username) %>
                     <br />
                   <% end %>
                 <% else %>
@@ -100,7 +100,7 @@
 
               <% if current_user.staff? %>
                 <td class = "username">
-                  <%= link_to vt.user.name.capitalize, user_path(vt.user.username) %>
+                  <%= link_to vt.user.name.titleize, user_path(vt.user.username) %>
                 </td>
               <% end %>
 

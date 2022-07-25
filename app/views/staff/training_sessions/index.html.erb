@@ -1,6 +1,6 @@
 <section class="page-contents">
   <div>
-    <h2 class="text-center pt-2 mb-5">Viewing <strong><%=@user.name.capitalize + "'s"%></strong> Training Sessions</h2>
+    <h2 class="text-center pt-2 mb-5">Viewing <strong><%=@user.name.titleize + "'s"%></strong> Training Sessions</h2>
     <input type="text" class="form-control mx-auto" id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
     <br />
     <table class="sessions-table text-center mx-auto mb-3">

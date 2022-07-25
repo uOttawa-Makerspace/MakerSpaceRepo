@@ -12,17 +12,17 @@
             Description: <%= f.text_area :description, placeholder: "Write an description...", class: 'form-control', required: true %>
           </div>
 
-          <div class="form-check">
-            <%= f.collection_check_boxes( :space_ids, @spaces, :id, :name, bootstrap: {check_inline: true}, class: "") do |b| %>
-              <%= b.label(:"data-value" => b.value) { b.check_box + b.text } %>
-            <% end %>
+          <div class="form-check-inline">
+          <%= f.collection_check_boxes(:space_ids, @spaces, :id, :name) do |b| %>
+            <%= b.label(:"data-value" => b.value, class:"form-check-label") { b.check_box(class: "form-check-input", style:"margin-left:8px;") + b.text } %>
+          <% end %>
           </div>
 
           <br><br>
 
           <div class="col-md-12 form-group">
             <%= f.label(:skill_id, "Skill Type", class:"form-label") %>
-            <%= f.select :skill_id, options_for_select(@skills), {include_blank: true}, {class: "form-control form-select"} %>
+            <%= f.select :skill_id, options_for_select(@skills), {include_blank: false}, {class: "form-control form-select"} %>
           </div>
 
           <div class="col-md-12 form-group my-5">

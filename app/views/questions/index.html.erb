@@ -47,7 +47,7 @@
 
               <td class="word-break"><%= q.description.split[0...5].join(' ') + "..." %></td>
 
-              <td class = "username"><%= link_to q.user.name.capitalize, user_path(q.user.username) %></td>
+              <td class = "username"><%= link_to q.user.name.titleize, user_path(q.user.username) %></td>
 
               <td class="action-cell">
                 <%=link_to "Edit", edit_question_path(q.id), class:"d-block w-100 btn btn-primary btn-sm" %>
