@@ -28,11 +28,11 @@
               </div>
               <div class="mx-auto col-md-4 text-center">
                 <b>Status:</b> <br />
-                <div class="d-inline-block text-start">
-                  <%= f.radio_button :status, 'open', :style => 'display:inline' %>
+                <div class="d-inline-block text-start form-check">
+                  <%= f.radio_button :status, 'open', :style => 'display:inline',class:"form-check-input" %>
                   <%= f.label :status, 'Open', :style => 'display:inline', class:"form-label"  %>
                   <br />
-                  <%= f.radio_button :status, 'completed', :style => 'display:inline' %>
+                  <%= f.radio_button :status, 'completed', :style => 'display:inline',class:"form-check-input" %>
                   <%= f.label :status, 'Completed', :style => 'display:inline', class:"form-label"  %>
                   <br />
                   <br />
@@ -40,9 +40,9 @@
               </div>
               <div class="mx-auto col-md-4 text-center">
                 <b>Space:</b> <br />
-                <div class="d-inline-block text-start">
+                <div class="d-inline-block text-start form-check">
                   <% Space.all.order(name: :asc).each do |s| %>
-                    <%= f.radio_button :space_id, s.id, :style => 'display:inline' %>
+                    <%= f.radio_button :space_id, s.id, :style => 'display:inline',class:"form-check-input" %>
                     <%= f.label :space_id, s.name.capitalize, :style => 'display:inline', class:"form-label"  %>
                     <br />
                   <% end %>
@@ -67,7 +67,7 @@
               <div class="mx-auto col-md-4 text-center">
                 <b>Choose a category:</b> <br />
                 <div class="d-inline-block text-center">
-                  <%= f.select(:category, @tasks_categories, {prompt: "Category..."} , {:class => "form-control"}) %>
+                  <%= f.select(:category, @tasks_categories, {prompt: "Category..."} , {:class => "form-control form-select"}) %>
                   <br />
                   <br />
                 </div>
@@ -90,7 +90,7 @@
               </div>
               <div class="col-md-12 text-center">
                 <%= label :certifications_id, "Certifications", class:"form-label"  %>
-                <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name', :selected => (@volunteer_task.require_trainings.pluck(:training_id) if @volunteer_task.require_trainings.present?)), {:multiple => true, :id => "task_certifications", :class => "form-control task_certifications"} %>
+                <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name', :selected => (@volunteer_task.require_trainings.pluck(:training_id) if @volunteer_task.require_trainings.present?)), {:multiple => true, :id => "task_certifications", :class => "form-control form-select task_certifications"} %>
                 <br><br>
               </div>
               <div class="col-md-6">

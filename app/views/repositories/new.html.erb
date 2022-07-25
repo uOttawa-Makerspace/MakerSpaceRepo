@@ -62,7 +62,7 @@
 
 
 
-    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name, multiple: true), class: "form-control", include_blank: "Select a category.../Sélectionne une catégorie..." %>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name, multiple: true), {include_blank: "Select a category.../Sélectionne une catégorie..."},{class: "form-control form-select"} %>
     </div>
     <div id="category-container"></div>
 
@@ -74,7 +74,7 @@
       d'équipment qui sont reliés newà ton
     </div>
 
-    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name, multiple: true), class: "profile-text form-control", include_blank: "Select a piece of equipment.../Sélectionne une piéce d'équipement..." %>
+    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name, multiple: true), {include_blank: "Select a piece of equipment.../Sélectionne une piéce d'équipement..."}, {class:"profile-text form-control form-select"} %>
     </div>
     <div id="equipment-container"></div>
 
@@ -86,7 +86,7 @@
       par les autres
     </div>
 
-    <%= f.select :license, @repository.class.license_options, class: "form-control" %>
+    <%= f.select :license, @repository.class.license_options, {},{class: "form-control form-select"} %>
     </div>
 
     <div class="mb-3">
@@ -95,7 +95,7 @@
       <% else %>
         <br>
         <%= f.label :license, "Are you creating this project because a Project Proposal? Let us know which Project Proposal. / Êtes-vous en train de créer un projet lié a une proposition de projet ? Veuillez choisir la proposition ci-dessous.", class:"form-label" %>
-        <%= f.select(:project_proposal_id, options_for_select(@project_proposals), {:include_blank => true}, {:class => "form-control"}) %>
+        <%= f.select(:project_proposal_id, options_for_select(@project_proposals), {:include_blank => true}, {:class => "form-control form-select"}) %>
       <% end %>
     </div>
 
@@ -108,13 +108,14 @@
 
     <br>
 
-    <div id="share_option">
+
+    <div id="share_option" class="form-check">
       <%= f.label :share_type, "Your project is...", class:"form-label" %>
       <%= fa_icon('globe') %>
-      <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline-flex; vertical-align:middle; margin-right: 4px;", :onclick => "hidePass();", required: true) %><%= f.label('share_type_public', "Public", :id => "type", :style => "display:inline") %>
+      <%= f.radio_button(:share_type, "public", :class => "show_extra form-check-input", :style => "margin-right: 4px;  height:16px;width:16px", :onclick => "hidePass();", required: true) %><%= f.label('share_type_public', "Public", :id => "type", :style => "display:inline") %>
       <div id="description"> Anyone can see this repository</div>
       <%= fa_icon('lock') %>
-      <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline-flex; vertical-align:middle; margin-right: 4px;", :onclick => "showPass();") %><%= f.label('share_type_private', "Private / Privé", :id => "type", :style => "display:inline") %>
+      <%= f.radio_button(:share_type, "private", :class => "show_extra form-check-input", :style => "margin-right: 4px; height:16px;width:16px", :onclick => "showPass();") %><%= f.label('share_type_private', "Private / Privé", :id => "type", :style => "display:inline") %>
       <div id="description"> Only those with the url and password can view this repository</div>
 
       <div id="pass" class="mb-3">

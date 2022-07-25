@@ -19,7 +19,7 @@ const end_time = document.getElementById("end_time").flatpickr({
     time_24hr: true
 });
 
-document.getElementById("#end_time_clear").addEventListener("click",() => {
+document.getElementById("end_time_clear").addEventListener("click",() => {
     end_time.clear()
 })
 
@@ -33,5 +33,8 @@ start_time.config.onClose = [() => {
 end_time.config.onClose = [() => {
     start_time.set("maxDate", end_time.selectedDates[0]);
 }];
-
-new TomSelect("#userId");
+document.addEventListener("turbolinks:load", () => {
+    if (document.getElementById("userId")){
+        new TomSelect("#userId");
+    }
+});

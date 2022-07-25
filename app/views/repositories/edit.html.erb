@@ -71,7 +71,7 @@
     <br>
     <%= f.label :categories, class:"form-label" %>
     <div>Choose at most 5 categories that fit your project.</div>
-    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), include_blank: "Select a category...", multiple: true %>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), {include_blank: false, multiple:true}, {class: "form-control form-select"} %>
 
     <div id="category-container">
       <% @categories.each do |category| %>
@@ -82,7 +82,7 @@
     <br>
     <%= f.label :equipment, class:"form-label" %>
     <div>Choose at most 5 pieces of equipment that are related to your project.</div>
-    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a piece of equipment...", multiple: true %>
+    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), {include_blank: false, multiple:true}, {class: "form-control form-select"}  %>
 
     <div id="equipment-container">
     <% @equipments.each do |equipment| %>
@@ -93,24 +93,20 @@
     <br>
     <%= f.label :license, class:"form-label" %>
     <div>Choose how you want your project to be used by others.</div>
-    <%= f.select :license, @repository.class.license_options %>
+    <%= f.select :license, @repository.class.license_options, {include_blank: false}, {class: "form-control form-select"} %>
 
-    <div id= "share_option">
-        <%= f.label :share_type, "Your project is...", class:"form-label" %>
-        <%= fa_icon('globe') %>
-        <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline",:onclick => "hidePass();", required: true)%><%= f.label(:share_type, "Public", :id =>"type", :style => "display:inline")  %>
-        <div id= "description"> Anyone can see this repository </div>
-        <%= fa_icon('lock') %>
-        <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline", :onclick => "showPass();") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>
-        <div id= "description"> Only those with the url and password can view this repository </div>
-        <% if @repository.share_type.eql?("private")%>
-          <div id = "change_pass"><input type="checkbox" , id= "change", onclick= "togglePass();">Change Password</div>
-        <% end %>
+    <div id="share_option" class="form-check">
+      <%= f.label :share_type, "Your project is...", class:"form-label" %>
+      <%= fa_icon('globe') %>
+      <%= f.radio_button(:share_type, "public", :class => "show_extra form-check-input", :style => "margin-right: 4px;  height:16px;width:16px", :onclick => "hidePass();", required: true) %><%= f.label('share_type_public', "Public", :id => "type", :style => "display:inline") %>
+      <div id="description"> Anyone can see this repository</div>
+      <%= fa_icon('lock') %>
+      <%= f.radio_button(:share_type, "private", :class => "show_extra form-check-input", :style => "margin-right: 4px; height:16px;width:16px", :onclick => "showPass();") %><%= f.label('share_type_private', "Private / Privé", :id => "type", :style => "display:inline") %>
+      <div id="description"> Only those with the url and password can view this repository</div>
 
-        <div id="pass" class="mb-3">
-          <br>
-          <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', style: "display: none;", class: "form-control" %>
-        </div>
+      <div id="pass" class="mb-3">
+        <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', style: "display: none;", 'aria-label': "Password / Mot de Passe", class: "form-control" %>
+      </div>
 
     </div>
 

@@ -14,10 +14,10 @@
             <%= f.trix_editor :description, placeholder: "Description of the learning module...", class: 'form-control', required: true, id: 'redactor', 'aria-label': 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)' %>
             <br />
             <%= f.label :training_id, "Category*", class:"form-label" %>
-            <%= f.select(:training_id, @training_categories , {} , {:class => "form-control"}) %>
+            <%= f.select(:training_id, @training_categories , {} , {:class => "form-control form-select"}) %>
             <br />
             <%= f.label :level, "Level*", class:"form-label" %>
-            <%= f.select(:level, @training_levels , {} , {:class => "form-control"}) %>
+            <%= f.select(:level, @training_levels , {} , {:class => "form-control form-select"}) %>
             <br>
             <br>
             <%= label_tag :file, "Project files", class:"form-label"%>

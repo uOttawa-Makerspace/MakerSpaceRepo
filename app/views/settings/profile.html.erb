@@ -58,13 +58,13 @@
       <div class="mb-3">
         <%= f.label :faculty , t('settings.profile.faculty') , class: "form-label profile-label" %>
         <%= content_tag :span, @user.errors[:faculty].first, class: 'form-error' %>
-        <%= f.select :faculty, %w(arts civil_law common_law education engineering health_sciences medicine science social_sciences telfer).map{ |faculty| t("settings.profile.#{faculty}") }, { prompt: t('settings.profile.choose') }, { :class => "form-control" } %>
+        <%= f.select :faculty, %w(arts civil_law common_law education engineering health_sciences medicine science social_sciences telfer).map{ |faculty| t("settings.profile.#{faculty}") }, { prompt: t('settings.profile.choose') }, { :class => "form-control form-select selectpicker" } %>
       </div>
 
       <div class="mb-3">
         <%= f.label :program, t('settings.profile.program') , class: "form-label profile-label" %>
         <%= content_tag :span, @user.errors[:program].first, class: 'form-error' %>
-        <%= f.select :program, @programs, { prompt: t('settings.profile.choose') }, { :class => "form-control", :id => "options" } %>
+        <%= f.select :program, @programs, { prompt: t('settings.profile.choose') }, { :class => "form-control form-select", :id => "options" } %>
       </div>
 
       <div class="mb-3">

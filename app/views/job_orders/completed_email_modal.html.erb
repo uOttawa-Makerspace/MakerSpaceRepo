@@ -7,7 +7,7 @@
       <div class="col-md-12">
         <%= form_for @job_order, url: job_order_processed_path(@job_order) do |f| %>
           <div class="pr-5 pl-5 text-center">
-            <div class="text-left">
+            <div class="text-start">
               <input id="job-order-message" value="<%= @message %>" type="hidden" name="message">
               <trix-editor input="job-order-message"></trix-editor>
             </div>

@@ -92,12 +92,12 @@ class RepositoriesController < SessionsController
         Airbrake.notify(e)
         flash[:alert] = 'Something went wrong while uploading photos, please try again later.'
         @repository.destroy
-        render json: {redirect_uri: request.path}
+         redirect_to request.path
       else
         create_files
         create_categories
         create_equipments
-        render json: {redirect_uri: repository_path(@user.username, @repository.slug).to_s}
+         redirect_to repository_path(@user.username, @repository.slug).to_s
       end
     else
       render json: @repository.errors['title'].first, status: :unprocessable_entity
@@ -118,10 +118,10 @@ class RepositoriesController < SessionsController
       rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
         Airbrake.notify(e)
         flash[:alert_yellow] = 'Something went wrong while uploading photos, try uploading them again later. Other changes have been saved.'
-        render json: {redirect_uri: repository_path(@repository.user_username, @repository.slug).to_s}
+         redirect_to repository_path(@repository.user_username, @repository.slug).to_s
       else
         flash[:notice] = 'Project updated successfully!'
-        render json: {redirect_uri: repository_path(@repository.user_username, @repository.slug).to_s}
+         redirect_to repository_path(@repository.user_username, @repository.slug).to_s
       end
     else
       flash[:alert] = 'Unable to apply the changes.'

@@ -22,7 +22,7 @@
               </div>
 
               <% if @job_order.job_order_options.where(job_option_id: o.id).present? && @job_order.job_order_options.where(job_option_id: o.id).first.option_file.attached? %>
-                <div class="text-left pt-2">
+                <div class="text-start pt-2">
                   <ul class="list-group">
                     <li class="list-group-item text-center text-muted">
                       (By Un-Checking, you will delete this file)
@@ -33,7 +33,7 @@
                         <%= label_tag "options_keep_file_#{o.id}", @job_order.job_order_options.where(job_option_id: o.id).first.option_file.filename, class: "form-check-label" %>
                       </div>
 
-                      <div class="text-right">
+                      <div class="text-end">
                         <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(@job_order.job_order_options.where(job_option_id: o.id).first.option_file, disposition: 'attachment') %>
                       </div>
                     </li>

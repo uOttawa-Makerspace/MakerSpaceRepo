@@ -272,29 +272,33 @@
 //         });
 
 //     });
+    if (document.getElementById("equipment-container")){
+        document.getElementById("equipment_container").children().each(function (e) {
+            console.log(e);
+        });
+    }
+    $('div#equipment-container').children().each(function () {
+        let equip_item = $(this);
+        let x = document.getElementById("repository_equipments");
 
-//     $('div#equipment-container').children().each(function () {
-//         let equip_item = $(this);
-//         let x = document.getElementById("repository_equipments");
+        for (let i = 0; i < x.options.length; i++) {
+            if (x.options[i].childNodes[0].nodeValue === equip_item[0].childNodes[0].nodeValue) {
+                x.remove(i);
+            }
+        }
+        equipmentArray.push(equip_item[0].innerText);
 
-//         for (let i = 0; i < x.options.length; i++) {
-//             if (x.options[i].childNodes[0].nodeValue === equip_item[0].childNodes[0].nodeValue) {
-//                 x.remove(i);
-//             }
-//         }
-//         equipmentArray.push(equip_item[0].innerText);
+        $(equip_item).click(function () {
+            let option = document.createElement("option");
+            option.text = equip_item[0].innerText;
+            x.add(option);
+            sort_options("repository_equipments");
+            let index = $(equip_item).index();
+            equipmentArray.splice(index, 1);
+            $(equip_item).remove();
+        });
 
-//         $(equip_item).click(function () {
-//             let option = document.createElement("option");
-//             option.text = equip_item[0].innerText;
-//             x.add(option);
-//             sort_options("repository_equipments");
-//             let index = $(equip_item).index();
-//             equipmentArray.splice(index, 1);
-//             $(equip_item).remove();
-//         });
-
-//     });
+    });
 
 //     $('div#certification-container').children().each(function () {
 //         let certif_item = $(this);

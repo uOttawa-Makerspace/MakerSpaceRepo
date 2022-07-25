@@ -26,21 +26,3 @@
     <% end %>
   </div>
 <% end %>
-
-<script type="text/javascript" charset="utf-8">
-
-    // $('.search_bar').on('keyup', debounce(function (e) {
-    //     $.ajax({
-    //         url: '/badges',
-    //         data: {search: $(this).serialize()},
-    //         format: 'js'
-    //     });
-    // }, 100));
-
-    $(function() {
-        $(".badge_list th a, .badge_list .pagination a").on("click", function(){
-            $.getScript(this.href);
-            return false;
-        });
-    });
-</script>

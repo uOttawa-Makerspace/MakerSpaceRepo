@@ -10,12 +10,12 @@
         Categories:
         <br />
         <div class="mt-3">
-          <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', :selected => (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, {multiple: true, :id => "questions_trainings", :class => "form-control"} %>
+          <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', :selected => (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, {multiple: true, :id => "questions_trainings", :class => "form-control form-select"} %>
         </div>
         <br />
         <div class="mb-3">
           <%= f.label :level, class:"form-label" %>
-          <%= f.select :level, options_for_select(@levels, selected: @question.level), {prompt: 'Select a Level'}, class: "form-control", required: true %>
+          <%= f.select :level, options_for_select(@levels, selected: @question.level), {prompt: 'Select a Level'}, class: "form-control form-select", required: true %>
         </div>
       </div>
       <br />

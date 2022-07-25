@@ -19,26 +19,28 @@
               <%= f.trix_editor :description, placeholder: "Description of the proficient project...", class: 'form-control', required: true %>
               <br />
               <%= f.label :training_id, "Category", class:"form-label" %>
-              <%= f.select(:training_id, @training_categories , {} , {:class => "form-control", id: 'training_id_field'}) %>
+              <%= f.select(:training_id, @training_categories , {} , {:class => "form-control form-select", id: 'training_id_field'}) %>
               <br />
               <%= f.label :level, "Level", class:"form-label" %>
-              <%= f.select(:level, @training_levels , {} , {:class => "form-control", id: 'training_level_field'}) %>
+              <%= f.select(:level, @training_levels , {} , {:class => "form-control form-select", id: 'training_level_field'}) %>
               <br />
               <%= f.label :cc, "Cc Points", class:"form-label" %>
               <%= f.number_field(:cc, :class => "form-control") %>
               <br />
               <br />
               <%= f.label :has_project_kit, "Physical kit:", class:"form-label" %>
+              <div class="form-check">
               <br />
-              <%= f.radio_button(:has_project_kit, false, checked: true, :style => 'display:inline') %>
+              <%= f.radio_button(:has_project_kit, false, checked: true, :style => 'display:inline', class:"form-check-input") %>
               <%= f.label 'has_project_kit_false', "No", class:"form-label" %>
               <br />
-              <%= f.radio_button(:has_project_kit, true, :style => 'display:inline') %>
+              <%= f.radio_button(:has_project_kit, true, :style => 'display:inline', class:"form-check-input") %>
               <%= f.label 'has_project_kit_true', "Yes", class:"form-label" %>
               <br />
+              </div>
               <br />
               <%= f.label :drop_off_location_id, "Drop-Off Location", class:"form-label" %>
-              <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id), :selected => f.object.drop_off_location_id), {:include_blank => "No Location"}, {:class => "form-control"}) %>
+              <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id), :selected => f.object.drop_off_location_id), {:include_blank => "No Location"}, {:class => "form-control form-select"}) %>
               <br />
               <%= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)", class:"form-label"  %>
               <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => true, :id => "badge_requirements", :class => "form-control"} %>

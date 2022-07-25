@@ -1,6 +1,6 @@
 import TomSelect from 'tom-select';
 document.addEventListener("turbolinks:load", function () {
-    document.getElementsByClassName("pp-status-button").forEach(function (element) {
+    [...document.getElementsByClassName("pp-status-button")].forEach(function (element) {
         if (element.innerHTML === "Revoked") {
             element.classList.add('btn-danger');
         } else if (element.innerHTML === "Awarded") {
