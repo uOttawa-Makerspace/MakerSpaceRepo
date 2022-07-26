@@ -3,25 +3,20 @@
   <div class="text-center">
     <div class="row mx-auto">
 
-      <div class="col-md-12">
+      <div class="col-md-12 accordion">
         <% @skills.each do |skill| %>
           <% next unless skill.trainings.present? %>
           <% skill.trainings.each do |training| %>
             <% next unless training.proficient_projects.present? %>
-
-            <div class="accordion" id="accordion-<%= training.id %>">
-              <div class="accordion-item">
-
-                <div class="accordion-header" id="header-<%= training.id %>">
-                  <div class="row">
+              <div class="card"  id="accordion-<%= training.id %>">
+                  <div class="accordion-button card-header" id="header-<%= training.id %>" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="true" aria-controls="training-<%= training.id %>">
                     <div class="col-4 float-end"></div>
-                    <div class="col-4">
-                      <button class="accordion-button btn btn-link"  type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="true" aria-controls="training-<%= training.id %>"><%= training.name %></button>
+                    <div class="col-4 text-center">
+                      <button class="btn btn-link"><%= training.name %></button>
                     </div>
                     <div class="col-4">
                       <%= training_status(training.id, current_user.id).html_safe %>
                     </div>
-                  </div>
                 </div>
 
                 <div id="training-<%= training.id %>" class="accordion-collapse collapse">
@@ -85,10 +80,8 @@
                     </div>
                     <br />
                   </div>
-
                 </div>
               </div>
-            </div>
           <% end %>
         <% end %>
       </div>

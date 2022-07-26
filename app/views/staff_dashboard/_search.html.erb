@@ -7,16 +7,16 @@
       </div>
     <% end %>
   </div>
-  <div class="col-auto p-1 mb-auto">
+  <div class="col-auto p-1 mb-auto ms-auto">
          <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: "sign_in_user_fastsearch", remote: true do %>
            <%= hidden_field_tag :added_users, "", { :id => "sign_in_user_fastsearch_username" } %>
            <%= submit_tag "Sign In", class: 'btn btn-primary form-control ' %>
          <% end %>
          </div>
-  <div class="col-auto p-1 mb-auto">
+  <div class="col-auto p-1 mb-auto me-auto">
          <%= form_tag staff_dashboard_user_profile_path, method: :get, id: "search_user_fastsearch" do %>
            <%= hidden_field_tag :username, "", { :id => "search_user_fastsearch_username" } %>
-           <%= button_tag "Search", onclick: 'searchForm()', class: 'btn btn-primary form-control' %>
+           <%= button_tag "Search", onclick: 'searchForm()', class: 'btn btn-secondary form-control' %>
          <% end %>
          </div>
 

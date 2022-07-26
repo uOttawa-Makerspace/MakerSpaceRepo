@@ -1,5 +1,6 @@
 import TomSelect from 'tom-select';
 
+if (document.getElementById("kit_user_select")){
 new TomSelect("#kit_user_select",{
     searchField: ['name'],
     valueField: 'id',
@@ -18,4 +19,4 @@ new TomSelect("#kit_user_select",{
     shouldLoad: function (type) {
         return type.length > 2;
     }
-})
+})}
