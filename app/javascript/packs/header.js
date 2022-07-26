@@ -78,7 +78,6 @@ document.addEventListener('turbolinks:load', function () {
     });
 
     navToggler.addEventListener('click', () => {
-        //Clicked while the navbar is transitioning
         if (navbarSupportedContent.clientHeight != 0) {
             doTransition(false, false);
         } else {
@@ -94,7 +93,6 @@ document.addEventListener('turbolinks:load', function () {
         window.scrollY < 10 ? doTransition(true, false) : doTransition(false, false);
     });
     let flashObserver = new ResizeObserver((e) => {
-        console.log("Flash observer");
         check();
     });
     flashObserver.observe(document.getElementById("flash"));
