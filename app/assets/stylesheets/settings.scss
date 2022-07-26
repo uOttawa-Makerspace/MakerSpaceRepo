@@ -1,6 +1,7 @@
 /* SETTING LAYOUT */
 
 @import "lib";
+@import "bootstrap/scss/bootstrap";
 
 div.setting-title {
   line-height: 5rem !important;
@@ -82,12 +83,38 @@ div.setting-side-panel {
         border-left: 5px solid #5f9ea0;
       }
     }
-
-    &:nth-last-child(1) {
-      margin-top: 1.5rem;
-    }
   }
 
+}
+@include media-breakpoint-down(md){
+  div.setting-side-panel {
+    li{
+      &:not(:first-child) {
+        margin-top: 1.5rem;
+      }
+    }
+  }
+}
+@include media-breakpoint-between(md, xl){
+  div.setting-side-panel {
+    li{
+      &:nth-last-child(1) {
+        margin-top: 1.5rem;
+      }
+    }
+  }
+}
+@include media-breakpoint-up  (xl) {
+  div.setting-side-panel {
+    li{
+      a{
+        white-space: nowrap;
+      }
+      & {
+        margin-top: 0;
+      }
+    }
+  }
 }
 
 /* EDIT PROFILE PAGE */
