@@ -93,9 +93,11 @@ document.addEventListener('turbolinks:load', function () {
         }
         window.scrollY < 10 ? doTransition(true, false) : doTransition(false, false);
     });
-    document.getElementsByClassName("alert")[0].addEventListener('closed.bs.alert', () => {
+    let flashObserver = new ResizeObserver((e) => {
+        console.log("Flash observer");
         check();
     });
+    flashObserver.observe(document.getElementById("flash"));
 
     check();
 
