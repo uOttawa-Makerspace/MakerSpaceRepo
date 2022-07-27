@@ -41,12 +41,12 @@
       <div class="mb-3">
         <%= f.label :need_files, "Need files?", required: true %>
 
-        <div class="form-control form-check form-check-inline">
+        <div class="form-check form-check-inline">
           <%= f.radio_button :need_files, false, class: 'form-check-input' %>
           <%= f.label :need_files, 'No', class: 'form-check-label', value: false %>
         </div>
 
-        <div class="form-control form-check form-check-inline">
+        <div class="form-check form-check-inline">
           <%= f.radio_button :need_files, true, class: 'form-check-input' %>
           <%= f.label :need_files, 'Yes', class: 'form-check-label', value: true %>
         </div>

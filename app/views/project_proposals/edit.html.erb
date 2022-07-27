@@ -198,12 +198,7 @@
     <br/>
     <%= f.label :categories, class:"form-label" %>
     <div>Choose at most 5 categories that fit your project.</div>
-    <%= f.select :categories, options_from_collection_for_select(@category_options, :id, :name), {include_blank: "Select a category..."},{class: "profile-text form-select"} %>
-    <div id="category-container">
-      <% @categories.each do |category| %>
-        <span class="category"><%= category.name %></span>
-      <% end %>
-    </div>
+    <%= f.select :categories, options_from_collection_for_select(@category_options, :name, :name, @categories.map { |category| category.name }), {include_blank: "Select a category...", include_hidden:false},{class: "profile-text form-control form-select",multiple: true} %>
     <br>
     <br>
     <br>

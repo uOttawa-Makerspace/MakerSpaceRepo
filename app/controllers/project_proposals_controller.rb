@@ -65,11 +65,17 @@ class ProjectProposalsController < ApplicationController
   # POST /project_proposals
   # POST /project_proposals.json
   def create
-    @project_proposal = ProjectProposal.new(project_proposal_params)
+    @project_proposal = ProjectProposal.new(project_proposal_params.except(:categories))
+    if params[:categories].present?
+      if params[:categories].all? { |c| c.is_a? String }
+        params[:categories] = params[:categories].map { |c| Category.create(name: c, project_proposal_id: @project_proposal.id) }
+      end
+      @project_proposal.categories = params[:categories]
+    end
     @project_proposal.user_id = @user.try(:id)
 
     respond_to do |format|
-      if verify_recaptcha(model: @project_proposal) && @project_proposal.save
+      if @project_proposal.save
         begin
           create_photos
         rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
@@ -155,7 +161,7 @@ class ProjectProposalsController < ApplicationController
   def update
     @project_proposal.categories.destroy_all
     respond_to do |format|
-      if @project_proposal.update(project_proposal_params)
+      if @project_proposal.update(project_proposal_params.except(:categories))
         update_files
         create_categories
         begin 
@@ -292,12 +298,12 @@ class ProjectProposalsController < ApplicationController
     params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description,
                                              :youtube_link, :username, :email, :client, :client_type,
                                              :client_interest, :client_background, :supervisor_background, :equipments,
-                                             :project_type, :project_cost, :past_experiences, :linked_project_proposal_id, area: [])
+                                             :project_type, :project_cost, :past_experiences, :linked_project_proposal_id, area: [], categories: [])
   end
 
   def create_categories
-    if params['categories'].present?
-      params['categories'].first(5).each do |c|
+    if params[:project_proposal]['categories'].present?
+      params[:project_proposal]['categories'].first(5).each do |c|
         Category.create(name: c, project_proposal_id: @project_proposal.id)
       end
     end

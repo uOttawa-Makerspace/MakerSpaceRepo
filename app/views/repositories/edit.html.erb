@@ -71,25 +71,12 @@
     <br>
     <%= f.label :categories, class:"form-label" %>
     <div>Choose at most 5 categories that fit your project.</div>
-    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), {include_blank: false, multiple:true}, {class: "form-control form-select"} %>
-
-    <div id="category-container">
-      <% @categories.each do |category| %>
-        <span class="category"><%= category.name %></span>
-      <% end %>
-    </div>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name, @categories.map { |category| category.name }), {include_blank: "Select a category...",include_hidden:false},{class: "profile-text form-control form-select",multiple: true} %>
 
     <br>
     <%= f.label :equipment, class:"form-label" %>
     <div>Choose at most 5 pieces of equipment that are related to your project.</div>
-    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), {include_blank: false, multiple:true}, {class: "form-control form-select"}  %>
-
-    <div id="equipment-container">
-    <% @equipments.each do |equipment| %>
-      <span class="equipment"><%= equipment.name %></span>
-    <% end %>
-    </div>
-
+    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name, @equipments.map { |equipment| equipment.name }), {include_blank: "Select a category...",include_hidden:false},{class: "profile-text form-control form-select",multiple: true} %>
     <br>
     <%= f.label :license, class:"form-label" %>
     <div>Choose how you want your project to be used by others.</div>

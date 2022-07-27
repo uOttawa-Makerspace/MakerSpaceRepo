@@ -195,11 +195,9 @@
       <div>Choose at most 5 categories that fit your project.<br>Choisi un maximum de 5 catégories qui convent à ton
         projet
       </div>
-      <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), {include_blank: "Select a category.../Sélectionne une catégorie..."}, {class: 'form-control form-select'} %>
-      <div id="category-container"></div>
-    </div>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name), {include_blank: "Select a category...", include_hidden:false},{class: "profile-text form-control form-select",multiple: true} %>
 
-    <%= recaptcha_tags %>
+    </div>
 
     <br>
 

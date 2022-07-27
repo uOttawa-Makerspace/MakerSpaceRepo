@@ -62,9 +62,9 @@
 
 
 
-    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name, multiple: true), {include_blank: "Select a category.../Sélectionne une catégorie..."},{class: "form-control form-select"} %>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name), {include_blank: "Select a category...",include_hidden:false},{class: "profile-text form-control form-select",multiple: true} %>
+
     </div>
-    <div id="category-container"></div>
 
     <br>
     <div class="mb-3">
@@ -74,9 +74,9 @@
       d'équipment qui sont reliés newà ton
     </div>
 
-    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name, multiple: true), {include_blank: "Select a piece of equipment.../Sélectionne une piéce d'équipement..."}, {class:"profile-text form-control form-select"} %>
+    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name), {include_blank: "Select a category...",include_hidden:false},{class: "profile-text form-control form-select",multiple: true} %>
+
     </div>
-    <div id="equipment-container"></div>
 
     <br>
     <div class="mb-3">
@@ -136,6 +136,7 @@
 </section>
 <script type="text/javascript" charset="utf-8">
     document.addEventListener("turbolinks:load", function() {
+      if (document.getElementById("owner_select")) {
         new TomSelect("#owner_select",{
                   searchField: ['name'],
         valueField: 'id',
@@ -155,6 +156,6 @@
         shouldLoad: function (type) {
             return type.length > 2;
         }
-        })
+        })}
     });
 </script>
