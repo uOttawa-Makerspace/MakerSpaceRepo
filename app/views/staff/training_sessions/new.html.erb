@@ -76,3 +76,13 @@
     <% end %>
   </div>
 </section>
+<script>
+document.addEventListener('turbolinks:load', ()=>{
+    if (document.getElementById("user_id")){
+        new TomSelect("#user_id", {
+            placeholder: "Select a user",
+            maxItems: 1,
+            plugins: ['remove_button'],
+        });
+    }
+});</script>

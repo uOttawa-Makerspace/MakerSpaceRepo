@@ -8,10 +8,15 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals
   # GET /project_proposals.json
   def index
-    @pending_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: nil).paginate(per_page: 15, page: params[:page_pending])
-    @approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
-    @not_approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
-
+    if params[:search].blank?
+      @pending_project_proposals = ProjectProposal.all.joins(:user).order(created_at: :desc).where(approved: nil).paginate(per_page: 15, page: params[:page_pending])
+      @approved_project_proposals = ProjectProposal.all.joins(:user).order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
+      @not_approved_project_proposals = ProjectProposal.all.joins(:user).order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
+    else
+      @pending_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: nil).paginate(per_page: 15, page: params[:page_pending])
+      @approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
+      @not_approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
+    end
     respond_to do |format|
       format.js
       format.html

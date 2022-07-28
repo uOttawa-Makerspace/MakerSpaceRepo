@@ -179,14 +179,17 @@
     </table>
     <br />
     <br />
-  </div>
-  <% if @user.admin? || @current_training_session.user == @user %>
+      <% if @user.admin? || @current_training_session.user == @user %>
+      <div class="text-center">
     <%= link_to "Destroy", { action: :destroy },
                 method: :delete,
                 data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
                 class:"btn btn-danger",
-                style: "color: #fff; float:right;" %>
+                style: "color: #fff;" %>
+                </div>
   <% end %>
+  </div>
+
 
   <br>
 </section>

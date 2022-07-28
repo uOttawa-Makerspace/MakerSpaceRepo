@@ -14,7 +14,7 @@
 
           <div class="form-check-inline">
           <%= f.collection_check_boxes(:space_ids, @spaces, :id, :name) do |b| %>
-            <%= b.label(:"data-value" => b.value, class:"form-check-label") { b.check_box(class: "form-check-input", style:"margin-left:8px;") + b.text } %>
+            <%= b.label(:"data-value" => b.value, class:"form-check-label") { b.check_box(class: "form-check-input", style:"margin-left:1rem;margin-right:0.5rem;") + b.text } %>
           <% end %>
           </div>
 

@@ -1,4 +1,3 @@
-import TomSelect from 'tom-select';
 document.addEventListener("turbolinks:load", () => {
     window.addEventListener('load', function () {
         var forms = document.getElementsByClassName('needs-validation');
@@ -18,4 +17,17 @@ document.addEventListener("turbolinks:load", () => {
             maxItems: null
         })
     }
+    if (document.getElementById("volunteer_id")){
+        new TomSelect("#volunteer_id", {
+            plugins: ['remove_button'],
+            maxItems: null
+        })
+    }
+    if (document.getElementById("staff_id")){
+        new TomSelect("#staff_id", {
+            plugins: ['remove_button'],
+            maxItems: null
+        })
+    }
+    
 });

@@ -39,16 +39,16 @@
 </section>
 
 <script type="text/javascript" charset="utf-8">
-    jQuery('#datepicker_start').flatpickr({
+    flatpickr('#datepicker_start',{
         enableTime: true,
         time_24hr: true,
     });
-    jQuery('#datepicker_end').flatpickr({
+    flatpickr('#datepicker_end',{
         enableTime: true,
         time_24hr: true,
     });
     document.addEventListener("turbolinks:load",function(){
-      new TomSelect("user_select",{
+      new TomSelect("#user_select",{
         searchField: ['name'],
         valueField: 'id',
         labelField: 'name',
@@ -68,5 +68,5 @@
             return type.length > 2;
         }
       })
-    }
+    });
 </script>

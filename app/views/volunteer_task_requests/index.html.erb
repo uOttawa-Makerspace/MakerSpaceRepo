@@ -60,19 +60,30 @@
 </section>
 
 <script type="text/javascript" charset="utf-8">
-    $('.search_bar_pending').on('keyup', function() {
-        $.ajax({
-            url: '/volunteer_task_requests/search_pending',
-            data: {search_pending: $(this).serialize()},
-            format: 'js'
-        });
-    });
-
-    $('.search_bar_processed').on('keyup', function() {
-        $.ajax({
-            url: '/volunteer_task_requests/search_processed',
-            data: {search_processed: $(this).serialize()},
-            format: 'js'
-        });
-    });
+    let pending_search = document.getElementById("search_pending");
+    pending_search.addEventListener("keyup",()=>{
+      if (pending_search.value.length < 0 ){pending_search.value = ''}
+      fetch('/volunteer_task_requests/search_pending?search_pending='+pending_search.value,
+      {
+        method: 'GET',
+        headers: {
+          'Accept':'*/*'
+        }
+      }).then(response => response.text()).then(data => {
+        document.querySelector('.pending-requests').innerHTML = data;
+      });
+    })
+    let processed_search = document.getElementById("search_processed");
+    processed_search.addEventListener("keyup",()=>{
+      if (processed_search.value.length < 0 ){processed_search.value = ''}
+      fetch('/volunteer_task_requests/search_processed?search_processed='+processed_search.value,
+      {
+        method: 'GET',
+        headers: {
+          'Accept':'*/*'
+        }
+      }).then(response => response.text()).then(data => {
+        document.querySelector('.processed-requests').innerHTML = data;
+      });
+    })
 </script>

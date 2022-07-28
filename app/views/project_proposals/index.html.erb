@@ -1,6 +1,5 @@
 <div>
   <% provide(:title, "Project Proposals") %>
-
   <div class="by-5">
     <%= form_tag(project_proposals_path, method: :get) do %>
       <div class="d-flex justify-content-center">
@@ -8,6 +7,12 @@
         <div class="col-md-4 search_bar" >
         <%= text_field_tag(:search, "", placeholder: "Search", class: 'form-control') %>
         </div>
+        <%# If search exists in the params, display back button %>
+        <% if params[:search] && !params[:search].empty? %>
+        <button class="btn btn-secondary">
+          <%= link_to 'Back', project_proposals_path %>
+        </button>
+        <% end %>
       </div>
     <% end %>
   </div>
@@ -21,37 +26,3 @@
   </div>
 
 </div>
-
-
-<script type="text/javascript" charset="utf-8">
-
-    window.debounce = function(func, wait, immediate) {
-        let timeout;
-        return function() {
-            const context = this, args = arguments;
-            const later = function () {
-                timeout = null;
-                if (!immediate) func.apply(context, args);
-            };
-            const callNow = immediate && !timeout;
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-            if (callNow) func.apply(context, args);
-        };
-    };
-
-    $('.search_bar').on('keyup', debounce(function (e) {
-        $.ajax({
-            url: '/project_proposals',
-            data: {search: $(this).serialize()},
-            format: 'js'
-        });
-    }, 100));
-
-    // $(function() {
-    //     $(".badge_list th a, .badge_list .pagination a").on("click", function(){
-    //         $.getScript(this.href);
-    //         return false;
-    //     });
-    // });
-</script>
