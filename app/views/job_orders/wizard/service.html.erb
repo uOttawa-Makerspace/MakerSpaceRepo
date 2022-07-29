@@ -10,7 +10,16 @@
         <div class="custom-file">
           <p><%= @job_type.file_description %></p>
           <%= f.label :user_files, @job_type.file_label, class: '' %>
-          <%= f.file_field :user_files, multiple: @job_type.multiple_files, required: !@job_order.user_files.attached?, name: 'job_order[user_files][]', class: 'form-control' %>
+          <div id="file-input-container">
+            <div class="d-flex upload-file-input mb-2" id="new-file-input">
+              <%= f.file_field :user_files, multiple: @job_type.multiple_files, required: !@job_order.user_files.attached?, name: 'job_order[user_files][]', class: 'form-control' %>
+              <% if @job_type.multiple_files %>
+                <button class="btn btn-success ms-2" type="button" id="clone-file-input">
+                  <i class="fa fa-plus"></i>
+                </button>
+              <% end %>
+            </div>
+          </div>
           <p>You can input <%= @job_type.multiple_files ? 'multiple files' : 'one file' %> in this form.</p>
         </div>
 
@@ -142,9 +151,12 @@
   <% end %>
 </section>
 
-<script>
+<script type="text/javascript" charset="utf-8">
+    // Needs to stay there for AlpineJS
     const handleCustomQualityChange = () => {
         const el = document.getElementsByClassName('custom-service-radio')[0];
         el.checked = !el.checked;
     }
 </script>
+
+<%= javascript_pack_tag 'job_orders_wizard' %>
