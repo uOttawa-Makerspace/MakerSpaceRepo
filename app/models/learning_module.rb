@@ -6,13 +6,14 @@ class LearningModule < ApplicationRecord
   has_many :videos,                     dependent: :destroy
   has_many :learning_module_tracks,     dependent: :destroy
 
-  validates :title, presence: { message: 'A title is required.' }, uniqueness: { message: 'Title already exists' }
+  validates :title, presence: { message: 'A title is required.' }
+  validate :uniqueness
   before_save :capitalize_title
 
   scope :filter_by_level, ->(level) { where(level: level) }
 
   def capitalize_title
-    self.title = title.capitalize
+    self.title = title.upcase_first
   end
 
   def self.filter_by_attribute(attribute, value)
@@ -35,6 +36,14 @@ class LearningModule < ApplicationRecord
 
   def extract_valid_urls
     self.extract_urls.uniq.select{ |url| url.include?("wiki.makerepo.com") }
+  end
+
+  private
+
+  def uniqueness
+    if LearningModule.where(title: self.title, training_id: self.training_id).where.not(id: self.id).count > 0
+      self.errors.add(:title, "Title already exists")
+    end
   end
 
 end
