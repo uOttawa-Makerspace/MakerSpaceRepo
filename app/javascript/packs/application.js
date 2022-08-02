@@ -26,7 +26,6 @@ global.Chart = require("chart.js");
 require("trix");
 require("@shopify/buy-button-js");
 global.PhotoSwipe = require('photoswipe');
-global.TomSelect = require("tom-select");
 global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
 import "clipboard";
 import moment from 'moment'
@@ -56,7 +55,7 @@ window.TomSelect = require("tom-select");
 window.bootstrap = require("bootstrap");
 // import bsCustomFileInput from 'bs-custom-file-input'
 require("packs/toastr");
-
+window.ActionCable = require("actioncable");
 
 import { Calendar } from '@fullcalendar/core';
 import interactionPlugin from '@fullcalendar/interaction';

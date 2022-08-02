@@ -29,6 +29,7 @@
     <div class="table-responsive">
       <table class="table table-striped">
         <p class="text-center">You have <%= @expired_codes.count %> used/expired coupons : </p>
+        <thead class="table-primary">
         <tr class="text-center">
           <th>Date</th>
           <th>Title</th>
@@ -36,7 +37,7 @@
           <th>CC</th>
           <th>Usage</th>
         </tr>
-
+        </thead>
         <tbody>
         <% @expired_codes.each do |discount_code| %>
           <tr>
@@ -58,7 +59,7 @@
     <h1 class="text-center"> All Discount Codes Generated</h1>
     <div class="table-responsive">
       <table class="table table-striped">
-
+      <thead class="table-primary">
         <tr class="text-center">
           <th>Date</th>
           <th>User</th>
@@ -67,7 +68,7 @@
           <th>CC</th>
           <th>User Usage</th>
         </tr>
-
+        </thead>
         <tbody>
         <% @all_discount_codes.each do |discount_code| %>
           <tr>

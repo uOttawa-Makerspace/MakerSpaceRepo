@@ -7,9 +7,9 @@
 
     <% if !@contact_infos.blank? %>
 
-      <div class="table-responsive table-striped">
-        <table class="table sessions-table">
-
+      <div class="table-responsive">
+        <table class="table sessions-table table-striped">
+        <thead class="table-primary">
           <tr>
             <th>Name</th>
             <th>Email</th>
@@ -18,7 +18,7 @@
             <th>Show Hours</th>
             <th class="action-header">Action</th>
           </tr>
-
+        </thead>
           <tbody>
           <% @contact_infos.each do |a| %>
             <tr>

@@ -20,8 +20,8 @@
           <%= will_paginate @kits, :container => false %>
         </div>
         <div class="">
-          <table class="table table-responsive">
-          <thead>
+          <table class="table table-responsive table-striped">
+          <thead class="table-primary">
             <tr>
               <th>Kit</th>
               <th>Date</th>
@@ -60,8 +60,8 @@
           </div>
 
           <div class="table-responsive">
-            <table class="table">
-            <thead>
+            <table class="table table-striped">
+            <thead class="table-primary">
               <tr>
                 <th>User</th>
                 <th>Kit</th>
@@ -74,7 +74,7 @@
               <tbody>
               <% @all_kits.each do |kit| %>
                 <tr>
-                  <td class="username"><p> <%= link_to kit.user.name, kit.user.username %></p></td>
+                  <td><p> <%= link_to kit.user.name, kit.user.username %></p></td>
                   <td><p><%= kit.proficient_project.title %></p></td>
                   <td><p><%= kit.created_at.strftime("%Y/%m/%d") %></p></td>
                   <td><p><%= kit.delivered? ? "Delivered" : "Not yet delivered" %></p></td>

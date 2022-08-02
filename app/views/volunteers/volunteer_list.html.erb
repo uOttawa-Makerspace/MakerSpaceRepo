@@ -14,7 +14,7 @@
 
       <div class="table-responsive">
         <table class="table sessions-table table-striped">
-
+        <thead class="table-primary">
           <tr>
             <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
@@ -23,8 +23,8 @@
             <th>Program<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <th>Certifications<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           </tr>
-
-          <tbody>
+        </thead>
+          <tbody> 
           <% @active_volunteers.each do |v| %>
             <tr>
               <td class = "username">
@@ -73,7 +73,7 @@
 
       <div class="table-responsive">
         <table class="table sessions-table-2 table-striped">
-
+        <thead class="table-primary">
           <tr>
             <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
@@ -82,7 +82,7 @@
             <th>Program<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <th>Certifications<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           </tr>
-
+          </thead>
           <tbody>
           <% @unactive_volunteers.each do |v| %>
             <tr>

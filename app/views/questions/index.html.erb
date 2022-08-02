@@ -9,8 +9,10 @@
 
     <% if !@questions.blank? %>
 
+      <div class="input-group w-50 mx-auto">
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: category, description, ..." class="form-control mx-auto">
-
+      <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
+      </div>
       <br />
 
       <div class="table-responsive">

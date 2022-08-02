@@ -1,10 +1,11 @@
-import TomSelect from 'tom-select';
-document.addEventListener("turbolinks:load", () => {
-    let linkPP = document.querySelectorAll(".link-pp")
-    linkPP.forEach(link => {
+let linkPP = document.querySelectorAll(".link-pp")
+linkPP.forEach(link => {
+    if (!link.tomselect) {
         new TomSelect(link, {});
-    });
-    if (document.getElementById("grant_user_select")) {
+    }
+});
+if (document.getElementById("grant_user_select")) {
+    if (!document.getElementById("grant_user_select").tomselect) {
         new TomSelect("#grant_user_select", {
             searchField: ['name'],
             valueField: 'id',
@@ -26,22 +27,24 @@ document.addEventListener("turbolinks:load", () => {
             }
         });
     }
-    if (document.getElementById("search_bar")) {
-        document.getElementById("search_bar").addEventListener("keyup", function (event) {
-            event.preventDefault();
-            let query = document.getElementById("search_bar").value;
-            if (query.length > 2) {
-                let url = "/badges?search=" + query;
-                fetch(url, {
-                    method: "GET",
-                    headers: {
-                        'Accept': '*/*',
-                    }
-                }).then(response => response.text()).then(data => { document.getElementsByClassName("badge_list")[0].innerHTML = data; });
-            }
-        });
-    }
-    if (document.getElementById("revoke_user_select")) {
+}
+if (document.getElementById("search_bar")) {
+    document.getElementById("search_bar").addEventListener("keyup", function (event) {
+        event.preventDefault();
+        let query = document.getElementById("search_bar").value;
+        if (query.length > 2) {
+            let url = "/badges?search=" + query;
+            fetch(url, {
+                method: "GET",
+                headers: {
+                    'Accept': '*/*',
+                }
+            }).then(response => response.text()).then(data => { document.getElementsByClassName("badge_list")[0].innerHTML = data; });
+        }
+    });
+}
+if (document.getElementById("revoke_user_select")) {
+    if (!document.getElementById("revoke_user_select").tomselect) {
         new TomSelect("#revoke_user_select", {
             searchField: ['name'],
             valueField: 'id',
@@ -63,4 +66,4 @@ document.addEventListener("turbolinks:load", () => {
             }
         });
     }
-});
+}

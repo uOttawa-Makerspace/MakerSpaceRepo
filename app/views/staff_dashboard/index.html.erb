@@ -30,11 +30,12 @@
     <% end %>
     <br />
     <div class="table-responsive">
-      <table class="staff-users-table text-center mb-5" id="table-js-signed-in">
+      <table class="staff-users-table text-center mb-5 table table-striped" id="table-js-signed-in">
         <p id="user-count" class="text-center">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>
         <% if @space.signed_in_users.present? %>
           <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary' %>
         <% end %>
+        <thead class="table-primary">
         <tr>
           <th class="name-header">Name
             <span onclick="sortTable('staff-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
@@ -49,6 +50,7 @@
             <span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
           <th class="action-header">Sign Out of <%= @space.name.capitalize %></th>
         </tr>
+        </thead>
         <% @space.signed_in_users.each do |user| %>
           <tr class="drop-rows" id="<%= return_no_waiver_id(user) %>">
             <td class="drop-username-cell">
@@ -107,8 +109,9 @@
     </div>
 
     <div class="table-responsive">
-      <table class="text-center table-striped staff-newly-signed-up-users-table mb-5" id="newly-signed-up">
+      <table class="text-center table table-striped staff-newly-signed-up-users-table mb-5" id="newly-signed-up">
         <p class="text-center">Newly signed up users on Maker<strong>Repo</strong></p>
+        <thead class="table-primary">
         <tr>
           <th class="name-header">Name
             <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
@@ -116,7 +119,7 @@
             <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
           <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
         </tr>
-
+        </thead>
         <% @users.each do |user| %>
           <tr class="add-rows" id="<%= return_no_waiver_id(user) %>">
             <td class="add-username-cell">
@@ -141,8 +144,9 @@
 
     <br>
     <div class="table-responsive">
-      <table class="staff-recent-users-table text-center mb-5" id="table-js-signed-out">
+      <table class="staff-recent-users-table text-center mb-5 table table-striped" id="table-js-signed-out">
         <p class="text-center">Users recently signed out of <%= @space.name %></p>
+        <thead class="table-primary">
         <tr>
           <th class="name-header">Name
             <span onclick="sortTable('staff-recent-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
@@ -152,6 +156,7 @@
             <span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
           <th class="action-header">Sign In To <%= @space.name.capitalize %></span></th>
         </tr>
+        </thead>
 
         <% @space.recently_signed_out_users.each do |user| %>
           <tr class="add-rows" id="<%= return_no_waiver_id(user) %>">

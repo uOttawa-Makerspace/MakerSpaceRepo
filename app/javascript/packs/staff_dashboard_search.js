@@ -1,5 +1,6 @@
-import TomSelect from "tom-select";
 
+
+if (!document.getElementById("user_dashboard_select").tomsselect) {
 new TomSelect("#user_dashboard_select",{
     searchField: ['name'],
     valueField: 'id',
@@ -20,7 +21,7 @@ new TomSelect("#user_dashboard_select",{
         return type.length > 2;
     }
 })
-
+}
 let form = document.getElementById('sign_in_user_fastsearch');
 form.onsubmit = function(){
     document.getElementById('sign_in_user_fastsearch_username').value = [document.getElementById('user_dashboard_select').value];

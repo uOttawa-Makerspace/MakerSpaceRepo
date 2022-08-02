@@ -17,11 +17,10 @@ document.querySelector('.form-control-input-excel').addEventListener('change',fu
 })
 
 
-document.addEventListener("turbolinks:load", () => {
-    setInterval(refreshCapacity, 60000)
-});
-refreshCapacity();
+
 function refreshCapacity() {
     let url = "/staff_dashboard/refresh_capacity";
     fetch(url).then(response => response.text()).then(data => {if (document.getElementsByClassName('max_capacity_alert')[0])document.getElementsByClassName('max_capacity_alert')[0].innerHTML = data.replace("\"","")});
 }
+setInterval(refreshCapacity, 60000)
+refreshCapacity();

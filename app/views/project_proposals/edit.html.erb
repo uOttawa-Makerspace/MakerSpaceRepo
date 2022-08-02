@@ -2,7 +2,7 @@
 
 <section id="new-repo">
   <div class="title">Edit Project Proposal</div>
-  <%= link_to fa_icon("search", text: 'View project proposal'), project_proposal_path(@project_proposal.id), class: 'edit-repo-link', id: 'view-repo-link' %>
+  <%= link_to fa_icon("search", text: 'View project proposal'), project_proposal_path(@project_proposal.slug), class: 'edit-repo-link', id: 'view-repo-link' %>
   <%= form_for @project_proposal, url: {controller: "project_proposals", action: "update"}, html: {multipart: true, class: "edit_project_proposal needs-validation", novalidate: true} do |f| %>
     <br>
     <div class="mb-3 required">

@@ -59,7 +59,7 @@
             <input id="end-datetime" autocomplete="false" class="form-control">
             <br>
             <%= label_tag :user_id, "User to select" %>
-            <%= select_tag :user_id, options_for_select(@staff), { id: 'modalUserId', autocomplete: 'off', multiple: true, required: true} %>
+            <%= select_tag :user_id, options_for_select(User.where(role: 'staff').pluck(:name, :id)), { id: 'modalUserId', autocomplete: 'off', multiple: true, required: true} %>
             <br>
             <label for="modal-reason">Reason</label>
             <select id="modalReason" class="form-select">
@@ -89,9 +89,3 @@
         padding-right: 3%;
     }
 </style>
-
-<script type="text/javascript" charset="utf-8">
-    new TomSelect("#modalUserId",{
-        maxItems: 3
-    });
-</script>
