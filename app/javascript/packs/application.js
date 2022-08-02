@@ -55,7 +55,7 @@ window.TomSelect = require("tom-select");
 window.bootstrap = require("bootstrap");
 // import bsCustomFileInput from 'bs-custom-file-input'
 require("packs/toastr");
-window.ActionCable = require("actioncable");
+// window.ActionCable = require("actioncable");
 
 import { Calendar } from '@fullcalendar/core';
 import interactionPlugin from '@fullcalendar/interaction';
