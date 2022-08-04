@@ -350,6 +350,7 @@ Rails.application.routes.draw do
   resources :learning_area do
     collection do
       get :open_modal
+      put :reorder
     end
   end
 

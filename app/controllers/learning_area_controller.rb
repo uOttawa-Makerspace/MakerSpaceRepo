@@ -8,7 +8,7 @@ class LearningAreaController < DevelopmentProgramsController
   def index
     @skills = Skill.all
     @learning_module_track = Proc.new { |learning_module| learning_module.learning_module_tracks.where(user: current_user) }
-    @all_learning_modules = Proc.new{ |training| training.learning_modules }
+    @all_learning_modules = Proc.new{ |training| training.learning_modules.order(:order) }
     @learning_modules_completed = Proc.new { |training, level| training.learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: { user: current_user, status: 'Completed'}).where(learning_modules: {level: level}) }
     @total_learning_modules_per_level = Proc.new { |training, level| training.learning_modules.where(level: level) }
   end
@@ -68,6 +68,22 @@ class LearningAreaController < DevelopmentProgramsController
     else
       flash[:alert] = 'Unable to apply the changes.'
       render json: @learning_module.errors['title'].first, status: :unprocessable_entity
+    end
+  end
+
+  def reorder
+    if params[:data].present?
+      lm_order = LearningModule.where(id: params[:data]).pluck(:order)
+      params[:data].each_with_index do |lm, i|
+        LearningModule.find(lm).update(order: lm_order[i])
+      end
+
+      respond_to do |format|
+        format.html { redirect_to learning_area_index_path, notice: "Successfully reordered the learning modules!" }
+        format.json { render json: {status: :ok} }
+      end
+    else
+      flash[:alert] = 'Unable to re-order the learning modules. Please try again later...'
     end
   end
 

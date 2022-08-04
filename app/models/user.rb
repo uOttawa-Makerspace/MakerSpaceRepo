@@ -151,7 +151,6 @@ class User < ApplicationRecord
   end
 
   def volunteer?
-    #role.eql?('volunteer')
     programs.pluck(:program_type).include?(Program::VOLUNTEER)
   end
 
@@ -232,16 +231,13 @@ class User < ApplicationRecord
   end
 
   def return_program_status
-    certifications = get_certifications_names
-    if !(certifications.include?('3D Printing') && certifications.include?('Basic Training'))
-      status = 0
-    elsif !(volunteer? || volunteer_program?) && !dev_program?
+    if !volunteer_program? && !dev_program?
       status = 1
-    elsif (volunteer? || volunteer_program?) && !dev_program?
+    elsif volunteer_program? && !dev_program?
       status = 2
-    elsif !(volunteer? || volunteer_program?) && dev_program?
+    elsif !volunteer_program? && dev_program?
       status = 3
-    elsif (volunteer? || volunteer_program?) && dev_program?
+    elsif volunteer_program? && dev_program?
       status = 4
     end
     status
