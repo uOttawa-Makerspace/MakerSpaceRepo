@@ -32,7 +32,8 @@ if (document.getElementById("search_bar")) {
     document.getElementById("search_bar").addEventListener("keyup", function (event) {
         event.preventDefault();
         let query = document.getElementById("search_bar").value;
-        if (query.length > 2) {
+        if (query == "") {query="."}
+        if (query.length > 2 || query == ".") {
             let url = "/badges?search=" + query;
             fetch(url, {
                 method: "GET",

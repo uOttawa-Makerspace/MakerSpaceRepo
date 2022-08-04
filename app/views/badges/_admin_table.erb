@@ -11,14 +11,14 @@
   <% if @order_items.present? %>
     <div class="text-center">
       <table class="table table-striped">
-        <tr>
+         <thead class="table-primary"><tr>
           <th>Date Updated</th>
           <th>Name</th>
           <th>Badge</th>
           <th>Project</th>
           <th>Certify</th>
           <th>Revoke</th>
-        </tr>
+        </tr></thead>
         <tbody>
         <% @order_items.each do |order_item| %>
           <tr>

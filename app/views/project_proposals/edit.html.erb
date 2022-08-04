@@ -161,6 +161,7 @@
 
       <div id="linkRef">
         <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link</button>
+        <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer le dernier lien / Remove last link</button>
         <br><br>
         <ul class="main_ul"></ul>
       </div>
@@ -210,9 +211,17 @@
         let urls = '<%= !f.object.past_experiences.nil? ? f.object.past_experiences.split("|")[1] : "" %>'.split(",");
         if (urls[0] != "") {
             for (let i = 0; i < urls.length; i++) {
-                $('.main_ul').append(
-                    $('<li><div class="mb-3"><input  placeholder="Ajoutez un lien / Add a link" class="link_name form-control" type="text" value="' + urls[i] + '"></div></li>')
-                );
+                let listItem = document.createElement("li");
+                let listDiv = document.createElement("div");
+                let listInput = document.createElement("input");
+                listDiv.classList.add("mb-3");
+                listInput.classList.add("form-control");
+                listInput.setAttribute("type", "text");
+                listInput.placeholder = "Ajoutez un lien / Add a link"
+                listInput.value = urls[i];
+                listDiv.appendChild(listInput);
+                listItem.appendChild(listDiv);
+                document.getElementsByClassName("main_ul")[0].appendChild(listItem);
             }
         }
     </script>
