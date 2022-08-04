@@ -35,6 +35,10 @@ class LearningModule < ApplicationRecord
     self.extract_urls.uniq.select{ |url| url.include?("wiki.makerepo.com") }
   end
 
+  def capitalize_title
+    self.title = title.upcase_first
+  end
+
   private
 
   def uniqueness
@@ -43,12 +47,8 @@ class LearningModule < ApplicationRecord
     end
   end
 
-  def capitalize_title
-    self.title = title.upcase_first
-  end
-
   def set_order
-    self.order = LearningModule.maximum(:order).order + 1
+    self.order = LearningModule.maximum(:order).present? ? LearningModule.maximum(:order) + 1 : 0
   end
 
 end

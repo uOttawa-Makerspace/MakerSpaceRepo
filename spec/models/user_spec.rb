@@ -523,10 +523,10 @@ RSpec.describe User, type: :model do
 
     context '#return_program_status' do
 
-      it 'should return status 0' do
+      it 'should return status 1' do
         user = create(:user, :regular_user)
         create(:space)
-        expect(user.return_program_status).to eq(0)
+        expect(user.return_program_status).to eq(1)
       end
 
       it 'should return status 1' do
