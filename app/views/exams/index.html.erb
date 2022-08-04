@@ -4,15 +4,15 @@
     <% if !@exams.blank? %>
       <br />
       <div class="table-responsive">
-        <table class="table">
-          <tr>
+        <table class="table table-striped">
+           <thead class="table-primary"><tr>
             <th>Date Created</th>
             <th>Expires at</th>
             <th>Category</th>
             <th>Status</th>
             <th>Score</th>
             <th class="action-header">Action</th>
-          </tr>
+          </tr></thead>
           <tbody>
           <% @exams.find_each do |e| %>
             <tr>

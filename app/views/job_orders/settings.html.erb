@@ -11,7 +11,7 @@
     <p class="text-center"><%= link_to "New Service Group", new_admin_job_service_group_path, class: "btn btn-secondary" %></p>
     <div class="table-responsive">
       <table class="table table-striped">
-        <tr class="text-center">
+         <thead class="table-primary"><tr class="text-center">
           <th>Name</th>
           <th>Type</th>
           <th>Description</th>
@@ -19,7 +19,7 @@
           <th>Multiple choices?</th>
           <th>Edit</th>
           <th>Delete</th>
-        </tr>
+        </tr></thead>
 
         <% @service_groups.each do |sg| %>
           <tr>

@@ -51,16 +51,18 @@
       <br />
     <% end %>
     <br />
-    <table class="training-session-users-table table-striped">
+    <table class="training-session-users-table table table-striped">
         Users in this training session
+        <thead class="table-primary">        
         <tr class="text-center">
-          <th class="action-header">Remove From This Session</th>
-          <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Training's Cert.<span onclick="sortTable('training-session-users-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-        </tr>
+           <th class="action-header">Remove From This Session</th>
+           <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Training's Cert.<span onclick="sortTable('training-session-users-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+         </tr>
+         </thead>
 
       <% @current_training_session.users.each do |user| %>
         <tr id="<%= return_no_waiver_id(user) %>">
@@ -129,15 +131,16 @@
     </div>
     <br />
     <br />
-    <table class="space-users-table">
+    <table class="space-users-table table table-striped">
         Users inside <%=@current_training_session.space.name%>
+      <thead class="table-primary">        
         <tr class="text-center">
-          <th class="action-header">Add To This Session</th>
-          <th>Name <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('space-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-        </tr>
-
+           <th class="action-header">Add To This Session</th>
+           <th>Name <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Email <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Certifications <span onclick="sortTable('space-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+         </tr>
+      </thead>
       <% @current_training_session.space.signed_in_users.each do |user| %>
         <% unless @current_training_session.users.include? user %>
           <tr>
