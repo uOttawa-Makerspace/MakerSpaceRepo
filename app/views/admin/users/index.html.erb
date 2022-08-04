@@ -21,14 +21,14 @@
       </table>
 
       <div class="locations">
-        <table class="locations">
+        <table class="locations table table-striped">
           <% if params[:location].nil? %>
             <td class="current">
           <% else %>
             <td>
           <% end %>
           <%= link_to "All locations", :sort => params[:sort], :direction => params[:direction], :p => params[:p] %></td>
-          <% PiReader.uniq.pluck(:pi_location).sort_by!{ |m| m }.each do |pi_location| %>
+          <% PiReader.all.uniq.pluck(:pi_location).sort_by!{ |m| m }.each do |pi_location| %>
             <% if !pi_location.nil? %>
               <% if params[:location] == pi_location %>
                 <td class="current">
@@ -51,7 +51,7 @@
         <p style="color:gray;text-align:center;padding-top:15px;">There are no users to show.</p>
       <% else %>
         <% direction = params[:direction] == "asc" ? "desc" : "asc" %>
-        <table class="admin-table" id="admin-index">
+        <table class="admin-table table table-striped" id="admin-index">
           <thead>
           <th><%= check_box_tag 'select-all', 'select-all', false, class:"form-check-input" %></th>
           <th>

@@ -18,8 +18,8 @@
         <p style="color:gray">There are no users signed in.</p>
       <% else %>
         <% direction = params[:direction] == "asc" ? "desc" : "asc" %>
-        <table class="admin-table">
-          <thead>
+        <table class="admin-table table table-striped">
+          <thead class="table-primary">
             <th><%= check_box_tag 'select-all' %></th>
             <th>
               <%= link_to "Username", :sort => "username", :direction => direction, :q => params[:q], :filter => params[:filter] %>

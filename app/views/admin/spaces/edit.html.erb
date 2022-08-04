@@ -18,8 +18,8 @@
   <h4>Staff needed</h4>
 
   <div class="responsive-table">
-    <table class="table">
-      <thead>
+    <table class="table  table-striped">
+      <thead class="table-primary">
       <tr>
         <th scope="col">Day</th>
         <th scope="col">Start Time</th>
@@ -81,18 +81,20 @@
 
   <br><br>
 
-  <table>
+  <table class="table table-striped">
     <th class="section-header">Manage RFID Readers</th>
   </table>
   <br>
   <div>
     <h3><%= @space.name.capitalize %> RFID Readers</h3>
-    <table>
+    <table class="table table-striped">
+      <thead class="table-primary">
       <tr>
         <th>Reader Mac Address</th>
         <th>Space</th>
         <th>Disassociate from <%= @space.name.capitalize %></th>
       </tr>
+      </thead>
       <% @space.pi_readers.each do |raspi| %>
         <tr>
           <td><%= raspi.pi_mac_address %></td>
@@ -105,12 +107,14 @@
     <br>
 
     <h3>Unassociated RFID Readers</h3>
-    <table>
+    <table class="table table-striped">
+      <thead class="table-primary">
       <tr>
         <th>Reader Mac Address</th>
         <th>Space</th>
         <th>Associate with <%= @space.name.capitalize %></th>
       </tr>
+      </thead>
       <% PiReader.where(space_id: nil).each do |raspi| %>
         <tr>
           <td><%= raspi.pi_mac_address %></td>
@@ -123,7 +127,7 @@
 
   <br>
 
-  <table>
+  <table class="table table-striped">
     <th class="section-header">Manage Trainings</th>
   </table>
   <div>
@@ -140,13 +144,15 @@
     <br>
 
     <h3><%= @space.name.capitalize %> Trainings</h3>
-    <table>
+    <table class="table table-striped">
+      <thead class="table-primary">
       <tr>
         <th>Training</th>
         <th>Total Sessions</th>
         <th>Total Certifications</th>
         <th>Delete Training and all Sessions and Certifications</th>
       </tr>
+      </thead>
       <% @space.trainings.each do |training| %>
         <tr>
           <td><%= training.name %></td>
@@ -171,7 +177,7 @@
   <% end %>
   <br>
 
-  <table>
+  <table class="table table-striped">
     <th class="destroy-header">Destroy Space</th>
   </table>
   <div>

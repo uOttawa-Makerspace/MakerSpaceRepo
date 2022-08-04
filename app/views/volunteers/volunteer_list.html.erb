@@ -6,10 +6,13 @@
     <h5>Total unactive volunteers: <b><%= @unactive_volunteers.count%></b></h5>
 
     <% if @active_volunteers.present? %>
+    <div class="input-group w-50 mx-auto">
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
+      <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
+    </div>
 
       <br />
-
+    </div>
       <h5>Active Volunteers</h5>
 
       <div class="table-responsive">
@@ -65,8 +68,10 @@
     <% end %>
 
     <% if @unactive_volunteers.present? %>
-      <input type="text" id="query-2" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
-
+      <div class="input-group w-50 mx-auto">
+        <input type="text" id="query-2" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
+        <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
+      </div>
       <br />
 
       <h5>Unactive Volunteers</h5>

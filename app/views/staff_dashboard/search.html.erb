@@ -7,16 +7,17 @@
     <%= render 'search' %>
     <br />
     <% if @users.any? %>
-    <table class="staff-search-results text-center" id="table-js-search">
+    <table class="staff-search-results text-center table table-striped" id="table-js-search">
         Search results
-        <tr>
-          <th>Name <span onclick="sortTable('staff-search-results', 0)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('staff-search-results', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Last Seen <span onclick="sortTable('staff-search-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Status <span onclick="sortTable('staff-search-results', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
-        </tr>
-
+        <thead class="table-primary">        
+         <tr>
+           <th>Name <span onclick="sortTable('staff-search-results', 0)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Email <span onclick="sortTable('staff-search-results', 1)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Last Seen <span onclick="sortTable('staff-search-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Status <span onclick="sortTable('staff-search-results', 3)"><%=fa_icon('arrow-down')%></span></th>
+           <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
+         </tr>
+        </thead>
         <% @users.each do |user| %>
           <tr class="sign-in-or-out" id="<%= return_no_waiver_id(user) %>">
             <td class="sign-in-cell"><%= link_to(content_tag(:drop_username, user.name), user_url(user.username)) %></td>
@@ -54,14 +55,16 @@
     <% end %>
     <br /><br />
 
-    <table class="space-users-table text-center" id="table-js-signed-in">
+    <table class="space-users-table text-center table table-striped" id="table-js-signed-in">
         <h2>Users inside <%=@space.name.capitalize%></h2>
-        <tr>
-          <th>Name <span onclick="sortTable('space-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th class="action-header">Sign Out of <%=@space.name.capitalize%></th>
-        </tr>
+        <thead class="table-primary">
+         <tr>
+           <th>Name <span onclick="sortTable('space-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Email <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Certifications <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+           <th class="action-header">Sign Out of <%=@space.name.capitalize%></th>
+         </tr>
+        </thead>
 
         <% @space.signed_in_users.each do |user| %>
           <tr class="drop-rows">

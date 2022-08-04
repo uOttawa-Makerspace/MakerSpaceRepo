@@ -76,3 +76,11 @@ if (document.getElementById("repository_equipments")) {
         })
     }
 }
+if (document.getElementById("repository_project_proposal_id")){
+    if (!document.getElementById("repository_project_proposal_id").tomselect) {
+        new TomSelect("#repository_project_proposal_id", {
+            plugins: ['remove_button'],
+            maxItems: 1
+        })
+    }
+}
