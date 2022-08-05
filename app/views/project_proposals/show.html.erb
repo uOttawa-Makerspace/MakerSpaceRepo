@@ -267,12 +267,12 @@
       PARTIR DE CETTE PROPOSITION:
     </div>
     <br>
-    <section id="repository-filter">
+    <section class="repository-filter">
       <div class="sort">sort by/classer par</div>
       <nav>
         <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-        <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
-        <ul class="filter">
+        <div id="filter-header" class="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
+        <ul id="sort-filter" class="filter">
           <li><%= link_to 'Newest/Plus récent', project_proposal_path(sort: :newest) %></li>
           <li><%= link_to 'Most Likes/Plus d\'Aimes', project_proposal_path(sort: :most_likes) %></li>
           <li><%= link_to 'Most Makes/Plus de fabrications', project_proposal_path(sort: :most_makes) %></li>

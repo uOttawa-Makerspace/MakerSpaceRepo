@@ -1,19 +1,41 @@
 <% provide(:title, "Search results for \"#{params[:q]}\"") %>
 <section id="repositories-index">
-  <section id="repository-filter">
-    <div class="sort">sort by</div>
-    <nav>
-      <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-      <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
-      <ul class="filter">
-        <li><%= link_to 'Newest/Plus récent', search_path(sort: :newest, q: params[:q]) %></li>
-        <li><%= link_to 'Most Likes/Plus d\'Aimes', search_path(sort: :most_likes, q: params[:q]) %></li>
-        <li><%= link_to 'Most Makes/Plus de fabrications', search_path(sort: :most_makes, q: params[:q]) %></li>
-        <li><%= link_to 'Recently Updated/Récemment mis à jour', search_path(sort: :recently_updated, q: params[:q]) %></li>
-      </ul>
-    </nav>
-  </section>
-  <span class='found'>
+  <div class="row">
+    <div class="col">
+      <section class="repository-filter">
+        <div class="sort">sort by/classé par</div>
+        <nav>
+          <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
+          <div id="filter-header" class="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
+          <ul id="sort-filter" class="filter">
+            <li><%= link_to 'Newest/Plus récent', explore_path(sort: :newest) %></li>
+            <li><%= link_to 'Most Likes/Plus d\'Aimes', explore_path(sort: :most_likes) %></li>
+            <li><%= link_to 'Most Makes/Plus de fabrications', explore_path(sort: :most_makes) %></li>
+            <li><%= link_to 'Recently Updated/Récemment mis à jour', explore_path(sort: :recently_updated) %></li>
+          </ul>
+        </nav>
+      </section>
+    </div>
+    <div class="col">
+      <section class="repository-filter">
+        <div class="sort">search by/cherche par</div>
+        <nav>
+          <div id="category-header" class="filter-header"><%= fa_icon 'caret-down', text: 'Category / Catégorie', right: true %> </div>
+          <ul id="category-filter" class="filter">
+            <li><%= link_to t("home.categories.wearables"), category_path(slug: "wearable") %></li>
+            <li><%= link_to t("home.categories.mobile_development"), category_path(slug: "mobile-development") %></li>
+            <li><%= link_to t("home.categories.gng_2101"), category_path(slug: "gng2101/gng2501") %></li>
+            <li><%= link_to t("home.categories.health_sciences"), category_path(slug: "health-sciences") %></li>
+            <li><%= link_to t("home.categories.iot"), category_path(slug: "internet-of-things") %></li>
+            <li><%= link_to t("home.categories.gng_1103"), category_path(slug: "gng1103/gng1503") %></li>
+            <li><%= link_to t("home.categories.vr"), category_path(slug: "virtual-reality") %></li>
+            <li><%= link_to t("home.categories.team_projects"), category_path(slug: "uottawa-team-projects") %></li>
+            <li><%= link_to t("home.categories.other_projects"), category_path(slug: "other-projects") %></li>
+          </ul>
+        </nav>
+      </section>
+    </div>
+  <span class='found text-center'>
     <%= "#{@repositories.count} repositories were found" %>
   </span>
   <section id="repositories-container">
@@ -29,7 +51,7 @@
         <div class="start">
           <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %></div>
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-          <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+          <div><%= time_ago_in_words(repository.created_at) << t("datetime.distance_in_words.ago") %></div>
         </div>
         <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
       </div>
