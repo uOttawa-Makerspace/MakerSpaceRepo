@@ -21,9 +21,8 @@ class MakesController < SessionsController
       begin
         create_photos
       rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e  
-        flash[:alert] = 'Something went wrong while uploading photos, but the make was created. Try uploading them again later.'
         @repo.destroy
-        redirect_to request.path
+        redirect_to request.path, alert: 'Something went wrong while uploading photos, but the make was created. Try uploading them again later.'
       else
         @repo.update(slug: @repo.id.to_s + '.' + @repo.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-'))
         copy_categories_and_equipment

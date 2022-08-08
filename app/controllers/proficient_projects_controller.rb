@@ -47,18 +47,15 @@ class ProficientProjectsController < DevelopmentProgramsController
       begin
         create_photos
       rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
-        flash[:alert] = 'Something went wrong while uploading photos, try uploading them again later.'
         @proficient_project.destroy
-        redirect_to request.path
+        redirect_to request.path, alert: 'Something went wrong while uploading photos, try uploading them again later.'
 
       else
         create_files
-        flash[:notice] = 'Proficient Project successfully created.'
-        redirect_to proficient_project_path(@proficient_project.id)
+        redirect_to proficient_project_path(@proficient_project.id), notice: 'Proficient Project successfully created.'
       end
     else
-      flash[:alert] = 'Something went wrong'
-      render json: @proficient_project.errors['title'].first, status: :unprocessable_entity
+      render json: @proficient_project.errors['title'].first, status: :unprocessable_entity, alert: 'Something went wrong'
     end
   end
 
