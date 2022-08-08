@@ -7,8 +7,7 @@ class SearchController < SessionsController
     if params[:category].blank?
       @repositories = Repository.paginate(per_page: 12, page: params[:page]).public_repos.order([sort_order].to_h).page params[:page]
     else
-      categories = Category.where(name: SLUG_TO_CATEGORY_MODEL[params[:category]]).where.not(repository_id: nil).distinct.includes(:repository).map(&:repository)
-      @repositories = Repository.paginate(per_page: 12, page: params[:page]).public_repos.where(id: categories.map(&:id)).order([sort_order].to_h).page params[:page]
+      @repositories = Repository.paginate(per_page: 12, page: params[:page]).public_repos.includes(:categories).where({categories: {name: SLUG_TO_CATEGORY_MODEL[params[:category]]}}).order([sort_order].to_h).page params[:page]
     end
     @photos = photo_hash
   end
@@ -25,8 +24,7 @@ class SearchController < SessionsController
                                                                                                                      "%#{params[:q].downcase}%",
                                                                                                                      "%#{params[:q].downcase}%").distinct
     else
-      categories = Category.where(name: SLUG_TO_CATEGORY_MODEL[params[:category]]).where.not(repository_id: nil).distinct.includes(:repository).map(&:repository)
-      @repositories = Repository.paginate(per_page: 12, page: params[:page]).public_repos.where(id: categories.map(&:id)).order([sort_arr].to_h).where("lower(title) LIKE ?
+      @repositories = Repository.paginate(per_page: 12, page: params[:page]).public_repos.includes(:categories).where({categories: {name: SLUG_TO_CATEGORY_MODEL[params[:category]]}}).order([sort_order].to_h).where("lower(title) LIKE ?
       OR lower(description) LIKE ?
       OR lower(user_username) LIKE ?
       OR lower(category) LIKE ?",

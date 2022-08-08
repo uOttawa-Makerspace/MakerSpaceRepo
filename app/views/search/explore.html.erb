@@ -3,7 +3,7 @@
   <div class="row">
     <div class="col">
       <section class="repository-filter">
-        <div class="sort">sort by/classer par</div>
+        <div class="sort">sort by/trier par</div>
         <nav>
           <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
           <div id="filter-header" class="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
