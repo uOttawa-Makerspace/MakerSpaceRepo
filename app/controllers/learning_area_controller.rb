@@ -30,11 +30,11 @@ class LearningAreaController < DevelopmentProgramsController
       rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
         flash[:alert] = 'Something went wrong while uploading photos, try again later.'
         @learning_module.destroy
-        render json: {redirect_uri: request.path}
+        render json: {redirect_uri: request.path
       else
         create_files
         flash[:notice] = 'Learning Module has been successfully created.'
-        render json: {redirect_uri: learning_area_path(@learning_module.id).to_s}
+        render json: {redirect_uri: learning_area_path(@learning_module.id)
       end
     else
       flash[:alert] = 'Something went wrong'
