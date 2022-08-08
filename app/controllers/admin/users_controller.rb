@@ -102,7 +102,7 @@ class Admin::UsersController < AdminAreaController
     end
     if @edit_admin_user.update(user_params)
       create_certifications
-      render json: { redirect_uri: edit_admin_user_path(@edit_admin_user).to_s }
+      redirect_to edit_admin_user_path(@edit_admin_user)
       flash[:notice] = 'User information updated!'
     end
   end
