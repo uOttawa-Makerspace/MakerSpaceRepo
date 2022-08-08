@@ -1,26 +1,23 @@
-import 'jquery'
 import 'flatpickr'
-import TomSelect from "tom-select";
-
-const start_time = jQuery('#start_time').flatpickr({
+const start_time = document.getElementById("start_time").flatpickr({
     enableTime: true,
     noCalendar: true,
     dateFormat: "H:i",
     time_24hr: true
 });
 
-jQuery('#start_time_clear').click(() => {
+document.getElementById("start_time_clear").addEventListener("click", () => {
     start_time.clear()
 })
 
-const end_time = jQuery('#end_time').flatpickr({
+const end_time = document.getElementById("end_time").flatpickr({
     enableTime: true,
     noCalendar: true,
     dateFormat: "H:i",
     time_24hr: true
 });
 
-jQuery('#end_time_clear').click(() => {
+document.getElementById("end_time_clear").addEventListener("click", () => {
     end_time.clear()
 })
 
@@ -35,4 +32,9 @@ end_time.config.onClose = [() => {
     start_time.set("maxDate", end_time.selectedDates[0]);
 }];
 
-new TomSelect("#userId");
+
+if (document.getElementById("userId")) {
+    if (!document.getElementById("userId").tomselect) {
+        new TomSelect("#userId");
+    }
+}

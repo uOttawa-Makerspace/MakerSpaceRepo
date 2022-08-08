@@ -1,8 +1,8 @@
 <% provide(:title, "Edit Proficient Project") %>
 <section class="card">
-  <div class="float-right">
-    <%=link_to 'Delete', @proficient_project, method: :delete, class: "btn btn-danger float-left ml-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
-    <%=link_to "Show", proficient_project_path(@proficient_project.id), class:"btn btn-primary float-right mr-5 mt-5" %>
+  <div class="float-end">
+    <%=link_to 'Delete', @proficient_project, method: :delete, class: "btn btn-danger float-start ms-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
+    <%=link_to "Show", proficient_project_path(@proficient_project.id), class:"btn btn-primary float-end me-5 mt-5" %>
   </div>
   <div class="col-lg-7 mx-auto">
     <br />
@@ -11,45 +11,47 @@
       <div class="row">
         <div class="col-lg-12">
           <%= form_for @proficient_project, url: {controller: "proficient_projects", action: "update"}, html: { multipart: true } do |f| %>
-            <div class="form-group">
-              <%= f.label :title, "Title" %>
+            <div class="mb-3">
+              <%= f.label :title, "Title", class:"form-label" %>
               <%= f.text_field :title, id:"repository_title", placeholder: "Title of the proficient project...", class: 'form-control', required: true %>
               <br />
-              <%= f.label :description, "Description (You can now input a wiki.makerepo.com link and the page will be displayed)" %>
+              <%= f.label :description, "Description (You can now input a wiki.makerepo.com link and the page will be displayed)", class:"form-label" %>
               <%= f.trix_editor :description, placeholder: "Description of the proficient project...", class: 'form-control', required: true %>
               <br />
-              <%= f.label :training_id, "Category" %>
-              <%= f.select(:training_id, @training_categories , {} , {:class => "form-control", id: 'training_id_field'}) %>
+              <%= f.label :training_id, "Category", class:"form-label" %>
+              <%= f.select(:training_id, @training_categories , {} , {:class => "form-control form-select", id: 'training_id_field'}) %>
               <br />
-              <%= f.label :level, "Level" %>
-              <%= f.select(:level, @training_levels , {} , {:class => "form-control", id: 'training_level_field'}) %>
+              <%= f.label :level, "Level", class:"form-label" %>
+              <%= f.select(:level, @training_levels , {} , {:class => "form-control form-select", id: 'training_level_field'}) %>
               <br />
-              <%= f.label :cc, "Cc Points" %>
+              <%= f.label :cc, "Cc Points", class:"form-label" %>
               <%= f.number_field(:cc, :class => "form-control") %>
               <br />
               <br />
-              <%= f.label :has_project_kit, "Physical kit:" %>
+              <%= f.label :has_project_kit, "Physical kit:", class:"form-label" %>
+              <div class="form-check">
               <br />
-              <%= f.radio_button(:has_project_kit, false, checked: true, :style => 'display:inline') %>
-              <%= f.label 'has_project_kit_false', "No" %>
+              <%= f.radio_button(:has_project_kit, false, checked: true, :style => 'display:inline', class:"form-check-input") %>
+              <%= f.label 'has_project_kit_false', "No", class:"form-label" %>
               <br />
-              <%= f.radio_button(:has_project_kit, true, :style => 'display:inline') %>
-              <%= f.label 'has_project_kit_true', "Yes" %>
+              <%= f.radio_button(:has_project_kit, true, :style => 'display:inline', class:"form-check-input") %>
+              <%= f.label 'has_project_kit_true', "Yes", class:"form-label" %>
               <br />
+              </div>
               <br />
-              <%= f.label :drop_off_location_id, "Drop-Off Location" %>
-              <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id), :selected => f.object.drop_off_location_id), {:include_blank => "No Location"}, {:class => "form-control"}) %>
+              <%= f.label :drop_off_location_id, "Drop-Off Location", class:"form-label" %>
+              <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id), :selected => f.object.drop_off_location_id), {:include_blank => "No Location"}, {:class => "form-control form-select"}) %>
               <br />
-              <%= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)" %>
-              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => true, :id => "badge_requirements", :class => "form-control select2"} %>
+              <%= label :badge_requirements_id, "Prerequisite Badge (Choose as many badges as you want)", class:"form-label"  %>
+              <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name', :selected => (@proficient_project.badge_requirements.pluck(:badge_template_id) if @proficient_project.badge_requirements.present?)),  {:multiple => true, :id => "badge_requirements", :class => "form-control"} %>
               <br>
-              <%= f.label :badge_template_id, "Badge that will be acquired" %>
+              <%= f.label :badge_template_id, "Badge that will be acquired", class:"form-label" %>
               <p class="alert alert-secondary" id="badge-acquired-text">No badge will be acquired</p>              <br>
               <br>
-              <%= label_tag :file, "Project files" %>
-              <div class="custom-file">
-                <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'custom-file-input', aria_label: 'Project Files / Fichiers du projet' %>
-                <label class="custom-file-label m-0" for="files_">Choose file</label>
+              <%= label_tag :file, "Project files", class:"form-label" %>
+              <div class="form-control">
+                <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control-input', aria_label: 'Project Files / Fichiers du projet' %>
+                <label class="form-label m-0" for="files_">Choose file</label>
               </div>
               <div id="file-container">
 
@@ -66,7 +68,7 @@
               </div>
               <br />
 
-              <%= label_tag :video, "Videos" %>
+              <%= label_tag :video, "Videos", class:"form-label" %>
               <div id="video-container">
 
                 <% @videos.each do |f| %>
@@ -84,16 +86,16 @@
               </div>
 
               <br />
-              <%= label_tag :photo, "Gallery*" %>
+              <%= label_tag :photo, "Gallery*", class:"form-label" %>
               <div class="mx-auto repo-image">
                 <div id="dragndrop">
                   <br>
                   <%= fa_icon 'cloud-upload' %>
                   <p>Drag &amp; Drop</p>
                 </div>
-                <div class="custom-file">
-                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: "custom-file-input", aria_label: "Select Pictures / Selectionner des images" %>
-                  <label class="custom-file-label m-0" for="images_">Choose an image...</label>
+                <div class="form-control">
+                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control-input", aria_label: "Select Pictures / Selectionner des images" %>
+                  <label class="form-label m-0" for="images_">Choose an image...</label>
                 </div>
               </div>
 

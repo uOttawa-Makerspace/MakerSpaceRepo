@@ -1,20 +1,23 @@
 <section class="page-contents">
   <div class="text-center">
 
-    <h2 class="font-weight-bold">List of Volunteers</h2>
+    <h2 class="fw-bold">List of Volunteers</h2>
     <h5>Total active volunteers: <b><%= @active_volunteers.count%></b></h5>
     <h5>Total unactive volunteers: <b><%= @unactive_volunteers.count%></b></h5>
 
     <% if @active_volunteers.present? %>
+    <div class="input-group w-50 mx-auto">
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
+      <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
+    </div>
 
       <br />
-
+    </div>
       <h5>Active Volunteers</h5>
 
       <div class="table-responsive">
         <table class="table sessions-table table-striped">
-
+        <thead class="table-primary">
           <tr>
             <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
@@ -23,8 +26,8 @@
             <th>Program<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <th>Certifications<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           </tr>
-
-          <tbody>
+        </thead>
+          <tbody> 
           <% @active_volunteers.each do |v| %>
             <tr>
               <td class = "username">
@@ -65,15 +68,17 @@
     <% end %>
 
     <% if @unactive_volunteers.present? %>
-      <input type="text" id="query-2" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
-
+      <div class="input-group w-50 mx-auto">
+        <input type="text" id="query-2" onkeyup="findSession('sessions-table')" placeholder="Find ..." class="form-control mx-auto">
+        <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
+      </div>
       <br />
 
       <h5>Unactive Volunteers</h5>
 
       <div class="table-responsive">
         <table class="table sessions-table-2 table-striped">
-
+        <thead class="table-primary">
           <tr>
             <th>Name<span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
             <th>Email<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
@@ -82,7 +87,7 @@
             <th>Program<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
             <th>Certifications<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
           </tr>
-
+          </thead>
           <tbody>
           <% @unactive_volunteers.each do |v| %>
             <tr>

@@ -126,6 +126,7 @@ class UsersController < SessionsController
   end
 
   def update
+
     if @user.update(user_params)
       flash[:notice] = 'Profile updated successfully.'
       redirect_to settings_profile_path

@@ -1,6 +1,6 @@
 <div class="table-responsive">
-  <table class="table sessions-table-2">
-
+  <table class="table table-striped sessions-table-2">
+  <thead class="table-primary">
     <tr>
       <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%= fa_icon('arrow-down') %></span></th>
       <th>Date Updated <span onclick="sortTable('sessions-table-2', 1)"><%= fa_icon('arrow-down') %></span></th>
@@ -10,7 +10,7 @@
       <th>Status<span onclick="sortTable('sessions-table-2', 5)"><%= fa_icon('arrow-down') %></span></th>
       <!--            <th class="action-header">Action</th>-->
     </tr>
-
+</thead >
     <tbody>
     <%= will_paginate @processed_volunteer_task_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
     <% @processed_volunteer_task_requests.each do |vtr| %>
@@ -34,11 +34,11 @@
           <%= vtr.volunteer_task.hours %> hours
         </td>
 
-        <td class="username">
-          <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id) %>
+        <td>
+          <%= link_to vtr.volunteer_task.title, volunteer_task_path(vtr.volunteer_task.id) %>
         </td>
 
-        <td class="username">
+        <td>
           <%= link_to vtr.user.name, user_path(vtr.user.username) %>
         </td>
 

@@ -1,13 +1,14 @@
 <section>
-  <h2 class="font-weight-bold py-3 text-center">Admin's Training Sessions Manager</h2>
+  <h2 class="fw-bold py-3 text-center">Admin's Training Sessions Manager</h2>
   <div class="text-center">
     <%= link_to 'See Demotions', demotions_admin_certifications_path, class: 'btn btn-primary' %>
   </div>
   <br />
 
-  <div class="form-group">
-    <div class="form-inline">
-      <%= text_field_tag(:search, search(params[:search]), placeholder: "Search by Course, Training, User, Date ...", class: 'form-control training_session_searchbar', style: "width: 100%") %>
+  <div class="mb-3">
+    <div class="input-group w-50 mx-auto">
+      <%= text_field_tag(:search, search(params[:search]), placeholder: "Search by Course, Training, User, Date ...", class: 'form-control', id:"training_session_searchbar") %>
+      <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
     </div>
   </div>
 

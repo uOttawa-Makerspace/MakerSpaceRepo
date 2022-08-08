@@ -4,7 +4,6 @@ import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import googleCalendarPlugin from '@fullcalendar/google-calendar';
-import TomSelect from 'tom-select';
 
 let calendarEl = document.getElementById('calendar');
 const urlParams = new URLSearchParams(window.location.search);
@@ -93,7 +92,7 @@ let calendar = new Calendar(calendarEl, {
     eventOrder: (a, b) => {
         if ((a.title.includes("is unavailable") && b.title.includes("is unavailable")) || (!a.title.includes("is unavailable") && !b.title.includes("is unavailable"))) {
             return 0;
-        } else if(a.title.includes("is unavailable")) {
+        } else if (a.title.includes("is unavailable")) {
             return -1;
         } else {
             return 1;
@@ -119,7 +118,7 @@ let createCalendarEvent = () => {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({start_datetime: start_datetime.value, end_datetime: end_datetime.value, format: 'json', user_id: selected_users, reason: modalReason.value})
+        body: JSON.stringify({ start_datetime: start_datetime.value, end_datetime: end_datetime.value, format: 'json', user_id: selected_users, reason: modalReason.value })
     }).then(response => response.json()).then(
         data => {
             calendar.addEvent({
@@ -143,14 +142,14 @@ let openModal = (arg) => {
     modal.style.display = "block"
     modal.classList.add("show")
 
-    if (arg !== undefined && arg !== null){
+    if (arg !== undefined && arg !== null) {
         start_picker.setDate(Date.parse(arg.startStr));
         end_picker.setDate(Date.parse(arg.endStr));
     }
 
 }
 let closeModal = () => {
-    modalUserIdSelect.clear();
+    // modalUserIdSelect.clear();
     modalReason.value = "";
     start_picker.clear();
     end_picker.clear();
@@ -159,20 +158,20 @@ let closeModal = () => {
     modalSave.removeEventListener('click', createCalendarEvent);
 }
 
-window.onclick = function(event) {
+window.onclick = function (event) {
     if (event.target === modal) {
         closeModal()
     }
 }
 
 let modifyEvent = (arg) => {
-    fetch("/admin/shifts/"+arg.event.id, {
+    fetch("/admin/shifts/" + arg.event.id, {
         method: "PUT",
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({start_datetime: arg.event.start, end_datetime: arg.event.end, format: 'json'})
+        body: JSON.stringify({ start_datetime: arg.event.start, end_datetime: arg.event.end, format: 'json' })
     }).then((response) => {
         if (!response.ok) {
             arg.revert();
@@ -184,13 +183,13 @@ let modifyEvent = (arg) => {
 
 let removeEvent = (arg) => {
     if (confirm('Are you sure you want to delete this event?')) {
-        fetch("/admin/shifts/"+arg.event.id, {
+        fetch("/admin/shifts/" + arg.event.id, {
             method: "DELETE",
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({format: 'json'})
+            body: JSON.stringify({ format: 'json' })
         }).then((response) => {
             if (response.ok) {
                 arg.event.remove()
@@ -208,7 +207,7 @@ const hideShowEvents = (eventName, toggleId, text) => {
     for (let ev of allEvents) {
         if (ev.source.id === eventName) {
             ev.setProp("display", sourceShow[eventName]);
-            document.getElementById(toggleId).innerText = `${ sourceShow[eventName] === "block" ? 'Hide' : 'Show' } ${text}`;
+            document.getElementById(toggleId).innerText = `${sourceShow[eventName] === "block" ? 'Hide' : 'Show'} ${text}`;
         }
     }
 
@@ -263,6 +262,10 @@ window.toggleVisibility = (name) => {
     });
 }
 
-let modalUserIdSelect = new TomSelect("#modalUserId",{
-    maxItems: 3
+new TomSelect("#modalUserId", {
+    maxItems: 3,
+    placeholder: "Select users",
+    search: true,
+    plugins:["remove_button"],
 });
+

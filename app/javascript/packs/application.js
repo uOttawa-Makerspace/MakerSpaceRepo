@@ -19,17 +19,15 @@ import 'regenerator-runtime/runtime'
 require("@rails/ujs").start();
 require("turbolinks").start();
 require("@rails/activestorage").start();
-require("jquery");
-require("jquery-ui")
-require("justifiedGallery")
-require("select2");
+// require("jquery");
+// require("jquery-ui")
 global.toastr = require("toastr");
 global.Chart = require("chart.js");
 require("trix");
 require("@shopify/buy-button-js");
 global.PhotoSwipe = require('photoswipe');
 global.PhotoSwipeUI_Default = require('photoswipe/dist/photoswipe-ui-default');
-var Clipboard = require("clipboard");
+import "clipboard";
 import moment from 'moment'
 // window.Cookies = require("js-cookie");
 require("@rails/actiontext")
@@ -48,10 +46,16 @@ require("packs/settings");
 require("packs/sorting");
 require("packs/vendor");
 require("packs/accordion-load");
+require("packs/clipboard");
+//Shouldn't be necessary, remove when controllers load properly.
+import "../controllers" 
 
-import "bootstrap";
-import "tom-select";
+// window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
+window.TomSelect = require("tom-select");
+window.bootstrap = require("bootstrap");
+// import bsCustomFileInput from 'bs-custom-file-input'
 require("packs/toastr");
+// window.ActionCable = require("actioncable");
 
 import { Calendar } from '@fullcalendar/core';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -59,8 +63,14 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 
 document.addEventListener("turbolinks:load", () => {
-    $('[data-toggle="tooltip"]').tooltip()
-    $('[data-toggle="popover"]').popover()
+    let tooltips = document.querySelectorAll("[data-bs-toggle=\"tooltip\"]")
+    tooltips.forEach(tooltip => {
+        return new bootstrap.Tooltip(tooltip)
+    });
+    let popovers = document.querySelectorAll("[data-bs-toggle=\"popover\"]")
+    popovers.forEach(popover => {
+        return new bootstrap.Popover(popover)
+    });
 
     const links = document.getElementsByTagName('a');
 
@@ -74,27 +84,28 @@ document.addEventListener("turbolinks:load", () => {
     }
 })
 
-// needed since by default bootstrap-select doesn't register page:load events
-$(document).on('turbolinks:load', function () {
-    $('[data-radio-enable]').on('change', function () {
-        var $inputs = $('input[type="radio"][name="' + $(this).attr('name') + '"]');
+// // needed since by default form-select doesn't register page:load events
+// document.addEventListener("turbolinks:load", () => {
+//     $('[data-radio-enable]').on('change', function () {
+//         var $inputs = $('input[type="radio"][name="' + $(this).attr('name') + '"]');
 
-        $inputs.each(function () {
-            var $input = $(this);
-            var $target = $($input.data('radio-enable'));
+//         $inputs.each(function () {
+//             var $input = $(this);
+//             var $target = $($input.data('radio-enable'));
 
-            if ($input.prop('checked')){
-                $target.prop('disabled', false);
-            } else {
-                $target.prop('disabled', true);
-            }
-        });
-    }).trigger('change');
+//             if ($input.prop('checked')){
+//                 $target.prop('disabled', false);
+//             } else {
+//                 $target.prop('disabled', true);
+//             }
+//         });
+//     }).trigger('change');
 
-    $('.bootstrap-select').selectpicker({
-        windowPadding: [80, 0, 0, 0]
-    });
-});
+//     $('.form-select').selectpicker({
+//         windowPadding: [80, 0, 0, 0]
+//     });
+// });
+
 
 window.clearEndDate = function() {
     document.getElementById("end_date").value = null;
@@ -102,17 +113,24 @@ window.clearEndDate = function() {
 
 window.setSpace = function(){
     let space_id = document.getElementById("set_space_id").value;
-
-    $.ajax({
-        url: "/staff_dashboard/change_space",
-        type: "PUT",
-        data: {
+    let url = "/staff_dashboard/change_space";
+    fetch(url, {
+        method: "PUT",
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body:JSON.stringify({
             space_id: space_id,
             training: document.URL.includes("training_sessions"),
             questions: document.URL.includes("questions"),
             shifts: document.URL.includes("shifts"),
-        }
-    })
+        }),
+    }).then(response => response.json()).then(data => {
+        Turbolinks.clearCache()
+        Turbolinks.visit(window.location, {"action":"replace"})
+    }).catch(error => {console.log(error)})
 }
 
 window.debounce = function(func, wait, immediate) {
@@ -129,3 +147,15 @@ window.debounce = function(func, wait, immediate) {
         if (callNow) func.apply(context, args);
     };
 };
+window.examResponse = function(exam_id, answer_id){
+    fetch('/exam_responses#create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            exam_id: exam_id,
+            answer_id: answer_id
+        })
+    })
+}

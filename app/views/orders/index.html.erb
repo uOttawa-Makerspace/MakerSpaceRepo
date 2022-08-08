@@ -19,7 +19,7 @@
         </div>
         <div class="table-responsive">
           <table class="table table-striped">
-
+          <thead class="table-primary">
             <tr>
               <th>Product/Quantity</th>
               <th>Date</th>
@@ -28,7 +28,7 @@
               <th>Badge Status</th>
               <th>Total</th>
             </tr>
-
+          </thead>
             <tbody>
               <% @orders.each do |order| %>
                 <tr>
@@ -75,7 +75,7 @@
 
           <div class="table-responsive">
             <table class="table table-striped">
-
+            <thead class="table-primary">
               <tr>
                 <th>User</th>
                 <th>Product/Quantity</th>
@@ -86,7 +86,7 @@
                 <th>Total</th>
                 <th>Action</th>
               </tr>
-
+            </thead>
               <tbody>
               <% @all_orders.each do |order| %>
                 <tr>

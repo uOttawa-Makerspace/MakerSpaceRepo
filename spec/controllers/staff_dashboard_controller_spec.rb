@@ -120,7 +120,7 @@ RSpec.describe StaffDashboardController, type: :controller do
         new_space = create(:space)
         expect{ put :change_space, params: {space_id: new_space.id} }.to change(LabSession, :count).by(0)
         expect(@controller.instance_variable_get(:@space).id).to eq(new_space.id)
-        expect(response).to redirect_to staff_dashboard_index_path
+        expect(response).to have_http_status(200)
         expect(LabSession.last.sign_out_time < DateTime.now)
         expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
       end

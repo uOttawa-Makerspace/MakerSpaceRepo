@@ -1,29 +1,59 @@
-$(document).on('turbolinks:load', function () {
+/**
+ * This class stores information about accordion states in local storage and sets states on page load. 
+ */
 
-    let storage = localStorage.getItem(location.pathname);
-    if ((storage != undefined) && (storage != "")) {
-        storage = storage.split(",");
-        storage.forEach(function (item) {
-            document.getElementById(item).classList.toggle("show");
+document.addEventListener('turbolinks:load', () => {
+    let storageString = localStorage.getItem(location.pathname);
+    let storage;
+    if (storageString) {
+        try {
+            storage = JSON.parse(storageString);
+        } catch (e) {
+            storage = {};
+        }
+        Object.keys(storage).forEach(function (item) {
+            if (storage[item] === true) {
+                if (document.getElementById(item)) {
+                    document.getElementById(item).classList.add("show");
+                }
+            } else if (storage[item] === false) {
+                if (document.getElementById(item)) {
+                    document.getElementById(item).classList.remove("show");
+                }
+            }
         });
     }
-
-    $(".collapse").on('shown.bs.collapse', function(e){
-        storeid(location.pathname);
+    const collapseElements = [...document.getElementsByClassName('collapse')];
+    collapseElements.forEach((collapseElement) => {
+        collapseElement.addEventListener('show.bs.collapse', (event) => {
+            let storageString = localStorage.getItem(location.pathname);
+            let storage;
+            if (storageString) {
+                try {
+                    storage = JSON.parse(storageString);
+                } catch {
+                    storage = {};
+                }
+            } else {
+                storage = {}
+            }
+            storage[event.target.id] = true;
+            localStorage.setItem(location.pathname, JSON.stringify(storage));
+        });
+        collapseElement.addEventListener('hide.bs.collapse', (event) => {
+            let storageString = localStorage.getItem(location.pathname);
+            let storage;
+            if (storageString) {
+                try {
+                    storage = JSON.parse(storageString);
+                } catch {
+                    storage = {};
+                }
+            } else {
+                storage = {}
+            }
+            storage[event.target.id] = false;
+            localStorage.setItem(location.pathname, JSON.stringify(storage));
+        });
     });
-
-    $(".collapse").on('hidden.bs.collapse', function(e){
-        storeid(location.pathname);
-    });
-
 });
-
-window.storeid = function(page) {
-    let className = document.getElementsByClassName('show');
-    let classnameCount = className.length;
-    let IdStore = new Array();
-    for(let i = 0; i < classnameCount; i++){
-        IdStore.push(className[i].id);
-    }
-    localStorage.setItem(page, IdStore.toString(), { expires: 1 });
-};

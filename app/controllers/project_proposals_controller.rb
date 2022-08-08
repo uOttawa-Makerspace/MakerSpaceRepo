@@ -8,10 +8,15 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals
   # GET /project_proposals.json
   def index
-    @pending_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: nil).paginate(per_page: 15, page: params[:page_pending])
-    @approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
-    @not_approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
-
+    if params[:search].blank?
+      @pending_project_proposals = ProjectProposal.all.joins(:user).order(created_at: :desc).where(approved: nil).paginate(per_page: 15, page: params[:page_pending])
+      @approved_project_proposals = ProjectProposal.all.joins(:user).order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
+      @not_approved_project_proposals = ProjectProposal.all.joins(:user).order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
+    else
+      @pending_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: nil).paginate(per_page: 15, page: params[:page_pending])
+      @approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 1).paginate(per_page: 15, page: params[:page_approved])
+      @not_approved_project_proposals = ProjectProposal.all.joins(:user).filter_by_attribute(params[:search]).order(created_at: :desc).where(approved: 0).paginate(per_page: 15, page: params[:page_not_approved])
+    end
     respond_to do |format|
       format.js
       format.html
@@ -65,18 +70,34 @@ class ProjectProposalsController < ApplicationController
   # POST /project_proposals
   # POST /project_proposals.json
   def create
-    @project_proposal = ProjectProposal.new(project_proposal_params)
+    @project_proposal = ProjectProposal.new(project_proposal_params.except(:categories))
+    if params[:categories].present?
+      if params[:categories].all? { |c| c.is_a? String }
+        params[:categories] = params[:categories].map { |c| Category.create(name: c, project_proposal_id: @project_proposal.id) }
+      end
+      @project_proposal.categories = params[:categories]
+    end
     @project_proposal.user_id = @user.try(:id)
 
     respond_to do |format|
-      if verify_recaptcha(model: @project_proposal) && @project_proposal.save
-        create_photos
-        create_files
-        create_categories
-        @project_proposal.save # This creates the slug with ID since the ID is not created before create
-        format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully created.' }
-        format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
-        MsrMailer.send_new_project_proposals.deliver_now
+      if verify_recaptcha(model: @project_proposal) && @project_proposal.save        
+        begin
+          create_photos
+        rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+          Airbrake.notify(e)
+          flash[:alert] = 'Something went wrong while uploading photos, try again later.'
+          @project_proposal.destroy
+          format.json {render json: {redirect_uri: request.path}}
+          format.html {redirect_back fallback_location: request.path}
+
+        else
+          create_files
+          create_categories
+          @project_proposal.save # This creates the slug with ID since the ID is not created before create
+          format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully created.' }
+          format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
+          MsrMailer.send_new_project_proposals.deliver_now
+        end
       else
         flash[:alert] = 'An error occurred while creating the project proposal, try again later.'
         format.html { render :new, status: :unprocessable_entity }
@@ -145,12 +166,20 @@ class ProjectProposalsController < ApplicationController
   def update
     @project_proposal.categories.destroy_all
     respond_to do |format|
-      if @project_proposal.update(project_proposal_params)
-        update_photos
+      if @project_proposal.update(project_proposal_params.except(:categories))
         update_files
         create_categories
-        format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully updated.' }
-        format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
+        begin 
+          update_photos
+        rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+          Airbrake.notify(e)
+          flash[:alert_yellow] = 'Something went wrong while uploading photos, try again later. Other changes have been saved. '
+          format.json {render json: {redirect_uri: request.path}}
+          format.html {redirect_back fallback_location: request.path}
+        else
+          format.html { redirect_to project_proposal_path(@project_proposal.slug), notice: 'Project proposal was successfully updated.' }
+          format.json { render json: { redirect_uri: project_proposal_path(@project_proposal.slug).to_s } }
+        end
       else
         flash[:alert] = 'An error occurred while updating the project proposal, try again later.'
         format.html { render :edit, status: :unprocessable_entity }
@@ -213,7 +242,7 @@ class ProjectProposalsController < ApplicationController
   def create_photos
     if params[:images].present?
       params[:images].first(5).each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size(img.tempfile,raise_on_failure: true)
         Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
       end
     end
@@ -239,7 +268,7 @@ class ProjectProposalsController < ApplicationController
 
     if params['images'].present?
       params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size(img.tempfile,raise_on_failure: true)
         Photo.create(image: img, project_proposal_id: @project_proposal.id, width: dimension.first, height: dimension.last)
       end
     end
@@ -274,12 +303,12 @@ class ProjectProposalsController < ApplicationController
     params.require(:project_proposal).permit(:user_id, :admin_id, :approved, :title, :description,
                                              :youtube_link, :username, :email, :client, :client_type,
                                              :client_interest, :client_background, :supervisor_background, :equipments,
-                                             :project_type, :project_cost, :past_experiences, :linked_project_proposal_id, area: [])
+                                             :project_type, :project_cost, :past_experiences, :linked_project_proposal_id, area: [], categories: [])
   end
 
   def create_categories
-    if params['categories'].present?
-      params['categories'].first(5).each do |c|
+    if params[:project_proposal]['categories'].present?
+      params[:project_proposal]['categories'].first(5).each do |c|
         Category.create(name: c, project_proposal_id: @project_proposal.id)
       end
     end

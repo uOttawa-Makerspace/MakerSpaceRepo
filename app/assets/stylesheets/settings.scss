@@ -1,6 +1,7 @@
 /* SETTING LAYOUT */
 
 @import "lib";
+@import "bootstrap/scss/bootstrap";
 
 div.setting-title {
   line-height: 5rem !important;
@@ -14,10 +15,6 @@ div.setting-grid {
   background-color: #fff;
   padding: 0 1rem;
   /*position: relative;*/
-
-  a {
-    color: inherit;
-  }
 
   .btn-secondary {
     color: #fff;
@@ -86,12 +83,38 @@ div.setting-side-panel {
         border-left: 5px solid #5f9ea0;
       }
     }
-
-    &:nth-last-child(1) {
-      margin-top: 1.5rem;
-    }
   }
 
+}
+@include media-breakpoint-down(md){
+  div.setting-side-panel {
+    li{
+      &:not(:first-child) {
+        margin-top: 1.5rem;
+      }
+    }
+  }
+}
+@include media-breakpoint-between(md, xl){
+  div.setting-side-panel {
+    li{
+      &:nth-last-child(1) {
+        margin-top: 1.5rem;
+      }
+    }
+  }
+}
+@include media-breakpoint-up  (xl) {
+  div.setting-side-panel {
+    li{
+      a{
+        white-space: nowrap;
+      }
+      & {
+        margin-top: 0;
+      }
+    }
+  }
 }
 
 /* EDIT PROFILE PAGE */
@@ -399,36 +422,6 @@ div.edit-column {
 
     }
 
-  }
-
-  // Select2
-  .select2-container .select2-selection--single {
-    box-sizing: border-box;
-    cursor: pointer;
-    display: block;
-    height: 40px;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  .select2-container--default .select2-selection--single .select2-selection__rendered {
-    color: #777;
-    line-height: 37px;
-    font-size: 15px;
-    font-family: 'Raleway', helvetica, sans-serif;
-  }
-
-  .select2-container .select2-selection--single .select2-selection__rendered {
-    display: block;
-    padding-left: 4px;
-    padding-right: 20px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  li.select2-results__option {
-    font: 4px;
   }
 
   .programs {

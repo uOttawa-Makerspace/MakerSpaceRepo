@@ -1,0 +1,4 @@
+<%# $('#job-order-row-<%= @job_order.id %>').html("<%= escape_javascript(render 'admin_row', jo: @job_order) %>") %>
+document.getElementById('job-order-row-<%= @job_order.id %>').innerHTML = "<%= escape_javascript(render 'admin_row', jo: @job_order) %>"
+<%# $('#flash').html("<%= escape_javascript(render 'layouts/flash') %>") %>
+document.getElementById('flash').innerHTML = "<%= escape_javascript(render 'layouts/flash') %>"

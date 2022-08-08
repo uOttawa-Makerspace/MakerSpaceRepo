@@ -22,7 +22,7 @@ gem 'jquery-rails'
 gem 'jquery-ui-rails'
 gem 'kaminari'
 gem 'mocha'
-gem 'octokit', '~> 4.0'
+gem 'octokit', '~> 4.21.0'
 gem 'paperclip'
 gem 'paperclip-av-transcoder'
 gem 'pg', '~> 1.1'
@@ -33,9 +33,8 @@ gem 'pry-rails', '~> 0.3.9', group: :development
 gem 'quick_random_records', '~> 0.3.2'
 gem 'rubyzip', '~> 2.1', require: 'zip'
 gem 'saml_idp', '~> 0.9.0'
-gem 'sass-rails', '~> 5.0.7'
+gem 'sass-rails', '~> 6.0.0'
 gem 'sdoc', '~> 1.1.0', group: :doc
-gem 'select2-rails'
 gem 'shopify_app', '~> 18.1.2'
 gem 'sidekiq', '~> 6.2.1'
 gem 'simplecov'
@@ -47,7 +46,7 @@ gem 'unicorn-worker-killer', '~> 0.4.3'
 gem 'whenever', require: false
 gem 'wicked_pdf'
 gem 'will_paginate', '~> 3.3.0'
-gem 'will_paginate-bootstrap4'
+gem 'will_paginate-bootstrap-style'
 gem 'wkhtmltopdf-binary'
 gem 'youtube_id'
 gem 'bootsnap', require: false
@@ -72,6 +71,7 @@ gem "prettier_print"
 gem "syntax_tree", "~> 3.3.0"
 gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
+gem 'stimulus-rails'
 
 group :development, :test do
   gem 'byebug', platform: :mri

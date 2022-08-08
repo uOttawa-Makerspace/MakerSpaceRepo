@@ -15,15 +15,23 @@
 
  */
 
+ $primary: #497979;
+ $primary-light: rgba(59, 147, 147, 0.5);
+ $navbar-light-color: rgba(0, 0, 0, 0.7);
+$navbar-light-hover-color: rgba(0, 0, 0, 1.0);
+$navbar-dark-color: rgba(255, 255, 255, 0.7);
+$navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
+$body-top-padding: 6rem; // equivalent to navbar height
+$input-border-radius: .25rem !default;
+$pagination-border-radius: 0;
+
+@import "bootstrap/scss/bootstrap";
 @import "toastr";
 @import './shared/variables';
 @import "trix";
-@import 'select2';
-@import "select2-bootstrap";
 @import "lib";
 @import "font-awesome";
-@import "select2-bootstrap";
-
+$enable-negative-margins: true;
 html {
   height: 100%;
   overflow: auto;
@@ -53,7 +61,7 @@ h1, h2, h3, h4, h5, h6{
   padding: 0;
   background: none;
   text-rendering: optimizeLegibility;
-  margin: 0 0 .5em 0;
+  margin: 0 0 .5rem 0;
 }
 
 p{
@@ -71,6 +79,9 @@ a{
   //&:focus{
   //  outline-style: none;
   //}
+}
+body{
+  background-color: #fff;
 }
 
 u{
@@ -188,4 +199,42 @@ div.form-error{
 
 .fc th {
   width: inherit;
+}
+
+@media (min-width:576px) {
+  .jumbotron {
+   padding:4rem 2rem;
+  }
+ }
+ @media (min-width: 1400px) {
+  .container {
+      max-width: 1140px;
+  }
+}
+.accordion-button{
+  background-color: rgba(0,0,0,.03) !important;
+}
+.dropdown-item:hover:not(:active) {
+  background-color: $primary-light;
+}
+.justified-gallery{
+  height: 250px;
+  overflow-x: scroll;
+  overflow-y: hidden;  
+  white-space: nowrap;
+}
+.justified-gallery img{
+  height:250px;
+  width:auto;
+}
+.padding-responsive {
+  padding-left: 20%;
+  padding-right: 20%;
+}
+
+@media screen and (max-width: 768px){
+  .padding-responsive {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
 }

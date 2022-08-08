@@ -1190,7 +1190,8 @@ GEM
       multi_json (~> 1.3)
       multi_xml (~> 0.5)
       rack (>= 1.2, < 3)
-    octokit (4.7.0)
+    octokit (4.21.0)
+      faraday (>= 0.9)
       sawyer (~> 0.8.0, >= 0.5.3)
     omniauth (2.1.0)
       hashie (>= 3.4.6)
@@ -1344,23 +1345,21 @@ GEM
       builder (>= 3.0)
       nokogiri (>= 1.6.2)
       uuid (>= 2.3)
-    sass (3.7.4)
-      sass-listen (~> 4.0.0)
-    sass-listen (4.0.0)
-      rb-fsevent (~> 0.9, >= 0.9.4)
-      rb-inotify (~> 0.9, >= 0.9.7)
-    sass-rails (5.0.8)
-      railties (>= 5.2.0)
-      sass (~> 3.1)
-      sprockets (>= 2.8, < 4.0)
-      sprockets-rails (>= 2.0, < 4.0)
-      tilt (>= 1.1, < 3)
+    sass-rails (6.0.0)
+      sassc-rails (~> 2.1, >= 2.1.1)
+    sassc (2.4.0)
+      ffi (~> 1.9)
+    sassc-rails (2.1.2)
+      railties (>= 4.0.0)
+      sassc (>= 2.0)
+      sprockets (> 3.0)
+      sprockets-rails
+      tilt
     sawyer (0.8.2)
       addressable (>= 2.3.5)
       faraday (> 0.8, < 2.0)
     sdoc (1.1.0)
       rdoc (>= 5.0)
-    select2-rails (4.0.13)
     selenium-webdriver (3.142.7)
       childprocess (>= 0.5, < 4.0)
       rubyzip (>= 1.2.2)
@@ -1409,6 +1408,8 @@ GEM
     sshkit (1.21.0)
       net-scp (>= 1.1.2)
       net-ssh (>= 2.8.0)
+    stimulus-rails (1.1.0)
+      railties (>= 6.0.0)
     stripe (5.42.0)
     stripe_event (2.3.1)
       activesupport (>= 3.1)
@@ -1432,7 +1433,7 @@ GEM
       eventmachine (~> 1.0, >= 1.0.4)
       rack (>= 1, < 3)
     thor (1.1.0)
-    tilt (2.0.10)
+    tilt (2.0.11)
     toastr-rails (1.0.3)
       railties (>= 3.1.0)
     trix-rails (2.3.0)
@@ -1472,7 +1473,7 @@ GEM
     wicked_pdf (2.1.0)
       activesupport
     will_paginate (3.3.0)
-    will_paginate-bootstrap4 (0.2.2)
+    will_paginate-bootstrap-style (0.2.4)
       will_paginate (~> 3.0, >= 3.0.0)
     wkhtmltopdf-binary (0.12.6.2)
     xpath (3.2.0)
@@ -1526,7 +1527,7 @@ DEPENDENCIES
   listen (~> 3.2.1)
   mocha
   net-ssh
-  octokit (~> 4.0)
+  octokit (~> 4.21.0)
   paperclip
   paperclip-av-transcoder
   pg (~> 1.1)
@@ -1546,9 +1547,8 @@ DEPENDENCIES
   rubocop-rails
   rubyzip (~> 2.1)
   saml_idp (~> 0.9.0)
-  sass-rails (~> 5.0.7)
+  sass-rails (~> 6.0.0)
   sdoc (~> 1.1.0)
-  select2-rails
   selenium-webdriver (~> 3.142.7)
   shopify_app (~> 18.1.2)
   shoulda-matchers (~> 4.0)
@@ -1556,6 +1556,7 @@ DEPENDENCIES
   simplecov
   spring (~> 2.1.0)
   spring-watcher-listen (~> 2.0.0)
+  stimulus-rails
   stripe
   stripe_event (~> 2.3, >= 2.3.1)
   syntax_tree (~> 3.3.0)
@@ -1572,7 +1573,7 @@ DEPENDENCIES
   whenever
   wicked_pdf
   will_paginate (~> 3.3.0)
-  will_paginate-bootstrap4
+  will_paginate-bootstrap-style
   wkhtmltopdf-binary
   youtube_id
   zip-zip

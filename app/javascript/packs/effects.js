@@ -1,63 +1,73 @@
-$(document).on('turbolinks:load', function(){
-
-
-  $('div.select-styled').change(function(){
-    var _this = $(this);
-    if(_this.text() == "Other"){
-      $('span.other textarea').fadeIn(1);
-    }else{
-      $('span.other textarea').fadeOut(1);
+function fadeOut(element, duration) {
+  let periods = duration / 100;
+  let opacity = 1;
+  let interval = setInterval(() => {
+    opacity -= 0.01;
+    element.style.opacity = opacity;
+    if (opacity <= 0) {
+      clearInterval(interval);
     }
-  });
+  }, periods);
+}
+function fadeIn(element, duration) {
+  let periods = duration / 100;
+  let opacity = 0;
+  let interval = setInterval(() => {
+    opacity += 0.01;
+    element.style.opacity = opacity;
+    if (opacity >= 1) {
+      clearInterval(interval);
+    }
+  }, periods);
+}
+document.addEventListener("turbolinks:load", function (event) {
 
-  //TODO: Create a way to generalize dropdown menus
+  // Can't find any references to this class other than this file and CSS. I can't tell where/if it gets assigned.
+  // document.getElementsByClassName("select-styled").forEach(function(element){
+  //   if (element.value == "Other"){
+  //     fadeIn(element,1000);
+  //   }else{
+  //     fadeOut(element,1000);
+  //   }
+  // });
 
-  $("span#menu-button1").hover(function(){
-    $('ul#menu1').fadeIn(100);
-  }, function(){
-    $('ul#menu1').fadeOut(100);
-  });
 
-    $("span#menu-button2").hover(function(){
-        $('ul#menu2').fadeIn(100);
-    }, function(){
-        $('ul#menu2').fadeOut(100);
+  [...document.getElementsByClassName("repository-container")].forEach(function (element) {
+    element.addEventListener("mouseenter", function (event) {
+      let wrapper = element.firstElementChild;
+      if (wrapper.children.length >= 2) {
+        fadeIn(wrapper.children[0], 100);
+        fadeIn(wrapper.children[1], 100);
+      }
     });
-  
-  $('div.repository-container').mouseenter(function(){
-    var wrapper = $($(this)[0].firstElementChild);
-    $(wrapper.children()[0]).fadeIn(100);
-    $(wrapper.children()[1]).fadeIn(100);
+    element.addEventListener("mouseleave", function (event) {
+      let wrapper = element.firstElementChild;
+      if (wrapper.children.length >= 2) {
+        fadeIn(wrapper.children[0], 100);
+        fadeIn(wrapper.children[1], 100);
+      }
+    });
   });
 
-  $('div.repository-container').mouseleave(function(){
-    var wrapper = $($(this)[0].firstElementChild);
-    $(wrapper.children()[0]).fadeOut(100);
-    $(wrapper.children()[1]).fadeOut(100);
-  });
-
-  $('a div.user-avatar').mouseenter(function(){
-    $('div.edit-avatar').slideDown(200);
-  });
-
-  $('a div.user-avatar').mouseleave(function(){
-    $('div.edit-avatar').fadeOut(200);
-  });
-
-  $('a.repository_report').click(function(){
-    $('div.spinner').css('display', 'inline-block');
-  });
-
-  $("div#alert").fadeIn(500).delay(5000).fadeOut(300);
-  $("div#notice").fadeIn(500).delay(5000).fadeOut(300);
-
-   $("div#filter-header").click(function(){
-    $('ul.filter').slideDown(100, function(){
-      $(document).click(function(){
-         $('ul.filter').slideUp(100);
-         $(this).off('click');
+  [...document.getElementsByClassName("repository_report")].forEach(function (element) {
+    element.addEventListener("click", function (event) {
+      [...document.getElementsByClassName("spinner")].forEach(function (element) {
+        element.style.display = "inline-block";
       });
     });
   });
 
+
+  let filterHeader = document.getElementById("filter-header")
+  if (filterHeader) {
+    document.getElementById("filter-header").addEventListener("click", function (event) {
+      [...document.getElementsByClassName("filter")].forEach(function (element) {
+        if (element.style.display == "none" || element.style.display == "") {
+          element.style.display = "block";
+        } else {
+          element.style.display = "none";
+        }
+      });
+    });
+  }
 });

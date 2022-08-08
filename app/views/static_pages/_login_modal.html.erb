@@ -4,12 +4,12 @@
 
       <div class="modal-header">
         <h1 class="text-center"><%= t('sessions.login.sign_in') %></h1>
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
         <%= form_tag login_authentication_path do %>
-          <div class="form-group attach">
+          <div class="mb-3 attach">
             <%= text_field_tag :username_email, params[:username_email], placeholder: t('sessions.login.username_or_email'), class: 'form-control', autofocus: true %>
             <%= password_field_tag :password, nil, placeholder: t('sessions.login.password'), class: 'form-control' %>
           </div>

@@ -2,13 +2,14 @@
 
 <section>
   <div class="text-center">
-    <h2 class="font-weight-bold py-3">Manage Roles</h2>
+    <h2 class="fw-bold py-3">Manage Roles</h2>
     <h3>Visit each user to update their roles.</h3>
   </div>
   <br>
   <div>
-    <table class="table-striped">
+    <table class="table table-striped">
       <h3>Admins on Makerepo</h3>
+    <thead class="table-primary">
       <tr class="text-center">
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
@@ -16,15 +17,17 @@
         <th class="email-header">View</th>
         <th class="email-header">Role</th>
       </tr>
+      </thead>
       <% @admins.each do |admin| %>
         <tr>
           <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
           <td class="name-cell"><%= admin.name %></td>
           <td class="email-cell"><%= admin.email %></td>
           <td class="link-table"><%= link_to fa_icon("eye"), user_url(admin.username) %></td>
-          <td class="form-inline">
+          <td class="w-auto">
             <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch do %>
-              <%= select_tag(:role, options_for_select(@roles, :selected => admin.role), class: "form-control") %>
+              <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]]%>
+              <%= select_tag(:role, options_for_select(@roles, selected: admin.role), class: "form-control form-select") %>
               <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control" %>
             <% end %>
           </td>
@@ -33,8 +36,9 @@
     </table>
     <br /><br />
 
-    <table class="table-striped">
+    <table class="table table-striped">
       <h3>Staff on Makerepo</h3>
+      <thead class="table-primary">
       <tr class="text-center">
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
@@ -42,15 +46,17 @@
         <th class="email-header">View</th>
         <th class="email-header">Role</th>
       </tr>
+      </thead>
       <% @staff.each do |staff| %>
         <tr>
           <td class="username-cell"><%= link_to staff.username, user_url(staff.username) %></td>
           <td class="name-cell"><%= staff.name %></td>
           <td class="email-cell"><%= staff.email %></td>
           <td class="link-table"><%= link_to fa_icon("eye"), user_url(staff.username) %></td>
-          <td class="form-inline">
+          <td class="w-auto">
             <%= form_tag set_role_admin_users_path(id: staff.id), method: :patch do %>
-              <%= select_tag(:role, options_for_select(@roles, :selected => staff.role), class: "form-control") %>
+              <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]]%>
+              <%= select_tag(:role, options_for_select(@roles, selected: staff.role), class: "form-control form-select") %>
               <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control" %>
             <% end %>
           </td>
@@ -59,15 +65,16 @@
     </table>
     <br /><br />
 
-    <table class="table-striped">
+    <table class="table table-striped">
       <h3>Volunteers on Makerepo</h3>
+      <thead class="table-primary">
       <tr class="text-center">
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
         <th class="email-header">Email</th>
         <th class="email-header">View</th>
       </tr>
-
+</thead>
       <% @volunteers.each do |volunteer| %>
         <tr>
           <td class="username-cell"><%= link_to volunteer.username, user_url(volunteer.username) %></td>

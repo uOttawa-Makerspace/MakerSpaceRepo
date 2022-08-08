@@ -1,6 +1,4 @@
-$(document).on('turbolinks:load', function () {
-    'use strict';
-
+document.addEventListener('turbolinks:load', function () {
     window.addEventListener('load', function () {
         var forms = document.getElementsByClassName('needs-validation');
         var validation = Array.prototype.filter.call(forms, function (form) {
@@ -10,8 +8,8 @@ $(document).on('turbolinks:load', function () {
                     event.stopPropagation();
                 } else {
                     var total_time_hidden = document.getElementById("total_time_hidden");
-                    var hour = Number($("input#hours").val());
-                    var minutes = Number($("input#minutes").val());
+                    var hour = document.getElementById("hour").value;
+                    var minutes = document.getElementById("minutes").value;
                     var total_time = hour + minutes / 60.0;
                     total_time_hidden.value = total_time;
                 }

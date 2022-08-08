@@ -28,9 +28,9 @@
           <% i = 0 %>
           <%= will_paginate @users_with_volunteer_hours, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @users_with_volunteer_hours.each do |user| %>
-            <tr data-toggle="collapse" id="row<%= i %>" data-target=".row<%= i %>">
+            <tr data-bs-toggle="collapse" id="row<%= i %>" data-bs-target=".row<%= i %>">
               <td class = "username">
-                <%= link_to user.name.capitalize, user_path(user.username) %>
+                <%= link_to user.name.titleize, user_path(user.username) %>
               </td>
               <td class="">
                 <b><%= user.volunteer_hours.approved.sum(:total_time) %></b>

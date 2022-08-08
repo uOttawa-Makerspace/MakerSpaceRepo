@@ -71,7 +71,21 @@ class RepositoriesController < SessionsController
 
   def create
     # @repository = @user.repositories.build(repository_params)
-    @repository = Repository.new(repository_params)
+    
+    @repository = Repository.new(repository_params.except(:categories, :equipments))
+    if params[:categories].present?
+      if params[:categories].all? { |c| c.is_a? String }
+        params[:categories] = params[:categories].map { |c| Category.create(name: c, repository_id: @repository.id) }
+      end
+      @repository.categories = params[:categories]
+    end
+    if params[:equipments].present?
+      if  params[:equipments].all? { |e| e.is_a? String }
+        params[:equipments] = params[:equipments].map { |e| Equipment.create(name: e, repository_id: @repository.id) }
+      end
+      @repository.equipments = params[:equipments]
+    end
+
     @repository.user_id = @user.id
     @repository.users << @user
     @repository.user_username = @user.username
@@ -86,29 +100,43 @@ class RepositoriesController < SessionsController
         end
         @repository.save
       end
-
-      create_photos
-      create_files
-      create_categories
-      create_equipments
-      render json: {redirect_uri: repository_path(@user.username, @repository.slug).to_s}
+      begin 
+        create_photos
+      rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+        Airbrake.notify(e)
+        flash[:alert] = 'Something went wrong while uploading photos, please try again later.'
+        @repository.destroy
+         redirect_to request.path
+      else
+        create_files
+        create_categories
+        create_equipments
+         redirect_to repository_path(@user.username, @repository.slug).to_s
+      end
     else
       render json: @repository.errors['title'].first, status: :unprocessable_entity
     end
   end
 
   def update
+    
     @repository.categories.destroy_all
     @repository.equipments.destroy_all
     update_password
-
-    if @repository.update(repository_params)
-      update_photos
+    if @repository.update(repository_params.except(:categories, :equipments))
       update_files
       create_categories
       create_equipments
-      flash[:notice] = 'Project updated successfully!'
-      render json: {redirect_uri: repository_path(@repository.user_username, @repository.slug).to_s}
+      begin
+        update_photos
+      rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
+        Airbrake.notify(e)
+        flash[:alert_yellow] = 'Something went wrong while uploading photos, try uploading them again later. Other changes have been saved.'
+         redirect_to repository_path(@repository.user_username, @repository.slug).to_s
+      else
+        flash[:notice] = 'Project updated successfully!'
+         redirect_to repository_path(@repository.user_username, @repository.slug).to_s
+      end
     else
       flash[:alert] = 'Unable to apply the changes.'
       render json: @repository.errors['title'].first, status: :unprocessable_entity
@@ -219,7 +247,7 @@ class RepositoriesController < SessionsController
   end
 
   def repository_params
-    params.require(:repository).permit(:title, :description, :license, :user_id, :share_type, :password, :youtube_link, :project_proposal_id)
+    params.require(:repository).permit(:title, :description, :license, :user_id, :share_type, :password, :youtube_link, :project_proposal_id, categories:[], equipments:[])
   end
 
   def comment_filter
@@ -236,7 +264,7 @@ class RepositoriesController < SessionsController
   def create_photos
     if params[:images].present?
       params[:images].first(5).each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size(img.tempfile,raise_on_failure: true)
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end
     end
@@ -262,7 +290,7 @@ class RepositoriesController < SessionsController
 
     if params['images'].present?
       params['images'].each do |img|
-        dimension = FastImage.size(img.tempfile)
+        dimension = FastImage.size(img.tempfile,raise_on_failure: true)
         Photo.create(image: img, repository_id: @repository.id, width: dimension.first, height: dimension.last)
       end
     end
@@ -288,16 +316,16 @@ class RepositoriesController < SessionsController
   end
 
   def create_categories
-    if params[:categories].present?
-      params[:categories].first(5).each do |c|
+    if params[:repository][:categories].present?
+      params[:repository][:categories].first(5).each do |c|
         Category.create(name: c, repository_id: @repository.id)
       end
     end
   end
-
+  
   def create_equipments
-    if params[:equipments].present?
-      params[:equipments].first(5).each do |e|
+    if params[:repository][:equipments].present?
+      params[:repository][:equipments].first(5).each do |e|
         Equipment.create(name: e, repository_id: @repository.id)
       end
     end

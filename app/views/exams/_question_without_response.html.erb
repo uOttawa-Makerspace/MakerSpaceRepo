@@ -1,22 +1,25 @@
-<div class=" text-left word-break">
+<div class=" text-start word-break">
   <h2><b><%= question.description %></b></h2>
 </div>
 
-<div id="questionImageGallery" class="text-center justified-gallery">
+<div class="text-center col-12 justified-gallery">
   <% if question.images.attached? %>
   <% question.images.each do |img| %>
       <a href="#">
-        <%= image_tag(img, alt: 'Image related to the question') %>
+        <%= image_tag(img, alt: 'Image related to the question', class:"d-inline-block mx-auto") %>
       </a>
   <% end %>
 <% end %>
 </div>
 
 <hr>
-<div class="text-left">
+<form class="text-start">
   <% question.answers.randomize_answers.each do |a| %>
-    <div class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
-      <%= a.description %>
+  <div class="form-check">
+    <input name=<%=question.id%> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+    <label class="form-check-label d-block" for=<%= a.id %>>
+    <%= a.description %>
+    </label>
     </div>
   <% end %>
-</div>
+</form>

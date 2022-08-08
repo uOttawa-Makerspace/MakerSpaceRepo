@@ -13,13 +13,13 @@
   <br>
   <h2>Search results for "<%= @query %>"</h2>
   <% if @users.any? %>
-  <%= form_tag bulk_add_certifications_admin_users_path, method: :post do %>
+  <%= form_tag admin_users_path, method: :post do %>
       <% if !@users.any? %>
         <p style="color:gray">There are no users signed in.</p>
       <% else %>
         <% direction = params[:direction] == "asc" ? "desc" : "asc" %>
-        <table class="admin-table">
-          <thead>
+        <table class="admin-table table table-striped">
+          <thead class="table-primary">
             <th><%= check_box_tag 'select-all' %></th>
             <th>
               <%= link_to "Username", :sort => "username", :direction => direction, :q => params[:q], :filter => params[:filter] %>
@@ -50,7 +50,7 @@
           </thead>
           <% @users.each do |user| %>
             <tr>
-              <td><center><%= check_box_tag 'bulk_cert_users[]', user.id %></center></td>
+              <td><center><%= check_box_tag 'bulk_cert_users[]', user.id, class:"form-check-input" %></center></td>
               <td><%= link_to "#{user.username}", admin_user_path(user) %></td>
               <td><%= user.name %></td>
               <td>

@@ -1,6 +1,6 @@
 function validation(){
 	var ret = true;
-	var title = $("input#repository_title");
+	var title = document.getElementById("repository_title").value;
 	$('span.form-error.repo-form').remove();
 	var span = $('<span>').addClass('form-error repo-form');
 	var regex = /^[-a-zA-Z\d\s]*$/;

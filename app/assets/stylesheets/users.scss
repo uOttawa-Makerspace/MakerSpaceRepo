@@ -13,7 +13,7 @@ section#signup, section#login, section#forgot-password {
     }
   }
 
-  .bootstrap-select .dropdown-menu {
+  .form-select .dropdown-menu {
     min-width: auto !important;
     width: 100%;
 
@@ -22,11 +22,11 @@ section#signup, section#login, section#forgot-password {
     }
   }
 
-  .bootstrap-select > .dropdown-toggle {
+  .form-select > .dropdown-toggle {
     width: 100%;
   }
 
-  .form-group.attach {
+  .mb-3.attach {
     .form-control {
       border-radius: 0;
       position: relative;

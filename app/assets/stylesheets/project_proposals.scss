@@ -150,7 +150,7 @@ div.declined{
   padding: 10px;
 }
 
-.form-group.required .control-label:after {
+.mb-3.required .form-label:after {
   content:"*";
   color:red;
   font-size: 25px;
