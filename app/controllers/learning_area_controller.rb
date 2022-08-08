@@ -59,7 +59,7 @@ class LearningAreaController < DevelopmentProgramsController
       rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
         redirect_to learning_area_path(@learning_module.id), alert_yellow: 'Something went wrong while uploading photos, try again later. Other changes have been saved.'
       else
-        redirect_to learning_area_path(@learning_module.id), notice: 'Learning Module has been successfully updated.'
+        redirect_to learning_area_path(@learning_module.id), notice: 'Learning module successfully updated.'
       end
     else
       flash[:alert] = 'Unable to apply the changes.'

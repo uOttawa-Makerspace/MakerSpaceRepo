@@ -55,7 +55,8 @@ class ProficientProjectsController < DevelopmentProgramsController
         redirect_to proficient_project_path(@proficient_project.id), notice: 'Proficient Project successfully created.'
       end
     else
-      render json: @proficient_project.errors['title'].first, status: :unprocessable_entity, alert: 'Something went wrong'
+      flash[:alert] = 'Something went wrong'
+      render json: @proficient_project.errors['title'].first, status: :unprocessable_entity
     end
   end
 
