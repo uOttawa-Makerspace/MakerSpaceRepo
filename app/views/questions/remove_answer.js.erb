@@ -1,1 +1,1 @@
-$('#question-form').html("<%= escape_javascript(render(:partial =>  'question_form'))%>")
+document.getElementById("question-form").innerHTML = "<%= escape_javascript(render(:partial =>  'question_form'))%>"
