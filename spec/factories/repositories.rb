@@ -9,14 +9,30 @@ FactoryBot.define do
     youtube_link { "" }
 
     trait :private do
-      password { "$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2" } # Password : abc
+      password do
+        "$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2"
+      end # Password : abc
       share_type { "private" }
     end
 
     trait :with_repo_files do
       after(:create) do |repo|
-        RepoFile.create(repository_id: repo.id, file: Rack::Test::UploadedFile.new(Rails.root.join('spec/support/assets', 'RepoFile1.pdf'), 'application/pdf'))
-        Photo.create(repository_id: repo.id, image: Rack::Test::UploadedFile.new(Rails.root.join('spec/support/assets', 'avatar.png'), 'image/png'))
+        RepoFile.create(
+          repository_id: repo.id,
+          file:
+            Rack::Test::UploadedFile.new(
+              Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
+              "application/pdf"
+            )
+        )
+        Photo.create(
+          repository_id: repo.id,
+          image:
+            Rack::Test::UploadedFile.new(
+              Rails.root.join("spec/support/assets", "avatar.png"),
+              "image/png"
+            )
+        )
       end
     end
 
@@ -30,8 +46,8 @@ FactoryBot.define do
     end
 
     trait :with_equipement_and_categories do
-      categories { ['Laser', '3D Printing'] }
-      equipments { ['Laser Cutter', '3D Printer'] }
+      categories { ["Laser", "3D Printing"] }
+      equipments { ["Laser Cutter", "3D Printer"] }
     end
 
     trait :broken_link do
@@ -47,14 +63,11 @@ FactoryBot.define do
     end
 
     factory :repository_with_users do
-      transient do
-        users_count { 5 }
-      end
+      transient { users_count { 5 } }
 
       after(:create) do |user, evaluator|
         create_list(:repository, evaluator.user_count, users: [user])
       end
-
     end
   end
 end

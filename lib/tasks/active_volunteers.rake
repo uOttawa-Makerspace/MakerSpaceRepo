@@ -1,19 +1,21 @@
 # frozen_string_literal: true
 
 namespace :active_volunteers do
-  desc 'Check if volunteers are active or not'
+  desc "Check if volunteers are active or not"
   task check_volunteers_status: :environment do
     User.volunteers.find_each do |user|
       program = user.programs.find_by_program_type("Volunteer Program")
-      if (user.last_seen_at.nil? || user.last_seen_at < 2.months.ago) && program.active == true
+      if (user.last_seen_at.nil? || user.last_seen_at < 2.months.ago) &&
+           program.active == true
         program.update(active: false)
-      elsif !user.last_seen_at.nil? && user.last_seen_at > 2.months.ago && program.active == false
+      elsif !user.last_seen_at.nil? && user.last_seen_at > 2.months.ago &&
+            program.active == false
         program.update(active: true)
       end
     end
   end
 
-  desc 'Check if volunteers had at least one task completed'
+  desc "Check if volunteers had at least one task completed"
   task check_volunteers_tasks_performance: :environment do
     User.volunteers.find_each do |user|
       status = []
@@ -22,7 +24,7 @@ namespace :active_volunteers do
         status << vtj.volunteer_task.status
       end
 
-      if status.include?('completed')
+      if status.include?("completed")
         program.update(active: true) if program.active != true
       else
         program.update(active: false) if program.active != false

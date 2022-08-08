@@ -31,5 +31,3 @@ jobs:
           ssh-add config/deploy_id_rsa
           gem install capistrano
           BRANCH=${{ steps.extract_branch.outputs.branch }} bundle exec cap dev_server deploy
-
-

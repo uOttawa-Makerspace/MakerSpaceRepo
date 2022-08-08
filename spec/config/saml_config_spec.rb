@@ -1,20 +1,25 @@
 # frozen_string_literal: true
-require 'rails_helper'
+require "rails_helper"
 
-RSpec.describe 'SamlConfig', type: :configuration do
-  it 'has the expected service providers' do
+RSpec.describe "SamlConfig", type: :configuration do
+  it "has the expected service providers" do
     service_providers = {
-      'wiki.makerepo.com' => {
-        metadata_url: 'https://wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com',
-        response_hosts: %w(en.wiki.makerepo.com fr.wiki.makerepo.com staff.makerepo.com)
+      "wiki.makerepo.com" => {
+        metadata_url:
+          "https://wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com",
+        response_hosts: %w[
+          en.wiki.makerepo.com
+          fr.wiki.makerepo.com
+          staff.makerepo.com
+        ]
       },
-      'rooms.makerepo.com' => {
-        metadata_url: 'https://rooms.makerepo.com/users/auth/saml/metadata',
-        response_hosts: %w(rooms.makerepo.com)
+      "rooms.makerepo.com" => {
+        metadata_url: "https://rooms.makerepo.com/users/auth/saml/metadata",
+        response_hosts: %w[rooms.makerepo.com]
       },
-      'print.makerepo.com' => {
-        metadata_url: 'https://print.makerepo.com/saml/metadata',
-        response_hosts: %w(print.makerepo.com localhost)
+      "print.makerepo.com" => {
+        metadata_url: "https://print.makerepo.com/saml/metadata",
+        response_hosts: %w[print.makerepo.com localhost]
       }
     }
 
@@ -27,7 +32,7 @@ RSpec.describe 'SamlConfig', type: :configuration do
     end
   end
 
-  it 'has expected identification information' do
+  it "has expected identification information" do
     principal = FactoryBot.create(:user)
 
     attributes = {
@@ -46,7 +51,7 @@ RSpec.describe 'SamlConfig', type: :configuration do
     end
   end
 
-  it 'has expected attributes' do
+  it "has expected attributes" do
     principal = FactoryBot.create(:user)
 
     attributes = {
