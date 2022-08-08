@@ -7,6 +7,6 @@ role :db, %w[deploy@server.makerepo.com]
 set :branch, ENV["BRANCH"] if ENV["BRANCH"]
 set :deploy_to, "/var/www/makerrepo-dev"
 set :keep_releases, 1
-set :rbenv_ruby, "2.7.2"
+set :rbenv_ruby, "2.7.3"
 set :maintenance_template_path,
     File.expand_path("../../maintenance/maintenance.html.erb", __FILE__)
