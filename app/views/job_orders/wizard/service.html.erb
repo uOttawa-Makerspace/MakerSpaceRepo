@@ -6,7 +6,7 @@
       <h2>New Job Order (Step 2/4)</h2>
 
       <div class="col-lg-6 mx-auto">
-        <p class="mt-0">Upload your file here</p>
+        <p class="mt-0"><%= @job_order.user_files.attached? ? "Upload additional files here" : "Upload your file(s) here" %></p>
         <div class="custom-file">
           <p><%= @job_type.file_description %></p>
           <%= f.label :user_files, @job_type.file_label, class: '' %>
