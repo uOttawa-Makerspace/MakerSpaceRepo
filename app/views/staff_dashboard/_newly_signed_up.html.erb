@@ -1,29 +1,20 @@
-
-        <thead class="table-primary">
-        <tr>
-          <th class="name-header">Name
-            <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-          <th class="email-header">Email
-            <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-          <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
-        </tr>
-        </thead>
-        <% @users.each do |user| %>
-          <tr class="add-rows" id="<%= return_no_waiver_id(user) %>">
+<tbody id="newly-signed-up">
+    <% @users.each do |user| %>
+        <tr class="add-rows" id="<%= return_no_waiver_id(user) %>">
             <td class="add-username-cell">
-              <%= link_to(content_tag(:add_username, user.name), user_url(user.username)) %>
+                <%= link_to(content_tag(:add_username, user.name), user_url(user.username)) %>
             </td>
-
             <td class="email-cell">
-              <%= user.email %>
+                <%= user.email %>
             </td>
             <td class="action-cell" >
-              <% if @space.signed_in_users.include?(user) %>
-                <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button', remote: true %>
-              <% else %>
-                <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button', remote: true %>
-              <% end %>
+                <% if @space.signed_in_users.include?(user) %>
+                    <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button', remote: true %>
+                <% else %>
+                    <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button', remote: true %>
+                <% end %>
             </td>
-          </tr>
-        <% end %>
-        <br />
+        </tr>
+    <% end %>
+</tbody>
+<br />
