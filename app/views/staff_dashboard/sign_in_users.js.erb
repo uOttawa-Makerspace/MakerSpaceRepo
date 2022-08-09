@@ -1,10 +1,4 @@
-fetch(location.href).then(r=>r.text()).then(p =>{
-    let page = new DOMParser().parseFromString(p, 'text/html')
-    let pageSignedIn = page.getElementById("table-js-signed-in").innerHTML;
-    let pageSignedOut = page.getElementById("table-js-signed-out").innerHTML;
-    let pageNewlySignedUp = page.getElementById("newly-signed-up").innerHTML;
-    document.getElementById("table-js-signed-in").innerHTML = pageSignedIn;
-    document.getElementById("table-js-signed-out").innerHTML = pageSignedOut;
-    document.getElementById("newly-signed-up").innerHTML = pageNewlySignedUp;
-    document.getElementById("user-count").innerHTML = "<p id='user-count' class='text-center'>Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>"
-});
+document.getElementById('table-js-signed-out').innerHTML = "<%= escape_javascript(render(partial: 'signed_out_table', locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space})) %>"
+document.getElementById('table-js-signed-in').innerHTML = "<%= escape_javascript(render(partial: 'signed_in_table', locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space})) %>"
+document.getElementById('newly-signed-up').innerHTML = "<%= escape_javascript(render(partial: 'newly_signed_up', locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space})) %>"
+document.getElementById("user-count").innerHTML = "<p id='user-count' class='text-center'>Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>"
