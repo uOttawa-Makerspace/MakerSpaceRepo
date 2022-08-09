@@ -10,7 +10,7 @@ class User < ApplicationRecord
   has_and_belongs_to_many :repositories, dependent: :destroy
   has_many :certifications, class_name: "Certification", foreign_key: 'user_id',dependent: :destroy
   has_many :demotion_staff, class_name: "Certification", foreign_key: 'demotion_staff_id',dependent: :destroy
-  has_many :lab_sessions, dependent: :destroy
+  has_many :lab_sessions, -> { order(sign_out_time: :desc) }, dependent: :destroy
   has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories
   has_many :project_proposals

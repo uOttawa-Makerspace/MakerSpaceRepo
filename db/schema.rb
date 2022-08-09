@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_07_11_154732) do
+ActiveRecord::Schema.define(version: 2022_08_09_013906) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -431,6 +431,7 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "level", default: "Beginner"
+    t.integer "order"
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|
@@ -923,6 +924,9 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.datetime "last_signed_in_time"
     t.string "otp_secret"
     t.integer "last_otp_at"
+    t.index "lower(f_unaccent((email)::text)) varchar_pattern_ops", name: "index_users_email_lower"
+    t.index "lower(f_unaccent((name)::text)) varchar_pattern_ops", name: "index_users_name_lower"
+    t.index "lower(f_unaccent((username)::text)) varchar_pattern_ops", name: "index_users_username_lower"
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
