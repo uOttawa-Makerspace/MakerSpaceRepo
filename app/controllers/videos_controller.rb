@@ -9,8 +9,10 @@ class VideosController < DevelopmentProgramsController
   end
 
   def new
-    @proficient_projects = ProficientProject.all.order(created_at: :asc).pluck(:title, :id)
-    @learning_modules = LearningModule.all.order(created_at: :asc).pluck(:title, :id)
+    @proficient_projects =
+      ProficientProject.all.order(created_at: :asc).pluck(:title, :id)
+    @learning_modules =
+      LearningModule.all.order(created_at: :asc).pluck(:title, :id)
     @new_video = Video.new
   end
 
@@ -41,7 +43,7 @@ class VideosController < DevelopmentProgramsController
     video = videos.find(params[:video_id])
     video.purge
     @video.destroy unless @video.video.attached?
-    flash[:notice] = 'Video Deleted.'
+    flash[:notice] = "Video Deleted."
     redirect_to videos_path
   end
 
@@ -52,13 +54,17 @@ class VideosController < DevelopmentProgramsController
   end
 
   def video_params
-    params.require(:video).permit(:proficient_project_id, :learning_module_id, video: [])
+    params.require(:video).permit(
+      :proficient_project_id,
+      :learning_module_id,
+      video: []
+    )
   end
 
   def grant_access_admin
     unless current_user.admin?
       redirect_to root_path
-      flash[:alert] = 'You cannot access this area.'
+      flash[:alert] = "You cannot access this area."
     end
   end
 end

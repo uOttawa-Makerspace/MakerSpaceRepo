@@ -1,5 +1,5 @@
 @import "lib";
-@import './shared/variables';
+@import "./shared/variables";
 
 section#home-header {
   overflow: hidden;
@@ -42,7 +42,6 @@ section#home-header {
     @media (max-width: 575.98px) {
       font-size: 3rem;
     }
-
   }
 
   .container {
@@ -139,7 +138,9 @@ section#home-categories {
         font-size: 1.25rem;
       }
 
-      &:hover, &:focus, &:active {
+      &:hover,
+      &:focus,
+      &:active {
         color: white;
         text-decoration: none;
         outline: none;

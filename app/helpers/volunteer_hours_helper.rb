@@ -8,16 +8,16 @@ module VolunteerHoursHelper
   def return_approval(approval)
     case approval
     when nil
-      'Not Accessed'
+      "Not Accessed"
     when true
-      'Approved'
+      "Approved"
     when false
-      'Not Approved'
+      "Not Approved"
     end
   end
 
   def define_redirect(role)
-    if role == 'volunteer'
+    if role == "volunteer"
       redirect_to volunteer_hours_path
     else
       redirect_to volunteer_hour_requests_volunteer_hours_path

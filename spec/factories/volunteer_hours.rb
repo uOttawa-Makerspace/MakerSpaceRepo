@@ -1,7 +1,6 @@
-require 'faker'
+require "faker"
 
 FactoryBot.define do
-
   factory :volunteer_hour do
     association :user, :volunteer_with_volunteer_program
     association :volunteer_task
@@ -20,16 +19,5 @@ FactoryBot.define do
       total_time { 10 }
       approval { nil }
     end
-
   end
-
 end
-
-
-
-
-
-
-
-
-

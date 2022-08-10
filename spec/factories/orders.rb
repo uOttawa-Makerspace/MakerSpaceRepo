@@ -10,10 +10,7 @@ FactoryBot.define do
     end
 
     trait :with_item do
-      after(:create) do |order|
-        create(:order_item, order_id: order.id)
-      end
+      after(:create) { |order| create(:order_item, order_id: order.id) }
     end
-
   end
 end

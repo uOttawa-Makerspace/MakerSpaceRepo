@@ -1,7 +1,8 @@
 class Admin::JobTypesController < AdminAreaController
   before_action :set_job_type, only: %i[edit update]
 
-  def index; end
+  def index
+  end
 
   def new
     @job_type = JobType.new
@@ -17,13 +18,14 @@ class Admin::JobTypesController < AdminAreaController
     redirect_to settings_job_orders_path
   end
 
-  def edit; end
+  def edit
+  end
 
   def update
     if @job_type.update(job_type_params)
-      flash[:notice] = 'The Job Type has been updated'
+      flash[:notice] = "The Job Type has been updated"
     else
-      flash[:alert] = 'Something went wrong while updating the Job Type'
+      flash[:alert] = "Something went wrong while updating the Job Type"
     end
     redirect_to settings_job_orders_path
   end
@@ -40,11 +42,15 @@ class Admin::JobTypesController < AdminAreaController
   private
 
   def job_type_params
-    params.require(:job_type).permit(:name, :comments, :service_fee, :multiple_files)
+    params.require(:job_type).permit(
+      :name,
+      :comments,
+      :service_fee,
+      :multiple_files
+    )
   end
 
   def set_job_type
     @job_type = JobType.find(params[:id])
   end
 end
-

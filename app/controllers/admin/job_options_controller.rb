@@ -1,7 +1,8 @@
 class Admin::JobOptionsController < AdminAreaController
   before_action :set_job_option, only: %i[edit update destroy]
 
-  def index; end
+  def index
+  end
 
   def new
     @job_option = JobOption.new
@@ -17,22 +18,23 @@ class Admin::JobOptionsController < AdminAreaController
     redirect_to settings_job_orders_path
   end
 
-  def edit; end
+  def edit
+  end
 
   def update
     if @job_option.update(job_option_params)
-      flash[:notice] = 'The Service Group has been updated'
+      flash[:notice] = "The Service Group has been updated"
     else
-      flash[:alert] = 'Something went wrong while updating the Service Group'
+      flash[:alert] = "Something went wrong while updating the Service Group"
     end
     redirect_to settings_job_orders_path
   end
 
   def destroy
     if @job_option.destroy
-      flash[:notice] = 'The option has been deleted successfully'
+      flash[:notice] = "The option has been deleted successfully"
     else
-      flash[:alert] = 'An error occurred while deleting the option.'
+      flash[:alert] = "An error occurred while deleting the option."
     end
     redirect_to settings_job_orders_path
   end
@@ -40,7 +42,13 @@ class Admin::JobOptionsController < AdminAreaController
   private
 
   def job_option_params
-    params.require(:job_option).permit(:name, :description, :need_files, :fee, job_type_ids: [])
+    params.require(:job_option).permit(
+      :name,
+      :description,
+      :need_files,
+      :fee,
+      job_type_ids: []
+    )
   end
 
   def set_job_option

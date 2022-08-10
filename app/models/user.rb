@@ -8,8 +8,14 @@ class User < ApplicationRecord
   has_many :upvotes, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_and_belongs_to_many :repositories, dependent: :destroy
-  has_many :certifications, class_name: "Certification", foreign_key: 'user_id',dependent: :destroy
-  has_many :demotion_staff, class_name: "Certification", foreign_key: 'demotion_staff_id',dependent: :destroy
+  has_many :certifications,
+           class_name: "Certification",
+           foreign_key: "user_id",
+           dependent: :destroy
+  has_many :demotion_staff,
+           class_name: "Certification",
+           foreign_key: "demotion_staff_id",
+           dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
   has_and_belongs_to_many :training_sessions
   accepts_nested_attributes_for :repositories
@@ -44,71 +50,116 @@ class User < ApplicationRecord
   has_many :job_orders, dependent: :destroy
   has_many :job_order_statuses
 
-  validates :avatar, file_content_type: {
-      allow: ['image/jpeg', 'image/png', 'image/gif', 'image/x-icon', 'image/svg+xml'],
-      if: -> {avatar.attached?},
-  }
+  validates :avatar,
+            file_content_type: {
+              allow: %w[
+                image/jpeg
+                image/png
+                image/gif
+                image/x-icon
+                image/svg+xml
+              ],
+              if: -> { avatar.attached? }
+            }
 
-  validates :name,
-            presence: true,
-            length: { maximum: 50 }
+  validates :name, presence: true, length: { maximum: 50 }
 
   validates :username,
             presence: true,
             uniqueness: true,
-            format: { with: /\A[a-zA-ZÀ-ÿ\d]*\z/ },
-            length: { maximum: 20 }
+            format: {
+              with: /\A[a-zA-ZÀ-ÿ\d]*\z/
+            },
+            length: {
+              maximum: 20
+            }
 
-  validates :email,
-            presence: true,
-            uniqueness: true
+  validates :email, presence: true, uniqueness: true
 
-  validates :how_heard_about_us,
-            length: { maximum: 250 }
+  validates :how_heard_about_us, length: { maximum: 250 }
 
   validates :read_and_accepted_waiver_form,
-            inclusion: { in: [true] }, on: :create
+            inclusion: {
+              in: [true]
+            },
+            on: :create
 
   validates :password,
             presence: true,
             confirmation: true,
-            format: { with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/ }
+            format: {
+              with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/
+            }
 
   validates :gender,
             presence: true,
-            inclusion: { in: ['Male', 'Female', 'Other', 'Prefer not to specify', 'unknown'] }
+            inclusion: {
+              in: [
+                "Male",
+                "Female",
+                "Other",
+                "Prefer not to specify",
+                "unknown"
+              ]
+            }
 
-  validates :faculty,
-            presence: true, if: :student?
+  validates :faculty, presence: true, if: :student?
 
-  validates :program,
-            presence: true, if: :student?
+  validates :program, presence: true, if: :student?
 
-  validates :year_of_study,
-            presence: true, if: :student?
+  validates :year_of_study, presence: true, if: :student?
 
-  validates :student_id,
-            presence: true, if: :student?
+  validates :student_id, presence: true, if: :student?
 
   validates :identity,
             presence: true,
-            inclusion: { in: %w[grad undergrad faculty_member community_member unknown] }
+            inclusion: {
+              in: %w[grad undergrad faculty_member community_member unknown]
+            }
 
-
-  scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
-  scope :between_dates_picked, ->(start_date, end_date) { where('created_at BETWEEN ? AND ? ', start_date, end_date) }
-  scope :frequency_between_dates, ->(start_date, end_date) { joins(lab_sessions: :space).where('lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?', start_date, end_date, 'Makerspace') }
+  scope :no_waiver_users, -> { where("read_and_accepted_waiver_form = false") }
+  scope :between_dates_picked,
+        ->(start_date, end_date) {
+          where("created_at BETWEEN ? AND ? ", start_date, end_date)
+        }
+  scope :frequency_between_dates,
+        ->(start_date, end_date) {
+          joins(lab_sessions: :space).where(
+            "lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?",
+            start_date,
+            end_date,
+            "Makerspace"
+          )
+        }
   scope :active, -> { where(active: true) }
-  scope :unknown_identity, -> { where(identity: 'unknown') }
-  scope :created_at_month, -> (month) { where("DATE_PART('month', created_at) = ?", month) }
-  scope :not_created_this_year, -> { where.not(created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year) }
-  scope :created_this_year, -> { where(created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year) }
-  scope :staff, -> { where(role: ['admin', 'staff']) }
-  scope :students, -> { where(identity: ['undergrad', 'grad']) }
-  scope :volunteers, -> { joins(:programs).where(programs: { program_type: Program::VOLUNTEER }) }
+  scope :unknown_identity, -> { where(identity: "unknown") }
+  scope :created_at_month,
+        ->(month) { where("DATE_PART('month', created_at) = ?", month) }
+  scope :not_created_this_year,
+        -> {
+          where.not(
+            created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year
+          )
+        }
+  scope :created_this_year,
+        -> {
+          where(
+            created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year
+          )
+        }
+  scope :staff, -> { where(role: %w[admin staff]) }
+  scope :students, -> { where(identity: %w[undergrad grad]) }
+  scope :volunteers,
+        -> {
+          joins(:programs).where(programs: { program_type: Program::VOLUNTEER })
+        }
 
   def token(exp = 14.days.from_now.to_i)
-    JWT.encode({user_id: id, exp: exp}, Rails.application.credentials.secret_key_base, 'HS256')
+    JWT.encode(
+      { user_id: id, exp: exp },
+      Rails.application.credentials.secret_key_base,
+      "HS256"
+    )
   end
 
   def display_avatar
@@ -121,7 +172,10 @@ class User < ApplicationRecord
   end
 
   def self.username_or_email(username_email)
-    User.where(username: username_email).or(User.where('lower(email) = ?', username_email.downcase)).first
+    User
+      .where(username: username_email)
+      .or(User.where("lower(email) = ?", username_email.downcase))
+      .first
   end
 
   def pword
@@ -139,15 +193,15 @@ class User < ApplicationRecord
   end
 
   def student?
-    identity == 'grad' || identity == 'undergrad'
+    identity == "grad" || identity == "undergrad"
   end
 
   def admin?
-    role.eql?('admin')
+    role.eql?("admin")
   end
 
   def staff?
-    role.eql?('staff') || role.eql?('admin')
+    role.eql?("staff") || role.eql?("admin")
   end
 
   def volunteer?
@@ -167,37 +221,30 @@ class User < ApplicationRecord
   end
 
   def internal?
-    identity == 'faculty_member' || identity == 'grad' || identity == 'undergrad'
+    identity == "faculty_member" || identity == "grad" ||
+      identity == "undergrad"
   end
 
   def self.to_csv(attributes)
-    CSV.generate do |csv|
-      attributes.each do |row|
-        csv << row
-      end
-    end
+    CSV.generate { |csv| attributes.each { |row| csv << row } }
   end
 
   def location
-    return 'no sign in yet' if lab_sessions.last.equal? nil
+    return "no sign in yet" if lab_sessions.last.equal? nil
 
     lab_sessions.last.space.name
   end
 
   def get_certifications_names
     cert = []
-    certifications.each do |c|
-      cert << c.training.name
-    end
+    certifications.each { |c| cert << c.training.name }
     cert
   end
 
   def get_volunteer_tasks_from_volunteer_joins
     volunteer_tasks = []
     vtjs = volunteer_task_joins.active
-    vtjs.each do |vtj|
-      volunteer_tasks << vtj.volunteer_task
-    end
+    vtjs.each { |vtj| volunteer_tasks << vtj.volunteer_task }
     volunteer_tasks
   end
 
@@ -214,19 +261,18 @@ class User < ApplicationRecord
     certifications.each do |cert|
       training_ids << cert.training_session.training.id
     end
-    path = if training_ids.include?(training_id)
-             'badges/bronze.png'
-           else
-             'badges/none.png'
-           end
+    path =
+      if training_ids.include?(training_id)
+        "badges/bronze.png"
+      else
+        "badges/none.png"
+      end
     path
   end
 
   def remaining_trainings
     trainings = []
-    certifications.each do |cert|
-      trainings << cert.training.id
-    end
+    certifications.each { |cert| trainings << cert.training.id }
     Training.all.where.not(id: trainings)
   end
 
@@ -254,15 +300,18 @@ class User < ApplicationRecord
   end
 
   def highest_badge(training)
-    badges = self.badges.joins(:certification => :training_session).where(training_sessions: {training_id: training.id})
-    if badges.where(training_sessions: {level: 'Advanced'}).present?
-      badge = badges.where(training_sessions: {level: 'Advanced'}).last
-    elsif badges.where(training_sessions: {level: 'Intermediate'}).present?
-      badge = badges.where(training_sessions: {level: 'Intermediate'}).last
-    elsif badges.where(training_sessions: {level: 'Beginner'}).present?
-      badge = badges.where(training_sessions: {level: 'Beginner'}).last
+    badges =
+      self
+        .badges
+        .joins(certification: :training_session)
+        .where(training_sessions: { training_id: training.id })
+    if badges.where(training_sessions: { level: "Advanced" }).present?
+      badge = badges.where(training_sessions: { level: "Advanced" }).last
+    elsif badges.where(training_sessions: { level: "Intermediate" }).present?
+      badge = badges.where(training_sessions: { level: "Intermediate" }).last
+    elsif badges.where(training_sessions: { level: "Beginner" }).present?
+      badge = badges.where(training_sessions: { level: "Beginner" }).last
     end
     badge
   end
-
 end

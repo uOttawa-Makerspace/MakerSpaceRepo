@@ -1,7 +1,7 @@
 $pswp__assets-path: "~photoswipe/src/css/default-skin/";
 
-$color-marker-complete: #00A407 !default;
-$color-marker-active: #FF9900 !default;
+$color-marker-complete: #00a407 !default;
+$color-marker-active: #ff9900 !default;
 $color-marker: #aaa !default;
 $marker-size: 32px !default;
 $color-marker-hover: #6e6e6e;
@@ -13,7 +13,7 @@ $table-accent-bg: #d6ebeb;
 @import "~photoswipe/src/css/main";
 @import "~photoswipe/src/css/default-skin/default-skin";
 // @import "~progress-tracker/src/styles/progress-tracker";
-@import 'toastr/build/toastr.min';
+@import "toastr/build/toastr.min";
 @import "~flatpickr/dist/flatpickr";
 @import "~@fullcalendar/common/main";
 @import "~tom-select/dist/css/tom-select.bootstrap4";
@@ -25,6 +25,6 @@ $table-accent-bg: #d6ebeb;
 // }
 
 .turbolinks-progress-bar {
-    background-color: var(--primary);
+  background-color: var(--primary);
   // background-color: theme-color("primary");
 }

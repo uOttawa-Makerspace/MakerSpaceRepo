@@ -34,7 +34,6 @@ three:
   share_type: private
   password: $2a$10$CdKIia2HsjiFqYWtmDbV2ed4SY2Yn0oU.JdcIzPq09FSg71yZxIzq
 
-
 # invalid repository
 #doesn't have any photos
 four:
@@ -46,8 +45,6 @@ four:
   user_username: bob
   category: other-projects
   share_type: public
-
-
 
 gng2101repo:
   id: 5
@@ -66,7 +63,6 @@ gng1103repo:
   slug: gng-1103sopmeprojectname
   user_username: bob
   share_type: public
-
 
 seven:
   id: 7

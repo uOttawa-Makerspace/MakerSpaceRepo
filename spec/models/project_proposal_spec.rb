@@ -1,82 +1,90 @@
-require 'rails_helper'
+require "rails_helper"
 include ActiveModel::Serialization
 
 RSpec.describe ProjectProposal, type: :model do
-
-  describe 'Association' do
-    context 'has_many' do
+  describe "Association" do
+    context "has_many" do
       it { should have_many(:categories) }
       it { should have_many(:project_joins) }
       it { should have_many(:repositories) }
     end
 
-    context 'belongs_to' do
+    context "belongs_to" do
       it { should belong_to(:user) }
     end
   end
 
-  describe 'validations' do
+  describe "validations" do
     context "title" do
       it { should_not allow_value("gds%%$32").for(:title) }
       it { should allow_value("johndoe").for(:title) }
-      it { should validate_presence_of(:title).with_message("Project title is required.") }
+      it do
+        should validate_presence_of(:title).with_message(
+                 "Project title is required."
+               )
+      end
     end
 
     context "email" do
-      it { should validate_presence_of(:email).with_message("Your email is required.") }
+      it do
+        should validate_presence_of(:email).with_message(
+                 "Your email is required."
+               )
+      end
     end
   end
 
   describe "Before save" do
-    context 'youtube_link' do
-      it 'should make youtube_link nil' do
+    context "youtube_link" do
+      it "should make youtube_link nil" do
         pp = create(:project_proposal, :normal)
         expect(pp.youtube_link).to be(nil)
       end
 
-      it 'should return nil (bad link)' do
+      it "should return nil (bad link)" do
         pp = create(:project_proposal, :bad_link)
         expect(pp.youtube_link).to be(nil)
       end
 
-      it 'should return nil (good link)' do
+      it "should return nil (good link)" do
         pp = create(:project_proposal, :good_link)
-        expect(pp.youtube_link).to eq("https://www.youtube.com/watch?v=AbcdeFGHIJLK")
+        expect(pp.youtube_link).to eq(
+          "https://www.youtube.com/watch?v=AbcdeFGHIJLK"
+        )
       end
     end
   end
 
   before :all do
-    3.times{ create(:project_proposal, :normal) }
+    3.times { create(:project_proposal, :normal) }
     2.times { create(:project_proposal, :approved) }
     create(:project_proposal, :not_approved)
   end
 
   describe "scopes" do
     context "#approved" do
-      it 'should return all approved project proposals' do
+      it "should return all approved project proposals" do
         expect(ProjectProposal.approved.count).to eq(2)
       end
     end
   end
 
-  describe 'Methods' do
-    context '#approval_status' do
-      it 'should return No (not approved)' do
+  describe "Methods" do
+    context "#approval_status" do
+      it "should return No (not approved)" do
         pp = ProjectProposal.where(approved: 0).first
-        expect(pp.approval_status).to eq('No')
+        expect(pp.approval_status).to eq("No")
       end
 
-      it 'should return Yes (approved)' do
+      it "should return Yes (approved)" do
         pp = ProjectProposal.where(approved: 1).first
-        expect(pp.approval_status).to eq('Yes')
+        expect(pp.approval_status).to eq("Yes")
       end
 
-      it 'should return Not validated (approved = nil)' do
+      it "should return Not validated (approved = nil)" do
         pp = ProjectProposal.where(approved: nil).first
-        expect(pp.approval_status).to eq('Not validated')
+        expect(pp.approval_status).to eq("Not validated")
       end
     end
   end
-
 end

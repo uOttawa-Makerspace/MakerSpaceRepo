@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'test_helper'
+require "test_helper"
 
 class GettingStartedControllerTest < ActionController::TestCase
   # test "should get setting_up_account" do

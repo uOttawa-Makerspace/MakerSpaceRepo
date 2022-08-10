@@ -4,29 +4,34 @@ Rails.application.routes.draw do
   resources :price_rules, only: %i[index new create destroy edit update]
   resources :discount_codes, only: %i[new index create]
   resources :custom_webhooks do
-    collection do
-      post :orders_paid
-    end
+    collection { post :orders_paid }
   end
 
   resources :videos, only: %i[index new create destroy]
-  get 'videos/:id/download/:filename', to: 'videos#download', constraints: { filename: /.+/ }, as: 'download_video'
+  get "videos/:id/download/:filename",
+      to: "videos#download",
+      constraints: {
+        filename: /.+/
+      },
+      as: "download_video"
 
-  require 'sidekiq/web'
+  require "sidekiq/web"
   Sidekiq::Web.use Rack::Auth::Basic do |username, password|
-    get_username = Rails.application.credentials[Rails.env.to_sym][:sidekiq][:username] || 'adam'
-    get_password = Rails.application.credentials[Rails.env.to_sym][:sidekiq][:password] || 'Password1'
+    get_username =
+      Rails.application.credentials[Rails.env.to_sym][:sidekiq][:username] ||
+        "adam"
+    get_password =
+      Rails.application.credentials[Rails.env.to_sym][:sidekiq][:password] ||
+        "Password1"
     username == get_username && password == get_password
   end
-  mount Sidekiq::Web => '/sidekiq'
+  mount Sidekiq::Web => "/sidekiq"
 
-  mount StripeEvent::Engine, at: '/stripe/webhooks'
+  mount StripeEvent::Engine, at: "/stripe/webhooks"
 
-  resources :project_kits, only: [:index, :new, :create, :destroy] do
+  resources :project_kits, only: %i[index new create destroy] do
     get :mark_delivered
-    collection do
-      get :populate_kit_users
-    end
+    collection { get :populate_kit_users }
   end
 
   resources :cc_moneys, only: [:index] do
@@ -38,16 +43,17 @@ Rails.application.routes.draw do
 
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
-    get :revoke, path: 'revoke'
+    get :revoke, path: "revoke"
   end
 
   resources :orders, only: %i[index create destroy]
 
-  get '/saml/auth' => 'saml_idp#login'
-  get '/saml/metadata' => 'saml_idp#metadata'
-  post '/saml/auth' => 'saml_idp#auth'
+  get "/saml/auth" => "saml_idp#login"
+  get "/saml/metadata" => "saml_idp#metadata"
+  post "/saml/auth" => "saml_idp#auth"
 
-  resources :print_orders, only: %i[index create update new destroy edit show] do
+  resources :print_orders,
+            only: %i[index create update new destroy edit show] do
     get :edit_approval
     collection do
       get :index_new
@@ -75,8 +81,8 @@ Rails.application.routes.draw do
       get :settings
       get :user_magic_approval
       patch :user_magic_approval_confirmation
-      post '/new' => "job_orders#new"
-      patch '/new' => "job_orders#new"
+      post "/new" => "job_orders#new"
+      patch "/new" => "job_orders#new"
     end
   end
 
@@ -101,123 +107,126 @@ Rails.application.routes.draw do
     end
   end
 
-  root 'static_pages#home'
+  root "static_pages#home"
 
   # STATIC PAGES
-  namespace :static_pages, path: '/', as: nil do
-    get 'forgot_password'
-    patch 'reset_password'
-    get 'terms_of_service', as: 'tos'
-    get 'hours'
-    get 'about'
-    get 'contact'
-    get 'calendar'
-    get 'report_repository/:repository_id', :as => 'report_repository', :action => 'report_repository'
-    get 'volunteer_program_info'
-    get 'development_program_info'
+  namespace :static_pages, path: "/", as: nil do
+    get "forgot_password"
+    patch "reset_password"
+    get "terms_of_service", as: "tos"
+    get "hours"
+    get "about"
+    get "contact"
+    get "calendar"
+    get "report_repository/:repository_id",
+        as: "report_repository",
+        action: "report_repository"
+    get "volunteer_program_info"
+    get "development_program_info"
   end
 
   # RFID
   namespace :rfid do
     get :get_unset_rfids
-    post 'card_number'
+    post "card_number"
   end
 
   # SEARCH PAGES
-  namespace :search, path: '/', as: nil do
-    get 'explore'
-    get 'search'
-    get 'category/:slug', :as => 'category', :action => 'category'
-    get 'category/:slug/featured', :as => 'featured', :action => 'featured'
-    get 'equipment/:slug', :as => 'equipment', :action => 'equipment'
+  namespace :search, path: "/", as: nil do
+    get "explore"
+    get "search"
+    get "category/:slug", as: "category", action: "category"
+    get "category/:slug/featured", as: "featured", action: "featured"
+    get "equipment/:slug", as: "equipment", action: "equipment"
   end
 
   # TEMPLATE
   namespace :template do
-    get 'file'
-    get 'category'
-    get 'equipment'
-    get 'certification'
-    get 'comment'
+    get "file"
+    get "category"
+    get "equipment"
+    get "certification"
+    get "comment"
   end
 
   # SESSION
-  namespace :sessions, path: '/', as: nil do
-    post 'login_authentication'
-    get 'logout'
-    get 'login'
-    get 'resend_email_confirmation'
-    get 'check_signed_in'
+  namespace :sessions, path: "/", as: nil do
+    post "login_authentication"
+    get "logout"
+    get "login"
+    get "resend_email_confirmation"
+    get "check_signed_in"
   end
 
   # GITHUB
   namespace :github do
-    get 'authorize'
-    get 'callback'
-    get 'unauthorize'
-    get 'repositories'
+    get "authorize"
+    get "callback"
+    get "unauthorize"
+    get "repositories"
   end
 
   # SETTING
   namespace :settings do
-    get 'profile'
-    get 'admin'
+    get "profile"
+    get "admin"
   end
 
-  get 'help', to: 'help#main'
-  put 'send_email', to: 'help#send_email'
+  get "help", to: "help#main"
+  put "send_email", to: "help#send_email"
 
   namespace :licenses do
-    get 'common_creative_attribution', as: 'cca'
-    get 'common_creative_attribution_share_alike', as: 'ccasa'
-    get 'common_creative_attribution_no_derivatives', as: 'ccand'
-    get 'common_creative_attribution_non_commercial', as: 'ccanc'
-    get 'attribution_non_commercial_share_alike', as: 'ancsa'
-    get 'attribution_non_commercial_no_derivatives', as: 'ancnd'
+    get "common_creative_attribution", as: "cca"
+    get "common_creative_attribution_share_alike", as: "ccasa"
+    get "common_creative_attribution_no_derivatives", as: "ccand"
+    get "common_creative_attribution_non_commercial", as: "ccanc"
+    get "attribution_non_commercial_share_alike", as: "ancsa"
+    get "attribution_non_commercial_no_derivatives", as: "ancnd"
   end
 
-  namespace :getting_started, path: 'getting-started' do
-    get 'setting-up-account', as: 'sua'
-    get 'creating-repository', as: 'cr'
+  namespace :getting_started, path: "getting-started" do
+    get "setting-up-account", as: "sua"
+    get "creating-repository", as: "cr"
   end
 
   namespace :admin do
-    get '/', :as => 'index', :action => 'index'
+    get "/", as: "index", action: "index"
 
     resources :announcements
 
     resources :badge_templates, only: %i[index edit update]
 
-    resources :job_service_groups, only: %i[index new create edit update destroy]
+    resources :job_service_groups,
+              only: %i[index new create edit update destroy]
     resources :job_services, only: %i[index new create edit update destroy]
     resources :job_options, only: %i[index new create edit update destroy]
     resources :job_type_extras, only: %i[index new create edit update destroy]
     resources :job_types, only: %i[index new create edit update]
 
-    get 'manage_badges'
+    get "manage_badges"
 
     namespace :report_generator do
-      get '/', :as => 'index', :action => 'index'
-      post '/generate', :as => 'generate', :action => 'generate', format: :xlsx
+      get "/", as: "index", action: "index"
+      post "/generate", as: "generate", action: "generate", format: :xlsx
       get :popular_hours
       get :popular_hours_per_period
     end
 
     resources :users, only: %i[index edit update show] do
       collection do
-        get 'search'
+        get "search"
         #post 'bulk_add_certifications'
-        patch 'set_role'
-        delete 'delete_repository'
-        delete 'delete_project_proposal'
-        delete 'delete_user'
-        get 'manage_roles'
+        patch "set_role"
+        delete "delete_repository"
+        delete "delete_project_proposal"
+        delete "delete_user"
+        get "manage_roles"
       end
     end
 
     resources :spaces, only: %i[index create edit] do
-      delete '/edit/', :as => 'destroy', :action => 'destroy'
-      post '/edit/', :as => 'update_name', :action => 'update_name'
+      delete "/edit/", as: "destroy", action: "destroy"
+      post "/edit/", as: "update_name", action: "update_name"
 
       collection do
         post :update_max_capacity
@@ -249,30 +258,27 @@ Rails.application.routes.draw do
     resources :contact_infos
 
     resources :training_sessions do
-      get '/', :as => 'index', :action => 'index'
+      get "/", as: "index", action: "index"
 
-      member do
-        patch 'update'
-      end
+      member { patch "update" }
     end
 
     resources :settings, only: [:index] do
       collection do
-
-        post 'add_category'
-        post 'add_area'
-        post 'add_printer'
+        post "add_category"
+        post "add_area"
+        post "add_printer"
         # post 'rename_category'
-        patch 'update_i_printed_it'
-        post 'remove_category'
-        post 'remove_area'
-        post 'remove_printer'
-        post 'add_equipment'
-        post 'rename_equipment'
-        post 'remove_equipment'
-        post 'submit_pi'
-        post 'remove_pi'
-        get 'pin_unpin_repository'
+        patch "update_i_printed_it"
+        post "remove_category"
+        post "remove_area"
+        post "remove_printer"
+        post "add_equipment"
+        post "rename_equipment"
+        post "remove_equipment"
+        post "submit_pi"
+        post "remove_pi"
+        get "pin_unpin_repository"
       end
     end
 
@@ -287,25 +293,25 @@ Rails.application.routes.draw do
 
   namespace :staff do
     resources :training_sessions do
-      get '/', :as => 'index', :action => 'index', on: :collection
+      get "/", as: "index", action: "index", on: :collection
       member do
-        post 'certify_trainees'
-        delete 'revoke_certification'
-        get 'training_report'
+        post "certify_trainees"
+        delete "revoke_certification"
+        get "training_report"
       end
     end
   end
 
   namespace :staff_dashboard do
-    get '/', :as => 'index', :action => 'index'
-    get 'search'
-    get 'present_users_report'
-    put '/change_space', :as => 'change_space', :action => 'change_space'
-    put '/add_users', :as => 'sign_in_users', :action => 'sign_in_users'
-    put '/remove_users', :as => 'sign_out_users', :action => 'sign_out_users'
-    put 'link_rfid'
-    put 'unlink_rfid'
-    get 'sign_out_all_users'
+    get "/", as: "index", action: "index"
+    get "search"
+    get "present_users_report"
+    put "/change_space", as: "change_space", action: "change_space"
+    put "/add_users", as: "sign_in_users", action: "sign_in_users"
+    put "/remove_users", as: "sign_out_users", action: "sign_out_users"
+    put "link_rfid"
+    put "unlink_rfid"
+    get "sign_out_all_users"
     get :user_profile
     get :populate_users
     post :import_excel
@@ -326,7 +332,7 @@ Rails.application.routes.draw do
       get :revoke_badge
       get :populate_badge_list
       get :certify
-      get 'grant', :as => 'grant_badge', :action => 'grant_badge'
+      get "grant", as: "grant_badge", action: "grant_badge"
       get :reinstate
       get :update_badge_data
       get :update_badge_templates
@@ -387,9 +393,7 @@ Rails.application.routes.draw do
   end
 
   resources :staff_availabilities, except: :show do
-    collection do
-      get :get_availabilities
-    end
+    collection { get :get_availabilities }
   end
 
   resources :exams, only: %i[index create show destroy] do
@@ -421,9 +425,7 @@ Rails.application.routes.draw do
   resources :announcements
 
   resources :volunteer_task_joins, only: [:create] do
-    collection do
-      post :remove
-    end
+    collection { post :remove }
   end
 
   resources :volunteer_hours, only: %i[index create new edit destroy update] do
@@ -435,27 +437,21 @@ Rails.application.routes.draw do
   end
 
   resources :require_trainings, only: [:create] do
-    collection do
-      post :remove_trainings
-    end
+    collection { post :remove_trainings }
   end
 
-
   resources :staff_spaces do
-    collection do
-      post :change_space_list
-    end
+    collection { post :change_space_list }
   end
 
   # namespace :help do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post 'vote/:comment_id', :as => 'vote', :action => 'vote', to: 'users#vote'
-
+  post "vote/:comment_id", as: "vote", action: "vote", to: "users#vote"
 
   # USER RESOURCES
-  resources :users, path: '/', param: :username, except: :edit do
+  resources :users, path: "/", param: :username, except: :edit do
     collection do
       get :resend_confirmation
       get :confirm_edited_email
@@ -463,7 +459,7 @@ Rails.application.routes.draw do
       patch :reset_password_confirmation
       get :confirm
       post :change_programs
-      post :create, path: '/new'
+      post :create, path: "/new"
       get :remove_avatar
       post :flag
       post :unflag
@@ -471,35 +467,42 @@ Rails.application.routes.draw do
       put :remove_flag
     end
 
-    get 'likes', on: :member
-    patch 'change_password', on: :member
+    get "likes", on: :member
+    patch "change_password", on: :member
   end
 
   # REPOSITORY RESOURCES
-  resources :repositories, path: '/:user_username', param: :id, except: :index do
-    post 'add_like', on: :member
+  resources :repositories,
+            path: "/:user_username",
+            param: :id,
+            except: :index do
+    post "add_like", on: :member
     collection do
-      get ':id/download_files', :as => 'download_files', :action => 'download_files', constraints: { id: /[^\/]+/ }
-      get ':id/download', :as => 'download', :action => 'download'
+      get ":id/download_files",
+          as: "download_files",
+          action: "download_files",
+          constraints: {
+            id: %r{[^/]+}
+          }
+      get ":id/download", as: "download", action: "download"
       get :populate_users
       patch :link_to_pp
       patch :add_owner
       patch :remove_owner
     end
     member do
-      get '/password_entry', :as => 'password_entry', :action => 'password_entry'
-      post 'pass_authenticate'
+      get "/password_entry", as: "password_entry", action: "password_entry"
+      post "pass_authenticate"
     end
   end
 
-  namespace :makes, path: 'makes/:user_username/:id' do
-    post 'create'
-    get 'new'
+  namespace :makes, path: "makes/:user_username/:id" do
+    post "create"
+    get "new"
   end
 
   namespace :comments do
-    post :create, path: '/:id'
-    delete :destroy, path: '/:id/destroy'
+    post :create, path: "/:id"
+    delete :destroy, path: "/:id/destroy"
   end
-
 end

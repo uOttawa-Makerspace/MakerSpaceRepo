@@ -1,4 +1,12 @@
 {
+  "scripts": {
+    "postinstall": "husky install",
+    "prettier:format": "prettier --write .",
+    "prettier:check": "prettier --check ."
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  },
   "dependencies": {
     "@babel/plugin-proposal-private-methods": "^7.16.0",
     "@fullcalendar/core": "5.9.0",
@@ -51,6 +59,10 @@
     "webpack-cli": "^3.3.12"
   },
   "devDependencies": {
+    "@prettier/plugin-ruby": "^3.2.0",
+    "husky": "^8.0.1",
+    "lint-staged": "^13.0.3",
+    "prettier": "^2.7.1",
     "webpack-dev-server": "^3.11.0"
   }
 }

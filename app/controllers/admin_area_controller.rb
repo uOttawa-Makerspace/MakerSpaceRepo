@@ -8,6 +8,6 @@ class AdminAreaController < SessionsController
 
   def ensure_admin
     @user = current_user
-    redirect_to '/' and return unless @user.admin?
+    redirect_to "/" and return unless @user.admin?
   end
 end

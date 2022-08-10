@@ -37,8 +37,6 @@ mary:
   identity: unknown
   read_and_accepted_waiver_form: true
 
-
-
 #old invalid user
 john:
   id: 5
@@ -52,7 +50,6 @@ john:
   use: null
   description: null
   identity: null
-
 
 #the only admin
 adam:
@@ -71,7 +68,6 @@ adam:
   identity: faculty_member
   read_and_accepted_waiver_form: true
 
-
 sara:
   username: sara
   name: Sara
@@ -81,7 +77,6 @@ sara:
   identity: faculty_member
   read_and_accepted_waiver_form: false
   gender: Female
-
 
 #the only staff
 olivia:
@@ -99,7 +94,6 @@ olivia:
   role: staff
   identity: faculty_member
   created_at: <%= 1.month.ago %>
-
 
 #another staff
 justine:

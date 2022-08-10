@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'faraday'
+require "faraday"
 
 def start
   # conn = Faraday.new(:url => 'http://makerepo.com')
@@ -11,7 +11,7 @@ def start
   # 	req.body = { rfid: 'temp' }.to_json
   # end
 
-  Faraday.post('http://makerepo.com/rfid/card_number', { rfid: 'something' })
+  Faraday.post("http://makerepo.com/rfid/card_number", { rfid: "something" })
 end
 
 start

@@ -19,10 +19,19 @@ namespace :csv do
         if certs.include?(training)
           puts "Ignored: #{user.username} is already certified for #{training}."
         else
-          training_session = TrainingSession.new(training_id: Training.find_by(name: training).id, user_id: User.find_by(name: trainer).id, course: course)
+          training_session =
+            TrainingSession.new(
+              training_id: Training.find_by(name: training).id,
+              user_id: User.find_by(name: trainer).id,
+              course: course
+            )
           training_session.users << user
           if training_session.save
-            cert = Certification.new(user_id: user.id, training_session_id: training_session.id)
+            cert =
+              Certification.new(
+                user_id: user.id,
+                training_session_id: training_session.id
+              )
             if cert.save
               puts "Success: #{user.name} trained by #{trainer} and certified for #{training}."
             else
