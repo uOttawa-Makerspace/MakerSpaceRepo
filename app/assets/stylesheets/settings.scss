@@ -5,7 +5,7 @@
 
 div.setting-title {
   line-height: 5rem !important;
-  font: 400 3rem 'Raleway', sans-serif;
+  font: 400 3rem "Raleway", sans-serif;
   color: #555;
 }
 
@@ -27,7 +27,6 @@ div.panel-title {
 }
 
 section#waivers {
-
   div.top {
     padding: 6px;
     background-color: transparentize(yellow, 0.7);
@@ -60,7 +59,6 @@ section#waivers {
     left: -200px;
     width: 850px;
     background-color: transparentize(yellow, 0.6);
-
   }
 }
 
@@ -69,7 +67,7 @@ div.setting-side-panel {
   position: relative;
   padding: 3rem 1rem 0;
   color: #333;
-  font: 400 1.2rem 'Raleway', helvetica, sans-serif;
+  font: 400 1.2rem "Raleway", helvetica, sans-serif;
 
   li {
     display: block;
@@ -84,30 +82,29 @@ div.setting-side-panel {
       }
     }
   }
-
 }
-@include media-breakpoint-down(md){
+@include media-breakpoint-down(md) {
   div.setting-side-panel {
-    li{
+    li {
       &:not(:first-child) {
         margin-top: 1.5rem;
       }
     }
   }
 }
-@include media-breakpoint-between(md, xl){
+@include media-breakpoint-between(md, xl) {
   div.setting-side-panel {
-    li{
+    li {
       &:nth-last-child(1) {
         margin-top: 1.5rem;
       }
     }
   }
 }
-@include media-breakpoint-up  (xl) {
+@include media-breakpoint-up(xl) {
   div.setting-side-panel {
-    li{
-      a{
+    li {
+      a {
         white-space: nowrap;
       }
       & {
@@ -121,18 +118,18 @@ div.setting-side-panel {
 
 label.profile-label {
   display: block;
-  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+  font: 400 0.9rem "Raleway", helvetica, sans-serif;
   color: #777;
 }
 
 label.radio-label {
   padding-top: -10px;
-  font: 400 0.9rem 'Raleway', helvetica, sans-serif;
+  font: 400 0.9rem "Raleway", helvetica, sans-serif;
   color: #777;
 }
 
 input.profile-text {
-  font: 300 0.9em 'Raleway', sans-serif;
+  font: 300 0.9em "Raleway", sans-serif;
   color: #555;
   padding: 0.5rem;
   margin: 0.5rem 0 1rem;
@@ -144,7 +141,7 @@ input.profile-text {
 }
 
 textarea.profile-text {
-  font: 300 0.9em 'Raleway', sans-serif;
+  font: 300 0.9em "Raleway", sans-serif;
   color: #555;
   padding: 0.5rem;
   margin: 0.5rem 0 1rem;
@@ -157,7 +154,7 @@ textarea.profile-text {
 }
 
 select.profile-select {
-  font: 300 0.9em 'Raleway', sans-serif;
+  font: 300 0.9em "Raleway", sans-serif;
   color: #555;
   padding: 0.5rem;
   margin: 0.5rem 0 1rem;
@@ -169,7 +166,7 @@ select.profile-select {
 }
 
 div.section-desc {
-  font: 400 1rem 'Raleway', sans-serif;
+  font: 400 1rem "Raleway", sans-serif;
   width: 100%;
   max-width: 400px;
   padding: 10px 0;
@@ -177,14 +174,13 @@ div.section-desc {
   color: #5f9ea0;
 
   & span {
-    font: 400 0.75rem 'Raleway', helvetica, sans-serif;
+    font: 400 0.75rem "Raleway", helvetica, sans-serif;
     color: #aaa;
   }
-
 }
 
 input.save-button {
-  font: 300 1em 'Raleway', sans-serif;
+  font: 300 1em "Raleway", sans-serif;
   padding: 0.5rem 1rem;
   border: none;
   text-transform: uppercase;
@@ -200,13 +196,13 @@ input.save-button {
   }
 }
 
-
 div.general-settings {
   select {
     display: inline;
   }
 
-  input#equipment_option_name, input#category_option_name {
+  input#equipment_option_name,
+  input#category_option_name {
     width: 400px;
     display: inline;
   }
@@ -219,11 +215,13 @@ div.general-settings {
     width: 378px;
   }
 
-  select#rename_equipment, select#rename_category {
+  select#rename_equipment,
+  select#rename_category {
     width: 170px;
   }
 
-  input#rename_equipment_text, input#rename_category_text {
+  input#rename_equipment_text,
+  input#rename_category_text {
     width: 185px;
   }
 }
@@ -253,7 +251,7 @@ a.vp-button {
 div.avatar-column {
   position: relative;
   color: #333;
-  font: 400 1rem 'Raleway', sans-serif;
+  font: 400 1rem "Raleway", sans-serif;
   display: inline-block;
   margin: 0.5rem 0;
 }
@@ -264,7 +262,7 @@ div.edit-column {
   //  margin-left: -260px;
   padding-left: 2rem;
   color: #333;
-  font: 400 1rem 'Raleway', sans-serif;
+  font: 400 1rem "Raleway", sans-serif;
   padding-top: 2rem;
   min-height: calc(100vh - 50px);
 
@@ -312,7 +310,6 @@ div.edit-column {
   }
 
   div#alert {
-
     .btn-primary {
       color: #fff;
     }
@@ -330,7 +327,6 @@ div.edit-column {
     }
 
     div#alert {
-
       display: none;
       position: absolute;
       top: 65px;
@@ -341,7 +337,7 @@ div.edit-column {
       height: 5rem;
       line-height: 5rem !important;
       font-size: 75%;
-      font: 500 2.0rem 'Raleway', sans-serif;
+      font: 500 2rem "Raleway", sans-serif;
       background-color: #cd5c5c;
       color: #fff;
       z-index: 2;
@@ -350,19 +346,16 @@ div.edit-column {
 
     section#old_users {
       padding: 10px;
-      background-color: #F2B3AC;
+      background-color: #f2b3ac;
 
       p {
-        font: 500 1rem 'Raleway', sans-serif;
+        font: 500 1rem "Raleway", sans-serif;
       }
 
       p#intro {
-        font: 500 1.2rem 'Raleway', sans-serif;
+        font: 500 1.2rem "Raleway", sans-serif;
       }
-
     }
-
-
   }
 
   img.edit-avatar {
@@ -387,13 +380,11 @@ div.edit-column {
     width: 100px;
     text-align: center;
 
-
     &:hover {
       background-color: rgba(119, 136, 153, 0.95);
       cursor: pointer;
     }
   }
-
 
   /* CHANGE PASSWORD */
 
@@ -402,11 +393,10 @@ div.edit-column {
     border-right: 1px solid #ddd;
     padding-left: 2rem;
     color: #333;
-    font: 400 1rem 'Raleway', sans-serif;
+    font: 400 1rem "Raleway", sans-serif;
   }
 
   @media screen and (max-width: 700px) {
-
     div.setting-side-panel {
       display: none;
     }
@@ -419,9 +409,7 @@ div.edit-column {
       div.title {
         padding-top: 0;
       }
-
     }
-
   }
 
   .programs {
@@ -432,7 +420,7 @@ div.edit-column {
     border-radius: 2px;
     border: 1px solid #aaa;
     margin: 0.5rem 0 1rem;
-    font: 300 1rem 'Raleway', helvetica, sans-serif;
+    font: 300 1rem "Raleway", helvetica, sans-serif;
   }
 
   .link_pp {
@@ -443,6 +431,6 @@ div.edit-column {
     border-radius: 2px;
     border: 1px solid #aaa;
     margin: 0.5rem 0 1rem;
-    font: 300 1rem 'Raleway', helvetica, sans-serif;
+    font: 300 1rem "Raleway", helvetica, sans-serif;
   }
 }

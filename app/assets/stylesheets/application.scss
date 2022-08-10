@@ -15,19 +15,19 @@
 
  */
 
- $primary: #497979;
- $primary-light: rgba(59, 147, 147, 0.5);
- $navbar-light-color: rgba(0, 0, 0, 0.7);
-$navbar-light-hover-color: rgba(0, 0, 0, 1.0);
+$primary: #497979;
+$primary-light: rgba(59, 147, 147, 0.5);
+$navbar-light-color: rgba(0, 0, 0, 0.7);
+$navbar-light-hover-color: rgba(0, 0, 0, 1);
 $navbar-dark-color: rgba(255, 255, 255, 0.7);
-$navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
+$navbar-dark-hover-color: rgba(255, 255, 255, 1);
 $body-top-padding: 6rem; // equivalent to navbar height
-$input-border-radius: .25rem !default;
+$input-border-radius: 0.25rem !default;
 $pagination-border-radius: 0;
 
 @import "bootstrap/scss/bootstrap";
 @import "toastr";
-@import './shared/variables';
+@import "./shared/variables";
 @import "trix";
 @import "lib";
 @import "font-awesome";
@@ -41,38 +41,43 @@ body {
   min-height: 100%;
   margin: 0;
   padding: 6rem 0 0 0;
-  background-color: rgba(238,238,238,0.5);
-  font-family: 'Raleway', helvetica, sans-serif!important;
+  background-color: rgba(238, 238, 238, 0.5);
+  font-family: "Raleway", helvetica, sans-serif !important;
   display: flex;
   flex-direction: column;
 }
 
-h1{
+h1 {
   font-size: 2.25rem;
 }
 
-h2{
+h2 {
   font-size: 1.75rem;
 }
 
-h1, h2, h3, h4, h5, h6{
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 400;
   color: #000;
   padding: 0;
   background: none;
   text-rendering: optimizeLegibility;
-  margin: 0 0 .5rem 0;
+  margin: 0 0 0.5rem 0;
 }
 
-p{
+p {
   margin: 0.5rem 0 !important;
 }
 
-a{
+a {
   text-decoration: none;
   color: inherit;
 
-  &::visited{
+  &::visited {
     color: #789;
   }
   //
@@ -80,11 +85,11 @@ a{
   //  outline-style: none;
   //}
 }
-body{
+body {
   background-color: #fff;
 }
 
-u{
+u {
   display: inline-block;
   text-decoration: none;
 }
@@ -101,7 +106,8 @@ u{
 //  display: block;
 //}
 
-input:not(.btn .form-control), textarea:not(.form-control) {
+input:not(.btn .form-control),
+textarea:not(.form-control) {
   @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
@@ -117,18 +123,18 @@ a :focus {
 //  outline: none;
 //}
 
-div.seperator{
+div.seperator {
   width: 100%;
   padding-top: 20px;
   border-bottom: 1px solid #ddd;
 }
 
-span.form-error{
+span.form-error {
   color: #cd5c5c;
   font-size: 0.8rem;
 }
 
-div.form-error{
+div.form-error {
   color: #cd5c5c;
   font-size: 0.8rem;
 }
@@ -201,38 +207,38 @@ div.form-error{
   width: inherit;
 }
 
-@media (min-width:576px) {
+@media (min-width: 576px) {
   .jumbotron {
-   padding:4rem 2rem;
-  }
- }
- @media (min-width: 1400px) {
-  .container {
-      max-width: 1140px;
+    padding: 4rem 2rem;
   }
 }
-.accordion-button{
-  background-color: rgba(0,0,0,.03) !important;
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1140px;
+  }
+}
+.accordion-button {
+  background-color: rgba(0, 0, 0, 0.03) !important;
 }
 .dropdown-item:hover:not(:active) {
   background-color: $primary-light;
 }
-.justified-gallery{
+.justified-gallery {
   height: 250px;
   overflow-x: scroll;
-  overflow-y: hidden;  
+  overflow-y: hidden;
   white-space: nowrap;
 }
-.justified-gallery img{
-  height:250px;
-  width:auto;
+.justified-gallery img {
+  height: 250px;
+  width: auto;
 }
 .padding-responsive {
   padding-left: 20%;
   padding-right: 20%;
 }
 
-@media screen and (max-width: 768px){
+@media screen and (max-width: 768px) {
   .padding-responsive {
     padding-left: 20px;
     padding-right: 20px;

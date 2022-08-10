@@ -9,7 +9,10 @@ class CreateJobTypeExtras < ActiveRecord::Migration[6.1]
 
     reversible do |change|
       change.up do
-        JobTypeExtra.create(name: "Machine Costs", job_type: JobType.find_by(name: 'Laser Cut'))
+        JobTypeExtra.create(
+          name: "Machine Costs",
+          job_type: JobType.find_by(name: "Laser Cut")
+        )
       end
     end
   end

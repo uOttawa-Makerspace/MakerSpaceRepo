@@ -12,18 +12,14 @@ FactoryBot.define do
     end
 
     factory :question_with_training do
-      transient do
-        training_count { 1 }
-      end
+      transient { training_count { 1 } }
       after(:create) do |question, evaluator|
         create_list(:training, evaluator.training_count, question: question)
       end
     end
 
     factory :question_with_answers do
-      transient do
-        answer_count { 5 }
-      end
+      transient { answer_count { 5 } }
       after(:create) do |question, evaluator|
         create_list(:answer, evaluator.answer_count, question: question)
       end

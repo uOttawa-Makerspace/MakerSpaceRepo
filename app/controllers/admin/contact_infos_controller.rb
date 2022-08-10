@@ -1,5 +1,4 @@
 class Admin::ContactInfosController < AdminAreaController
-
   def index
     @contact_infos = ContactInfo.all.order(name: :asc)
   end
@@ -25,9 +24,9 @@ class Admin::ContactInfosController < AdminAreaController
   def update
     contact_info = ContactInfo.find(params[:id])
     if contact_info.update(contact_infos_params)
-      flash[:notice] = 'Contact Info updated'
+      flash[:notice] = "Contact Info updated"
     else
-      flash[:alert] = 'Something went wrong'
+      flash[:alert] = "Something went wrong"
     end
     redirect_to admin_contact_infos_path
   end
@@ -35,15 +34,22 @@ class Admin::ContactInfosController < AdminAreaController
   def destroy
     contact_info = ContactInfo.find(params[:id])
     if contact_info.destroy
-      flash[:notice] = 'Contact Info Deleted'
+      flash[:notice] = "Contact Info Deleted"
     else
-      flash[:alert] = 'Something went wrong'
+      flash[:alert] = "Something went wrong"
     end
     redirect_to admin_contact_infos_path
   end
 
   def contact_infos_params
-    params.require(:contact_info).permit(:name, :email, :address, :phone_number, :url, :show_hours, opening_hour_attributes: [:students, :public, :summer])
+    params.require(:contact_info).permit(
+      :name,
+      :email,
+      :address,
+      :phone_number,
+      :url,
+      :show_hours,
+      opening_hour_attributes: %i[students public summer]
+    )
   end
-
 end

@@ -2,6 +2,6 @@
 
 class AddStatusToExams < ActiveRecord::Migration[5.0]
   def change
-    add_column :exams, :status, :string, default: 'not started'
+    add_column :exams, :status, :string, default: "not started"
   end
 end

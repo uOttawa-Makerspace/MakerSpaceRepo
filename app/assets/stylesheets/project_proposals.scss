@@ -4,13 +4,13 @@
 @import "lib";
 
 .checkbox-list {
-  label#type{
+  label#type {
     color: #555;
-    font: 300 0.9em 'Raleway', sans-serif;
+    font: 300 0.9em "Raleway", sans-serif;
   }
 }
 
-div.titlepp{
+div.titlepp {
   color: #366;
   font-size: 2rem;
   padding-bottom: 0.5rem;
@@ -21,8 +21,8 @@ div.titlepp{
   border-bottom: 2px solid #366;
 }
 
-.blue-button{
-  font: 300 1em 'Raleway', sans-serif;
+.blue-button {
+  font: 300 1em "Raleway", sans-serif;
   padding: 0.4rem 0.6rem;
   border: none;
   text-transform: uppercase;
@@ -33,15 +33,14 @@ div.titlepp{
   color: #fff;
   margin-bottom: 20px;
 
-  &:hover{
+  &:hover {
     cursor: pointer;
     color: aquamarine;
   }
-
 }
 
-.green-button{
-  font: 300 1em 'Raleway', sans-serif;
+.green-button {
+  font: 300 1em "Raleway", sans-serif;
   padding: 0.4rem 0.6rem;
   border: none;
   text-transform: uppercase;
@@ -52,15 +51,14 @@ div.titlepp{
   color: #fff;
   margin-bottom: 20px;
 
-  &:hover{
+  &:hover {
     cursor: pointer;
     color: aquamarine;
   }
-
 }
 
-.coldblue-button{
-  font: 300 1em 'Raleway', sans-serif;
+.coldblue-button {
+  font: 300 1em "Raleway", sans-serif;
   padding: 0.4rem 0.6rem;
   border: none;
   text-transform: uppercase;
@@ -71,15 +69,14 @@ div.titlepp{
   color: #fff;
   margin-bottom: 20px;
 
-  &:hover{
+  &:hover {
     cursor: pointer;
     color: aquamarine;
   }
-
 }
 
-.coldgreen-button{
-  font: 300 1em 'Raleway', sans-serif;
+.coldgreen-button {
+  font: 300 1em "Raleway", sans-serif;
   padding: 0.4rem 0.6rem;
   border: none;
   text-transform: uppercase;
@@ -90,58 +87,56 @@ div.titlepp{
   color: #fff;
   margin-bottom: 20px;
 
-  &:hover{
+  &:hover {
     cursor: pointer;
     color: aquamarine;
   }
-
 }
 
-div.approved{
+div.approved {
   color: #19c1a5;
   font-weight: 500;
-  i{
+  i {
     padding-right: 5px;
     color: #777;
   }
 }
 
-div.declined{
-  color: #FF0000;
+div.declined {
+  color: #ff0000;
   font-weight: 500;
-  i{
+  i {
     padding-right: 5px;
     color: #777;
   }
 }
 
-.username{
+.username {
   @include transition(100ms);
   color: #19c1a5;
   font-weight: 500;
 
-  i{
+  i {
     padding-right: 5px;
     color: #777;
   }
 
-  &:hover{
+  &:hover {
     color: #5f9ea0;
   }
 }
 
-
-.admin_username{
+.admin_username {
   @include transition(100ms);
   color: blue;
   font-weight: 500;
 
-  i{
+  i {
     padding-right: 5px;
     color: #777;
   }
 
-  &:hover{
+  &:hover {
     color: dodgerblue;
   }
 }
@@ -151,7 +146,7 @@ div.declined{
 }
 
 .mb-3.required .form-label:after {
-  content:"*";
-  color:red;
+  content: "*";
+  color: red;
   font-size: 25px;
 }

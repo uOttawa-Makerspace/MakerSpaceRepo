@@ -9,14 +9,19 @@ class VolunteerHour < ApplicationRecord
   scope :processed, -> { where(approval: [false, true]) }
 
   def was_processed?
-    if approval.nil?
-      false
-    else
-      true
-    end
+    approval.nil? ? false : true
   end
 
-  def self.create_volunteer_hour_from_approval(volunteer_task_id, volunteer_id, hours)
-    create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, total_time: hours, approval: true)
+  def self.create_volunteer_hour_from_approval(
+    volunteer_task_id,
+    volunteer_id,
+    hours
+  )
+    create(
+      volunteer_task_id: volunteer_task_id,
+      user_id: volunteer_id,
+      total_time: hours,
+      approval: true
+    )
   end
 end

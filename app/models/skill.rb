@@ -4,7 +4,7 @@ class Skill < ApplicationRecord
 
   private
 
-    def remove_training_relation
-      self.trainings.update_all(skill_id: nil)
-    end
+  def remove_training_relation
+    self.trainings.update_all(skill_id: nil)
+  end
 end

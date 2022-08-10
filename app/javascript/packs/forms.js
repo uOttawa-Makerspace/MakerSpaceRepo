@@ -5,7 +5,6 @@
 //     let span = $('<span>').addClass('form-error repo-form');
 //     let regex = /^[-a-zA-ZÀ-ÿ\d\s]*$/;
 
-
 //     if (title.val().length === 0) {
 //         span.text("Project title is required.");
 //         $('input#repository_title').before(span);
@@ -70,7 +69,6 @@
 //         scrow_to_error("project_proposal_client");
 //         return false;
 //     }
-
 
 //     if (title.val().length === 0) {
 //         span.text("Project title is required.");
@@ -170,7 +168,6 @@
 //         }
 //     };
 
-
 //     $('#download-zip').click(function (event) {
 //         $("#download-zip").attr('class', 'no-bg-download');
 //         $("#download-zip").html("<img src='/assets/loader-65526d2bb686aee87b0257dcbc756449cffeebf62d6646ba9a9979de8b51111a.gif' height='15px'>");
@@ -190,7 +187,6 @@
 //             downloadTimeout = setTimeout(checkDownloadCookie, 1000);
 //         }
 //     };
-
 
 //     //**************** END | download zip stuff *******************//
 
@@ -272,33 +268,40 @@
 //         });
 
 //     });
-    if (document.getElementById("equipment-container")){
-        document.getElementById("equipment_container").children().each(function (e) {
-            console.log(e);
-        });
-    }
-    $('div#equipment-container').children().each(function () {
-        let equip_item = $(this);
-        let x = document.getElementById("repository_equipments");
-
-        for (let i = 0; i < x.options.length; i++) {
-            if (x.options[i].childNodes[0].nodeValue === equip_item[0].childNodes[0].nodeValue) {
-                x.remove(i);
-            }
-        }
-        equipmentArray.push(equip_item[0].innerText);
-
-        $(equip_item).click(function () {
-            let option = document.createElement("option");
-            option.text = equip_item[0].innerText;
-            x.add(option);
-            sort_options("repository_equipments");
-            let index = $(equip_item).index();
-            equipmentArray.splice(index, 1);
-            $(equip_item).remove();
-        });
-
+if (document.getElementById("equipment-container")) {
+  document
+    .getElementById("equipment_container")
+    .children()
+    .each(function (e) {
+      console.log(e);
     });
+}
+$("div#equipment-container")
+  .children()
+  .each(function () {
+    let equip_item = $(this);
+    let x = document.getElementById("repository_equipments");
+
+    for (let i = 0; i < x.options.length; i++) {
+      if (
+        x.options[i].childNodes[0].nodeValue ===
+        equip_item[0].childNodes[0].nodeValue
+      ) {
+        x.remove(i);
+      }
+    }
+    equipmentArray.push(equip_item[0].innerText);
+
+    $(equip_item).click(function () {
+      let option = document.createElement("option");
+      option.text = equip_item[0].innerText;
+      x.add(option);
+      sort_options("repository_equipments");
+      let index = $(equip_item).index();
+      equipmentArray.splice(index, 1);
+      $(equip_item).remove();
+    });
+  });
 
 //     $('div#certification-container').children().each(function () {
 //         let certif_item = $(this);
@@ -310,7 +313,6 @@
 //             }
 //         }
 //         certificationArray.push(certif_item[0].innerText);
-
 
 //         $(certif_item).click(function () {
 //             let option = document.createElement("option");
@@ -430,14 +432,12 @@
 //         });
 //     });
 
-
 //     //Get certifications
 //     $(document).ready(function () {
 //         $('#user_certifications').on('change', function (e) {
 //             let val = e.target.options[e.target.selectedIndex].text;
 //             e.target.remove(e.target.selectedIndex);
 //             e.target.selectedIndex = 0;
-
 
 //             for (let i = 0; i < certificationArray.length; i++) {
 //                 if (val == certificationArray[i]) {
@@ -460,7 +460,6 @@
 //                     sort_options("user_certifications");
 //                     certificationArray.splice(index, 1);
 //                     $(child).remove();
-
 
 //                 });
 //             }, 'html');
@@ -501,7 +500,6 @@
 //                 console.log('error');
 //             });
 
-
 //     });
 
 //     $("form#new_repository, form.edit_repository, form#new_proficient_project, form.edit_proficient_project, form#new_learning_module, form.edit_learning_module, form.makes_new").submit(function (e) {
@@ -521,26 +519,21 @@
 //             form.append("files[]", instructableFiles[i]);
 //         }
 
-
 //         for (let i = 0; i < videoFiles.length; i++) {
 //             form.append("videos[]", videoFiles[i]);
 //         }
-
 
 //         for (let i = 0; i < photoFiles.length; i++) {
 //             form.append("images[]", photoFiles[i]);
 //         }
 
-
 //         for (let i = 0; i < categoryArray.length; i++) {
 //             form.append("categories[]", categoryArray[i]);
 //         }
 
-
 //         for (let i = 0; i < equipmentArray.length; i++) {
 //             form.append("equipments[]", equipmentArray[i]);
 //         }
-
 
 //         if (validate) {
 //             document.getElementById("status-save").innerHTML = "<img src='/assets/loader-65526d2bb686aee87b0257dcbc756449cffeebf62d6646ba9a9979de8b51111a.gif' height='15px'> Saving project...";
@@ -635,7 +628,6 @@
 
 //     });
 
-
 //     $("span.file-remove").click(function (e) {
 //         let index = $($(this)).index();
 //         instructableFiles.splice(index, 1);
@@ -643,7 +635,6 @@
 //         document.getElementById("deletefiles").value = document.getElementById("deletefiles").value + e.target.id + ",";
 //         e.target.parentElement.parentElement.parentElement.remove();
 //     });
-
 
 //     $('div#video-container').children().each(function () {
 //         let file_item = $(this);

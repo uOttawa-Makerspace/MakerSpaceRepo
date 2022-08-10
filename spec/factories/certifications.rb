@@ -3,20 +3,16 @@ FactoryBot.define do
     association :user, :regular_user
     association :training_session
 
-    trait :'3d_printing' do
-      association :training_session, :'3d_printing'
+    trait :"3d_printing" do
+      association :training_session, :"3d_printing"
     end
 
     trait :basic_training do
       association :training_session, :basic_training
     end
 
-    trait 'inactive' do
+    trait "inactive" do
       active { false }
     end
   end
 end
-
-
-
-

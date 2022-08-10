@@ -1,13 +1,12 @@
 @import "lib";
 
-section#help{
+section#help {
   @include span-columns(8, 3);
   background-color: #fff;
   /*padding: 2rem 0;*/
   color: #555;
 
-
-  div.title{
+  div.title {
     color: #366;
     max-width: 40vmax;
     border-bottom: 2px solid #366;
@@ -17,100 +16,93 @@ section#help{
     margin-bottom: 2rem;
   }
 
-  div.sub-title{
-	  font: 400 1.5rem 'Raleway', helvetica, sans-serif;
-	  color: #366;
-	  padding: 2rem 0 1rem;
+  div.sub-title {
+    font: 400 1.5rem "Raleway", helvetica, sans-serif;
+    color: #366;
+    padding: 2rem 0 1rem;
   }
 
-  a{
-  	color: #4682B4;
+  a {
+    color: #4682b4;
   }
 
-  div.content{
-
-    img{
+  div.content {
+    img {
       max-width: 100%;
       margin: 2rem 0;
       border: 1px solid #366;
     }
   }
-
 }
 
-div.help-grid{
+div.help-grid {
   @include outer-container(70rem);
   background-color: #fff;
   padding-bottom: 1rem;
 
-  div.contact{
+  div.contact {
     float: left;
     padding-top: 2rem;
     margin-left: 3%;
     font-size: 0.7rem;
 
-    a{
-      color: #4682B4;
+    a {
+      color: #4682b4;
     }
   }
 }
 
-div.help-side-panel{
+div.help-side-panel {
   @include span-columns(3.5, 0);
   position: relative;
   padding: 3rem 0;
   color: #333;
   border-left: 1px solid #aaa;
 
-  div.title{
+  div.title {
     color: #555;
-    font: 700 1.2rem 'Raleway', helvetica, sans-serif;
+    font: 700 1.2rem "Raleway", helvetica, sans-serif;
     border-bottom: 1px solid #aaa;
     padding-left: 1rem;
-    padding-bottom: 1rem; 
-    margin-bottom: 1rem; 
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
 
-    a{
+    a {
       @include transition(200ms);
 
-      &:hover{
-      color: #5f9ea0;
+      &:hover {
+        color: #5f9ea0;
       }
     }
-
   }
 
-  li{
+  li {
     @include transition(200ms);
-    font: 700 0.7rem 'Raleway', helvetica, sans-serif;
+    font: 700 0.7rem "Raleway", helvetica, sans-serif;
     padding: 0.5rem 0;
     padding-left: 1rem;
     color: #777;
     text-transform: uppercase;
     display: block;
 
-    a:hover{
-      color:#5f9ea0; 
+    a:hover {
+      color: #5f9ea0;
     }
 
-    &:last-child{
+    &:last-child {
       /*border-bottom: 1px solid #aaa;*/
       padding-bottom: 1.2rem;
     }
   }
-
 }
 
-@media screen and (max-width: 700px){
- 
-  div.help-side-panel{
+@media screen and (max-width: 700px) {
+  div.help-side-panel {
     display: none;
   }
 
-  section#help{
+  section#help {
     @include span-columns(12, 3);
     padding: 0;
-
   }
-
 }

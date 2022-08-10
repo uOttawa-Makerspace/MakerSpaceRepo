@@ -21,14 +21,21 @@ FactoryBot.define do
 
     trait :regular_user_with_certifications do
       after(:create) do |user|
-        create(:certification, :'3d_printing', user_id: user.id)
+        create(:certification, :"3d_printing", user_id: user.id)
         create(:certification, :basic_training, user_id: user.id)
       end
     end
 
     trait :regular_user_with_avatar do
       after(:build) do |avatar|
-        avatar.avatar.attach(io: File.open(Rails.root.join('spec', 'support', 'assets', 'avatar.png')), filename: 'avatar.png', content_type: 'image/png')
+        avatar.avatar.attach(
+          io:
+            File.open(
+              Rails.root.join("spec", "support", "assets", "avatar.png")
+            ),
+          filename: "avatar.png",
+          content_type: "image/png"
+        )
       end
     end
 
@@ -64,7 +71,11 @@ FactoryBot.define do
       role { "volunteer" }
 
       after(:create) do |volunteer|
-        Program.create(user_id: volunteer.id, program_type: Program::VOLUNTEER, active: false)
+        Program.create(
+          user_id: volunteer.id,
+          program_type: Program::VOLUNTEER,
+          active: false
+        )
       end
     end
 
@@ -72,7 +83,10 @@ FactoryBot.define do
       role { "volunteer" }
 
       after(:create) do |volunteer|
-        Program.create(user_id: volunteer.id, program_type: Program::DEV_PROGRAM)
+        Program.create(
+          user_id: volunteer.id,
+          program_type: Program::DEV_PROGRAM
+        )
       end
     end
 
@@ -82,14 +96,12 @@ FactoryBot.define do
       program { "BASc in Software Engineering" }
       faculty { "Engineering" }
       year_of_study { 2020 }
-      student_id { 234139242 }
+      student_id { 234_139_242 }
       gender { "Female" }
     end
 
     factory :user_with_announcements do
-      transient do
-        announcements_count { 5 }
-      end
+      transient { announcements_count { 5 } }
       after(:create) do |user, evaluator|
         create_list(:announcement, evaluator.announcements_count, user: user)
       end

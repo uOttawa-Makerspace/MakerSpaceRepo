@@ -17,24 +17,41 @@ class Space < ApplicationRecord
 
   after_create :create_popular_hours
 
-  validates :name, presence: { message: 'A name is required for the space' }, uniqueness: { message: 'Space already exists' }
+  validates :name,
+            presence: {
+              message: "A name is required for the space"
+            },
+            uniqueness: {
+              message: "Space already exists"
+            }
 
   def signed_in_users
-    lab_sessions.where('sign_out_time > ?', Time.zone.now).reverse.map(&:user).uniq
+    lab_sessions
+      .where("sign_out_time > ?", Time.zone.now)
+      .reverse
+      .map(&:user)
+      .uniq
   end
 
   def recently_signed_out_users
-    users = lab_sessions.where('sign_out_time < ?', Time.zone.now).last(20).map(&:user).uniq
-    signed_in_users.each do |user|
-      users.delete(user)
-    end
+    users =
+      lab_sessions
+        .where("sign_out_time < ?", Time.zone.now)
+        .last(20)
+        .map(&:user)
+        .uniq
+    signed_in_users.each { |user| users.delete(user) }
     users
   end
 
   def create_popular_hours
     (0..6).each do |weekday|
       (0..23).each do |hour|
-        PopularHour.find_or_create_by(space_id: self.id, hour: hour, day: weekday)
+        PopularHour.find_or_create_by(
+          space_id: self.id,
+          hour: hour,
+          day: weekday
+        )
       end
     end
   end
