@@ -1,1 +1,1 @@
-$(".admin-badge-request").html("<%= escape_javascript(render 'badges/admin_table') %>")
+document.getElementsByClassName("admin-badge-request")[0].innerHTML = "<%= escape_javascript(render 'badges/admin_table') %>"

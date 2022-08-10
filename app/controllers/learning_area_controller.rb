@@ -28,13 +28,11 @@ class LearningAreaController < DevelopmentProgramsController
       begin
         create_photos
       rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
-        flash[:alert] = 'Something went wrong while uploading photos, try again later.'
         @learning_module.destroy
-        redirect_to request.path
+        redirect_to request.path, alert: 'Something went wrong while uploading photos, try again later.'
       else
         create_files
-        flash[:notice] = 'Learning Module has been successfully created.'
-        redirect_to learning_area_path(@learning_module.id)
+        redirect_to learning_area_path(@learning_module.id), notice: 'Learning Module has been successfully created.'
       end
     else
       flash[:alert] = 'Something went wrong'
@@ -59,11 +57,9 @@ class LearningAreaController < DevelopmentProgramsController
       begin
         update_photos
       rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
-        flash[:alert_yellow] = 'Something went wrong while uploading photos, try again later. Other changes have been saved.'
-        redirect_to learning_area_path(@learning_module.id)
+        redirect_to learning_area_path(@learning_module.id), alert_yellow: 'Something went wrong while uploading photos, try again later. Other changes have been saved.'
       else
-        flash[:notice] = 'Learning module successfully updated.'
-        redirect_to learning_area_path(@learning_module.id)
+        redirect_to learning_area_path(@learning_module.id), notice: 'Learning module successfully updated.'
       end
     else
       flash[:alert] = 'Unable to apply the changes.'
@@ -91,8 +87,7 @@ class LearningAreaController < DevelopmentProgramsController
 
     def only_admin_access
       unless current_user.admin?
-        redirect_to development_programs_path
-        flash[:alert] = 'Only admin members can access this area.'
+        redirect_to development_programs_path, alert: 'Only admin members can access this area.'
       end
     end
 
