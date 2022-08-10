@@ -83,6 +83,15 @@ class StaffDashboardController < StaffAreaController
 
   def sign_out_users
     if params[:dropped_users].present?
+      @users = User.order(id: :desc).limit(10)
+      @certifications_on_space =
+        Proc.new do |user, space_id|
+          user
+            .certifications
+            .joins(:training, training: :spaces)
+            .where(trainings: { spaces: { id: space_id } })
+        end
+      @all_user_certs = Proc.new { |user| user.certifications }
       users = User.where(username: params[:dropped_users]).map(&:id)
       lab_sessions = LabSession.where(user_id: users)
       lab_sessions.update_all(sign_out_time: Time.zone.now)
@@ -96,6 +105,16 @@ class StaffDashboardController < StaffAreaController
 
   def sign_out_all_users
     space = @space
+    @certifications_on_space =
+      Proc.new do |user, space_id|
+        user
+          .certifications
+          .joins(:training, training: :spaces)
+          .where(trainings: { spaces: { id: space_id } })
+      end
+    @all_user_certs = Proc.new { |user| user.certifications }
+    @users = User.order(id: :desc).limit(10)
+
     space.signed_in_users.each do |user|
       lab_session = LabSession.where(user_id: user.id)
       lab_session.update_all(sign_out_time: Time.zone.now)
@@ -111,6 +130,16 @@ class StaffDashboardController < StaffAreaController
   def sign_in_users
     alert = []
     if params[:added_users].present?
+      @certifications_on_space =
+        Proc.new do |user, space_id|
+          user
+            .certifications
+            .joins(:training, training: :spaces)
+            .where(trainings: { spaces: { id: space_id } })
+        end
+      @all_user_certs = Proc.new { |user| user.certifications }
+      @users = User.order(id: :desc).limit(10)
+
       users = User.where(username: params[:added_users])
       users.each do |user|
         lab_session =
