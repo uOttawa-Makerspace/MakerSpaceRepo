@@ -54,4 +54,8 @@ class LearningModule < ApplicationRecord
       self.errors.add(:title, "Title already exists")
     end
   end
+
+  def set_order
+    self.order = LearningModule.maximum(:order).order + 1
+  end
 end
