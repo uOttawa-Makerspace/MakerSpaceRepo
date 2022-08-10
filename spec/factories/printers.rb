@@ -21,7 +21,7 @@ FactoryBot.define do
       number { "RPL2 - 02" }
     end
     trait :dremel_10_17 do
-      model { 'Dremel' }
+      model { "Dremel" }
       number { "10 - 17" }
     end
   end

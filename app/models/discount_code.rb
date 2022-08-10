@@ -25,13 +25,15 @@ class DiscountCode < ApplicationRecord
   end
 
   def status
-    usage_count == 0 ? 'Not used' : 'Used'
+    usage_count == 0 ? "Not used" : "Used"
   end
 
   def shopify_api_create_discount_code
     DiscountCode.start_session
     shopify_discount_code = ShopifyAPI::DiscountCode.new
-    shopify_discount_code.prefix_options[:price_rule_id] = price_rule.shopify_price_rule_id
+    shopify_discount_code.prefix_options[
+      :price_rule_id
+    ] = price_rule.shopify_price_rule_id
     shopify_discount_code.code = code
     shopify_discount_code.save
     shopify_discount_code
@@ -39,7 +41,11 @@ class DiscountCode < ApplicationRecord
 
   def delete_discount_code_from_shopify
     DiscountCode.start_session
-    shopify_discount_code = ShopifyAPI::DiscountCode.where(id: shopify_discount_code_id, price_rule_id: price_rule.shopify_price_rule_id).last
+    shopify_discount_code =
+      ShopifyAPI::DiscountCode.where(
+        id: shopify_discount_code_id,
+        price_rule_id: price_rule.shopify_price_rule_id
+      ).last
     shopify_discount_code.destroy
   end
 end

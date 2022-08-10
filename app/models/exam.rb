@@ -6,10 +6,12 @@ class Exam < ApplicationRecord
   has_many :exam_responses, through: :exam_questions
   has_one :training, through: :training_session
 
-  STATUS = { not_started: 'not started',
-             incomplete: 'incomplete',
-             passed: 'passed',
-             failed: 'failed' }.freeze
+  STATUS = {
+    not_started: "not started",
+    incomplete: "incomplete",
+    passed: "passed",
+    failed: "failed"
+  }.freeze
 
   SCORE_TO_PASS = 68
 
@@ -20,6 +22,6 @@ class Exam < ApplicationRecord
   end
 
   def failed?
-    status == 'failed'
+    status == "failed"
   end
 end

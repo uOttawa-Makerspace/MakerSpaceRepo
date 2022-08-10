@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 namespace :users_inactive do
-  desc 'sends emails to a list of emails'
+  desc "sends emails to a list of emails"
   task check: :environment do
     @users = User.active
     @users.each do |user|

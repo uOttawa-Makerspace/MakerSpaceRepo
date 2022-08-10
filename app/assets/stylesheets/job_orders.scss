@@ -7,7 +7,7 @@ ul.timeline {
   position: relative;
 }
 ul.timeline:before {
-  content: ' ';
+  content: " ";
   background: #d4d9df;
   display: inline-block;
   position: absolute;
@@ -21,7 +21,7 @@ ul.timeline > li {
   padding-left: 20px;
 }
 ul.timeline > li:before {
-  content: ' ';
+  content: " ";
   background: white;
   display: inline-block;
   position: absolute;
@@ -32,9 +32,9 @@ ul.timeline > li:before {
   height: 20px;
   z-index: 400;
 }
-.job-order-table thead{
-  background-color:#c2d6d6
+.job-order-table thead {
+  background-color: #c2d6d6;
 }
-.link-primary{
+.link-primary {
   text-decoration: underline;
 }

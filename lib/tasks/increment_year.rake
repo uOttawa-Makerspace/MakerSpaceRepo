@@ -1,20 +1,26 @@
 # frozen_string_literal: true
 
 namespace :increment_year do
-  desc 'increment year to students'
+  desc "increment year to students"
   task increment_one_year: :environment do
     # Get students, created this month and are not alumni and not created this year
     this_month = Date.today.month
-    User.active.students.not_created_this_year.created_at_month(this_month).where.not(year_of_study: 'Alumni').find_each do |u|
-      if u.year_of_study.to_i.between?(1, 7)
-        u.update(year_of_study: u.year_of_study.next)
-      else
-        u.update(year_of_study: "Alumni")
+    User
+      .active
+      .students
+      .not_created_this_year
+      .created_at_month(this_month)
+      .where.not(year_of_study: "Alumni")
+      .find_each do |u|
+        if u.year_of_study.to_i.between?(1, 7)
+          u.update(year_of_study: u.year_of_study.next)
+        else
+          u.update(year_of_study: "Alumni")
+        end
       end
-    end
   end
 
-  desc 'fix year for students'
+  desc "fix year for students"
   task fix: :environment do
     User.active.students.not_created_this_year.find_each do |u|
       this_year = Date.today.year
@@ -44,11 +50,14 @@ namespace :increment_year do
     end
   end
 
-  desc 'fix year for students created this year'
+  desc "fix year for students created this year"
   task fix_this_year: :environment do
-    User.active.students.created_this_year.where.not(year_of_study: %w[1 2 3 4 5 6 7]).find_each do |u|
-      u.update(year_of_study: 1)
-    end
+    User
+      .active
+      .students
+      .created_this_year
+      .where.not(year_of_study: %w[1 2 3 4 5 6 7])
+      .find_each { |u| u.update(year_of_study: 1) }
   end
 end
 

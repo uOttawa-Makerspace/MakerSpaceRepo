@@ -21,7 +21,8 @@ module ApplicationHelper
   end
 
   def github_client
-    @github_client ||= Octokit::Client.new(access_token: @user.access_token) if github?
+    @github_client ||=
+      Octokit::Client.new(access_token: @user.access_token) if github?
   end
 
   def signed_in?
@@ -29,11 +30,17 @@ module ApplicationHelper
   end
 
   def has_valid_jwt?
-    auth_header = request.headers['Authorization']
+    auth_header = request.headers["Authorization"]
     if auth_header
       user_token = auth_header.split(" ")[1]
       begin
-        decoded_token = JWT.decode(user_token, Rails.application.credentials.secret_key_base, true,{algorithm: 'HS256'})
+        decoded_token =
+          JWT.decode(
+            user_token,
+            Rails.application.credentials.secret_key_base,
+            true,
+            { algorithm: "HS256" }
+          )
         session[:user_id] = decoded_token[0]["user_id"]
         return true
       rescue JWT::ExpiredSignature
@@ -57,31 +64,29 @@ module ApplicationHelper
   end
 
   def license_url
-    { 'Creative Commons - Attribution' => licenses_cca_path,
-      'Creative Commons - Attribution - Share Alike' => licenses_ccasa_path,
-      'Creative Commons - Attribution - No Derivatives' => licenses_ccand_path,
-      'Creative Commons - Attribution - Non-Commercial' => licenses_ccanc_path,
-      'Attribution - Non-Commercial - Share Alike' => licenses_ancsa_path,
-      'Attribution - Non-Commercial - No Derivatives' => licenses_ancnd_path }
+    {
+      "Creative Commons - Attribution" => licenses_cca_path,
+      "Creative Commons - Attribution - Share Alike" => licenses_ccasa_path,
+      "Creative Commons - Attribution - No Derivatives" => licenses_ccand_path,
+      "Creative Commons - Attribution - Non-Commercial" => licenses_ccanc_path,
+      "Attribution - Non-Commercial - Share Alike" => licenses_ancsa_path,
+      "Attribution - Non-Commercial - No Derivatives" => licenses_ancnd_path
+    }
   end
 
   private
 
-  def page_title(curr_page = '')
-    base_title = 'MakerRepo'
-    if curr_page.empty?
-      base_title
-    else
-      curr_page + ' | ' + base_title
-    end
+  def page_title(curr_page = "")
+    base_title = "MakerRepo"
+    curr_page.empty? ? base_title : curr_page + " | " + base_title
   end
 
   def youtube_video(url)
-    render partial: 'partials/streaming', locals: { url: url }
+    render partial: "partials/streaming", locals: { url: url }
   end
 
   def load_rakes
-    require 'rake'
+    require "rake"
     MakerSpaceRepo::Application.load_tasks if Rake::Task.tasks.empty?
   end
 end

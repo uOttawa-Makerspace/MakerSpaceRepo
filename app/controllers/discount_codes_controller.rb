@@ -6,13 +6,21 @@ class DiscountCodesController < DevelopmentProgramsController
 
   def index
     user_discount_codes = current_user.discount_codes
-    @discount_codes = user_discount_codes.not_used.includes(:price_rule).order(created_at: :desc)
+    @discount_codes =
+      user_discount_codes
+        .not_used
+        .includes(:price_rule)
+        .order(created_at: :desc)
     @expired_codes = user_discount_codes.used_code.includes(:price_rule)
-    @all_discount_codes = DiscountCode.includes(:price_rule).order(created_at: :desc) if current_user.admin?
+    @all_discount_codes =
+      DiscountCode.includes(:price_rule).order(
+        created_at: :desc
+      ) if current_user.admin?
   end
 
   def new
-    @price_rules = PriceRule.where("expired_at > ? OR expired_at IS NULL", DateTime.now)
+    @price_rules =
+      PriceRule.where("expired_at > ? OR expired_at IS NULL", DateTime.now)
   end
 
   def create
@@ -27,44 +35,44 @@ class DiscountCodesController < DevelopmentProgramsController
         @discount_code.usage_count = shopify_discount_code.usage_count
         if @discount_code.save
           cc_money_payment.update(discount_code: @discount_code)
-          flash[:notice] = 'Discount Code created'
+          flash[:notice] = "Discount Code created"
         else
           cc_money_payment.destroy
-          flash[:notice] = 'Discount Code not created properly!'
+          flash[:notice] = "Discount Code not created properly!"
         end
       else
         cc_money_payment.destroy
-        flash[:notice] = 'Shopify API not working'
+        flash[:notice] = "Shopify API not working"
       end
     else
-      flash[:notice] = 'Payment not processed'
+      flash[:notice] = "Payment not processed"
     end
     redirect_to discount_codes_path
   end
 
   private
 
-    def check_and_set_price_rule_expiration
-      @price_rule = PriceRule.find_by(id: params[:price_rule_id])
-      unless @price_rule.expired_at.nil? || @price_rule.expired_at > DateTime.now
-        flash[:alert] = "This coupon is expired"
-        redirect_to new_discount_code_path
-      end
+  def check_and_set_price_rule_expiration
+    @price_rule = PriceRule.find_by(id: params[:price_rule_id])
+    unless @price_rule.expired_at.nil? || @price_rule.expired_at > DateTime.now
+      flash[:alert] = "This coupon is expired"
+      redirect_to new_discount_code_path
     end
+  end
 
-    def webhook_params
-      params.except(:controller, :action, :type)
-    end
+  def webhook_params
+    params.except(:controller, :action, :type)
+  end
 
-    def set_price_rule
-      @price_rule = PriceRule.find_by(id: params[:price_rule_id])
-    end
+  def set_price_rule
+    @price_rule = PriceRule.find_by(id: params[:price_rule_id])
+  end
 
-    def check_user_wallet
-      current_user.update_wallet
-      unless current_user.wallet >= @price_rule.cc
-        flash[:alert] = 'Not enough CC points'
-        redirect_back(fallback_location: root_path)
-      end
+  def check_user_wallet
+    current_user.update_wallet
+    unless current_user.wallet >= @price_rule.cc
+      flash[:alert] = "Not enough CC points"
+      redirect_back(fallback_location: root_path)
     end
+  end
 end

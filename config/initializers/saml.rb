@@ -1,20 +1,25 @@
 # frozen_string_literal: true
 SamlIdp.configure do |config|
-  config.x509_certificate = IO.read(File.join(Rails.root, 'certs/saml.crt'))
-  config.secret_key = IO.read(File.join(Rails.root, 'certs/saml.key'))
+  config.x509_certificate = IO.read(File.join(Rails.root, "certs/saml.crt"))
+  config.secret_key = IO.read(File.join(Rails.root, "certs/saml.key"))
 
   service_providers = {
-    'wiki.makerepo.com' => {
-      metadata_url: 'https://wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com',
-      response_hosts: %w(en.wiki.makerepo.com fr.wiki.makerepo.com staff.makerepo.com)
+    "wiki.makerepo.com" => {
+      metadata_url:
+        "https://wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com",
+      response_hosts: %w[
+        en.wiki.makerepo.com
+        fr.wiki.makerepo.com
+        staff.makerepo.com
+      ]
     },
-    'rooms.makerepo.com' => {
-      metadata_url: 'https://rooms.makerepo.com/users/auth/saml/metadata',
-      response_hosts: %w(rooms.makerepo.com)
+    "rooms.makerepo.com" => {
+      metadata_url: "https://rooms.makerepo.com/users/auth/saml/metadata",
+      response_hosts: %w[rooms.makerepo.com]
     },
-    'print.makerepo.com' => {
-      metadata_url: 'https://print.makerepo.com/saml/metadata',
-      response_hosts: %w(print.makerepo.com localhost),
+    "print.makerepo.com" => {
+      metadata_url: "https://print.makerepo.com/saml/metadata",
+      response_hosts: %w[print.makerepo.com localhost]
     }
   }
 
@@ -31,7 +36,7 @@ SamlIdp.configure do |config|
       getter: ->(principal) { principal.email }
     },
     username: {
-      getter: -> (principal) { principal.username }
+      getter: ->(principal) { principal.username }
     },
     name: {
       getter: ->(principal) { principal.name }
@@ -49,12 +54,14 @@ SamlIdp.configure do |config|
       getter: ->(principal) { principal.role }
     },
     avatar_transient_url: {
-      getter: ->(principal) { principal.avatar.attachment&.url },
+      getter: ->(principal) { principal.avatar.attachment&.url }
     },
     avatar_content_type: {
       getter: ->(principal) { principal.avatar.attachment&.content_type }
     }
   }
 
-  config.service_provider.finder = ->(issuer_or_entity_id) { service_providers[issuer_or_entity_id] }
+  config.service_provider.finder = ->(issuer_or_entity_id) do
+    service_providers[issuer_or_entity_id]
+  end
 end

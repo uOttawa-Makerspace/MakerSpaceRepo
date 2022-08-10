@@ -19,6 +19,5 @@ FactoryBot.define do
     trait :with_invalid_staff_files do
       staff_files { [FilesTestHelper.png] }
     end
-
   end
 end

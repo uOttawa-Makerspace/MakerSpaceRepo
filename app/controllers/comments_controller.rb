@@ -11,7 +11,11 @@ class CommentsController < SessionsController
     comment.username = @user.username
 
     if comment.save
-      redirect_to repository_path(id: repository.id, user_username: repository.user_username, :anchor => "repo-comments")
+      redirect_to repository_path(
+                    id: repository.id,
+                    user_username: repository.user_username,
+                    anchor: "repo-comments"
+                  )
     else
       redirect_to root_path
     end
@@ -20,14 +24,17 @@ class CommentsController < SessionsController
   def destroy
     if comment = Comment.find_by(id: params[:id])
       if @user.admin? || comment.user == @user
-        flash[:notice] = 'Comment deleted succesfully' if comment.destroy
+        flash[:notice] = "Comment deleted succesfully" if comment.destroy
       else
-        flash[:alert] = 'Something went wrong'
+        flash[:alert] = "Something went wrong"
       end
     else
-      flash[:alert] = 'Something went wrong'
+      flash[:alert] = "Something went wrong"
     end
-    redirect_to repository_path(id: comment.repository.id, user_username: comment.repository.user_username)
+    redirect_to repository_path(
+                  id: comment.repository.id,
+                  user_username: comment.repository.user_username
+                )
   end
 
   private
