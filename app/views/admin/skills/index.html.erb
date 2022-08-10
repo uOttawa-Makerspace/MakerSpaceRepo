@@ -5,10 +5,12 @@
     <p class="text-center"><%= link_to "New Skill Type", new_admin_skill_path, class: "btn btn-secondary" %></p>
     <br />
     <table class="table table-striped mb-5">
-      <tr class="text-center">
-        <th>Skill</th>
-        <th>Action</th>
-      </tr>
+      <thead class="table-primary">
+        <tr class="text-center">
+          <th>Skill Type</th>
+          <th>Action</th>
+        </tr>
+      </thead>
 
       <% @skills.each do |t| %>
         <tr>

@@ -15,7 +15,7 @@
               Categories:
               <br />
               <div class="mt-3">
-                <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name'), {}, {multiple: true, :id => "questions_trainings", :class => "form-control form-select"} %>
+                <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name',false), {}, {multiple: true, :id => "questions_trainings", :class => "form-control form-select"} %>
               </div>
               <br />
 
@@ -74,4 +74,27 @@
     </div>
   </div>
 </div>
-
+<script>
+if (document.getElementById("questions_trainings")) {
+    if (!document.getElementById("questions_trainings").tomselect) {
+        new TomSelect("#questions_trainings", {
+            plugins: {
+                "clear_button": { title: "Clear" }
+            },
+        });
+    }
+}
+document.getElementById("pictureInput").addEventListener('change', function (event) {
+    var files = event.target.files;
+    var image = files;
+    for (var i = 0; i < files.length; i++) {
+        var reader = new FileReader();
+        reader.onload = function (file) {
+            var img = new Image();
+            img.src = file.target.result;
+            document.getElementById('image-target').insertBefore(img, null);
+        }
+        reader.readAsDataURL(image[i]);
+    }
+});
+</script>

@@ -23,8 +23,9 @@
         <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']).order('name ASC'), 'id', 'name'), prompt: 'Select instructor', class: "form-control form-select", required: true %><br>
       <% end %>
     <br />
-      <table class="staff-table table text-center" id="staff-users-table">
+      <table class="staff-table table text-center table-striped" id="staff-users-table">
         <h3>Users Inside <%=@space.name%></h3>
+        <thead class="table-primary">
         <tr>
           <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <%=fa_icon('arrow-down')%></th>
           <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
@@ -32,7 +33,7 @@
           <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
           <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
         </tr>
-
+        </thead>
         <% @space.signed_in_users.each do |user| %>
           <tr id="<%= return_no_waiver_id(user) %>">
             <td class="action-cell">
@@ -77,12 +78,12 @@
   </div>
 </section>
 <script>
-document.addEventListener('turbolinks:load', ()=>{
     if (document.getElementById("user_id")){
+      if (!document.getElementById("user_id").tomselect){
         new TomSelect("#user_id", {
             placeholder: "Select a user",
             maxItems: 1,
             plugins: ['remove_button'],
         });
-    }
-});</script>
+    }}
+</script>

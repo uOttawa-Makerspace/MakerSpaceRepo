@@ -201,15 +201,13 @@ class ProjectProposalsController < ApplicationController
   def approve
     @project_proposal = ProjectProposal.find(params[:id])
     @project_proposal.update(approved: 1, admin_id: current_user.id)
-    flash[:notice] = 'Project Proposal Approved'
-    redirect_to project_proposals_url
+    redirect_to project_proposals_url, notice: 'Project Proposal Approved'
   end
 
   def decline
     @project_proposal = ProjectProposal.find(params[:id])
     @project_proposal.update(approved: 0, admin_id: current_user.id)
-    flash[:notice] = 'Project Proposal Declined'
-    redirect_to project_proposals_url
+    redirect_to project_proposals_url, notice: 'Project Proposal Declined'
   end
 
   def join_project_proposal
@@ -217,11 +215,9 @@ class ProjectProposalsController < ApplicationController
     @project_join = ProjectJoin.new(project_join_params)
     @project_join.user_id = @user.id
     if @project_join.save
-      flash[:notice] = 'You joined this project.'
-      redirect_to project_proposal_path(@project_proposal.slug)
+      redirect_to project_proposal_path(@project_proposal.slug), notice: 'You joined this project.'
     else
-      flash[:alert] = 'You already joined this project or something went wrong.'
-      redirect_to project_proposal_path(@project_proposal.slug)
+      redirect_to project_proposal_path(@project_proposal.slug), alert: 'You already joined this project or something went wrong.'
     end
   end
 
@@ -229,11 +225,9 @@ class ProjectProposalsController < ApplicationController
     @project_proposal = ProjectProposal.find(params[:project_proposal_id])
     @project_join = ProjectJoin.find(params[:project_join_id])
     if @project_join.delete
-      flash[:notice] = 'You unjoined this project.'
-      redirect_to project_proposal_path(@project_proposal.slug)
+      redirect_to project_proposal_path(@project_proposal.slug), notice: 'You unjoined this project.'
     else
-      flash[:alert] = 'Something went wrong.'
-      redirect_to project_proposal_path(@project_proposal.slug)
+      redirect_to project_proposal_path(@project_proposal.slug), alert: 'Something went wrong.'
     end
   end
 
@@ -320,8 +314,7 @@ class ProjectProposalsController < ApplicationController
 
   def show_only_project_approved
     if !@user.admin? && @project_proposal.approved != 1
-      flash[:alert] = 'You are not allowed to access this project.'
-      redirect_to root_path
+      redirect_to root_path, alert: 'You are not allowed to access this project.'
     end
   end
 

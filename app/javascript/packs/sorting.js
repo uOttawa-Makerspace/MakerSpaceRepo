@@ -21,7 +21,6 @@ window.findSession = function(table_class, id = 'query') {
     }else{
       tr[i].style.display = "none";
     }
-    console.log(tr[i]);
   }
 }
 

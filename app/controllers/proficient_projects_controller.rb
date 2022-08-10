@@ -47,14 +47,12 @@ class ProficientProjectsController < DevelopmentProgramsController
       begin
         create_photos
       rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
-        flash[:alert] = 'Something went wrong while uploading photos, try uploading them again later.'
         @proficient_project.destroy
-        render json: {redirect_uri: request.path}
+        redirect_to request.path, alert: 'Something went wrong while uploading photos, try uploading them again later.'
 
       else
         create_files
-        flash[:notice] = 'Proficient Project successfully created.'
-        render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
+        redirect_to proficient_project_path(@proficient_project.id), notice: 'Proficient Project successfully created.'
       end
     else
       flash[:alert] = 'Something went wrong'
@@ -90,10 +88,10 @@ class ProficientProjectsController < DevelopmentProgramsController
         update_photos
       rescue FastImage::ImageFetchFailure, FastImage::UnknownImageType, FastImage::SizeNotFound => e
         flash[:alert_yellow] = 'Something went wrong while uploading photos, try again later. Other changes have been saved.'
-        render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
+        redirect_to proficient_project_path(@proficient_project.id)
       else
         flash[:notice] = 'Proficient Project successfully updated.'
-        render json: {redirect_uri: proficient_project_path(@proficient_project.id).to_s}
+        redirect_to proficient_project_path(@proficient_project.id)
       end
     else
       flash[:alert] = 'Unable to apply the changes.'

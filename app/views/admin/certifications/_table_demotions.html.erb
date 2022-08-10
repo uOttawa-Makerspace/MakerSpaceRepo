@@ -1,15 +1,17 @@
 <div class="table-responsive table-striped">
-  <table class="table sessions-table" id="table-js-demotions">
+  <table class="table sessions-table  table-striped" id="table-js-demotions">
+    <thead class="table-primary">
     <tr>
-      <th>User</th>
-      <th>Training</th>
-      <th>Trainer</th>
-      <th>Created on</th>
-      <th>Demoted on</th>
-      <th>Demotion's reason</th>
-      <th>Demoted By</th>
-      <th class="action-header">Action</th>
-    </tr>
+       <th>User</th>
+       <th>Training</th>
+       <th>Trainer</th>
+       <th>Created on</th>
+       <th>Demoted on</th>
+       <th>Demotion's reason</th>
+       <th>Demoted By</th>
+       <th class="action-header">Action</th>
+     </tr>
+     </thead>
 
     <tbody>
     <% @demotions.each do |demotion| %>

@@ -102,27 +102,23 @@ class Admin::UsersController < AdminAreaController
     end
     if @edit_admin_user.update(user_params)
       create_certifications
-      render json: { redirect_uri: edit_admin_user_path(@edit_admin_user).to_s }
-      flash[:notice] = 'User information updated!'
+      redirect_to edit_admin_user_path(@edit_admin_user), notice: 'User information updated!'
     end
   end
 
   def delete_repository
     Repository.find(params[:id]).destroy
-    redirect_to root_path
-    flash[:notice] = 'Repository Deleted!'
+    redirect_to root_path, notice: 'Repository Deleted!'
   end
 
   def delete_project_proposal
     ProjectProposal.find(params[:id]).destroy
-    redirect_to project_proposals_path
-    flash[:notice] = 'Project Proposal Deleted!'
+    redirect_to project_proposals_path, notice: 'Project Proposal Deleted!'
   end
 
   def delete_user
     User.find(params[:id]).destroy
-    redirect_to root_path
-    flash[:notice] = 'User Deleted!'
+    redirect_to root_path, notice: 'User Deleted!'
   end
 
   def set_role

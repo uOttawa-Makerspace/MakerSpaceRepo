@@ -1,5 +1,3 @@
-import TomSelect from 'tom-select';
-
 window.showPass = function () {
     document.getElementById("password_repo_field").style.display = 'block'
 };
@@ -17,9 +15,8 @@ window.togglePass = function () {
     }
 }
 
-
-document.addEventListener("turbolinks:load", function () {
-    if (document.getElementById("search_users_add")) {
+if (document.getElementById("search_users_add")) {
+    if (!document.getElementById("search_users_add").tomselect) {
         new TomSelect("#search_users_add", {
             searchField: ['name'],
             valueField: 'id',
@@ -40,7 +37,9 @@ document.addEventListener("turbolinks:load", function () {
             }
         })
     }
-    if (document.getElementById("search_users_remove")) {
+}
+if (document.getElementById("search_users_remove")) {
+    if (!document.getElementById("search_users_remove").tomselect) {
         new TomSelect("#search_users_remove", {
             searchField: ['name'],
             valueField: 'id',
@@ -49,7 +48,9 @@ document.addEventListener("turbolinks:load", function () {
             searchOnKeyUp: true,
         })
     }
-    if (document.getElementById("search_project_proposals")) {
+}
+if (document.getElementById("search_project_proposals")) {
+    if (!document.getElementById("search_project_proposals").tomselect) {
         new TomSelect("#search_project_proposals", {
             searchField: ['name'],
             valueField: 'id',
@@ -58,16 +59,28 @@ document.addEventListener("turbolinks:load", function () {
             searchOnKeyUp: true,
         })
     }
-    if (document.getElementById("repository_categories")){
-        new TomSelect("#repository_categories",{
+}
+if (document.getElementById("repository_categories")) {
+    if (!document.getElementById("repository_categories").tomselect) {
+        new TomSelect("#repository_categories", {
             plugins: ['remove_button'],
-            maxItems:5
+            maxItems: 5
         })
     }
-    if (document.getElementById("repository_equipments")){
-        new TomSelect("#repository_equipments",{
+}
+if (document.getElementById("repository_equipments")) {
+    if (!document.getElementById("repository_equipments").tomselect) {
+        new TomSelect("#repository_equipments", {
             plugins: ['remove_button'],
-            maxItems:5
+            maxItems: 5
         })
     }
-});
+}
+if (document.getElementById("repository_project_proposal_id")){
+    if (!document.getElementById("repository_project_proposal_id").tomselect) {
+        new TomSelect("#repository_project_proposal_id", {
+            plugins: ['remove_button'],
+            maxItems: 1
+        })
+    }
+}

@@ -5,14 +5,15 @@
   <br />
   <% if @badge_template.present? %>
     <div class="table-responsive">
-      <table class="table sessions-table">
+      <table class="table sessions-table table-striped">
+      <thead class="table-primary">
         <tr>
           <th>Badge Name</th>
           <th>Related training</th>
           <th>Training level</th>
           <th class="action-header">Action</th>
         </tr>
-
+      </thead>
         <tbody>
           <% @badge_template.each do |bt| %>
             <tr>

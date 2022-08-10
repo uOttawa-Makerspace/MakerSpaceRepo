@@ -5,11 +5,12 @@
     <p class="text-center"><%= link_to "New Location", new_admin_drop_off_location_path, class: "btn btn-secondary" %></p>
     <br />
     <table class="table table-striped mb-5">
+      <thead class="table-primary">
       <tr class="text-center">
         <th>Drop-Off Location</th>
         <th>Action</th>
       </tr>
-
+      </thead>
       <% @locations.each do |t| %>
         <tr>
           <td><%= t.name %></td>

@@ -6,9 +6,9 @@
   <br />
 
   <div class="mb-3">
-          <%= fa_icon 'search', class: "fa-2x pe-2" %>
-    <div class="w-auto d-inline-block">
-      <%= text_field_tag(:search, search(params[:search]), placeholder: "Search by Course, Training, User, Date ...", class: 'form-control', id:"training_session_searchbar", style: "width: 100%") %>
+    <div class="input-group w-50 mx-auto">
+      <%= text_field_tag(:search, search(params[:search]), placeholder: "Search by Course, Training, User, Date ...", class: 'form-control', id:"training_session_searchbar") %>
+      <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
     </div>
   </div>
 

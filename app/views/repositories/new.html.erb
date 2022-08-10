@@ -135,6 +135,7 @@
 <script type="text/javascript" charset="utf-8">
     document.addEventListener("turbolinks:load", function() {
       if (document.getElementById("owner_select")) {
+        if (!document.getElementById("owner_select").tomselect){
         new TomSelect("#owner_select",{
                   searchField: ['name'],
         valueField: 'id',
@@ -154,6 +155,6 @@
         shouldLoad: function (type) {
             return type.length > 2;
         }
-        })}
+        })}}
     });
 </script>
