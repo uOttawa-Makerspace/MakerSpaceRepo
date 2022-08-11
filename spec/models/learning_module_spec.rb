@@ -52,6 +52,13 @@ RSpec.describe LearningModule, type: :model do
       end
     end
 
+    context "#set_order" do
+      it "should set the order of the Learning Module" do
+        expect(create(:learning_module).order).to eq(0)
+        expect(create(:learning_module).order).to eq(1)
+      end
+    end
+
     context "#filter_by_attribute" do
       before(:each) do
         create(:learning_module)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_07_11_154732) do
+ActiveRecord::Schema.define(version: 2022_08_09_013906) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -452,6 +452,7 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "level", default: "Beginner"
+    t.integer "order"
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|

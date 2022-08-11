@@ -50,6 +50,7 @@
     "rails-erb-loader": "^5.5.2",
     "rails-ujs": "^5.2.4-3",
     "sass": "^1.32.6",
+    "sortablejs": "^1.15.0",
     "toastr": "^2.1.4",
     "tom-select": "^2.0.0",
     "trix": "^1.2.0",

@@ -37,12 +37,19 @@ class DevelopmentProgramsController < ApplicationController
   def join_development_program
     program =
       Program.new(user_id: current_user.id, program_type: Program::DEV_PROGRAM)
-    if program.save!
+    if program.save
       flash[:notice] = "You've joined the Development Program"
       redirect_to development_programs_path
     else
-      flash[:notice] = "Something went wrong."
-      redirect_to root_path
+      redirect_to root_path,
+                  alert:
+                    (
+                      if current_user.dev_program?
+                        "You already joined the Program. You can already access it!"
+                      else
+                        "Something went wrong. Please try again later"
+                      end
+                    )
     end
   end
 
