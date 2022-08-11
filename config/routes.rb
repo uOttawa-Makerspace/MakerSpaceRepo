@@ -354,7 +354,10 @@ Rails.application.routes.draw do
   end
 
   resources :learning_area do
-    collection { get :open_modal }
+    collection do
+      get :open_modal
+      put :reorder
+    end
   end
 
   resources :learning_module_track, only: %i[index] do

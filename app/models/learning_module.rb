@@ -9,6 +9,7 @@ class LearningModule < ApplicationRecord
   validates :title, presence: { message: "A title is required." }
   validate :uniqueness
   before_save :capitalize_title
+  before_create :set_order
 
   scope :filter_by_level, ->(level) { where(level: level) }
 
@@ -52,5 +53,16 @@ class LearningModule < ApplicationRecord
          .count > 0
       self.errors.add(:title, "Title already exists")
     end
+  end
+
+  def set_order
+    self.order =
+      (
+        if LearningModule.maximum(:order).present?
+          LearningModule.maximum(:order) + 1
+        else
+          0
+        end
+      )
   end
 end
