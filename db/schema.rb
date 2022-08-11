@@ -951,12 +951,6 @@ ActiveRecord::Schema.define(version: 2022_08_09_013906) do
     t.datetime "last_signed_in_time"
     t.string "otp_secret"
     t.integer "last_otp_at"
-    t.index "lower(f_unaccent((email)::text)) varchar_pattern_ops",
-            name: "index_users_email_lower"
-    t.index "lower(f_unaccent((name)::text)) varchar_pattern_ops",
-            name: "index_users_name_lower"
-    t.index "lower(f_unaccent((username)::text)) varchar_pattern_ops",
-            name: "index_users_username_lower"
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 

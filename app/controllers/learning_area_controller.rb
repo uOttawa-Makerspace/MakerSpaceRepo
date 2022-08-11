@@ -105,7 +105,8 @@ class LearningAreaController < DevelopmentProgramsController
 
   def reorder
     if params[:data].present?
-      lm_order = LearningModule.where(id: params[:data]).pluck(:order)
+      lm_order =
+        LearningModule.where(id: params[:data]).order(:order).pluck(:order)
       params[:data].each_with_index do |lm, i|
         LearningModule.find(lm).update(order: lm_order[i])
       end

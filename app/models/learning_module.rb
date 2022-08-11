@@ -56,6 +56,13 @@ class LearningModule < ApplicationRecord
   end
 
   def set_order
-    self.order = LearningModule.maximum(:order).order + 1
+    self.order =
+      (
+        if LearningModule.maximum(:order).present?
+          LearningModule.maximum(:order) + 1
+        else
+          0
+        end
+      )
   end
 end
