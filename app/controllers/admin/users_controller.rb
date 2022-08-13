@@ -117,8 +117,12 @@ class Admin::UsersController < AdminAreaController
   end
 
   def delete_user
-    User.find(params[:id]).destroy
-    redirect_to root_path, notice: 'User Deleted!'
+    if User.authenticate(params[:username_email], params[:password]).admin?
+      User.find(params[:id]).destroy
+      redirect_to root_path, notice: 'User Deleted!'
+    else
+      redirect_to user_path(User.find(params[:id]).username), alert: 'Invalid password!'
+    end
   end
 
   def set_role
