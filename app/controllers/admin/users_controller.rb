@@ -117,8 +117,13 @@ class Admin::UsersController < AdminAreaController
   end
 
   def delete_user
-    if User.authenticate(params[:username_email], params[:password]).admin?
-      User.find(params[:id]).destroy
+    if @user.admin? && @user.pword == params[:password]
+      delete_user = User.find(params[:id])
+      delete_user.repositories.each do |repository|
+          repository.destroy
+      end
+      LabSession.where(user_id: delete_user.id).destroy_all
+      delete_user.destroy
       redirect_to root_path, notice: 'User Deleted!'
     else
       redirect_to user_path(User.find(params[:id]).username), alert: 'Invalid password!'

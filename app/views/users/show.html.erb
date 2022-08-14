@@ -540,7 +540,6 @@
             <%= hidden_field_tag "id", @repo_user.id%>
             <%= label_tag :delete_user, "Are you sure you want to delete this user?", class:"form-label mb-3" %>
             <%= password_field_tag :password, nil, placeholder: t('sessions.login.password'), class: 'form-control mb-3' %>
-            <%= text_field_tag :username_email, params[:username_email], placeholder: t('sessions.login.username_or_email'), class: 'form-control mb-3', autofocus: true %>
             <%= submit_tag "Delete", class: "btn btn-danger" %>
           <% end %>
           </div>

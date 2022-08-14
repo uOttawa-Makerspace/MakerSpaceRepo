@@ -284,6 +284,11 @@ class UsersController < SessionsController
   end
 
   def destroy
+    sign_out
+    @user.repositories.each do |repo|
+      repo.destroy
+    end
+    LabSession.where(user_id: @user.id).destroy_all
     @user.destroy
     #disconnect_user
     redirect_to root_path
