@@ -20,7 +20,7 @@ RSpec.describe ProjectProposal, type: :model do
       it { should allow_value("johndoe").for(:title) }
       it do
         should validate_presence_of(:title).with_message(
-                 "Project title is required."
+                 'Veuillez entrer le titre du projet / Please enter the project\'s title'
                )
       end
     end
@@ -28,7 +28,7 @@ RSpec.describe ProjectProposal, type: :model do
     context "email" do
       it do
         should validate_presence_of(:email).with_message(
-                 "Your email is required."
+                 "Veuillez entrer votre addresse couriel / Please enter your email address"
                )
       end
     end
