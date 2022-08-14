@@ -42,19 +42,18 @@ class Repository < ApplicationRecord
               scope: :user_username
             }
 
-  validates :share_type,
-            presence: {
-              message: "Is your project public or private?"
-            },
-            inclusion: {
-              in: %w[public private]
-            }
+  validates :share_type, inclusion: { in: %w[public private], message: "" }
 
   validates :password,
             presence: {
               message: "Password is required for private projects"
             },
             if: :private?
+
+  # validates :category,
+  #           inclusion: { within: CategoryOption.show_options },
+  #           presence: { message: "A category is required."},
+  #           length: {maximum: 5, message:"You may only select 5 categories."}
 
   before_save do
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)
@@ -97,10 +96,6 @@ class Repository < ApplicationRecord
         ->(start_date, end_date) {
           where("created_at BETWEEN ? AND ? ", start_date, end_date)
         }
-
-  # validates :category,
-  #   inclusion: { within: category_options },
-  #   presence: { message: "A category is required."}
 
   # validates :license,
   #   inclusion: { within: license_options },

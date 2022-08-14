@@ -17,16 +17,39 @@ class ProjectProposal < ApplicationRecord
 
   scope :approved, -> { where(approved: 1) }
 
+  validates :username,
+            presence: {
+              message: "Veuillez entrer votre nom / Please enter your name."
+            }
+
   validates :title,
             format: {
               with: /\A[-a-zA-ZÀ-ÿ\d\s]*\z/,
-              message: "Invalid project title"
+              message: "Le titre du projet est invalide / Invalid project title"
             },
             presence: {
-              message: "Project title is required."
+              message:
+                'Veuillez entrer le titre du projet / Please enter the project\'s title'
             }
 
-  validates :email, presence: { message: "Your email is required." }
+  validates :email,
+            presence: {
+              message:
+                "Veuillez entrer votre addresse couriel / Please enter your email address"
+            }
+
+  validates :client,
+            presence: {
+              message:
+                'Veuillez entrer le nom du client / Please enter the client\'s name'
+            }
+
+  validates :project_cost,
+            numericality: {
+              greater_than_or_equal_to: 0,
+              message:
+                "Coût prévu du projet invalide / Estimated cost can not be below 0"
+            }
 
   before_save do
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)

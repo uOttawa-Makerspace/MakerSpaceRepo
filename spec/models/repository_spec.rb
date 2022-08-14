@@ -58,11 +58,6 @@ RSpec.describe Repository, type: :model do
     context "share type" do
       it { should_not allow_value("Nothing").for(:share_type) }
       it { should allow_value("public", "private").for(:share_type) }
-      it do
-        should validate_presence_of(:share_type).with_message(
-                 "Is your project public or private?"
-               )
-      end
     end
 
     context "password private" do

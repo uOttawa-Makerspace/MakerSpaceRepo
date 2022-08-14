@@ -141,14 +141,6 @@ class ProjectProposalsController < ApplicationController
   def create
     @project_proposal =
       ProjectProposal.new(project_proposal_params.except(:categories))
-    if params[:categories].present?
-      if params[:categories].all? { |c| c.is_a? String }
-        params[:categories] = params[:categories].map do |c|
-          Category.create(name: c, project_proposal_id: @project_proposal.id)
-        end
-      end
-      @project_proposal.categories = params[:categories]
-    end
     @project_proposal.user_id = @user.try(:id)
 
     respond_to do |format|

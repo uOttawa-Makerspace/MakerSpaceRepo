@@ -47,8 +47,12 @@ section#new-repo {
     position: relative;
     margin-bottom: 15px;
     border-radius: 3px;
-    border: 1px solid #aaa;
     display: block;
+  }
+  input.repo:not(.is-invalid),
+  textarea:not(.is-invalid),
+  input#tag:not(.is-invalid) {
+    border: 1px solid #aaa;
   }
 
   input.repo {

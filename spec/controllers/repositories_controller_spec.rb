@@ -181,13 +181,13 @@ RSpec.describe RepositoriesController, type: :controller do
 
       it "should create a repository with categories and equipements" do
         repo_params = FactoryBot.attributes_for(:repository)
+        repo_params[:categories] = ["Laser", "3D Printing"]
+        repo_params[:equipments] = ["Laser Cutter", "3D Printer"]
         expect {
           post :create,
                params: {
                  user_username: User.last.username,
-                 repository: repo_params,
-                 categories: ["Laser", "3D Printing"],
-                 equipments: ["Laser Cutter", "3D Printer"]
+                 repository: repo_params
                }
         }.to change(Repository, :count).by(1)
         expect(Repository.last.users.first.id).to eq(User.last.id)

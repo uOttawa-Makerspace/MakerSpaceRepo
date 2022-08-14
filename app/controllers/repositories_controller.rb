@@ -101,23 +101,6 @@ class RepositoriesController < SessionsController
 
     @repository =
       Repository.new(repository_params.except(:categories, :equipments))
-    if params[:categories].present?
-      if params[:categories].all? { |c| c.is_a? String }
-        params[:categories] = params[:categories].map do |c|
-          Category.create(name: c, repository_id: @repository.id)
-        end
-      end
-      @repository.categories = params[:categories]
-    end
-    if params[:equipments].present?
-      if params[:equipments].all? { |e| e.is_a? String }
-        params[:equipments] = params[:equipments].map do |e|
-          Equipment.create(name: e, repository_id: @repository.id)
-        end
-      end
-      @repository.equipments = params[:equipments]
-    end
-
     @repository.user_id = @user.id
     @repository.users << @user
     @repository.user_username = @user.username
@@ -150,8 +133,9 @@ class RepositoriesController < SessionsController
         redirect_to repository_path(@user.username, @repository.slug).to_s
       end
     else
-      render json: @repository.errors["title"].first,
-             status: :unprocessable_entity
+      @project_proposals =
+        ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
+      render "new", status: 422
     end
   end
 

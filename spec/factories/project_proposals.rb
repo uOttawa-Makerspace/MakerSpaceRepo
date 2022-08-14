@@ -13,6 +13,7 @@ FactoryBot.define do
     client_background { "None" }
     supervisor_background { "None" }
     equipments { "Not informed." }
+    project_cost { Faker::Number.number(digits: 2) }
 
     trait "normal" do
       youtube_link { "" }
