@@ -111,9 +111,12 @@ class ProficientProjectsController < DevelopmentProgramsController
                     notice: "Proficient Project successfully created."
       end
     else
+      @training_levels ||= TrainingSession.return_levels
+      @training_categories = Training.all.order(:name).pluck(:name, :id)
+      @drop_off_location = DropOffLocation.all.order(name: :asc)
+      @badge_templates = BadgeTemplate.all.order(badge_name: :asc)
       flash[:alert] = "Something went wrong"
-      render json: @proficient_project.errors["title"].first,
-             status: :unprocessable_entity
+      render "new", status: 422
     end
   end
 

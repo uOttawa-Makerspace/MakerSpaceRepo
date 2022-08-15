@@ -102,9 +102,7 @@
     <%= label_tag :file, "Project files<br>Fichiers du Projet".html_safe, class:"form-label" %>
     <div class="mb-3"></div>
     <div class="input-group mb-3">
-      <div class="form-control">
-        <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control-input', aria_label: 'Project Files / Fichiers du projet' %>
-      </div>
+      <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
     </div>
 
     <div id="file-container"></div>
@@ -119,9 +117,7 @@
         <%= fa_icon 'cloud-upload' %>
         <p>Drag &amp; Drop</p>
       </div>
-      <div class="form-control">
-        <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control-input", aria_label: "Select Pictures / Selectionner des images" %>
-      </div>
+      <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control", aria_label: "Select Pictures / Selectionner des images" %>
     </div>
 
     <br>
