@@ -51,9 +51,11 @@
             <th class="action-header">Sign Out of <%= @space.name.capitalize %></th>
           </tr>
         </thead>
+
         <%=render partial:"signed_in_table", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
       </table>
     </div>
+
     <div class="table-responsive">
       <p class="text-center">Users recently signed out of <%= @space.name %></p>
       <table class="staff-recent-users-table text-center mb-5 table table-striped">
