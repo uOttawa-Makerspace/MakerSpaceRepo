@@ -63,10 +63,12 @@
               <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
             <th class="email-header">Email
               <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="last-seen-header">Last Seen
+              <span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
             <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
           </tr>
         </thead>
-        <%= render partial:"newly_signed_up", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
+        <%= render partial:"signed_out_table", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
       </table>
     </div>
     <br>
@@ -79,12 +81,10 @@
               <span onclick="sortTable('staff-recent-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
             <th class="email-header">Email
               <span onclick="sortTable('staff-recent-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="last-seen-header">Last Seen
-              <span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
             <th class="action-header">Sign In To <%= @space.name.capitalize %></span></th>
           </tr>
         </thead>
-        <%= render partial:"signed_out_table", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
+        <%= render partial:"newly_signed_up", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
       </table>
     </div>
     <br />
