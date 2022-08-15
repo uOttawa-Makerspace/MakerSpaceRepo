@@ -4,11 +4,13 @@
 
 div#printer-div {
   height: 4em;
-  position: relative }
+  position: relative;
+}
 div.container div#printer-div-2 {
   margin: 0;
   position: absolute;
   top: 50%;
   left: 50%;
   margin-right: -50%;
-  transform: translate(-50%, -50%) }
+  transform: translate(-50%, -50%);
+}

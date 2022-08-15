@@ -4,8 +4,8 @@
 
   <%= form_for @repository, url: {controller: "repositories", action: "create"}, html: {multipart: true} do |f| %>
     <br>
-    <div class="mb-3">
-    <%= f.label :title, "*Title/Titre", class:"form-label" %>
+    <div class="mb-3 required">
+    <%= f.label :title, "Title/Titre", class:"form-label" %>
     <div>Great project titles are short and memorable.<br>Des titres de projets génial sont court et mémorable.</div>
     <%= f.text_field :title, class: 'repo form-control' %>
     </div>
@@ -26,8 +26,8 @@
     </div>
 
     <div id="file-container"></div>
-
-    <%= label_tag :photo, "*Gallery/Galerie", class:"form-label" %>
+    <div class="mb-3 required">
+    <%= label_tag :photo, "Gallery/Galerie", class:"form-label" %>
     <div>A maximum of five photos can be uploaded per repository.<br>Un maximum de cinq photos peuvent être téléchargés
       par répertoire.
     </div>
@@ -41,6 +41,7 @@
         <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control-input", aria_label: "Select Pictures / Selectionner des images" %>
       </div>
     </div>
+    </div>
 
     <div id="image-container"></div>
     <div class="mb-3">
@@ -51,8 +52,8 @@
     <%= f.text_field :youtube_link, class: 'repo form-control' %>
     </div>
     <br>
-    <div class="mb-3">
-    <%= f.label :categories, "*Categories/Catégories", class:"form-label" %>
+    <div class="mb-3 required">
+    <%= f.label :categories, "Categories/Catégories", class:"form-label" %>
 
     <div>Choose at most 5 categories that fit your project.<br>Choisi un maximum de 5 catégories qui convent à ton
       projet
@@ -107,19 +108,21 @@
     <br>
 
 
-    <div id="share_option" class="form-check">
+    <div id="share_option">
       <%= f.label :share_type, "Your project is...", class:"form-label" %>
-      <%= fa_icon('globe') %>
-      <%= f.radio_button(:share_type, "public", :class => "show_extra form-check-input", :style => "margin-right: 4px;  height:16px;width:16px", :onclick => "hidePass();", required: true) %><%= f.label('share_type_public', "Public", :id => "type", :style => "display:inline") %>
+
+      <%= f.radio_button(:share_type, "public", :class => "show_extra form-check-input", :style => "margin-right: 4px;  height:16px;width:16px", :onclick => "hidePass();") %><%= f.label('share_type_public', fa_icon('globe') +  " Public", :id => "type", :style => "display:inline") %>
       <div id="description"> Anyone can see this repository</div>
-      <%= fa_icon('lock') %>
-      <%= f.radio_button(:share_type, "private", :class => "show_extra form-check-input", :style => "margin-right: 4px; height:16px;width:16px", :onclick => "showPass();") %><%= f.label('share_type_private', "Private / Privé", :id => "type", :style => "display:inline") %>
+
+      <%= f.radio_button(:share_type, "private", :class => "show_extra form-check-input", :style => "margin-right: 4px; height:16px;width:16px", :onclick => "showPass();") %><%= f.label('share_type_private', fa_icon('lock') + " Private / Privé", :id => "type", :style => "display:inline") %>
       <div id="description"> Only those with the url and password can view this repository</div>
 
       <div id="pass" class="mb-3">
         <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', style: "display: none;", 'aria-label': "Password / Mot de Passe", class: "form-control" %>
       </div>
-
+      <div class="invalid-feedback">
+        Please Select a Share Type
+      </div>
     </div>
 
     <br>

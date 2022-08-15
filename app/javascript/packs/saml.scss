@@ -29,14 +29,14 @@ html.saml-login {
 
     .break {
       &::before {
-        content: ' – ';
+        content: " – ";
       }
 
       @media (max-width: 575.98px) {
         display: block;
 
         &::before {
-          content: '';
+          content: "";
         }
       }
 
@@ -44,7 +44,7 @@ html.saml-login {
         display: block;
 
         &::before {
-          content: '';
+          content: "";
         }
       }
     }
@@ -58,7 +58,9 @@ html.saml-login {
     justify-content: center;
   }
 
-  input, textarea, .btn {
+  input,
+  textarea,
+  .btn {
     box-shadow: none;
   }
 

@@ -13,15 +13,15 @@ FactoryBot.define do
       after :create do |task|
         training1 = create(:training)
         training2 = create(:training)
-        RequireTraining.create(volunteer_task_id: task.id, training_id: training1.id)
-        RequireTraining.create(volunteer_task_id: task.id, training_id: training2.id)
+        RequireTraining.create(
+          volunteer_task_id: task.id,
+          training_id: training1.id
+        )
+        RequireTraining.create(
+          volunteer_task_id: task.id,
+          training_id: training2.id
+        )
       end
     end
   end
 end
-
-
-
-
-
-

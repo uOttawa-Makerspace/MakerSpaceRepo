@@ -1,10 +1,13 @@
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins 'localhost:3001', 'uottawa-makerspace.github.io/makerepo-react-app', 'uottawa-makerspace.github.io', 'app.makerepo.com'
+    origins "localhost:3001",
+            "uottawa-makerspace.github.io/makerepo-react-app",
+            "uottawa-makerspace.github.io",
+            "app.makerepo.com"
 
-    resource '*',
+    resource "*",
              headers: :any,
-             methods: [:get, :post, :put, :patch, :delete, :options, :head],
+             methods: %i[get post put patch delete options head],
              credentials: true
   end
 end

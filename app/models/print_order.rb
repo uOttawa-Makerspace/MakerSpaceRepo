@@ -1,30 +1,63 @@
 # frozen_string_literal: true
-require 'date'
+require "date"
 
 class PrintOrder < ApplicationRecord
   belongs_to :user
   after_save :set_filename
 
   has_one_attached :file
-  validates :file, file_content_type: {
-      allow: ['application/pdf', 'image/svg+xml', 'text/html', 'model/stl', 'application/vnd.ms-pki.stl', 'application/octet-stream', 'text/plain', "model/x.stl-binary", 'model/x.stl-binary', 'text/x.gcode', 'image/vnd.dxf', 'image/x-dxf', 'model/x.stl-ascii'],
-      if: -> {file.attached?},
-  }
+  validates :file,
+            file_content_type: {
+              allow: %w[
+                application/pdf
+                image/svg+xml
+                text/html
+                model/stl
+                application/vnd.ms-pki.stl
+                application/octet-stream
+                text/plain
+                model/x.stl-binary
+                model/x.stl-binary
+                text/x.gcode
+                image/vnd.dxf
+                image/x-dxf
+                model/x.stl-ascii
+              ],
+              if: -> { file.attached? }
+            }
 
   has_many_attached :final_file
-  validates :final_file, file_content_type: {
-      allow: ['application/pdf', 'image/svg+xml', 'text/html', 'model/stl', 'application/vnd.ms-pki.stl', 'application/octet-stream', 'text/plain', "model/x.stl-binary", 'model/x.stl-binary', 'text/x.gcode', 'image/vnd.dxf', 'image/x-dxf', 'model/x.stl-ascii'],
-      if: -> {final_file.attached?},
-  }
+  validates :final_file,
+            file_content_type: {
+              allow: %w[
+                application/pdf
+                image/svg+xml
+                text/html
+                model/stl
+                application/vnd.ms-pki.stl
+                application/octet-stream
+                text/plain
+                model/x.stl-binary
+                model/x.stl-binary
+                text/x.gcode
+                image/vnd.dxf
+                image/x-dxf
+                model/x.stl-ascii
+              ],
+              if: -> { final_file.attached? }
+            }
 
   has_one_attached :pdf_form
-  validates :pdf_form, file_content_type: {
-    allow: %w[application/pdf text/plain],
-    if: -> {pdf_form.attached?},
-  }
+  validates :pdf_form,
+            file_content_type: {
+              allow: %w[application/pdf text/plain],
+              if: -> { pdf_form.attached? }
+            }
 
   def set_filename
-    file.blob.update(filename: "#{id}_#{file.filename}") if file.attached? && !file.filename.to_s.start_with?(id.to_s)
+    if file.attached? && !file.filename.to_s.start_with?(id.to_s)
+      file.blob.update(filename: "#{id}_#{file.filename}")
+    end
 
     if final_file.attached?
       final_file.each do |staff_files|
@@ -35,12 +68,13 @@ class PrintOrder < ApplicationRecord
     end
 
     if pdf_form.attached?
-      pdf_form.blob.update(filename: "#{id}_#{pdf_form.filename}") if pdf_form.attached? && !pdf_form.filename.to_s.start_with?(id.to_s)
+      if pdf_form.attached? && !pdf_form.filename.to_s.start_with?(id.to_s)
+        pdf_form.blob.update(filename: "#{id}_#{pdf_form.filename}")
+      end
     end
   end
 
   def self.filter_by_date(start_date, end_date)
-
     if end_date.present?
       begin
         end_date = Date.parse(end_date).to_date
@@ -53,16 +87,36 @@ class PrintOrder < ApplicationRecord
 
     if start_date.present?
       begin
-        where('created_at > ? AND created_at <= ?', Date.parse(start_date).to_date, end_date)
+        where(
+          "created_at > ? AND created_at <= ?",
+          Date.parse(start_date).to_date,
+          end_date
+        )
       rescue ArgumentError
-        if start_date == '1m'
-          where('created_at > ? AND created_at <= ?', 1.month.ago.to_date, end_date)
-        elsif start_date == '3m'
-          where('created_at > ? AND created_at <= ?', 3.months.ago.to_date, end_date)
-        elsif start_date == '6m'
-          where('created_at > ? AND created_at <= ?', 6.months.ago.to_date, end_date)
-        elsif start_date == '12m'
-          where('created_at > ? AND created_at <= ?', 1.year.ago.to_date, end_date)
+        if start_date == "1m"
+          where(
+            "created_at > ? AND created_at <= ?",
+            1.month.ago.to_date,
+            end_date
+          )
+        elsif start_date == "3m"
+          where(
+            "created_at > ? AND created_at <= ?",
+            3.months.ago.to_date,
+            end_date
+          )
+        elsif start_date == "6m"
+          where(
+            "created_at > ? AND created_at <= ?",
+            6.months.ago.to_date,
+            end_date
+          )
+        elsif start_date == "12m"
+          where(
+            "created_at > ? AND created_at <= ?",
+            1.year.ago.to_date,
+            end_date
+          )
         else
           default_scoped
         end
@@ -71,5 +125,4 @@ class PrintOrder < ApplicationRecord
       default_scoped
     end
   end
-
 end

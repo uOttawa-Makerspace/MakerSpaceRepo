@@ -2,6 +2,6 @@
 
 module QuestionsHelper
   def return_answer_border_color(answer)
-    answer.correct ? 'border-success' : 'border-danger'
+    answer.correct ? "border-success" : "border-danger"
   end
 end

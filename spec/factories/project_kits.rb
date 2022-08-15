@@ -4,7 +4,7 @@ FactoryBot.define do
     association :proficient_project
     name { Faker::Name.name }
 
-    trait 'delivered' do
+    trait "delivered" do
       delivered { true }
     end
   end

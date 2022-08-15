@@ -2,30 +2,25 @@ namespace :active_storage do
   task migrate: :environment do
     Rails.application.eager_load!
     models = ActiveRecord::Base.descendants.reject(&:abstract_class?)
-    @bucket_name = Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name]
+    @bucket_name =
+      Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name]
     @region = Rails.application.credentials[Rails.env.to_sym][:aws][:region]
     models.each do |model|
-      attachments = model.column_names.map do |c|
-        if c =~ /(.+)_file_name$/
-          $1
-        end
-      end.compact
+      attachments =
+        model.column_names.map { |c| $1 if c =~ /(.+)_file_name$/ }.compact
 
-      if attachments.blank?
-        next
-      end
+      next if attachments.blank?
 
-      attachments.each do |attachment|
-        migrate_data(attachment,model)
-      end
+      attachments.each { |attachment| migrate_data(attachment, model) }
     end
   end
 
   private
 
-    def migrate_data(attachment, model)
-      model.where.not("#{attachment}_file_name": nil).find_each do |instance|
-
+  def migrate_data(attachment, model)
+    model
+      .where.not("#{attachment}_file_name": nil)
+      .find_each do |instance|
         content_type = instance.send("#{attachment}_content_type")
         filename = instance.send("#{attachment}_file_name")
 
@@ -35,12 +30,15 @@ namespace :active_storage do
         id = instance.id
         id_partition = ("%09d".freeze % id).scan(/\d{3}/).join("/".freeze)
 
-        if klass.to_s == 'photos'
-          url = "https://#{@bucket_name}.s3-#{@region}.amazonaws.com/repo_images/#{id}/#{filename}"
-        elsif klass.to_s == 'repo_files'
-          url = "https://#{@bucket_name}.s3-#{@region}.amazonaws.com/repo_files/#{id}/#{filename}"
+        if klass.to_s == "photos"
+          url =
+            "https://#{@bucket_name}.s3-#{@region}.amazonaws.com/repo_images/#{id}/#{filename}"
+        elsif klass.to_s == "repo_files"
+          url =
+            "https://#{@bucket_name}.s3-#{@region}.amazonaws.com/repo_files/#{id}/#{filename}"
         else
-          url = "https://#{@bucket_name}.s3-#{@region}.amazonaws.com/#{klass}/#{attachment.pluralize}/#{id_partition}/original/#{filename}"
+          url =
+            "https://#{@bucket_name}.s3-#{@region}.amazonaws.com/#{klass}/#{attachment.pluralize}/#{id_partition}/original/#{filename}"
         end
 
         response, url = return_response_from_url_and_url(url)
@@ -50,21 +48,20 @@ namespace :active_storage do
         puts url
 
         instance.send(attachment.to_sym).attach(
-            io: open(url),
-            filename: filename,
-            content_type: content_type
+          io: open(url),
+          filename: filename,
+          content_type: content_type
         )
       end
-    end
+  end
 
-    def return_response_from_url_and_url(url)
-      url = url.gsub(" ", "_")
-      url = URI.encode(url)
-      url = URI.parse(url)
-      req = Net::HTTP.new(url.host, url.port)
-      req.use_ssl = true
-      res = req.request_head(url.path)
-      return res.code, url
-    end
-
+  def return_response_from_url_and_url(url)
+    url = url.gsub(" ", "_")
+    url = URI.encode(url)
+    url = URI.parse(url)
+    req = Net::HTTP.new(url.host, url.port)
+    req.use_ssl = true
+    res = req.request_head(url.path)
+    return res.code, url
+  end
 end
