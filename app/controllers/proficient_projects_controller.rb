@@ -115,7 +115,8 @@ class ProficientProjectsController < DevelopmentProgramsController
       @training_categories = Training.all.order(:name).pluck(:name, :id)
       @drop_off_location = DropOffLocation.all.order(name: :asc)
       @badge_templates = BadgeTemplate.all.order(badge_name: :asc)
-      render "new", alert: "Something went wrong", status: 422
+      flash[:alert] = "Something went wrong"
+      render "new", status: 422
     end
   end
 
