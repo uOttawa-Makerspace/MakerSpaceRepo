@@ -137,8 +137,7 @@ document.querySelectorAll(".invalid-feedback").forEach((el) => {
   el.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     document.getElementById("deleteimages").value += el.id + ",";
-    el.parentElement.parentElement.remove();
+    el.parentElement.remove();
   });
 });

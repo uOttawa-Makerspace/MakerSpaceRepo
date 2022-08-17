@@ -61,8 +61,9 @@ class LearningAreaController < DevelopmentProgramsController
       end
     else
       flash[:alert] = "Something went wrong"
-      render json: @learning_module.errors["title"].first,
-             status: :unprocessable_entity
+      @training_levels ||= TrainingSession.return_levels
+      @training_categories = Training.all.order(:name).pluck(:name, :id)
+      render "new", status: 422
     end
   end
 

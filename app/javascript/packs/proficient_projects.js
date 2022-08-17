@@ -41,3 +41,19 @@ if (form) {
     }
   });
 }
+[...document.getElementsByClassName("file-remove")].forEach((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById("deletefiles").value += el.id + ",";
+    el.parentElement.parentElement.remove();
+  });
+});
+[...document.getElementsByClassName("image-remove")].forEach((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById("deleteimages").value += el.id + ",";
+    el.parentElement.remove();
+  });
+});
