@@ -13,13 +13,15 @@ RSpec.describe HelpController, type: :controller do
   context "PUT /send_email" do
     describe "submit help" do
       it "should send an email" do
-        put :send_email,
-            params: {
-              name: "John",
-              email: "john@doe.com",
-              subject: "HELP",
-              message: "HELP !!!"
-            }
+        post :send_email,
+             params: {
+               help: {
+                 name: "John",
+                 email: "john@doe.com",
+                 subject: "HELP",
+                 comments: "HELP !!!"
+               }
+             }
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(
           "john@doe.com"
