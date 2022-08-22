@@ -83,6 +83,7 @@ if (form) {
       if (!clientBackground.parentElement.querySelector(".invalid-feedback")) {
         let clientFeedback = document.createElement("div");
         clientFeedback.classList.add("invalid-feedback");
+
         clientFeedback.innerText =
           "Veuillez entrer le contexte du client / Please enter client's background";
         clientBackground.parentElement.appendChild(clientFeedback);

@@ -41,7 +41,7 @@ class MakesController < SessionsController
       end
     else
       flash[:alert] = "Something went wrong"
-      render json: @repo.errors["title"].first, status: :unprocessable_entity
+      render :new
     end
   end
 

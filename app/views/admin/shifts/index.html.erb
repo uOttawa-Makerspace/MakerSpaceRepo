@@ -2,9 +2,14 @@
   <br>
   <div class="d-flex justify-content-center">
     <%= form_tag admin_shifts_path, method: :get do %>
+      <% if params[:space_id].present?%>
+        <% space_id = params[:space_id]%>
+      <% else %>
+        <% space_id = @space_id %>
+      <%end%>
       <div class="input-group mb-3">
         <%= label_tag :space_id, "Space", class: 'input-group-text' %>
-        <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: (params[:space_id].present? ? params[:space_id] : Space.find_by(name: 'Makerspace').id)), class: "form-select" %>
+        <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: (space_id.present? ? space_id : Space.find_by(name: 'Makerspace').id)), class: "form-select" %>
         <button class="btn btn-outline-secondary" type="submit">Go</button>
       </div>
     <% end %>

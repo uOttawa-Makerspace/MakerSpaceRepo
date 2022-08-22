@@ -112,15 +112,17 @@
 
     <br />
 
-    <table class="staff-recent-users-table text-center" id="table-js-signed-out">
+    <table class="staff-recent-users-table text-center table table-striped" id="table-js-signed-out">
       <h2>Users recently signed out of <%=@space.name.capitalize%></h2>
+      <thead class="table-primary">
       <tr>
         <th>Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
         <th>Email <span onclick="sortTable('staff-recent-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
         <th>Last Seen <span onclick="sortTable('staff-recent-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
         <th class="action-header">Sign In To <%=@space.name.capitalize%></th>
       </tr>
-
+      </thead>
+      <tbody>
       <% @space.recently_signed_out_users.each do |user| %>
         <tr class="add-rows" id="<%= return_no_waiver_id(user) %>">
           <td class="add-username-cell"><%=
@@ -143,6 +145,7 @@
 
         </tr>
       <% end %>
+      </tbody>
       <br />
     </table>
     <br>
