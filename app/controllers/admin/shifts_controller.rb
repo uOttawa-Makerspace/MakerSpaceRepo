@@ -9,6 +9,7 @@ class Admin::ShiftsController < AdminAreaController
   def index
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @colors = {}
+    @space_id = @user.space_id || Space.first.id
 
     StaffSpace
       .where(space_id: @space_id)
