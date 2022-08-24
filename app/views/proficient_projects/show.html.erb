@@ -1,9 +1,9 @@
 <% provide(:title, "Proficient Project") %>
 <section class="card w3-card-2 <%= return_border_color(@proficient_project.level) %>">
   <div>
-    <%= link_to 'Delete', @proficient_project, method: :delete, class: "btn btn-danger float-left ml-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin? %>
-    <b class="float-left ml-5 mt-5 text-info p-1"><%= @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : @proficient_project.cc.to_s + " Ccs" %></b>
-    <%= link_to "Edit", edit_proficient_project_path(@proficient_project.id), class: "btn btn-primary float-right mr-5 mt-5", style: "opacity: 0.5" if current_user.admin? %>
+    <%= link_to 'Delete', @proficient_project, method: :delete, class: "btn btn-danger float-start ms-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin? %>
+    <b class="float-start ms-5 mt-5 text-info p-1"><%= @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : @proficient_project.cc.to_s + " Ccs" %></b>
+    <%= link_to "Edit", edit_proficient_project_path(@proficient_project.id), class: "btn btn-primary float-end me-5 mt-5", style: "opacity: 0.5" if current_user.admin? %>
   </div>
   <div class="text-center">
     Badge that will be Awarded:
@@ -20,9 +20,9 @@
     <h2 class="text-center title"><%= @proficient_project.title.html_safe %></h2>
     <% if current_user.admin? %>
       <%= form_tag project_requirements_path, method: :post do %>
-        <div class="form-inline">
+        <div class="w-auto d-inline-block">
           <%= hidden_field_tag(:id, @proficient_project.id) %>
-          <% label_tag 'required_project_id' %>
+          <% label_tag 'required_project_id', class:"form-label" %>
           <%= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects_selected, 'id', 'title'), prompt: 'Select required project' %>
           <br>
           <%= submit_tag 'Add Required Project', class: "btn btn-primary" %>
@@ -44,7 +44,7 @@
       <br/>
       <div class="row">
         <div class="col-lg-12">
-          <div class="jumbotron text-center text-wrap">
+          <div class="jumbotron card bg-light text-center text-wrap">
             <%= @proficient_project.description.html_safe %>
           </div>
           <div id="show-photo">
@@ -91,8 +91,8 @@
 <% end %>
 
 <% @files.each do |f| %>
-  <div class="embed-responsive embed-responsive-16by9">
-    <iframe class="embed-responsive-item" src="<%= url_for(f.file) %>" allowfullscreen></iframe>
+  <div class="ratio ratio-16x9">
+    <iframe src="<%= url_for(f.file) %>" allowfullscreen></iframe>
     <br/>
   </div>
 <% end %>
@@ -107,14 +107,14 @@
     <% @project_requirements.each do |project_requirement| %>
       <% project_required = project_requirement.required_project %>
       <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(project_required.level) %>" style="border-width:2px !important;">
-        <form class="form-inline">
-          <div class="form-group">
-            <%= link_to "-Edit-", edit_proficient_project_path(project_required.id), class: "btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
+        <form class="w-auto d-inline-block">
+          <div class="mb-3">
+            <%= link_to "Edit", edit_proficient_project_path(project_required.id), class: "btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
           </div>
-          <div class="form-group mx-auto">
+          <div class="mb-3 mx-auto">
             <p><h6 class="text-center py-3"><strong><%= project_required.training.name %></strong></h6></p>
           </div>
-          <div class="form-group">
+          <div class="mb-3">
             <%= link_to 'Unfollow', project_requirement, method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Project Requirement, but not the Project itself.'} if current_user.admin? %>
           </div>
         </form>
@@ -124,7 +124,7 @@
         </a>
         <div>
           <a href="<%= proficient_project_path(project_required.id) %>">
-            <h6 class="pt-3 font-weight-bold text-center"><strong><%= project_required.title %></strong></h6></a>
+            <h6 class="pt-3 fw-bold text-center"><strong><%= project_required.title %></strong></h6></a>
           <p><%= project_required.level %></p>
         </div>
       </div>
@@ -138,8 +138,8 @@
   <div class="row text-center">
     <% @inverse_required_projects.each do |inverse_required_project| %>
       <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(inverse_required_project.level) %>" style="border-width:2px !important;">
-        <form class="form-inline">
-          <div class="form-group mx-auto">
+        <form class="w-auto d-inline-block">
+          <div class="mb-3 mx-auto">
             <p><h6 class="text-center py-3"><strong><%= inverse_required_project.training.name %></strong></h6></p>
           </div>
         </form>
@@ -149,7 +149,7 @@
         </a>
         <div>
           <a href="<%= proficient_project_path(inverse_required_project.id) %>">
-            <h6 class="pt-3 font-weight-bold text-center"><strong><%= inverse_required_project.title %></strong></h6>
+            <h6 class="pt-3 fw-bold text-center"><strong><%= inverse_required_project.title %></strong></h6>
           </a>
           <p><%= inverse_required_project.level %></p>
         </div>

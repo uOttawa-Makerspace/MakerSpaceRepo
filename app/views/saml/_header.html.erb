@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="saml-login" lang="en">
+<html class="sams-login" lang="en">
 <head>
   <title>MakerRepo</title>
 
@@ -16,20 +16,22 @@
 </head>
 <body class="h-100 d-flex flex-column">
   <nav class="navbar navbar-expand-xl navbar-light bg-light">
+  <div class="container-fluid">
     <a class="navbar-brand" href="/">Maker<strong>Repo</strong></a>
 
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav ml-auto align-items-xl-baseline">
+      <ul class="navbar-nav ms-auto align-items-xl-baseline">
         <% locales_change.each do |locale| %>
           <li class="nav-item">
             <%= link_to t('name', locale: locale), url_for(request.query_parameters.merge(locale: locale)), class: 'nav-link' %>
           </li>
         <% end %>
       </ul>
+    </div>
     </div>
   </nav>
 

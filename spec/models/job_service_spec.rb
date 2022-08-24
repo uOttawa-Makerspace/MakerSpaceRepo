@@ -1,8 +1,8 @@
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe JobService, type: :model do
-  describe 'Association' do
-    context 'belongs_to' do
+  describe "Association" do
+    context "belongs_to" do
       it { should belong_to(:job_service_group) }
     end
 
@@ -11,14 +11,14 @@ RSpec.describe JobService, type: :model do
     end
   end
 
-  describe 'Active Storage' do
-    context 'file type validation' do
-      it 'should be false' do
+  describe "Active Storage" do
+    context "file type validation" do
+      it "should be false" do
         job_service = build(:job_service, :with_invalid_files)
         expect(job_service.valid?).to be_falsey
       end
 
-      it 'should be true' do
+      it "should be true" do
         job_service = build(:job_service, :with_files)
         expect(job_service.valid?).to be_truthy
       end

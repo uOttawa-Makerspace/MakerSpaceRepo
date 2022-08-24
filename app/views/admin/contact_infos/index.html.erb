@@ -1,15 +1,15 @@
 <section>
   <div class="text-center">
 
-    <h2 class="py-3 font-weight-bold">Contact Infos</h2>
+    <h2 class="py-3 fw-bold">Contact Infos</h2>
 
     <%= link_to "New Contact Info", new_admin_contact_info_path, :class=>"btn btn-primary m-3" %>
 
     <% if !@contact_infos.blank? %>
 
-      <div class="table-responsive table-striped">
-        <table class="table sessions-table">
-
+      <div class="table-responsive">
+        <table class="table sessions-table table-striped">
+        <thead class="table-primary">
           <tr>
             <th>Name</th>
             <th>Email</th>
@@ -18,7 +18,7 @@
             <th>Show Hours</th>
             <th class="action-header">Action</th>
           </tr>
-
+        </thead>
           <tbody>
           <% @contact_infos.each do |a| %>
             <tr>
@@ -43,10 +43,10 @@
               </td>
 
               <td class="action-cell">
-                <%=link_to "Edit", edit_admin_contact_info_path(a.id), class:"btn btn-primary btn-block btn-sm mb-1 mt-0"%>
+                <%=link_to "Edit", edit_admin_contact_info_path(a.id), class:"btn btn-primary d-block w-100 btn-sm mt-0"%>
                 <%=link_to "Delete", { controller: :contact_infos ,action: :destroy, id: a.id }, method: :delete,
                            data: { confirm: 'Are you sure that you want to delete this contact information ?' },
-                           class:"btn btn-danger btn-sm btn-block mb-1 mr-0" %>
+                           class:"btn btn-danger btn-sm d-block w-100 me-0" %>
               </td>
             </tr>
           <% end %>

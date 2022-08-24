@@ -5,9 +5,9 @@
 
       <h2>New Job Order (Step 1/4)</h2>
 
-      <div class="form-group col-lg-6 mx-auto">
+      <div class="col-lg-6 mx-auto">
         <%= f.label :job_type_id, 'Job Type' %>
-        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_order.job_type_id.present? ? @job_order.job_type_id : ''), {}, {class: "form-control", 'x-model': 'job_type_id'} %>
+        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_order.job_type_id.present? ? @job_order.job_type_id : ''), {}, {class: "form-control form-select", 'x-model': 'job_type_id'} %>
       </div>
 
       <% JobType.all.each do |jo| %>

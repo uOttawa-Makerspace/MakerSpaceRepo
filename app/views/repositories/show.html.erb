@@ -138,9 +138,9 @@
         <div class="repo-info-item">
           <div class="title">Link to Project Proposal:</div>
           <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
-            <div class="form-group">
+            <div class="mb-3">
               <%= f.hidden_field :repository_id, value: @repository.id %>
-              <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "form-control", :id => "options"}) %>
+              <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "form-control", :id => "search_project_proposals"}) %>
               <br> </br>
               <%= f.submit "Link", class: "btn btn-primary" %>
             </div>
@@ -151,9 +151,9 @@
         <div class="repo-info-item">
           <div class="title">Add an owner:</div>
           <%= form_for :repo_owner, url: {controller: "repositories", action: "add_owner"}, method: :patch do |f| %>
-              <div class="form-group">
+              <div class="mb-3">
                 <%= f.hidden_field :repository_id, value: @repository.id %>
-                <%= f.select(:owner_id, @all_users , {prompt: "Choose..."} , {:class => "search_users_add form-control", :id => "search_users_add"}) %>
+                <%= f.select(:owner_id, "" , {prompt: "Choose..."} , {:class => "search_users_add form-control", :id => "search_users_add"}) %>
                 <br> </br>
                 <%= f.submit "Add", class: "btn btn-success" %>
               </div>
@@ -164,7 +164,7 @@
           <div class="repo-info-item">
             <div class="title">Remove an owner:</div>
             <%= form_for :repo_owner, url: {controller: "repositories", action: "remove_owner"}, method: :patch do |f| %>
-                <div class="form-group">
+                <div class="mb-3">
                   <%= f.hidden_field :repository_id, value: @repository.id %>
                   <%= f.select(:owner_id, @owners.pluck(:name, :id) , {prompt: "Choose..."} , {:class => "search_users_remove form-control", :id => "search_users_remove"}) %>
                   <br> </br>
@@ -181,7 +181,7 @@
   <section id="repo-comments">
     <div class="title">Comments</div>
     <%= form_for("Comments", url: comments_create_path, id: 'comment', remote: true ) do%>
-      <div style="max-width: 50rem" class="form-group">
+      <div style="max-width: 50rem" class="mb-3">
         <%= hidden_field_tag :content %>
         <trix-editor input="content"></trix-editor>
       </div>

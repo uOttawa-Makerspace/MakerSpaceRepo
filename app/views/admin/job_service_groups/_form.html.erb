@@ -25,39 +25,39 @@
 
       <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :job_type_id, 'Job Type' %>
-        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_service_group.job_type_id.present? ? @job_service_group.job_type_id : ''), {}, class: "form-control" %>
+        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_service_group.job_type_id.present? ? @job_service_group.job_type_id : ''), {}, class: "form-control form-select" %>
       </div>
 
       <div class="mb-3">
         <%= f.label :multiple, "Accept multiple service selection in group", required: true %>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :multiple, false, class: 'custom-control-input' %>
-          <%= f.label :multiple, 'No', class: 'custom-control-label', value: false %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :multiple, false, class: 'form-check-input' %>
+          <%= f.label :multiple, 'No', class: 'form-check-label', value: false %>
         </div>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :multiple, true, class: 'custom-control-input' %>
-          <%= f.label :multiple, 'Yes', class: 'custom-control-label', value: true %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :multiple, true, class: 'form-check-input' %>
+          <%= f.label :multiple, 'Yes', class: 'form-check-label', value: true %>
         </div>
       </div>
 
       <div class="mb-3">
         <%= f.label :text_field, "Accept text-field input", required: true %>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :text_field, 'false', class: 'custom-control-input' %>
-          <%= f.label :text_field, 'No', class: 'custom-control-label', value: 'false' %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :text_field, 'false', class: 'form-check-input' %>
+          <%= f.label :text_field, 'No', class: 'form-check-label', value: 'false' %>
         </div>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :text_field, 'true', class: 'custom-control-input' %>
-          <%= f.label :text_field, 'Yes', class: 'custom-control-label', value: 'true' %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :text_field, 'true', class: 'form-check-input' %>
+          <%= f.label :text_field, 'Yes', class: 'form-check-label', value: 'true' %>
         </div>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :text_field, 'option', class: 'custom-control-input' %>
-          <%= f.label :text_field, 'Option', class: 'custom-control-label', value: 'option' %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :text_field, 'option', class: 'form-check-input' %>
+          <%= f.label :text_field, 'Option', class: 'form-check-label', value: 'option' %>
         </div>
       </div>
 

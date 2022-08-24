@@ -33,11 +33,11 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7.2
+          ruby-version: 2.7.3
           bundler-cache: true
       - uses: actions/setup-node@v2
         with:
-          node-version: "12"
+          node-version: "14.15.5"
       - uses: c-hive/gha-yarn-cache@v1
       - run: npm i -g yarn
       - run: yarn install

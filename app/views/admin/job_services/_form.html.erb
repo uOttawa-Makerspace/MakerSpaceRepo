@@ -24,7 +24,7 @@
       </div>
       <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :job_service_group_id, 'Job Service Group' %>
-        <%= f.select :job_service_group_id, options_from_collection_for_select(JobServiceGroup.all, :id, :name, @job_service.job_service_group_id.present? ? @job_service.job_service_group_id : ''), {}, class: "form-control" %>
+        <%= f.select :job_service_group_id, options_from_collection_for_select(JobServiceGroup.all, :id, :name, @job_service.job_service_group_id.present? ? @job_service.job_service_group_id : ''), {}, class: "form-control form-select" %>
       </div>
 
       <div class="col-lg-6 text-center mx-auto mb-3">
@@ -55,14 +55,14 @@
       <div class="mb-3">
         <%= f.label :required, "Required? (ex: Onyx for MarkForged)", required: true %>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :required, false, class: 'custom-control-input' %>
-          <%= f.label :required, 'No', class: 'custom-control-label', value: false %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :required, false, class: 'form-check-input' %>
+          <%= f.label :required, 'No', class: 'form-check-label', value: false %>
         </div>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :required, true, class: 'custom-control-input' %>
-          <%= f.label :required, 'Yes', class: 'custom-control-label', value: true %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :required, true, class: 'form-check-input' %>
+          <%= f.label :required, 'Yes', class: 'form-check-label', value: true %>
         </div>
       </div>
 

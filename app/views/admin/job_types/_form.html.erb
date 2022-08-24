@@ -25,7 +25,7 @@
 
       <div class="form-group col-lg-6 mx-auto mb-3">
         <%= f.label :comments, 'Comments (To be shown at the bottom of the page)' %>
-        <div class="text-left">
+        <div class="text-start">
           <%= f.trix_editor :comments, class: 'form-control', style: "height: auto!important;" %>
         </div>
       </div>
@@ -33,14 +33,14 @@
       <div class="mb-3">
         <%= f.label :multiple_files, "Accept multiple files", required: true %>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :multiple_files, false, class: 'custom-control-input' %>
-          <%= f.label :multiple_files, 'No', class: 'custom-control-label', value: false %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :multiple_files, false, class: 'form-check-input' %>
+          <%= f.label :multiple_files, 'No', class: 'form-check-label', value: false %>
         </div>
 
-        <div class="custom-control custom-radio custom-control-inline">
-          <%= f.radio_button :multiple_files, true, class: 'custom-control-input' %>
-          <%= f.label :multiple_files, 'Yes', class: 'custom-control-label', value: true %>
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :multiple_files, true, class: 'form-check-input' %>
+          <%= f.label :multiple_files, 'Yes', class: 'form-check-label', value: true %>
         </div>
       </div>
 

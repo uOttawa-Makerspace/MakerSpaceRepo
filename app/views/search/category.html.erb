@@ -34,7 +34,7 @@
         <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
       </div>
       <div class="repo-info">
-        <div class="left">
+        <div class="start">
           <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %>
             <% if repository.featured %> &nbsp;
               <%= fa_icon 'star' %><br>

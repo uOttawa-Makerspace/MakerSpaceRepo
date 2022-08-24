@@ -4,7 +4,6 @@ bob_lathe_1:
   training_session_id: 1
   created_at: <%= 1.month.ago %>
 
-
 mary_welding_3:
   id: 2
   user_id: 2

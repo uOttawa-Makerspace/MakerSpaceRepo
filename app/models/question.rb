@@ -5,7 +5,7 @@ class Question < ApplicationRecord
   has_many :exams, through: :exam_questions
   has_many :answers, dependent: :destroy
 
-  LEVELS = ['Beginner', 'Intermediate', 'Advanced']
+  LEVELS = %w[Beginner Intermediate Advanced]
 
   has_many :exam_responses, through: :exam_questions do
     def find_by_user(user)
@@ -19,8 +19,9 @@ class Question < ApplicationRecord
 
   accepts_nested_attributes_for :answers
   has_many_attached :images
-  validates :images, file_content_type: {
-      allow: ['image/jpeg', 'image/png'],
-      if: -> {images.attached?},
-  }
+  validates :images,
+            file_content_type: {
+              allow: %w[image/jpeg image/png],
+              if: -> { images.attached? }
+            }
 end

@@ -1,7 +1,7 @@
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe JobType, type: :model do
-  describe 'Association' do
+  describe "Association" do
     context "has_many" do
       it { should have_many(:job_service_groups) }
       it { should have_many(:job_orders) }
@@ -13,12 +13,10 @@ RSpec.describe JobType, type: :model do
   end
 
   describe "Validations" do
-
     context "name" do
       subject { build :job_type }
       it { should validate_presence_of(:name) }
       it { should validate_uniqueness_of(:name) }
     end
-
   end
 end

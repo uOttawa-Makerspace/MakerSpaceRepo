@@ -3,12 +3,21 @@
 class ApplicationController < ActionController::Base
   # Prevent CSRF attacks by raising an exception.
   # For APIs, you may want to use :null_session instead.
-  protect_from_forgery with: :null_session, only: proc { |c| c.request.format == 'application/json' }
+  protect_from_forgery with: :null_session,
+                       only: proc { |c| c.request.format == "application/json" }
   include ApplicationHelper
-  require 'zip'
+  require "zip"
 
   before_action :set_locale
-  before_action :set_last_seen_at, if: proc { signed_in? && (current_user.last_seen_at.nil? || current_user.last_seen_at < 15.minutes.ago) }
+  before_action :set_last_seen_at,
+                if:
+                  proc {
+                    signed_in? &&
+                      (
+                        current_user.last_seen_at.nil? ||
+                          current_user.last_seen_at < 15.minutes.ago
+                      )
+                  }
   helper_method :current_order
 
   def set_locale
@@ -19,7 +28,8 @@ class ApplicationController < ActionController::Base
   def current_order
     if !session[:order_id].nil?
       Order.find(session[:order_id])
-    elsif current_user.orders.last.present? && current_user.orders.last.order_status.name.eql?("In progress")
+    elsif current_user.orders.last.present? &&
+          current_user.orders.last.order_status.name.eql?("In progress")
       current_user.orders.last
     else
       Order.new
@@ -38,8 +48,8 @@ class ApplicationController < ActionController::Base
 
     respond_to do |format|
       format.html { redirect_to login_path(back_to: request.fullpath) }
-      format.js   { render js: "window.location.href = '#{login_path}'" }
-      format.json { render json: 'redirect' }
+      format.js { render js: "window.location.href = '#{login_path}'" }
+      format.json { render json: "redirect" }
     end
   end
 end

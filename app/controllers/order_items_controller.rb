@@ -4,11 +4,13 @@ class OrderItemsController < DevelopmentProgramsController
   def create
     @order = current_order
     @order.user = current_user
-    proficient_project = ProficientProject.find(params[:order_item][:proficient_project_id])
+    proficient_project =
+      ProficientProject.find(params[:order_item][:proficient_project_id])
     if @order.user.has_required_badges?(proficient_project.badge_requirements)
       begin
         @order_item = @order.order_items.new(order_item_params)
-        existing_order = @order.order_items.where(proficient_project: proficient_project)
+        existing_order =
+          @order.order_items.where(proficient_project: proficient_project)
         @order.save unless existing_order.count >= 1
       end
     end
@@ -36,10 +38,22 @@ class OrderItemsController < DevelopmentProgramsController
   end
 
   def revoke
-    OrderItem.find(params[:order_item_id]).update(status: 'Revoked')
-    order_items = OrderItem.completed_order.order(updated_at: :desc).includes(order: :user).joins(proficient_project: :badge_template)
-    @order_items = order_items.where(status: 'In progress').paginate(page: params[:page], per_page: 20)
-    @order_items_done = order_items.where.not(status: 'In progress').paginate(page: params[:page], per_page: 20)
+    OrderItem.find(params[:order_item_id]).update(status: "Revoked")
+    order_items =
+      OrderItem
+        .completed_order
+        .order(updated_at: :desc)
+        .includes(order: :user)
+        .joins(proficient_project: :badge_template)
+    @order_items =
+      order_items.where(status: "In progress").paginate(
+        page: params[:page],
+        per_page: 20
+      )
+    @order_items_done =
+      order_items
+        .where.not(status: "In progress")
+        .paginate(page: params[:page], per_page: 20)
   end
 
   private

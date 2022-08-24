@@ -2,7 +2,7 @@
 
 one:
   user_id: 123123
-  comment_id: 456456 
+  comment_id: 456456
 
 two:
   user_id: 456456

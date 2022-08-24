@@ -10,7 +10,10 @@ class PrintOrderMessage < ApplicationRecord
       print = PrintOrder.find(print)
       new_message = message
       new_message.gsub!(print_id, print.id.to_s)
-      new_message.gsub!(quote_balance, ActiveSupport::NumberHelper.number_to_currency(print.quote).to_s)
+      new_message.gsub!(
+        quote_balance,
+        ActiveSupport::NumberHelper.number_to_currency(print.quote).to_s
+      )
 
       new_message
     else

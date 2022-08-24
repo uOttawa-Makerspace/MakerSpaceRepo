@@ -7,7 +7,12 @@ module Filterable
     def filter_params(attributes)
       results = where(nil)
       attributes.each do |key, value|
-        results = results.public_send('filter_by_attribute', key, value) if value.present?
+        results =
+          results.public_send(
+            "filter_by_attribute",
+            key,
+            value
+          ) if value.present?
       end
       results
     end

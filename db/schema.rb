@@ -10,8 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_07_11_154732) do
-
+ActiveRecord::Schema.define(version: 2022_08_09_013906) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -23,7 +22,9 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.bigint "record_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["record_type", "record_id", "name"], name: "index_action_text_rich_texts_uniqueness", unique: true
+    t.index %w[record_type record_id name],
+            name: "index_action_text_rich_texts_uniqueness",
+            unique: true
   end
 
   create_table "active_storage_attachments", force: :cascade do |t|
@@ -33,7 +34,9 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
-    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
+    t.index %w[record_type record_id name blob_id],
+            name: "index_active_storage_attachments_uniqueness",
+            unique: true
   end
 
   create_table "active_storage_blobs", force: :cascade do |t|
@@ -51,7 +54,9 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
   create_table "active_storage_variant_records", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
-    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+    t.index %w[blob_id variation_digest],
+            name: "index_active_storage_variant_records_uniqueness",
+            unique: true
   end
 
   create_table "announcements", id: :serial, force: :cascade do |t|
@@ -82,8 +87,10 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.datetime "updated_at", null: false
     t.integer "badge_template_id"
     t.integer "proficient_project_id"
-    t.index ["badge_template_id"], name: "index_badge_requirements_on_badge_template_id"
-    t.index ["proficient_project_id"], name: "index_badge_requirements_on_proficient_project_id"
+    t.index ["badge_template_id"],
+            name: "index_badge_requirements_on_badge_template_id"
+    t.index ["proficient_project_id"],
+            name: "index_badge_requirements_on_proficient_project_id"
   end
 
   create_table "badge_templates", id: :serial, force: :cascade do |t|
@@ -119,7 +126,8 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.datetime "updated_at", null: false
     t.integer "category_option_id"
     t.integer "project_proposal_id"
-    t.index ["category_option_id"], name: "index_categories_on_category_option_id"
+    t.index ["category_option_id"],
+            name: "index_categories_on_category_option_id"
     t.index ["repository_id"], name: "index_categories_on_repository_id"
   end
 
@@ -141,7 +149,8 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.boolean "linked", default: true
     t.index ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id"
     t.index ["order_id"], name: "index_cc_moneys_on_order_id"
-    t.index ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id"
+    t.index ["proficient_project_id"],
+            name: "index_cc_moneys_on_proficient_project_id"
   end
 
   create_table "certifications", id: :serial, force: :cascade do |t|
@@ -152,7 +161,8 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.boolean "active", default: true
     t.string "demotion_reason"
     t.bigint "demotion_staff_id"
-    t.index ["demotion_staff_id"], name: "index_certifications_on_demotion_staff_id"
+    t.index ["demotion_staff_id"],
+            name: "index_certifications_on_demotion_staff_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
   end
 
@@ -280,8 +290,10 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "job_order_quote_id"
-    t.index ["job_option_id"], name: "index_job_order_quote_options_on_job_option_id"
-    t.index ["job_order_quote_id"], name: "index_job_order_quote_options_on_job_order_quote_id"
+    t.index ["job_option_id"],
+            name: "index_job_order_quote_options_on_job_option_id"
+    t.index ["job_order_quote_id"],
+            name: "index_job_order_quote_options_on_job_order_quote_id"
   end
 
   create_table "job_order_quote_services", force: :cascade do |t|
@@ -291,8 +303,10 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.bigint "job_order_quote_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["job_order_quote_id"], name: "index_job_order_quote_services_on_job_order_quote_id"
-    t.index ["job_service_id"], name: "index_job_order_quote_services_on_job_service_id"
+    t.index ["job_order_quote_id"],
+            name: "index_job_order_quote_services_on_job_order_quote_id"
+    t.index ["job_service_id"],
+            name: "index_job_order_quote_services_on_job_service_id"
   end
 
   create_table "job_order_quote_type_extras", force: :cascade do |t|
@@ -301,8 +315,10 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.decimal "price", precision: 10, scale: 2
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["job_order_quote_id"], name: "index_job_order_quote_type_extras_on_job_order_quote_id"
-    t.index ["job_type_extra_id"], name: "index_job_order_quote_type_extras_on_job_type_extra_id"
+    t.index ["job_order_quote_id"],
+            name: "index_job_order_quote_type_extras_on_job_order_quote_id"
+    t.index ["job_type_extra_id"],
+            name: "index_job_order_quote_type_extras_on_job_type_extra_id"
   end
 
   create_table "job_order_quotes", force: :cascade do |t|
@@ -333,8 +349,10 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.text "comments"
     t.text "user_comments"
     t.boolean "is_deleted", default: false
-    t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
-    t.index ["job_service_group_id"], name: "index_job_orders_on_job_service_group_id"
+    t.index ["job_order_quote_id"],
+            name: "index_job_orders_on_job_order_quote_id"
+    t.index ["job_service_group_id"],
+            name: "index_job_orders_on_job_service_group_id"
     t.index ["job_type_id"], name: "index_job_orders_on_job_type_id"
     t.index ["user_id"], name: "index_job_orders_on_user_id"
   end
@@ -343,7 +361,8 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.bigint "job_order_id", null: false
     t.bigint "job_service_id", null: false
     t.index ["job_order_id"], name: "index_job_orders_services_on_job_order_id"
-    t.index ["job_service_id"], name: "index_job_orders_services_on_job_service_id"
+    t.index ["job_service_id"],
+            name: "index_job_orders_services_on_job_service_id"
   end
 
   create_table "job_service_groups", force: :cascade do |t|
@@ -370,7 +389,8 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.bigint "job_order_id"
     t.boolean "user_created", default: false
     t.index ["job_order_id"], name: "index_job_services_on_job_order_id"
-    t.index ["job_service_group_id"], name: "index_job_services_on_job_service_group_id"
+    t.index ["job_service_group_id"],
+            name: "index_job_services_on_job_service_group_id"
   end
 
   create_table "job_statuses", force: :cascade do |t|
@@ -420,7 +440,8 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.bigint "user_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["learning_module_id"], name: "index_learning_module_tracks_on_learning_module_id"
+    t.index ["learning_module_id"],
+            name: "index_learning_module_tracks_on_learning_module_id"
     t.index ["user_id"], name: "index_learning_module_tracks_on_user_id"
   end
 
@@ -431,6 +452,7 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "level", default: "Beginner"
+    t.integer "order"
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|
@@ -613,8 +635,10 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.integer "badge_template_id"
     t.boolean "has_project_kit"
     t.bigint "drop_off_location_id"
-    t.index ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id"
-    t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
+    t.index ["badge_template_id"],
+            name: "index_proficient_projects_on_badge_template_id"
+    t.index ["drop_off_location_id"],
+            name: "index_proficient_projects_on_drop_off_location_id"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
@@ -645,8 +669,10 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "learning_module_id"
-    t.index ["learning_module_id"], name: "index_project_kits_on_learning_module_id"
-    t.index ["proficient_project_id"], name: "index_project_kits_on_proficient_project_id"
+    t.index ["learning_module_id"],
+            name: "index_project_kits_on_learning_module_id"
+    t.index ["proficient_project_id"],
+            name: "index_project_kits_on_proficient_project_id"
     t.index ["user_id"], name: "index_project_kits_on_user_id"
   end
 
@@ -673,7 +699,8 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.string "past_experiences"
     t.string "slug"
     t.bigint "linked_project_proposal_id"
-    t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
+    t.index ["linked_project_proposal_id"],
+            name: "index_project_proposals_on_linked_project_proposal_id"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
@@ -862,7 +889,8 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
   create_table "training_sessions_users", id: false, force: :cascade do |t|
     t.integer "training_session_id"
     t.integer "user_id"
-    t.index ["training_session_id"], name: "index_training_sessions_users_on_training_session_id"
+    t.index ["training_session_id"],
+            name: "index_training_sessions_users_on_training_session_id"
     t.index ["user_id"], name: "index_training_sessions_users_on_user_id"
   end
 
@@ -933,7 +961,8 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.boolean "processed", default: false, null: false
     t.bigint "learning_module_id"
     t.index ["learning_module_id"], name: "index_videos_on_learning_module_id"
-    t.index ["proficient_project_id"], name: "index_videos_on_proficient_project_id"
+    t.index ["proficient_project_id"],
+            name: "index_videos_on_proficient_project_id"
   end
 
   create_table "volunteer_hours", id: :serial, force: :cascade do |t|
@@ -977,8 +1006,12 @@ ActiveRecord::Schema.define(version: 2022_07_11_154732) do
     t.decimal "hours", precision: 5, scale: 2, default: "0.0"
   end
 
-  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_attachments",
+                  "active_storage_blobs",
+                  column: "blob_id"
+  add_foreign_key "active_storage_variant_records",
+                  "active_storage_blobs",
+                  column: "blob_id"
   add_foreign_key "badge_requirements", "badge_templates"
   add_foreign_key "badge_requirements", "proficient_projects"
   add_foreign_key "badge_templates", "trainings"

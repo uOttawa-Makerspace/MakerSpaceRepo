@@ -9,10 +9,8 @@
     <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.2/js/bootstrap-select.min.js"></script>
     <%= csrf_meta_tags %>
     <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.2/css/bootstrap-select.min.css">
 </head>
 <body data-no-turbolink="true">
 	<%= render 'layouts/header' %>
@@ -32,5 +30,6 @@
   </section>
 
   <%= render 'layouts/footer' %>
+  <%= javascript_pack_tag controller_name if File.exists?("#{Rails.root}/app/javascript/packs/#{controller_name}.js") %>
 </body>
 </html>
