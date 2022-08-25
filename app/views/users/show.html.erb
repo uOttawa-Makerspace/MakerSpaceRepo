@@ -212,7 +212,7 @@
                   <% begin %>
                     <div class="col-md-3">
                       <% if badges.badge_url.present? %>
-                        <a style="width: inherit" target="_blank" class="w-100" href="<%= @acclaim_badge_url + badges.acclaim_badge_id %>">
+                        <a target="_blank" class="w-100" href="<%= @acclaim_badge_url + badges.acclaim_badge_id %>">
                           <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", alt: 'Badge') %>
                         </a>
                       <% else %>
