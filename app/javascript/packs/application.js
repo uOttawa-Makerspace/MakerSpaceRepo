@@ -32,7 +32,6 @@ import moment from "moment";
 require("@rails/actiontext");
 require("flatpickr/dist/flatpickr");
 
-require("bootbox");
 require("packs/validation");
 require("packs/direct_uploads");
 require("packs/effects");
