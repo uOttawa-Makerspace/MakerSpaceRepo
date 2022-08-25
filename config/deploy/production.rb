@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-role :app, %w[deploy@server.makerepo.com]
-role :web, %w[deploy@server.makerepo.com]
-role :db,  %w[deploy@server.makerepo.com]
+role :app, %w[deploy@prod-server.makerepo.com]
+role :web, %w[deploy@prod-server.makerepo.com]
+role :db,  %w[deploy@prod-server.makerepo.com]
 
 set :branch, 'master'
 set :deploy_to, '/var/www/makerrepo'
