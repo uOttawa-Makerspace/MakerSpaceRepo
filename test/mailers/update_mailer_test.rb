@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'test_helper'
+require "test_helper"
 
 class UpdateMailerTest < ActionMailer::TestCase
   # test "the truth" do

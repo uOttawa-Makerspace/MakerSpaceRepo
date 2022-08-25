@@ -2,6 +2,6 @@
 
 class AddStatusToVolunteerTask < ActiveRecord::Migration[5.0]
   def change
-    add_column :volunteer_tasks, :status, :string, default: 'open'
+    add_column :volunteer_tasks, :status, :string, default: "open"
   end
 end

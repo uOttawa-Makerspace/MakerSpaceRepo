@@ -19,10 +19,7 @@
         <%= fa_icon 'cloud-upload'%>
         <p>Drag &amp; Drop</p>
       </div>
-      <label class="custom-image-upload">
-        <%= file_field_tag 'images[]', type: :files, multiple: true %>
-        or choose an image...
-      </label>
+      <%= file_field_tag 'images[]', type: :files, class: "form-control", multiple: true %>
     </div>
 
     <div id="image-container"></div>

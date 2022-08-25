@@ -1,6 +1,5 @@
 FactoryBot.define do
   factory :printer_session do
-
     trait :um2p_session do
       association :user, :regular_user
       association :printer, :UM2P_02
@@ -20,6 +19,5 @@ FactoryBot.define do
       association :user, :admin
       association :printer, :dremel_10_17
     end
-
   end
 end

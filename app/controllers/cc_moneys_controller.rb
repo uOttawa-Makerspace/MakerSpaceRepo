@@ -10,9 +10,14 @@ class CcMoneysController < ApplicationController
     if @verifier.valid_message?(@cc_token)
       cc_id = @verifier.verify(@cc_token)
       @cc_money = CcMoney.find_by_id(cc_id)
-      redirect_to cc_moneys_path, alert: "The CC Money has already been added to an account" if @cc_money.linked?
+      if @cc_money.linked?
+        redirect_to cc_moneys_path,
+                    alert: "The CC Money has already been added to an account"
+      end
     else
-      flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+      flash[
+        :alert
+      ] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
       redirect_to cc_moneys_path
     end
   end
@@ -33,11 +38,11 @@ class CcMoneysController < ApplicationController
 
   private
 
-    def set_verifier
-      @verifier = Rails.application.message_verifier(:cc)
-    end
+  def set_verifier
+    @verifier = Rails.application.message_verifier(:cc)
+  end
 
-    def user_params
-      params.require(:user).permit(:email)
-    end
+  def user_params
+    params.require(:user).permit(:email)
+  end
 end

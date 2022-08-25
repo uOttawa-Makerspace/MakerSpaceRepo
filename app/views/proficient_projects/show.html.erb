@@ -109,7 +109,7 @@
       <div class="col-md-4 mb-5 mt-3 card w3-card-4 w3-hover-opacity <%= return_hover_and_text_colors(project_required.level) %>" style="border-width:2px !important;">
         <form class="w-auto d-inline-block">
           <div class="mb-3">
-            <%= link_to "-Edit-", edit_proficient_project_path(project_required.id), class: "btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
+            <%= link_to "Edit", edit_proficient_project_path(project_required.id), class: "btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
           </div>
           <div class="mb-3 mx-auto">
             <p><h6 class="text-center py-3"><strong><%= project_required.training.name %></strong></h6></p>

@@ -10,17 +10,18 @@ class PriceRule < ApplicationRecord
 
   def self.create_price_rule(title, value)
     start_shopify_session
-    price_rule = ShopifyAPI::PriceRule.create(
-      title: title,
-      target_type: 'line_item',
-      target_selection: 'all',
-      allocation_method: 'across',
-      value_type: 'fixed_amount',
-      value: '-' + value.to_s,
-      customer_selection: 'all',
-      starts_at: Time.now.iso8601,
-      usage_limit: 1
-    )
+    price_rule =
+      ShopifyAPI::PriceRule.create(
+        title: title,
+        target_type: "line_item",
+        target_selection: "all",
+        allocation_method: "across",
+        value_type: "fixed_amount",
+        value: "-" + value.to_s,
+        customer_selection: "all",
+        starts_at: Time.now.iso8601,
+        usage_limit: 1
+      )
     price_rule.id
   end
 
@@ -34,7 +35,7 @@ class PriceRule < ApplicationRecord
     start_shopify_session
     price_rule = ShopifyAPI::PriceRule.find(id)
     price_rule.title = title
-    price_rule.value = '-' + value.to_s
+    price_rule.value = "-" + value.to_s
     price_rule.save
   end
 
