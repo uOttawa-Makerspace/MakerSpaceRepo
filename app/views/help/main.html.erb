@@ -11,22 +11,22 @@
 
   </div>
   <div class="issue-report">
-    <%= form_tag send_email_path, method: :put do %>
-      <div class="mb-3">
+    <%= form_for @help, url:'/send_email', html: {multipart: true} do |f| %>
+      <div class="mb-3 required">
       <%= label_tag :name, "Full Name", class:"form-label" %>
-      <%= text_field_tag :name,'', autofocus: true, :required => true, :class => 'form-control' %>
+      <%= f.text_field :name, autofocus: true, :class => 'form-control' %>
       </div>
-      <div class="mb-3">
-      <%= label_tag :email, "Email", class: "form-check-label"%>
-      <%= email_field_tag :email,'', :required => true, :class => 'form-control' %>
+      <div class="mb-3 required">
+      <%= label_tag :email, "Email", class: "form-label"%>
+      <%= f.text_field :email, :class => 'form-control' %>
       </div>
-      <div class="mb-3">
-      <%= label_tag :subject, "Subject", class: "form-check-label"%>
-      <%= text_field_tag :subject,'', :required => true, :class => 'form-control' %>
+      <div class="mb-3 required">
+      <%= label_tag :subject, "Subject", class: "form-label"%>
+      <%= f.text_field :subject, :class => 'form-control' %>
       </div>
-      <div class="mb-3">
-      <%= label_tag :comments, "Comments", class: "form-check-label"%>
-      <%= text_area_tag :comments,'', :required => true, placeholder: "Please explain your issue.", :class => 'form-control' %>
+      <div class="mb-3 required">
+      <%= label_tag :comments, "Comments", class: "form-label"%>
+      <%= f.text_area :comments, placeholder: "Please explain your issue.", :class => 'form-control' %>
       </div>
 
       <div class="mb-3">

@@ -12,8 +12,8 @@
       <br />
 
       <div class="table-responsive">
-        <table class="table sessions-table">
-
+        <table class="table sessions-table table-striped">
+        <thead class="table-primary">
           <tr>
             <th class="action-header">Action</th>
             <th>CC/Hours<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
@@ -29,7 +29,7 @@
               <th>Created by <span onclick="sortTable('sessions-table', 10)"><%=fa_icon('arrow-down')%></span></th>
             <% end %>
           </tr>
-
+        </thead>
           <tbody>
           <%= will_paginate @volunteer_tasks, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
           <% @volunteer_tasks.each do |vt| %>

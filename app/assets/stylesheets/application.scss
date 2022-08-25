@@ -23,7 +23,6 @@ $navbar-dark-color: rgba(255, 255, 255, 0.7);
 $navbar-dark-hover-color: rgba(255, 255, 255, 1);
 $body-top-padding: 6rem; // equivalent to navbar height
 $input-border-radius: 0.25rem !default;
-$pagination-border-radius: 0;
 
 @import "bootstrap/scss/bootstrap";
 @import "toastr";
@@ -207,9 +206,14 @@ div.form-error {
   width: inherit;
 }
 
-@media (min-width: 576px) {
+@include media-breakpoint-up(md) {
   .jumbotron {
     padding: 4rem 2rem;
+  }
+}
+@include media-breakpoint-down(md) {
+  .jumbotron {
+    padding: 2rem 1rem;
   }
 }
 @media (min-width: 1400px) {
@@ -243,4 +247,7 @@ div.form-error {
     padding-left: 20px;
     padding-right: 20px;
   }
+}
+td > .btn:not(:last-of-type) {
+  margin-bottom: 0.5rem;
 }

@@ -10,7 +10,7 @@
       <%= form_tag staff_availabilities_path, method: :get do %>
         <div class="input-group mb-3">
           <%= label_tag :staff_id, "User", class: 'input-group-text' %>
-          <%= select_tag :staff_id, options_for_select(StaffSpace.all.joins(:user).order('users.name ASC').distinct.pluck('users.name', 'users.id')), class: "form-select", include_blank:"Select Staff", selected: (params[:staff_id].present? ? params[:staff_id] : @user.id) %>
+          <%= select_tag :staff_id, options_for_select(StaffSpace.all.joins(:user).order('users.name ASC').distinct.pluck('users.name', 'users.id'), selected: (params[:staff_id].present? ? params[:staff_id] : @user.id.to_s)), class: "form-select", include_blank:"Select Staff" %>
           <button class="btn btn-outline-secondary" type="submit">Go</button>
         </div>
       <% end %>
@@ -52,7 +52,6 @@ if (document.getElementById("staff_id")) {
         {
           maxItems: 1,
           placeholder: "Select Staff",
-          plugins: ["remove_button"],
         });
     }
 }
