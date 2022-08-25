@@ -1,12 +1,12 @@
 <% provide(:title, params[:slug].slug_to_title(params[:slug])) %>
 <section id="repositories-index">
   <div class="like-title"><%= yield(:title)  %></div>
-  <section id="repository-filter">
-    <div class="sort">sort by/classer par</div>
+  <section class="repository-filter">
+    <div class="sort">sort by/trier par</div>
     <nav>
       <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-      <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
-      <ul class="filter">
+      <div id="filter-header" class="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
+      <ul id="sort-filter" class="filter">
         <li><%= link_to 'Newest/Plus récent', equipment_path(sort: :newest, slug: params[:slug]) %></li>
         <li><%= link_to 'Most Likes/Plus d\'Aimes', equipment_path(sort: :most_likes, slug: params[:slug]) %></li>
         <li><%= link_to 'Most Makes/Plus de fabrications', equipment_path(sort: :most_makes, slug: params[:slug]) %></li>
