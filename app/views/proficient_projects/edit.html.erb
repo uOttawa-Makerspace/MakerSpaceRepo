@@ -84,7 +84,7 @@
 
               <br />
               <%= label_tag :photo, "Gallery*", class:"form-label" %>
-              <div class="mx-auto repo-image">
+              <div class="mx-auto repo-image mb-3">
                 <div id="dragndrop">
                   <br>
                   <%= fa_icon 'cloud-upload' %>
@@ -93,7 +93,7 @@
                 <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control", aria_label: "Select Pictures / Selectionner des images" %>
               </div>
 
-              <div id="image-container" class="mx-auto">
+              <div id="image-container" class="mx-auto mb-3">
                 <% @photos.each do |img| %>
                   <div class="image-item">
                     <span id="<%= img.image.filename %>" class="image-remove"></span>

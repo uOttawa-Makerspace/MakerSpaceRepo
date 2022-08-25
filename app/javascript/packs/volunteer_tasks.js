@@ -38,8 +38,7 @@ if (document.getElementById("volunteer_id")) {
 if (document.getElementById("staff_id")) {
   if (!document.getElementById("staff_id").tomselect) {
     new TomSelect("#staff_id", {
-      plugins: ["remove_button"],
-      maxItems: null,
+      maxItems: 1,
     });
   }
 }

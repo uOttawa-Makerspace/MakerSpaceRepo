@@ -188,7 +188,8 @@ class RepositoriesController < SessionsController
   def add_like # MAKE A LIKE CONTROLLER TO PUT THIS IN
     @repository.likes.create!(user_id: @user.id)
     @repository.users.each { |u| u.increment!(:reputation, 5) }
-    render json: { like: @repository.like, rep: repo_user.reputation }
+    flash[:notice] = "You have liked this project!"
+    redirect_to repository_path(@repository.user_username, @repository.slug)
   rescue StandardError
     render json: { failed: true }
   end

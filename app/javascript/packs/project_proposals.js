@@ -83,6 +83,7 @@ if (form) {
       if (!clientBackground.parentElement.querySelector(".invalid-feedback")) {
         let clientFeedback = document.createElement("div");
         clientFeedback.classList.add("invalid-feedback");
+
         clientFeedback.innerText =
           "Veuillez entrer le contexte du client / Please enter client's background";
         clientBackground.parentElement.appendChild(clientFeedback);
@@ -113,3 +114,19 @@ if (form) {
     }
   });
 }
+[...document.getElementsByClassName("file-remove")].forEach((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById("deletefiles").value += el.id + ",";
+    el.parentElement.parentElement.remove();
+  });
+});
+[...document.getElementsByClassName("image-remove")].forEach((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById("deleteimages").value += el.id + ",";
+    el.parentElement.remove();
+  });
+});

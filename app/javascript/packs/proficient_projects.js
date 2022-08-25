@@ -24,6 +24,7 @@ if (form) {
   form.addEventListener("submit", (e) => {
     let images = document.getElementById("images_");
     let image_feedback = document.createElement("div");
+    image_feedback.classList.add("text-center");
     let uploaded_images = document.getElementsByClassName("image-item").length;
     let total_images = uploaded_images + images.files.length;
     if (total_images < 1) {
@@ -41,3 +42,19 @@ if (form) {
     }
   });
 }
+[...document.getElementsByClassName("file-remove")].forEach((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById("deletefiles").value += el.id + ",";
+    el.parentElement.parentElement.remove();
+  });
+});
+[...document.getElementsByClassName("image-remove")].forEach((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById("deleteimages").value += el.id + ",";
+    el.parentElement.remove();
+  });
+});

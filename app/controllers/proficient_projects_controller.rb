@@ -172,8 +172,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       end
     else
       flash[:alert] = "Unable to apply the changes."
-      render json: @proficient_project.errors["title"].first,
-             status: :unprocessable_entity
+      render "edit", status: 422
     end
   end
 
