@@ -63,18 +63,24 @@ document.addEventListener("turbolinks:load", function (event) {
 
   let filterHeader = document.getElementById("filter-header");
   if (filterHeader) {
-    document
-      .getElementById("filter-header")
-      .addEventListener("click", function (event) {
-        [...document.getElementsByClassName("filter")].forEach(function (
-          element
-        ) {
-          if (element.style.display == "none" || element.style.display == "") {
-            element.style.display = "block";
-          } else {
-            element.style.display = "none";
-          }
-        });
-      });
+    filterHeader.addEventListener("click", function (event) {
+      let element = document.getElementById("sort-filter")
+        if (element.style.display == "none" || element.style.display == "") {
+          element.style.display = "block";
+        } else {
+          element.style.display = "none";
+        }
+    });
+  }
+  let categoryHeader = document.getElementById("category-header")
+  if (categoryHeader) {
+    categoryHeader.addEventListener("click", function (event) {
+      let element = document.getElementById("category-filter")
+        if (element.style.display == "none" || element.style.display == "") {
+          element.style.display = "block";
+        } else {
+          element.style.display = "none";
+        }
+    });
   }
 });

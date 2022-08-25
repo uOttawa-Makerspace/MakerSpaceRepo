@@ -5,8 +5,8 @@ $color-marker-active: #ff9900 !default;
 $color-marker: #aaa !default;
 $marker-size: 32px !default;
 $color-marker-hover: #6e6e6e;
-//$table-accent-bg: #a8a8a84f;
-$table-accent-bg: #d6ebeb;
+// $table-accent-bg: #d6ebeb;
+$pagination-border-radius: 0;
 
 @import "shared/variables";
 @import "~bootstrap/scss/bootstrap";
@@ -23,7 +23,9 @@ $table-accent-bg: #d6ebeb;
 //     @include progress-state(#FF4F37);
 //   }
 // }
-
+a {
+  text-decoration: none;
+}
 .turbolinks-progress-bar {
   background-color: #497979;
   // background-color: theme-color("primary");
