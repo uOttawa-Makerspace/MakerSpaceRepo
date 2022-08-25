@@ -29,8 +29,8 @@
       </div>
 
       <div class="repo-info">
-        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
         <div class="start">
+          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           <div class="title">
             <%= link_to repository.title, repository_path(user_username: repository.user_username, id: repository.slug) %>
           </div>

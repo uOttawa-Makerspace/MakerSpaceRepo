@@ -23,6 +23,9 @@ $pagination-border-radius: 0;
 //     @include progress-state(#FF4F37);
 //   }
 // }
+a {
+  text-decoration: none;
+}
 .turbolinks-progress-bar {
   background-color: #497979;
   // background-color: theme-color("primary");
