@@ -22,22 +22,6 @@ if (document.getElementById("link-list")) {
       document.getElementsByClassName("main_ul")[0].appendChild(listItem);
     });
 }
-if (document.getElementById("link-list")) {
-  document
-    .getElementById("link-list")
-    .addEventListener("click", function (event) {
-      let listItem = document.createElement("li");
-      let listDiv = document.createElement("div");
-      let listInput = document.createElement("input");
-      listDiv.classList.add("mb-3");
-      listInput.classList.add("form-control");
-      listInput.setAttribute("type", "text");
-      listInput.placeholder = "Ajoutez un lien / Add a link";
-      listDiv.appendChild(listInput);
-      listItem.appendChild(listDiv);
-      document.getElementsByClassName("main_ul")[0].appendChild(listItem);
-    });
-}
 if (document.getElementById("remove-link-list")) {
   document
     .getElementById("remove-link-list")

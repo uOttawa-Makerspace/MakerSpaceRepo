@@ -28,7 +28,7 @@ function refreshCapacity() {
     .then((data) => {
       if (document.getElementsByClassName("max_capacity_alert")[0])
         document.getElementsByClassName("max_capacity_alert")[0].innerHTML =
-          data.replace('"', "");
+          data;
     });
 }
 setInterval(refreshCapacity, 60000);
