@@ -3,7 +3,7 @@
   <div class="col-md-9 p-1">
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
       <div class="mb-3 mb-0">
-        <%= select_tag(:username, "", prompt: "Choose User...", :class => "form-control", :id => "user_dashboard_select") %>
+        <%= select_tag(:username, "", prompt: "Choose User...", :class => "form-control form-select", :id => "user_dashboard_select") %>
       </div>
     <% end %>
   </div>
