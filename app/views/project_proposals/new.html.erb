@@ -41,9 +41,6 @@
       <%= f.label :client, "Client/Client", class: "form-label" %>
       <div>Who is the client? <br> Qui est le client?</div>
       <%= f.text_field :client, class: 'form-control' %>
-      <div class="invalid-feedback">
-        Veuillez entrer le nom du client / Please enter the client's name
-      </div>
     </div>
     <br>
     <div class="mb-3 required">
@@ -107,10 +104,7 @@
 
     <div id="file-container"></div>
 
-    <%= label_tag :photo, "Gallery/Galerie", class:"form-label" %>
-    <div>A maximum of five photos can be uploaded per repository.<br>Un maximum de cinq photos peuvent être téléchargés
-      par répertoire.
-    </div>
+    <%= label_tag :photo, "Gallery/Galerie", class:"form-label required" %>
     <div class="repo-image">
       <div id="dragndrop">
         <br>
