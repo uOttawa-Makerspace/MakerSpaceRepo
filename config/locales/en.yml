@@ -184,3 +184,6 @@ en:
       telfer: "Telfer School of Management"
       choose: "Choose\u2026"
       save: "Save"
+  datetime:
+    distance_in_words:
+      ago: " ago"

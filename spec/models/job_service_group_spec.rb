@@ -1,8 +1,8 @@
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe JobServiceGroup, type: :model do
-  describe 'Association' do
-    context 'belongs_to' do
+  describe "Association" do
+    context "belongs_to" do
       it { should belong_to(:job_type) }
     end
 
@@ -13,7 +13,6 @@ RSpec.describe JobServiceGroup, type: :model do
   end
 
   describe "Validations" do
-
     context "name" do
       subject { build :job_service_group }
       it { should validate_presence_of(:name) }

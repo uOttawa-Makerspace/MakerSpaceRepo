@@ -7,11 +7,7 @@ class Like < ApplicationRecord
   validates :repository_id, uniqueness: { scope: :user_id }
   validates :user_id, presence: true
 
-  before_create do
-    repository.increment!(:like)
-  end
+  before_create { repository.increment!(:like) }
 
-  before_destroy do
-    repository.decrement!(:like)
-  end
+  before_destroy { repository.decrement!(:like) }
 end

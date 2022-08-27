@@ -1,7 +1,6 @@
-require 'faker'
+require "faker"
 
 FactoryBot.define do
-
   factory :volunteer_task_join do
     association :volunteer_task
 
@@ -34,14 +33,5 @@ FactoryBot.define do
       active { false }
       user_type { "Admin" }
     end
-
   end
-
 end
-
-
-
-
-
-
-

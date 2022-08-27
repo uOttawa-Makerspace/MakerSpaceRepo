@@ -11,7 +11,6 @@ section#report {
       margin: 0 auto;
       line-height: 10mm;
       font-size: 18px;
-
     }
   }
 
@@ -49,7 +48,7 @@ section#report {
     background-color: #4bbc9c;
     color: #fff;
     padding: 0.2rem;
-    font: 400 1.2rem 'Raleway', helvetica, sans-serif;
+    font: 400 1.2rem "Raleway", helvetica, sans-serif;
     display: block;
     margin-left: 10px;
 
@@ -65,13 +64,18 @@ section#report {
   }
 
   form {
-    select#start_year, #start_month, #start_day,
-    #end_year, #end_month, #end_day {
+    select#start_year,
+    #start_month,
+    #start_day,
+    #end_year,
+    #end_month,
+    #end_day {
       width: 20%;
     }
   }
 }
 
-.nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
   background-color: #e7e7e7;
 }

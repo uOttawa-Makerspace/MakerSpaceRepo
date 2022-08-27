@@ -22,27 +22,38 @@
           <tr class="sign-in-or-out" id="<%= return_no_waiver_id(user) %>">
             <td class="sign-in-cell"><%= link_to(content_tag(:drop_username, user.name), user_url(user.username)) %></td>
             <td class="email-cell"><%= user.email %></td>
+            <% labSessions = user.lab_sessions.present? %>
+            <% labSessions ? signedIn = user.lab_sessions.sort_by(&:sign_out_time).last.sign_out_time > Time.now : signedIn = false %>
 
             <td class="signed_in-cell" style="horizontal-alginment:center;">
-              <%= time_ago_in_words(user.lab_sessions.sort_by(&:sign_out_time).last.sign_out_time) + " ago at #{user.lab_sessions.last.space.name}" if user.lab_sessions.present? %>
+              <%= time_ago_in_words(user.lab_sessions.sort_by(&:sign_out_time).last.sign_out_time) + " ago at #{user.lab_sessions.last.space.name}" if labSessions %>
             </td>
-
+            <%# Caching and avoiding unnecessary db calls %>
             <td class="status-cell">
               <%=
-                if @space.signed_in_users.include?(user)
+              if labSessions
+                if signedIn
                   "Signed In"
                 else
                   "Signed Out"
-                end if user.lab_sessions.present?
-              %>
+                end
+              else
+                "Signed Out"
+              end %>
             </td>
 
             <td class="action-cell" >
-              <% if @space.signed_in_users.include?(user) %>
-                <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button', remote: true %>
-              <% else %>
-                <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button', remote: true %>
-              <% end %>
+
+              <%=
+              if labSessions
+                if signedIn
+                  link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button', remote: true
+                else
+                  link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button', remote: true
+                end
+              else
+                link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button', remote: true
+              end %>
             </td>
 
           </tr>
@@ -55,17 +66,29 @@
     <% end %>
     <br /><br />
 
-    <table class="space-users-table text-center table table-striped" id="table-js-signed-in">
-        <h2>Users inside <%=@space.name.capitalize%></h2>
+    <div class="table-responsive">
+      <p id="user-count" class="text-center">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>
+      <div class="container text-center mx-auto">
+        <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary mx-auto text-center' %>
+      </div>
+      <table class="staff-users-table text-center mb-5 table table-striped" >          
         <thead class="table-primary">
-         <tr>
-           <th>Name <span onclick="sortTable('space-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-           <th>Email <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-           <th>Certifications <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-           <th class="action-header">Sign Out of <%=@space.name.capitalize%></th>
-         </tr>
+          <tr>
+            <th class="name-header">Name
+              <span onclick="sortTable('staff-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="email-header">Email
+              <span onclick="sortTable('staff-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="name-header">Flagged?</th>
+            <th class="certifications-header">Certifications in <%= @space.name %>
+              <span onclick="sortTable('staff-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="email-header"> # of visits <br> (Past 2
+              months)<span onclick="sortTable('staff-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="last-seen-header">Last Seen
+              <span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="action-header">Sign Out of <%= @space.name.capitalize %></th>
+          </tr>
         </thead>
-
+        <tbody id="table-js-signed-in">
         <% @space.signed_in_users.each do |user| %>
           <tr class="drop-rows">
             <td class="drop-username-cell">
@@ -73,6 +96,14 @@
             </td>
             <td class="email-cell">
               <%= user.email %>
+            </td>
+            <td>
+                <%= render 'staff_dashboard/flag', staff_dashboard_user: user %>
+                <% if user.flagged? %>
+                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#flag_message_<%= user.id %>">See Flag</button>
+                <% else %>
+                    None
+                <% end %>
             </td>
             <td class="certifications-cell">
               <% if user.certifications.first.present? %>
@@ -91,51 +122,42 @@
                 <% end %>
               <% end %>
             </td>
-
-            <td class="action-cell" >
-              <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]},  method: :put, class: 'x-button', remote: true %>
+            <td class="email-cell">
+                <%= user.lab_sessions.where('space_id' => @space.id).where('created_at BETWEEN ? AND ? ', 2.month.ago, DateTime.now).count %>
+            </td>
+            <td class="sign_out_time-cell" style="horizontal-alginment:center;">
+                <%= time_ago_in_words(user.lab_sessions.sort_by(&:sign_out_time).second_to_last&.sign_out_time) + " ago at #{user.lab_sessions.last.space.name}" if user.lab_sessions.second_to_last.present? %></td>
+            </td>
+            <td class="action-cell">
+                <%= link_to (fa_icon('times')), {controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username]}, method: :put, class: 'x-button', remote: true %>
             </td>
           </tr>
         <% end %>
         <br />
+        </tbody>
       </table>
+      </div>
       <br />
 
     <br />
 
-    <table class="staff-recent-users-table text-center" id="table-js-signed-out">
-      <h2>Users recently signed out of <%=@space.name.capitalize%></h2>
-      <tr>
-        <th>Name <span onclick="sortTable('staff-recent-users-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Email <span onclick="sortTable('staff-recent-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Last Seen <span onclick="sortTable('staff-recent-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-        <th class="action-header">Sign In To <%=@space.name.capitalize%></th>
-      </tr>
-
-      <% @space.recently_signed_out_users.each do |user| %>
-        <tr class="add-rows" id="<%= return_no_waiver_id(user) %>">
-          <td class="add-username-cell"><%=
-            link_to(content_tag(:add_username, user.name), user_url(user.username))
-          %></td>
-
-          <td class="add-username-cell"><%=
-             user.email
-          %></td>
-
-          <td class="signed_in-cell" style="horizontal-alginment:center;"><%=
-            if user.lab_sessions.present?
-              time_ago_in_words(user.lab_sessions.sort_by(&:sign_out_time).last.sign_out_time) + " ago at #{user.lab_sessions.last.space.name}"
-            end
-          %></td>
-
-          <td class="action-cell" >
-            <%= link_to (fa_icon('check')), {controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username]},  method: :put, class: 'check-button', remote: true %>
-          </td>
-
-        </tr>
-      <% end %>
-      <br />
-    </table>
+    <div class="table-responsive">
+      <p class="text-center">Users recently signed out of <%= @space.name %></p>
+      <table class="staff-recent-users-table text-center mb-5 table table-striped">
+        <thead class="table-primary">
+          <tr>
+            <th class="name-header">Name
+              <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="email-header">Email
+              <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="last-seen-header">Last Seen
+              <span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
+          </tr>
+        </thead>
+        <%= render partial:"signed_out_table", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
+      </table>
+    </div>
     <br>
   </div>
 </section>

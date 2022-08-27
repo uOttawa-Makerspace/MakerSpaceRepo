@@ -5,42 +5,42 @@ cache:
   yarn: true
 #bundler_args: --full-index
 rvm:
-- 2.5.3
+  - 2.5.3
 services:
-- postgresql
+  - postgresql
 before_install:
-- gem update --system
-- gem install bundler:2.1.4
+  - gem update --system
+  - gem install bundler:2.1.4
 before_script:
-- nvm install node
-- node -v
-- npm i -g yarn
-- yarn install
-- psql -c 'create database makerspacerepo_test;' -U postgres
-- mkdir certs && touch certs/saml.key && touch certs/saml.crt
-- openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
+  - nvm install node
+  - node -v
+  - npm i -g yarn
+  - yarn install
+  - psql -c 'create database makerspacerepo_test;' -U postgres
+  - mkdir certs && touch certs/saml.key && touch certs/saml.crt
+  - openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
 jobs:
   include:
-  - stage: test
-    name: Test
-    script:
-    - bundle exec rails db:environment:set RAILS_ENV=test
-    - bundle exec rails db:migrate RAILS_ENV=test
-    - bundle exec rails spec RAILS_ENV=test
-    - bundle exec rails test RAILS_ENV=test
-  - stage: deploy
-    name: Deploy
-    script:
-    - openssl aes-256-cbc -k $DEPLOY_KEY -d -a -in config/deploy_id_rsa_enc_travis -out config/deploy_id_rsa
-    - chmod 600 config/deploy_id_rsa
-    - eval "$(ssh-agent -s)"
-    - ssh-add config/deploy_id_rsa
-    - gem install capistrano
-    - bundle exec cap staging deploy
+    - stage: test
+      name: Test
+      script:
+        - bundle exec rails db:environment:set RAILS_ENV=test
+        - bundle exec rails db:migrate RAILS_ENV=test
+        - bundle exec rails spec RAILS_ENV=test
+        - bundle exec rails test RAILS_ENV=test
+    - stage: deploy
+      name: Deploy
+      script:
+        - openssl aes-256-cbc -k $DEPLOY_KEY -d -a -in config/deploy_id_rsa_enc_travis -out config/deploy_id_rsa
+        - chmod 600 config/deploy_id_rsa
+        - eval "$(ssh-agent -s)"
+        - ssh-add config/deploy_id_rsa
+        - gem install capistrano
+        - bundle exec cap staging deploy
 stages:
-- name: test
-- name: deploy
-  if: branch = staging
+  - name: test
+  - name: deploy
+    if: branch = staging
 notifications:
   slack:
     rooms:
