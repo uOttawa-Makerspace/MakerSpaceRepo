@@ -20,7 +20,7 @@ set :linked_dirs,
       "public/packs"
     )
 set :default_env,
-    { "PASSENGER_INSTANCE_REGISTRY_DIR" => "/var/passenger_instance_registry" }
+    { "PASSENGER_INSTANCE_REGISTRY_DIR" => "/tmp" }
 
 # before "deploy:assets:precompile", "deploy:yarn_install"
 # namespace :deploy do
