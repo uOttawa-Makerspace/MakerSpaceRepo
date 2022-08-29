@@ -14,7 +14,13 @@
 *= require_self
 
  */
-
+$color-marker-complete: #00a407 !default;
+$color-marker-active: #ff9900 !default;
+$color-marker: #aaa !default;
+$marker-size: 32px !default;
+$color-marker-hover: #6e6e6e;
+// $table-accent-bg: #d6ebeb;
+$pagination-border-radius: 0;
 $primary: #497979;
 $primary-light: rgba(59, 147, 147, 0.5);
 $navbar-light-color: rgba(0, 0, 0, 0.7);
@@ -23,6 +29,7 @@ $navbar-dark-color: rgba(255, 255, 255, 0.7);
 $navbar-dark-hover-color: rgba(255, 255, 255, 1);
 $body-top-padding: 6rem; // equivalent to navbar height
 $input-border-radius: 0.25rem !default;
+$enable-negative-margins: true;
 
 @import "bootstrap/scss/bootstrap";
 @import "toastr";
@@ -30,7 +37,6 @@ $input-border-radius: 0.25rem !default;
 @import "trix";
 @import "lib";
 @import "font-awesome";
-$enable-negative-margins: true;
 html {
   height: 100%;
   overflow: auto;
@@ -105,11 +111,6 @@ u {
 //  display: block;
 //}
 
-input:not(.btn .form-control),
-textarea:not(.form-control) {
-  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
 :focus {
   outline: -webkit-focus-ring-color auto 1px;
 }
@@ -141,6 +142,17 @@ div.form-error {
 .main {
   flex-shrink: 0;
   margin-bottom: auto;
+}
+
+@include media-breakpoint-up(md) {
+  .jumbotron {
+    padding: 4rem 2rem;
+  }
+}
+@include media-breakpoint-down(md) {
+  .jumbotron {
+    padding: 2rem 1rem;
+  }
 }
 
 .container.page {
@@ -206,16 +218,6 @@ div.form-error {
   width: inherit;
 }
 
-@include media-breakpoint-up(md) {
-  .jumbotron {
-    padding: 4rem 2rem;
-  }
-}
-@include media-breakpoint-down(md) {
-  .jumbotron {
-    padding: 2rem 1rem;
-  }
-}
 @media (min-width: 1400px) {
   .container {
     max-width: 1140px;
@@ -224,8 +226,9 @@ div.form-error {
 .accordion-button {
   background-color: rgba(0, 0, 0, 0.03) !important;
 }
-.dropdown-item:hover:not(:active) {
-  background-color: $primary-light;
+input:not(.btn .form-control),
+textarea:not(.form-control) {
+  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
 }
 .justified-gallery {
   height: 250px;
