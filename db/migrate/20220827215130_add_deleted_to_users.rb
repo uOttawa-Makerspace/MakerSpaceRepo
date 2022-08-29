@@ -1,5 +1,8 @@
 class AddDeletedToUsers < ActiveRecord::Migration[6.1]
-  def change
-    add_column :users, :deleted, :boolean, default: false
+  def self.up
+    add_column :users, :deleted, :boolean, User.update_all(deleted: false)
+  end
+  def self.down
+    remove_column :users, :deleted
   end
 end
