@@ -26,6 +26,8 @@ module AnnouncementsHelper
       "Admins"
     when "all"
       "All Users"
+    when "all_visitors"
+      "All Visitors (Even not signed in)"
     end
   end
 end

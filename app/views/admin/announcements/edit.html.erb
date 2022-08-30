@@ -19,7 +19,7 @@
               <div class="mx-auto col-md-6 text-center">
                 <b>Select to what public you want this to appear</b> <br />
                 <div class="d-inline-block text-start form-check">
-                  <%= f.radio_button :public_goal, 'volunteer' :style => 'display:inline', class:"form-check-input" %>
+                  <%= f.radio_button :public_goal, 'volunteer', :style => 'display:inline', class:"form-check-input" %>
                   <%= f.label :public_goal, 'Volunteers', :style => 'display:inline', class:"form-label" %>
                   <br />
                   <%= f.radio_button :public_goal, 'regular_user', :style => 'display:inline', class:"form-check-input" %>
@@ -33,6 +33,9 @@
                   <br />
                   <%= f.radio_button :public_goal, 'all', :style => 'display:inline', class:"form-check-input" %>
                   <%= f.label :public_goal, 'All Users', :style => 'display:inline', class:"form-label" %>
+                  <br/>
+                  <%= f.radio_button :public_goal, 'all_visitors', :style => 'display:inline', class:"form-check-input" %>
+                  <%= f.label :public_goal, 'All Visitors (Even not signed in)', :style => 'display:inline', class:"form-label" %>
                   <br />
                   <br />
                 </div>

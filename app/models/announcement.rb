@@ -14,4 +14,5 @@ class Announcement < ApplicationRecord
   scope :all_users, -> { where(public_goal: "all") }
   scope :admins, -> { where(public_goal: "admin") }
   scope :staff, -> { where(public_goal: "staff") }
+  scope :all_visitors, -> { where(public_goal: "all_visitors") }
 end
