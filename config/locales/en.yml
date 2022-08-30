@@ -32,6 +32,8 @@ en:
       sign_out: "Sign Out"
       printorder: "Order Print/Laser Cut"
       printorder_admin: "Print Order Admin"
+      joborder: "Job Order Request"
+      joborder_admin: "Job Order Admin"
   home:
     welcome_html: "Welcome to Maker<strong>Repo</strong>!"
     welcome_desc_html: "Browse projects built using spaces provided by CEED & publish your own!"
@@ -182,3 +184,6 @@ en:
       telfer: "Telfer School of Management"
       choose: "Choose\u2026"
       save: "Save"
+  datetime:
+    distance_in_words:
+      ago: " ago"

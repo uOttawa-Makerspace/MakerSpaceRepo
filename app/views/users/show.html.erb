@@ -65,11 +65,11 @@
                 <%= render 'users/flag' %>
                 <div class="row mx-auto mb-2">
                   <% if @repo_user.flagged? %>
-                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#flag_message">
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#flag_message">
                       Flagged
                     </button>
                   <% else %>
-                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#flag_message">
+                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#flag_message">
                       Add Flag
                     </button>
                   <% end %>
@@ -77,7 +77,7 @@
                 <div class="mb-2">
                   <% if @repo_user.rfid.present? %>
                     <div class="dropdown">
-                      <button class="btn btn-outline-success dropdown-toggle" type="button" id="rfidUnregisterMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      <button class="btn btn-outline-success dropdown-toggle" type="button" id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <%= fa_icon "check", text: "RFID Card Set" %>
                       </button>
                       <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
@@ -87,7 +87,7 @@
                     </div>
                   <% else %>
                     <div class="dropdown">
-                      <button class="btn btn-outline-danger dropdown-toggle" type="button" id="rfidUnregisterMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      <button class="btn btn-outline-danger dropdown-toggle" type="button" id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <%= fa_icon "ban", text: "RFID Card Not Set" %>
                       </button>
                       <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
@@ -109,30 +109,30 @@
         </div>
         <ul class="nav nav-tabs" id="myTab" role="tablist">
           <li class="nav-item">
-            <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">About</a>
+            <a class="nav-link active" id="home-tab" data-bs-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">About</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="skills-tab" data-toggle="tab" href="#profile-skills" role="tab" aria-controls="profile" aria-selected="false">Skills</a>
+            <a class="nav-link" id="skills-tab" data-bs-toggle="tab" href="#profile-skills" role="tab" aria-controls="profile" aria-selected="false">Skills</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="badges-tab" data-toggle="tab" href="#badges-manager" role="tab" aria-controls="profile" aria-selected="false">Badges</a>
+            <a class="nav-link" id="badges-tab" data-bs-toggle="tab" href="#badges-manager" role="tab" aria-controls="profile" aria-selected="false">Badges</a>
           </li>
           <li class="nav-item">
-            <a href="#programs-manager" class="nav-link" id="programs-tab" data-toggle="tab" role="tab" aria-controls="profile" aria-selected="false">Programs</a>
+            <a href="#programs-manager" class="nav-link" id="programs-tab" data-bs-toggle="tab" role="tab" aria-controls="profile" aria-selected="false">Programs</a>
           </li>
           <% if @user.staff? %>
             <li class="nav-item">
-              <a class="nav-link text-danger" id="certifications-tab" data-toggle="tab" href="#certifications-manager" role="tab" aria-controls="profile" aria-selected="false">Certifications</a>
+              <a class="nav-link text-danger" id="certifications-tab" data-bs-toggle="tab" href="#certifications-manager" role="tab" aria-controls="profile" aria-selected="false">Certifications</a>
             </li>
           <% end %>
           <% if @user.admin? %>
             <li class="nav-item">
-              <a class="nav-link text-danger" id="roles-tab" data-toggle="tab" href="#role-manager" role="tab" aria-controls="profile" aria-selected="false">Role
+              <a class="nav-link text-danger" id="roles-tab" data-bs-toggle="tab" href="#role-manager" role="tab" aria-controls="profile" aria-selected="false">Role
                 Manager</a>
             </li>
             <% if @repo_user.staff? %>
               <li class="nav-item">
-                <a class="nav-link text-danger" id="staff-tab" data-toggle="tab" href="#staff-manager" role="tab" aria-controls="profile" aria-selected="false">
+                <a class="nav-link text-danger" id="staff-tab" data-bs-toggle="tab" href="#staff-manager" role="tab" aria-controls="profile" aria-selected="false">
                   Staff Manager
                 </a>
               </li>
@@ -212,11 +212,11 @@
                   <% begin %>
                     <div class="col-md-3">
                       <% if badges.badge_url.present? %>
-                        <a style="width: inherit" target="_blank" href="<%= @acclaim_badge_url + badges.acclaim_badge_id %>">
+                        <a target="_blank" class="w-100" href="<%= @acclaim_badge_url + badges.acclaim_badge_id %>">
                           <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", alt: 'Badge') %>
                         </a>
                       <% else %>
-                        <%= image_tag(badges.badge_template.image_url, alt: 'Badge', :style => "width: inherit", 'data-toggle' => "modal", 'data-target' => "#pending_modal") %>
+                        <%= image_tag(badges.badge_template.image_url, alt: 'Badge', :style => "width: inherit", 'data-bs-toggle' => "modal", 'data-bs-target' => "#pending_modal") %>
                       <% end %>
                     </div>
                   <% end %>
@@ -234,11 +234,11 @@
                   <div class="field form-group">
                     <div class="checkbox-inline">
                       <%= hidden_field_tag :user_id, @repo_user.id %>
-                      <%= check_box_tag :dev_program, '1', @programs.include?(Program::DEV_PROGRAM) %>
-                      <%= label_tag :dev_program, Program::DEV_PROGRAM %>
+                      <%= check_box_tag :dev_program, '1', @programs.include?(Program::DEV_PROGRAM), class:"form-check-input" %>
+                      <%= label_tag :dev_program, Program::DEV_PROGRAM, class:"form-label" %>
                       <br>
-                      <%= check_box_tag :volunteer, '1', @programs.include?(Program::VOLUNTEER) %>
-                      <%= label_tag :volunteer, Program::VOLUNTEER %>
+                      <%= check_box_tag :volunteer, '1', @programs.include?(Program::VOLUNTEER), class:"form-check-input" %>
+                      <%= label_tag :volunteer, Program::VOLUNTEER, class:"form-label" %>
                     </div>
                   </div>
                   <button type="submit" class="btn btn-success">Change Programs</button>
@@ -256,21 +256,23 @@
           <div class="col-md-12">
             <% @skills.each do |skill| %>
 
-              <div class="accordion">
-                <div class="card">
-                  <div class="card-header" type="button" data-toggle="collapse" data-target="#trainings-<%= skill.id %>">
-                    <h6 class="my-auto py-2"><%= skill.name %></h6>
-                  </div>
-                  <div id="trainings-<%= skill.id %>" class="collapse">
+              <div class="accordion mb-3" id="accordion-skill-<%=skill.name%>">
+                <div class="accordion-item">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#trainings-skill-<%= skill.id %>" aria-expanded="false" aria-controls="trainings-<%= skill.id %>">
+                <h6 id="header-skill-<%= skill.name %>">
+                    <%= skill.name %>
+                  </button>
+                  </h6>
+                  <div id="trainings-skill-<%= skill.id %>" class="accordion-collapse collapse">
                     <% skill.trainings.each do |training| %>
 
-                      <div class="accordion">
-                        <div class="card">
-                          <div class="card-header" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
+                      <div class="accordion" id="accordion-<% training.name%>">
+                        <div class="accordion-item">
+                          <div class="accordion-header" id="header-training-<% training.name%>" type="button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>"">
                             <div class="row">
                               <div class="col-4"></div>
                               <div class="col-4 text-center">
-                                <button class="btn btn-link" type="button"><%= training.name %></button>
+                                <button class="btn btn-link"><%= training.name %></button>
                               </div>
                               <div class="col-4">
                                 <%= training_status(training.id, @repo_user.id).html_safe %>
@@ -278,10 +280,10 @@
                             </div>
                           </div>
 
-                          <div id="training-<%= training.id %>" class="collapse">
-                            <div class="card-body">
+                          <div id="training-<%= training.id %>" class="accordion-collapse collapse" aria-labelledby="header-<% training.name%>" data-bs-parent="#accordion-<% training.name%>">
+                            <div class="accordion-body">
                               <% if training.description.present? %>
-                                <div class="jumbotron text-center text-wrap">
+                                <div class="jumbotron card bg-light text-center text-wrap">
                                   <%= training.description %>
                                 </div>
                               <% end %>
@@ -353,7 +355,7 @@
                 </td>
                 <% if @user.admin? || (@user == certification.training_session.user) %>
                   <td class="action-cell">
-                    <a data-toggle="modal" data-target="#modal-window" data-remote="true" href="<%= open_modal_admin_certifications_path(id: certification.id) %>" class="btn btn-danger btn-block btn-sm">Demote</a>
+                    <a data-bs-toggle="modal" data-bs-target="#modal-window" data-remote="true" href="<%= open_modal_admin_certifications_path(id: certification.id) %>" class="btn btn-danger d-block w-100 btn-sm">Demote</a>
                   </td>
                 <% end %>
                 </tr>
@@ -376,14 +378,14 @@
               <div class="col-md-6">
                 <label>Update Role</label>
               </div>
-              <div class="col-md-6 float-right">
+              <div class="col-md-6 float-end">
                 <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
-                  <%= radio_button_tag :role, "admin" %>
-                  <%= label_tag "Admin" %> <br/>
-                  <%= radio_button_tag :role, "staff" %>
-                  <%= label_tag "Staff" %> <br/>
-                  <%= radio_button_tag :role, "regular_user" %>
-                  <%= label_tag "Regular" %> <br/>
+                  <%= radio_button_tag :role, "admin", @repo_user.admin?, class: "form-check-input" %>
+                  <%= label_tag :role_admin, "Admin", class:"form-label" %> <br/>
+                  <%= radio_button_tag :role, "staff", @repo_user.staff? && !@repo_user.admin?, class: "form-check-input" %>
+                  <%= label_tag :role_staff,"Staff", class:"form-label" %> <br/>
+                  <%= radio_button_tag :role, "regular_user", !(@repo_user.staff? || @repo_user.admin?), class: "form-check-input" %>
+                  <%= label_tag :role_regular, "Regular", class:"form-label" %> <br/>
                   <%= submit_tag "Update", class: "btn btn-primary" %>
                 <% end %>
               </div>
@@ -397,13 +399,13 @@
                   <div class="checkbox-inline">
                     <%= hidden_field_tag :user_id, @repo_user.id %>
                     <% @space_list.each do |space| %>
-                      <%= check_box_tag "space[]", space.id, @staff_spaces.include?(space.id) %>
+                      <%= check_box_tag "space[]", space.id, @staff_spaces.include?(space.id), class:"form-check-input" %>
                       <%= label_tag "space[]", space.name %>
                       <br>
                     <% end %>
                   </div>
                 </div>
-                <button type="submit" class="btn btn-success">Change staff spaces</button>
+                <button type="submit" class="btn btn-success mt-2">Change staff spaces</button>
               <% end %>
             </div>
           <% end %>
@@ -447,19 +449,19 @@
         <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if (repository.photos.present? and repository.photos.first.present? and repository.photos.first.image.attached?)}')" %> >
           <% if repository.user_username.eql?(@user.username) %>
             <%= link_to "Delete", repository_path(repository.user_username, repository.id),
-                        method: :delete, data: { confirm: "Are you sure? Once you delete the repository there is no coming back!" }, class: 'btn btn-danger btn-sm float-right m-1', style: 'display: none' %>
-            <%= link_to "Edit", edit_repository_path(repository.user_username, repository.id), class: 'btn btn-secondary btn-sm float-right m-1', style: 'display: none' %>
+                        method: :delete, data: { confirm: "Are you sure? Once you delete the repository there is no coming back!" }, class: 'btn btn-danger btn-sm float-end m-1', style: 'display: none' %>
+            <%= link_to "Edit", edit_repository_path(repository.user_username, repository.id), class: 'btn btn-secondary btn-sm float-end m-1', style: 'display: none' %>
           <% end %>
           <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
         </div>
 
         <div class="repo-info">
-          <div class="left">
+          <div class="start">
+            <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
             <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %></div>
             <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
             <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
           </div>
-          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
         </div>
       </div>
 
@@ -504,7 +506,7 @@
         <p>Congratulations!</p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

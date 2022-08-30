@@ -1,6 +1,6 @@
 <div class="text-center">
   <br />
-  <h2 class="font-weight-bold">Announcements</h2>
+  <h2 class="fw-bold">Announcements</h2>
 
   <%= link_to "New Announcement", new_admin_announcement_path, :class=>"btn btn-primary m-1" %>
 
@@ -12,17 +12,17 @@
     <br />
 
     <div class="table-responsive">
-      <table class="table sessions-table">
-
-        <tr>
-          <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Description <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Public<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Active?<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Created By<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-          <th class="action-header">Action</th>
-        </tr>
-
+      <table class="table sessions-table  table-striped">
+        <thead class="table-primary">
+         <tr>
+           <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Description <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Public<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Active?<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Created By<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+           <th class="action-header">Action</th>
+         </tr>
+        </thead>
         <tbody>
         <% @announcements.each do |a| %>
           <tr>
@@ -45,16 +45,16 @@
             </td>
 
             <td class = "username">
-              <%= link_to a.user.name.capitalize, user_path(a.user.username) %>
+              <%= link_to a.user.name.titleize, user_path(a.user.username) %>
               <br />
             </td>
 
             <td class="action-cell">
-              <%=link_to "Edit", edit_admin_announcement_path(a.id), class:"btn btn-primary btn-block btn-sm mb-1 mt-0" if current_user.staff?%>
-              <%=link_to "Show", admin_announcement_path(a.id), class:"btn btn-info btn-block btn-sm mt-0 mb-1" %>
+              <%=link_to "Edit", edit_admin_announcement_path(a.id), class:"btn btn-primary d-block w-100 btn-sm mt-0" if current_user.staff?%>
+              <%=link_to "Show", admin_announcement_path(a.id), class:"btn btn-info d-block w-100 btn-sm mt-0" %>
               <%=link_to "Delete", { controller: :announcements ,action: :destroy, id: a.id }, method: :delete,
                          data: { confirm: 'Are you sure that you want to delete this announcement?' },
-                         class:"btn btn-danger btn-sm btn-block mb-1 mr-0" %>
+                         class:"btn btn-danger btn-sm d-block w-100 me-0" %>
             </td>
 
           </tr>

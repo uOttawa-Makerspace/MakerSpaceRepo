@@ -1,5 +1,4 @@
-$("#table-js-signed-out").load(location.href + " #table-js-signed-out");
-$("#table-js-signed-in").load(location.href + " #table-js-signed-in");
-$("#table-js-search").load(location.href + " #table-js-search");
-$("#newly-signed-up").load(location.href + " #newly-signed-up");
-$('#user-count').html("<p id='user-count' class='text-center'>Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>")
+document.getElementById('table-js-signed-out').innerHTML = "<%= escape_javascript(render(partial: 'signed_out_table', locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space})) %>"
+document.getElementById('table-js-signed-in').innerHTML = "<%= escape_javascript(render(partial: 'signed_in_table', locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space})) %>"
+document.getElementById('newly-signed-up').innerHTML = "<%= escape_javascript(render(partial: 'newly_signed_up', locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space})) %>"
+document.getElementById("user-count").innerHTML = "<p id='user-count' class='text-center'>Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>"

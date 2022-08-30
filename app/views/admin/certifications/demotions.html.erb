@@ -1,9 +1,9 @@
 <section>
   <div class="text-center">
-    <h2 class="py-3 font-weight-bold">Demotions</h2>
+    <h2 class="py-3 fw-bold">Demotions</h2>
     <div class="mb-5 text-center mx-auto">
       <%= form_tag(demotions_admin_certifications_path, method: :get, remote: true) do %>
-        <div class="form-inline text-center">
+        <div class="w-auto d-inline-block text-center">
           <%= text_field_tag(:search, "", placeholder: "Search by name, training, demotions' reason... PRESS ENTER", class: 'form-control col-md-12 search_bar text-center') %>
         </div>
       <% end %>

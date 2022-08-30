@@ -4,5 +4,3 @@ FactoryBot.define do
     association :volunteer_task
   end
 end
-
-

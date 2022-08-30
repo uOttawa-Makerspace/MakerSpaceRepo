@@ -11,7 +11,10 @@ footer {
   margin-top: 2rem;
   padding: 1rem;
 
-  a:hover, a:focus, a:active {
+  a,
+  a:hover,
+  a:focus,
+  a:active {
     text-decoration: none;
   }
 
@@ -27,9 +30,10 @@ footer {
       margin: 0.1rem 0.5rem;
       white-space: nowrap;
 
-       a {
-         display: inline-block;
-       }
+      a {
+        display: inline-block;
+        text-decoration: none;
+      }
     }
   }
 

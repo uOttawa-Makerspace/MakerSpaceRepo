@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 Rails.application.configure do
-
   $n_exams_question = 3
   # Settings specified here will take precedence over those in config/application.rb.
 
@@ -18,12 +17,12 @@ Rails.application.configure do
 
   # Enable/disable caching. By default caching is disabled.
   # Run rails dev:cache to toggle caching.
-  if Rails.root.join('tmp', 'caching-dev.txt').exist?
+  if Rails.root.join("tmp", "caching-dev.txt").exist?
     config.action_controller.perform_caching = true
 
     config.cache_store = :memory_store
     config.public_file_server.headers = {
-        'Cache-Control' => "public, max-age=#{2.days.to_i}"
+      "Cache-Control" => "public, max-age=#{2.days.to_i}"
     }
   else
     config.action_controller.perform_caching = false
@@ -48,7 +47,6 @@ Rails.application.configure do
   # Highlight code that triggered database queries in logs.
   config.active_record.verbose_query_logs = true
 
-
   # Debug mode disables concatenation and preprocessing of assets.
   # This option may cause significant delays in view rendering with a large
   # number of complex assets.
@@ -65,14 +63,16 @@ Rails.application.configure do
   config.console = Pry
 
   Octokit.configure do |c|
-    c.client_id        = Rails.application.credentials[Rails.env.to_sym][:github][:app_key]
-    c.client_secret    = Rails.application.credentials[Rails.env.to_sym][:github][:app_key_secret]
+    c.client_id =
+      Rails.application.credentials[Rails.env.to_sym][:github][:app_key]
+    c.client_secret =
+      Rails.application.credentials[Rails.env.to_sym][:github][:app_key_secret]
   end
 
   # Use letter opener to open emails in development mode
   config.action_mailer.delivery_method = :letter_opener
-  config.action_mailer.default_url_options = { host: 'staging.makerepo.com' }
-  config.action_mailer.asset_host = 'http://localhost:3000'
+  config.action_mailer.default_url_options = { host: "staging.makerepo.com" }
+  config.action_mailer.asset_host = "http://localhost:3000"
   config.action_mailer.perform_deliveries = true
   config.action_mailer.perform_caching = false
 
@@ -82,9 +82,14 @@ Rails.application.configure do
     storage: :s3,
     s3_region: Rails.application.credentials[Rails.env.to_sym][:aws][:region],
     s3_credentials: {
-      bucket: Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name],
-      access_key_id: Rails.application.credentials[Rails.env.to_sym][:aws][:access_key_id],
-      secret_access_key: Rails.application.credentials[Rails.env.to_sym][:aws][:secret_access_key]
+      bucket:
+        Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name],
+      access_key_id:
+        Rails.application.credentials[Rails.env.to_sym][:aws][:access_key_id],
+      secret_access_key:
+        Rails.application.credentials[Rails.env.to_sym][:aws][
+          :secret_access_key
+        ]
     }
   }
 end

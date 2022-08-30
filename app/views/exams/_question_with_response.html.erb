@@ -1,27 +1,31 @@
-<div class=" text-left word-break">
+<div class=" text-start word-break">
   <h2><b><%= question.description %></b></h2>
 </div>
 
-<div id="questionImageGallery" class="text-center justified-gallery">
+<div class="text-center col-12 justified-gallery">
   <% if question.images.attached? %>
     <% question.images.each do |img| %>
       <a href="#">
-        <%= image_tag(img, alt: 'Picture related to the questions') %>
+        <%= image_tag(img, alt: 'Picture related to the questions', class:"d-inline-block mx-auto") %>
       </a>
     <% end %>
   <% end %>
 </div>
 <hr>
-<div class="text-left">
+<form class="form-check text-start">
   <% question.answers.randomize_answers.each do |a| %>
+    <div class="form-check">
+
     <% if response.answer.eql?(a) %>
-      <div class="selected-answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
-        <%= a.description %>
-      </div>
+    <input name=<%=question.id%> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)" checked=true>
+    <label for=<%= a.id %> class="form-check-label d-block">
+    <%= a.description %>
+    </label>
     <% else %>
-      <div class="answers" onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
-        <%= a.description %>
-      </div>
+    <input name=<%=question.id%> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+    <label for=<%= a.id %> class="form-check-label">
+    <%= a.description %>
     <% end %>
+      </div>
   <% end %>
-</div>
+    </form>

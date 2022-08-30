@@ -14,16 +14,29 @@
 *= require_self
 
  */
+$color-marker-complete: #00a407 !default;
+$color-marker-active: #ff9900 !default;
+$color-marker: #aaa !default;
+$marker-size: 32px !default;
+$color-marker-hover: #6e6e6e;
+// $table-accent-bg: #d6ebeb;
+$pagination-border-radius: 0;
+$primary: #497979;
+$primary-light: rgba(59, 147, 147, 0.5);
+$navbar-light-color: rgba(0, 0, 0, 0.7);
+$navbar-light-hover-color: rgba(0, 0, 0, 1);
+$navbar-dark-color: rgba(255, 255, 255, 0.7);
+$navbar-dark-hover-color: rgba(255, 255, 255, 1);
+$body-top-padding: 6rem; // equivalent to navbar height
+$input-border-radius: 0.25rem !default;
+$enable-negative-margins: true;
 
+@import "bootstrap/scss/bootstrap";
 @import "toastr";
-@import './shared/variables';
+@import "./shared/variables";
 @import "trix";
-@import 'select2';
-@import "select2-bootstrap";
 @import "lib";
 @import "font-awesome";
-@import "select2-bootstrap";
-
 html {
   height: 100%;
   overflow: auto;
@@ -33,38 +46,43 @@ body {
   min-height: 100%;
   margin: 0;
   padding: 6rem 0 0 0;
-  background-color: rgba(238,238,238,0.5);
-  font-family: 'Raleway', helvetica, sans-serif!important;
+  background-color: rgba(238, 238, 238, 0.5);
+  font-family: "Raleway", helvetica, sans-serif !important;
   display: flex;
   flex-direction: column;
 }
 
-h1{
+h1 {
   font-size: 2.25rem;
 }
 
-h2{
+h2 {
   font-size: 1.75rem;
 }
 
-h1, h2, h3, h4, h5, h6{
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 400;
   color: #000;
   padding: 0;
   background: none;
   text-rendering: optimizeLegibility;
-  margin: 0 0 .5em 0;
+  margin: 0 0 0.5rem 0;
 }
 
-p{
+p {
   margin: 0.5rem 0 !important;
 }
 
-a{
+a {
   text-decoration: none;
   color: inherit;
 
-  &::visited{
+  &::visited {
     color: #789;
   }
   //
@@ -72,8 +90,11 @@ a{
   //  outline-style: none;
   //}
 }
+body {
+  background-color: #fff;
+}
 
-u{
+u {
   display: inline-block;
   text-decoration: none;
 }
@@ -90,10 +111,6 @@ u{
 //  display: block;
 //}
 
-input:not(.btn .form-control), textarea:not(.form-control) {
-  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
 :focus {
   outline: -webkit-focus-ring-color auto 1px;
 }
@@ -106,18 +123,18 @@ a :focus {
 //  outline: none;
 //}
 
-div.seperator{
+div.seperator {
   width: 100%;
   padding-top: 20px;
   border-bottom: 1px solid #ddd;
 }
 
-span.form-error{
+span.form-error {
   color: #cd5c5c;
   font-size: 0.8rem;
 }
 
-div.form-error{
+div.form-error {
   color: #cd5c5c;
   font-size: 0.8rem;
 }
@@ -125,6 +142,17 @@ div.form-error{
 .main {
   flex-shrink: 0;
   margin-bottom: auto;
+}
+
+@include media-breakpoint-up(md) {
+  .jumbotron {
+    padding: 4rem 2rem;
+  }
+}
+@include media-breakpoint-down(md) {
+  .jumbotron {
+    padding: 2rem 1rem;
+  }
 }
 
 .container.page {
@@ -188,4 +216,41 @@ div.form-error{
 
 .fc th {
   width: inherit;
+}
+
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1140px;
+  }
+}
+.accordion-button {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+input:not(.btn .form-control),
+textarea:not(.form-control) {
+  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+}
+.justified-gallery {
+  height: 250px;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+.justified-gallery img {
+  height: 250px;
+  width: auto;
+}
+.padding-responsive {
+  padding-left: 20%;
+  padding-right: 20%;
+}
+
+@media screen and (max-width: 768px) {
+  .padding-responsive {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+td > .btn:not(:last-of-type) {
+  margin-bottom: 0.5rem;
 }

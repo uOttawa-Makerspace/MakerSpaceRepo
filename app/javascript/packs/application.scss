@@ -1,30 +1,23 @@
 $pswp__assets-path: "~photoswipe/src/css/default-skin/";
 
-$color-marker-complete: #00A407 !default;
-$color-marker-active: #FF9900 !default;
-$color-marker: #aaa !default;
-$marker-size: 32px !default;
-$color-marker-hover: #6e6e6e;
-//$table-accent-bg: #a8a8a84f;
-$table-accent-bg: #d6ebeb;
-
 @import "shared/variables";
-@import "~bootstrap/scss/bootstrap";
 @import "~photoswipe/src/css/main";
 @import "~photoswipe/src/css/default-skin/default-skin";
-@import "~justifiedGallery/dist/css/justifiedGallery";
-@import "~progress-tracker/src/styles/progress-tracker";
-@import 'toastr/build/toastr.min';
+// @import "~progress-tracker/src/styles/progress-tracker";
+@import "toastr/build/toastr.min";
 @import "~flatpickr/dist/flatpickr";
 @import "~@fullcalendar/common/main";
-@import "~tom-select/dist/css/tom-select.bootstrap4";
+@import "~tom-select/dist/css/tom-select.bootstrap5";
 
-.progress-step {
-  &.is-declined {
-    @include progress-state(#FF4F37);
-  }
+// .progress-step {
+//   &.is-declined {
+//     @include progress-state(#FF4F37);
+//   }
+// }
+a {
+  text-decoration: none;
 }
-
 .turbolinks-progress-bar {
-  background-color: theme-color("primary");
+  background-color: #497979;
+  // background-color: theme-color("primary");
 }

@@ -14,7 +14,7 @@ Rails.application.configure do
   config.eager_load = true
 
   # Full error reports are disabled and caching is turned on.
-  config.consider_all_requests_local       = false
+  config.consider_all_requests_local = false
   config.action_controller.perform_caching = true
 
   # Enable Rack::Cache to put a simple HTTP cache in front of your application
@@ -25,7 +25,7 @@ Rails.application.configure do
 
   # Disable serving static files from the `/public` folder by default since
   # Apache or NGINX already handles this.
-  config.public_file_server.enabled = ENV['RAILS_SERVE_STATIC_FILES'].present?
+  config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
 
   # Compress JavaScripts and CSS.
   # config.assets.js_compressor = :uglifier
@@ -85,22 +85,28 @@ Rails.application.configure do
   config.assets.precompile += %w[vendor.js vendor.css]
 
   Octokit.configure do |c|
-    c.client_id        = Rails.application.credentials[Rails.env.to_sym][:github][:app_key]
-    c.client_secret    = Rails.application.credentials[Rails.env.to_sym][:github][:app_key_secret]
+    c.client_id =
+      Rails.application.credentials[Rails.env.to_sym][:github][:app_key]
+    c.client_secret =
+      Rails.application.credentials[Rails.env.to_sym][:github][:app_key_secret]
   end
 
   # SMTP settings
-  config.action_mailer.default_url_options = { host: 'dev.makerepo.com' }
-  config.action_mailer.asset_host = 'https://dev.makerepo.com'
+  config.action_mailer.default_url_options = { host: "dev.makerepo.com" }
+  config.action_mailer.asset_host = "https://dev.makerepo.com"
 
   config.paperclip_defaults = {
     storage: :s3,
     s3_credentials: {
-      bucket: Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name],
-      access_key_id: Rails.application.credentials[Rails.env.to_sym][:aws][:access_key_id],
-      secret_access_key: Rails.application.credentials[Rails.env.to_sym][:aws][:secret_access_key],
+      bucket:
+        Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name],
+      access_key_id:
+        Rails.application.credentials[Rails.env.to_sym][:aws][:access_key_id],
+      secret_access_key:
+        Rails.application.credentials[Rails.env.to_sym][:aws][
+          :secret_access_key
+        ],
       s3_region: Rails.application.credentials[Rails.env.to_sym][:aws][:region]
     }
   }
 end
-

@@ -22,11 +22,11 @@
 # Learn more: http://github.com/javan/whenever
 
 set :whenever_identifier, -> { "#{fetch(:application)}_#{fetch(:stage)}" }
-set :output, 'log/cron_log.log'
-env :PATH, ENV['PATH']
+set :output, "log/cron_log.log"
+env :PATH, ENV["PATH"]
 
 every 1.month do
-  rake 'increment_year:increment_one_year'
+  rake "increment_year:increment_one_year"
 end
 
 # every 1.month do
@@ -34,11 +34,11 @@ end
 # end
 
 every :hour, at: 50 do
-  rake 'popular_hours:calculate_popular_hours'
+  rake "popular_hours:calculate_popular_hours"
 end
 
 every 1.month do
-  rake 'confirmed_users:remind'
+  rake "confirmed_users:remind"
 end
 
 # At 7am of First day of every week
@@ -46,10 +46,8 @@ end
 #   runner "MsrMailer.send_weekly_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com']).deliver_now"
 # end
 
-every '0 11 1 9 *' do
-  if Time.now.year % 2 != 0
-    rake 'update_profile:send_emails'
-  end
+every "0 11 1 9 *" do
+  rake "update_profile:send_emails" if Time.now.year % 2 != 0
 end
 
 # At 7:30am of First day of every week
@@ -57,26 +55,26 @@ end
 #   runner "MsrMailer.send_training_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com','brunsfield@uottawa.ca', 'MTC@uottawa.ca']).deliver_now"
 # end
 
-every :sunday, at: '1am' do
-  rake 'active_volunteers:check_volunteers_status'
+every :sunday, at: "1am" do
+  rake "active_volunteers:check_volunteers_status"
 end
 
-every :day, at: '2am' do
-  rake 'active_volunteers:check_volunteers_status'
+every :day, at: "2am" do
+  rake "active_volunteers:check_volunteers_status"
 end
 
-every :day, at: '11:59pm' do
-  rake 'exams:check_expired_exams'
+every :day, at: "11:59pm" do
+  rake "exams:check_expired_exams"
 end
 
-every :day, at: '3am' do
-  rake 'badge:get_data'
-  rake 'badge:get_and_update_badge_templates'
+every :day, at: "3am" do
+  rake "badge:get_data"
+  rake "badge:get_and_update_badge_templates"
 end
 
-every :day, at: '9am' do
-  rake 'print_order_notifications:two_weeks_reminder'
-  rake 'users_inactive:check'
+every :day, at: "9am" do
+  rake "print_order_notifications:two_weeks_reminder"
+  rake "users_inactive:check"
 end
 
 # Use this file to easily define all of your cron jobs.

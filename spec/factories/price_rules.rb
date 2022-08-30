@@ -6,11 +6,13 @@ FactoryBot.define do
     cc { 50 }
 
     factory :price_rule_with_discount_codes do
-      transient do
-        discount_code_count { 5 }
-      end
+      transient { discount_code_count { 5 } }
       after(:create) do |price_rule, evaluator|
-        create_list(:discount_code, evaluator.discount_code_count, price_rule: price_rule)
+        create_list(
+          :discount_code,
+          evaluator.discount_code_count,
+          price_rule: price_rule
+        )
       end
     end
   end

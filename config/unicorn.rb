@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-APP_PATH = '/home/deploy/apps/Makerepo/current'
+APP_PATH = "/home/deploy/apps/Makerepo/current"
 pid "#{APP_PATH}/tmp/pids/unicorn.pid"
 
 # Use at least one worker per core if you're on a dedicated server,
@@ -9,7 +9,7 @@ worker_processes 2
 
 working_directory APP_PATH
 
-listen '/var/run/makerspacerepo/unicorn.sock', backlog: 64
+listen "/var/run/makerspacerepo/unicorn.sock", backlog: 64
 
 timeout 30
 
@@ -21,8 +21,7 @@ stdout_path "#{APP_PATH}/log/unicorn.stdout.log"
 # combine Ruby 2.0.0dev or REE with "preload_app true" for memory savings
 # http://rubyenterpriseedition.com/faq.html#adapt_apps_for_cow
 preload_app true
-GC.respond_to?(:copy_on_write_friendly=) and
-  GC.copy_on_write_friendly = true
+GC.respond_to?(:copy_on_write_friendly=) and GC.copy_on_write_friendly = true
 
 # fast LAN.
 check_client_connection false
@@ -33,8 +32,7 @@ run_once = true
 before_fork do |_server, _worker|
   # the following is highly recomended for Rails + "preload_app true"
   # as there's no need for the master process to hold a connection
-  defined?(ActiveRecord::Base) and
-    ActiveRecord::Base.connection.disconnect!
+  defined?(ActiveRecord::Base) and ActiveRecord::Base.connection.disconnect!
 
   # Occasionally, it may be necessary to run non-idempotent code in the
   # master before forking.  Keep in mind the above disconnect! example
@@ -47,6 +45,5 @@ end
 
 after_fork do |_server, _worker|
   # the following is *required* for Rails + "preload_app true",
-  defined?(ActiveRecord::Base) and
-    ActiveRecord::Base.establish_connection
+  defined?(ActiveRecord::Base) and ActiveRecord::Base.establish_connection
 end
