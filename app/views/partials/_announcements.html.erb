@@ -14,7 +14,7 @@
   <% end %>
 <% end %>
 
-<% if !Announcement.active.all_users.blank? && signed_in? %>
+<% if !Announcement.active.regular_user.blank? && signed_in? %>
   <% Announcement.active.all_users.find_each do |a| %>
     <div class="alert alert-primary text-center" role="alert">
       <b>To All Users: </b><%= a.description %>
@@ -22,10 +22,10 @@
   <% end %>
 <% end %>
 
-<% unless Announcement.active.all_visitors.blank? %>
-    <%  Announcement.active.all_visitors.find_each do |a|  %>
+<% unless Announcement.active.all_users.blank? %>
+    <%  Announcement.active.all_users.find_each do |a|  %>
         <div class="alert alert-primary text-center" role="alert">
-            <b>To All Users: </b><%=  a.description  %>
+            <b>To All Visitors: </b><%=  a.description  %>
         </div>
     <% end %>
 <% end %>
