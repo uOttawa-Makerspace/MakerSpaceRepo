@@ -26,18 +26,18 @@ jobs:
           --health-retries 5
       redis:
         image: redis
-        ports: ['6379:6379']
+        ports: ["6379:6379"]
         options: --entrypoint redis-server
     steps:
       - uses: actions/checkout@v3.0.1
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7.2
+          ruby-version: 2.7.3
           bundler-cache: true
       - uses: actions/setup-node@v2
         with:
-          node-version: '12'
+          node-version: "14.15.5"
       - uses: c-hive/gha-yarn-cache@v1
       - run: npm i -g yarn
       - run: yarn install
@@ -47,7 +47,7 @@ jobs:
         with:
           name: "makerepo-1632742c49cc.json"
           json: ${{ secrets.CREDENTIALS_JSON }}
-          dir: 'config/'
+          dir: "config/"
       - name: Build and test
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
@@ -70,10 +70,10 @@ jobs:
         env:
           DEPLOY_ENC_KEY: ${{ secrets.DEPLOY_ENC_KEY }}
         run: |
-          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_rsa_enc -out config/deploy_id_rsa -k $DEPLOY_ENC_KEY -a -pbkdf2
-          chmod 600 config/deploy_id_rsa
+          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_ed25519_staging_enc -out config/deploy_id_ed25519_staging -k $DEPLOY_ENC_KEY -a -pbkdf2
+          chmod 600 config/deploy_id_ed25519_staging
           eval "$(ssh-agent -s)"
-          ssh-add config/deploy_id_rsa
+          ssh-add config/deploy_id_ed25519_staging
           gem install capistrano
           bundle exec cap staging deploy
       - name: Deploy Master
@@ -81,28 +81,23 @@ jobs:
         env:
           DEPLOY_ENC_KEY: ${{ secrets.DEPLOY_ENC_KEY }}
         run: |
-          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_rsa_enc -out config/deploy_id_rsa -k $DEPLOY_ENC_KEY -a -pbkdf2
-          chmod 600 config/deploy_id_rsa
+          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_ed25519_prod_enc -out config/deploy_id_ed25519_prod -k $DEPLOY_ENC_KEY -a -pbkdf2
+          chmod 600 config/deploy_id_ed25519_prod
           eval "$(ssh-agent -s)"
-          ssh-add config/deploy_id_rsa
+          ssh-add config/deploy_id_ed25519_prod
           gem install capistrano
           bundle exec cap production deploy
       - uses: ravsamhq/notify-slack-action@master
         if: always()
         with:
           status: ${{ job.status }}
-          notify_when: 'success,failure,warnings' # default is 'success,failure,warnings'
+          notify_when: "success,failure,warnings" # default is 'success,failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} # required
       - uses: toko-bifrost/ms-teams-deploy-card@master
         if: always()
         with:
           github-token: ${{ github.token }}
-          webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}  
+          webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           timezone: "America/Montreal"
-          show-on-start	: false
-
-
-
-        
-      
+          show-on-start: false

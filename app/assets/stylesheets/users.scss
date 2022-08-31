@@ -1,7 +1,9 @@
 @import "lib";
-@import './shared/variables';
+@import "./shared/variables";
 
-section#signup, section#login, section#forgot-password {
+section#signup,
+section#login,
+section#forgot-password {
   // TODO remove when old CSS is completely removed
   .waiver ul {
     list-style-type: disc;
@@ -13,7 +15,7 @@ section#signup, section#login, section#forgot-password {
     }
   }
 
-  .bootstrap-select .dropdown-menu {
+  .form-select .dropdown-menu {
     min-width: auto !important;
     width: 100%;
 
@@ -22,11 +24,11 @@ section#signup, section#login, section#forgot-password {
     }
   }
 
-  .bootstrap-select > .dropdown-toggle {
+  .form-select > .dropdown-toggle {
     width: 100%;
   }
 
-  .form-group.attach {
+  .mb-3.attach {
     .form-control {
       border-radius: 0;
       position: relative;
@@ -51,8 +53,9 @@ section#signup, section#login, section#forgot-password {
     }
   }
 
-  label.required::after, span.required::after {
-    content: '*';
+  label.required::after,
+  span.required::after {
+    content: "*";
     color: #aa0000;
     margin-left: 0.25rem;
   }

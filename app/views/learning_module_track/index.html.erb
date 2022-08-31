@@ -14,19 +14,19 @@
 
           <% skill.trainings.each do |training| %>
 
-            <div class="accordion">
-              <div class="card m-3">
-                <div class="card-header">
+            <div class="accordion" id="accordion-<%=training.id%>">
+              <div class="accordion-item m-3">
+                <div class="accordion-header" id="header-<%=training.id%>">
                   <p style="float: right"><%= get_lower_level_lm(training.id).html_safe %></p>
                   <h2 class="mb-0">
-                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#training-<%= training.id %>">
+                    <button class="accordion-button btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>">
                       <%= training.name %>
                     </button>
                   </h2>
                 </div>
 
-                <div id="training-<%= training.id %>" class="collapse">
-                  <div class="card-body">
+                <div id="training-<%= training.id %>" class="accordion-collapse collapse" aria-labelledby="header-<%=training.id%>" data-bs-parent="#accordion-<%=training.id%>">
+                  <div class="accordion-body">
 
                     <p><%= training.description if training.description.present? %></p>
 

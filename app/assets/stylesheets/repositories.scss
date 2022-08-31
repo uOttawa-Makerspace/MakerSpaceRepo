@@ -1,12 +1,12 @@
 @import "lib";
 
-section#new-repo{
+section#new-repo {
   @include outer-container(60rem);
   background-color: #fff;
   padding: 2rem 5rem;
   min-height: calc(100vh - 65px);
 
-  div.title{
+  div.title {
     color: #366;
     font-size: 2rem;
     padding-bottom: 0.5rem;
@@ -17,27 +17,29 @@ section#new-repo{
     border-bottom: 2px solid #366;
   }
 
-  form{
+  form {
     max-width: 420px;
     width: 100%;
     margin: 0 auto;
   }
 
-  label{
+  label {
     display: block;
-    font: 400 1em 'Raleway', sans-serif;
+    font: 400 1em "Raleway", sans-serif;
     margin: 10px 0 5px;
     color: #5f9ea0;
   }
 
-  label + div{
-    font: 400 0.75rem 'Raleway', helvetica, sans-serif;
+  label + div {
+    font: 400 0.75rem "Raleway", helvetica, sans-serif;
     color: #aaa;
     margin-bottom: 0.5rem;
   }
 
-  input.repo, textarea, input#tag {
-    font: 300 0.9em 'Raleway', sans-serif;
+  input.repo,
+  textarea,
+  input#tag {
+    font: 300 0.9em "Raleway", sans-serif;
     color: #555;
     width: 100%;
     max-width: 400px;
@@ -45,54 +47,60 @@ section#new-repo{
     position: relative;
     margin-bottom: 15px;
     border-radius: 3px;
-    border: 1px solid #aaa;
     display: block;
   }
+  input.repo:not(.is-invalid),
+  textarea:not(.is-invalid),
+  input#tag:not(.is-invalid) {
+    border: 1px solid #aaa;
+  }
 
-  input.repo{
+  input.repo {
     border-radius: initial;
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
   }
 }
 
-.ui-state-focus:not(.ui-selectmenu-button){
+.ui-state-focus:not(.ui-selectmenu-button) {
   background-color: #5f9ea0;
   color: #fff;
 }
 
-[aria-hidden="true"] { display: none; }
+[aria-hidden="true"] {
+  display: none;
+}
 
 ul.ui-menu {
-    width: 400px;
-    border: 1px solid #aaa;
-    background-color: #fff;
-    position: absolute !important;
-    @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+  width: 400px;
+  border: 1px solid #aaa;
+  background-color: #fff;
+  position: absolute !important;
+  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
 li.ui-menu-item {
-    padding: 0.5rem;
-    font: 300 0.9em 'Raleway', sans-serif;
-    cursor: pointer;
+  padding: 0.5rem;
+  font: 300 0.9em "Raleway", sans-serif;
+  cursor: pointer;
 
-    &:hover {
-      background-color: #5f9ea0;
-      color: #fff;
-    }
+  &:hover {
+    background-color: #5f9ea0;
+    color: #fff;
+  }
 }
 
-.ui-autocomplete-input{
-  font: 300 0.9em 'Raleway', sans-serif;
+.ui-autocomplete-input {
+  font: 300 0.9em "Raleway", sans-serif;
   background-color: #fff;
   width: calc(400px + 1rem);
   @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
   border: 1px solid #aaa;
 
-  & li{
+  & li {
     padding: 0.5rem;
 
-    &:hover{
+    &:hover {
       background-color: #5f9ea0;
       color: #fff;
     }
@@ -105,7 +113,8 @@ li.ui-menu-item {
   padding-right: 10px;
 }
 
-.select, select:not(.form-control) {
+.select,
+select:not(.form-control) {
   cursor: pointer;
   display: inline-block;
   position: relative;
@@ -113,7 +122,7 @@ li.ui-menu-item {
   width: 100%;
   max-width: calc(400px + 1rem);
   height: 2.4rem;
-  font: 300 0.9em 'Raleway', sans-serif;
+  font: 300 0.9em "Raleway", sans-serif;
   border: 1px solid #aaa;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px;
@@ -121,7 +130,10 @@ li.ui-menu-item {
 
 .select-styled {
   position: absolute;
-  top: 0;right:0;bottom:0;left:0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   padding: 10px;
   @include transition(0.2s);
   &:after {
@@ -137,7 +149,9 @@ li.ui-menu-item {
 .select-options {
   display: none;
   position: absolute;
-  top: 115%;right: 0;left: 0;
+  top: 115%;
+  right: 0;
+  left: 0;
   z-index: 1;
   background-color: #fff;
   border: 1px solid #aaa;
@@ -154,33 +168,35 @@ li.ui-menu-item {
   }
 }
 
-div#dragndrop{
+div#dragndrop {
   position: absolute;
-  top:0;left:0;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   color: #aaa;
-  padding-top: 20px;
-  font: 300 2em 'Raleway', sans-serif;
+  margin-top: 40px;
+  font: 300 2em "Raleway", sans-serif;
   text-align: center;
 
-  p{
+  p {
     margin: 0;
     font-size: 1rem;
   }
 }
 
-div.repo-image, div.repo-file{
+div.repo-image,
+div.repo-file {
   height: 150px;
   max-width: calc(400px + 1rem);
   border-radius: 3px;
-  background-color: rgba(250,250,250,0.7);
+  background-color: rgba(250, 250, 250, 0.7);
   border: 1px dashed #aaa;
   position: relative;
   background-size: cover;
 }
 
-label.custom-image-upload{
+label.custom-image-upload {
   position: absolute;
   bottom: 0;
   width: 100%;
@@ -188,131 +204,131 @@ label.custom-image-upload{
   padding: 10px 0;
   text-align: center;
   background-color: #eee;
-  font: 300 0.8em 'Raleway', sans-serif !important;
+  font: 300 0.8em "Raleway", sans-serif !important;
   color: #4682b4 !important;
   margin: 0 !important;
-  &:hover{
+  &:hover {
     cursor: pointer;
   }
 }
 
-div#image-container{
+div#image-container {
   @include outer-container(calc(420px + 1rem));
   margin: 0.5rem 0;
 
-
-  div.image-item{
+  div.image-item {
     display: inline-block;
     margin-right: 1%;
     position: relative;
     height: 70px;
     min-width: 65px;
 
-    img{
+    img {
       height: 100%;
       max-width: 100%;
       display: block;
     }
 
-    span.image-remove{
+    span.image-remove {
       position: absolute;
-      top:5%;
+      top: 5%;
       right: 5%;
       padding: 1% 5%;
       color: #fff;
       background-color: #222;
       cursor: pointer;
-      &:after{
-        font: 300 1em 'Raleway', sans-serif !important;
+      &:after {
+        font: 300 1em "Raleway", sans-serif !important;
         content: "remove";
       }
     }
   }
 }
 
-div#category-container, div#equipment-container{
-  span{
+div#category-container,
+div#equipment-container {
+  span {
     display: inline-block;
     padding: 0.25rem 0.7rem;
     background-color: #4682b4;
     color: #eee;
-    font: 300 0.8em 'Raleway', sans-serif !important;
+    font: 300 0.8em "Raleway", sans-serif !important;
     margin-top: 0.2rem;
     margin-right: 0.2rem;
     cursor: default;
   }
 
-  span:hover{
+  span:hover {
     background-color: darkred;
     cursor: not-allowed;
   }
 }
-div#share_option{
-  span{
+div#share_option {
+  span {
     display: inline-block;
     padding: 0.25rem 0.7rem;
     background-color: #4682b4;
     color: #555;
-    font: 300 0.8em 'Raleway', sans-serif !important;
+    font: 300 0.8em "Raleway", sans-serif !important;
     margin-top: 0.2rem;
     margin-right: 0.2rem;
     cursor: default;
   }
 
-  label#type{
+  label#type {
     color: #555;
-    font: 300 0.9em 'Raleway', sans-serif;
+    font: 300 0.9em "Raleway", sans-serif;
   }
-  div#description{
+  div#description {
     text-indent: 5mm;
   }
 
-  div#pass{
-    padding-left: 10px;;
+  div#pass {
+    padding-left: 10px;
   }
-  div#change_pass{
-    padding-left: 10px;;
+  div#change_pass {
+    padding-left: 10px;
   }
-  span:hover{
+  span:hover {
     background-color: darkred;
     cursor: not-allowed;
   }
 
   input {
-      color: #666;
-      height: 20px;
-      padding: 2px;
-      padding-left: 5px;
+    color: #666;
+    height: 20px;
+    padding: 2px;
+    padding-left: 5px;
   }
 }
 
-label.custom-instructable-upload{
+label.custom-instructable-upload {
   @include transition(100);
   font-size: 10px;
   display: inline-block !important;
-  background-color: rgba(238,238,238,0.3);
-  font: 300 0.8em 'Raleway', sans-serif !important;
+  background-color: rgba(238, 238, 238, 0.3);
+  font: 300 0.8em "Raleway", sans-serif !important;
   color: #4682b4 !important;
   padding: 5px 10px;
   border-radius: 3px;
-  cursor:pointer;
+  cursor: pointer;
   border: 1px solid #aaa;
 
-  &:hover{
-    background-color: rgba(119,136,153,0.2);
+  &:hover {
+    background-color: rgba(119, 136, 153, 0.2);
   }
 }
 
-span.ui-helper-hidden-accessible div{
+span.ui-helper-hidden-accessible div {
   display: none;
 }
 
-.repo-form{
+.repo-form {
   display: block;
   padding-bottom: 0.5rem;
 }
 
-ul.redactor-toolbar{
+ul.redactor-toolbar {
   position: static;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px;
@@ -321,31 +337,34 @@ ul.redactor-toolbar{
   @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
-div.redactor-editor{
+div.redactor-editor {
   @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
   padding: 10px;
   border: 1px solid #aaa;
   border-top: 1px solid #eee;
-  font: 300 0.9em 'Raleway', sans-serif;
+  font: 300 0.9em "Raleway", sans-serif;
   color: #555;
 
-  & h1, h2, h3, h4, h5, h6{
+  & h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-weight: 400;
   }
 
-  & ul{
+  & ul {
     list-style-type: circle;
   }
 
-  & li{
+  & li {
     display: list-item;
   }
-
-
 }
 
-.pin-button{
-  font: 300 1em 'Raleway', sans-serif;
+.pin-button {
+  font: 300 1em "Raleway", sans-serif;
   padding: 0.5rem 1rem;
   border: none;
   text-transform: uppercase;
@@ -355,30 +374,27 @@ div.redactor-editor{
   background-color: #5f9ea0;
   color: #fff;
   margin-bottom: 20px;
-
 }
 
-
-.delete-button{
-  font: 300 1em 'Raleway', sans-serif;
+.delete-button {
+  font: 300 1em "Raleway", sans-serif;
   padding: 0.4rem 0.6rem;
   border: none;
   text-transform: uppercase;
   color: #777;
   letter-spacing: 0.15em;
   border-radius: 10px;
-  background-color: #A61E10;
+  background-color: #a61e10;
   color: #fff;
   margin-bottom: 20px;
 
-  &:hover{
+  &:hover {
     cursor: pointer;
     color: aquamarine;
   }
-
 }
 
 #status-save {
-  padding-left:10px;
-  color:dimgray;
+  padding-left: 10px;
+  color: dimgray;
 }

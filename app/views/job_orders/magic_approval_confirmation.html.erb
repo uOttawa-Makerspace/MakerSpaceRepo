@@ -1,0 +1,17 @@
+<div class="jumbotron text-center">
+  <% if @status %>
+    <i class="fa fa-check-circle fa-5x mb-3 text-success"></i>
+    <h1>Thank You for Approving/Denying the Job Order!</h1>
+  <% else %>
+    <i class="fa fa-times-circle fa-5x mb-3 text-danger"></i>
+    <h1>An error occured while trying to Approve/Deny the Job Order...</h1>
+
+    <h2>Please try again later.</h2>
+  <% end %>
+  <hr>
+  <p>
+    Having trouble or have any questions? Contact Us!
+  </p>
+  <p><a href="mailto:makerspace@uottawa.ca">makerspace@uottawa.ca</a> (For General Questions and Administrative issues)</p>
+  <p><a href="mailto:uottawa.makerepo@gmail.com">uottawa.makerepo@gmail.com</a> (Website Technical Issues)</p>
+</div>

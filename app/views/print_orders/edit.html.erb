@@ -32,13 +32,13 @@
         <%= hidden_field_tag :id, @print_order.id %>
 
         <% if @print_order.order_type != 1 %>
-          <div class="form-group">
+          <div class="mb-3">
             <label>STL File</label>
             <%= f.file_field :file, style: "display: block!important;" %>
             <p>Current file : <%= @print_order.file.filename %></p>
           </div>
 
-          <fieldset class="form-group">
+          <fieldset class="mb-3">
             <div class="row">
               <legend class="col-form-label col-sm-2 pt-0">Material</legend>
               <div class="col-sm-10">
@@ -78,7 +78,7 @@
             </div>
           </fieldset>
 
-          <fieldset class="form-group">
+          <fieldset class="mb-3">
             <div class="row">
               <legend class="col-form-label col-sm-2 pt-0">Quality</legend>
               <div class="col-sm-10">
@@ -112,14 +112,14 @@
           </fieldset>
 
         <% else %>
-          <div class="form-group">
+          <div class="mb-3">
             <label>SVG File</label>
             <label class="label-size">(Please put cut lines as 0.001 Inch and everything at 100% Opacity)</label>
             <%= f.file_field :file, style: "display: block!important;" %>
             <p>Current file : <%= @print_order.file.filename %></p>
           </div>
 
-          <fieldset class="form-group">
+          <fieldset class="mb-3">
             <div class="row">
               <legend class="col-form-label col-sm-2 pt-0">Material</legend>
               <div class="col-sm-10" id="material-section">
@@ -148,7 +148,7 @@
             </div>
           </fieldset>
 
-          <fieldset class="form-group" id="color_form">
+          <fieldset class="mb-3" id="color_form">
             <div class="row">
               <legend class="col-form-label col-sm-2 pt-0">Color</legend>
               <div class="col-sm-10">
@@ -167,7 +167,7 @@
           </fieldset>
         <% end %>
 
-        <fieldset class="form-group">
+        <fieldset class="mb-3">
           <div class="row">
             <legend class="col-form-label col-sm-2 pt-0">Expedited, extra charge ($20 CAD)</legend>
             <div class="col-sm-10">
@@ -187,7 +187,7 @@
           </div>
         </fieldset>
 
-        <fieldset class="form-group">
+        <fieldset class="mb-3">
           <div class="row">
             <legend class="col-form-label col-sm-2 pt-0">Comments</legend>
             <div class="col-sm-10">
@@ -196,7 +196,7 @@
           </div>
         </fieldset>
 
-        <div class="form-group">
+        <div class="mb-3">
           <button class="btn btn-primary" type="submit">Edit Request</button>
         </div>
       <% end %>
@@ -205,7 +205,7 @@
     <div class="col-md-4">
       <div class="table-responsive">
         <table class="table table-striped">
-          <thead>
+          <thead class="table-primary">
           <tr>
             <th scope="col">Service</th>
             <th scope="col">Material Cost ($)</th>

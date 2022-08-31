@@ -2,13 +2,13 @@
   <h2 class="text-center py-3"><b>Proficient Projects Requests</b></h2>
 
   <% if @order_item_waiting_for_approval.present? %>
-    <table class="text-center table-striped staff-newly-signed-up-users-table mb-5">
-
+    <table class="text-center table-striped staff-newly-signed-up-users-table mb-5 table">
+    <thead class="table-primary">
       <th>User</th>
       <th>Title</th>
       <th>Approve</th>
       <th>Revoke</th>
-
+    </thead>
       <% @order_item_waiting_for_approval.each do |oi| %>
         <tr>
           <td><%= link_to oi.order.user.name, user_path(oi.order.user.username) %></td>

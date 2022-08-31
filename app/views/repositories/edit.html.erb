@@ -7,24 +7,21 @@
   <%= form_for @repository, url: {controller: "repositories", action: "update"}, html: { multipart: true } do |f| %>
 
     <br>
-    <div class="form-group">
-    <%= f.label :title, "Title" %>
+    <div class="mb-3">
+    <%= f.label :title, "Title", class:"form-label" %>
     <div>Great project titles are short and memorable.</div>
     <%= f.text_field :title, class: 'repo form-control' %>
     </div>
-    <div class="form-group">
+    <div class="mb-3">
     <br>
-    <%= f.label :description %>
+    <%= f.label :description, class:"form-label" %>
     <div style="width: 420px;">
       <%= f.trix_editor :description, class: 'repo form-control', style: "height: auto!important;" %>
     </div>
 
     </div>
-    <%= label_tag :file, "Project files" %>
-    <div class="custom-file">
-      <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'custom-file-input', aria_label: 'Project Files / Fichiers du projet' %>
-      <label class="custom-file-label m-0" for="files_">Choose file</label>
-    </div>
+    <%= label_tag :file, "Project files", class:"form-label" %>
+    <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
 
     <div id="file-container">
       <% @files.each do |f| %>
@@ -39,7 +36,7 @@
       <%= hidden_field_tag 'deletefiles' %>
     </div>
     <br>
-    <%= label_tag :photo, "Gallery" %>
+    <%= label_tag :photo, "Gallery", class:"form-label" %>
     <div>A maximum of five photos can be uploaded per repository.</div>
     <div class="repo-image">
       <div id="dragndrop">
@@ -47,10 +44,7 @@
         <%= fa_icon 'cloud-upload' %>
         <p>Drag &amp; Drop</p>
       </div>
-      <div class="custom-file">
-        <%= file_field_tag 'images[]', type: :files, multiple: true, class: "custom-file-input", aria_label: "Select Pictures / Selectionner des images" %>
-        <label class="custom-file-label m-0" for="images_">Choose an image...</label>
-      </div>
+      <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control", aria_label: "Select Pictures / Selectionner des images" %>
       </div>
     </div>
 
@@ -63,54 +57,37 @@
     <% end %>
     <%= hidden_field_tag 'deleteimages' %>
     </div>
-    <div class="form-group">
-    <%= f.label :youtube_link, "Youtube Link" %>
+    <div class="mb-3">
+    <%= f.label :youtube_link, "Youtube Link", class:"form-label" %>
     <div>Your project will be better understood with a 1 min Youtube video.<br>Votre projet sera mieux compris avec une vidéo Youtube de 1 minute</div>
     <%= f.text_field :youtube_link, class: 'repo form-control' %>
     </div>
     <br>
-    <%= f.label :categories %>
+    <%= f.label :categories, class:"form-label" %>
     <div>Choose at most 5 categories that fit your project.</div>
-    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), include_blank: "Select a category...", multiple: true %>
-
-    <div id="category-container">
-      <% @categories.each do |category| %>
-        <span class="category"><%= category.name %></span>
-      <% end %>
-    </div>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name, @categories.map { |category| category.name }), {include_blank: "Select a category...",include_hidden:false},{class: "profile-text form-control form-select",multiple: true} %>
 
     <br>
-    <%= f.label :equipment %>
+    <%= f.label :equipment, class:"form-label" %>
     <div>Choose at most 5 pieces of equipment that are related to your project.</div>
-    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: "profile-text", include_blank: "Select a piece of equipment...", multiple: true %>
-
-    <div id="equipment-container">
-    <% @equipments.each do |equipment| %>
-      <span class="equipment"><%= equipment.name %></span>
-    <% end %>
-    </div>
-
+    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name, @equipments.map { |equipment| equipment.name }), {include_blank: "Select a category...",include_hidden:false},{class: "profile-text form-control form-select",multiple: true} %>
     <br>
-    <%= f.label :license %>
+    <%= f.label :license, class:"form-label" %>
     <div>Choose how you want your project to be used by others.</div>
-    <%= f.select :license, @repository.class.license_options %>
+    <%= f.select :license, @repository.class.license_options, {include_blank: false}, {class: "form-control form-select"} %>
 
-    <div id= "share_option">
-        <%= f.label :share_type, "Your project is..." %>
-        <%= fa_icon('globe') %>
-        <%= f.radio_button(:share_type, "public", :class => "show_extra", :style => "display:inline",:onclick => "hidePass();", required: true)%><%= f.label(:share_type, "Public", :id =>"type", :style => "display:inline")  %>
-        <div id= "description"> Anyone can see this repository </div>
-        <%= fa_icon('lock') %>
-        <%= f.radio_button(:share_type, "private", :class => "show_extra", :style => "display:inline", :onclick => "showPass();") %><%= f.label(:share_type, "Private", :id =>"type", :style => "display:inline")  %>
-        <div id= "description"> Only those with the url and password can view this repository </div>
-        <% if @repository.share_type.eql?("private")%>
-          <div id = "change_pass"><input type="checkbox" , id= "change", onclick= "togglePass();">Change Password</div>
-        <% end %>
+    <div id="share_option" class="form-check">
+      <%= f.label :share_type, "Your project is...", class:"form-label" %>
+      <%= fa_icon('globe') %>
+      <%= f.radio_button(:share_type, "public", :class => "show_extra form-check-input", :style => "margin-right: 4px;  height:16px;width:16px", :onclick => "hidePass();", required: true) %><%= f.label('share_type_public', "Public", :id => "type", :style => "display:inline") %>
+      <div id="description"> Anyone can see this repository</div>
+      <%= fa_icon('lock') %>
+      <%= f.radio_button(:share_type, "private", :class => "show_extra form-check-input", :style => "margin-right: 4px; height:16px;width:16px", :onclick => "showPass();") %><%= f.label('share_type_private', "Private / Privé", :id => "type", :style => "display:inline") %>
+      <div id="description"> Only those with the url and password can view this repository</div>
 
-        <div id="pass" class="form-group">
-          <br>
-          <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', style: "display: none;", class: "form-control" %>
-        </div>
+      <div id="pass" class="mb-3">
+        <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', style: "display: none;", 'aria-label': "Password / Mot de Passe", class: "form-control" %>
+      </div>
 
     </div>
 

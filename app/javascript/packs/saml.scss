@@ -23,28 +23,28 @@ html.saml-login {
       height: auto;
     }
 
-    @include media-breakpoint-down(xs) {
+    @include media-breakpoint-down(sm) {
       height: auto;
     }
 
     .break {
       &::before {
-        content: ' – ';
+        content: " – ";
       }
 
       @media (max-width: 575.98px) {
         display: block;
 
         &::before {
-          content: '';
+          content: "";
         }
       }
 
-      @include media-breakpoint-down(xs) {
+      @include media-breakpoint-down(sm) {
         display: block;
 
         &::before {
-          content: '';
+          content: "";
         }
       }
     }
@@ -58,7 +58,9 @@ html.saml-login {
     justify-content: center;
   }
 
-  input, textarea, .btn {
+  input,
+  textarea,
+  .btn {
     box-shadow: none;
   }
 
@@ -71,7 +73,7 @@ html.saml-login {
       font-size: 3rem;
     }
 
-    @include media-breakpoint-down(xs) {
+    @include media-breakpoint-down(sm) {
       font-size: 3rem;
     }
   }

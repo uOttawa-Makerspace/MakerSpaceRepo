@@ -3,22 +3,22 @@
 // You can use Sass (SCSS) here: http://sass-lang.com/
 @import "lib";
 
-.volunteer_task{
+.volunteer_task {
   @include transition(100ms);
   color: brown;
   font-weight: 500;
 
-  i{
+  i {
     padding-right: 5px;
     color: #777;
   }
 
-  &:hover{
-    color: #730E15;
+  &:hover {
+    color: #730e15;
   }
 }
 
-.ccs{
+.ccs {
   height: 25px;
   width: auto;
 }

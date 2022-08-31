@@ -1,10 +1,8 @@
-require 'faker'
+require "faker"
 
 FactoryBot.define do
-
   factory :badge_requirement do
-
-    trait :'3d_printing' do
+    trait :"3d_printing" do
       badge_template_id { 1 }
     end
 
@@ -15,13 +13,5 @@ FactoryBot.define do
     trait :arduino do
       badge_template_id { 3 }
     end
-
   end
-
 end
-
-
-
-
-
-
