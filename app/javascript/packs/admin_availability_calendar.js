@@ -6,7 +6,6 @@ import listPlugin from "@fullcalendar/list";
 
 let calendarEl = document.getElementById("calendar");
 const urlParams = new URLSearchParams(window.location.search);
-const space_id = urlParams.get("space_id");
 
 let calendar = new Calendar(calendarEl, {
   plugins: [interactionPlugin, timeGridPlugin, listPlugin],
@@ -40,7 +39,7 @@ let calendar = new Calendar(calendarEl, {
   },
   eventSources: [
     {
-      url: `/admin/shifts/get_availabilities?space_id=${space_id}`,
+      url: `/admin/shifts/get_availabilities`,
     },
   ],
 });
