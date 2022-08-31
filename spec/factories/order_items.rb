@@ -1,6 +1,5 @@
 FactoryBot.define do
   factory :order_item do
-
     association :proficient_project
     association :order, :completed
 
@@ -25,7 +24,5 @@ FactoryBot.define do
       status { "Awarded" }
       association :proficient_project, :with_badge
     end
-
   end
-
 end

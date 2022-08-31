@@ -1,141 +1,136 @@
 // Place all the styles related to the Admin::TrainingSessions controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
-input#query{
+input#query {
   font-size: 13px;
-
 }
 
-table{
-  width:98%;
+table {
+  width: 98%;
   font-size: 14px;
 
   th {
-      background-color: #c2d6d6;
-      color: #366;
-      padding:5px;
-      width: 200px;
+    background-color: #c2d6d6;
+    color: #366;
+    padding: 5px;
+    width: 200px;
 
-      a {
-          text-decoration: underline;
-      }
-      i {
-          margin-left:1px;
-          line-height: 10px;
-          width: 10px;
-          height: 13px;
-          text-align: center;
-      }
-      i.fa-sort-asc {
-          vertical-align: bottom;
-      }
-      i.fa-sort-desc {
-          vertical-align: top;
-      }
-
+    a {
+      text-decoration: underline;
+    }
+    i {
+      margin-left: 1px;
+      line-height: 10px;
+      width: 10px;
+      height: 13px;
+      text-align: center;
+    }
+    i.fa-sort-asc {
+      vertical-align: bottom;
+    }
+    i.fa-sort-desc {
+      vertical-align: top;
+    }
   }
-  .action-header{
+  .action-header {
     width: 100px;
   }
 
-
-
-  td{
-      padding:5px 6px;
-      text-align: center;
+  td {
+    padding: 5px 6px;
+    text-align: center;
   }
   //tr {
   //    background-color: #f0f5f5;
   //}
   tr.current-session {
-      background-color: #b3e6cc;
+    background-color: #b3e6cc;
   }
   .link-table {
     color: #366;
-    text-align:center;
+    text-align: center;
   }
-  td.action-cell{
+  td.action-cell {
     align-items: center;
     padding-top: 12px;
     width: 70px;
 
-      .visit-button{
-        font: 300 10px 'Raleway', sans-serif;
-        padding: 0.5rem 1.6rem;
-        border: none;
-        text-transform: uppercase;
-        color: #777;
-        letter-spacing: 0.15em;
-        border-radius: 2px;
-        background-color: #5f9ea0;
-        color: #fff;
+    .visit-button {
+      font: 300 10px "Raleway", sans-serif;
+      padding: 0.5rem 1.6rem;
+      border: none;
+      text-transform: uppercase;
+      color: #777;
+      letter-spacing: 0.15em;
+      border-radius: 2px;
+      background-color: #5f9ea0;
+      color: #fff;
 
-        &:hover{
-          cursor: pointer;
-        }
+      &:hover {
+        cursor: pointer;
       }
+    }
 
-      .destroy-button{
-        float: right;
-        font: 300 10px 'Raleway', sans-serif;
-        padding: 0.5rem 0.81rem;
-        border: none;
-        text-transform: uppercase;
-        color: #777;
-        letter-spacing: 0.15em;
-        border-radius: 2px;
-        background-color: #A61E10;
-        color: #fff;
-        margin-bottom: 7px;
-        margin-top: 0;
-        margin-right: 5px;
-        &:hover{
-          cursor: pointer;
-        }
-      }
-
-    .edit-button{
+    .destroy-button {
       float: right;
-      font: 300 10px 'Raleway', sans-serif;
+      font: 300 10px "Raleway", sans-serif;
       padding: 0.5rem 0.81rem;
       border: none;
       text-transform: uppercase;
       color: #777;
       letter-spacing: 0.15em;
       border-radius: 2px;
-      background-color: #367e78 ;
+      background-color: #a61e10;
       color: #fff;
       margin-bottom: 7px;
       margin-top: 0;
       margin-right: 5px;
-      &:hover{
+      &:hover {
         cursor: pointer;
       }
     }
 
-      .download-button{
-        float: right;
-        font: 300 10px 'Raleway', sans-serif;
-        padding: 0.5rem 0.34rem;
-        border: none;
-        text-transform: uppercase;
-        color: #777;
-        letter-spacing: 0.15em;
-        border-radius: 2px;
-        background-color: #5A42E8;
-        color: #fff;
-        margin-right: 5px;
-        margin-top: 11px;
-        margin-bottom: 5px;
-        &:hover{
-          cursor: pointer;
-        }
+    .edit-button {
+      float: right;
+      font: 300 10px "Raleway", sans-serif;
+      padding: 0.5rem 0.81rem;
+      border: none;
+      text-transform: uppercase;
+      color: #777;
+      letter-spacing: 0.15em;
+      border-radius: 2px;
+      background-color: #367e78;
+      color: #fff;
+      margin-bottom: 7px;
+      margin-top: 0;
+      margin-right: 5px;
+      &:hover {
+        cursor: pointer;
+      }
+    }
+
+    .download-button {
+      float: right;
+      font: 300 10px "Raleway", sans-serif;
+      padding: 0.5rem 0.34rem;
+      border: none;
+      text-transform: uppercase;
+      color: #777;
+      letter-spacing: 0.15em;
+      border-radius: 2px;
+      background-color: #5a42e8;
+      color: #fff;
+      margin-right: 5px;
+      margin-top: 11px;
+      margin-bottom: 5px;
+      &:hover {
+        cursor: pointer;
+      }
     }
   }
-
 }
 
-div#sesh-users{
+div#sesh-users {
   visibility: hidden;
   width: 150px;
   background-color: #c2d6d6;
@@ -148,65 +143,63 @@ div#sesh-users{
   z-index: 1;
 }
 
-div.users-count{
-  cursor:pointer;
+div.users-count {
+  cursor: pointer;
   padding: 40px 40px 40px 40px;
   white-space: nowrap;
 }
 
-div.users-count:hover div#sesh-users{
-    visibility:visible;
+div.users-count:hover div#sesh-users {
+  visibility: visible;
 }
 
-
-
-div.clickable-username:hover{
+div.clickable-username:hover {
   background-color: rgba(238, 238, 238, 0.5);
 
-  .user-link{
+  .user-link {
     padding: 0px 55px;
   }
-
 }
 
-select#training_session_user_id{
+select#training_session_user_id {
   width: 90px;
   font-size: 0.75rem;
   alignment: center;
 }
 
-input#query{
+input#query {
   width: 250px;
 }
 
-
-div#notice{
+div#notice {
   display: none;
   position: absolute;
   top: 65px;
   width: 100vw;
-  left:0;right:0;
+  left: 0;
+  right: 0;
   margin: 0 auto;
   height: 5rem;
   line-height: 5rem !important;
   font-size: 75%;
-  font: 500 2.0rem 'Raleway', sans-serif;
+  font: 500 2rem "Raleway", sans-serif;
   background-color: #5cb85c;
   color: #fff;
   z-index: 2;
   text-align: center;
 }
 
-div#alert{
+div#alert {
   display: none;
   position: absolute;
   top: 65px;
   width: 100vw;
-  left:0;right:0;
+  left: 0;
+  right: 0;
   margin: 0 auto;
   height: 2rem;
   line-height: 2rem !important;
-  font: 300 1.1rem 'Raleway', sans-serif;
+  font: 300 1.1rem "Raleway", sans-serif;
   background-color: #cd5c5c;
   color: #fff;
   z-index: 2;

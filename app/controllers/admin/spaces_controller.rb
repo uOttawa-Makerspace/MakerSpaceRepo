@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Admin::SpacesController < AdminAreaController
-  layout 'admin_area'
+  layout "admin_area"
 
-  def index; end
+  def index
+  end
 
   #def new
   #  @space = Space.new
@@ -12,9 +13,9 @@ class Admin::SpacesController < AdminAreaController
   def create
     space = Space.new(space_params)
     if space.save
-      flash[:notice] = 'Space created successfully!'
+      flash[:notice] = "Space created successfully!"
     else
-      flash[:alert] = 'Something went wrong.'
+      flash[:alert] = "Something went wrong."
     end
     redirect_back(fallback_location: root_path)
   end
@@ -23,7 +24,7 @@ class Admin::SpacesController < AdminAreaController
     @space_staff_hours = SpaceStaffHour.where(space: params[:id])
     @new_training = Training.new
     unless @space = Space.find(params[:id])
-      flash[:alert] = 'Not Found'
+      flash[:alert] = "Not Found"
       redirect_back(fallback_location: root_path)
     end
   end
@@ -31,7 +32,7 @@ class Admin::SpacesController < AdminAreaController
   def update_name
     @space = Space.find(params[:space_id])
     if @space.update(name: params[:name])
-      flash[:notice] = 'Space Name updated !'
+      flash[:notice] = "Space Name updated !"
       redirect_back(fallback_location: root_path)
     end
   end
@@ -39,21 +40,30 @@ class Admin::SpacesController < AdminAreaController
   def update_max_capacity
     @space = Space.find(params[:space_id])
     if @space.update(max_capacity: params[:max_capacity])
-      flash[:notice] = 'Space Capacity updated !'
+      flash[:notice] = "Space Capacity updated !"
       redirect_back(fallback_location: root_path)
     end
   end
 
   def add_space_hours
-    unless params[:space_id].present? && params[:day].present? && params[:start_time].present? && params[:end_time].present? && SpaceStaffHour.create(space_id: params[:space_id], day: params[:day], start_time: params[:start_time], end_time: params[:end_time])
-      flash[:notice] = 'Make sure you sent all the information and try again.'
+    unless params[:space_id].present? && params[:day].present? &&
+             params[:start_time].present? && params[:end_time].present? &&
+             SpaceStaffHour.create(
+               space_id: params[:space_id],
+               day: params[:day],
+               start_time: params[:start_time],
+               end_time: params[:end_time]
+             )
+      flash[:notice] = "Make sure you sent all the information and try again."
     end
     redirect_back(fallback_location: root_path)
   end
 
   def delete_space_hour
-    unless params[:space_staff_hour_id] && SpaceStaffHour.find(params[:space_staff_hour_id]).present? && SpaceStaffHour.find(params[:space_staff_hour_id]).destroy
-      flash[:notice] = 'An issue occurred while deleting the slot.'
+    unless params[:space_staff_hour_id] &&
+             SpaceStaffHour.find(params[:space_staff_hour_id]).present? &&
+             SpaceStaffHour.find(params[:space_staff_hour_id]).destroy
+      flash[:notice] = "An issue occurred while deleting the slot."
     end
     redirect_back(fallback_location: root_path)
   end
@@ -64,12 +74,16 @@ class Admin::SpacesController < AdminAreaController
       if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
         raspis = PiReader.where(space_id: space.id)
         raspis.update_all(space_id: nil)
-        flash[:notice] = 'Space deleted!' if space.destroy
+        flash[:notice] = "Space deleted!" if space.destroy
       else
-        flash[:notice] = 'The destroy request has been submitted, a second admin will need to approve it for the space to be destroyed.' if space.update(destroy_admin_id: @user.id)
+        flash[
+          :notice
+        ] = "The destroy request has been submitted, a second admin will need to approve it for the space to be destroyed." if space.update(
+          destroy_admin_id: @user.id
+        )
       end
     else
-      flash[:alert] = 'Invalid Input'
+      flash[:alert] = "Invalid Input"
     end
     redirect_to admin_spaces_path
   end

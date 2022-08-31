@@ -19,15 +19,15 @@
           <%= page_entries_info @kits, :model => 'project_kits' %>
           <%= will_paginate @kits, :container => false %>
         </div>
-        <div class="table-responsive">
-          <table class="table table-striped">
-
+        <div class="">
+          <table class="table table-responsive table-striped">
+          <thead class="table-primary">
             <tr>
               <th>Kit</th>
               <th>Date</th>
               <th>Delivery Status</th>
             </tr>
-
+          </thead>
             <tbody>
             <% @kits.each do |kit| %>
               <tr>
@@ -61,7 +61,7 @@
 
           <div class="table-responsive">
             <table class="table table-striped">
-
+            <thead class="table-primary">
               <tr>
                 <th>User</th>
                 <th>Kit</th>
@@ -70,11 +70,11 @@
                 <th>Mark delivered</th>
                 <th>Delete</th>
               </tr>
-
+          </thead>
               <tbody>
               <% @all_kits.each do |kit| %>
                 <tr>
-                  <td class="username"><p> <%= link_to kit.user.name, kit.user.username %></p></td>
+                  <td><p> <%= link_to kit.user.name, kit.user.username %></p></td>
                   <td><p><%= kit.proficient_project.title %></p></td>
                   <td><p><%= kit.created_at.strftime("%Y/%m/%d") %></p></td>
                   <td><p><%= kit.delivered? ? "Delivered" : "Not yet delivered" %></p></td>

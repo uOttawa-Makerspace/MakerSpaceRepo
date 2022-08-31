@@ -5,7 +5,11 @@ class ExamsController < ApplicationController
   before_action :check_exam_status, only: [:show]
 
   def index
-    @exams = current_user.exams.order(category: :desc).paginate(page: params[:page], per_page: 50)
+    @exams =
+      current_user
+        .exams
+        .order(category: :desc)
+        .paginate(page: params[:page], per_page: 50)
   end
 
   def create_from_training
@@ -28,16 +32,18 @@ class ExamsController < ApplicationController
   def show
     # TODO: User cannot open new tab when clicking "Finish Exam"
     @exam = Exam.find(params[:id])
-    @exam.update(status: Exam::STATUS[:incomplete]) if @exam.status == Exam::STATUS[:not_started]
+    if @exam.status == Exam::STATUS[:not_started]
+      @exam.update(status: Exam::STATUS[:incomplete])
+    end
     @questions = @exam.questions
   end
 
   def destroy
     exam = Exam.find(params[:id])
     if exam.destroy
-      flash[:notice] = 'Exam Deleted'
+      flash[:notice] = "Exam Deleted"
     else
-      flash[:alert] = 'Something went wrong'
+      flash[:alert] = "Something went wrong"
     end
     redirect_to exams_path
   end
@@ -65,32 +71,44 @@ class ExamsController < ApplicationController
 
   private
 
-    def create_exam_and_exam_questions(user, training_session)
-      new_exam = user.exams.new(training_session_id: training_session.id,
-                                category: training_session.training.name, expired_at: DateTime.now + 3.days)
-      new_exam.save!
-      if ExamQuestion.create_exam_questions(new_exam.id, new_exam.training.id, $n_exams_question, training_session.level)
-        flash[:notice] = "You've successfully sent exams to all users in this training."
-      else
-        flash[:alert] = 'Something went wrong'
-      end
+  def create_exam_and_exam_questions(user, training_session)
+    new_exam =
+      user.exams.new(
+        training_session_id: training_session.id,
+        category: training_session.training.name,
+        expired_at: DateTime.now + 3.days
+      )
+    new_exam.save!
+    if ExamQuestion.create_exam_questions(
+         new_exam.id,
+         new_exam.training.id,
+         $n_exams_question,
+         training_session.level
+       )
+      flash[
+        :notice
+      ] = "You've successfully sent exams to all users in this training."
+    else
+      flash[:alert] = "Something went wrong"
     end
+  end
 
-    def set_exam
-      @exam = Exam.find_by(id: params[:id]) || Exam.new
-    end
+  def set_exam
+    @exam = Exam.find_by(id: params[:id]) || Exam.new
+  end
 
-    def grant_access
-      unless @exam.user.eql?(current_user) || current_user.staff?
-        flash[:alert] = 'You cannot access this area.'
-        redirect_to root_path
-      end
+  def grant_access
+    unless @exam.user.eql?(current_user) || current_user.staff?
+      flash[:alert] = "You cannot access this area."
+      redirect_to root_path
     end
+  end
 
-    def check_exam_status
-      unless @exam.status == Exam::STATUS[:incomplete] || @exam.status == Exam::STATUS[:not_started]
-        flash[:alert] = 'You cannot access an exam after being finished.'
-        redirect_to exams_path
-      end
+  def check_exam_status
+    unless @exam.status == Exam::STATUS[:incomplete] ||
+             @exam.status == Exam::STATUS[:not_started]
+      flash[:alert] = "You cannot access an exam after being finished."
+      redirect_to exams_path
     end
+  end
 end

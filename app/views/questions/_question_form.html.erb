@@ -1,7 +1,7 @@
 <%= form_for @question, url: {controller: "questions", action: "update"}, :html => {  class:"needs-validation", novalidate: 'novalidate' } do |f| %>
   <div class="row">
     <div class="col-md-12">
-      <div class="form-group text-center">
+      <div class="mb-3 text-center">
         <%= f.text_area :description, placeholder: "Write your question here...", class: 'form-control', required: true %>
         <div class="invalid-feedback">
           Please provide the question description.
@@ -10,12 +10,12 @@
         Categories:
         <br />
         <div class="mt-3">
-          <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', :selected => (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, {multiple: true, :id => "questions_trainings", :class => "form-control select2"} %>
+          <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', :selected => (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, {multiple: true, :id => "questions_trainings", :class => "form-control form-select"} %>
         </div>
         <br />
-        <div class="form-group">
-          <%= f.label :level %>
-          <%= f.select :level, options_for_select(@levels, selected: @question.level), {prompt: 'Select a Level'}, class: "form-control", required: true %>
+        <div class="mb-3">
+          <%= f.label :level, class:"form-label" %>
+          <%= f.select :level, options_for_select(@levels, selected: @question.level), {prompt: 'Select a Level'}, class: "form-control form-select", required: true %>
         </div>
       </div>
       <br />
@@ -39,7 +39,7 @@
       <%= render partial: 'answers', locals: {f: f} %>
     </div>
     <div class="col-12">
-      <%= link_to 'Add Answer', add_answer_questions_path(id: @question.id), method: :post, class: 'btn btn-info text-white float-left' %>
+      <%= link_to 'Add Answer', add_answer_questions_path(id: @question.id), method: :post, class: 'btn btn-info text-white float-start' %>
     </div>
     <br />
     <br />
@@ -48,4 +48,29 @@
       <%= f.submit "Update Question", class: "btn btn-secondary btn-xl text-uppercase" %>
     </div>
   </div>
+  <script>
+if (document.getElementById("questions_trainings")) {
+    if (!document.getElementById("questions_trainings").tomselect) {
+        new TomSelect("#questions_trainings", {
+            plugins: {
+                "clear_button": { title: "Clear" }
+            },
+        });
+    }
+}
+document.getElementById("pictureInput").addEventListener('change', function (event) {
+    var files = event.target.files;
+    var image = files;
+    for (var i = 0; i < files.length; i++) {
+        var reader = new FileReader();
+        reader.onload = function (file) {
+            var img = new Image();
+            img.src = file.target.result;
+            document.getElementById('image-target').insertBefore(img, null);
+        }
+        reader.readAsDataURL(image[i]);
+    }
+});
+</script>
+
 <% end %>

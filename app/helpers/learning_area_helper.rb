@@ -1,6 +1,14 @@
 module LearningAreaHelper
   def get_lower_level_lm(training_id)
-    lm = LearningModule.where.not(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)).where(training_id: training_id)
+    lm =
+      LearningModule
+        .where.not(
+          id:
+            current_user.learning_module_tracks.completed.pluck(
+              :learning_module_id
+            )
+        )
+        .where(training_id: training_id)
     if lm.where(level: "Beginner").present?
       "<span style='color: green'>Beg</span>"
     elsif lm.where(level: "Intermediate").present?
@@ -27,17 +35,18 @@ module LearningAreaHelper
 
   def return_text_color(level)
     case level
-    when 'Beginner' then 'text-success'
-    when 'Intermediate' then 'text-warning'
-    when 'Advanced' then 'text-danger'
+    when "Beginner"
+      "text-success"
+    when "Intermediate"
+      "text-warning"
+    when "Advanced"
+      "text-danger"
     end
   end
 
   def levels_ordered(training)
     result = training.learning_modules.pluck(:level).uniq.sort
-    result.include?('Advanced') ? result = result.rotate(1) : result
+    result.include?("Advanced") ? result = result.rotate(1) : result
     result
   end
 end
-
-

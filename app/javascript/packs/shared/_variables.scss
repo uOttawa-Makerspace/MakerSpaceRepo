@@ -2,9 +2,9 @@ $theme-colors: (
   //"primary": rgb(95, 158, 160) // "MakerRepo Green"
   "primary": #497979 // New "MakerRepo Green"
 );
-
+$primary: #497979;
 $navbar-light-color: rgba(0, 0, 0, 0.7);
-$navbar-light-hover-color: rgba(0, 0, 0, 1.0);
+$navbar-light-hover-color: rgba(0, 0, 0, 1);
 $navbar-dark-color: rgba(255, 255, 255, 0.7);
-$navbar-dark-hover-color: rgba(255, 255, 255, 1.0);
+$navbar-dark-hover-color: rgba(255, 255, 255, 1);
 $body-top-padding: 6rem; // equivalent to navbar height

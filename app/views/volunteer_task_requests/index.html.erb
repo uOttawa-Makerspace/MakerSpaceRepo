@@ -2,7 +2,7 @@
   <div class="text-center">
 
     <% current_user.staff? ? title = "Requests" : title = "Your Requests" %>
-    <h2 class="font-weight-bold"><%= title %></h2>
+    <h2 class="fw-bold"><%= title %></h2>
 
     <h5>Total requests: <b><%= @volunteer_task_requests.count %></b></h5>
     <h5>Pending requests: <b><%= @pending_volunteer_task_requests.count %></b></h5>
@@ -14,8 +14,9 @@
 
       <div class="by-5">
         <%= form_tag(volunteer_task_requests_path, method: :get) do %>
-          <div class="form-inline">
+          <div class="w-50 input-group mx-auto">
             <%= text_field_tag(:search_pending, "", placeholder: "Search by Name, Task ...", class: 'form-control col-md-4 search_bar_pending') %>
+            <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
           </div>
         <% end %>
       </div>
@@ -39,8 +40,9 @@
 
       <div class="by-5">
         <%= form_tag(volunteer_task_requests_path, method: :get) do %>
-          <div class="form-inline">
+          <div class="w-50 input-group mx-auto">
             <%= text_field_tag(:search_processed, "", placeholder: "Search by Name, Task ...", class: 'form-control col-md-4 search_bar_processed') %>
+            <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
           </div>
         <% end %>
       </div>
@@ -60,19 +62,30 @@
 </section>
 
 <script type="text/javascript" charset="utf-8">
-    $('.search_bar_pending').on('keyup', function() {
-        $.ajax({
-            url: '/volunteer_task_requests/search_pending',
-            data: {search_pending: $(this).serialize()},
-            format: 'js'
-        });
-    });
-
-    $('.search_bar_processed').on('keyup', function() {
-        $.ajax({
-            url: '/volunteer_task_requests/search_processed',
-            data: {search_processed: $(this).serialize()},
-            format: 'js'
-        });
-    });
+    let pending_search = document.getElementById("search_pending");
+    pending_search.addEventListener("keyup",()=>{
+      if (pending_search.value.length < 0 ){pending_search.value = ''}
+      fetch('/volunteer_task_requests/search_pending?search_pending='+pending_search.value,
+      {
+        method: 'GET',
+        headers: {
+          'Accept':'*/*'
+        }
+      }).then(response => response.text()).then(data => {
+        document.querySelector('.pending-requests').innerHTML = data;
+      });
+    })
+    let processed_search = document.getElementById("search_processed");
+    processed_search.addEventListener("keyup",()=>{
+      if (processed_search.value.length < 0 ){processed_search.value = ''}
+      fetch('/volunteer_task_requests/search_processed?search_processed='+processed_search.value,
+      {
+        method: 'GET',
+        headers: {
+          'Accept':'*/*'
+        }
+      }).then(response => response.text()).then(data => {
+        document.querySelector('.processed-requests').innerHTML = data;
+      });
+    })
 </script>
