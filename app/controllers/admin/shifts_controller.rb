@@ -161,7 +161,7 @@ class Admin::ShiftsController < AdminAreaController
   def get_availabilities
     opacity = params[:transparent].present? ? 0.25 : 1
     staff_availabilities = []
-
+    @space_id = params[:space_id] if params[:space_id].present?
     StaffAvailability
       .where(user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
       .each do |staff|
