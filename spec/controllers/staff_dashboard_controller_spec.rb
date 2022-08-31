@@ -155,7 +155,7 @@ RSpec.describe StaffDashboardController, type: :controller do
         expect(@controller.instance_variable_get(:@space).id).to eq(
           new_space.id
         )
-        expect(response).to have_http_status(200)
+        expect(response).to have_http_status(302)
         expect(LabSession.last.sign_out_time < DateTime.now)
         expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
       end
