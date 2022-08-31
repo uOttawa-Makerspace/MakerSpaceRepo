@@ -6,9 +6,7 @@ FactoryBot.define do
     username { "Bob" }
 
     factory :comment_with_upvotes do
-      transient do
-        upvote_count { 5 }
-      end
+      transient { upvote_count { 5 } }
       after(:create) do |comment, evaluator|
         create_list(:upvote, evaluator.upvote_count, comment: comment)
       end

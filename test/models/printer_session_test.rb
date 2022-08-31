@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'test_helper'
+require "test_helper"
 
 class PrinterSessionTest < ActiveSupport::TestCase
   # test "the truth" do

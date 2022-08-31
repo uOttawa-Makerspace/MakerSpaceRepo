@@ -1,11 +1,16 @@
 @import "lib";
-@import './shared/variables';
+@import "./shared/variables";
 
 .navbar {
   //position: relative;
 
   &.bg-dark-gradient {
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0)) !important;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 0.6) 50%,
+      rgba(0, 0, 0, 0)
+    ) !important;
   }
 
   .background {
@@ -64,11 +69,14 @@
   }
 
   &.transition {
-    $transition-duration: .35s; // from bootstrap variable $transition-collapse
+    $transition-duration: 0.35s; // from bootstrap variable $transition-collapse
 
     transition: all ease-in-out $transition-duration;
 
-    .navbar-brand, .nav-link, .navbar-divider, .background {
+    .navbar-brand,
+    .nav-link,
+    .navbar-divider,
+    .background {
       transition: all ease-in-out $transition-duration;
     }
   }
@@ -86,13 +94,13 @@
   //}
 }
 
-span.msr-logo a{
+span.msr-logo a {
   @include transition(200ms);
   display: block;
   height: 60px;
   padding-left: 1rem;
   line-height: 60px !important;
-  font: 300 2rem 'Raleway', helvetica, sans-serif;
+  font: 300 2rem "Raleway", helvetica, sans-serif;
   float: left;
   color: #fff;
 }
@@ -102,10 +110,10 @@ span.header-menu-item {
   display: inline-block;
   float: right;
   color: #fff;
-  font: 400 1rem 'Raleway', helvetica, sans-serif;
+  font: 400 1rem "Raleway", helvetica, sans-serif;
   line-height: 60px !important;
 
-  > a{
+  > a {
     @include transition(200ms);
     display: block;
     float: right;
@@ -114,24 +122,24 @@ span.header-menu-item {
     padding: 4px 20px;
     line-height: 25px;
 
-    img{
+    img {
       height: 40px;
       width: 40px;
       border-radius: 20px;
       vertical-align: middle;
       margin-right: 10px;
     }
-    &:hover{
+    &:hover {
       color: #a3e6db;
     }
   }
 }
 
-span.menu-button{
+span.menu-button {
   position: relative;
   z-index: 10;
   padding-top: 5px;
-  ul{
+  ul {
     display: none;
     background-color: #fff;
     position: absolute;
@@ -141,7 +149,7 @@ span.menu-button{
     width: 150px;
     @include prefixer(box-shadow, 0 5px 20px rgba(0, 0, 0, 0.2));
 
-    li{
+    li {
       @include transition(50ms);
       font-size: 0.8rem;
       padding-left: 15px;
@@ -150,28 +158,28 @@ span.menu-button{
       color: #555;
       border-bottom: 1px solid #eee;
 
-      a{
+      a {
         display: block;
       }
 
-      &:hover{
+      &:hover {
         background-color: #a3e6db;
         color: #366;
       }
 
-      &:nth-last-child(1){
+      &:nth-last-child(1) {
         border: none;
       }
     }
   }
 }
 
-form.header-search{
+form.header-search {
   display: inline-block;
   line-height: 60px;
   margin-left: 50px;
 
-  input{
+  input {
     @include transition(200ms);
     border: none;
     border-radius: 5px;
@@ -183,107 +191,110 @@ form.header-search{
     @include prefixer(box-shadow, none);
 
     &::-webkit-input-placeholder {
-        color:    #366;
-        opacity: 0.5;
+      color: #366;
+      opacity: 0.5;
     }
     &:-moz-placeholder {
-       color:    #366;
-       opacity:  0.5;
+      color: #366;
+      opacity: 0.5;
     }
     &::-moz-placeholder {
-       color:    #366;
-       opacity:  0.5;
+      color: #366;
+      opacity: 0.5;
     }
     &:-ms-input-placeholder {
-       color:    #366;
+      color: #366;
       opacity: 0.5;
     }
 
-    &:focus{
-      width:200px;
+    &:focus {
+      width: 200px;
     }
   }
 
-  i{
+  i {
     color: #fff;
     padding-right: 10px;
   }
 }
 
-@media screen and (max-width: 700px){
-  form.header-search{
+@media screen and (max-width: 700px) {
+  form.header-search {
     display: none;
   }
 }
 
-@media screen and (max-width: 550px){
-  span.msr-logo{
+@media screen and (max-width: 550px) {
+  span.msr-logo {
     display: none;
   }
 }
 
 // Sidenav Menu
 .sidenav {
-    height: 100%;
-    width: 0;
-    position: fixed;
-    z-index: 1;
-    top: 65px;
-    left: 0;
-    background-color: #f8f9fa;
-    overflow-x: hidden;
-    transition: 0.5s;
-    padding-top: 60px;
+  height: 100%;
+  width: 0;
+  position: fixed;
+  z-index: 1;
+  top: 65px;
+  left: 0;
+  background-color: #f8f9fa;
+  overflow-x: hidden;
+  transition: 0.5s;
+  padding-top: 60px;
 }
 
 .sidenav a {
   padding: 8px 8px 8px 8px;
-      text-decoration: none;
-      font-size: 20px;
-      color: #000;
-      display: block;
-      transition: 0.3s;
-      white-space: nowrap;
-      margin-left: 10px;
+  text-decoration: none;
+  font-size: 20px;
+  color: #000;
+  display: block;
+  transition: 0.3s;
+  white-space: nowrap;
+  margin-left: 10px;
 }
 
-.sidenav a:hover, .offcanvas a:focus{
-    color: #000;
+.sidenav a:hover,
+.offcanvas a:focus {
+  color: #000;
 }
-a#item:hover{
+a#item:hover {
   color: #000;
   border-left: 5px solid #366;
-
 }
 
 .sidenav .closebtn {
-    position: absolute;
-    top: 0;
-    right: 25px;
-    font-size: 36px;
-    margin-left: 50px;
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
 }
-  #side-menu{
-    font-size:30px;
-    cursor:pointer;
-    top:0;
-    left: 0;
-    color: #000;
-    float: left;
-    padding-right: 30px;
-    padding-top: 8px;
+#side-menu {
+  font-size: 30px;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  color: #000;
+  float: left;
+  padding-right: 30px;
+  padding-top: 8px;
 
-    &:hover{
-      color: #47474b;
-    }
+  &:hover {
+    color: #47474b;
   }
-
+}
 
 @media screen and (max-height: 450px) {
-  .sidenav {padding-top: 15px;}
-  .sidenav a {font-size: 18px;}
+  .sidenav {
+    padding-top: 15px;
+  }
+  .sidenav a {
+    font-size: 18px;
+  }
 }
 
-span.no-padding{
+span.no-padding {
   padding: 0px;
 }

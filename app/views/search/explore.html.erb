@@ -1,18 +1,42 @@
 <% provide(:title, "Explore") %>
 <section id="repositories-index">
-  <section id="repository-filter">
-    <div class="sort">sort by/classé par</div>
-    <nav>
-      <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-      <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
-      <ul class="filter">
-        <li><%= link_to 'Newest/Plus récent', explore_path(sort: :newest) %></li>
-        <li><%= link_to 'Most Likes/Plus d\'Aimes', explore_path(sort: :most_likes) %></li>
-        <li><%= link_to 'Most Makes/Plus de fabrications', explore_path(sort: :most_makes) %></li>
-        <li><%= link_to 'Recently Updated/Récemment mis à jour', explore_path(sort: :recently_updated) %></li>
-      </ul>
-    </nav>
-  </section>
+  <div class="row">
+    <div class="col">
+      <section class="repository-filter">
+        <div class="sort">sort by/trier par</div>
+        <nav>
+          <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
+          <div id="filter-header" class="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
+          <ul id="sort-filter" class="filter">
+            <li><%= link_to 'Newest/Plus récent', explore_path(sort: :newest, category: params[:category]) %></li>
+            <li><%= link_to 'Most Likes/Plus d\'Aimes', explore_path(sort: :most_likes, category: params[:category]) %></li>
+            <li><%= link_to 'Most Makes/Plus de fabrications', explore_path(sort: :most_makes, category: params[:category]) %></li>
+            <li><%= link_to 'Recently Updated/Récemment mis à jour', explore_path(sort: :recently_updated, category: params[:category]) %></li>
+          </ul>
+        </nav>
+      </section>
+    </div>
+    <div class="col">
+      <section class="repository-filter">
+        <div class="sort">filter by / filtrer par</div>
+        <nav>
+          <div id="category-header" class="filter-header"><%= fa_icon 'caret-down', text: 'Category / Catégorie', right: true %> </div>
+          <ul id="category-filter" class="filter">
+            <li><%= link_to 'All / Tous', explore_path(category: nil) %></li>
+            <li><%= link_to t("home.categories.wearables"), explore_path(category: "wearable") %></li>
+            <li><%= link_to t("home.categories.mobile_development"), explore_path(category: "mobile-development") %></li>
+            <li><%= link_to t("home.categories.gng_2101"), explore_path(category: "gng2101/gng2501") %></li>
+            <li><%= link_to t("home.categories.health_sciences"), explore_path(category: "health-sciences") %></li>
+            <li><%= link_to t("home.categories.iot"), explore_path(category: "internet-of-things") %></li>
+            <li><%= link_to t("home.categories.gng_1103"), explore_path(category: "gng1103/gng1503") %></li>
+            <li><%= link_to t("home.categories.vr"), explore_path(category: "virtual-reality") %></li>
+            <li><%= link_to t("home.categories.team_projects"), explore_path(category: "uottawa-team-projects") %></li>
+            <li><%= link_to t("home.categories.other_projects"), explore_path(category: "other-projects") %></li>
+          </ul>
+        </nav>
+      </section>
+    </div>
+
 
   <section id="repositories-container">
 
@@ -29,14 +53,14 @@
       </div>
 
       <div class="repo-info">
-        <div class="left">
+        <div class="start">
+          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           <div class="title">
             <%= link_to repository.title, repository_path(user_username: repository.user_username, id: repository.slug) %>
           </div>
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-          <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+          <div><%= time_ago_in_words(repository.created_at) << t("datetime.distance_in_words.ago") %></div>
         </div>
-        <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
       </div>
     </div>
   <% end %>

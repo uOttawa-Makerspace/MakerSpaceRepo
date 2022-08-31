@@ -1,0 +1,40 @@
+<section>
+  <%= form_for([:admin, @job_type_extra]) do |f| %>
+    <% if @job_type_extra.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(@job_type_extra.errors.count, "error") %> prohibited this job type extra from being saved:</h2>
+
+        <ul>
+          <% @job_type_extra.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="text-center">
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :name, 'Name of the Job Type Extra' %>
+        <%= f.text_field :name, class: "form-control", required: true %>
+      </div>
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
+        <%= f.label :description, 'Description (To be used if price is not available)' %>
+        <%= f.text_area :description, class: "form-control" %>
+      </div>
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
+        <%= f.label :price, 'Price (optional)' %>
+        <%= f.number_field :price, class: "form-control" %>
+      </div>
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
+        <%= f.label :job_type_id, 'Job Type' %>
+        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_type_extra.job_type_id.present? ? @job_type_extra.job_type_id : ''), {}, class: "form-control form-select" %>
+      </div>
+
+      <%= f.submit class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+</section>

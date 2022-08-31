@@ -1,11 +1,11 @@
 <section class="page-contents">
   <div>
 
-    <h2 class="text-center font-weight-bold">List of users in the Volunteer Program</h2>
+    <h2 class="text-center fw-bold">List of users in the Volunteer Program</h2>
     <br>
     <div class="container">
       <div class="row">
-        <div class="col-lg-6">
+        <div class="col">
         <h5 class="text-center">All Volunteer's Emails (<%= @all_emails.count %>)</h5>
           <div id="email-1" class="text-center">
             <% @all_emails.each do |email| %>
@@ -20,7 +20,7 @@
           </div>
         </div>
 
-        <div class="col-lg-6 mb-5">
+        <div class="col mb-5">
           <h5 class="text-center">Active Volunteer's Emails (<%= @active_emails.count %>)</h5>
           <div id="email-2" class="text-center">
             <% @active_emails.each do |email| %>
@@ -35,7 +35,7 @@
           </div>
         </div>
 
-        <div class="col-lg-12">
+        <div class="col">
           <h5 class="text-center">Unactive Emails (<%= @unactive_emails.count %>)</h5>
           <div id="email-3" class="text-center">
             <% @unactive_emails.each do |email| %>

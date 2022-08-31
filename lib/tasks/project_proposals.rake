@@ -1,15 +1,17 @@
 # frozen_string_literal: true
 
 namespace :project_proposals do
-
-  desc 'Create/Update slugs for project proposal'
+  desc "Create/Update slugs for project proposal"
   task create_slugs: :environment do
     ProjectProposal.all.each do |pp|
-      pp.update(slug: "#{pp.id.to_s}.#{pp.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}")
+      pp.update(
+        slug:
+          "#{pp.id.to_s}.#{pp.title.downcase.gsub(/[^0-9a-z ]/i, "").gsub(/\s+/, "-")}"
+      )
     end
   end
 
-  desc 'Translate level of interest for project proposal'
+  desc "Translate level of interest for project proposal"
   task translate_level_of_interest: :environment do
     ProjectProposal.all.each do |pp|
       case pp.client_interest
@@ -23,7 +25,7 @@ namespace :project_proposals do
     end
   end
 
-  desc 'Translate client type for project proposal'
+  desc "Translate client type for project proposal"
   task translate_client_type: :environment do
     ProjectProposal.all.each do |pp|
       case pp.client_type
@@ -35,7 +37,7 @@ namespace :project_proposals do
     end
   end
 
-  desc 'Change Wording for french client type'
+  desc "Change Wording for french client type"
   task change_wording_fr_client_type: :environment do
     ProjectProposal.all.each do |pp|
       if pp.client_type == "Individual / Particulier"
@@ -43,5 +45,4 @@ namespace :project_proposals do
       end
     end
   end
-
 end

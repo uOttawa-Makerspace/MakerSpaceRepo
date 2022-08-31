@@ -1,9 +1,19 @@
 <section>
-  <div class="col-lg-8 mx-auto">
+  <div class="col-lg-10 mx-auto">
     <br/>
 
     <h2 class="text-center">Welcome to the Development Program Area</h2>
     <br>
+
+    <% unless @user.dev_program? %>
+
+    <div class="h-100 p-4 bg-light border rounded-3 mb-2">
+          <h2>Congratulations! <br>You can now join the Development Program!</h2>
+      <p>You can join the program through the button below or learn more by reading this page!</p>
+      <p><%=  link_to "Join Development Program", join_development_program_development_programs_path, class: "btn btn-primary"  %></p>
+    </div>
+
+    <%  end %>
 
     <h3 class="text-center text-muted">Overview</h3>
     <p>

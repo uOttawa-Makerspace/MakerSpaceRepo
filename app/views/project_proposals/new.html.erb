@@ -2,85 +2,73 @@
 <section id="new-repo">
   <div class="title">New Project Proposal<br>Nouvelle Proposition de Projet</div>
 
-  <%= form_for @project_proposal, html: {class: "needs-validation", novalidate: true, multipart: true} do |f| %>
+  <%= form_for @project_proposal, url:{controller:"project_proposals", action:"create"}, html: {multipart: true} do |f| %>
     <br>
-    <div class="form-group required">
-      <%= f.label :username, "Name/Nom", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :username, "Name/Nom", class: "form-label" %>
       <div>What is your name? <br> Quel est votre nom?</div>
-      <%= f.text_field :username, class: 'form-control', autofocus: true, required: true %>
-      <div class="invalid-feedback">
-        Veuillez entrer votre nom / Please enter your name.
-      </div>
+      <%= f.text_field :username, class: 'form-control', autofocus: true %>
+
     </div>
     <br>
-    <div class="form-group required">
-      <%= f.label :email, "Email/Adresse Courriel", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :email, "Email/Adresse Courriel", class: "form-label" %>
       <div>What is your email? <br> Quel est votre adresse courriel?</div>
-      <%= f.email_field :email, class: 'form-control', required: true %>
-      <div class="invalid-feedback">
-        Veuillez entrer votre addresse couriel / Please enter your email address
-      </div>
+      <%= f.email_field :email, class: 'form-control'%>
+
     </div>
     <br>
-    <div class="form-group required">
-      <%= f.label :title, "Title/Titre", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :title, "Title/Titre", class: "form-label" %>
       <div>Great project titles are short and memorable.<br>Des titres de projets génial sont court et mémorable.</div>
-      <%= f.text_field :title, class: 'form-control', required: true %>
-      <div class="invalid-feedback">
-        Veuillez entrer le titre du projet / Please enter the project's title
-      </div>
+      <%= f.text_field :title, class: 'form-control' %>
+
     </div>
     <br>
-    <div class="form-group required">
-      <%= f.label :client_type, "Client Type/Type de Client", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :client_type, "Client Type/Type de Client", class: "form-label" %>
       <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
-      <div class='checkbox-list'>
-        <%= f.radio_button :client_type, 'Organization / Organisation', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_type_organization', 'Organization / Organisation', :id => 'type', :style => 'display:inline', class: "control-label" %>
+      <div class='checkbox-list form-check'>
+        <%= f.radio_button :client_type, 'Organization / Organisation', :checked => true, :class => 'show_extra form-check-input', :style => 'display:inline' %>
+        <%= f.label 'client_type_organization', 'Organization / Organisation', :id => 'type', :style => 'display:inline', class: "form-check-label" %>
         <br>
-        <%= f.radio_button :client_type, 'Individual / Individuel', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_type_individual', 'Individual / Individuel', :id => 'type', :style => 'display:inline', class: "control-label" %>
+        <%= f.radio_button :client_type, 'Individual / Individuel', :class => 'show_extra form-check-input', :style => 'display:inline' %>
+        <%= f.label 'client_type_individual', 'Individual / Individuel', :id => 'type', :style => 'display:inline', class: "form-check-label" %>
       </div>
     </div>
     <br>
-    <div class="form-group required">
-      <%= f.label :client, "Client/Client", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :client, "Client/Client", class: "form-label" %>
       <div>Who is the client? <br> Qui est le client?</div>
-      <%= f.text_field :client, class: 'form-control', required: true %>
-      <div class="invalid-feedback">
-        Veuillez entrer le nom du client / Please enter the client's name
-      </div>
+      <%= f.text_field :client, class: 'form-control' %>
     </div>
     <br>
-    <div class="form-group required">
-      <%= f.label :client_interest, "Client Level of Interest/Niveau d'intérêt du Client", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :client_interest, "Client Level of Interest/Niveau d'intérêt du Client", class: "form-label" %>
       <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
-      <div class='checkbox-list'>
-        <%= f.radio_button :client_interest, 'Low / Faible', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_interest_low', 'Low / Faible', :id => 'type', :style => 'display:inline' %>
+      <div class='checkbox-list form-check'>
+        <%= f.radio_button :client_interest, 'Low / Faible', :checked => true, :class => 'show_extra form-check-input', :style => 'display:inline' %>
+        <%= f.label 'client_interest_low', 'Low / Faible', :id => 'type', :style => 'display:inline', class:"form-check-label" %>
         <br>
-        <%= f.radio_button :client_interest, 'Medium / Moyen', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_interest_medium', 'Medium / Moyen', :id => 'type', :style => 'display:inline' %>
+        <%= f.radio_button :client_interest, 'Medium / Moyen', :class => 'show_extra form-check-input', :style => 'display:inline' %>
+        <%= f.label 'client_interest_medium', 'Medium / Moyen', :id => 'type', :style => 'display:inline', class:"form-check-label" %>
         <br>
-        <%= f.radio_button :client_interest, 'High / Élévé', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'client_interest_high', 'High / Élevé', :id => 'type', :style => 'display:inline' %>
+        <%= f.radio_button :client_interest, 'High / Élévé', :class => 'show_extra form-check-input', :style => 'display:inline' %>
+        <%= f.label 'client_interest_high', 'High / Élevé', :id => 'type', :style => 'display:inline', class:"form-check-label" %>
       </div>
     </div>
     <br/>
-    <div class="form-group required">
-      <%= f.label :client_background, "Client Background / Contexte du client", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :client_background, "Client Background / Contexte du client", class: "form-label" %>
       <div>What is the client background?<br>Quel est le contexte du client?</div>
       <div style="width: 420px;">
         <%= f.hidden_field :client_background, id: :project_proposal_client_background, class: "form-control" %>
         <trix-editor input="project_proposal_client_background"></trix-editor>
-        <div class="invalid-feedback">
-          Veuillez entrer le contexte du client / Please enter client's background
-        </div>
       </div>
     </div>
     <br/>
-    <div class="form-group">
-      <%= f.label :supervisor_background, "Supervisor Background/Contexte du Superviseur", class: "control-label" %>
+    <div class="mb-3">
+      <%= f.label :supervisor_background, "Supervisor Background/Contexte du Superviseur", class: "form-label" %>
       <div>What is the supervisor background?<br>Quel est le contexte du superviseur?</div>
       <div style="width: 420px;">
         <%= f.hidden_field :supervisor_background, id: :project_proposal_supervisor_background, class: "form-control" %>
@@ -88,7 +76,7 @@
       </div>
     </div>
     <br/>
-<!--    <div class="form-group">-->
+<!--    <div class="mb-3">-->
       <!--<div class = 'checkbox-list'>-->
       <!--<%= f.collection_check_boxes :area, AreaOption.show_options, :name, :name do |b| %>-->
         <!--<%= b.label { b.check_box + b.text } %>-->
@@ -97,108 +85,91 @@
       <!--</div>-->
 <!--      <br>-->
 <!--    </div>-->
-    <div class="form-group required">
-      <%= f.label :description, "Project background / Contexte du projet", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :description, "Project background / Contexte du projet", class: "form-label" %>
       <div></div>
       <div style="width: 420px;">
-        <%= f.hidden_field :description, id: :project_proposal_description, class: "form-control", required: true %>
+        <%= f.hidden_field :description, id: :project_proposal_description, class: "form-control" %>
         <trix-editor input="project_proposal_description" style="min-height: 100px;"></trix-editor>
-        <div class="invalid-feedback">
-          Veuillez entrer la description du projet / Please enter project's description
-        </div>
       </div>
     </div>
 
     <br>
 
-    <%= label_tag :file, "Project files<br>Fichiers du Projet".html_safe %>
-    <div class="form-group"></div>
+    <%= label_tag :file, "Project files<br>Fichiers du Projet".html_safe, class:"form-label" %>
+    <div class="mb-3"></div>
     <div class="input-group mb-3">
-      <div class="custom-file">
-        <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'custom-file-input', aria_label: 'Project Files / Fichiers du projet' %>
-        <label class="custom-file-label m-0" for="files_">Choose file</label>
-      </div>
+      <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
     </div>
 
     <div id="file-container"></div>
 
-    <%= label_tag :photo, "*Gallery/Galerie" %>
-    <div>A maximum of five photos can be uploaded per repository.<br>Un maximum de cinq photos peuvent être téléchargés
-      par répertoire.
-    </div>
+    <%= label_tag :photo, "Gallery/Galerie", class:"form-label required" %>
     <div class="repo-image">
       <div id="dragndrop">
         <br>
         <%= fa_icon 'cloud-upload' %>
         <p>Drag &amp; Drop</p>
       </div>
-      <div class="custom-file">
-        <%= file_field_tag 'images[]', type: :files, multiple: true, class: "custom-file-input", aria_label: "Select Pictures / Selectionner des images" %>
-        <label class="custom-file-label m-0" for="images_">Choose an image...</label>
-      </div>
+      <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control", aria_label: "Select Pictures / Selectionner des images" %>
     </div>
 
     <br>
-    <div class="form-group">
-      <%= f.label :equipments, "Possible technologies involved / Technologies possibles impliquées", class: "control-label" %>
+    <div class="mb-3">
+      <%= f.label :equipments, "Possible technologies involved / Technologies possibles impliquées", class: "form-label" %>
       <%= f.text_area :equipments, class: 'form-control' %>
     </div>
     <br>
-    <div class="form-group">
-      <%= f.label :youtube_link, "Youtube Link", class: "control-label" %>
+    <div class="mb-3">
+      <%= f.label :youtube_link, "Youtube Link", class: "form-label" %>
       <div>Project similar in Youtube<br>Projet similaire sur Youtube</div>
       <%= f.text_field :youtube_link, class: 'form-control' %>
     </div>
     <br>
-    <div class="form-group">
-      <%= f.label :past_experiences, "Past experiences / Tentatives précédentes", class: "control-label" %>
+    <div class="mb-3">
+      <%= f.label :past_experiences, "Past experiences / Tentatives précédentes", class: "form-label" %>
       <%= f.text_area :past_experiences, class: 'form-control', value: "There has been no previous attempt to solving this problem. / Il n'y a pas de tentatives précédentes pour résoudre ce problème." %>
 
-      <div id="linkRef">
-        <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link</button>
-        <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer un lien / Remove a link</button>
+      <div id="linkRef d-inline-block">
+        <button type="button" id="link-list" class="btn btn-primary link-list btn-sm mb-3">Ajouter un lien / Add a link</button>
+        <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer le dernier lien / Remove last link</button>
         <br><br>
         <ul class="main_ul"></ul>
       </div>
     </div>
 
     <br>
-    <div class="form-group required">
-      <%= f.label :project_cost, "Expected cost of the project / Coût prévu du projet", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :project_cost, "Expected cost of the project / Coût prévu du projet", class: "form-label" %>
       <div>Expected cost of the project / Coût prévu du projet</div>
       <div class="input-group mb-3">
-        <div class="input-group-prepend">
-          <span class="input-group-text" id="basic-addon1">$</span>
-        </div>
-        <%= f.number_field :project_cost, class: 'form-control', required: true, value: 0 %>
-        <div class="invalid-feedback">
-          Please enter the expected project cost / Veuillez entrer le coût prévu du projet
-        </div>
+        <span class="input-group-text" id="basic-addon1">$</span>
+        <%= f.number_field :project_cost, class: 'form-control', value: 0 %>
       </div>
     </div>
     <br>
-    <div class="form-group required">
-      <%= f.label :project_type, "Project Type / Type de projet", class: "control-label" %>
+    <div class="mb-3 required">
+      <%= f.label :project_type, "Project Type / Type de projet", class: "form-label" %>
       <div>Choose a project type / Choisissez un type de projet</div>
-      <div class='checkbox-list'>
-        <%= f.radio_button :project_type, 'General', :checked => true, :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'project_type_general', 'General', :id => 'type', :style => 'display:inline' %>
+      <div class='checkbox-list form-check'>
+        <%= f.radio_button :project_type, 'General', :checked => true, :class => 'show_extra form-check-input', :style => 'display:inline' %>
+        <%= f.label 'project_type_general', 'General', :id => 'type', :style => 'display:inline', class:"form-check-label" %>
         <br>
-        <%= f.radio_button :project_type, 'Spécifique au client / Client Specific', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'project_type_client_specific', 'Client Specific / Spécifique au client', :id => 'type', :style => 'display:inline' %>
+        <%= f.radio_button :project_type, 'Spécifique au client / Client Specific', :class => 'show_extra form-check-input', :style => 'display:inline' %>
+        <%= f.label 'project_type_client_specific', 'Client Specific / Spécifique au client', :id => 'type', :style => 'display:inline', class:"form-check-label" %>
         <br>
-        <%= f.radio_button :project_type, 'N/A | S/O', :class => 'show_extra', :style => 'display:inline' %>
-        <%= f.label 'project_type_na__so', 'N/A | S/O', :id => 'type', :style => 'display:inline' %>
+        <%= f.radio_button :project_type, 'N/A | S/O', :class => 'show_extra form-check-input', :style => 'display:inline' %>
+        <%= f.label 'project_type_na__so', 'N/A | S/O', :id => 'type', :style => 'display:inline', class:"form-check-label" %>
       </div>
     </div>
     <br>
-    <div class="form-group">
-      <%= f.label :categories, "Categories/Catégories", class: "control-label" %>
+    <div class="mb-3">
+      <%= f.label :categories, "Categories/Catégories", class: "form-label" %>
       <div>Choose at most 5 categories that fit your project.<br>Choisi un maximum de 5 catégories qui convent à ton
         projet
       </div>
-      <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :id, :name), include_blank: "Select a category.../Sélectionne une catégorie..." %>
-      <div id="category-container"></div>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name), {include_blank: "Select a category...", include_hidden:false},{class: "profile-text form-control form-select",multiple: true} %>
+
     </div>
 
     <%= recaptcha_tags %>

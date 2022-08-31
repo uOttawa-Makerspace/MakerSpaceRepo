@@ -19,25 +19,25 @@
       <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
         <div>Trainer: <%= @staff.name %></div>
         <% if @user.admin?%>
-          <% label_tag 'changed_params[user_id]' %>
+          <% label_tag 'changed_params[user_id]', class:"form-label" %>
           <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: ['staff','admin']).order('name ASC'), 'id', 'name'), prompt: 'Change trainer', class: "form-control" %>
           <br />
         <% end %>
         <div>
           Training Type: <%= @current_training_session.training.name %>
           <br />
-          <% label_tag 'changed_params[training_id]' %>
+          <% label_tag 'changed_params[training_id]', class:"form-label" %>
           <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings.order('name ASC'), 'id', 'name'), prompt: 'Change training', class: "form-control" %>
           <br />
           Level: <%= @current_training_session.level %>
           <br />
-          <% label_tag 'changed_params[level]' %>
+          <% label_tag 'changed_params[level]', class:"form-label" %>
           <%= select_tag 'changed_params[level]', options_for_select(@levels), prompt: 'Change level', class: "form-control" %>
           <br />
           <div>
             Course: <%= @current_training_session.course %>
           </div>
-          <% label_tag 'changed_params[course]' %>
+          <% label_tag 'changed_params[course]', class:"form-label" %>
           <%= select_tag 'changed_params[course]',  options_for_select(@course_names), prompt: 'Change course', class: "form-control" %>
           <br />
         </div>
@@ -51,16 +51,18 @@
       <br />
     <% end %>
     <br />
-    <table class="training-session-users-table table-striped">
+    <table class="training-session-users-table table table-striped">
         Users in this training session
+        <thead class="table-primary">        
         <tr class="text-center">
-          <th class="action-header">Remove From This Session</th>
-          <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Training's Cert.<span onclick="sortTable('training-session-users-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-        </tr>
+           <th class="action-header">Remove From This Session</th>
+           <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Training's Cert.<span onclick="sortTable('training-session-users-table', 5)"><%=fa_icon('arrow-down')%></span></th>
+         </tr>
+         </thead>
 
       <% @current_training_session.users.each do |user| %>
         <tr id="<%= return_no_waiver_id(user) %>">
@@ -129,15 +131,16 @@
     </div>
     <br />
     <br />
-    <table class="space-users-table">
+    <table class="space-users-table table table-striped">
         Users inside <%=@current_training_session.space.name%>
+      <thead class="table-primary">        
         <tr class="text-center">
-          <th class="action-header">Add To This Session</th>
-          <th>Name <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('space-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-        </tr>
-
+           <th class="action-header">Add To This Session</th>
+           <th>Name <span onclick="sortTable('space-users-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Email <span onclick="sortTable('space-users-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Certifications <span onclick="sortTable('space-users-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+         </tr>
+      </thead>
       <% @current_training_session.space.signed_in_users.each do |user| %>
         <% unless @current_training_session.users.include? user %>
           <tr>
@@ -179,14 +182,17 @@
     </table>
     <br />
     <br />
-  </div>
-  <% if @user.admin? || @current_training_session.user == @user %>
+      <% if @user.admin? || @current_training_session.user == @user %>
+      <div class="text-center">
     <%= link_to "Destroy", { action: :destroy },
                 method: :delete,
                 data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
                 class:"btn btn-danger",
-                style: "color: #fff; float:right;" %>
+                style: "color: #fff;" %>
+                </div>
   <% end %>
+  </div>
+
 
   <br>
 </section>

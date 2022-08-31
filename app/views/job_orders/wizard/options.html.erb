@@ -1,0 +1,80 @@
+<section>
+  <%= form_for(@job_order, url: {controller: "job_orders", action: "steps"}, html: { :multipart => true }) do |f| %>
+
+    <div class="text-center">
+
+      <h2>New Job Order (Step 3/4)</h2>
+
+      <div class="form-group col-lg-6 mx-auto">
+        <% @options.each do |o| %>
+          <div class="my-3 card p-2">
+            <div class="form-check-inline">
+              <% if o.description.present? %>
+                <p><%= o.description.html_safe %></p>
+              <% end %>
+              <%= check_box_tag "options_id_#{o.id}", o.id, @job_order.job_order_options.pluck(:job_option_id).include?(o.id), {multiple: true, class: 'form-check-input option-checkbox', data: {'file-required': o.need_files, 'option-id': o.id}} %>
+              <%= label_tag "options_id_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'form-check-label' %>
+            </div>
+
+            <% if o.need_files %>
+              <div class="custom-file mt-2">
+                <%= file_field_tag "options_file_#{o.id}", class: 'form-control option-file', data: {file: o.id} %>
+              </div>
+
+              <% if @job_order.job_order_options.where(job_option_id: o.id).present? && @job_order.job_order_options.where(job_option_id: o.id).first.option_file.attached? %>
+                <div class="text-start pt-2">
+                  <ul class="list-group">
+                    <li class="list-group-item text-center text-muted">
+                      (By Un-Checking, you will delete this file)
+                    </li>
+                    <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
+                      <div class="form-check">
+                        <%= check_box_tag "options_keep_file_#{o.id}", true, true, {class: 'form-check-input'} %>
+                        <%= label_tag "options_keep_file_#{o.id}", @job_order.job_order_options.where(job_option_id: o.id).first.option_file.filename, class: "form-check-label" %>
+                      </div>
+
+                      <div class="text-end">
+                        <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(@job_order.job_order_options.where(job_option_id: o.id).first.option_file, disposition: 'attachment') %>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if @options.count == 0 %>
+          <div class="alert alert-warning">
+            There are no options available to you right now. Please continue to the next step.
+          </div>
+        <% end %>
+      </div>
+
+      <%= hidden_field_tag :change_options, true %>
+      <%= hidden_field_tag :step, 4 %>
+      <div class="text-center">
+        <%= link_to "Previous Step", job_order_steps_path(step: 2), class: "btn btn-primary mb-1" %>
+        <%= link_to('Delete Current Order', job_order_path(@job_order), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger mb-1") %>
+        <%= f.submit "Next Step", class: "btn btn-primary mb-1" %>
+      </div>
+    </div>
+  <% end %>
+</section>
+
+<script type="text/javascript" charset="utf-8">
+  document.getElementsByClassName("option-file").forEach((input) => {
+    input.addEventListener('change', () => {
+      document.getElementById("options_id_" + input.getAttribute('data-file')).checked = true;
+    });
+  });
+
+  [...document.getElementsByClassName("option-checkbox")].forEach((input) => {
+      if (input.getAttribute('data-file-required') === 'true') {
+        input.addEventListener('change', () => {
+            const el = document.getElementById(`options_file_${input.getAttribute('data-option-id')}`)
+            el.required = input.checked === true;
+        });
+      }
+  });
+</script>

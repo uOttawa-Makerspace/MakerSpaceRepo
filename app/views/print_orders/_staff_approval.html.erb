@@ -1,4 +1,4 @@
-<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#quote_modal_<%= prints.id %>">
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quote_modal_<%= prints.id %>">
   Approve
 </button>
 <div class="modal fade" id="quote_modal_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="quote_modal_<%= prints.id %>" aria-hidden="true">
@@ -6,123 +6,121 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLabel">Quote for ID#<%= prints.id %></h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <%= form_for(prints, url: print_order_path(prints), html: {multipart: true}) do |f| %>
         <div class="modal-body">
           <%= f.hidden_field :approved, :value => true %>
           <% if prints.order_type == 0 and (prints.sst != true) %>
-            <%= f.label :quote, "Service Charges (In CAD) " %>
-            <div class="form-group">
+            <%= f.label :quote, "Service Charges (In CAD) ", class:"form-label" %>
+            <div class="mb-3">
               <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
             </div>
             <% if prints.clean_part == true %>
-              <div class="form-group form-inline">
-                <%= f.label :clean_part, "Clean Part", style: 'margin-right: 5px;' %>
-                <%= f.check_box :clean_part, class: 'custom-control custom-checkbox', :required => true %>
+              <div class="mb-3 w-auto d-inline-block">
+                <%= f.label :clean_part, "Clean Part", style: 'margin-right: 5px;', class:"form-label" %>
+                <%= f.check_box :clean_part, class: 'form-check-input', :required => true %>
               </div>
             <% end %>
             <div class="row">
               <div class="col-md-6">
-                <%= f.label :quote, "Number of Grams (Or CM3)" %>
-                <div class="form-group">
+                <%= f.label :quote, "Number of Grams (Or CM3)", class:"form-label" %>
+                <div class="mb-3">
                   <%= f.number_field :grams, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
                 </div>
               </div>
               <div class="col-md-6">
-                <%= f.label :quote, "Price Per Gram (In CAD) " %>
-                <div class="form-group">
+                <%= f.label :quote, "Price Per Gram (In CAD) ", class:"form-label" %>
+                <div class="mb-3">
                   <%= f.number_field :price_per_gram, step: "0.01", placeholder: "0.08", class: "form-control", :required => true %>
                 </div>
               </div>
               <% if prints.material == "M2 Onyx" %>
                 <div class="col-md-6">
-                  <%= f.label :grams_fiberglass, "CM3 Fiberglass" %>
-                  <div class="form-group">
+                  <%= f.label :grams_fiberglass, "CM3 Fiberglass", class:"form-label" %>
+                  <div class="mb-3">
                     <%= f.number_field :grams_fiberglass, step: "0.01", value: 0, class: "form-control", :required => true %>
                   </div>
                 </div>
                 <div class="col-md-6">
-                  <%= f.label :price_per_gram_fiberglass, "Price Per Gram (Fiberglass) " %>
-                  <div class="form-group">
+                  <%= f.label :price_per_gram_fiberglass, "Price Per Gram (Fiberglass) ", class:"form-label" %>
+                  <div class="mb-3">
                     <%= f.number_field :price_per_gram_fiberglass, step: "0.01", value: 0, class: "form-control", :required => true %>
                   </div>
                 </div>
                 <div class="col-md-6">
-                  <%= f.label :grams_carbonfiber, "CM3 Carbon fiber" %>
-                  <div class="form-group">
+                  <%= f.label :grams_carbonfiber, "CM3 Carbon fiber", class:"form-label" %>
+                  <div class="mb-3">
                     <%= f.number_field :grams_carbonfiber, step: "0.01", value: 0, class: "form-control", :required => true %>
                   </div>
                 </div>
                 <div class="col-md-6">
-                  <%= f.label :price_per_gram_carbonfiber, "Price Per Gram (Carbonfiber) " %>
-                  <div class="form-group">
+                  <%= f.label :price_per_gram_carbonfiber, "Price Per Gram (Carbonfiber) ", class:"form-label" %>
+                  <div class="mb-3">
                     <%= f.number_field :price_per_gram_carbonfiber, step: "0.01", value: 0, class: "form-control", :required => true %>
                   </div>
                 </div>
               <% end  %>
             </div>
           <% elsif prints.sst == true %>
-            <%= f.label :quote, "Service Charges (In CAD) " %>
-            <div class="form-group">
+            <%= f.label :quote, "Service Charges (In CAD) ", class:"form-label" %>
+            <div class="mb-3">
               <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
             </div>
-            <%= f.label :quote, "Hours (In CAD) " %>
-            <div class="form-group">
+            <%= f.label :quote, "Hours (In CAD) ", class:"form-label" %>
+            <div class="mb-3">
               <%= f.number_field :hours, step: "0.01", placeholder: "10", class: "form-control", :required => true %>
             </div>
-            <%= f.label :quote, "Price Per Hour (In CAD) " %>
-            <div class="form-group">
+            <%= f.label :quote, "Price Per Hour (In CAD) ", class:"form-label" %>
+            <div class="mb-3">
               <%= f.number_field :price_per_hour, step: "0.01", placeholder: "30.00", class: "form-control", :required => true %>
             </div>
           <% else %>
-            <%= f.label :quote, "Service Charges (In CAD) " %>
-            <div class="form-group">
+            <%= f.label :quote, "Service Charges (In CAD) ", class:"form-label" %>
+            <div class="mb-3">
               <%= f.number_field :service_charge, step: "0.01", placeholder: "20", class: "form-control", :required => true %>
             </div>
             <div class="row">
               <div class="col-md-6">
-                <%= f.label :quote, "Material Cost (In CAD) " %>
-                <div class="form-group">
+                <%= f.label :quote, "Material Cost (In CAD) ", class:"form-label" %>
+                <div class="mb-3">
                   <%= f.number_field :material_cost, step: "0.01", placeholder: "100", class: "form-control", :required => true %>
                 </div>
               </div>
               <div class="col-md-6">
-                <%= f.label :quote, "Price For Hours Worked (In CAD) " %>
-                <div class="form-group">
+                <%= f.label :quote, "Price For Hours Worked (In CAD) ", class:"form-label" %>
+                <div class="mb-3">
                   <%= f.number_field :price_per_hour, step: "0.01", placeholder: "15.00", class: "form-control", :required => true %>
                 </div>
               </div>
             </div>
           <% end %>
-          <div class="form-group">
-            <%= f.label "final_file", "PDF/GCode" %>
+          <div class="mb-3">
+            <%= f.label "final_file", "PDF/GCode", class:"form-label" %>
             <%= f.file_field "final_file", style: "display: block!important;", multiple: true %>
           </div>
 
-          <div class="form-group">
-            <%= f.label :staff_comments, "Comments for the user" %>
+          <div class="mb-3">
+            <%= f.label :staff_comments, "Comments for the user", class:"form-label" %>
             <%= f.text_field :staff_comments, placeholder: "I will need to add supports", class: "form-control" %>
           </div>
-          <div class="form-group">
-            <%= f.label :comments_for_staff, "Comments for the staff members" %>
-            <%= f.text_field :comments_for_staff, placeholder: "Use the Raise 3D", class: "form-control" %>
+          <div class="mb-3">
+            <%= f.label :comments_for_staff, "Comments for the staff members", class:"form-label" %>
+            <%= f.text_field :comments_for_staff, placeholder: "Use the Raise 3D", class: "form-control mb-2" %>
           </div>
         </div>
         <button class="btn btn-primary" onClick="checkFile(this.form)" type="button">Approve</button>
         <br><br>
       <% end %>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
 </div>
 <br><br>
 
-<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#decline_<%= prints.id %>">
+<button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#decline_<%= prints.id %>">
   Decline
 </button>
 <div class="modal fade" id="decline_<%= prints.id %>" tabindex="-1" role="dialog" aria-labelledby="decline_<%= prints.id %>" aria-hidden="true">
@@ -130,15 +128,14 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLabel">Quote</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </button>
       </div>
       <%= form_for prints, url: print_order_path(prints), html: {id: "approve-#{prints.id}"} do |f| %>
         <div class="modal-body">
           <%= f.hidden_field :approved, :value => false %>
-          <%= f.label :staff_comments, "Comments (Why is it not approved ?)" %>
-          <div class="form-group">
+          <%= f.label :staff_comments, "Comments (Why is it not approved ?)", class:"form-label" %>
+          <div class="mb-3">
             <%= f.text_field :staff_comments, placeholder: "The size won't fit", class: "form-control" %>
           </div>
         </div>
@@ -146,7 +143,7 @@
         <br><br>
       <% end %>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

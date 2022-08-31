@@ -6,26 +6,42 @@ class MakesController < SessionsController
   before_action :set_repository
 
   def create
-    @repo = @repository.makes.build do |r|
-      r.title = params[@repository.title][:title]
-      r.description = params[@repository.title][:description]
-      r.license = @repository.license
-      r.github = @repository.github
-      r.github_url = @repository.github_url
-      r.user_username = @user.username
-      r.user_id = @user.id
-      r.share_type = "public"
-    end
+    @repo =
+      @repository.makes.build do |r|
+        r.title = params[@repository.title][:title]
+        r.description = params[@repository.title][:description]
+        r.license = @repository.license
+        r.github = @repository.github
+        r.github_url = @repository.github_url
+        r.user_username = @user.username
+        r.user_id = @user.id
+        r.share_type = "public"
+      end
 
     if @repo.save
-      @repo.update(slug: @repo.id.to_s + '.' + @repo.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-'))
-      create_photos
-      copy_categories_and_equipment
-      @repository.increment!(:make)
-      render json: { redirect_uri: repository_path(@user.username, @repo.slug).to_s }
-      @user.increment!(:reputation, 15)
+      begin
+        create_photos
+      rescue FastImage::ImageFetchFailure,
+             FastImage::UnknownImageType,
+             FastImage::SizeNotFound => e
+        @repo.destroy
+        redirect_to request.path,
+                    alert:
+                      "Something went wrong while uploading photos, but the make was created. Try uploading them again later."
+      else
+        @repo.update(
+          slug:
+            @repo.id.to_s + "." +
+              @repo.title.downcase.gsub(/[^0-9a-z ]/i, "").gsub(/\s+/, "-")
+        )
+        copy_categories_and_equipment
+        @repository.increment!(:make)
+        redirect_to repository_path(@user.username, @repo.slug)
+        @user.increment!(:reputation, 15)
+      end
     else
-      render :new, alert: 'Something went wrong'
+      flash[:alert] = "Something went wrong"
+      render :new
     end
   end
 
@@ -36,21 +52,31 @@ class MakesController < SessionsController
   private
 
   def set_repository
-    @repository = Repository.find_by(user_username: params[:user_username], id: params[:id])
+    @repository =
+      Repository.find_by(user_username: params[:user_username], id: params[:id])
   end
 
   def create_photos
     if params[:images].present?
       params[:images].each do |img|
-        dimension = FastImage.size(img.tempfile)
-        Photo.create(image: img, repository_id: @repo.id, width: dimension.first, height: dimension.last)
+        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
+        Photo.create(
+          image: img,
+          repository_id: @repo.id,
+          width: dimension.first,
+          height: dimension.last
+        )
       end
-      end
+    end
   end
 
   def copy_categories_and_equipment
     @repository.categories.each do |c|
-      Category.create(name: c.name, repository_id: @repo.id, category_option_id: c.category_option_id)
+      Category.create(
+        name: c.name,
+        repository_id: @repo.id,
+        category_option_id: c.category_option_id
+      )
     end
     @repository.equipments.each do |e|
       Equipment.create(name: e.name, repository_id: @repo.id)
