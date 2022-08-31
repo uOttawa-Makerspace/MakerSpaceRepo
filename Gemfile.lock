@@ -1288,7 +1288,10 @@ GEM
       json
     redirect_safely (1.0.0)
       activemodel
-    redis (4.5.1)
+    redis (5.0.1)
+      redis-client (~> 0.7)
+    redis-client (0.7.1)
+      connection_pool
     regexp_parser (1.7.1)
     representable (3.0.4)
       declarative (< 0.1.0)
@@ -1378,7 +1381,7 @@ GEM
       shopify_api (~> 9.4)
     shoulda-matchers (4.3.0)
       activesupport (>= 4.2.0)
-    sidekiq (6.2.1)
+    sidekiq (6.4.0)
       connection_pool (>= 2.2.2)
       rack (~> 2.0)
       redis (>= 4.2.0)
@@ -1552,7 +1555,7 @@ DEPENDENCIES
   selenium-webdriver (~> 3.142.7)
   shopify_app (~> 18.1.2)
   shoulda-matchers (~> 4.0)
-  sidekiq (~> 6.2.1)
+  sidekiq (~> 6.4.0)
   simplecov
   spring (~> 2.1.0)
   spring-watcher-listen (~> 2.0.0)
