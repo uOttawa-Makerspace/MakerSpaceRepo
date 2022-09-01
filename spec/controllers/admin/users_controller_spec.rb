@@ -29,34 +29,36 @@ RSpec.describe Admin::UsersController, type: :controller do
 
       it "should delete a user" do
         @user = create(:user, :regular_user)
-        expect(User.count).to eq(2)
+        count = User.count
+        diff = User.unscoped.count - count
         delete :delete_user, params: { id: @user.id, password: "password" }
         expect(flash[:notice]).to eq("User flagged as deleted")
-        expect(User.unscoped.count).to eq(2)
-        expect(User.count).to eq(1)
+        expect(User.unscoped.count).to eq(User.count + diff + 1)
+        expect(User.count).to eq(count - 1)
       end
 
       it "should restore a user" do
         @user = create(:user, :regular_user)
+        count = User.count
+        diff = User.unscoped.count - count
         @user.deleted = true
         @user.save!
-        expect(User.unscoped.count).to eq(2)
-        expect(User.count).to eq(1)
         put :restore_user, params: { id: @user.id }
-        expect(User.unscoped.count).to eq(2)
-        expect(User.count).to eq(2)
+        expect(User.unscoped.count).to eq(count + diff)
+        expect(User.count).to eq(count)
       end
 
       it "should not delete a user if the password is wrong" do
         @user = create(:user, :regular_user)
-        expect(User.count).to eq(2)
+        count = User.count
+        diff = User.unscoped.count - count
         delete :delete_user,
                params: {
                  id: @user.id,
                  password: "wrong password"
                }
-        expect(User.unscoped.count).to eq(2)
-        expect(User.count).to eq(2)
+        expect(User.unscoped.count).to eq(count + diff)
+        expect(User.count).to eq(count)
       end
 
       it "should delete a user and their repository" do
