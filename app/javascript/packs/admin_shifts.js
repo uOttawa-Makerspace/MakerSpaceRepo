@@ -246,6 +246,9 @@ const hideShowEvents = (eventName, toggleId, text) => {
   } else {
     sourceShow[eventName] = "none";
   }
+  [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
+    el.innerText = `${sourceShow[eventName] === "block" ? "Show" : "Hide"}`;
+  });
 };
 
 document
@@ -289,18 +292,6 @@ modalClose.addEventListener("click", closeModal);
 modalSave.addEventListener("click", () => {
   createCalendarEvent();
 });
-
-window.toggleVisibility = (name) => {
-  Array.from(document.getElementsByClassName(name)).forEach((item) => {
-    if (item.style.display === "none") {
-      item.style.display = "block";
-      document.getElementById(name).innerText = "Hide";
-    } else {
-      item.style.display = "none";
-      document.getElementById(name).innerText = "Show";
-    }
-  });
-};
 
 new TomSelect("#modalUserId", {
   maxItems: 3,

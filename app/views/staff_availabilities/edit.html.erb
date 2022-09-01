@@ -8,7 +8,7 @@
             <div class="col-md-12">
               <div class="mb-3 text-center">
                 <%= f.label :user_id, "User to select", class:"form-label"  %>
-                <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id), selected: f.object.user_id), {}, id: 'userId', autocomplete: 'off', required: true, class: "form-control form-select" %>
+                <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id).sort_by {|n| n[0].titleize}, selected: f.object.user_id), {}, id: 'userId', autocomplete: 'off', required: true, class: "form-control form-select" %>
               </div>
               <div class="mb-3 text-center">
                 <%= f.label :day, "Day of the week", class:"form-label"  %>
