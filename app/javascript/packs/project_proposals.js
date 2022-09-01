@@ -98,6 +98,36 @@ if (form) {
     }
   });
 }
+if (document.getElementById("clone-file-input")) {
+  let cloneButton = document.getElementById("clone-file-input");
+  cloneButton.addEventListener("click", () => {
+    let parent = cloneButton.parentElement;
+    let clone = parent.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.children[0].value = null;
+    clone.children[1].className = "btn btn-danger";
+    clone.children[1].children[0].className = "fa fa-trash";
+    clone.children[1].addEventListener("click", (el) => {
+      el.target.closest(".input-group").remove();
+    });
+    parent.parentElement.appendChild(clone);
+  });
+}
+if (document.getElementById("clone-photo-input")) {
+  let cloneButton = document.getElementById("clone-photo-input");
+  cloneButton.addEventListener("click", () => {
+    let parent = cloneButton.parentElement;
+    let clone = parent.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.children[0].value = null;
+    clone.children[1].className = "btn btn-danger";
+    clone.children[1].children[0].className = "fa fa-trash";
+    clone.children[1].addEventListener("click", (el) => {
+      el.target.closest(".input-group").remove();
+    });
+    parent.parentElement.parentElement.appendChild(clone);
+  });
+}
 [...document.getElementsByClassName("file-remove")].forEach((el) => {
   el.addEventListener("click", (e) => {
     e.preventDefault();

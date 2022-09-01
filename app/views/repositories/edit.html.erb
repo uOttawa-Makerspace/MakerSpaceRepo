@@ -21,8 +21,14 @@
 
     </div>
     <%= label_tag :file, "Project files", class:"form-label" %>
-    <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
-
+    <div class="mb-3">
+      <div class="input-group mb-3">
+        <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
+        <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="clone-file-input">
+            <i class="fa fa-plus"></i>
+        </button>
+      </div>
+    </div>
     <div id="file-container">
       <% @files.each do |f| %>
         <table>
@@ -37,14 +43,20 @@
     </div>
     <br>
     <%= label_tag :photo, "Gallery", class:"form-label" %>
-    <div>A maximum of five photos can be uploaded per repository.</div>
-    <div class="repo-image">
-      <div id="dragndrop">
-        <br>
-        <%= fa_icon 'cloud-upload' %>
-        <p>Drag &amp; Drop</p>
-      </div>
-      <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control", aria_label: "Select Pictures / Selectionner des images" %>
+    <div class="mb-3">
+      <div>A maximum of five photos can be uploaded per repository.</div>
+      <div class="repo-image">
+        <div id="dragndrop">
+          <br>
+          <%= fa_icon 'cloud-upload' %>
+          <p>Drag &amp; Drop</p>
+        </div>
+        <div class="input-group mb-3">
+          <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control", aria_label: "Select Pictures / Selectionner des images" %>
+          <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="clone-photo-input">
+              <i class="fa fa-plus"></i>
+          </button>
+        </div>
       </div>
     </div>
 
