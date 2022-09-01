@@ -293,6 +293,22 @@ modalSave.addEventListener("click", () => {
   createCalendarEvent();
 });
 
+window.toggleVisibility = (name) => {
+  document.getElementById(name).innerText = `${
+    document.getElementById(name).innerText == "Hide" ? "Show" : "Hide"
+  }`;
+  let staff_name = document.getElementById(name).dataset.staffname;
+  let allEvents = calendar.getEvents();
+  for (let ev of allEvents) {
+    if (ev.title.startsWith(staff_name)) {
+      ev.setProp(
+        "display",
+        document.getElementById(name).innerText == "Show" ? "none" : "block"
+      );
+    }
+  }
+};
+
 new TomSelect("#modalUserId", {
   maxItems: 3,
   placeholder: "Select users",
