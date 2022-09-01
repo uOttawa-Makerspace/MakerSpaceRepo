@@ -107,7 +107,7 @@
           <tr class="file-item">
             <td><%= fa_icon "file-text-o" %> <%= f.file.filename %></td>
             <td><span><%= f.file.byte_size/1000 %> KB</span></td>
-            <td><span id="<%= f.file.filename %>" class="file-remove">remove</span></td>
+            <td><span id="<%= f.file.id %>" class="file-remove">remove</span></td>
           </tr>
         </table>
       <% end %>
