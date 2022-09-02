@@ -100,27 +100,28 @@
     <div class="mb-3">
       <div class="input-group mb-3">
         <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control files_', aria_label: 'Project Files / Fichiers du projet' %>
-        <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="clone-file-input">
+        <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input">
           <i class="fa fa-plus"></i>
         </button>
       </div>
     </div>
 
     <div id="file-container"></div>
-
-    <%= label_tag :photo, "Gallery/Galerie", class:"form-label required" %>
+    <div class="mb-3 required">
+      <%= label_tag :photo, "Gallery/Galerie", class:"form-label required" %>
+      <div class="input-group mb-3">
+        <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control d-inline-block float-start image-upload", aria_label: "Select Pictures / Selectionner des images" %>
+        <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+          <i class="fa fa-plus"></i>
+        </button>
+      </div>
+    </div>
     <div class="mb-3">
       <div class="repo-image">
-        <div id="dragndrop">
+        <div id="dragndrop"  ondrop="dragndrop(event);" ondragover="dragover(event);">
           <br>
           <%= fa_icon 'cloud-upload' %>
           <p>Drag &amp; Drop</p>
-        </div>
-        <div class="input-group mb-3">
-          <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control d-inline-block float-start", aria_label: "Select Pictures / Selectionner des images" %>
-          <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="clone-photo-input">
-            <i class="fa fa-plus"></i>
-          </button>
         </div>
       </div>
     </div>

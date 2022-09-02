@@ -11,15 +11,21 @@
     <%= f.label :description, class:"form-label" %>
     <%= f.text_area :description, class: 'repo' %>
 
-    <%= label_tag :photo, "Gallery", class:"form-label" %>
-    <div>A maximum of five photos can be uploaded per repository.</div>
-
-    <div class="repo-image">
-      <div id="dragndrop">
-        <%= fa_icon 'cloud-upload'%>
-        <p>Drag &amp; Drop</p>
+    <div class="mb-3 required">
+      <%= label_tag :photo, "Gallery", class:"form-label" %>
+      <div>A maximum of five photos can be uploaded per repository.</div>
+      <div class="input-group mb-3">
+        <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control image-upload", aria_label: "Select Pictures / Selectionner des images" %>
+        <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+          <i class="fa fa-plus"></i>
+        </button>
       </div>
-      <%= file_field_tag 'images[]', type: :files, class: "form-control", multiple: true %>
+    </div>
+    <div class="repo-image">
+        <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
+          <%= fa_icon 'cloud-upload'%>
+          <p>Drag &amp; Drop</p>
+        </div>
     </div>
 
     <div id="image-container"></div>
@@ -29,3 +35,35 @@
 
   <% end %>
 </section>
+<script>
+if (document.getElementById("new-file-input")) {
+  let cloneButton = document.getElementById("new-file-input");
+  cloneButton.addEventListener("click", () => {
+    let parent = cloneButton.parentElement;
+    let clone = parent.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.children[0].value = null;
+    clone.children[1].className = "btn btn-danger";
+    clone.children[1].children[0].className = "fa fa-trash";
+    clone.children[1].addEventListener("click", (el) => {
+      el.target.closest(".input-group").remove();
+    });
+    parent.parentElement.appendChild(clone);
+  });
+}
+if (document.getElementById("new-photo-input")) {
+  let cloneButton = document.getElementById("new-photo-input");
+  cloneButton.addEventListener("click", () => {
+    let parent = cloneButton.parentElement;
+    let clone = parent.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.children[0].value = null;
+    clone.children[1].className = "btn btn-danger";
+    clone.children[1].children[0].className = "fa fa-trash";
+    clone.children[1].addEventListener("click", (el) => {
+      el.target.closest(".input-group").remove();
+    });
+    parent.parentElement.appendChild(clone);
+  });
+}
+</script>

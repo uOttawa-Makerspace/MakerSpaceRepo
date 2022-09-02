@@ -98,8 +98,8 @@ if (form) {
     }
   });
 }
-if (document.getElementById("clone-file-input")) {
-  let cloneButton = document.getElementById("clone-file-input");
+if (document.getElementById("new-file-input")) {
+  let cloneButton = document.getElementById("new-file-input");
   cloneButton.addEventListener("click", () => {
     let parent = cloneButton.parentElement;
     let clone = parent.cloneNode(true);
@@ -113,8 +113,8 @@ if (document.getElementById("clone-file-input")) {
     parent.parentElement.appendChild(clone);
   });
 }
-if (document.getElementById("clone-photo-input")) {
-  let cloneButton = document.getElementById("clone-photo-input");
+if (document.getElementById("new-photo-input")) {
+  let cloneButton = document.getElementById("new-photo-input");
   cloneButton.addEventListener("click", () => {
     let parent = cloneButton.parentElement;
     let clone = parent.cloneNode(true);
@@ -125,7 +125,7 @@ if (document.getElementById("clone-photo-input")) {
     clone.children[1].addEventListener("click", (el) => {
       el.target.closest(".input-group").remove();
     });
-    parent.parentElement.parentElement.appendChild(clone);
+    parent.parentElement.appendChild(clone);
   });
 }
 [...document.getElementsByClassName("file-remove")].forEach((el) => {

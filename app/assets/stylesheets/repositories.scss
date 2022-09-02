@@ -169,13 +169,11 @@ select:not(.form-control) {
 }
 
 div#dragndrop {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: relative;
   width: 100%;
   height: 100%;
   color: #aaa;
-  margin-top: 40px;
+  padding-top: 40px;
   font: 300 2em "Raleway", sans-serif;
   text-align: center;
 
@@ -187,7 +185,8 @@ div#dragndrop {
 
 div.repo-image,
 div.repo-file {
-  height: 150px;
+  min-height: 150px;
+  height: auto;
   max-width: calc(400px + 1rem);
   border-radius: 3px;
   background-color: rgba(250, 250, 250, 0.7);

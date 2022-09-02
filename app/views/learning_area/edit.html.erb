@@ -60,14 +60,21 @@
               </div>
 
               <br />
-              <%= label_tag :photo, "Gallery*", class:"form-label" %>
+              <div class="required" >
+              <%= label_tag :photo, "Gallery", class:"form-label" %>
+                <div class="input-group mb-3">
+                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control image-upload", aria_label: "Select Pictures / Selectionner des images" %>
+                  <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+                    <i class="fa fa-plus"></i>
+                  </button>
+                </div>
+              </div>
               <div class="mx-auto repo-image">
-                <div id="dragndrop">
+                <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
                   <br>
                   <%= fa_icon 'cloud-upload' %>
                   <p>Drag &amp; Drop</p>
                 </div>
-                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control", aria_label: "Select Pictures / Selectionner des images" %>
               </div>
 
               <div id="image-container" class="mx-auto">
