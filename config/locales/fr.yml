@@ -186,7 +186,7 @@ fr:
       save: "Enregistrer"
   datetime:
     distance_in_words:
-      ago: ''
+      ago: ""
       about_x_hours:
         one: environ une heure
         other: environ %{count} heures

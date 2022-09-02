@@ -117,6 +117,7 @@ class User < ApplicationRecord
               in: %w[grad undergrad faculty_member community_member unknown]
             }
 
+  default_scope { where(deleted: false) }
   scope :no_waiver_users, -> { where("read_and_accepted_waiver_form = false") }
   scope :between_dates_picked,
         ->(start_date, end_date) {
