@@ -246,6 +246,9 @@ const hideShowEvents = (eventName, toggleId, text) => {
   } else {
     sourceShow[eventName] = "none";
   }
+  [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
+    el.innerText = `${sourceShow[eventName] === "block" ? "Show" : "Hide"}`;
+  });
 };
 
 document
@@ -291,15 +294,19 @@ modalSave.addEventListener("click", () => {
 });
 
 window.toggleVisibility = (name) => {
-  Array.from(document.getElementsByClassName(name)).forEach((item) => {
-    if (item.style.display === "none") {
-      item.style.display = "block";
-      document.getElementById(name).innerText = "Hide";
-    } else {
-      item.style.display = "none";
-      document.getElementById(name).innerText = "Show";
+  document.getElementById(name).innerText = `${
+    document.getElementById(name).innerText == "Hide" ? "Show" : "Hide"
+  }`;
+  let staff_name = document.getElementById(name).dataset.staffname;
+  let allEvents = calendar.getEvents();
+  for (let ev of allEvents) {
+    if (ev.title.startsWith(staff_name)) {
+      ev.setProp(
+        "display",
+        document.getElementById(name).innerText == "Show" ? "none" : "block"
+      );
     }
-  });
+  }
 };
 
 new TomSelect("#modalUserId", {

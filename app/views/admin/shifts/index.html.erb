@@ -13,6 +13,8 @@
 
   <div class="row">
     <div class="col-md-2">
+      <button id="hide-show-unavailabilities" class="btn btn-primary">Hide Unavailabilities</button>
+
       <% @colors.each do |staff_name, array| %>
         <%= form_tag(update_color_admin_shifts_path, method: :post) do %>
           <label><%= staff_name %></label>
@@ -21,6 +23,7 @@
             <input type="color" name="color" class="form-control form-control-color" value="<%= array[1] %>" title="Choose your color">
             <%= hidden_field_tag :id, array[0] %>
             <button type="submit" class="btn btn-primary btn-sm ms-1">Update color</button>
+            <button type="button" id="<%= staff_name.strip.downcase.gsub(' ', '-') %>" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ms-1 shift-hide-button" data-staffname="<%=staff_name%>">Hide</button>
           </div>
         <% end %>
         <br>
