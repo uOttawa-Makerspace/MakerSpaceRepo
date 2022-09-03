@@ -235,9 +235,8 @@ Rails.application.routes.draw do
       end
     end
 
-    namespace :staff_manager do
+    namespace :add_new_staff do
       get "/", as: "index", action: "index"
-      put "/add_users", action: "add_users"
     end
 
     resources :shifts, except: %i[new show] do
