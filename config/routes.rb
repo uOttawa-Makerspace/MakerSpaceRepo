@@ -235,6 +235,10 @@ Rails.application.routes.draw do
       end
     end
 
+    namespace :add_new_staff do
+      get "/", as: "index", action: "index"
+    end
+
     resources :shifts, except: %i[new show] do
       collection do
         get :shifts
@@ -441,7 +445,10 @@ Rails.application.routes.draw do
   end
 
   resources :staff_spaces do
-    collection { post :change_space_list }
+    collection do
+      post :change_space_list
+      post :bulk_add_users
+    end
   end
 
   # namespace :help do

@@ -98,7 +98,6 @@ class RepositoriesController < SessionsController
 
   def create
     # @repository = @user.repositories.build(repository_params)
-
     @repository =
       Repository.new(repository_params.except(:categories, :equipments))
     @repository.user_id = @user.id
@@ -324,6 +323,7 @@ class RepositoriesController < SessionsController
   end
 
   def create_photos
+    puts params[:images]
     if params[:images].present?
       params[:images]
         .first(5)
