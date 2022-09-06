@@ -7,62 +7,16 @@
   </div>
   <br>
   <div>
-    <table class="table table-striped">
-      <h3>Admins on Makerepo</h3>
-    <thead class="table-primary">
-      <tr class="text-center">
-        <th class="name-header">Username</th>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="email-header">View</th>
-        <th class="email-header">Role</th>
-      </tr>
-      </thead>
-      <% @admins.each do |admin| %>
-        <tr>
-          <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
-          <td class="name-cell"><%= admin.name %></td>
-          <td class="email-cell"><%= admin.email %></td>
-          <td class="link-table"><%= link_to fa_icon("eye"), user_url(admin.username) %></td>
-          <td class="w-auto">
-            <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch do %>
-              <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]]%>
-              <%= select_tag(:role, options_for_select(@roles, selected: admin.role), class: "form-control form-select d-inline w-auto") %>
-              <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control d-inline w-auto" %>
-            <% end %>
-          </td>
-        </tr>
-      <%end%>
-    </table>
+  <h3>Admins on Makerepo</h3>
+  <table class="table table-striped" id="admin_table">
+    <%= render partial:"admin_table", locals:{admins: @admins}%>
+  </table>
     <br /><br />
 
-    <table class="table table-striped">
-      <h3>Staff on Makerepo</h3>
-      <thead class="table-primary">
-      <tr class="text-center">
-        <th class="name-header">Username</th>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="email-header">View</th>
-        <th class="email-header">Role</th>
-      </tr>
-      </thead>
-      <% @staff.each do |staff| %>
-        <tr>
-          <td class="username-cell"><%= link_to staff.username, user_url(staff.username) %></td>
-          <td class="name-cell"><%= staff.name %></td>
-          <td class="email-cell"><%= staff.email %></td>
-          <td class="link-table"><%= link_to fa_icon("eye"), user_url(staff.username) %></td>
-          <td class="w-auto">
-            <%= form_tag set_role_admin_users_path(id: staff.id), method: :patch do %>
-              <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]]%>
-              <%= select_tag(:role, options_for_select(@roles, selected: staff.role), class: "form-control form-select d-inline w-auto") %>
-              <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control d-inline w-auto" %>
-            <% end %>
-          </td>
-        </tr>
-      <% end %>
-    </table>
+  <h3>Staff on Makerepo</h3>
+  <table class="table table-striped" id="staff_table">
+    <%= render partial:"staff_table", locals:{staff: @staff}%>
+  </table>
     <br /><br />
 
     <table class="table table-striped">
@@ -72,7 +26,6 @@
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
         <th class="email-header">Email</th>
-        <th class="email-header">View</th>
       </tr>
 </thead>
       <% @volunteers.each do |volunteer| %>
@@ -80,7 +33,6 @@
           <td class="username-cell"><%= link_to volunteer.username, user_url(volunteer.username) %></td>
           <td class="name-cell"><%= volunteer.name %></td>
           <td class="email-cell"><%= volunteer.email %></td>
-          <td class="link-table"><%= link_to fa_icon("eye"), user_url(volunteer.username) %></td>
         </tr>
       <% end %>
     </table>

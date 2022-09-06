@@ -1,0 +1,22 @@
+      <thead class="table-primary">
+      <tr class="text-center">
+        <th class="name-header">Username</th>
+        <th class="name-header">Name</th>
+        <th class="email-header">Email</th>
+        <th class="email-header">Role</th>
+      </tr>
+      </thead>
+      <% @staff.each do |staff| %>
+        <tr>
+          <td class="username-cell"><%= link_to staff.username, user_url(staff.username) %></td>
+          <td class="name-cell"><%= staff.name %></td>
+          <td class="email-cell"><%= staff.email %></td>
+          <td class="w-auto">
+            <%= form_tag set_role_admin_users_path(id: staff.id), method: :patch, format: "js", remote: true do %>
+              <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]]%>
+              <%= select_tag(:role, options_for_select(@roles, selected: staff.role), class: "form-control form-select d-inline w-auto") %>
+              <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control d-inline w-auto" %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
