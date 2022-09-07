@@ -162,3 +162,31 @@ window.examResponse = function (exam_id, answer_id) {
     }),
   });
 };
+window.dragndrop = function (event) {
+  event.preventDefault();
+  let images = [...document.getElementsByClassName("image-upload")];
+  for (let i = 0; i < images.length; i++) {
+    if (images[i].files.length == 0) {
+      images[i].files = event.dataTransfer.files;
+      break;
+    }
+  }
+};
+window.dragover = function (event) {
+  event.preventDefault();
+};
+window.toggleVisibility = (name) => {
+  document.getElementById(name).innerText = `${
+    document.getElementById(name).innerText == "Hide" ? "Show" : "Hide"
+  }`;
+  let staff_name = document.getElementById(name).dataset.staffname;
+  let allEvents = calendar.getEvents();
+  for (let ev of allEvents) {
+    if (ev.title.startsWith(staff_name)) {
+      ev.setProp(
+        "display",
+        document.getElementById(name).innerText == "Show" ? "none" : "block"
+      );
+    }
+  }
+};

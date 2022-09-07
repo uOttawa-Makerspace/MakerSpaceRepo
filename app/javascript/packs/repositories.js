@@ -101,10 +101,16 @@ let form =
 if (form) {
   form.addEventListener("submit", (e) => {
     let images = document.getElementById("images_");
+    let aux_image_length = [...document.getElementsByClassName("image-upload")];
     let image_feedback = document.createElement("div");
     image_feedback.classList.add("text-center");
     let uploaded_images = document.getElementsByClassName("image-item").length;
-    let total_images = uploaded_images + images.files.length;
+    let total_images = [
+      ...document.getElementsByClassName("image-upload"),
+    ].reduce((acc, curr) => {
+      acc += curr.files.length;
+      return acc;
+    }, uploaded_images + images.files.length);
     if (total_images < 1 || total_images > 5) {
       e.preventDefault();
       e.stopPropagation();
@@ -143,3 +149,33 @@ document.querySelectorAll(".invalid-feedback").forEach((el) => {
     el.parentElement.remove();
   });
 });
+if (document.getElementById("new-file-input")) {
+  let cloneButton = document.getElementById("new-file-input");
+  cloneButton.addEventListener("click", () => {
+    let parent = cloneButton.parentElement;
+    let clone = parent.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.children[0].value = null;
+    clone.children[1].className = "btn btn-danger";
+    clone.children[1].children[0].className = "fa fa-trash";
+    clone.children[1].addEventListener("click", (el) => {
+      el.target.closest(".input-group").remove();
+    });
+    parent.parentElement.appendChild(clone);
+  });
+}
+if (document.getElementById("new-photo-input")) {
+  let cloneButton = document.getElementById("new-photo-input");
+  cloneButton.addEventListener("click", () => {
+    let parent = cloneButton.parentElement;
+    let clone = parent.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.children[0].value = null;
+    clone.children[1].className = "btn btn-danger";
+    clone.children[1].children[0].className = "fa fa-trash";
+    clone.children[1].addEventListener("click", (el) => {
+      el.target.closest(".input-group").remove();
+    });
+    parent.parentElement.appendChild(clone);
+  });
+}

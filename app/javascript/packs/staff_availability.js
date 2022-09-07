@@ -38,6 +38,8 @@ end_time.config.onClose = [
 
 if (document.getElementById("userId")) {
   if (!document.getElementById("userId").tomselect) {
-    new TomSelect("#userId");
+    new TomSelect("#userId", {
+      maxOptions: null,
+    });
   }
 }

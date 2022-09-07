@@ -1,5 +1,5 @@
 <div class="padding-10">
-  <h2 class="text-center pt-2 mb-5 fw-bold">Create a new availability</h2>
+  <h2 class="text-center pt-2 mb-5 fw-bold">Create a new unavailability</h2>
   <div class="container my-5">
     <div class="row">
       <div class="col-lg-12">
@@ -8,7 +8,7 @@
             <div class="col-md-12">
               <div class="mb-3 text-center">
                 <%= f.label :user_id, "User to select", class:"form-label"  %>
-                <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id)), {}, id: 'userId', autocomplete: 'off', required: true, class: "form-control form-select" %>
+                <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id).sort_by {|n| n[0].titleize}), {}, id: 'userId', autocomplete: 'off', required: true, class: "form-control form-select" %>
               </div>
               <div class="mb-3 text-center">
                 <%= f.label :day, "Day of the week", class:"form-label"  %>

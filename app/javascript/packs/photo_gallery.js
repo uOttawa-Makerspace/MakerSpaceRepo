@@ -14,7 +14,6 @@ document.addEventListener("DOMContentLoaded", function () {
           h: img.getAttribute("data-height"),
         });
         img.addEventListener("click", function () {
-          gallery.options.index = img.index();
           gallery.init();
         });
       }

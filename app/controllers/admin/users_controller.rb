@@ -198,19 +198,30 @@ class Admin::UsersController < AdminAreaController
     @user.save
 
     @user.staff_spaces.destroy_all if params[:role] == "regular_user"
-
-    redirect_back(fallback_location: root_path)
+    @admins = User.where(role: "admin").order("lower(name) ASC")
+    @staff = User.where(role: "staff").order("lower(name) ASC")
+    @volunteers =
+      User
+        .joins(:programs)
+        .where(programs: { program_type: Program::VOLUNTEER })
+        .order("lower(name) ASC")
+    @roles = %w[admin staff regular_user]
+    # response is js
+    respond_to do |format|
+      format.html
+      format.js { render layout: false }
+      format.all { redirect_back(fallback_location: root_path) }
+    end
   end
 
   def manage_roles
-    @admins = User.where(role: "admin")
-    @staff = User.where(role: "staff")
+    @admins = User.where(role: "admin").order("lower(name) ASC")
+    @staff = User.where(role: "staff").order("lower(name) ASC")
     @volunteers =
-      User.joins(:programs).where(
-        programs: {
-          program_type: Program::VOLUNTEER
-        }
-      )
+      User
+        .joins(:programs)
+        .where(programs: { program_type: Program::VOLUNTEER })
+        .order("lower(name) ASC")
     @roles = %w[admin staff regular_user]
   end
 

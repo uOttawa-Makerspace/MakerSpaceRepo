@@ -3,7 +3,6 @@
   <div class="d-flex justify-content-center">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
       <div class="input-group mb-3">
-
         <%= label_tag :space_id, "Space", class: 'input-group-text' %>
         <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: "form-select" %>
         <%= hidden_field_tag :shifts, true %>
@@ -23,7 +22,7 @@
       <br><br>
 
       <% @colors.each do |staff_name, array| %>
-        <%= form_tag(update_color_admin_shifts_path, method: :post) do %>
+        <%= form_tag(update_color_admin_shifts_path, method: :put) do %>
           <label><%= staff_name %></label>
           <br>
           <div class="w-auto d-inline-block">
@@ -31,7 +30,7 @@
             <%= hidden_field_tag :id, array[0] %>
             <%= hidden_field :shifts, true %>
             <button type="submit" class="btn btn-primary btn-sm ms-1">Update color</button>
-            <button type="button" id="<%= staff_name.strip.downcase.gsub(' ', '-') %>" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ms-1">Hide</button>
+            <button type="button" id="<%= staff_name.strip.downcase.gsub(' ', '-') %>" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ms-1 shift-hide-button" data-staffname="<%=staff_name%>">Hide</button>
           </div>
         <% end %>
         <br>

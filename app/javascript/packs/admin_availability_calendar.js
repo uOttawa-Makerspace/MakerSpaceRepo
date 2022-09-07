@@ -6,8 +6,7 @@ import listPlugin from "@fullcalendar/list";
 
 let calendarEl = document.getElementById("calendar");
 const urlParams = new URLSearchParams(window.location.search);
-const space_id = urlParams.get("space_id");
-
+let show = "block";
 let calendar = new Calendar(calendarEl, {
   plugins: [interactionPlugin, timeGridPlugin, listPlugin],
   headerToolbar: {
@@ -40,9 +39,41 @@ let calendar = new Calendar(calendarEl, {
   },
   eventSources: [
     {
-      url: `/admin/shifts/get_availabilities?space_id=${space_id}`,
+      url: `/admin/shifts/get_availabilities`,
     },
   ],
 });
 
 calendar.render();
+
+document
+  .getElementById("hide-show-unavailabilities")
+  .addEventListener("click", () => {
+    show = show === "block" ? "none" : "block";
+    let allEvents = calendar.getEvents();
+    allEvents.forEach((event) => {
+      event.setProp("display", show === "block" ? "block" : "none");
+    });
+    [...document.getElementsByClassName("shift-hide-button")].forEach(
+      (item) => {
+        item.innerText = show === "block" ? "Hide" : "Show";
+      }
+    );
+    document.getElementById("hide-show-unavailabilities").innerText =
+      show === "block" ? "Hide Unavailabilities" : "Show Unavailabilities";
+  });
+window.toggleVisibility = (name) => {
+  document.getElementById(name).innerText = `${
+    document.getElementById(name).innerText == "Hide" ? "Show" : "Hide"
+  }`;
+  let staff_name = document.getElementById(name).dataset.staffname;
+  let allEvents = calendar.getEvents();
+  for (let ev of allEvents) {
+    if (ev.title.startsWith(staff_name)) {
+      ev.setProp(
+        "display",
+        document.getElementById(name).innerText == "Show" ? "none" : "block"
+      );
+    }
+  }
+};

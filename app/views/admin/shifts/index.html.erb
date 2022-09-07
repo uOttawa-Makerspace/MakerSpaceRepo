@@ -1,10 +1,11 @@
 <div>
   <br>
   <div class="d-flex justify-content-center">
-    <%= form_tag admin_shifts_path, method: :get do %>
+    <%= form_tag staff_dashboard_change_space_path, method: :put do %>
       <div class="input-group mb-3">
         <%= label_tag :space_id, "Space", class: 'input-group-text' %>
-        <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: (params[:space_id].present? ? params[:space_id ] : @space_id)), class: "form-select" %>
+        <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: "form-select" %>
+        <%= hidden_field_tag :shifts, true %>
         <button class="btn btn-outline-secondary" type="submit">Go</button>
       </div>
     <% end %>
@@ -12,6 +13,8 @@
 
   <div class="row">
     <div class="col-md-2">
+      <button id="hide-show-unavailabilities" class="btn btn-primary">Hide Unavailabilities</button>
+
       <% @colors.each do |staff_name, array| %>
         <%= form_tag(update_color_admin_shifts_path, method: :post) do %>
           <label><%= staff_name %></label>
@@ -20,6 +23,7 @@
             <input type="color" name="color" class="form-control form-control-color" value="<%= array[1] %>" title="Choose your color">
             <%= hidden_field_tag :id, array[0] %>
             <button type="submit" class="btn btn-primary btn-sm ms-1">Update color</button>
+            <button type="button" id="<%= staff_name.strip.downcase.gsub(' ', '-') %>" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ms-1 shift-hide-button" data-staffname="<%=staff_name%>">Hide</button>
           </div>
         <% end %>
         <br>

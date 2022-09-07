@@ -17,26 +17,37 @@
     </div>
     </div>
 
-    <%= label_tag :file, "Project files<br>Fichiers du Projet".html_safe, class:"form-label" %>
-    <div class="mb-3"></div>
-    <div class="input-group mb-3">
-      <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
+    <%= label_tag :file, "Project files<br>Fichiers du Projet".html_safe, class:"form-label mb-3" %>
+    <div class="mb-3">
+      <div class="input-group mb-3">
+        <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
+        <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+          <i class="fa fa-plus"></i>
+        </button>
+      </div>
     </div>
 
     <div id="file-container"></div>
     <div class="mb-3 required">
-    <%= label_tag :photo, "Gallery/Galerie", class:"form-label" %>
-    <div>A maximum of five photos can be uploaded per repository.<br>Un maximum de cinq photos peuvent être téléchargés
-      par répertoire.
-    </div>
-    <div class="repo-image">
-      <div id="dragndrop">
-        <br>
-        <%= fa_icon 'cloud-upload' %>
-        <p>Drag &amp; Drop</p>
+      <%= label_tag :photo, "Gallery/Galerie", class:"form-label" %>
+      <div>A maximum of five photos can be uploaded per repository.<br>Un maximum de cinq photos peuvent être téléchargés
+        par répertoire.
       </div>
-      <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control", aria_label: "Select Pictures / Selectionner des images" %>
-    </div>
+      <div>
+        <div class="input-group mb-3">
+          <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control image-upload", aria_label: "Select Pictures / Selectionner des images" %>
+          <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+            <i class="fa fa-plus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="repo-image">
+        <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
+          <br>
+          <%= fa_icon 'cloud-upload' %>
+          <p>Drag &amp; Drop</p>
+        </div>
+      </div>
     </div>
 
     <div id="image-container"></div>

@@ -21,3 +21,10 @@ a {
   background-color: #497979;
   // background-color: theme-color("primary");
 }
+
+.dropdown-item:hover {
+  background-color: rgba(59, 147, 147, 0.2) !important;
+}
+.dropdown-item:active {
+  background-color: #497979 !important;
+}

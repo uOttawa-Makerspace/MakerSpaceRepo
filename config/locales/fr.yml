@@ -28,8 +28,6 @@ fr:
       volunteer_area: "Programme des bénévoles"
       development_program: "Programme de Développement"
       exams: "Examens"
-      printorder: "Commander une impression/découpe laser"
-      printorder_admin: "Administrateurs commander une impression"
       joborder: "Demande de commande"
       joborder_admin: "Administrateur de commande"
       help: "Aide"
