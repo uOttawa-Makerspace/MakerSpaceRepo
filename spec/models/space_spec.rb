@@ -16,6 +16,7 @@ RSpec.describe Space, type: :model do
       it { should have_many(:popular_hours) }
       it { should have_many(:shadowing_hours) }
       it { should have_many(:users) }
+      it { should have_many(:staff_required_calendars) }
     end
   end
 

@@ -14,6 +14,7 @@ class Space < ApplicationRecord
   has_many :staff_spaces
   has_many :space_staff_hour
   has_many :shifts, dependent: :destroy
+  has_many :staff_needed_calendars, dependent: :destroy
 
   after_create :create_popular_hours
 
