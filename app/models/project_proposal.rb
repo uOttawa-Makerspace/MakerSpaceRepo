@@ -23,10 +23,6 @@ class ProjectProposal < ApplicationRecord
             }
 
   validates :title,
-            format: {
-              with: /\A[-a-zA-ZÀ-ÿ\d\s]*\z/,
-              message: "Le titre du projet est invalide / Invalid project title"
-            },
             presence: {
               message:
                 'Veuillez entrer le titre du projet / Please enter the project\'s title'
