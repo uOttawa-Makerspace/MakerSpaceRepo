@@ -16,7 +16,6 @@ RSpec.describe ProjectProposal, type: :model do
 
   describe "validations" do
     context "title" do
-      it { should_not allow_value("gds%%$32").for(:title) }
       it { should allow_value("johndoe").for(:title) }
       it do
         should validate_presence_of(:title).with_message(

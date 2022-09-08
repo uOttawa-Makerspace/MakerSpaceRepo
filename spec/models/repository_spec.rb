@@ -37,11 +37,6 @@ RSpec.describe Repository, type: :model do
   describe "Validations" do
     context "title" do
       subject { build :repository }
-      it do
-        should_not allow_value("gds%%$32").for(:title).with_message(
-                     "Invalid project title"
-                   )
-      end
       it { should allow_value("johndoe").for(:title) }
       it do
         should validate_presence_of(:title).with_message(
