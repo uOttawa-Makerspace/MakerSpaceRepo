@@ -99,19 +99,6 @@ RSpec.describe ProjectProposalsController, type: :controller do
         )
       end
 
-      it "should fail creating a project proposal" do
-        project_proposal_params =
-          FactoryBot.attributes_for(:project_proposal, :broken)
-        expect {
-          post :create, params: { project_proposal: project_proposal_params }
-        }.to change(ProjectProposal, :count).by(0)
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(flash[:alert]).to eq(
-          "An error occurred while creating the project proposal, try again later."
-        )
-        expect(ActionMailer::Base.deliveries.count).to eq(0)
-      end
-
       it "should create a repository with images and files" do
         project_proposal_params =
           FactoryBot.attributes_for(:project_proposal, :normal)
@@ -192,21 +179,6 @@ RSpec.describe ProjectProposalsController, type: :controller do
                     )
         expect(flash[:notice]).to eq(
           "Project proposal was successfully updated."
-        )
-      end
-
-      it "should update the project proposal" do
-        project_proposal = ProjectProposal.first
-        patch :update,
-              params: {
-                id: project_proposal.id,
-                project_proposal: {
-                  title: "abc$123"
-                }
-              }
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(flash[:alert]).to eq(
-          "An error occurred while updating the project proposal, try again later."
         )
       end
 
