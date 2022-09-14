@@ -176,6 +176,34 @@
     </div>
   <% end %>
   <br>
+  <h3>New Sub Space</h3>
+  <%= form_for admin_spaces_path, action: :create_sub_space, method: :put do |f| %>
+    <div class="mb-3">
+      <%= text_field_tag :name, "", class: "form-control" %>
+      <%= hidden_field_tag :space_id, @space.id %>
+      <%= f.submit "Create new sub space", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+  <br>
+  <h3>Sub Spaces</h3>
+  <table class="table table-striped">
+    <thead class="table-primary">
+    <tr>
+      <th>Sub Space</th>
+      <th>Delete Sub Space</th>
+    </tr>
+    </thead>
+    <% @sub_spaces.each do |sub_space| %>
+      <tr>
+        <td><%= sub_space.name %></td>
+        <td><%= link_to fa_icon('times'), admin_space_delete_sub_space_path(space_id:@space.id, name:sub_space.name), method: :delete, action: :delete_sub_space,
+                        data: { confirm: 'Are you sure you want to delete this sub space ?' } %></td>
+      </tr>
+    <% end %>
+  </table>
+    <br>
+
 
   <table class="table table-striped">
     <th class="destroy-header">Destroy Space</th>

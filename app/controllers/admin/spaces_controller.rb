@@ -17,12 +17,44 @@ class Admin::SpacesController < AdminAreaController
     else
       flash[:alert] = "Something went wrong."
     end
+
+    redirect_back(fallback_location: root_path)
+  end
+
+  def create_sub_space
+    if params[:name].present?
+      sub_space =
+        SubSpace.create(
+          name: params[:name],
+          space: Space.find(params[:space_id])
+        )
+      flash[:notice] = "Sub Space created!"
+    else
+      flash[:alert] = "Please enter a name for the sub space"
+    end
+    @sub_spaces = SubSpace.where(space: Space.find(params[:space_id]))
+    redirect_back(fallback_location: root_path)
+  end
+
+  def delete_sub_space
+    if params[:name].present?
+      if SubSpace.where(
+           name: params[:name],
+           space: Space.find(params[:space_id])
+         ).destroy_all
+        flash[:notice] = "Sub Space deleted!"
+      else
+        flash[:alert] = "Something went wrong."
+      end
+    end
+    @sub_spaces = SubSpace.where(space: Space.find(params[:space_id]))
     redirect_back(fallback_location: root_path)
   end
 
   def edit
     @space_staff_hours = SpaceStaffHour.where(space: params[:id])
     @new_training = Training.new
+    @sub_spaces = SubSpace.where(space: Space.find(params[:id]))
     unless @space = Space.find(params[:id])
       flash[:alert] = "Not Found"
       redirect_back(fallback_location: root_path)

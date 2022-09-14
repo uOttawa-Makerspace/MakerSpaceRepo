@@ -227,6 +227,8 @@ Rails.application.routes.draw do
     resources :spaces, only: %i[index create edit] do
       delete "/edit/", as: "destroy", action: "destroy"
       post "/edit/", as: "update_name", action: "update_name"
+      put "/edit/", as: "create_sub_space", action: "create_sub_space"
+      delete "/edit/:name", as: "delete_sub_space", action: "delete_sub_space"
 
       collection do
         post :update_max_capacity
@@ -320,6 +322,17 @@ Rails.application.routes.draw do
     get :populate_users
     post :import_excel
     get :refresh_capacity
+  end
+
+  resources :sub_space_booking, only: %i[index create destroy] do
+    put :decline
+    put :approve
+
+    collection do
+      get :admin
+      post :book
+      get :bookings
+    end
   end
 
   resources :development_programs, only: [:index] do
