@@ -26,11 +26,11 @@
           <label><%= staff_name %></label>
           <br>
           <div class="w-auto d-inline-block">
-            <input type="color" name="color" class="form-control form-control-color" value="<%= array[1] %>" title="Choose your color">
+            <input type="color" name="color" class="form-control form-control-color mb-1" value="<%= array[1] %>" title="Choose your color">
             <%= hidden_field_tag :id, array[0] %>
             <%= hidden_field :shifts, true %>
-            <button type="submit" class="btn btn-primary btn-sm ms-1">Update color</button>
-            <button type="button" id="<%= staff_name.strip.downcase.gsub(' ', '-') %>" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ms-1 shift-hide-button" data-staffname="<%=staff_name%>">Hide</button>
+            <button type="submit" class="btn btn-primary btn-sm ms-1 mb-1">Update color</button>
+            <button type="button" id="<%= staff_name.strip.downcase.gsub(' ', '-') %>" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ms-1 shift-hide-button mb-1" data-staffname="<%=staff_name%>">Hide</button>
           </div>
         <% end %>
         <br>
