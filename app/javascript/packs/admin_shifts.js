@@ -6,12 +6,10 @@ import listPlugin from "@fullcalendar/list";
 import googleCalendarPlugin from "@fullcalendar/google-calendar";
 
 let calendarEl = document.getElementById("calendar");
-const urlParams = new URLSearchParams(window.location.search);
 let modal = document.getElementById("shiftModal");
 let start_datetime = document.getElementById("start-datetime");
 let end_datetime = document.getElementById("end-datetime");
 let modalSave = document.getElementById("shiftSave");
-let modalClose = document.getElementById("shiftCancel");
 let modalUserId = document.getElementById("modalUserId");
 let modalReason = document.getElementById("modalReason");
 let sourceShow = {
@@ -40,6 +38,7 @@ let calendar = new Calendar(calendarEl, {
     center: "",
     right: "addNewEvent,timeGridWeek,timeGridDay",
   },
+  contentHeight: "auto",
   slotEventOverlap: false,
   allDaySlot: false,
   timeZone: "America/New_York",
@@ -169,7 +168,6 @@ let openModal = (arg) => {
   }
 };
 let closeModal = () => {
-  // modalUserIdSelect.clear();
   modalReason.value = "";
   start_picker.clear();
   end_picker.clear();
@@ -247,9 +245,13 @@ const hideShowEvents = (eventName, toggleId, text) => {
     sourceShow[eventName] = "none";
   }
   [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
-    el.innerText = `${sourceShow[eventName] === "block" ? "Show" : "Hide"}`;
+    el.checked = sourceShow[eventName] === "block";
   });
 };
+
+[...document.getElementsByClassName("shift-cancel")].forEach((el) => {
+  el.addEventListener("click", closeModal);
+});
 
 document
   .getElementById("hide-show-unavailabilities")
@@ -287,23 +289,17 @@ const end_picker = end_datetime.flatpickr({
   altFormat: "F j, Y at H:i",
 });
 
-modalClose.addEventListener("click", closeModal);
-
 modalSave.addEventListener("click", () => {
   createCalendarEvent();
 });
 
-window.toggleVisibility = (name) => {
-  document.getElementById(name).innerText = `${
-    document.getElementById(name).innerText == "Hide" ? "Show" : "Hide"
-  }`;
-  let staff_name = document.getElementById(name).dataset.staffname;
+window.toggleVisibility = (id) => {
   let allEvents = calendar.getEvents();
   for (let ev of allEvents) {
-    if (ev.title.startsWith(staff_name)) {
+    if (ev.id == id) {
       ev.setProp(
         "display",
-        document.getElementById(name).innerText == "Show" ? "none" : "block"
+        document.getElementById(`user-${id}`).checked ? "block" : "none"
       );
     }
   }
@@ -315,3 +311,38 @@ new TomSelect("#modalUserId", {
   search: true,
   plugins: ["remove_button"],
 });
+
+window.updateColor = (id, color) => {
+  fetch("/admin/shifts/update_color", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: id,
+      color: color,
+      format: "json",
+    }),
+  })
+    .then((response) => {
+      if (response.ok) {
+        const toast = new bootstrap.Toast(
+          document.getElementById("toast-color-update-success")
+        );
+        toast.show();
+      } else {
+        const toast = new bootstrap.Toast(
+          document.getElementById("toast-color-update-failed")
+        );
+        toast.show();
+      }
+    })
+    .catch((error) => {
+      const toast = new bootstrap.Toast(
+        document.getElementById("toast-color-update-failed")
+      );
+      toast.show();
+      console.log("An error occurred: " + error.message);
+    });
+};

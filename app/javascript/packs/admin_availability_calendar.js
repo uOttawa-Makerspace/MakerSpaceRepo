@@ -21,6 +21,7 @@ let calendar = new Calendar(calendarEl, {
       },
     },
   },
+  contentHeight: "auto",
   allDaySlot: false,
   timeZone: "America/New_York",
   initialView: "timeGridWeek",
@@ -62,18 +63,49 @@ document
     document.getElementById("hide-show-unavailabilities").innerText =
       show === "block" ? "Hide Unavailabilities" : "Show Unavailabilities";
   });
-window.toggleVisibility = (name) => {
-  document.getElementById(name).innerText = `${
-    document.getElementById(name).innerText == "Hide" ? "Show" : "Hide"
-  }`;
-  let staff_name = document.getElementById(name).dataset.staffname;
+window.toggleVisibility = (id) => {
   let allEvents = calendar.getEvents();
   for (let ev of allEvents) {
-    if (ev.title.startsWith(staff_name)) {
+    if (ev.id == id) {
       ev.setProp(
         "display",
-        document.getElementById(name).innerText == "Show" ? "none" : "block"
+        document.getElementById(`user-${id}`).checked ? "block" : "none"
       );
     }
   }
+};
+
+window.updateColor = (id, color) => {
+  fetch("/admin/shifts/update_color", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: id,
+      color: color,
+      format: "json",
+    }),
+  })
+    .then((response) => {
+      if (response.ok) {
+        const toast = new bootstrap.Toast(
+          document.getElementById("toast-color-update-success")
+        );
+        toast.show();
+      } else {
+        const toast = new bootstrap.Toast(
+          document.getElementById("toast-color-update-failed")
+        );
+        toast.show();
+      }
+    })
+    .catch((error) => {
+      const toast = new bootstrap.Toast(
+        document.getElementById("toast-color-update-failed")
+      );
+      toast.show();
+      console.log("An error occurred: " + error.message);
+    });
 };

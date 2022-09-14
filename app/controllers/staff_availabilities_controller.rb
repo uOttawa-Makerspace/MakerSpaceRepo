@@ -1,4 +1,4 @@
-class StaffAvailabilitiesController < StaffAreaController
+class StaffAvailabilitiesController < ApplicationController
   before_action :check_admin_or_staff_in_space
   before_action :set_staff_availabilities, only: %i[edit update destroy]
   before_action :set_selected_user

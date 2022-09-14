@@ -8,12 +8,20 @@ class Admin::ShiftsController < AdminAreaController
 
   def index
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
-    @colors = {}
     @space_id = @user.space_id || Space.first.id
+    @colors = []
 
     StaffSpace
+      .joins(:user)
       .where(space_id: @space_id)
-      .each { |staff| @colors[staff.user.name] = [staff.id, staff.color] }
+      .order("users.name")
+      .each do |staff|
+        @colors << {
+          id: staff.user.id,
+          name: staff.user.name,
+          color: staff.color
+        }
+      end
   end
 
   def shifts
@@ -22,11 +30,19 @@ class Admin::ShiftsController < AdminAreaController
         id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
       ).pluck(:name, :id)
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
-    @colors = {}
+    @colors = []
 
     StaffSpace
+      .joins(:user)
       .where(space_id: @space_id)
-      .each { |staff| @colors[staff.user.name] = [staff.id, staff.color] }
+      .order("users.name")
+      .each do |staff|
+        @colors << {
+          id: staff.user.id,
+          name: staff.user.name,
+          color: staff.color
+        }
+      end
   end
 
   def create
@@ -153,9 +169,20 @@ class Admin::ShiftsController < AdminAreaController
     else
       flash[:alert] = "An error occurred, try again later."
     end
-    redirect_to(
-      (params[:shifts].present? ? shifts_admin_shifts_path : admin_shifts_path)
-    )
+    respond_to do |format|
+      format.html do
+        redirect_to(
+          (
+            if params[:shifts].present?
+              shifts_admin_shifts_path
+            else
+              admin_shifts_path
+            end
+          )
+        )
+      end
+      format.json { render json: { status: :ok } }
+    end
   end
 
   def get_availabilities
@@ -167,7 +194,7 @@ class Admin::ShiftsController < AdminAreaController
       .each do |staff|
         event = {}
         event["title"] = "#{staff.user.name} is unavailable"
-        event["id"] = staff.id
+        event["id"] = staff.user.id
         event["daysOfWeek"] = [staff.day]
         event["startTime"] = staff.start_time.strftime("%H:%M")
         event["endTime"] = staff.end_time.strftime("%H:%M")
@@ -194,14 +221,11 @@ class Admin::ShiftsController < AdminAreaController
       .each do |shift|
         event = {}
         event["title"] = shift.return_event_title
-        event["id"] = shift.id
+        event["id"] = shift.users.first.id
         event["start"] = shift.start_datetime
         event["end"] = shift.end_datetime
         event["color"] = hex_color_to_rgba(shift.color(@space_id), 1)
-        event["className"] = shift.users.first.name.strip.downcase.gsub(
-          " ",
-          "-"
-        )
+        event["className"] = "user-#{shift.users.first.id}"
         shifts << event
       end
 

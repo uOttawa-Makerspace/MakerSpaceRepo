@@ -120,6 +120,11 @@
           <li class="nav-item">
             <a href="#programs-manager" class="nav-link" id="programs-tab" data-bs-toggle="tab" role="tab" aria-controls="profile" aria-selected="false">Programs</a>
           </li>
+          <% if @user.staff? || @user == @repo_user %>
+            <li class="nav-item">
+              <a class="nav-link" id="unavailabilities-tab" data-bs-toggle="tab" href="#unavailabilities-manager" role="tab" aria-controls="profile" aria-selected="false">Staff Unavailabilities</a>
+            </li>
+          <% end %>
           <% if @user.staff? %>
             <li class="nav-item">
               <a class="nav-link text-danger" id="certifications-tab" data-bs-toggle="tab" href="#certifications-manager" role="tab" aria-controls="profile" aria-selected="false">Certifications</a>
@@ -252,6 +257,10 @@
           </div>
         </div>
 
+        <div class="tab-pane fade" id="unavailabilities-manager" role="tabpanel" aria-labelledby="unavailabilities-tab">
+          <%= link_to 'See Staff Unavailabilities', staff_availabilities_path, class: "btn btn-primary" %>
+        </div>
+
         <div class="tab-pane fade" id="profile-skills" role="tabpanel" aria-labelledby="profile-tab">
           <div class="col-md-12">
             <% @skills.each do |skill| %>
@@ -261,8 +270,8 @@
                   <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#trainings-skill-<%= skill.id %>" aria-expanded="false" aria-controls="trainings-<%= skill.id %>">
                 <h6 id="header-skill-<%= skill.name %>">
                     <%= skill.name %>
+                </h6>
                   </button>
-                  </h6>
                   <div id="trainings-skill-<%= skill.id %>" class="accordion-collapse collapse">
                     <% skill.trainings.each do |training| %>
 
