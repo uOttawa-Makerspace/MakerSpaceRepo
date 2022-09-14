@@ -53,11 +53,11 @@
     "trix": "^1.2.0",
     "turbolinks": "^5.2.0",
     "webpack": "^4.44.1",
-    "webpack-cli": "^3.3.12"
+    "webpack-cli": "^3.3.12",
+    "husky": "^8.0.1"
   },
   "devDependencies": {
     "@prettier/plugin-ruby": "^3.2.0",
-    "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
     "prettier": "^2.7.1",
     "webpack-dev-server": "^3.11.0"
