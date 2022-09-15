@@ -64,23 +64,23 @@ document.addEventListener("turbolinks:load", function (event) {
   let filterHeader = document.getElementById("filter-header");
   if (filterHeader) {
     filterHeader.addEventListener("click", function (event) {
-      let element = document.getElementById("sort-filter")
-        if (element.style.display == "none" || element.style.display == "") {
-          element.style.display = "block";
-        } else {
-          element.style.display = "none";
-        }
+      let element = document.getElementById("sort-filter");
+      if (element.style.display == "none" || element.style.display == "") {
+        element.style.display = "block";
+      } else {
+        element.style.display = "none";
+      }
     });
   }
-  let categoryHeader = document.getElementById("category-header")
+  let categoryHeader = document.getElementById("category-header");
   if (categoryHeader) {
     categoryHeader.addEventListener("click", function (event) {
-      let element = document.getElementById("category-filter")
-        if (element.style.display == "none" || element.style.display == "") {
-          element.style.display = "block";
-        } else {
-          element.style.display = "none";
-        }
+      let element = document.getElementById("category-filter");
+      if (element.style.display == "none" || element.style.display == "") {
+        element.style.display = "block";
+      } else {
+        element.style.display = "none";
+      }
     });
   }
 });

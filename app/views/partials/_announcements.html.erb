@@ -14,12 +14,20 @@
   <% end %>
 <% end %>
 
-<% if !Announcement.active.all_users.blank? && signed_in? %>
+<% if !Announcement.active.regular_user.blank? && signed_in? %>
   <% Announcement.active.all_users.find_each do |a| %>
     <div class="alert alert-primary text-center" role="alert">
       <b>To All Users: </b><%= a.description %>
     </div>
   <% end %>
+<% end %>
+
+<% unless Announcement.active.all_users.blank? %>
+    <%  Announcement.active.all_users.find_each do |a|  %>
+        <div class="alert alert-primary text-center" role="alert">
+            <b>To All Visitors: </b><%=  a.description  %>
+        </div>
+    <% end %>
 <% end %>
 
 <% if current_user.volunteer? || current_user.staff? %>

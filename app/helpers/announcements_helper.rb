@@ -21,11 +21,11 @@ module AnnouncementsHelper
     when "staff"
       "Staff"
     when "regular_user"
-      "Regular Users"
+      "All Users"
     when "admin"
       "Admins"
     when "all"
-      "All Users"
+      "All Visitors (Even not signed in)"
     end
   end
 end
