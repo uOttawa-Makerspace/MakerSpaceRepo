@@ -221,19 +221,6 @@ RSpec.describe RepositoriesController, type: :controller do
           ).to_s
         )
       end
-
-      it "should fail to create a repository" do
-        repo_params = FactoryBot.attributes_for(:repository, :broken)
-        expect {
-          post :create,
-               params: {
-                 user_username: User.last.username,
-                 repository: repo_params
-               }
-        }.to change(Repository, :count).by(0)
-        expect(User.last.reputation).to eq(0)
-        expect(response).to have_http_status(:unprocessable_entity)
-      end
     end
   end
 
@@ -297,19 +284,6 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
         expect(flash[:notice]).to eq("Project updated successfully!")
-      end
-
-      it "should fail to update the repository" do
-        create(:repository)
-        patch :update,
-              params: {
-                user_username: User.last.username,
-                id: Repository.last.id,
-                repository: {
-                  title: "$$$abc"
-                }
-              }
-        expect(flash[:alert]).to eq("Unable to apply the changes.")
       end
 
       it "should create a private repository" do

@@ -30,10 +30,6 @@ class Repository < ApplicationRecord
   end
 
   validates :title,
-            format: {
-              with: /\A[-a-zA-ZÀ-ÿ\d\s]*\z/,
-              message: "Invalid project title"
-            },
             presence: {
               message: "Project title is required."
             },
