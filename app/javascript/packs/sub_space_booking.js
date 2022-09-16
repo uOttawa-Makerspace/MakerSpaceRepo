@@ -52,7 +52,7 @@ if (bookedCalendarEl) {
       end: end,
       room: new URLSearchParams(window.location.search).get("room"),
     };
-    let url = "/sub_space_booking/book";
+    let url = "/sub_space_booking";
     let request = new Request(url, {
       method: "POST",
       headers: {

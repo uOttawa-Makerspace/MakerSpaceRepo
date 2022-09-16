@@ -324,13 +324,12 @@ Rails.application.routes.draw do
     get :refresh_capacity
   end
 
-  resources :sub_space_booking, only: %i[index create destroy] do
+  resources :sub_space_booking, only: %i[index create] do
     put :decline
     put :approve
 
     collection do
       get :admin
-      post :book
       get :bookings
     end
   end

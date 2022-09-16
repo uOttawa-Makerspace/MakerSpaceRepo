@@ -23,16 +23,11 @@ class Admin::SpacesController < AdminAreaController
 
   def create_sub_space
     if params[:name].present?
-      sub_space =
-        SubSpace.create(
-          name: params[:name],
-          space: Space.find(params[:space_id])
-        )
+      SubSpace.create(name: params[:name], space: Space.find(params[:space_id]))
       flash[:notice] = "Sub Space created!"
     else
       flash[:alert] = "Please enter a name for the sub space"
     end
-    @sub_spaces = SubSpace.where(space: Space.find(params[:space_id]))
     redirect_back(fallback_location: root_path)
   end
 

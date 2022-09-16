@@ -194,7 +194,7 @@
       <th>Delete Sub Space</th>
     </tr>
     </thead>
-    <% @sub_spaces.each do |sub_space| %>
+    <% SubSpace.where(space: @space).each do |sub_space| %>
       <tr>
         <td><%= sub_space.name %></td>
         <td><%= link_to fa_icon('times'), admin_space_delete_sub_space_path(space_id:@space.id, name:sub_space.name), method: :delete, action: :delete_sub_space,

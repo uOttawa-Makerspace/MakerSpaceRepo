@@ -6,6 +6,6 @@ class SubSpace < ApplicationRecord
               message: "A name is required for the space"
             },
             uniqueness: {
-              message: "Space already exists"
+              message: "Sub Space already exists"
             }
 end
