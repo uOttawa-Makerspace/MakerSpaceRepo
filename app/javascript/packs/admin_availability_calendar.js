@@ -5,7 +5,6 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 
 let calendarEl = document.getElementById("calendar");
-const urlParams = new URLSearchParams(window.location.search);
 let show = "block";
 let calendar = new Calendar(calendarEl, {
   plugins: [interactionPlugin, timeGridPlugin, listPlugin],
@@ -55,14 +54,11 @@ document
     allEvents.forEach((event) => {
       event.setProp("display", show === "block" ? "block" : "none");
     });
-    [...document.getElementsByClassName("shift-hide-button")].forEach(
-      (item) => {
-        item.innerText = show === "block" ? "Hide" : "Show";
-      }
-    );
-    document.getElementById("hide-show-unavailabilities").innerText =
-      show === "block" ? "Hide Unavailabilities" : "Show Unavailabilities";
+    [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
+      el.checked = show === "block";
+    });
   });
+
 window.toggleVisibility = (id) => {
   let allEvents = calendar.getEvents();
   for (let ev of allEvents) {

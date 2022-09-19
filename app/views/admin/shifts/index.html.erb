@@ -13,7 +13,12 @@
 
   <div class="row">
     <div class="col-md-2">
-      <button id="hide-show-unavailabilities" class="btn btn-primary">Hide Unavailabilities</button>
+      <div class="form-check mb-3">
+        <input class="form-check-input checkbox-lg me-2 mt-0" type="checkbox" value="" id="hide-show-unavailabilities" checked>
+        <label class="form-check-label" for="hide-show-unavailabilities">
+          Unavailabilities
+        </label>
+      </div>
 
       <% @colors.each do |user| %>
         <div class="pb-2">

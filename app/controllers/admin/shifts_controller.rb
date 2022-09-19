@@ -221,7 +221,7 @@ class Admin::ShiftsController < AdminAreaController
       .each do |shift|
         event = {}
         event["title"] = shift.return_event_title
-        event["id"] = shift.users.first.id
+        event["id"] = shift.id
         event["start"] = shift.start_datetime
         event["end"] = shift.end_datetime
         event["color"] = hex_color_to_rgba(shift.color(@space_id), 1)

@@ -228,14 +228,11 @@ let removeEvent = (arg) => {
   }
 };
 
-const hideShowEvents = (eventName, toggleId, text) => {
+const hideShowEvents = (eventName) => {
   let allEvents = calendar.getEvents();
   for (let ev of allEvents) {
     if (ev.source.id === eventName) {
       ev.setProp("display", sourceShow[eventName]);
-      document.getElementById(toggleId).innerText = `${
-        sourceShow[eventName] === "block" ? "Hide" : "Show"
-      } ${text}`;
     }
   }
 
@@ -244,9 +241,11 @@ const hideShowEvents = (eventName, toggleId, text) => {
   } else {
     sourceShow[eventName] = "none";
   }
-  [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
-    el.checked = sourceShow[eventName] === "block";
-  });
+  if (eventName === "transparent") {
+    [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
+      el.checked = sourceShow[eventName] === "none";
+    });
+  }
 };
 
 [...document.getElementsByClassName("shift-cancel")].forEach((el) => {
@@ -256,23 +255,19 @@ const hideShowEvents = (eventName, toggleId, text) => {
 document
   .getElementById("hide-show-unavailabilities")
   .addEventListener("click", () => {
-    hideShowEvents(
-      "transparent",
-      "hide-show-unavailabilities",
-      "Unavailabilities"
-    );
+    hideShowEvents("transparent");
   });
 
 document
   .getElementById("hide-show-google-events")
   .addEventListener("click", () => {
-    hideShowEvents("google", "hide-show-google-events", "Event");
+    hideShowEvents("google");
   });
 
 document
   .getElementById("hide-show-staff-needed")
   .addEventListener("click", () => {
-    hideShowEvents("staffNeeded", "hide-show-staff-needed", "Staff Needed");
+    hideShowEvents("staffNeeded");
   });
 
 const start_picker = start_datetime.flatpickr({
