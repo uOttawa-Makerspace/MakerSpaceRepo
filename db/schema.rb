@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_08_09_013906) do
+ActiveRecord::Schema.define(version: 2022_09_12_184445) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -117,6 +117,19 @@ ActiveRecord::Schema.define(version: 2022_08_09_013906) do
     t.bigint "certification_id"
     t.index ["badge_template_id"], name: "index_badges_on_badge_template_id"
     t.index ["certification_id"], name: "index_badges_on_certification_id"
+  end
+
+  create_table "booking_statuses", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.bigint "booking_status_id"
+    t.bigint "sub_space_booking_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["booking_status_id"],
+            name: "index_booking_statuses_on_booking_status_id"
+    t.index ["sub_space_booking_id"],
+            name: "index_booking_statuses_on_sub_space_booking_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
@@ -762,6 +775,7 @@ ActiveRecord::Schema.define(version: 2022_08_09_013906) do
     t.boolean "featured", default: false
     t.string "youtube_link"
     t.integer "project_proposal_id"
+    t.boolean "deleted"
     t.index ["user_id"], name: "index_repositories_on_user_id"
   end
 
@@ -863,6 +877,14 @@ ActiveRecord::Schema.define(version: 2022_08_09_013906) do
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
   end
 
+  create_table "staff_needed_calendars", force: :cascade do |t|
+    t.string "calendar_url", null: false
+    t.bigint "space_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
+  end
+
   create_table "staff_spaces", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "space_id"
@@ -871,6 +893,41 @@ ActiveRecord::Schema.define(version: 2022_08_09_013906) do
     t.string "color"
     t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
+  end
+
+  create_table "sub_space_booking_statuses", force: :cascade do |t|
+    t.bigint "sub_space_booking_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.bigint "booking_status_id"
+    t.index ["booking_status_id"],
+            name: "index_sub_space_booking_statuses_on_booking_status_id"
+    t.index ["sub_space_booking_id"],
+            name: "index_sub_space_booking_statuses_on_sub_space_booking_id"
+  end
+
+  create_table "sub_space_bookings", force: :cascade do |t|
+    t.string "name"
+    t.string "description"
+    t.datetime "start"
+    t.datetime "end"
+    t.bigint "user_id"
+    t.bigint "sub_space_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.bigint "sub_space_booking_status_id"
+    t.index ["sub_space_booking_status_id"],
+            name: "index_sub_space_bookings_on_sub_space_booking_status_id"
+    t.index ["sub_space_id"], name: "index_sub_space_bookings_on_sub_space_id"
+    t.index ["user_id"], name: "index_sub_space_bookings_on_user_id"
+  end
+
+  create_table "sub_spaces", force: :cascade do |t|
+    t.string "name"
+    t.bigint "space_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["space_id"], name: "index_sub_spaces_on_space_id"
   end
 
   create_table "training_sessions", id: :serial, force: :cascade do |t|
@@ -951,6 +1008,7 @@ ActiveRecord::Schema.define(version: 2022_08_09_013906) do
     t.datetime "last_signed_in_time"
     t.string "otp_secret"
     t.integer "last_otp_at"
+    t.boolean "deleted"
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
@@ -1017,6 +1075,8 @@ ActiveRecord::Schema.define(version: 2022_08_09_013906) do
   add_foreign_key "badge_templates", "trainings"
   add_foreign_key "badges", "badge_templates"
   add_foreign_key "badges", "certifications"
+  add_foreign_key "booking_statuses", "booking_statuses"
+  add_foreign_key "booking_statuses", "sub_space_bookings"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
@@ -1070,8 +1130,15 @@ ActiveRecord::Schema.define(version: 2022_08_09_013906) do
   add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "staff_availabilities", "users"
+  add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
+  add_foreign_key "sub_space_booking_statuses", "booking_statuses"
+  add_foreign_key "sub_space_booking_statuses", "sub_space_bookings"
+  add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
+  add_foreign_key "sub_space_bookings", "sub_spaces"
+  add_foreign_key "sub_space_bookings", "users"
+  add_foreign_key "sub_spaces", "spaces"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"

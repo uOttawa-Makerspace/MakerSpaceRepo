@@ -18,98 +18,119 @@ let sourceShow = {
   staffNeeded: "none",
 };
 
-let calendar = new Calendar(calendarEl, {
-  plugins: [
-    interactionPlugin,
-    timeGridPlugin,
-    listPlugin,
-    googleCalendarPlugin,
-  ],
-  customButtons: {
-    addNewEvent: {
-      text: "+",
-      click: () => {
-        createEvent();
+let calendar;
+
+fetch("/admin/shifts/get_external_staff_needed", {
+  method: "GET",
+  headers: {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  },
+})
+  .then((res) => res.json())
+  .then((res) => {
+    calendar = new Calendar(calendarEl, {
+      plugins: [
+        interactionPlugin,
+        timeGridPlugin,
+        listPlugin,
+        googleCalendarPlugin,
+      ],
+      customButtons: {
+        addNewEvent: {
+          text: "+",
+          click: () => {
+            createEvent();
+          },
+        },
       },
-    },
-  },
-  headerToolbar: {
-    left: "prev,today,next",
-    center: "",
-    right: "addNewEvent,timeGridWeek,timeGridDay",
-  },
-  contentHeight: "auto",
-  slotEventOverlap: false,
-  allDaySlot: false,
-  timeZone: "America/New_York",
-  initialView: "timeGridWeek",
-  navLinks: true,
-  selectable: true,
-  selectMirror: true,
-  slotMinTime: "07:00:00",
-  slotMaxTime: "22:00:00",
-  eventTimeFormat: {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  },
-  editable: true,
-  dayMaxEvents: true,
-  eventSources: [
-    {
-      id: "transparent",
-      url: "/admin/shifts/get_availabilities?transparent=true",
-      editable: false,
-    },
-    {
-      id: "shifts",
-      url: "/admin/shifts/get_shifts",
-    },
-    {
-      id: "google",
-      googleCalendarApiKey: "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
-      googleCalendarId:
-        "c_d7liojb08eadntvnbfa5na9j98@group.calendar.google.com",
-      color: "rgba(255,31,31,0.4)",
-      editable: false,
-    },
-    {
-      id: "staffNeeded",
-      url: "/admin/shifts/get_staff_needed",
-      color: "rgba(40,40,40,0.4)",
-      editable: false,
-    },
-  ],
-  select: (arg) => {
-    createEvent(arg);
-  },
-  eventClick: (arg) => {
-    if (arg.event.source.id === "shifts") {
-      removeEvent(arg);
-    }
-  },
-  eventDrop: (arg) => {
-    modifyEvent(arg);
-  },
-  eventResize: (arg) => {
-    modifyEvent(arg);
-  },
-  eventOrder: (a, b) => {
-    if (
-      (a.title.includes("is unavailable") &&
-        b.title.includes("is unavailable")) ||
-      (!a.title.includes("is unavailable") &&
-        !b.title.includes("is unavailable"))
-    ) {
-      return 0;
-    } else if (a.title.includes("is unavailable")) {
-      return -1;
-    } else {
-      return 1;
-    }
-  },
-});
-calendar.render();
+      headerToolbar: {
+        left: "prev,today,next",
+        center: "",
+        right: "addNewEvent,timeGridWeek,timeGridDay",
+      },
+      contentHeight: "auto",
+      slotEventOverlap: false,
+      allDaySlot: false,
+      timeZone: "America/New_York",
+      initialView: "timeGridWeek",
+      navLinks: true,
+      selectable: true,
+      selectMirror: true,
+      slotMinTime: "07:00:00",
+      slotMaxTime: "22:00:00",
+      eventTimeFormat: {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+      editable: true,
+      dayMaxEvents: true,
+      eventSources: [
+        {
+          id: "transparent",
+          url: "/admin/shifts/get_availabilities?transparent=true",
+          editable: false,
+        },
+        {
+          id: "shifts",
+          url: "/admin/shifts/get_shifts",
+        },
+        {
+          id: "google",
+          googleCalendarApiKey: "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
+          googleCalendarId:
+            "c_d7liojb08eadntvnbfa5na9j98@group.calendar.google.com",
+          color: "rgba(255,31,31,0.4)",
+          editable: false,
+        },
+        {
+          id: "staffNeeded",
+          url: "/admin/shifts/get_staff_needed",
+          color: "rgba(40,40,40,0.4)",
+          editable: false,
+        },
+        ...res.map((cal) => {
+          return {
+            id: "staffNeeded",
+            googleCalendarApiKey: "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
+            googleCalendarId: cal,
+            color: "rgba(40,40,40,0.4)",
+            editable: false,
+          };
+        }),
+      ],
+      select: (arg) => {
+        createEvent(arg);
+      },
+      eventClick: (arg) => {
+        if (arg.event.source.id === "shifts") {
+          removeEvent(arg);
+        }
+      },
+      eventDrop: (arg) => {
+        modifyEvent(arg);
+      },
+      eventResize: (arg) => {
+        modifyEvent(arg);
+      },
+      eventOrder: (a, b) => {
+        if (
+          (a.title.includes("is unavailable") &&
+            b.title.includes("is unavailable")) ||
+          (!a.title.includes("is unavailable") &&
+            !b.title.includes("is unavailable"))
+        ) {
+          return 0;
+        } else if (a.title.includes("is unavailable")) {
+          return -1;
+        } else {
+          return 1;
+        }
+      },
+    });
+    calendar.render();
+  });
 
 let createEvent = (arg = undefined) => {
   openModal(arg);

@@ -162,8 +162,34 @@ class Admin::UsersController < AdminAreaController
   end
 
   def delete_user
-    User.find(params[:id]).destroy
-    redirect_to root_path, notice: "User Deleted!"
+    if @user.admin? && @user.pword == params[:password]
+      delete_user = User.find(params[:id])
+      delete_user.deleted = true
+      delete_user.repositories.each do |repo|
+        repo.deleted = true
+        repo.save!
+      end
+      delete_user.save!
+      redirect_to root_path, notice: "User flagged as deleted"
+    else
+      redirect_to user_path(User.find(params[:id]).username),
+                  alert: "Invalid password!"
+    end
+  end
+
+  def restore_user
+    if @user.admin?
+      restore_user = User.unscoped.find(params[:id])
+      restore_user.deleted = false
+      restore_user.repositories.each do |repo|
+        repo.deleted = false
+        repo.save!
+      end
+      restore_user.save!
+      redirect_to user_path(restore_user.username), notice: "User restored!"
+    else
+      redirect_to root_path, alert: "You do not have permission to do that!"
+    end
   end
 
   def set_role

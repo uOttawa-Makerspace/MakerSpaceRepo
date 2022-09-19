@@ -249,6 +249,11 @@ class Admin::ShiftsController < AdminAreaController
     render json: staff_needed
   end
 
+  def get_external_staff_needed
+    render json:
+             StaffNeededCalendar.where(space_id: @space_id).pluck(:calendar_url)
+  end
+
   private
 
   def set_default_space
