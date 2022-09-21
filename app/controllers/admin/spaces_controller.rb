@@ -102,9 +102,17 @@ class Admin::SpacesController < AdminAreaController
       else
         [params[:staff_needed_calendar]]
       end
-    ).each do |snc|
+    ).each_with_index do |snc, i|
       unless snc.blank?
         StaffNeededCalendar.create(
+          color:
+            (
+              if (params[:staff_needed_calendar_color].is_a? Array)
+                params[:staff_needed_calendar_color][i]
+              else
+                params[:staff_needed_calendar_color]
+              end
+            ),
           space_id: params[:space_id],
           calendar_url: snc
         )

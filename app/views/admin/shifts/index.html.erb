@@ -25,7 +25,7 @@
           <label><%= user[:name] %></label>
           <br>
           <div class="d-flex">
-            <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color" value="<%= user[:color] %>" title="Choose your color">
+            <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
             <input class="form-check-input checkbox-lg ms-1 shift-hide-button" id="user-<%= user[:id] %>" type="checkbox" onclick="toggleVisibility(<%= user[:id] %>)" checked>
           </div>
         </div>

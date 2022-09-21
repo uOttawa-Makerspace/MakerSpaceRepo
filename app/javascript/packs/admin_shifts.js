@@ -94,8 +94,8 @@ fetch("/admin/shifts/get_external_staff_needed", {
           return {
             id: "staffNeeded",
             googleCalendarApiKey: "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
-            googleCalendarId: cal,
-            color: "rgba(40,40,40,0.4)",
+            googleCalendarId: cal.calendar_url,
+            color: cal.color,
             editable: false,
           };
         }),
@@ -136,6 +136,19 @@ let createEvent = (arg = undefined) => {
   openModal(arg);
 };
 
+const refreshPendingShifts = () => {
+  fetch("/admin/shifts/pending_shifts?format=js", {
+    method: "GET",
+  })
+    .then((r) => r.text())
+    .then((html) => {
+      const fragment = document.createRange().createContextualFragment(html);
+      document
+        .getElementById("pending-shift-partial")
+        .replaceChildren(fragment);
+    });
+};
+
 let createCalendarEvent = () => {
   let selected_users = [];
   for (let option of modalUserId.options) {
@@ -173,6 +186,7 @@ let createCalendarEvent = () => {
       );
       calendar.unselect();
       closeModal();
+      refreshPendingShifts();
     })
     .catch((error) => {
       console.log("An error occurred: " + error.message);
@@ -189,7 +203,8 @@ let openModal = (arg) => {
   }
 };
 let closeModal = () => {
-  modalReason.value = "";
+  modalReason.value = "Shift";
+  newShiftUserSelect.clear();
   start_picker.clear();
   end_picker.clear();
   modal.style.display = "none";
@@ -220,6 +235,7 @@ let modifyEvent = (arg) => {
       if (!response.ok) {
         arg.revert();
       }
+      refreshPendingShifts();
     })
     .catch((error) => {
       console.log("An error occurred: " + error.message);
@@ -242,6 +258,7 @@ let removeEvent = (arg) => {
         } else {
           console.log("An error occurred");
         }
+        refreshPendingShifts();
       })
       .catch((error) => {
         console.log("An error occurred: " + error.message);
@@ -321,7 +338,7 @@ window.toggleVisibility = (id) => {
   }
 };
 
-new TomSelect("#modalUserId", {
+const newShiftUserSelect = new TomSelect("#modalUserId", {
   maxItems: 3,
   placeholder: "Select users",
   search: true,

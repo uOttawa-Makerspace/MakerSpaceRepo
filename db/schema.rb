@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_09_12_184445) do
+ActiveRecord::Schema.define(version: 2022_09_19_202630) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -827,6 +827,7 @@ ActiveRecord::Schema.define(version: 2022_09_12_184445) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "google_event_id"
+    t.boolean "pending", default: true
     t.index ["space_id"], name: "index_shifts_on_space_id"
     t.index ["user_id"], name: "index_shifts_on_user_id"
   end
@@ -879,6 +880,7 @@ ActiveRecord::Schema.define(version: 2022_09_12_184445) do
 
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
+    t.string "color"
     t.bigint "space_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false

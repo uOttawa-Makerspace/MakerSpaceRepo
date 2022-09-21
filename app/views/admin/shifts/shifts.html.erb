@@ -1,5 +1,4 @@
-<div>
-  <br>
+<div class="mt-4">
   <div class="d-flex justify-content-center">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
       <div class="input-group mb-3">
@@ -9,6 +8,10 @@
         <button class="btn btn-outline-secondary" type="submit">Go</button>
       </div>
     <% end %>
+  </div>
+
+  <div id="pending-shift-partial">
+    <%= render partial: 'pending_shifts', locals: {pending_shifts: @pending_shifts} %>
   </div>
 
   <div class="row">
@@ -37,7 +40,7 @@
             <label><%= user[:name] %></label>
             <br>
             <div class="d-flex">
-              <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color" value="<%= user[:color] %>" title="Choose your color">
+              <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
               <input class="form-check-input checkbox-lg ms-1 shift-hide-button" id="user-<%= user[:id] %>" type="checkbox" onclick="toggleVisibility(<%= user[:id] %>)" checked>
             </div>
           </div>

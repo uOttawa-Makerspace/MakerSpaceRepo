@@ -45,6 +45,22 @@ class Admin::ShiftsController < AdminAreaController
       end
   end
 
+  def pending_shifts
+    render partial: "admin/shifts/pending_shifts"
+  end
+
+  def confirm_shifts
+    Shift.where(space_id: @user.space_id, pending: true).update(pending: false)
+    redirect_to shifts_admin_shifts_path,
+                notice: "Shifts have been successfully confirmed!"
+  end
+
+  def clear_pending_shifts
+    Shift.where(space_id: @user.space_id, pending: true).destroy_all
+    redirect_to shifts_admin_shifts_path,
+                notice: "Shifts have been successfully cleared!"
+  end
+
   def create
     if params[:shift].present? && params[:user_id].present?
       @shift = Shift.new(shift_params.merge(space_id: @space_id))
@@ -83,7 +99,11 @@ class Admin::ShiftsController < AdminAreaController
           render json: {
                    id: @shift.id,
                    name: @shift.return_event_title,
-                   color: @shift.color(@space_id),
+                   color:
+                     hex_color_to_rgba(
+                       @shift.color(@space_id),
+                       @shift.pending? ? 0.7 : 1
+                     ),
                    start: @shift.start_datetime,
                    end: @shift.end_datetime,
                    className:
@@ -224,7 +244,10 @@ class Admin::ShiftsController < AdminAreaController
         event["id"] = shift.id
         event["start"] = shift.start_datetime
         event["end"] = shift.end_datetime
-        event["color"] = hex_color_to_rgba(shift.color(@space_id), 1)
+        event["color"] = hex_color_to_rgba(
+          shift.color(@space_id),
+          shift.pending? ? 0.7 : 1
+        )
         event["className"] = "user-#{shift.users.first.id}"
         shifts << event
       end
@@ -251,7 +274,9 @@ class Admin::ShiftsController < AdminAreaController
 
   def get_external_staff_needed
     render json:
-             StaffNeededCalendar.where(space_id: @space_id).pluck(:calendar_url)
+             StaffNeededCalendar.where(space_id: @space_id).as_json(
+               only: %i[calendar_url color]
+             )
   end
 
   private
