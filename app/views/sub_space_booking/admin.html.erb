@@ -19,8 +19,7 @@
                   <th>Description</th>
                   <th>User</th>
                   <th>Email</th>
-                  <th>Date</th>
-                  <th>Time</th>
+                  <th>Booking Time</th>
                   <th>Actions</th>
                 </tr>
                 </thead>
@@ -28,16 +27,17 @@
                 <% @bookings.each do |booking|%>
                 <% if SubSpaceBookingStatus.where(id:booking.id).first.booking_status_id == BookingStatus::PENDING.id %>
                     <tr>
-                      <td><%= booking.sub_space.name %></td>
+                      <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + " - " + booking.sub_space.name   %></td>
                       <td><%= booking.name %></td>
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start %></td>
-                      <td><%= booking.end %></td>
+                      <td><%= booking.start.to_formatted_s(:short)    %> to <%= booking.end.to_s(:time)   %></td>
                       <td>
+                        <div class="btn-group" role="group">
                         <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
                         <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
+                        </div>
                       </td>
                     </tr>
                 <% end %>
@@ -66,22 +66,26 @@
                   <th>Description</th>
                   <th>User</th>
                   <th>Email</th>
-                  <th>Date</th>
-                  <th>Time</th>
-
+                  <th>Booking Time</th>
+                  <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
                 <% @bookings.each do |booking|%>
                   <% if SubSpaceBookingStatus.where(id:booking.id).first.booking_status_id == BookingStatus::APPROVED.id %>
                     <tr>
-                      <td><%= booking.sub_space.name %></td>
+                      <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + " - " + booking.sub_space.name   %></td>
                       <td><%= booking.name %></td>
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start %></td>
-                      <td><%= booking.end %></td>
+                      <td><%= booking.start.to_formatted_s(:short)    %> to <%= booking.end.to_s(:time)   %></td>
+                      <td>
+                        <div class="btn-group" role="group">
+                          <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
+                          <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
+                        </div>
+                      </td>
                     </tr>
                   <% end %>
                 <% end %>
@@ -109,22 +113,26 @@
                   <th>Description</th>
                   <th>User</th>
                   <th>Email</th>
-                  <th>Date</th>
-                  <th>Time</th>
-
+                  <th>Booking Time</th>
+                  <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
                 <% @bookings.each do |booking|%>
                   <% if SubSpaceBookingStatus.where(id:booking.id).first.booking_status_id == BookingStatus::DECLINED.id %>
                     <tr>
-                      <td><%= booking.sub_space.name %></td>
+                      <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + " - " + booking.sub_space.name   %></td>
                       <td><%= booking.name %></td>
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start %></td>
-                      <td><%= booking.end %></td>
+                      <td><%= booking.start.to_formatted_s(:short)    %> to <%= booking.end.to_s(:time)   %></td>
+                      <td>
+                        <div class="btn-group" role="group">
+                          <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
+                          <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
+                        </div>
+                      </td>
                     </tr>
                   <% end %>
                 <% end %>

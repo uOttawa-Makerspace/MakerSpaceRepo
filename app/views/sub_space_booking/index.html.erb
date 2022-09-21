@@ -14,7 +14,7 @@
           </a>
           <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
             <% subspaces.each do |subspace| %>
-              <a class="dropdown-item" href="<%=  sub_space_booking_index_path(subspace)  %>"><%=  subspace.name  %></a>
+              <a class="dropdown-item" href="<%=  sub_space_booking_index_path(room:subspace.name)  %>"><%=  subspace.name  %></a>
             <%  end  %>
           </div>
         </div>
