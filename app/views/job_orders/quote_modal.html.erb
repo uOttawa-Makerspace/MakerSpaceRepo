@@ -20,18 +20,18 @@
           </div>
           <div class="col-md-6">
             <div class="form-group">
-              <%= label_tag "quote_service_amount_#{service.id}", "Number of #{service.unit}" %>
+              <%= label_tag "quote_service_amount_#{service.id}", "Number of #{service.unit.present? ? service.unit : "unit"}" %>
               <div class="input-group mb-3">
                 <%= number_field_tag "quote_service_amount_#{service.id}", "", step: "0.01", placeholder: "100", class: "form-control", required: true %>
                 <div class="input-group-append">
-                  <span class="input-group-text"><%= service.unit %></span>
+                  <span class="input-group-text"><%= service.unit.present? ? service.unit : "unit" %></span>
                 </div>
               </div>
             </div>
           </div>
           <div class="col-md-6">
             <div class="form-group">
-              <%= label_tag "quote_service_per_unit_#{service.id}", "Price per #{service.unit} (In CAD) " %>
+              <%= label_tag "quote_service_per_unit_#{service.id}", "Price per #{service.unit.present? ? service.unit : "unit"} (In CAD) " %>
               <div class="input-group mb-3">
                 <div class="input-group-prepend">
                   <span class="input-group-text">$</span>
