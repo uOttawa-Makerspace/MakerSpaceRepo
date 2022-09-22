@@ -146,22 +146,39 @@ RSpec.describe Admin::ShiftsController, type: :controller do
           [
             {
               title:
-                /#{s1.reason} for (#{s1.users.first.name}|#{s1.users.second.name}), (#{s1.users.first.name}|#{s1.users.second.name})/,
-              id: s1.id,
-              start: s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
-              end: s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+                /(#{s1.reason} for (#{s1.users.first.name}|#{s1.users.second.name}), (#{s1.users.first.name}|#{s1.users.second.name})|#{s3.reason} for #{s3.users.first.name})/,
+              id: s1.id || s3.id,
+              start:
+                s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
+                  s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+              end:
+                s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
+                  s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
               color:
-                "rgba(#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-              className: s1.users.first.name.strip.downcase.gsub(" ", "-")
+                "rgba(#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)" ||
+                  "rgba(#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+              className:
+                s1.users.first.name.strip.downcase.gsub(" ", "-") ||
+                  s1.users.second.name.strip.downcase.gsub(" ", "-") ||
+                  s3.users.first.name.strip.downcase.gsub(" ", "-")
             },
             {
-              title: "#{s3.reason} for #{s3.users.first.name}",
-              id: s3.id,
-              start: s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
-              end: s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+              title:
+                /(#{s1.reason} for (#{s1.users.first.name}|#{s1.users.second.name}), (#{s1.users.first.name}|#{s1.users.second.name})|#{s3.reason} for #{s3.users.first.name})/,
+              id: s3.id || s1.id,
+              start:
+                s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
+                  s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+              end:
+                s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
+                  s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
               color:
-                "rgba(#{s3.users.first.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-              className: s3.users.first.name.strip.downcase.gsub(" ", "-")
+                "rgba(#{s3.users.first.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)" ||
+                  "rgba(#{s1.users.first.staff_spaces.find_by(space_id: s1.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+              className:
+                s3.users.first.name.strip.downcase.gsub(" ", "-") ||
+                  s1.users.second.name.strip.downcase.gsub(" ", "-") ||
+                  s1.users.first.name.strip.downcase.gsub(" ", "-")
             }
           ]
         )
