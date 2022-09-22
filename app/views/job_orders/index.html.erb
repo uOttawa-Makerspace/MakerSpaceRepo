@@ -5,7 +5,7 @@
     <% @drafts.each do |draft| %>
       <p><%= link_to "Order ##{draft.id}", job_order_steps_path(job_order_id: draft.id, step: 1) %></p>
     <% end %>
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <button type="button" class="btn-close" data-dismiss="alert">&times;</button>
   </div>
 <% end %>
 
