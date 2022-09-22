@@ -142,14 +142,14 @@ RSpec.describe Admin::ShiftsController, type: :controller do
 
         get :get_shifts
         expect(response).to have_http_status(:success)
-        expect(response.body).to eq(
+        expect(response.body).to include_json(
           [
             {
               title:
-                "#{s1.reason} for #{s1.users.first.name}, #{s1.users.second.name}",
+                /#{s1.reason} for (#{s1.users.first.name}|#{s1.users.second.name}), (#{s1.users.first.name}|#{s1.users.second.name})/,
               id: s1.id,
-              start: s1.start_datetime,
-              end: s1.end_datetime,
+              start: s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+              end: s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
               color:
                 "rgba(#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
               className: s1.users.first.name.strip.downcase.gsub(" ", "-")
@@ -157,37 +157,13 @@ RSpec.describe Admin::ShiftsController, type: :controller do
             {
               title: "#{s3.reason} for #{s3.users.first.name}",
               id: s3.id,
-              start: s3.start_datetime,
-              end: s3.end_datetime,
+              start: s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+              end: s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
               color:
                 "rgba(#{s3.users.first.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
               className: s3.users.first.name.strip.downcase.gsub(" ", "-")
             }
-          ].to_json
-        ).or(
-          eq(
-            [
-              {
-                title:
-                  "#{s1.reason} for #{s1.users.second.name}, #{s1.users.first.name}",
-                id: s1.id,
-                start: s1.start_datetime,
-                end: s1.end_datetime,
-                color:
-                  "rgba(#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-                className: s1.users.first.name.strip.downcase.gsub(" ", "-")
-              },
-              {
-                title: "#{s3.reason} for #{s3.users.first.name}",
-                id: s3.id,
-                start: s3.start_datetime,
-                end: s3.end_datetime,
-                color:
-                  "rgba(#{s3.users.first.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-                className: s3.users.first.name.strip.downcase.gsub(" ", "-")
-              }
-            ].to_json
-          )
+          ]
         )
       end
     end
