@@ -229,6 +229,9 @@ Rails.application.routes.draw do
       post "/edit/", as: "update_name", action: "update_name"
       put "/edit/", as: "create_sub_space", action: "create_sub_space"
       delete "/edit/:name", as: "delete_sub_space", action: "delete_sub_space"
+      patch "/edit/:name",
+            as: "change_sub_space_approval",
+            action: "change_sub_space_approval"
 
       collection do
         post :update_max_capacity

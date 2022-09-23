@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_09_12_184445) do
+ActiveRecord::Schema.define(version: 2022_09_23_170845) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -773,6 +773,7 @@ ActiveRecord::Schema.define(version: 2022_09_12_184445) do
     t.boolean "featured", default: false
     t.string "youtube_link"
     t.integer "project_proposal_id"
+    t.boolean "deleted"
     t.index ["user_id"], name: "index_repositories_on_user_id"
   end
 
@@ -866,6 +867,14 @@ ActiveRecord::Schema.define(version: 2022_09_12_184445) do
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
   end
 
+  create_table "staff_needed_calendars", force: :cascade do |t|
+    t.string "calendar_url", null: false
+    t.bigint "space_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
+  end
+
   create_table "staff_spaces", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "space_id"
@@ -908,6 +917,7 @@ ActiveRecord::Schema.define(version: 2022_09_12_184445) do
     t.bigint "space_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.boolean "approval_required", default: false
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
   end
 
@@ -987,6 +997,7 @@ ActiveRecord::Schema.define(version: 2022_09_12_184445) do
     t.boolean "confirmed", default: false
     t.bigint "space_id"
     t.datetime "last_signed_in_time"
+    t.boolean "deleted"
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
@@ -1107,6 +1118,7 @@ ActiveRecord::Schema.define(version: 2022_09_12_184445) do
   add_foreign_key "shifts", "spaces"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "staff_availabilities", "users"
+  add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"

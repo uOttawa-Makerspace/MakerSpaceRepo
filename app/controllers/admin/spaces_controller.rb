@@ -46,6 +46,22 @@ class Admin::SpacesController < AdminAreaController
     redirect_back(fallback_location: root_path)
   end
 
+  def change_sub_space_approval
+    if params[:name].present?
+      subspace =
+        SubSpace.find_by(
+          name: params[:name],
+          space: Space.find(params[:space_id])
+        )
+      subspace.update(approval_required: !subspace.approval_required)
+      subspace.save
+      flash[
+        :notice
+      ] = "Aproval for #{subspace.name} is now #{subspace.approval_required ? "manual" : "automatic"}"
+      redirect_back(fallback_location: root_path)
+    end
+  end
+
   def edit
     @space_staff_hours = SpaceStaffHour.where(space: params[:id])
     @new_training = Training.new

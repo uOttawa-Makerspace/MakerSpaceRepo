@@ -46,7 +46,14 @@ class SubSpaceBookingController < ApplicationController
     status =
       SubSpaceBookingStatus.new(
         sub_space_booking_id: @booking.id,
-        booking_status: BookingStatus::APPROVED
+        booking_status:
+          (
+            if SubSpace.find_by(name: params[:room]).approval_required
+              BookingStatus::PENDING
+            else
+              BookingStatus::APPROVED
+            end
+          )
       )
     status.save
     @booking.sub_space_booking_status_id = status.id
