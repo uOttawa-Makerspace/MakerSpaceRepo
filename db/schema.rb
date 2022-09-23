@@ -899,8 +899,8 @@ ActiveRecord::Schema.define(version: 2022_09_23_170845) do
   create_table "sub_space_bookings", force: :cascade do |t|
     t.string "name"
     t.string "description"
-    t.datetime "start"
-    t.datetime "end"
+    t.datetime "start_time"
+    t.datetime "end_time"
     t.bigint "user_id"
     t.bigint "sub_space_id"
     t.datetime "created_at", precision: 6, null: false

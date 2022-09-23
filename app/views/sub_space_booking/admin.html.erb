@@ -32,7 +32,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start.to_formatted_s(:short)    %> to <%= booking.end.to_s(:time)   %></td>
+                      <td><%= booking.start_time.to_formatted_s(:short)    %> to <%= booking.end_time.to_s(:time)   %></td>
                       <td>
                         <div class="btn-group" role="group">
                         <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
@@ -79,7 +79,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start.to_formatted_s(:short)    %> to <%= booking.end.to_s(:time)   %></td>
+                      <td><%= booking.start_time.to_formatted_s(:short)    %> to <%= booking.end_time.to_s(:time)   %></td>
                       <td>
                         <div class="btn-group" role="group">
                           <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
@@ -126,7 +126,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start.to_formatted_s(:short)    %> to <%= booking.end.to_s(:time)   %></td>
+                      <td><%= booking.start_time.to_formatted_s(:short)    %> to <%= booking.end_time.to_s(:time)   %></td>
                       <td>
                         <div class="btn-group" role="group">
                           <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>

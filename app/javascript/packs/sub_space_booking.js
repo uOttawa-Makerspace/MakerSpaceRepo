@@ -43,14 +43,16 @@ if (bookedCalendarEl) {
   function bookEvent(e) {
     let name = document.getElementById("book-name").value;
     let description = document.getElementById("book-description").value;
-    let start = start_picker.selectedDates[0];
-    let end = end_picker.selectedDates[0];
+    let start_time = start_picker.selectedDates[0];
+    let end_time = end_picker.selectedDates[0];
     let data = {
-      name: name,
-      description: description,
-      start: start,
-      end: end,
-      room: new URLSearchParams(window.location.search).get("room"),
+      sub_space_booking: {
+        name: name,
+        description: description,
+        start_time: start_time,
+        end_time: end_time,
+        room: new URLSearchParams(window.location.search).get("room"),
+      },
     };
     let url = "/sub_space_booking";
     let request = new Request(url, {
@@ -63,9 +65,27 @@ if (bookedCalendarEl) {
     fetch(request)
       .then((response) => response.text())
       .then((data) => {
-        closeModal();
-        Turbolinks.clearCache();
-        Turbolinks.visit(window.location.href);
+        try {
+          let errors = JSON.parse(data)["errors"];
+          for (let error of errors) {
+            let errorInput = error.split(" ")[0];
+            let errorText = error.split(" ").slice(1).join(" ");
+            let feedback = document.createElement("div");
+            feedback.classList.add("invalid-feedback");
+            feedback.innerText = errorText;
+            let errorEl = document.getElementById(
+              "book-" + errorInput.toLowerCase()
+            );
+            if (errorEl && !errorEl.classList.contains("is-invalid")) {
+              errorEl.classList.add("is-invalid");
+              errorEl.after(feedback);
+            }
+          }
+        } catch (e) {
+          closeModal();
+          Turbolinks.clearCache();
+          Turbolinks.visit(window.location.href);
+        }
       })
       .catch((error) => {
         console.log(error);

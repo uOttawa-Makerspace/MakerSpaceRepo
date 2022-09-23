@@ -43,7 +43,9 @@ class Admin::SpacesController < AdminAreaController
       end
     end
     @sub_spaces = SubSpace.where(space: Space.find(params[:space_id]))
-    redirect_back(fallback_location: root_path)
+    redirect_back(
+      fallback_location: edit_admin_space_path(id: params[:space_id])
+    )
   end
 
   def change_sub_space_approval
@@ -58,7 +60,9 @@ class Admin::SpacesController < AdminAreaController
       flash[
         :notice
       ] = "Aproval for #{subspace.name} is now #{subspace.approval_required ? "manual" : "automatic"}"
-      redirect_back(fallback_location: root_path)
+      redirect_back(
+        fallback_location: edit_admin_space_path(id: params[:space_id])
+      )
     end
   end
 

@@ -23,8 +23,8 @@ class SubSpaceBookingController < ApplicationController
               id:
                 "booking_" + booking.id.to_s + "_" + booking.sub_space_id.to_s,
               title: title,
-              start: booking.start,
-              end: booking.end,
+              start: booking.start_time,
+              end: booking.end_time,
               color: color
             }
             bookings << event
@@ -36,19 +36,25 @@ class SubSpaceBookingController < ApplicationController
 
   def create
     @booking = SubSpaceBooking.new(sub_space_booking_params)
-    @booking.sub_space_id = SubSpace.where(name: params[:room]).first.id
+    @booking.sub_space_id =
+      SubSpace.where(name: params[:sub_space_booking][:room]).first.id
     @booking.user_id = current_user.id
-    if @booking.save
-      flash[:notice] = "Booking for #{params[:room]} created successfully."
-    else
-      flash[:alert] = "Booking for #{params[:room]} failed to create."
+
+    unless @booking.save
+      render json: {
+               errors: @booking.errors.full_messages
+             },
+             status: :unprocessable_entity
+      return
     end
     status =
       SubSpaceBookingStatus.new(
         sub_space_booking_id: @booking.id,
         booking_status:
           (
-            if SubSpace.find_by(name: params[:room]).approval_required
+            if SubSpace.find_by(
+                 name: params[:sub_space_booking][:room]
+               ).approval_required
               BookingStatus::PENDING
             else
               BookingStatus::APPROVED
@@ -58,6 +64,9 @@ class SubSpaceBookingController < ApplicationController
     status.save
     @booking.sub_space_booking_status_id = status.id
     @booking.save
+    flash[
+      :notice
+    ] = "Booking for #{params[:sub_space_booking][:room]} created successfully."
   end
 
   def admin
@@ -71,9 +80,11 @@ class SubSpaceBookingController < ApplicationController
   def approve
     unless current_user.admin? || current_user.staff?
       redirect_to root_path, alert: "You are not authorized to view this page."
+      return
     end
+
     booking = SubSpaceBookingStatus.find(params[:sub_space_booking_id])
-    booking.booking_status_id = BookingStatus::APPROVED.id
+    booking.booking_status = BookingStatus::APPROVED
     booking.save
     redirect_to admin_sub_space_booking_index_path,
                 notice:
@@ -82,11 +93,13 @@ class SubSpaceBookingController < ApplicationController
 
   def decline
     unless current_user.admin? || current_user.staff?
-      flash[:alert] = "You are not authorized to view this page."
-      redirect_to root_path
+      return(
+        redirect_to root_path,
+                    alert: "You are not authorized to view this page."
+      )
     end
     booking = SubSpaceBookingStatus.find(params[:sub_space_booking_id])
-    booking.booking_status_id = BookingStatus::DECLINED.id
+    booking.booking_status = BookingStatus::DECLINED
     booking.save
     redirect_to admin_sub_space_booking_index_path,
                 notice:
@@ -94,6 +107,11 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def sub_space_booking_params
-    params.require(:sub_space_booking).permit(:start, :end, :name, :description)
+    params.require(:sub_space_booking).permit(
+      :start_time,
+      :end_time,
+      :name,
+      :description
+    )
   end
 end

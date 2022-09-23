@@ -125,4 +125,61 @@ RSpec.describe Admin::SpacesController, type: :controller do
       end
     end
   end
+
+  describe "PUT /create_sub_space" do
+    context "create a sub space" do
+      it "should create a sub space" do
+        sub_space_params = FactoryBot.attributes_for(:sub_space)
+        expect {
+          put :create_sub_space,
+              params: {
+                space_id: sub_space_params[:space].id,
+                name: sub_space_params[:name]
+              }
+        }.to change(SubSpace, :count).by(1)
+        expect(response).to have_http_status(302)
+        expect(flash[:notice]).to eq("Sub Space created!")
+      end
+
+      it "should fail creating a sub space" do
+        space = create(:space)
+        expect {
+          put :create_sub_space, params: { space_id: space.id, name: "" }
+        }.to change(SubSpace, :count).by(0)
+        expect(flash[:alert]).to eq("Please enter a name for the sub space")
+      end
+    end
+  end
+  describe "DELETE /delete_sub_space" do
+    context "destroy sub space" do
+      it "should delete the sub space" do
+        sub_space = create(:sub_space)
+        space = sub_space.space
+        expect {
+          delete :delete_sub_space,
+                 params: {
+                   space_id: sub_space.space.id,
+                   name: sub_space.name
+                 }
+        }.to change(SubSpace, :count).by(-1)
+        expect(flash[:notice]).to eq("Sub Space deleted!")
+        expect(response).to redirect_to edit_admin_space_path(id: space.id)
+      end
+    end
+  end
+  describe "PATCH/change_sub_space_approval" do
+    context "change sub space approval" do
+      it "should change the sub space approval" do
+        sub_space = create(:sub_space)
+        space = sub_space.space
+        patch :change_sub_space_approval,
+              params: {
+                space_id: sub_space.space.id,
+                name: sub_space.name
+              }
+        expect(response).to have_http_status(302)
+        expect(SubSpace.last.approval_required).to eq(true)
+      end
+    end
+  end
 end
