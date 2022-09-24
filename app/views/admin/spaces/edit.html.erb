@@ -173,6 +173,12 @@
   <h3>New Sub Space</h3>
   <%= form_for admin_spaces_path, action: :create_sub_space, method: :put do |f| %>
     <div class="mb-3 input-group">
+      <div class="input-group-text">
+        <div class="form-check form-check-inline">
+        <%= f.check_box :approval_required, class:"form-check-input" %>
+        <%= label_tag :approval_required, "Require Approval", class:"form-check-label" %>
+        </div>
+      </div>
       <%= text_field_tag :name, "", class: "form-control", placeholder:"Subspace Name" %>
       <%= hidden_field_tag :space_id, @space.id %>
       <%= f.submit "Create new sub space", class: "btn btn-primary" %>

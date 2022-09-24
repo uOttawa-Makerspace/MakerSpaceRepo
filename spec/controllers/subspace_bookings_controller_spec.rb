@@ -101,13 +101,11 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       it "should return 204 and create a booking" do
         post :create,
              params: {
-               sub_space_booking: {
-                 room: @subspace.name,
-                 start_time: DateTime.now,
-                 end_time: DateTime.now + 1.hour,
-                 name: Faker::Lorem.word,
-                 description: Faker::Lorem.sentence
-               }
+               room: @subspace.name,
+               start_time: DateTime.now,
+               end_time: DateTime.now + 1.hour,
+               name: Faker::Lorem.word,
+               description: Faker::Lorem.sentence
              }
         expect(response).to have_http_status(204)
         expect(flash[:notice]).to eq(
@@ -120,12 +118,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       it "should return 422 and notify the user they need to enter a name" do
         post :create,
              params: {
-               sub_space_booking: {
-                 room: @subspace.name,
-                 start_time: DateTime.now,
-                 end_time: DateTime.now + 1.hour,
-                 description: Faker::Lorem.sentence
-               }
+               room: @subspace.name,
+               start_time: DateTime.now,
+               end_time: DateTime.now + 1.hour,
+               description: Faker::Lorem.sentence
              }
         expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
@@ -134,12 +130,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       it "should return 422 and notify the user they need to enter a description" do
         post :create,
              params: {
-               sub_space_booking: {
-                 room: @subspace.name,
-                 start_time: DateTime.now,
-                 end_time: DateTime.now + 1.hour,
-                 name: Faker::Lorem.word
-               }
+               room: @subspace.name,
+               start_time: DateTime.now,
+               end_time: DateTime.now + 1.hour,
+               name: Faker::Lorem.word
              }
         expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
@@ -148,12 +142,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       it "should return 422 and notify the user they need to enter a start time" do
         post :create,
              params: {
-               sub_space_booking: {
-                 room: @subspace.name,
-                 end_time: DateTime.now + 1.hour,
-                 name: Faker::Lorem.word,
-                 description: Faker::Lorem.sentence
-               }
+               room: @subspace.name,
+               end_time: DateTime.now + 1.hour,
+               name: Faker::Lorem.word,
+               description: Faker::Lorem.sentence
              }
         expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
@@ -162,12 +154,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       it "should return 422 and notify the user they need to enter a end time" do
         post :create,
              params: {
-               sub_space_booking: {
-                 room: @subspace.name,
-                 start_time: DateTime.now,
-                 name: Faker::Lorem.word,
-                 description: Faker::Lorem.sentence
-               }
+               room: @subspace.name,
+               start_time: DateTime.now,
+               name: Faker::Lorem.word,
+               description: Faker::Lorem.sentence
              }
         expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)

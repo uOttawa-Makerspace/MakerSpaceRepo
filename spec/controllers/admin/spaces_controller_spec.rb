@@ -134,7 +134,10 @@ RSpec.describe Admin::SpacesController, type: :controller do
           put :create_sub_space,
               params: {
                 space_id: sub_space_params[:space].id,
-                name: sub_space_params[:name]
+                name: sub_space_params[:name],
+                "/admin/spaces": {
+                  approval_required: 0
+                }
               }
         }.to change(SubSpace, :count).by(1)
         expect(response).to have_http_status(302)
@@ -172,6 +175,9 @@ RSpec.describe Admin::SpacesController, type: :controller do
       it "should change the sub space approval" do
         sub_space = create(:sub_space)
         space = sub_space.space
+        contact =
+          ContactInfo.new(space_id: space.id, email: Faker::Internet.email)
+        contact.save
         patch :change_sub_space_approval,
               params: {
                 space_id: sub_space.space.id,

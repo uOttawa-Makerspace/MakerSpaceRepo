@@ -23,7 +23,14 @@ class Admin::SpacesController < AdminAreaController
 
   def create_sub_space
     if params[:name].present?
-      SubSpace.create(name: params[:name], space: Space.find(params[:space_id]))
+      sub_space =
+        SubSpace.create(
+          name: params[:name],
+          space: Space.find(params[:space_id])
+        )
+      sub_space.approval_required =
+        params["/admin/spaces"][:approval_required] == "1" ? true : false
+      sub_space.save
       flash[:notice] = "Sub Space created!"
     else
       flash[:alert] = "Please enter a name for the sub space"
@@ -55,6 +62,13 @@ class Admin::SpacesController < AdminAreaController
           name: params[:name],
           space: Space.find(params[:space_id])
         )
+      if ContactInfo.where(space_id: subspace.space.id).blank?
+        flash[
+          :alert
+        ] = "Please add contact information for the associated space disabling automatic booking."
+        redirect_back(fallback_location: root_path)
+        return
+      end
       subspace.update(approval_required: !subspace.approval_required)
       subspace.save
       flash[
