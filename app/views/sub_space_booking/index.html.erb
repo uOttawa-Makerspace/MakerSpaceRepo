@@ -1,14 +1,14 @@
 <section>
   <div class="navbar navbar-expand-xl navbar-light bg-light w-100">
-  <div class="container-fluid">
+  <div class="container-fluid justify-content-start ">
   <a class="navbar-brand" href="<%= sub_space_booking_index_path %>">Maker<strong>Room</strong></a>
 
     <% Space.all.each do |space| %>
       <% subspaces = SubSpace.where(space_id: space.id) %>
       <% if subspaces.length == 1 %>
-        <div class="nav-item"><%=  link_to(subspaces.last.name, sub_space_booking_index_path(room:subspaces.last.name), class:"nav-link")  %></div>
+        <div class="nav-item ms-4"><%=  link_to(subspaces.last.name, sub_space_booking_index_path(room:subspaces.last.name), class:"nav-link")  %></div>
       <%  else  %>
-        <div class="nav-item dropdown">
+        <div class="nav-item dropdown ms-4">
           <a class="nav-link dropdown-toggle" role="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%=  space.name  %>
           </a>
