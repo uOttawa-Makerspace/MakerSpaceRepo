@@ -7,6 +7,10 @@ class Admin::ShiftsController < AdminAreaController
   before_action :set_shifts, only: %i[edit update destroy]
 
   def index
+    @staff =
+      User.where(
+        id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
+      ).pluck(:name, :id)
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @space_id = @user.space_id || Space.first.id
     @colors = []
@@ -211,18 +215,19 @@ class Admin::ShiftsController < AdminAreaController
     @space_id = params[:space_id] if params[:space_id].present?
     StaffAvailability
       .where(user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
-      .each do |staff|
+      .each do |sa|
         event = {}
-        event["title"] = "#{staff.user.name} is unavailable"
-        event["id"] = staff.user.id
-        event["daysOfWeek"] = [staff.day]
-        event["startTime"] = staff.start_time.strftime("%H:%M")
-        event["endTime"] = staff.end_time.strftime("%H:%M")
+        event["title"] = "#{sa.user.name} is unavailable"
+        event["id"] = sa.id
+        event["daysOfWeek"] = [sa.day]
+        event["startTime"] = sa.start_time.strftime("%H:%M")
+        event["endTime"] = sa.end_time.strftime("%H:%M")
         event["color"] = hex_color_to_rgba(
-          staff.user.staff_spaces.find_by(space_id: @space_id).color,
+          sa.user.staff_spaces.find_by(space_id: @space_id).color,
           opacity
         )
-        event["className"] = staff.user.name.strip.downcase.gsub(" ", "-")
+        event["userId"] = sa.user.id
+        event["className"] = sa.user.name.strip.downcase.gsub(" ", "-")
         staff_availabilities << event
       end
 

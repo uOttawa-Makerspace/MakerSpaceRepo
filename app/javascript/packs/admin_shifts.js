@@ -5,18 +5,50 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import googleCalendarPlugin from "@fullcalendar/google-calendar";
 
-let calendarEl = document.getElementById("calendar");
-let modal = document.getElementById("shiftModal");
-let start_datetime = document.getElementById("start-datetime");
-let end_datetime = document.getElementById("end-datetime");
-let modalSave = document.getElementById("shiftSave");
-let modalUserId = document.getElementById("modalUserId");
-let modalReason = document.getElementById("modalReason");
+// Modal
+const shiftModal = new bootstrap.Modal(document.getElementById("shiftModal"));
+
+// Show
 let sourceShow = {
   google: "none",
   transparent: "none",
   staffNeeded: "none",
 };
+
+// Inputs
+const startDateTimeInput = document.getElementById("start-datetime");
+const endDateTimeInput = document.getElementById("end-datetime");
+const userIdInput = document.getElementById("user-id");
+const reasonInput = document.getElementById("reason");
+const modalSave = document.getElementById("modal-save");
+
+modalSave.addEventListener("click", () => {
+  createCalendarEvent();
+});
+
+const startPicker = startDateTimeInput.flatpickr({
+  enableTime: true,
+  time_24hr: true,
+  altInput: true,
+  altFormat: "F j, Y at H:i",
+});
+
+const endPicker = endDateTimeInput.flatpickr({
+  enableTime: true,
+  time_24hr: true,
+  altInput: true,
+  altFormat: "F j, Y at H:i",
+});
+
+const newShiftUserSelect = new TomSelect("#user-id", {
+  maxItems: 3,
+  placeholder: "Select users",
+  search: true,
+  plugins: ["remove_button"],
+});
+
+// Calendar Config
+const calendarEl = document.getElementById("calendar");
 
 let calendar;
 
@@ -40,7 +72,7 @@ fetch("/admin/shifts/get_external_staff_needed", {
         addNewEvent: {
           text: "+",
           click: () => {
-            createEvent();
+            openModal();
           },
         },
       },
@@ -101,7 +133,7 @@ fetch("/admin/shifts/get_external_staff_needed", {
         }),
       ],
       select: (arg) => {
-        createEvent(arg);
+        openModal(arg);
       },
       eventClick: (arg) => {
         if (arg.event.source.id === "shifts") {
@@ -132,10 +164,7 @@ fetch("/admin/shifts/get_external_staff_needed", {
     calendar.render();
   });
 
-let createEvent = (arg = undefined) => {
-  openModal(arg);
-};
-
+// Refresh pending Shifts
 const refreshPendingShifts = () => {
   fetch("/admin/shifts/pending_shifts?format=js", {
     method: "GET",
@@ -149,9 +178,10 @@ const refreshPendingShifts = () => {
     });
 };
 
-let createCalendarEvent = () => {
+// Calendar CRUD
+const createCalendarEvent = () => {
   let selected_users = [];
-  for (let option of modalUserId.options) {
+  for (let option of userIdInput.options) {
     if (option.selected) {
       selected_users.push(option.value);
     }
@@ -163,11 +193,11 @@ let createCalendarEvent = () => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      start_datetime: start_datetime.value,
-      end_datetime: end_datetime.value,
+      start_datetime: startDateTimeInput.value,
+      end_datetime: endDateTimeInput.value,
       format: "json",
       user_id: selected_users,
-      reason: modalReason.value,
+      reason: reasonInput.value,
     }),
   })
     .then((response) => response.json())
@@ -184,8 +214,8 @@ let createCalendarEvent = () => {
         },
         "shifts"
       );
+      shiftModal.hide();
       calendar.unselect();
-      closeModal();
       refreshPendingShifts();
     })
     .catch((error) => {
@@ -193,32 +223,16 @@ let createCalendarEvent = () => {
     });
 };
 
-let openModal = (arg) => {
-  modal.style.display = "block";
-  modal.classList.add("show");
-
+const openModal = (arg) => {
   if (arg !== undefined && arg !== null) {
-    start_picker.setDate(Date.parse(arg.startStr));
-    end_picker.setDate(Date.parse(arg.endStr));
+    startPicker.setDate(Date.parse(arg.startStr));
+    endPicker.setDate(Date.parse(arg.endStr));
   }
-};
-let closeModal = () => {
-  modalReason.value = "Shift";
-  newShiftUserSelect.clear();
-  start_picker.clear();
-  end_picker.clear();
-  modal.style.display = "none";
-  modal.classList.remove("show");
-  modalSave.removeEventListener("click", createCalendarEvent);
+
+  shiftModal.show();
 };
 
-window.onclick = function (event) {
-  if (event.target === modal) {
-    closeModal();
-  }
-};
-
-let modifyEvent = (arg) => {
+const modifyEvent = (arg) => {
   fetch("/admin/shifts/" + arg.event.id, {
     method: "PUT",
     headers: {
@@ -242,7 +256,7 @@ let modifyEvent = (arg) => {
     });
 };
 
-let removeEvent = (arg) => {
+const removeEvent = (arg) => {
   if (confirm("Are you sure you want to delete this event?")) {
     fetch("/admin/shifts/" + arg.event.id, {
       method: "DELETE",
@@ -266,6 +280,7 @@ let removeEvent = (arg) => {
   }
 };
 
+// Hide/Show Events
 const hideShowEvents = (eventName) => {
   let allEvents = calendar.getEvents();
   for (let ev of allEvents) {
@@ -286,10 +301,6 @@ const hideShowEvents = (eventName) => {
   }
 };
 
-[...document.getElementsByClassName("shift-cancel")].forEach((el) => {
-  el.addEventListener("click", closeModal);
-});
-
 document
   .getElementById("hide-show-unavailabilities")
   .addEventListener("click", () => {
@@ -308,28 +319,11 @@ document
     hideShowEvents("staffNeeded");
   });
 
-const start_picker = start_datetime.flatpickr({
-  enableTime: true,
-  time_24hr: true,
-  altInput: true,
-  altFormat: "F j, Y at H:i",
-});
-
-const end_picker = end_datetime.flatpickr({
-  enableTime: true,
-  time_24hr: true,
-  altInput: true,
-  altFormat: "F j, Y at H:i",
-});
-
-modalSave.addEventListener("click", () => {
-  createCalendarEvent();
-});
-
+// Toggle Staff Visibility
 window.toggleVisibility = (id) => {
   let allEvents = calendar.getEvents();
   for (let ev of allEvents) {
-    if (ev.id == id) {
+    if (ev.extendedProps.userId === id) {
       ev.setProp(
         "display",
         document.getElementById(`user-${id}`).checked ? "block" : "none"
@@ -338,13 +332,7 @@ window.toggleVisibility = (id) => {
   }
 };
 
-const newShiftUserSelect = new TomSelect("#modalUserId", {
-  maxItems: 3,
-  placeholder: "Select users",
-  search: true,
-  plugins: ["remove_button"],
-});
-
+// Update the staff's color
 window.updateColor = (id, color) => {
   fetch("/admin/shifts/update_color", {
     method: "POST",

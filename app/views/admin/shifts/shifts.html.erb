@@ -57,8 +57,8 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel">New Shift</h5>
-          <button type="button" class="btn-close shift-cancel" data-bs-dismiss="modal"></button>
+          <h5 class="modal-title">New Shift</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3 text-center">
@@ -69,10 +69,10 @@
             <input id="end-datetime" autocomplete="false" class="form-control">
             <br>
             <%= label_tag :user_id, "User to select" %>
-            <%= select_tag :user_id, options_for_select(@staff), { id: 'modalUserId', autocomplete: 'off', multiple: true, required: true} %>
+            <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true} %>
             <br>
-            <label for="modal-reason">Reason</label>
-            <select id="modalReason" class="form-select">
+            <label for="reason">Reason</label>
+            <select id="reason" class="form-select">
               <option value="Shift">Shift</option>
               <option value="Training">Training</option>
               <option value="Meeting">Meeting</option>
@@ -82,8 +82,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary shift-cancel" data-bs-dismiss="modal">Close</button>
-          <button type="button" id="shiftSave" class="btn btn-primary">Save changes</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" id="modal-save" class="btn btn-primary">Save changes</button>
         </div>
       </div>
     </div>
