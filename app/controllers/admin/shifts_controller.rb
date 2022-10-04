@@ -293,7 +293,6 @@ class Admin::ShiftsController < AdminAreaController
 
   def shift_suggestions
     weekday = params[:day]
-    # Time format is 24 hour, HH:MM
     start_time = params[:start]
     end_time = params[:end]
     @suggestions = []
