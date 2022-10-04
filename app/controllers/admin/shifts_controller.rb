@@ -7,13 +7,25 @@ class Admin::ShiftsController < AdminAreaController
   before_action :set_shifts, only: %i[edit update destroy]
 
   def index
+    @staff =
+      User.where(
+        id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
+      ).pluck(:name, :id)
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
-    @colors = {}
     @space_id = @user.space_id || Space.first.id
+    @colors = []
 
     StaffSpace
+      .joins(:user)
       .where(space_id: @space_id)
-      .each { |staff| @colors[staff.user.name] = [staff.id, staff.color] }
+      .order("users.name")
+      .each do |staff|
+        @colors << {
+          id: staff.user.id,
+          name: staff.user.name,
+          color: staff.color
+        }
+      end
   end
 
   def shifts
@@ -22,11 +34,35 @@ class Admin::ShiftsController < AdminAreaController
         id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
       ).pluck(:name, :id)
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
-    @colors = {}
+    @colors = []
 
     StaffSpace
+      .joins(:user)
       .where(space_id: @space_id)
-      .each { |staff| @colors[staff.user.name] = [staff.id, staff.color] }
+      .order("users.name")
+      .each do |staff|
+        @colors << {
+          id: staff.user.id,
+          name: staff.user.name,
+          color: staff.color
+        }
+      end
+  end
+
+  def pending_shifts
+    render partial: "admin/shifts/pending_shifts"
+  end
+
+  def confirm_shifts
+    Shift.where(space_id: @user.space_id, pending: true).update(pending: false)
+    redirect_to shifts_admin_shifts_path,
+                notice: "Shifts have been successfully confirmed!"
+  end
+
+  def clear_pending_shifts
+    Shift.where(space_id: @user.space_id, pending: true).destroy_all
+    redirect_to shifts_admin_shifts_path,
+                notice: "Shifts have been successfully cleared!"
   end
 
   def create
@@ -67,7 +103,11 @@ class Admin::ShiftsController < AdminAreaController
           render json: {
                    id: @shift.id,
                    name: @shift.return_event_title,
-                   color: @shift.color(@space_id),
+                   color:
+                     hex_color_to_rgba(
+                       @shift.color(@space_id),
+                       @shift.pending? ? 0.7 : 1
+                     ),
                    start: @shift.start_datetime,
                    end: @shift.end_datetime,
                    className:
@@ -142,9 +182,16 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def update_color
-    if params[:id].present? && StaffSpace.find(params[:id]).present? &&
-         params[:color].present?
-      staff_space = StaffSpace.find(params[:id])
+    if params[:user_id].present? &&
+         StaffSpace.where(
+           user_id: params[:user_id],
+           space_id: @user.space_id
+         ).present? && params[:color].present?
+      staff_space =
+        StaffSpace.where(
+          user_id: params[:user_id],
+          space_id: @user.space_id
+        ).first
       if staff_space.update(color: params[:color])
         flash[:notice] = "Color updated successfully"
       else
@@ -153,9 +200,20 @@ class Admin::ShiftsController < AdminAreaController
     else
       flash[:alert] = "An error occurred, try again later."
     end
-    redirect_to(
-      (params[:shifts].present? ? shifts_admin_shifts_path : admin_shifts_path)
-    )
+    respond_to do |format|
+      format.html do
+        redirect_to(
+          (
+            if params[:shifts].present?
+              shifts_admin_shifts_path
+            else
+              admin_shifts_path
+            end
+          )
+        )
+      end
+      format.json { render json: { status: :ok } }
+    end
   end
 
   def get_availabilities
@@ -164,18 +222,19 @@ class Admin::ShiftsController < AdminAreaController
     @space_id = params[:space_id] if params[:space_id].present?
     StaffAvailability
       .where(user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
-      .each do |staff|
+      .each do |sa|
         event = {}
-        event["title"] = "#{staff.user.name} is unavailable"
-        event["id"] = staff.id
-        event["daysOfWeek"] = [staff.day]
-        event["startTime"] = staff.start_time.strftime("%H:%M")
-        event["endTime"] = staff.end_time.strftime("%H:%M")
+        event["title"] = "#{sa.user.name} is unavailable"
+        event["id"] = sa.id
+        event["daysOfWeek"] = [sa.day]
+        event["startTime"] = sa.start_time.strftime("%H:%M")
+        event["endTime"] = sa.end_time.strftime("%H:%M")
         event["color"] = hex_color_to_rgba(
-          staff.user.staff_spaces.find_by(space_id: @space_id).color,
+          sa.user.staff_spaces.find_by(space_id: @space_id).color,
           opacity
         )
-        event["className"] = staff.user.name.strip.downcase.gsub(" ", "-")
+        event["userId"] = sa.user.id
+        event["className"] = sa.user.name.strip.downcase.gsub(" ", "-")
         staff_availabilities << event
       end
 
@@ -197,11 +256,11 @@ class Admin::ShiftsController < AdminAreaController
         event["id"] = shift.id
         event["start"] = shift.start_datetime
         event["end"] = shift.end_datetime
-        event["color"] = hex_color_to_rgba(shift.color(@space_id), 1)
-        event["className"] = shift.users.first.name.strip.downcase.gsub(
-          " ",
-          "-"
+        event["color"] = hex_color_to_rgba(
+          shift.color(@space_id),
+          shift.pending? ? 0.7 : 1
         )
+        event["className"] = "user-#{shift.users.first.id}"
         shifts << event
       end
 
@@ -227,7 +286,9 @@ class Admin::ShiftsController < AdminAreaController
 
   def get_external_staff_needed
     render json:
-             StaffNeededCalendar.where(space_id: @space_id).pluck(:calendar_url)
+             StaffNeededCalendar.where(space_id: @space_id).as_json(
+               only: %i[calendar_url color]
+             )
   end
 
   private

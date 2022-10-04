@@ -74,6 +74,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               endTime: sa1.end_time.strftime("%H:%M"),
               color:
                 "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+              userId: sa1.user.id,
               className: sa1.user.name.strip.downcase.gsub(" ", "-")
             },
             {
@@ -84,6 +85,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               endTime: sa2.end_time.strftime("%H:%M"),
               color:
                 "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+              userId: sa2.user.id,
               className: sa2.user.name.strip.downcase.gsub(" ", "-")
             }
           ].to_json
@@ -105,6 +107,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               endTime: sa1.end_time.strftime("%H:%M"),
               color:
                 "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
+              userId: sa1.user.id,
               className: sa1.user.name.strip.downcase.gsub(" ", "-")
             },
             {
@@ -115,6 +118,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               endTime: sa2.end_time.strftime("%H:%M"),
               color:
                 "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
+              userId: sa2.user.id,
               className: sa2.user.name.strip.downcase.gsub(" ", "-")
             }
           ].to_json
@@ -127,7 +131,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
     context "get shifts" do
       it "should get all the shifts from the staffs" do
         space = create(:space)
-        s1 = create(:shift, space_id: space.id)
+        s1 = create(:shift, space_id: space.id, pending: false)
         s2 = create(:shift)
         s3 = create(:shift, space_id: space.id)
 
@@ -152,7 +156,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               end: s1.end_datetime,
               color:
                 "rgba(#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-              className: s1.users.first.name.strip.downcase.gsub(" ", "-")
+              className: "user-#{s1.users.first.id}"
             },
             {
               title: "#{s3.reason} for #{s3.users.first.name}",
@@ -160,11 +164,33 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               start: s3.start_datetime,
               end: s3.end_datetime,
               color:
-                "rgba(#{s3.users.first.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-              className: s3.users.first.name.strip.downcase.gsub(" ", "-")
+                "rgba(#{s3.users.first.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.7)",
+              className: "user-#{s3.users.first.id}"
             }
           ].to_json
-        )
+        ).or eq(
+               [
+                 {
+                   title:
+                     "#{s1.reason} for #{s1.users.second.name}, #{s1.users.first.name}",
+                   id: s1.id,
+                   start: s1.start_datetime,
+                   end: s1.end_datetime,
+                   color:
+                     "rgba(#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                   className: "user-#{s1.users.first.id}"
+                 },
+                 {
+                   title: "#{s3.reason} for #{s3.users.first.name}",
+                   id: s3.id,
+                   start: s3.start_datetime,
+                   end: s3.end_datetime,
+                   color:
+                     "rgba(#{s3.users.first.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.7)",
+                   className: "user-#{s3.users.first.id}"
+                 }
+               ].to_json
+             )
       end
     end
   end

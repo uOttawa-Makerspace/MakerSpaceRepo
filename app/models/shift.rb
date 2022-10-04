@@ -48,10 +48,12 @@ class Shift < ApplicationRecord
   end
 
   def set_or_update_google_event
-    if self.google_event_id.present?
-      Shift.update_event(self).id
-    else
-      self.google_event_id = Shift.create_event(self).id
+    unless self.pending
+      if self.google_event_id.present?
+        Shift.update_event(self).id
+      else
+        self.google_event_id = Shift.create_event(self).id
+      end
     end
   end
 
