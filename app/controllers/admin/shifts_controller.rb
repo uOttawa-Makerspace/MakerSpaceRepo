@@ -182,9 +182,16 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def update_color
-    if params[:id].present? && StaffSpace.find(params[:id]).present? &&
-         params[:color].present?
-      staff_space = StaffSpace.find(params[:id])
+    if params[:user_id].present? &&
+         StaffSpace.where(
+           user_id: params[:user_id],
+           space_id: @user.space_id
+         ).present? && params[:color].present?
+      staff_space =
+        StaffSpace.where(
+          user_id: params[:user_id],
+          space_id: @user.space_id
+        ).first
       if staff_space.update(color: params[:color])
         flash[:notice] = "Color updated successfully"
       else

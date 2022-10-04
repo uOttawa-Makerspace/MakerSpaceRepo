@@ -333,7 +333,7 @@ window.toggleVisibility = (id) => {
 };
 
 // Update the staff's color
-window.updateColor = (id, color) => {
+window.updateColor = (userId, color) => {
   fetch("/admin/shifts/update_color", {
     method: "POST",
     headers: {
@@ -341,16 +341,14 @@ window.updateColor = (id, color) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      id: id,
+      user_id: userId,
       color: color,
       format: "json",
     }),
   })
     .then((response) => {
       if (response.ok) {
-        const toast = new bootstrap.Toast(
-          document.getElementById("toast-color-update-success")
-        );
+        Turbolinks.visit(window.location, { action: "replace" });
         toast.show();
       } else {
         const toast = new bootstrap.Toast(
