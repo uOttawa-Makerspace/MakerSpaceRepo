@@ -204,7 +204,7 @@ const populateUsers = (arg) => {
     "Sat,": 6,
   }[startDate.toUTCString().split(" ")[0]];
   fetch(
-    `/admin/shifts/shift_suggestions?start=${startHour}:${startMinute}&start=${endHour}:${endMinute}&day=${weekDayInt}`,
+    `/admin/shifts/shift_suggestions?start=${startHour}:${startMinute}&end=${endHour}:${endMinute}&day=${weekDayInt}`,
     {
       method: "GET",
       headers: {
