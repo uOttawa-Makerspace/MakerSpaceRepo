@@ -8308,6 +8308,11 @@ syntax-error@^1.1.1:
   dependencies:
     acorn-node "^1.2.0"
 
+table-sort-js@^1.8.0:
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/table-sort-js/-/table-sort-js-1.8.0.tgz#b50786f7800e0c24a9beff7ef74c3693356de41e"
+  integrity sha512-YBU+6jOSXq9FnK+1ZSEYlpyuDtkUW5RRTnLjdPcDsc+JvpnSigysI5QWkygBQ7epkAN5pc3NcxBB8zsn1bqJ2A==
+
 tapable@^1.0.0, tapable@^1.1.3:
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/tapable/-/tapable-1.1.3.tgz#a1fccc06b58db61fd7a45da2da44f5f3a3e67ba2"

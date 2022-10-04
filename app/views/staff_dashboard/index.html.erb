@@ -34,40 +34,32 @@
       <div class="container text-center mx-auto">
         <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary mx-auto text-center' %>
       </div>
-      <table class="staff-users-table text-center mb-5 table table-striped" >          
+      <table class="staff-users-table text-center mb-5 table table-striped table-sort table-arrows">
         <thead class="table-primary">
           <tr>
-            <th class="name-header">Name
-              <span onclick="sortTable('staff-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="email-header">Email
-              <span onclick="sortTable('staff-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="name-header">Name</th>
+            <th class="email-header">Email</th>
             <th class="name-header">Flagged?</th>
-            <th class="certifications-header">Certifications in <%= @space.name %>
-              <span onclick="sortTable('staff-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="email-header"> # of visits <br> (Past 2
-              months)<span onclick="sortTable('staff-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="last-seen-header">Last Seen
-              <span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="action-header">Sign Out of <%= @space.name.capitalize %></th>
+            <th class="certifications-header">Certifications in <%= @space.name %></th>
+            <th class="email-header"> # of visits <br> (Past 2 months)</th>
+            <th class="last-seen-header">Last Seen</th>
+            <th class="action-header disable-sort">Sign Out of <%= @space.name.capitalize %></th>
           </tr>
         </thead>
 
-        <%=render partial:"signed_in_table", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
+        <%= render partial:"signed_in_table", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
       </table>
     </div>
 
     <div class="table-responsive">
       <p class="text-center">Users recently signed out of <%= @space.name %></p>
-      <table class="staff-recent-users-table text-center mb-5 table table-striped">
+      <table class="staff-recent-users-table text-center mb-5 table table-striped table-sort table-arrows">
         <thead class="table-primary">
           <tr>
-            <th class="name-header">Name
-              <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="email-header">Email
-              <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="last-seen-header">Last Seen
-              <span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="action-header"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
+            <th class="name-header">Name</th>
+            <th class="email-header">Email</th>
+            <th class="last-seen-header">Last Seen</th>
+            <th class="action-header disable-sort"><%=fa_icon('check') %>&nbsp; TO SIGN IN <br> <%=fa_icon('times') %>&nbsp; TO SIGN OUT</th>
           </tr>
         </thead>
         <%= render partial:"signed_out_table", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
@@ -76,14 +68,12 @@
     <br>
     <div class="table-responsive">
       <p class="text-center">Newly signed up users on Maker<strong>Repo</strong></p>
-      <table class="text-center table table-striped staff-newly-signed-up-users-table mb-5">
+      <table class="text-center table table-striped staff-newly-signed-up-users-table mb-5 table-sort table-arrows">
         <thead class="table-primary">
           <tr>
-            <th class="name-header">Name
-              <span onclick="sortTable('staff-recent-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="email-header">Email
-              <span onclick="sortTable('staff-recent-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="action-header">Sign In To <%= @space.name.capitalize %></span></th>
+            <th class="name-header">Name</th>
+            <th class="email-header">Email</th>
+            <th class="action-header disable-sort">Sign In To <%= @space.name.capitalize %></span></th>
           </tr>
         </thead>
         <%= render partial:"newly_signed_up", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>
@@ -92,4 +82,5 @@
     <br />
   </div>
 </section>
+
 <%= javascript_pack_tag 'staff_dashboard', 'data-turbolinks-track': 'reload' %>

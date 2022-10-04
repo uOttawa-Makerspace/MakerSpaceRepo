@@ -48,6 +48,8 @@ require("packs/clipboard");
 //Shouldn't be necessary, remove when controllers load properly.
 import "../controllers";
 
+import tableSort from "table-sort-js/table-sort.js";
+
 // window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
 window.TomSelect = require("tom-select");
 window.bootstrap = require("bootstrap");

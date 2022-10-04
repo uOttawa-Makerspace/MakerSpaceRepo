@@ -119,11 +119,13 @@ class Staff::TrainingSessionsController < StaffDashboardController
           user_id: graduate.id,
           training_session_id: @current_training_session.id
         )
-      unless certification.save
-        error = true
-        flash[
-          :alert
-        ] = "#{graduate.username}'s certification not saved properly!"
+      if certification.unique_cert
+        unless certification.save
+          error = true
+          flash[
+            :alert
+          ] = "#{graduate.username}'s certification not saved properly!"
+        end
       end
     end
     respond_to do |format|
