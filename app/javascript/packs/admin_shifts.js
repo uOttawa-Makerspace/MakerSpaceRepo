@@ -138,6 +138,8 @@ fetch("/admin/shifts/get_external_staff_needed", {
       eventClick: (arg) => {
         if (arg.event.source.id === "shifts") {
           removeEvent(arg);
+        } else if (arg.event.source.id === "staffNeeded") {
+          staffNeededEvent(arg);
         }
       },
       eventDrop: (arg) => {
@@ -175,6 +177,59 @@ const refreshPendingShifts = () => {
       document
         .getElementById("pending-shift-partial")
         .replaceChildren(fragment);
+    });
+};
+
+const populateUsers = (arg) => {
+  userIdInput.tomselect.clearOptions();
+  let startDate, endDate;
+  if (arg.event) {
+    startDate = arg.event.start;
+    endDate = arg.event.end;
+  } else {
+    startDate = arg.start;
+    endDate = arg.end;
+  }
+  let startHour = startDate.toUTCString().split(" ")[4].split(":")[0];
+  let startMinute = startDate.toUTCString().split(" ")[4].split(":")[1];
+  let endHour = endDate.toUTCString().split(" ")[4].split(":")[0];
+  let endMinute = endDate.toUTCString().split(" ")[4].split(":")[1];
+  let weekDayInt = {
+    "Sun,": 0,
+    "Mon,": 1,
+    "Tue,": 2,
+    "Wed,": 3,
+    "Thu,": 4,
+    "Fri,": 5,
+    "Sat,": 6,
+  }[startDate.toUTCString().split(" ")[0]];
+  fetch(
+    "/admin/shifts/shift_suggestions?start=" +
+      startHour +
+      ":" +
+      startMinute +
+      "&end=" +
+      endHour +
+      ":" +
+      endMinute +
+      "&day=" +
+      weekDayInt,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    }
+  )
+    .then((res) => res.json())
+    .then((res) => {
+      res.forEach((user) => {
+        userIdInput.tomselect.addOption({
+          value: user.id,
+          text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,
+        });
+      });
     });
 };
 
@@ -228,7 +283,7 @@ const openModal = (arg) => {
     startPicker.setDate(Date.parse(arg.startStr));
     endPicker.setDate(Date.parse(arg.endStr));
   }
-
+  populateUsers(arg);
   shiftModal.show();
 };
 
@@ -278,6 +333,16 @@ const removeEvent = (arg) => {
         console.log("An error occurred: " + error.message);
       });
   }
+};
+
+const staffNeededEvent = (arg) => {
+  openModal(arg);
+  startPicker.setDate(
+    Date.parse(arg.event.start) + new Date().getTimezoneOffset() * 60 * 1000
+  );
+  endPicker.setDate(
+    Date.parse(arg.event.end) + new Date().getTimezoneOffset() * 60 * 1000
+  );
 };
 
 // Hide/Show Events
