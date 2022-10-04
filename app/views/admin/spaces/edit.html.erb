@@ -89,6 +89,7 @@
       <div id="link-container">
         <% @staff_needed_calendars.each_with_index do |snc, i| %>
           <div class="d-flex upload-file-input mb-2" <%= 'id=new-link-input' if i == 0 %>>
+            <input type="color" name="staff_needed_calendar_color[]" class="form-control form-control-color" value="<%= snc.color %>" title="Choose your color">
             <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control' } %>
             <button class="btn <%= i == 0 ? 'btn-success' : 'btn-danger original-button' %> ms-2" type="button" <%= 'id=clone-link-input' if i == 0 %>>
               <i class="fa fa-<%= i == 0 ? "plus" : "trash" %>"></i>
@@ -98,6 +99,7 @@
 
         <% unless @staff_needed_calendars.count > 0 %>
           <div class="d-flex upload-file-input mb-2" id="new-link-input">
+            <input type="color" name="staff_needed_calendar_color[]" class="form-control form-control-color" value="#000" title="Choose your color">
             <%= text_field_tag 'staff_needed_calendar[]', "",  { class: 'form-control' }%>
             <button class="btn btn-success ms-2" type="button" id="clone-link-input">
               <i class="fa fa-plus"></i>

@@ -23,7 +23,9 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
         session[:user_id] = user.id
         get :index
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(flash[:alert]).to eq(
+          "You cannot access this area. If you think you should be able, try asking your manager if you were added in one of the spaces."
+        )
       end
     end
   end
