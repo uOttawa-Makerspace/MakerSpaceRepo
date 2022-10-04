@@ -136,7 +136,7 @@ window.toggleVisibility = (id) => {
 };
 
 // Update the user's color
-window.updateColor = (id, color) => {
+window.updateColor = (userId, color) => {
   fetch("/admin/shifts/update_color", {
     method: "POST",
     headers: {
@@ -144,14 +144,14 @@ window.updateColor = (id, color) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      id: id,
+      user_id: userId,
       color: color,
       format: "json",
     }),
   })
     .then((response) => {
       if (response.ok) {
-        showToast("toast-color-update-success");
+        Turbolinks.visit(window.location, { action: "replace" });
       } else {
         showToast("toast-color-update-failed");
       }

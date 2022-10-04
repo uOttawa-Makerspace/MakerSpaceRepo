@@ -204,16 +204,7 @@ const populateUsers = (arg) => {
     "Sat,": 6,
   }[startDate.toUTCString().split(" ")[0]];
   fetch(
-    "/admin/shifts/shift_suggestions?start=" +
-      startHour +
-      ":" +
-      startMinute +
-      "&end=" +
-      endHour +
-      ":" +
-      endMinute +
-      "&day=" +
-      weekDayInt,
+    `/admin/shifts/shift_suggestions?start=${startHour}:${startMinute}&start=${endHour}:${endMinute}&day=${weekDayInt}`,
     {
       method: "GET",
       headers: {
@@ -286,7 +277,6 @@ const openModal = (arg) => {
   populateUsers(arg);
   shiftModal.show();
 };
-
 const modifyEvent = (arg) => {
   fetch("/admin/shifts/" + arg.event.id, {
     method: "PUT",
@@ -398,7 +388,8 @@ window.toggleVisibility = (id) => {
 };
 
 // Update the staff's color
-window.updateColor = (id, color) => {
+
+window.updateColor = (userId, color) => {
   fetch("/admin/shifts/update_color", {
     method: "POST",
     headers: {
@@ -406,17 +397,14 @@ window.updateColor = (id, color) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      id: id,
+      user_id: userId,
       color: color,
       format: "json",
     }),
   })
     .then((response) => {
       if (response.ok) {
-        const toast = new bootstrap.Toast(
-          document.getElementById("toast-color-update-success")
-        );
-        toast.show();
+        Turbolinks.visit(window.location, { action: "replace" });
       } else {
         const toast = new bootstrap.Toast(
           document.getElementById("toast-color-update-failed")
