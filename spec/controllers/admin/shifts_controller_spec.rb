@@ -151,13 +151,11 @@ RSpec.describe Admin::ShiftsController, type: :controller do
             {
               title:
                 /(#{s1.reason} for (#{s1.users.first.name}|#{s1.users.second.name}), (#{s1.users.first.name}|#{s1.users.second.name})|#{s3.reason} for #{s3.users.first.name})/,
-              id: s1.id || s3.id,
+              id: /(#{s1.id}|#{s3.id})/,
               start:
-                s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
-                  s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+                /(#{s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
               end:
-                s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
-                  s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+                /(#{s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
               color:
                 /(rgba\((#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}|#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}), (1|0.7))/,
               className:
@@ -166,13 +164,11 @@ RSpec.describe Admin::ShiftsController, type: :controller do
             {
               title:
                 /(#{s1.reason} for (#{s1.users.first.name}|#{s1.users.second.name}), (#{s1.users.first.name}|#{s1.users.second.name})|#{s3.reason} for #{s3.users.first.name})/,
-              id: s3.id || s1.id,
+              id: /(#{s1.id}|#{s3.id})/,
               start:
-                s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
-                  s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+                /(#{s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
               end:
-                s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
-                  s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
+                /(#{s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
               color:
                 /(rgba\((#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}|#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}), (1|0.7))/,
               className:
