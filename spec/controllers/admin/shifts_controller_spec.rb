@@ -159,12 +159,9 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
                   s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
               color:
-                "rgba(#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)" ||
-                  "rgba(#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                /(rgba\((#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}|#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}), (1|0.7))/,
               className:
-                s1.users.first.name.strip.downcase.gsub(" ", "-") ||
-                  s1.users.second.name.strip.downcase.gsub(" ", "-") ||
-                  s3.users.first.name.strip.downcase.gsub(" ", "-")
+                /((user-#{s1.users.first.id}|user-#{s1.users.second.id}|user-#{s3.users.first.id}))/
             },
             {
               title:
@@ -177,12 +174,9 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z") ||
                   s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z"),
               color:
-                "rgba(#{s3.users.first.staff_spaces.find_by(space_id: s3.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)" ||
-                  "rgba(#{s1.users.first.staff_spaces.find_by(space_id: s1.space_id).color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+                /(rgba\((#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}|#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}), (1|0.7))/,
               className:
-                s3.users.first.name.strip.downcase.gsub(" ", "-") ||
-                  s1.users.second.name.strip.downcase.gsub(" ", "-") ||
-                  s1.users.first.name.strip.downcase.gsub(" ", "-")
+                /((user-#{s1.users.first.id}|user-#{s1.users.second.id}|user-#{s3.users.first.id}))/
             }
           ]
         )
