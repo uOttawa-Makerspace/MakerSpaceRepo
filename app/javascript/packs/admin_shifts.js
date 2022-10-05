@@ -389,7 +389,6 @@ window.toggleVisibility = (id) => {
 };
 
 // Update the staff's color
-
 window.updateColor = (userId, color) => {
   fetch("/admin/shifts/update_color", {
     method: "POST",

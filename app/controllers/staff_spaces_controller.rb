@@ -21,7 +21,6 @@ class StaffSpacesController < StaffAreaController
     end
   end
   def bulk_add_users
-    puts params
     if params[:space_ids].present? && params[:user_ids].present?
       space_list = params[:space_ids]
       user_list = params[:user_ids]
