@@ -1,4 +1,4 @@
-class StaffAvailabilitiesController < StaffAreaController
+class StaffAvailabilitiesController < ApplicationController
   before_action :check_admin_or_staff_in_space
   before_action :set_staff_availabilities, only: %i[edit update destroy]
   before_action :set_selected_user
@@ -69,7 +69,24 @@ class StaffAvailabilitiesController < StaffAreaController
                       notice:
                         "The staff unavailabilities were successfully created."
         end
-        format.json { render json: { id: @staff_availability.id } }
+        format.json do
+          render json: {
+                   title: "#{@staff_availability.user.name} is unavailable",
+                   daysOfWeek: [@staff_availability.day],
+                   startTime: @staff_availability.start_time.strftime("%H:%M"),
+                   endTime: @staff_availability.end_time.strftime("%H:%M"),
+                   color:
+                     hex_color_to_rgba(
+                       @staff_availability
+                         .user
+                         .staff_spaces
+                         .find_by(space: @user.space)
+                         .color,
+                       1
+                     ),
+                   id: @staff_availability.id
+                 }
+        end
       else
         format.html { render :new }
         format.json do
@@ -179,5 +196,10 @@ class StaffAvailabilitiesController < StaffAreaController
     else
       @selected_user = @user
     end
+  end
+
+  def hex_color_to_rgba(hex, opacity)
+    rgb = hex.match(/^#(..)(..)(..)$/).captures.map(&:hex)
+    "rgba(#{rgb.join(", ")}, #{opacity})"
   end
 end

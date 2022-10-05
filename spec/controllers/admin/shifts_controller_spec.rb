@@ -74,6 +74,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               endTime: sa1.end_time.strftime("%H:%M"),
               color:
                 "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+              userId: sa1.user.id,
               className: sa1.user.name.strip.downcase.gsub(" ", "-")
             },
             {
@@ -84,6 +85,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               endTime: sa2.end_time.strftime("%H:%M"),
               color:
                 "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+              userId: sa2.user.id,
               className: sa2.user.name.strip.downcase.gsub(" ", "-")
             }
           ].to_json
@@ -105,6 +107,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               endTime: sa1.end_time.strftime("%H:%M"),
               color:
                 "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
+              userId: sa1.user.id,
               className: sa1.user.name.strip.downcase.gsub(" ", "-")
             },
             {
@@ -115,6 +118,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
               endTime: sa2.end_time.strftime("%H:%M"),
               color:
                 "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
+              userId: sa2.user.id,
               className: sa2.user.name.strip.downcase.gsub(" ", "-")
             }
           ].to_json
@@ -127,7 +131,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
     context "get shifts" do
       it "should get all the shifts from the staffs" do
         space = create(:space)
-        s1 = create(:shift, space_id: space.id)
+        s1 = create(:shift, space_id: space.id, pending: false)
         s2 = create(:shift)
         s3 = create(:shift, space_id: space.id)
 
