@@ -7,6 +7,8 @@ class JobOrder < ApplicationRecord
   has_many :job_order_statuses, dependent: :destroy
   has_and_belongs_to_many :job_services
 
+  after_save :set_filename
+
   scope :without_drafts,
         -> {
           joins(:job_order_statuses)
@@ -81,6 +83,24 @@ class JobOrder < ApplicationRecord
               ],
               if: -> { staff_files.attached? }
             }
+
+  def set_filename
+    if user_files.attached?
+      user_files.each do |user_files|
+        unless user_files.filename.to_s.start_with?(id.to_s)
+          user_files.blob.update(filename: "#{id}_#{user_files.filename}")
+        end
+      end
+    end
+
+    if staff_files.attached?
+      staff_files.each do |staff_files|
+        unless staff_files.filename.to_s.start_with?(id.to_s)
+          staff_files.blob.update(filename: "#{id}_#{staff_files.filename}")
+        end
+      end
+    end
+  end
 
   def allow_edit?
     job_order_statuses.last.job_status == JobStatus::DRAFT ||

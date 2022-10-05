@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-
+require "date"
 class Admin::ShiftsController < AdminAreaController
   layout "admin_area"
 
@@ -289,6 +289,59 @@ class Admin::ShiftsController < AdminAreaController
              StaffNeededCalendar.where(space_id: @space_id).as_json(
                only: %i[calendar_url color]
              )
+  end
+
+  def shift_suggestions
+    weekday = params[:day]
+    start_time = params[:start]
+    end_time = params[:end]
+    @suggestions = []
+    @excluded = []
+
+    StaffSpace
+      .where(space_id: @space_id)
+      .each do |staff|
+        StaffAvailability
+          .where(user_id: staff.user_id)
+          .where(day: weekday)
+          .each do |availability|
+            availability_start_time =
+              availability.start_time.strftime("%H%M").to_i
+            availability_end_time = availability.end_time.strftime("%H%M").to_i
+            shift_start_time = start_time.gsub(":", "").to_i
+            shift_end_time = end_time.gsub(":", "").to_i
+            if (
+                 availability_start_time <= shift_start_time &&
+                   availability_end_time <= shift_start_time
+               ) ||
+                 (
+                   availability_start_time >= shift_end_time &&
+                     availability_end_time >= shift_end_time
+                 )
+              unless @suggestions.include?(staff.user) ||
+                       @excluded.include?(staff.user)
+                @suggestions << staff.user
+              end
+            else
+              @excluded << staff.user unless @excluded.include?(staff.user)
+            end
+          end
+        if StaffAvailability
+             .where(user_id: staff.user_id)
+             .where(day: weekday)
+             .empty?
+          @suggestions << staff.user
+        end
+      end
+    render json:
+             @suggestions
+               .filter { |user| !@excluded.include?(user) }
+               .reduce([]) { |arr, user|
+                 arr << { id: user.id, name: user.name, acceptable: true }
+               } +
+               @excluded.reduce([]) { |arr, user|
+                 arr << { id: user.id, name: user.name, acceptable: false }
+               }
   end
 
   private
