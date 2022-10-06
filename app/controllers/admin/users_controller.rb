@@ -169,6 +169,8 @@ class Admin::UsersController < AdminAreaController
         repo.deleted = true
         repo.save!
       end
+      delete_user.lab_sessions.each { |session| session.destroy }
+
       delete_user.save!
       redirect_to root_path, notice: "User flagged as deleted"
     else
