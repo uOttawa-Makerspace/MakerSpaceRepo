@@ -228,6 +228,12 @@ Rails.application.routes.draw do
       delete "/edit/", as: "destroy", action: "destroy"
       post "/edit/", as: "update_name", action: "update_name"
       put "/edit/", as: "create_sub_space", action: "create_sub_space"
+      patch "/edit/:sub_space_id",
+            as: "set_max_booking_duration",
+            action: "set_max_booking_duration"
+      patch "/edit/:sub_space_id",
+            as: "set_max_booking_hours_per_week",
+            action: "set_max_booking_hours_per_week"
       delete "/edit/:name", as: "delete_sub_space", action: "delete_sub_space"
       patch "/edit/:name",
             as: "change_sub_space_approval",

@@ -6,7 +6,7 @@
     <% Space.all.each do |space| %>
       <% subspaces = SubSpace.where(space_id: space.id) %>
       <% if subspaces.length == 1 %>
-        <div class="nav-item ms-4"><%=  link_to(subspaces.last.name, sub_space_booking_index_path(room:subspaces.last.name), class:"nav-link")  %></div>
+        <div class="nav-item ms-4"><%=  link_to(subspaces.last.name, sub_space_booking_index_path(room:subspaces.last.id), class:"nav-link")  %></div>
       <%  else  %>
         <div class="nav-item dropdown ms-4">
           <a class="nav-link dropdown-toggle" role="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -14,12 +14,21 @@
           </a>
           <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
             <% subspaces.each do |subspace| %>
-              <a class="dropdown-item" href="<%=  sub_space_booking_index_path(room:subspace.name)  %>"><%=  subspace.name  %></a>
+              <a class="dropdown-item" href="<%=  sub_space_booking_index_path(room:subspace.id)  %>"><%=  subspace.name  %></a>
             <%  end  %>
           </div>
         </div>
       <% end %>
     <% end %>
+
+  <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast bg-warning text-black" data-bs-autohide="false">
+    <div class="toast-header">
+      <strong id="toast_title" class="me-auto"></strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div id="toast_text" class="toast-body">
+    </div>
+  </div>
 
     </div>
   </div>

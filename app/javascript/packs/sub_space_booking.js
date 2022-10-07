@@ -51,7 +51,7 @@ if (bookedCalendarEl) {
         description: description,
         start_time: start_time,
         end_time: end_time,
-        room: new URLSearchParams(window.location.search).get("room"),
+        sub_space_id: new URLSearchParams(window.location.search).get("room"),
       },
     };
     let url = "/sub_space_booking";
@@ -65,26 +65,46 @@ if (bookedCalendarEl) {
     fetch(request)
       .then((response) => response.text())
       .then((data) => {
+        console.log(data);
         try {
           let errors = JSON.parse(data)["errors"];
           for (let error of errors) {
             let errorInput = error.split(" ")[0];
-            let errorText = error.split(" ").slice(1).join(" ");
-            let feedback = document.createElement("div");
-            feedback.classList.add("invalid-feedback");
-            feedback.innerText = errorText;
-            let errorEl = document.getElementById(
-              "book-" + errorInput.toLowerCase()
-            );
-            if (errorEl && !errorEl.classList.contains("is-invalid")) {
-              errorEl.classList.add("is-invalid");
-              errorEl.after(feedback);
+            if (
+              errorInput === "DurationHour" ||
+              errorInput === "DurationWeek"
+            ) {
+              let toastEl = document.getElementById("booking_toast");
+              if (toastEl) {
+                document.getElementById("toast_text").innerText = error
+                  .split(" ")
+                  .slice(1)
+                  .join(" ");
+                document.getElementById("toast_title").innerText =
+                  "Your booking failed";
+                bootstrap.Toast.getOrCreateInstance(toastEl).show();
+                closeModal();
+                window.scrollTo(0, 0);
+              }
+            } else {
+              let errorText = error.split(" ").slice(1).join(" ");
+              let feedback = document.createElement("div");
+              feedback.classList.add("invalid-feedback");
+              feedback.innerText = errorText;
+              let errorEl = document.getElementById(
+                "book-" + errorInput.toLowerCase()
+              );
+              if (errorEl && !errorEl.classList.contains("is-invalid")) {
+                errorEl.classList.add("is-invalid");
+                errorEl.after(feedback);
+              }
             }
           }
         } catch (e) {
+          console.log(e);
           closeModal();
           Turbolinks.clearCache();
-          Turbolinks.visit(window.location.href);
+          // Turbolinks.visit(window.location.href);
         }
       })
       .catch((error) => {
@@ -93,15 +113,15 @@ if (bookedCalendarEl) {
   }
   let bookedCalendar = new Calendar(bookedCalendarEl, {
     plugins: [interactionPlugin, timeGridPlugin, listPlugin],
-    height: "auto",
+    height: "50vh",
     headerToolbar: {
       left: "prev,today,next",
-      center: "book",
-      right: "timeGridWeek",
+      center: "",
+      right: "book,timeGridWeek",
     },
     customButtons: {
       book: {
-        text: `Book ${new URLSearchParams(window.location.search).get("room")}`,
+        text: "Book",
         click: () => {
           createEvent();
         },
@@ -121,8 +141,8 @@ if (bookedCalendarEl) {
     initialView: "timeGridWeek",
     navLinks: true,
     slotEventOverlap: false,
-    slotMinTime: "08:00:00",
-    slotMaxTime: "18:00:00",
+    slotMinTime: "06:00:00",
+    slotMaxTime: "22:00:00",
     selectable: true,
     eventTimeFormat: {
       hour: "2-digit",

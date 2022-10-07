@@ -6,7 +6,7 @@ class SubSpaceBookingController < ApplicationController
     bookings = []
     if params[:room].present?
       SubSpaceBooking
-        .where(sub_space_id: SubSpace.where(name: params[:room]).first.id)
+        .where(sub_space_id: params[:room])
         .each do |booking|
           if booking.sub_space_booking_status.booking_status ==
                BookingStatus::APPROVED ||
@@ -35,10 +35,65 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def create
+    puts params
+    puts params[:sub_space_booking][:sub_space_id]
     @booking = SubSpaceBooking.new(sub_space_booking_params)
-    @booking.sub_space_id =
-      SubSpace.where(name: params[:sub_space_booking][:room]).first.id
+    @booking.sub_space =
+      SubSpace.find(params[:sub_space_booking][:sub_space_id])
     @booking.user_id = current_user.id
+
+    # Check time violations
+
+    duration = (@booking.end_time - @booking.start_time) / 1.hour
+
+    if !SubSpace
+         .find(params[:sub_space_booking][:sub_space_id])
+         .maximum_booking_duration
+         .nil?
+      if duration > @booking.sub_space.maximum_booking_duration
+        puts duration
+        puts @booking.sub_space.maximum_booking_duration
+        puts "#{duration} > #{@booking.sub_space.maximum_booking_duration}"
+        puts "Duration violation"
+        render json: {
+                 errors: [
+                   "DurationHour You cannot book #{@booking.sub_space.name} for more than #{@booking.sub_space.maximum_booking_duration} hours."
+                 ]
+               },
+               status: :unprocessable_entity
+        @booking.destroy
+        return
+      end
+    end
+
+    if !SubSpace
+         .find(params[:sub_space_booking][:sub_space_id])
+         .maximum_booking_hours_per_week
+         .nil?
+      user_bookings =
+        SubSpaceBooking
+          .where(sub_space_id: @booking.sub_space.id)
+          .where(user_id: current_user.id)
+          .where("start_time >= ?", Date.today.beginning_of_week)
+          .where("start_time <= ?", Date.today.end_of_week)
+      total_duration = 0
+      user_bookings.each do |booking|
+        total_duration += booking.end_time - booking.start_time
+      end
+      total_duration += duration
+      # Check if the total duration is within the maximum duration per week
+      if total_duration > @booking.sub_space.maximum_booking_hours_per_week
+        puts "Duration per week violation"
+        render json: {
+                 errors: [
+                   "DurationWeek You cannot book #{@booking.sub_space.name} for more than #{@booking.sub_space.maximum_booking_hours_per_week} hours per week."
+                 ]
+               },
+               status: :unprocessable_entity
+        @booking.destroy
+        return
+      end
+    end
 
     unless @booking.save
       render json: {
@@ -52,10 +107,10 @@ class SubSpaceBookingController < ApplicationController
         sub_space_booking_id: @booking.id,
         booking_status:
           (
-            if SubSpace.find_by(
-                 name: params[:sub_space_booking][:room]
+            if SubSpace.find(
+                 params[:sub_space_booking][:sub_space_id]
                ).approval_required
-              BookingStatus::PENDING
+              BookingStatus::PENDINGsub_space_id
             else
               BookingStatus::APPROVED
             end
@@ -111,7 +166,8 @@ class SubSpaceBookingController < ApplicationController
       :start_time,
       :end_time,
       :name,
-      :description
+      :description,
+      :sub_space_id
     )
   end
 end

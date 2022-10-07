@@ -114,7 +114,31 @@ class Admin::SpacesController < AdminAreaController
     end
     redirect_back(fallback_location: root_path)
   end
-
+  def set_max_booking_duration
+    if params[:max_hours].present? && params[:space_id].present?
+      max_hours = params[:max_hours].to_i == -1 ? nil : params[:max_hours].to_i
+      SubSpace.find(params[:sub_space_id]).update(
+        maximum_booking_duration: max_hours
+      )
+      flash[:notice] = "Max booking duration updated!"
+    elsif params[:max_hours_weekly].present? && params[:space_id].present?
+      max_weekly_hours =
+        (
+          if params[:max_hours_weekly].to_i == -1
+            nil
+          else
+            params[:max_hours_weekly].to_i
+          end
+        )
+      SubSpace.find(params[:sub_space_id]).update(
+        maximum_booking_hours_per_week: max_weekly_hours
+      )
+      flash[:notice] = "Max weekly booking duration updated!"
+    else
+      flash[:alert] = "Something went wrong."
+    end
+    redirect_to edit_admin_space_path(id: params[:space_id])
+  end
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
