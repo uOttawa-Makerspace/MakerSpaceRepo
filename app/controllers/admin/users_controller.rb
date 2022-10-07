@@ -169,7 +169,14 @@ class Admin::UsersController < AdminAreaController
         repo.deleted = true
         repo.save!
       end
-      delete_user.lab_sessions.each { |session| session.destroy }
+      delete_user.lab_sessions.each do |session|
+        session.deleted = true
+        session.save!
+      end
+      delete_user.certifications.each do |cert|
+        cert.active = false
+        cert.save!
+      end
 
       delete_user.save!
       redirect_to root_path, notice: "User flagged as deleted"
@@ -187,6 +194,15 @@ class Admin::UsersController < AdminAreaController
         repo.deleted = false
         repo.save!
       end
+      restore_user.lab_sessions.each do |session|
+        session.deleted = false
+        session.save!
+      end
+      restore_user.certifications.each do |cert|
+        cert.active = true
+        cert.save!
+      end
+
       restore_user.save!
       redirect_to user_path(restore_user.username), notice: "User restored!"
     else

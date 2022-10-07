@@ -3,7 +3,7 @@
 class LabSession < ApplicationRecord
   belongs_to :user
   belongs_to :space
-
+  default_scope { where(deleted: false) }
   scope :between_dates_picked,
         ->(start_date, end_date) {
           where("created_at BETWEEN ? AND ? ", start_date, end_date)
