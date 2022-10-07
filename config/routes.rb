@@ -338,8 +338,12 @@ Rails.application.routes.draw do
     put :approve
 
     collection do
+      put :request_access
+      put :deny_access
+      put :approve_access
       get :admin
       get :bookings
+      get :users
     end
   end
 

@@ -1,7 +1,60 @@
 class SubSpaceBookingController < ApplicationController
   def index
+    unless signed_in?
+      redirect_to login_path, alert: "You must be logged in to view this page."
+      return
+    end
   end
 
+  def request_access
+    if UserBookingApproval.where(user: current_user).first.nil?
+      UserBookingApproval.create(
+        user: current_user,
+        date: Time.now,
+        comments: params[:comments],
+        approved: false
+      )
+      flash[:notice] = "Access request submitted successfully."
+    else
+      flash[:alert] = "You have already requested access."
+    end
+    redirect_to root_path
+  end
+
+  def approve_access
+    if params[:id].nil?
+      user = User.find(params[:user_id])
+      UserBookingApproval.new(
+        user: user,
+        date: Time.now,
+        approved: true,
+        staff: current_user
+      ).save
+      user.update(booking_approval: true)
+      user.save!
+      redirect_to admin_sub_space_booking_index_path
+    else
+      user = UserBookingApproval.find(params[:id]).user
+      UserBookingApproval.find(params[:id]).update(approved: true)
+      UserBookingApproval.find(params[:id]).update(staff_id: current_user.id)
+      user.booking_approval = true
+      user.save!
+      redirect_to admin_sub_space_booking_index_path,
+                  notice: "Access request approved successfully."
+    end
+  end
+  def deny_access
+    user = UserBookingApproval.find(params[:id]).user
+    UserBookingApproval.find(params[:id]).destroy
+    user.booking_approval = false
+    user.save!
+    redirect_to admin_sub_space_booking_index_path,
+                notice: "Access request denied successfully."
+  end
+
+  def users
+    render json: User.all if current_user.admin? || current_user.staff?
+  end
   def bookings
     bookings = []
     if params[:room].present?
@@ -35,8 +88,6 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def create
-    puts params
-    puts params[:sub_space_booking][:sub_space_id]
     @booking = SubSpaceBooking.new(sub_space_booking_params)
     @booking.sub_space =
       SubSpace.find(params[:sub_space_booking][:sub_space_id])
@@ -119,9 +170,10 @@ class SubSpaceBookingController < ApplicationController
     status.save
     @booking.sub_space_booking_status_id = status.id
     @booking.save
-    flash[
-      :notice
-    ] = "Booking for #{params[:sub_space_booking][:room]} created successfully."
+    flash[:notice] = "Booking for #{params[:room]} created successfully."
+    if SubSpace.find_by(name: params[:room]).approval_required
+      BookingMailer.send_booking_needs_approval(@booking.id).deliver_now
+    end
   end
 
   def admin
@@ -144,6 +196,7 @@ class SubSpaceBookingController < ApplicationController
     redirect_to admin_sub_space_booking_index_path,
                 notice:
                   "Booking for #{SubSpaceBooking.find(params[:sub_space_booking_id]).sub_space.name} approved successfully."
+    BookingMailer.send_booking_approved(booking.id).deliver_now
   end
 
   def decline

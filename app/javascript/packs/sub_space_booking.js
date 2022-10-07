@@ -164,3 +164,30 @@ if (bookedCalendarEl) {
   });
   bookedCalendar.render();
 }
+let userSelect = document.getElementById("user_booking_select");
+if (userSelect) {
+  if (!userSelect.tomSelect) {
+    userSelect.tomSelect = new TomSelect(userSelect, {
+      plugins: {
+        remove_button: {
+          title: "Remove this item",
+        },
+      },
+      valueField: "id",
+      labelField: "name",
+      searchField: ["name"],
+      options: [],
+      load: function (query, callback) {
+        if (!query.length) return callback();
+        fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
+          .then((res) => res.json())
+          .then((res) => {
+            callback(res);
+          })
+          .catch((err) => {
+            callback();
+          });
+      },
+    });
+  }
+}

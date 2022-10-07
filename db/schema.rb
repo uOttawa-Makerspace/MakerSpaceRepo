@@ -194,6 +194,8 @@ ActiveRecord::Schema.define(version: 2022_10_06_223546) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.boolean "show_hours"
+    t.bigint "space_id"
+    t.index ["space_id"], name: "index_contact_infos_on_space_id"
   end
 
   create_table "course_names", force: :cascade do |t|
@@ -961,6 +963,18 @@ ActiveRecord::Schema.define(version: 2022_10_06_223546) do
     t.index ["user_id"], name: "index_upvotes_on_user_id"
   end
 
+  create_table "user_booking_approvals", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.date "date"
+    t.string "comments"
+    t.bigint "staff_id"
+    t.boolean "approved"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["staff_id"], name: "index_user_booking_approvals_on_staff_id"
+    t.index ["user_id"], name: "index_user_booking_approvals_on_user_id"
+  end
+
   create_table "users", id: :serial, force: :cascade do |t|
     t.string "username"
     t.string "password"
@@ -996,6 +1010,7 @@ ActiveRecord::Schema.define(version: 2022_10_06_223546) do
     t.bigint "space_id"
     t.datetime "last_signed_in_time"
     t.boolean "deleted"
+    t.boolean "booking_approval", default: false
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
@@ -1071,6 +1086,7 @@ ActiveRecord::Schema.define(version: 2022_10_06_223546) do
   add_foreign_key "certifications", "users", column: "demotion_staff_id"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
+  add_foreign_key "contact_infos", "spaces"
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
@@ -1129,6 +1145,8 @@ ActiveRecord::Schema.define(version: 2022_10_06_223546) do
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
+  add_foreign_key "user_booking_approvals", "users"
+  add_foreign_key "user_booking_approvals", "users", column: "staff_id"
   add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
