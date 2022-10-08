@@ -88,31 +88,33 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def create
-    @booking = SubSpaceBooking.new(sub_space_booking_params)
-    @booking.sub_space =
-      SubSpace.find(params[:sub_space_booking][:sub_space_id])
-    @booking.user_id = current_user.id
+    booking = SubSpaceBooking.new(sub_space_booking_params)
+    booking.sub_space = SubSpace.find(params[:sub_space_booking][:sub_space_id])
+    booking.user_id = current_user.id
+
+    #ensure 4 basic validations are met
+    unless booking.save
+      render json: {
+               errors: booking.errors.full_messages
+             },
+             status: :unprocessable_entity
+      return
+    end
 
     # Check time violations
-
-    duration = (@booking.end_time - @booking.start_time) / 1.hour
-
+    duration = (booking.end_time - booking.start_time) / 1.hour
     if !SubSpace
          .find(params[:sub_space_booking][:sub_space_id])
          .maximum_booking_duration
-         .nil?
-      if duration > @booking.sub_space.maximum_booking_duration
-        puts duration
-        puts @booking.sub_space.maximum_booking_duration
-        puts "#{duration} > #{@booking.sub_space.maximum_booking_duration}"
-        puts "Duration violation"
+         .nil? && !current_user.admin?
+      if duration > booking.sub_space.maximum_booking_duration
         render json: {
                  errors: [
-                   "DurationHour You cannot book #{@booking.sub_space.name} for more than #{@booking.sub_space.maximum_booking_duration} hours."
+                   "DurationHour You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_duration} hours."
                  ]
                },
                status: :unprocessable_entity
-        @booking.destroy
+        booking.destroy
         return
       end
     end
@@ -120,10 +122,10 @@ class SubSpaceBookingController < ApplicationController
     if !SubSpace
          .find(params[:sub_space_booking][:sub_space_id])
          .maximum_booking_hours_per_week
-         .nil?
+         .nil? && !current_user.admin?
       user_bookings =
         SubSpaceBooking
-          .where(sub_space_id: @booking.sub_space.id)
+          .where(sub_space_id: booking.sub_space.id)
           .where(user_id: current_user.id)
           .where("start_time >= ?", Date.today.beginning_of_week)
           .where("start_time <= ?", Date.today.end_of_week)
@@ -133,29 +135,21 @@ class SubSpaceBookingController < ApplicationController
       end
       total_duration += duration
       # Check if the total duration is within the maximum duration per week
-      if total_duration > @booking.sub_space.maximum_booking_hours_per_week
-        puts "Duration per week violation"
+      if total_duration > booking.sub_space.maximum_booking_hours_per_week
         render json: {
                  errors: [
-                   "DurationWeek You cannot book #{@booking.sub_space.name} for more than #{@booking.sub_space.maximum_booking_hours_per_week} hours per week."
+                   "DurationWeek You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_hours_per_week} hours per week."
                  ]
                },
                status: :unprocessable_entity
-        @booking.destroy
+        booking.destroy
         return
       end
     end
 
-    unless @booking.save
-      render json: {
-               errors: @booking.errors.full_messages
-             },
-             status: :unprocessable_entity
-      return
-    end
     status =
       SubSpaceBookingStatus.new(
-        sub_space_booking_id: @booking.id,
+        sub_space_booking_id: booking.id,
         booking_status:
           (
             if SubSpace.find(
@@ -168,11 +162,13 @@ class SubSpaceBookingController < ApplicationController
           )
       )
     status.save
-    @booking.sub_space_booking_status_id = status.id
-    @booking.save
-    flash[:notice] = "Booking for #{params[:room]} created successfully."
-    if SubSpace.find_by(name: params[:room]).approval_required
-      BookingMailer.send_booking_needs_approval(@booking.id).deliver_now
+    booking.sub_space_booking_status_id = status.id
+    booking.save
+    flash[
+      :notice
+    ] = "Booking for #{booking.sub_space.name} created successfully."
+    if booking.sub_space.approval_required
+      BookingMailer.send_booking_needs_approval(booking.id).deliver_now
     end
   end
 
@@ -181,7 +177,7 @@ class SubSpaceBookingController < ApplicationController
       flash[:alert] = "You are not authorized to view this page."
       redirect_to root_path
     end
-    @bookings = SubSpaceBooking.all
+    bookings = SubSpaceBooking.all
   end
 
   def approve

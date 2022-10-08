@@ -129,28 +129,31 @@ class Admin::SpacesController < AdminAreaController
     redirect_back(fallback_location: root_path)
   end
   def set_max_booking_duration
-    if params[:max_hours].present? && params[:space_id].present?
-      max_hours = params[:max_hours].to_i == -1 ? nil : params[:max_hours].to_i
-      SubSpace.find(params[:sub_space_id]).update(
-        maximum_booking_duration: max_hours
+    if params[:max_hours].present? && params[:sub_space_id].present?
+      SubSpace.find(params[:sub_space_id]).update!(
+        maximum_booking_duration:
+          params[:max_hours].to_i == -1 ? nil : params[:max_hours].to_i
       )
       flash[:notice] = "Max booking duration updated!"
-    elsif params[:max_hours_weekly].present? && params[:space_id].present?
-      max_weekly_hours =
-        (
-          if params[:max_hours_weekly].to_i == -1
-            nil
-          else
-            params[:max_hours_weekly].to_i
-          end
-        )
-      SubSpace.find(params[:sub_space_id]).update(
-        maximum_booking_hours_per_week: max_weekly_hours
+      return
+    end
+
+    if params[:max_weekly_hours].present? && params[:sub_space_id].present?
+      SubSpace.find(params[:sub_space_id]).update!(
+        maximum_booking_hours_per_week:
+          (
+            if params[:max_weekly_hours].to_i == -1
+              nil
+            else
+              params[:max_weekly_hours].to_i
+            end
+          )
       )
       flash[:notice] = "Max weekly booking duration updated!"
-    else
-      flash[:alert] = "Something went wrong."
+      return
     end
+
+    flash[:alert] = "Something went wrong."
     redirect_to edit_admin_space_path(id: params[:space_id])
   end
   def destroy

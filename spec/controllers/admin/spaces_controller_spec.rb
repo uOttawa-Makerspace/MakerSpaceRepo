@@ -188,4 +188,36 @@ RSpec.describe Admin::SpacesController, type: :controller do
       end
     end
   end
+
+  describe "PATCH/set_max_booking_duration" do
+    context "set max booking duration" do
+      it "should set the max booking duration" do
+        space = create(:space)
+        subspace = create(:sub_space, space: space)
+        max_hours = Faker::Number.number(digits: 2)
+        patch :set_max_booking_duration,
+              params: {
+                space_id: space.id,
+                sub_space_id: subspace.id,
+                max_hours: max_hours
+              }
+        expect(flash[:notice]).to eq("Max booking duration updated!")
+        expect(SubSpace.last.maximum_booking_duration).to eq(max_hours)
+      end
+    end
+
+    it "should set the max booking hours per week" do
+      space = create(:space)
+      subspace = create(:sub_space, space: space)
+      max_hours = Faker::Number.number(digits: 2)
+      patch :set_max_booking_duration,
+            params: {
+              space_id: space.id,
+              sub_space_id: subspace.id,
+              max_weekly_hours: max_hours
+            }
+      expect(flash[:notice]).to eq("Max weekly booking duration updated!")
+      expect(SubSpace.last.maximum_booking_hours_per_week).to eq(max_hours)
+    end
+  end
 end
