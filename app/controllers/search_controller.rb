@@ -5,9 +5,21 @@ class SearchController < SessionsController
 
   def explore
     if params[:category].blank?
-      @repositories = Repository.paginate(per_page: 12, page: params[:page]).public_repos.order([sort_order].to_h).page params[:page]
+      @repositories =
+        Repository
+          .paginate(per_page: 12, page: params[:page])
+          .public_repos
+          .order([sort_order].to_h).page params[:page]
     else
-      @repositories = Repository.paginate(per_page: 12, page: params[:page]).public_repos.includes(:categories).where({categories: {name: SLUG_TO_CATEGORY_MODEL[params[:category]]}}).order([sort_order].to_h).page params[:page]
+      @repositories =
+        Repository
+          .paginate(per_page: 12, page: params[:page])
+          .public_repos
+          .includes(:categories)
+          .where(
+            { categories: { name: SLUG_TO_CATEGORY_MODEL[params[:category]] } }
+          )
+          .order([sort_order].to_h).page params[:page]
     end
     @photos = photo_hash
   end
@@ -15,23 +27,43 @@ class SearchController < SessionsController
   def search
     sort_arr = sort_order
     if params[:category].blank?
-      @repositories = Repository.paginate(per_page: 12, page: params[:page]).public_repos.order([sort_arr].to_h).where("lower(title) LIKE ?
+      @repositories =
+        Repository
+          .paginate(per_page: 12, page: params[:page])
+          .public_repos
+          .order([sort_arr].to_h)
+          .where(
+            "lower(title) LIKE ?
                                                 OR lower(description) LIKE ?
                                                 OR lower(user_username) LIKE ?
                                                 OR lower(category) LIKE ?",
-                                                                                                                     "%#{params[:q].downcase}%",
-                                                                                                                     "%#{params[:q].downcase}%",
-                                                                                                                     "%#{params[:q].downcase}%",
-                                                                                                                     "%#{params[:q].downcase}%").distinct
+            "%#{params[:q].downcase}%",
+            "%#{params[:q].downcase}%",
+            "%#{params[:q].downcase}%",
+            "%#{params[:q].downcase}%"
+          )
+          .distinct
     else
-      @repositories = Repository.paginate(per_page: 12, page: params[:page]).public_repos.includes(:categories).where({categories: {name: SLUG_TO_CATEGORY_MODEL[params[:category]]}}).order([sort_order].to_h).where("lower(title) LIKE ?
+      @repositories =
+        Repository
+          .paginate(per_page: 12, page: params[:page])
+          .public_repos
+          .includes(:categories)
+          .where(
+            { categories: { name: SLUG_TO_CATEGORY_MODEL[params[:category]] } }
+          )
+          .order([sort_order].to_h)
+          .where(
+            "lower(title) LIKE ?
       OR lower(description) LIKE ?
       OR lower(user_username) LIKE ?
       OR lower(category) LIKE ?",
-                                                                           "%#{params[:q].downcase}%",
-                                                                           "%#{params[:q].downcase}%",
-                                                                           "%#{params[:q].downcase}%",
-                                                                           "%#{params[:q].downcase}%").distinct
+            "%#{params[:q].downcase}%",
+            "%#{params[:q].downcase}%",
+            "%#{params[:q].downcase}%",
+            "%#{params[:q].downcase}%"
+          )
+          .distinct
     end
     @photos = photo_hash
   end
@@ -135,12 +167,12 @@ class SearchController < SessionsController
   end
 
   SLUG_TO_OLD_CATEGORY = {
-    'internet-of-things' => 'Internet of Things',
-    'virtual-reality' => 'Virtual Reality',
-    'health-sciences' => 'Bio-Medical',
-    'mobile-development' => 'Mobile',
-    'other-projects' => '3D-Model',
-    'wearable' => 'Wearables'
+    "internet-of-things" => "Internet of Things",
+    "virtual-reality" => "Virtual Reality",
+    "health-sciences" => "Bio-Medical",
+    "mobile-development" => "Mobile",
+    "other-projects" => "3D-Model",
+    "wearable" => "Wearables"
   }.freeze
 
   SLUG_TO_CATEGORY_MODEL = {

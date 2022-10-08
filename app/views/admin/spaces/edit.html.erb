@@ -83,6 +83,43 @@
   <br><br>
 
   <h2 class="mb-3 fw-bold">Manage RFID Readers</h2>
+  <div class="mb-3">
+    <h4>Staff Needed Calendar</h4>
+    <p>You can add here all the Public Google Calendars you want to be displayed as Staff Needed.</p>
+    <p>Please <b>Paste the ID</b> of the <b>Public Agenda</b> (NOT the link). Follow <a href="https://docs.simplecalendar.io/find-google-calendar-id/" rel="noopener noreferrer" target="_blank" >this link</a> for help retreiving it.</p>
+    <%= form_for update_staff_needed_calendars_admin_spaces_path, url: { controller: "admin/spaces", action: "update_staff_needed_calendars", space_id: @space.id }, method: :put do |f| %>
+      <div id="link-container">
+        <% @staff_needed_calendars.each_with_index do |snc, i| %>
+          <div class="d-flex upload-file-input mb-2" <%= 'id=new-link-input' if i == 0 %>>
+            <input type="color" name="staff_needed_calendar_color[]" class="form-control form-control-color" value="<%= snc.color %>" title="Choose your color">
+            <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control' } %>
+            <button class="btn <%= i == 0 ? 'btn-success' : 'btn-danger original-button' %> ms-2" type="button" <%= 'id=clone-link-input' if i == 0 %>>
+              <i class="fa fa-<%= i == 0 ? "plus" : "trash" %>"></i>
+            </button>
+          </div>
+        <% end %>
+
+        <% unless @staff_needed_calendars.count > 0 %>
+          <div class="d-flex upload-file-input mb-2" id="new-link-input">
+            <input type="color" name="staff_needed_calendar_color[]" class="form-control form-control-color" value="#000" title="Choose your color">
+            <%= text_field_tag 'staff_needed_calendar[]', "",  { class: 'form-control' }%>
+            <button class="btn btn-success ms-2" type="button" id="clone-link-input">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        <% end %>
+      </div>
+      <%= f.submit "Update Calendar Links", class: "btn btn-primary" %>
+    <% end %>
+
+  </div>
+
+  <br><br>
+
+  <table class="table table-striped">
+    <th class="section-header">Manage RFID Readers</th>
+  </table>
+  <br>
   <div>
     <h3><%= @space.name %> RFID Readers</h3>
     <table class="table text-center table-striped">
@@ -244,3 +281,4 @@
   <br>
 </section>
 <%= javascript_pack_tag 'staff_availability', 'data-turbolinks-track': 'reload' %>
+<%= javascript_pack_tag 'space_staff_needed_calendar', 'data-turbolinks-track': 'reload' %>

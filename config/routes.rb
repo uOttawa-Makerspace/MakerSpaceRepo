@@ -220,6 +220,7 @@ Rails.application.routes.draw do
         delete "delete_repository"
         delete "delete_project_proposal"
         delete "delete_user"
+        patch "restore_user"
         get "manage_roles"
       end
     end
@@ -240,6 +241,7 @@ Rails.application.routes.draw do
         post :update_max_capacity
         post :add_space_hours
         delete :delete_space_hour
+        put :update_staff_needed_calendars
       end
     end
 
@@ -253,7 +255,12 @@ Rails.application.routes.draw do
         get :get_availabilities
         get :get_shifts
         get :get_staff_needed
+        get :get_external_staff_needed
+        get :pending_shifts
+        get :shift_suggestions
         post :update_color
+        post :confirm_shifts
+        post :clear_pending_shifts
       end
     end
 

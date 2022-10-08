@@ -302,74 +302,85 @@ class UsersController < SessionsController
   end
 
   def show
-    @repo_user = User.find_by username: params[:username]
-    @programs = @repo_user.programs.pluck(:program_type)
-    @github_username =
-      Octokit::Client.new(access_token: @repo_user.access_token).login
-    @repositories =
-      if params[:username] == @user.username || @user.admin? || @user.staff?
-        @repo_user
-          .repositories
-          .where(make_id: nil)
-          .paginate(page: params[:page], per_page: 18)
-      else
-        @repo_user
-          .repositories
-          .public_repos
-          .where(make_id: nil)
-          .paginate(page: params[:page], per_page: 18)
-      end
+    if @user.admin? || @user.staff?
+      @repo_user = User.unscoped.find_by username: params[:username]
+    else
+      @repo_user = User.find_by username: params[:username]
+    end
 
-    @acclaim_badge_url =
-      if params[:username] == @user.username
-        "https://www.youracclaim.com/earner/earned/share/"
-      else
-        "https://www.youracclaim.com/badges/"
-      end
-
-    @acclaim_data = @repo_user.badges
-    @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
-    @joined_projects = @user.project_joins
-    @photos = photo_hash
-    @certifications = @repo_user.certifications.highest_level
-    @remaining_trainings = @repo_user.remaining_trainings
-    @skills = Skill.all
-    @proficient_projects_awarded =
-      Proc.new do |training|
-        training.proficient_projects.where(
-          id: @repo_user.order_items.awarded.pluck(:proficient_project_id)
-        )
-      end
-    @learning_modules_completed =
-      Proc.new do |training|
-        training.learning_modules.where(
-          id:
-            @repo_user.learning_module_tracks.completed.pluck(
-              :learning_module_id
-            )
-        )
-      end
-    @recomended_hours =
-      Proc.new do |training, levels|
-        training.learning_modules.where(level: levels).count +
-          training.proficient_projects.where(level: levels).count
-      end
-    @space_list = Space.all
-    @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
-
-    respond_to do |format|
-      format.html
-      format.json do
-        if @user.staff? || @user.admin? || @repo_user == @user
-          render json: {
-                   user: @repo_user.as_json(include: :rfid),
-                   programs: @programs.as_json,
-                   certifications: @certifications.as_json(include: :training),
-                   remaining_trainings: @remaining_trainings.as_json
-                 }
+    if @repo_user.nil?
+      redirect_to root_path, alert: "User not found."
+    else
+      @programs = @repo_user.programs.pluck(:program_type)
+      @github_username =
+        Octokit::Client.new(access_token: @repo_user.access_token).login
+      @repositories =
+        if params[:username] == @user.username || @user.admin? || @user.staff?
+          @repo_user
+            .repositories
+            .where(make_id: nil)
+            .paginate(page: params[:page], per_page: 18)
         else
-          render json:
-                   "This page has restricted access. If you think you need this access, please contact uottawa.makerepo@gmail.com"
+          @repo_user
+            .repositories
+            .public_repos
+            .where(make_id: nil)
+            .paginate(page: params[:page], per_page: 18)
+        end
+
+      @acclaim_badge_url =
+        if params[:username] == @user.username
+          "https://www.youracclaim.com/earner/earned/share/"
+        else
+          "https://www.youracclaim.com/badges/"
+        end
+
+      @acclaim_data = @repo_user.badges
+      @makes =
+        @repo_user.repositories.where.not(make_id: nil).page params[:page]
+      @joined_projects = @user.project_joins
+      @photos = photo_hash
+      @certifications = @repo_user.certifications.highest_level
+      @remaining_trainings = @repo_user.remaining_trainings
+      @skills = Skill.all
+      @proficient_projects_awarded =
+        Proc.new do |training|
+          training.proficient_projects.where(
+            id: @repo_user.order_items.awarded.pluck(:proficient_project_id)
+          )
+        end
+      @learning_modules_completed =
+        Proc.new do |training|
+          training.learning_modules.where(
+            id:
+              @repo_user.learning_module_tracks.completed.pluck(
+                :learning_module_id
+              )
+          )
+        end
+      @recomended_hours =
+        Proc.new do |training, levels|
+          training.learning_modules.where(level: levels).count +
+            training.proficient_projects.where(level: levels).count
+        end
+      @space_list = Space.all
+      @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
+
+      respond_to do |format|
+        format.html
+        format.json do
+          if @user.staff? || @user.admin? || @repo_user == @user
+            render json: {
+                     user: @repo_user.as_json(include: :rfid),
+                     programs: @programs.as_json,
+                     certifications:
+                       @certifications.as_json(include: :training),
+                     remaining_trainings: @remaining_trainings.as_json
+                   }
+          else
+            render json:
+                     "This page has restricted access. If you think you need this access, please contact uottawa.makerepo@gmail.com"
+          end
         end
       end
     end
@@ -383,6 +394,9 @@ class UsersController < SessionsController
   end
 
   def destroy
+    sign_out
+    @user.repositories.each { |repo| repo.destroy }
+    LabSession.where(user_id: @user.id).destroy_all
     @user.destroy
     #disconnect_user
     redirect_to root_path

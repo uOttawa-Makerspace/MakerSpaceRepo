@@ -1,5 +1,4 @@
-<div>
-  <br>
+<div class="mt-4">
   <div class="d-flex justify-content-center">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
       <div class="input-group mb-3">
@@ -11,29 +10,40 @@
     <% end %>
   </div>
 
+  <div id="pending-shift-partial">
+    <%= render partial: 'pending_shifts', locals: {pending_shifts: @pending_shifts} %>
+  </div>
+
   <div class="row">
     <div class="col-md-2">
+      <div class="form-check mb-2">
+        <input class="form-check-input checkbox-lg me-2 mt-0" type="checkbox" value="" id="hide-show-unavailabilities" checked>
+        <label class="form-check-label" for="hide-show-unavailabilities">
+          Unavailabilities
+        </label>
+      </div>
+      <div class="form-check mb-2 d-flex align-items-center">
+        <input class="form-check-input checkbox-lg me-2 mt-0" type="checkbox" value="" id="hide-show-google-events" checked>
+        <label class="form-check-label" for="hide-show-google-events">
+          Events
+        </label>
+      </div>
+      <div class="form-check mb-2 d-flex align-items-center">
+        <input class="form-check-input checkbox-lg me-2 mt-0" type="checkbox" value="" id="hide-show-staff-needed" checked>
+        <label class="form-check-label" for="hide-show-staff-needed">
+          Staff Needed
+        </label>
+      </div>
 
-      <button id="hide-show-unavailabilities" class="btn btn-primary">Hide Unavailabilities</button>
-      <br><br>
-      <button id="hide-show-google-events" class="btn btn-primary">Hide Events</button>
-      <br><br>
-      <button id="hide-show-staff-needed" class="btn btn-primary">Hide Staff Needed</button>
-      <br><br>
-
-      <% @colors.each do |staff_name, array| %>
-        <%= form_tag(update_color_admin_shifts_path, method: :put) do %>
-          <label><%= staff_name %></label>
-          <br>
-          <div class="w-auto d-inline-block">
-            <input type="color" name="color" class="form-control form-control-color" value="<%= array[1] %>" title="Choose your color">
-            <%= hidden_field_tag :id, array[0] %>
-            <%= hidden_field :shifts, true %>
-            <button type="submit" class="btn btn-primary btn-sm ms-1">Update color</button>
-            <button type="button" id="<%= staff_name.strip.downcase.gsub(' ', '-') %>" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ms-1 shift-hide-button" data-staffname="<%=staff_name%>">Hide</button>
+      <% @colors.each do |user| %>
+          <div class="pb-2">
+            <label><%= user[:name] %></label>
+            <br>
+            <div class="d-flex">
+              <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
+              <input class="form-check-input checkbox-lg ms-1 shift-hide-button" id="user-<%= user[:id] %>" type="checkbox" onclick="toggleVisibility(<%= user[:id] %>)" checked>
+            </div>
           </div>
-        <% end %>
-        <br>
       <% end %>
     </div>
     <div class="col-md-10">
@@ -47,8 +57,8 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel">New Shift</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">New Shift</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3 text-center">
@@ -59,10 +69,10 @@
             <input id="end-datetime" autocomplete="false" class="form-control">
             <br>
             <%= label_tag :user_id, "User to select" %>
-            <%= select_tag :user_id, options_for_select(User.where(role: 'staff').pluck(:name, :id)), { id: 'modalUserId', autocomplete: 'off', multiple: true, required: true} %>
+            <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true} %>
             <br>
-            <label for="modal-reason">Reason</label>
-            <select id="modalReason" class="form-select">
+            <label for="reason">Reason</label>
+            <select id="reason" class="form-select">
               <option value="Shift">Shift</option>
               <option value="Training">Training</option>
               <option value="Meeting">Meeting</option>
@@ -72,9 +82,30 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" id="shiftCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" id="shiftSave" class="btn btn-primary">Save changes</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" id="modal-save" class="btn btn-primary">Save changes</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="toast-color-update-success" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          The color of the user has been successfully updated!
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+
+    <div id="toast-color-update-failed" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          The color of the user has not been updated... Please try again later.
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
     </div>
   </div>

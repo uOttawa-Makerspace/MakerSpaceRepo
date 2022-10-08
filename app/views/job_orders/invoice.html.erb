@@ -178,7 +178,7 @@
     <% @job_order.job_order_quote.job_order_quote_services.each do |s| %>
       <tr class="item last">
         <td>
-          <%= s.job_service.job_service_group.name %> - <%= s.job_service.name %> (<%= "#{s.quantity} #{s.job_service.unit}" %>)
+          <%= s.job_service.job_service_group.name %> - <%= s.job_service.name %> (<%= "#{s.quantity} #{s.job_service.unit.present? ? s.job_service.unit : 'unit'}" %>)
         </td>
         <td>
           CAD <%= number_to_currency(s.cost) %>
@@ -216,8 +216,8 @@
       </td>
     </tr>
   </table>
-  <% if @job_order.staff_comments.present? %>
-    <p>Comments to the user : <%= @job_order.staff_comments %></p>
+  <% if @job_order.user_comments.present? %>
+    <p>Comments to the user : <%= @job_order.user_comments %></p>
   <% end %>
 </div>
 </body>

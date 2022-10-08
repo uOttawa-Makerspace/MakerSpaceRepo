@@ -50,6 +50,7 @@ class Repository < ApplicationRecord
   #           inclusion: { within: CategoryOption.show_options },
   #           presence: { message: "A category is required."},
   #           length: {maximum: 5, message:"You may only select 5 categories."}
+  default_scope { where(deleted: false) }
 
   before_save do
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)

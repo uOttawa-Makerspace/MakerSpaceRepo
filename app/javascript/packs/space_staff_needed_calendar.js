@@ -1,8 +1,15 @@
-if (document.getElementById("clone-file-input")) {
-  document.getElementById("clone-file-input").addEventListener("click", () => {
-    const clone = document.getElementById("new-file-input").cloneNode(true);
+if (document.getElementById("clone-link-input")) {
+  // For buttons generated server-side
+  [...document.getElementsByClassName("original-button")].forEach((btn) =>
+    btn.addEventListener("click", (el) => {
+      el.target.closest("button").parentNode.remove();
+    })
+  );
+
+  document.getElementById("clone-link-input").addEventListener("click", () => {
+    const clone = document.getElementById("new-link-input").cloneNode(true);
     clone.removeAttribute("id");
-    clone.removeChild(clone.children[1]);
+    clone.removeChild(clone.children[2]);
     clone.children[0].value = null;
 
     const newChild = document.createElement("button");
@@ -17,6 +24,6 @@ if (document.getElementById("clone-file-input")) {
     });
     clone.appendChild(newChild);
 
-    document.getElementById("file-input-container").append(clone);
+    document.getElementById("link-container").append(clone);
   });
 }

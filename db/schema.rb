@@ -11,6 +11,7 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema.define(version: 2022_10_07_152219) do
+
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -122,8 +123,14 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
   create_table "booking_statuses", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
+    t.bigint "booking_status_id"
+    t.bigint "sub_space_booking_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.index ["booking_status_id"],
+            name: "index_booking_statuses_on_booking_status_id"
+    t.index ["sub_space_booking_id"],
+            name: "index_booking_statuses_on_sub_space_booking_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
@@ -867,6 +874,7 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
 
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
+    t.string "color"
     t.bigint "space_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
@@ -1011,6 +1019,8 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
     t.datetime "last_signed_in_time"
     t.boolean "deleted"
     t.boolean "booking_approval", default: false
+    t.string "otp_secret"
+    t.integer "last_otp_at"
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
@@ -1077,6 +1087,8 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
   add_foreign_key "badge_templates", "trainings"
   add_foreign_key "badges", "badge_templates"
   add_foreign_key "badges", "certifications"
+  add_foreign_key "booking_statuses", "booking_statuses"
+  add_foreign_key "booking_statuses", "sub_space_bookings"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"

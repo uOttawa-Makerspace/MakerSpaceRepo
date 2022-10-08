@@ -81,6 +81,7 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def edit
+    @staff_needed_calendars = StaffNeededCalendar.where(space: params[:id])
     @space_staff_hours = SpaceStaffHour.where(space: params[:id])
     @new_training = Training.new
     @sub_spaces = SubSpace.where(space: Space.find(params[:id]))
@@ -174,6 +175,38 @@ class Admin::SpacesController < AdminAreaController
       flash[:alert] = "Invalid Input"
     end
     redirect_to admin_spaces_path
+  end
+
+  def update_staff_needed_calendars
+    unless params[:space_id].present?
+      flash[
+        :alert
+      ] = "An error occurred while trying to add/remove the calendar URLs, please try again later."
+    end
+    StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
+    (
+      if (params[:staff_needed_calendar].is_a? Array)
+        params[:staff_needed_calendar]
+      else
+        [params[:staff_needed_calendar]]
+      end
+    ).each_with_index do |snc, i|
+      unless snc.blank?
+        StaffNeededCalendar.create(
+          color:
+            (
+              if (params[:staff_needed_calendar_color].is_a? Array)
+                params[:staff_needed_calendar_color][i]
+              else
+                params[:staff_needed_calendar_color]
+              end
+            ),
+          space_id: params[:space_id],
+          calendar_url: snc
+        )
+      end
+    end
+    redirect_back(fallback_location: root_path)
   end
 
   private

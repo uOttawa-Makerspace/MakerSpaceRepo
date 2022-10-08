@@ -23,5 +23,9 @@ FactoryBot.define do
     trait "all" do
       public_goal { "all" }
     end
+
+    trait "all_visitors" do
+      public_goal { "all_visitors" }
+    end
   end
 end
