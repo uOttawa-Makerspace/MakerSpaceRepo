@@ -20,7 +20,10 @@ class ReportGenerator
 
         # region Overview
         title(sheet, "Overview")
-        table_header(sheet, ["Space", "Distinct Users", "", "Total Visits"])
+        table_header(
+          sheet,
+          ["Space", "Distinct User.unscopeds", "", "Total Visits"]
+        )
 
         space_details[:spaces].each do |space_name, space|
           sheet.add_row [space_name, space[:unique], "", space[:total]]
@@ -28,7 +31,10 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        table_header(sheet, ["Identity", "Distinct Users", "", "Total Visits"])
+        table_header(
+          sheet,
+          ["Identity", "Distinct User.unscopeds", "", "Total Visits"]
+        )
 
         space_details[:identities].each do |identity_name, space|
           sheet.add_row [identity_name, space[:unique], "", space[:total]]
@@ -36,7 +42,10 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        table_header(sheet, ["Faculty", "Distinct Users", "", "Total Visits"])
+        table_header(
+          sheet,
+          ["Faculty", "Distinct User.unscopeds", "", "Total Visits"]
+        )
 
         space_details[:faculties].each do |faculty_name, space|
           sheet.add_row [faculty_name, space[:unique], "", space[:total]]
@@ -46,7 +55,14 @@ class ReportGenerator
 
         table_header(
           sheet,
-          ["Identity", "Distinct Users", "", "Total Visits", "", "Faculty"]
+          [
+            "Identity",
+            "Distinct User.unscopeds",
+            "",
+            "Total Visits",
+            "",
+            "Faculty"
+          ]
         )
         space_details[:identities].each do |identity_name, identity|
           start_index = sheet.rows.last.row_index + 1
@@ -84,7 +100,7 @@ class ReportGenerator
 
           table_header(
             sheet,
-            ["Identity", "Distinct Users", "", "Total Visits"]
+            ["Identity", "Distinct User.unscopeds", "", "Total Visits"]
           )
           space_detail[:identities].each do |identity_name, identity|
             sheet.add_row [
@@ -97,7 +113,10 @@ class ReportGenerator
 
           sheet.add_row # spacing
 
-          table_header(sheet, ["Faculty", "Distinct Users", "", "Total Visits"])
+          table_header(
+            sheet,
+            ["Faculty", "Distinct User.unscopeds", "", "Total Visits"]
+          )
           space_detail[:faculties].each do |faculty_name, faculty|
             sheet.add_row [faculty_name, faculty[:unique], "", faculty[:total]]
           end
@@ -106,7 +125,14 @@ class ReportGenerator
 
           table_header(
             sheet,
-            ["Identity", "Distinct Users", "", "Total Visits", "", "Faculty"]
+            [
+              "Identity",
+              "Distinct User.unscopeds",
+              "",
+              "Total Visits",
+              "",
+              "Faculty"
+            ]
           )
           space_detail[:identities].each do |identity_name, identity|
             start_index = sheet.rows.last.row_index + 1
@@ -136,7 +162,10 @@ class ReportGenerator
 
           sheet.add_row # spacing
 
-          table_header(sheet, ["Gender", "Distinct Users", "", "Total Visits"])
+          table_header(
+            sheet,
+            ["Gender", "Distinct User.unscopeds", "", "Total Visits"]
+          )
           space_detail[:genders].each do |gender_name, gender|
             sheet.add_row [gender_name, gender[:unique], "", gender[:total]]
           end
@@ -512,14 +541,14 @@ class ReportGenerator
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_new_users_report(start_date, end_date)
-    users = User.between_dates_picked(start_date, end_date)
+    users = User.unscoped.between_dates_picked(start_date, end_date)
 
     spreadsheet = Axlsx::Package.new
 
     spreadsheet
       .workbook
       .add_worksheet(name: "Report") do |sheet|
-        title(sheet, "New Users")
+        title(sheet, "New User.unscopeds")
 
         sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
         sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
@@ -580,7 +609,7 @@ class ReportGenerator
           sheet,
           [
             "Name",
-            "Username",
+            "User.unscopedname",
             "Email",
             "Gender",
             "Identity",
@@ -796,7 +825,7 @@ class ReportGenerator
         sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
         sheet.add_row # spacing
 
-        table_header(sheet, %w[Title Users URL Categories])
+        table_header(sheet, %w[Title User.unscopeds URL Categories])
 
         repositories.each do |repository|
           sheet.add_row [
@@ -849,6 +878,7 @@ class ReportGenerator
   def self.generate_space_present_users_report(id)
     lab_sessions =
       LabSession
+        .unscoped
         .includes(:user)
         .joins(:user)
         .where("space_id" => id)
@@ -860,7 +890,7 @@ class ReportGenerator
     spreadsheet
       .workbook
       .add_worksheet(name: "Report") do |sheet|
-        title(sheet, "Present Users")
+        title(sheet, "Present User.unscopeds")
 
         sheet.add_row ["Date", DateTime.now.strftime("%Y-%m-%d %H:%M:%S")]
 
@@ -883,7 +913,7 @@ class ReportGenerator
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_peak_hours_report(start_date, end_date)
-    ls = LabSession.arel_table
+    ls = LabSession.unscoped.arel_table
 
     result =
       ActiveRecord::Base.connection.exec_query(
@@ -982,7 +1012,10 @@ class ReportGenerator
         sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
         sheet.add_row # spacing
 
-        table_header(sheet, ["Kit name", "User", "Date", "Delivery Status"])
+        table_header(
+          sheet,
+          ["Kit name", "User.unscoped", "Date", "Delivery Status"]
+        )
 
         kits.each do |kit|
           status = kit.delivered? ? "Delivered" : "Not yet delivered"
@@ -1006,8 +1039,8 @@ class ReportGenerator
   # @param [DateTime] end_date
   def self.get_visitors(start_date, end_date)
     g = Arel::Table.new("g")
-    ls = LabSession.arel_table
-    u = User.arel_table
+    ls = LabSession.unscoped.arel_table
+    u = User.unscoped.arel_table
     s = Space.arel_table
 
     result =
@@ -1025,6 +1058,7 @@ class ReportGenerator
           )
           .from(
             LabSession
+              .unscoped
               .select(
                 [
                   ls[:space_id],
@@ -1207,8 +1241,8 @@ class ReportGenerator
     t = Training.arel_table
     ts = TrainingSession.arel_table
     tsu = Arel::Table.new(:training_sessions_users)
-    u = User.arel_table
-    uu = User.arel_table.alias("trainers")
+    u = User.unscoped.arel_table
+    uu = User.unscoped.arel_table.alias("trainers")
     s = Space.arel_table
 
     query =
