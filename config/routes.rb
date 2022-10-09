@@ -249,6 +249,7 @@ Rails.application.routes.draw do
         get :get_staff_needed
         get :get_external_staff_needed
         get :pending_shifts
+        get :shift_suggestions
         post :update_color
         post :confirm_shifts
         post :clear_pending_shifts
