@@ -43,7 +43,7 @@
             <th class="certifications-header">Certifications in <%= @space.name %></th>
             <th class="email-header"> # of visits <br> (Past 2 months)</th>
             <th class="last-seen-header">Last Seen</th>
-            <th class="action-header disable-sort">Sign Out of <%= @space.name.capitalize %></th>
+            <th class="action-header disable-sort">Sign Out of <%= @space.name %></th>
           </tr>
         </thead>
 
@@ -73,7 +73,7 @@
           <tr>
             <th class="name-header">Name</th>
             <th class="email-header">Email</th>
-            <th class="action-header disable-sort">Sign In To <%= @space.name.capitalize %></span></th>
+            <th class="action-header disable-sort">Sign In To <%= @space.name %></span></th>
           </tr>
         </thead>
         <%= render partial:"newly_signed_up", locals: {space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space} %>

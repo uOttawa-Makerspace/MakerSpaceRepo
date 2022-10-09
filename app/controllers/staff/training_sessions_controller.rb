@@ -124,7 +124,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
           error = true
           flash[
             :alert
-          ] = "#{graduate.username}'s certification not saved properly!"
+          ] = "#{graduate.username}'s certification did not saved properly!"
         end
       end
     end
