@@ -14,7 +14,7 @@
     </p>
 <% else %>
   <table class="table text-center table-striped">
-    <thead>
+    <thead class="table-primary">
     <tr>
       <th scope="col" class="border-0 bg-light">
         <div class="p-2 px-3 text-uppercase">Product</div>
@@ -44,14 +44,14 @@
   <div class="row">
     <div class="col-md-7"></div>
     <div class="col-md-5">
-      <div class="bg-light rounded-pill px-4 py-3 text-uppercase font-weight-bold">Order summary </div>
+      <div class="bg-light rounded-pill px-4 py-3 text-uppercase fw-bold">Order summary </div>
       <div class="p-4">
         <ul class="list-unstyled mb-4">
           <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Order Subtotal </strong><strong><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></strong></li>
           <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Total</strong>
-            <h5 class="font-weight-bold"><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></h5>
+            <h5 class="fw-bold"><%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %><%= current_order.subtotal %></h5>
           </li>
-        <%= link_to "Confirm order", orders_path, :action => :create, :method => :post, class: "btn btn-primary rounded-pill py-2 btn-block", 'aria-label': "Confirm order, the total is #{current_order.subtotal} CC", data: {confirm:"Are you sure you want to proceed with the order ?"} %>
+        <%= link_to "Confirm order", orders_path, :action => :create, :method => :post, class: "btn btn-primary rounded-pill py-2 d-block w-100", 'aria-label': "Confirm order, the total is #{current_order.subtotal} CC", data: {confirm:"Are you sure you want to proceed with the order ?"} %>
         </ul>
       </div>
   </div>

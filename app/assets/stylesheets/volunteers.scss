@@ -2,11 +2,11 @@
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
 
-.x-button{
+.x-button {
   color: #af0000;
   font-size: 1.4em;
 }
-.check-button{
+.check-button {
   color: #006200;
   font-size: 1.4em;
 }
@@ -23,15 +23,15 @@ section#volunteers-getting-started {
     border-bottom: 2px solid #366;
   }
 
-  table{
-    th{
+  table {
+    th {
       width: 15%;
       text-align: center;
       vertical-align: top;
     }
   }
 
-  ul{
+  ul {
     padding-left: 30px;
     list-style-type: circle;
   }
@@ -43,7 +43,7 @@ section#volunteers-getting-started {
 }
 
 .border {
-  border-width: 1.8px!important;
+  border-width: 1.8px !important;
 }
 
 .googleCalendar {
@@ -52,7 +52,7 @@ section#volunteers-getting-started {
   padding-bottom: 50%;
 }
 
-.googleCalendar iframe{
+.googleCalendar iframe {
   position: absolute;
   top: 0;
   left: 0;

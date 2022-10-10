@@ -1,0 +1,73 @@
+<section>
+  <%= form_for([:admin, @job_service]) do |f| %>
+    <% if @job_service.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(@job_service.errors.count, "error") %> prohibited this service from being saved:</h2>
+
+        <ul>
+          <% @job_service.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="text-center">
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :name, 'Name of the Service' %>
+        <%= f.text_field :name, class: "form-control", required: true %>
+      </div>
+
+      <div class="form-group col-lg-6 mx-auto mb-3">
+        <%= f.label :description, 'Description' %>
+        <%= f.text_area :description, class: "form-control" %>
+      </div>
+      <div class="form-group col-lg-6 mx-auto mb-3">
+        <%= f.label :job_service_group_id, 'Job Service Group' %>
+        <%= f.select :job_service_group_id, options_from_collection_for_select(JobServiceGroup.all, :id, :name, @job_service.job_service_group_id.present? ? @job_service.job_service_group_id : ''), {}, class: "form-control form-select" %>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :unit, 'Unit (g, cm3, h ...)' %>
+        <%= f.text_field :unit, class: "form-control", required: true %>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :internal_price, 'Internal Price per unit' %>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text">$</span>
+          </div>
+          <%= f.number_field :internal_price, class: "form-control", required: true, step: '.01' %>
+        </div>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :external_price, 'External Price per unit' %>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text">$</span>
+          </div>
+          <%= f.number_field :external_price, class: "form-control", required: true, step: '.01' %>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <%= f.label :required, "Required? (ex: Onyx for MarkForged)", required: true %>
+
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :required, false, class: 'form-check-input' %>
+          <%= f.label :required, 'No', class: 'form-check-label', value: false %>
+        </div>
+
+        <div class="form-check form-check-inline">
+          <%= f.radio_button :required, true, class: 'form-check-input' %>
+          <%= f.label :required, 'Yes', class: 'form-check-label', value: true %>
+        </div>
+      </div>
+
+      <%= f.submit class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+</section>

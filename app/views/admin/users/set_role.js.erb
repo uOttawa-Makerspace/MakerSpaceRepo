@@ -1,0 +1,2 @@
+document.getElementById("admin_table").innerHTML = "<%= escape_javascript(render(partial: 'admin_table', locals: {admins: @admins})) %>"
+document.getElementById("staff_table").innerHTML = "<%= escape_javascript(render(partial: 'staff_table', locals: {staff: @staff})) %>"

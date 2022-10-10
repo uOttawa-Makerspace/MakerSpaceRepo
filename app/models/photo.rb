@@ -8,10 +8,17 @@ class Photo < ApplicationRecord
 
   has_one_attached :image
 
-  ALLOWED_CONTENT_TYPES = %w[image/jpeg image/png image/gif image/x-icon image/svg+xml].freeze
+  ALLOWED_CONTENT_TYPES = %w[
+    image/jpeg
+    image/png
+    image/gif
+    image/x-icon
+    image/svg+xml
+  ].freeze
 
-  validates :image, file_content_type: {
-      allow: [ALLOWED_CONTENT_TYPES],
-      if: -> {image.attached?},
-  }
+  validates :image,
+            file_content_type: {
+              allow: [ALLOWED_CONTENT_TYPES],
+              if: -> { image.attached? }
+            }
 end

@@ -1,36 +1,25 @@
-require('select2');
-
-$(document).on('turbolinks:load', function () {
-    'use strict';
-    $('#pictureInput').on('change', function(event) {
-        var files = event.target.files;
-        var image = files;
-        for(var i = 0; i < files.length; i++){
-            var reader = new FileReader();
-            reader.onload = function(file) {
-                var img = new Image();
-                img.src = file.target.result;
-                document.getElementById('image-target').insertBefore(img, null);
-            }
-            reader.readAsDataURL(image[i]);
-        }
-        // var editImage = document.getElementById("edit-image");
-        // if(editImage){
-        //  editImage.style.display = "none";
-        // }
+console.log("Hello World");
+if (document.getElementById("questions_trainings")) {
+  if (!document.getElementById("questions_trainings").tomselect) {
+    new TomSelect("#questions_trainings", {
+      plugins: {
+        clear_button: { title: "Clear" },
+      },
     });
-});
-
-$(document).on("turbolinks:load", function () {
-    $("#questions_trainings").select2({
-        allowClear: true,
-        multiple: true
-    });
-
-    $("#questionImageGallery").justifiedGallery({
-        rowHeight: 250,
-        lastRow: 'center'
-    });
-
-});
-
+  }
+}
+document
+  .getElementById("pictureInput")
+  .addEventListener("change", function (event) {
+    var files = event.target.files;
+    var image = files;
+    for (var i = 0; i < files.length; i++) {
+      var reader = new FileReader();
+      reader.onload = function (file) {
+        var img = new Image();
+        img.src = file.target.result;
+        document.getElementById("image-target").insertBefore(img, null);
+      };
+      reader.readAsDataURL(image[i]);
+    }
+  });

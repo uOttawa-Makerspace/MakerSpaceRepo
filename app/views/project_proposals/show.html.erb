@@ -267,12 +267,12 @@
       PARTIR DE CETTE PROPOSITION:
     </div>
     <br>
-    <section id="repository-filter">
-      <div class="sort">sort by/classer par</div>
+    <section class="repository-filter">
+      <div class="sort">sort by/trier par</div>
       <nav>
         <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-        <div id="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
-        <ul class="filter">
+        <div id="filter-header" class="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
+        <ul id="sort-filter" class="filter">
           <li><%= link_to 'Newest/Plus récent', project_proposal_path(sort: :newest) %></li>
           <li><%= link_to 'Most Likes/Plus d\'Aimes', project_proposal_path(sort: :most_likes) %></li>
           <li><%= link_to 'Most Makes/Plus de fabrications', project_proposal_path(sort: :most_makes) %></li>
@@ -292,14 +292,14 @@
           </div>
 
           <div class="repo-info">
-            <div class="left">
+            <div class="start">
+              <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
               <div class="title">
                 <%= link_to repository.title, repository_path(user_username: repository.user_username, id: repository.slug) %>
               </div>
               <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
               <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
             </div>
-            <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           </div>
         </div>
       <% end %>

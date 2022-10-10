@@ -8,5 +8,5 @@ class VolunteerTaskJoin < ApplicationRecord
 
   scope :active, -> { where(active: true) }
   scope :not_active, -> { where(active: false) }
-  scope :user_type_volunteer, -> { where(user_type: 'Volunteer') }
+  scope :user_type_volunteer, -> { where(user_type: "Volunteer") }
 end

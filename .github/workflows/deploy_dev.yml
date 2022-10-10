@@ -9,11 +9,11 @@ jobs:
     if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/staging'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3.0.1
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7.2
+          ruby-version: 2.7.3
           bundler-cache: true
       - name: Extract branch name
         shell: bash
@@ -31,5 +31,3 @@ jobs:
           ssh-add config/deploy_id_rsa
           gem install capistrano
           BRANCH=${{ steps.extract_branch.outputs.branch }} bundle exec cap dev_server deploy
-
-

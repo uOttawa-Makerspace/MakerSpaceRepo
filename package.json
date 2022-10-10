@@ -1,4 +1,12 @@
 {
+  "scripts": {
+    "postinstall": "husky install",
+    "prettier:format": "prettier --write .",
+    "prettier:check": "prettier --check ."
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  },
   "dependencies": {
     "@babel/plugin-proposal-private-methods": "^7.16.0",
     "@fullcalendar/core": "5.9.0",
@@ -7,17 +15,17 @@
     "@fullcalendar/interaction": "5.9.0",
     "@fullcalendar/list": "5.9.0",
     "@fullcalendar/timegrid": "5.9.0",
-    "@rails/actioncable": "^6.0.3-2",
+    "@hotwired/stimulus": "^3.1.0",
+    "@hotwired/stimulus-webpack-helpers": "^1.0.1",
+    "@popperjs/core": "^2.11.5",
     "@rails/actiontext": "^6.0.3-4",
     "@rails/activestorage": "^6.0.3-2",
     "@rails/ujs": "^6.0.3-2",
     "@rails/webpacker": "5.2.1",
     "@shopify/buy-button-js": "^2.1.7",
     "activestorage": "^5.2.4-3",
-    "boostrap": "^2.0.0",
-    "bootbox": "^5.4.0",
-    "bootstrap": "^4.5.2",
-    "bootstrap-datepicker": "^1.9.0",
+    "bootstrap": "^5.2.0",
+    "bs-custom-file-input": "^1.3.4",
     "chart.js": "^2.9.3",
     "clipboard": "^2.0.6",
     "expose-loader": "^1.0.0",
@@ -28,10 +36,9 @@
     "jquery-ui": "^1.13.0",
     "jquery-ui-dist": "^1.12.1",
     "js-cookie": "^2.2.1",
-    "justifiedGallery": "^3.8.1",
     "lightgallery": "^1.7.2",
-    "moment": "^2.29.1",
-    "moment-timezone": "^0.5.31",
+    "moment": "^2.29.2",
+    "moment-timezone": "^0.5.35",
     "node": "^14.14.0",
     "node-sass": "^4.14.1",
     "photoswipe": "^4.1.3",
@@ -40,18 +47,19 @@
     "rails-erb-loader": "^5.5.2",
     "rails-ujs": "^5.2.4-3",
     "sass": "^1.32.6",
-    "select2": "^4.0.13",
-    "select2-bootstrap-theme": "^0.1.0-beta.10",
-    "tempusdominus-bootstrap-4": "^5.39.0",
-    "tempusdominus-core": "5.19.0",
+    "sortablejs": "^1.15.0",
     "toastr": "^2.1.4",
     "tom-select": "^2.0.0",
     "trix": "^1.2.0",
     "turbolinks": "^5.2.0",
     "webpack": "^4.44.1",
-    "webpack-cli": "^3.3.12"
+    "webpack-cli": "^3.3.12",
+    "husky": "^8.0.1"
   },
   "devDependencies": {
+    "@prettier/plugin-ruby": "^3.2.0",
+    "lint-staged": "^13.0.3",
+    "prettier": "^2.7.1",
     "webpack-dev-server": "^3.11.0"
   }
 }

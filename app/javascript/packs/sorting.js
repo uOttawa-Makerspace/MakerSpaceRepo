@@ -1,4 +1,4 @@
-window.findSession = function(table_class, id = 'query') {
+window.findSession = function (table_class, id = "query") {
   var input, filter, table, tr, i;
   input = document.getElementById(id);
   filter = input.value.toUpperCase();
@@ -7,42 +7,41 @@ window.findSession = function(table_class, id = 'query') {
   for (i = 1; i < tr.length; i++) {
     td = tr[i].getElementsByTagName("td");
     bingo = false;
-    for(j = 0; j < td.length; j++){
+    for (j = 0; j < td.length; j++) {
       tdj = td[j];
       if (tdj) {
         if (tdj.innerHTML.toUpperCase().indexOf(filter) > -1) {
           bingo = true;
-          break
+          break;
         }
       }
     }
-    if(bingo){
+    if (bingo) {
       tr[i].style.display = "";
-    }else{
+    } else {
       tr[i].style.display = "none";
     }
-    console.log(tr[i]);
   }
-}
+};
 
 var sort_direction = 1;
-window.sortTable = function(table_class, col) {
-  if(sort_direction === 1){
+window.sortTable = function (table_class, col) {
+  if (sort_direction === 1) {
     var table, rows, switching, i, x, y, shouldSwitch;
     table = document.getElementsByClassName(table_class)[0];
     switching = true;
     while (switching) {
       switching = false;
-      if(table){
+      if (table) {
         rows = table.getElementsByTagName("tr");
       }
       if (rows) {
-        for (i = 1; i < (rows.length - 1); i++) {
+        for (i = 1; i < rows.length - 1; i++) {
           shouldSwitch = false;
           x = rows[i].getElementsByTagName("td")[col];
           y = rows[i + 1].getElementsByTagName("td")[col];
           if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-            shouldSwitch= true;
+            shouldSwitch = true;
             break;
           }
         }
@@ -53,22 +52,22 @@ window.sortTable = function(table_class, col) {
       }
     }
     sort_direction = 0;
-  }else{
+  } else {
     var table, rows, switching, i, x, y, shouldSwitch;
     table = document.getElementsByClassName(table_class)[0];
     switching = true;
     while (switching) {
       switching = false;
-      if(table){
+      if (table) {
         rows = table.getElementsByTagName("tr");
       }
-      if(rows){
-        for (i = 1; i < (rows.length - 1); i++) {
+      if (rows) {
+        for (i = 1; i < rows.length - 1; i++) {
           shouldSwitch = false;
           x = rows[i].getElementsByTagName("td")[col];
           y = rows[i + 1].getElementsByTagName("td")[col];
           if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
-            shouldSwitch= true;
+            shouldSwitch = true;
             break;
           }
         }
@@ -80,23 +79,22 @@ window.sortTable = function(table_class, col) {
     }
     sort_direction = 1;
   }
-}
+};
 
 var select_direction = 1;
-window.selectAll = function(table_id){
-  if(select_direction == 1){
+window.selectAll = function (table_id) {
+  if (select_direction == 1) {
     boxes = document.getElementById(table_id).getElementsByTagName("input");
-    for (i = 0; i < (boxes.length ); i++) {
+    for (i = 0; i < boxes.length; i++) {
       boxes[i].checked = true;
     }
     select_direction = 0;
-  }else{
+  } else {
     boxes = document.getElementById(table_id).getElementsByTagName("input");
-    for (i = 0; i < (boxes.length ); i++) {
+    for (i = 0; i < boxes.length; i++) {
       boxes[i].checked = false;
     }
     select_direction = 1;
   }
   return false;
-
-}
+};

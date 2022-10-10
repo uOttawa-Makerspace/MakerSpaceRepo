@@ -1,8 +1,8 @@
 <% if @user.admin? %>
   <div class="card">
-    <div class="card-header" data-toggle="collapse" data-target="#page_pending" aria-expanded="true" aria-controls="collapseOne">
+    <div class="card-header" data-bs-toggle="collapse" data-bs-target="#page_pending" aria-expanded="true" aria-controls="collapseOne">
       <h2 class="mb-0">
-        <button class="btn btn-link btn-block text-left text-center" type="button" >
+        <button class="btn btn-link d-block w-100 text-start text-center" type="button" >
           Pending Project Proposals
         </button>
       </h2>
@@ -16,9 +16,9 @@
   </div>
 <% end %>
 <div class="card">
-  <div class="card-header" data-toggle="collapse" data-target="#page_approved">
+  <div class="card-header" data-bs-toggle="collapse" data-bs-target="#page_approved">
     <h2 class="mb-0">
-      <button class="btn btn-link btn-block text-left collapsed text-center" type="button">
+      <button class="btn btn-link d-block w-100 text-start collapsed text-center" type="button">
         Approved Project Proposals
       </button>
     </h2>
@@ -30,9 +30,9 @@
   </div>
 </div>
 <div class="card">
-  <div class="card-header" data-toggle="collapse" data-target="#page_not_approved" aria-controls="collapseThree">
+  <div class="card-header" data-bs-toggle="collapse" data-bs-target="#page_not_approved" aria-controls="collapseThree">
     <h2 class="mb-0">
-      <button class="btn btn-link btn-block text-left collapsed text-center" type="button">
+      <button class="btn btn-link d-block w-100 text-start collapsed text-center" type="button">
         Project Proposals not approved
       </button>
     </h2>

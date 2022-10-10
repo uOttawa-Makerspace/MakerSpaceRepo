@@ -1,37 +1,37 @@
 <div class="padding-10">
-  <h2 class="text-center pt-2 mb-5 font-weight-bold">Create a new availability</h2>
+  <h2 class="text-center pt-2 mb-5 fw-bold">Create a new unavailability</h2>
   <div class="container my-5">
     <div class="row">
       <div class="col-lg-12">
         <%= form_for @staff_availability, url: {controller: "staff_availabilities", action: "create"} do |f| %>
           <div class="row">
             <div class="col-md-12">
-              <div class="form-group text-center">
-                <%= f.label :day, "Day of the week" %>
-                <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), {}, class: "form-control" %>
+              <div class="mb-3 text-center">
+                <%= f.label :user_id, "User to select", class:"form-label"  %>
+                <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id).sort_by {|n| n[0].titleize}), {}, id: 'userId', autocomplete: 'off', required: true, class: "form-control form-select" %>
+              </div>
+              <div class="mb-3 text-center">
+                <%= f.label :day, "Day of the week", class:"form-label"  %>
+                <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), {}, class: "form-control form-select" %>
               </div>
             </div>
 
-            <div class="form-group col-md-6 text-center">
-              <%= f.label :start_time, 'Start Time (24h format)' %>
+            <div class="mb-3 col-md-6 text-center">
+              <%= f.label :start_time, 'Start Time (24h format)', class:"form-label"  %>
               <div class="input-group">
                 <%= f.text_field "start_time", id: 'start_time', autocomplete: 'off', class: "form-control", required: true %>
-                <div class="input-group-append">
-                  <button class="btn btn-outline-danger" id="start_time_clear" type="button">
-                    <i class="fa fa-times"></i>
-                  </button>
-                </div>
+                <button class="btn btn-outline-danger" id="start_time_clear" type="button">
+                  <i class="fa fa-times"></i>
+                </button>
               </div>
             </div>
             <div class="col-md-6">
-              <%= f.label :end_time, 'End Time (24h format)' %>
+              <%= f.label :end_time, 'End Time (24h format)', class:"form-label"  %>
               <div class="input-group">
                 <%= f.text_field "end_time", id: 'end_time', autocomplete: 'off', class: "form-control", required: true %>
-                <div class="input-group-append">
-                  <button class="btn btn-outline-danger" id="end_time_clear" type="button">
-                    <i class="fa fa-times"></i>
-                  </button>
-                </div>
+                <button class="btn btn-outline-danger" id="end_time_clear" type="button">
+                  <i class="fa fa-times"></i>
+                </button>
               </div>
             </div>
 

@@ -13,44 +13,62 @@ class SessionsController < ApplicationController
       if @user
         if @user.confirmed?
           @user.update(last_signed_in_time: DateTime.now)
-          if request.env['HTTP_REFERER'] == login_authentication_url
+          if request.env["HTTP_REFERER"] == login_authentication_url
             format.html { redirect_to root_path }
           else
             format.html { redirect_back(fallback_location: root_path) }
           end
-          format.json {
-            render json: {user: @user.as_json, signed_in: true, token: @user.token}
-          }
+          format.json do
+            render json: {
+                     user: @user.as_json,
+                     signed_in: true,
+                     token: @user.token
+                   }
+          end
         else
-          flash.now[:alert] = "Please confirm your account before logging in, you can resend the email #{view_context.link_to 'here', resend_email_confirmation_path(email: params[:username_email]), class: 'text-primary'}".html_safe
           @user = User.new
           session[:user_id] = nil
-          format.html { render :login }
-          format.json { render json: "Account not confirmed", status: :unprocessable_entity }
+          format.html do
+            flash.now[
+              :alert
+            ] = "Please confirm your account before logging in, you can resend the email #{view_context.link_to "here", resend_email_confirmation_path(email: params[:username_email]), class: "text-primary"}".html_safe
+            render :login
+          end
+          format.json do
+            render json: "Account not confirmed", status: :unprocessable_entity
+          end
         end
         format.json { render json: { role: :guest }, status: :ok }
       else
         @user = User.new
-        flash.now[:alert] = 'Incorrect username or password.'
-        format.html { render :login }
-        format.json { render json: {'error': 'Incorrect username or password.'}, status: :unprocessable_entity }
+        format.html do
+          flash[:alert] = "Incorrect username or password."
+          render :login
+        end
+        format.json do
+          render json: {
+                   error: "Incorrect username or password."
+                 },
+                 status: :unprocessable_entity
+        end
       end
     end
   end
 
   def check_signed_in
     if signed_in?
-      render json: {"signed_in": "true", user: @user.as_json, token: @user.token}
+      render json: {
+               signed_in: "true",
+               user: @user.as_json,
+               token: @user.token
+             }
     else
-      render json: {"signed_in": "false"}
+      render json: { signed_in: "false" }
     end
   end
 
   def login
-    if signed_in?
-      flash[:alert] = 'You are already logged in.'
-      redirect_to root_path
-    end
+    redirect_to root_path if signed_in?
     @user = User.new
     session[:back] = request.referer
   end
@@ -60,8 +78,8 @@ class SessionsController < ApplicationController
 
     respond_to do |format|
       format.html { redirect_to login_path }
-      format.js   { render js: "window.location.href = '#{login_path}'" }
-      format.json { render json: 'redirect' }
+      format.js { render js: "window.location.href = '#{login_path}'" }
+      format.json { render json: "redirect" }
     end
   end
 
@@ -70,7 +88,7 @@ class SessionsController < ApplicationController
     @user = User.new
     respond_to do |format|
       format.html { redirect_to root_path }
-      format.json { render json: {"logout": "true"} }
+      format.json { render json: { logout: "true" } }
     end
   end
 
@@ -97,8 +115,8 @@ class SessionsController < ApplicationController
 
   private
 
-    def get_session_time_left
-      expire_time = session[:expires_at] || Time.zone.now
-      @session_time_left = (expire_time.to_time - Time.zone.now).to_i
-    end
+  def get_session_time_left
+    expire_time = session[:expires_at] || Time.zone.now
+    @session_time_left = (expire_time.to_time - Time.zone.now).to_i
+  end
 end

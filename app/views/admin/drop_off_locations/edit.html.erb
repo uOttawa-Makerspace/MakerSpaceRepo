@@ -1,7 +1,7 @@
 <section>
   <div class="text-center">
     <h2>Editing <b><%= @location.name.capitalize %></b></h2>
-    <div class="float-right">
+    <div class="float-end">
       <%= link_to "Back", admin_drop_off_locations_path %>
     </div>
     <br />
@@ -21,7 +21,7 @@
     <div class="pb-5">
       <%=link_to "Delete", { controller: "admin/drop_off_locations", action: :destroy, id: @location.id }, method: :delete,
                  data: { confirm: 'Are you sure that you want to delete this location ?' },
-                 class:"btn btn-danger float-right"%>
+                 class:"btn btn-danger float-end"%>
     </div>
   </div>
 </section>

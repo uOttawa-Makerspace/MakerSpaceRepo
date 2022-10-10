@@ -2,7 +2,7 @@
 
 class Printer < ApplicationRecord
   has_many :printer_sessions, dependent: :destroy
-  scope :show_options, -> { order('lower(model) ASC').all }
+  scope :show_options, -> { order("lower(model) ASC").all }
 
   def model_and_number
     "#{model}; Number #{number}"
@@ -13,8 +13,11 @@ class Printer < ApplicationRecord
   end
 
   def self.get_last_model_session(printer_model)
-    PrinterSession.joins(:printer).order(created_at: :desc)
-                  .where('printers.model = ?', printer_model).first
+    PrinterSession
+      .joins(:printer)
+      .order(created_at: :desc)
+      .where("printers.model = ?", printer_model)
+      .first
   end
 
   def self.get_last_number_session(printer_id)
