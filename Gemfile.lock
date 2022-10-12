@@ -1050,7 +1050,6 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.12.2)
-    colorize (0.8.1)
     concurrent-ruby (1.1.9)
     connection_pool (2.2.5)
     crass (1.0.6)
@@ -1509,7 +1508,6 @@ DEPENDENCIES
   caxlsx (~> 3.0.1)
   clipboard-rails
   coffee-rails (= 5.0.0)
-  colorize
   concurrent-ruby (~> 1.1, >= 1.1.6)
   database_cleaner-active_record
   ed25519 (~> 1.2)
