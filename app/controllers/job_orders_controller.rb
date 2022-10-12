@@ -485,7 +485,7 @@ class JobOrdersController < ApplicationController
             ),
           is_deleted: false
         ).first
-      if @user.admin? || @user.id == jo.user_id
+      if @user.admin? | @user.staff? || @user.id == jo.user_id
         @job_order = jo
       else
         flash[:alert] = "You do not have permission to view this job order."
