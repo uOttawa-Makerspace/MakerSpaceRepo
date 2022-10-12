@@ -19,7 +19,6 @@ namespace :add_badges_to_beginner_trainings do
         badge_template = BadgeTemplate.find_by(training_id: c.training.id)
 
         if badge_template.present?
-          updated_certifications << "#{c.user.name} - #{badge_template.badge_name} (#{b.acclaim_badge_id})"
           response = Badge.acclaim_api_create_badge(c.user, badge_template)
           if response.status == 201
             b =
