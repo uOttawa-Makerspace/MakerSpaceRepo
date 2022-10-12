@@ -13,20 +13,22 @@
 
   <div class="row">
     <div class="col-md-2">
-      <button id="hide-show-unavailabilities" class="btn btn-primary">Hide Unavailabilities</button>
+      <div class="form-check mb-3">
+        <input class="form-check-input checkbox-lg me-2 mt-0" type="checkbox" value="" id="hide-show-unavailabilities" checked>
+        <label class="form-check-label" for="hide-show-unavailabilities">
+          Unavailabilities
+        </label>
+      </div>
 
-      <% @colors.each do |staff_name, array| %>
-        <%= form_tag(update_color_admin_shifts_path, method: :post) do %>
-          <label><%= staff_name %></label>
+      <% @colors.each do |user| %>
+        <div class="pb-2">
+          <label><%= user[:name] %></label>
           <br>
-          <div class="w-auto d-inline-block">
-            <input type="color" name="color" class="form-control form-control-color" value="<%= array[1] %>" title="Choose your color">
-            <%= hidden_field_tag :id, array[0] %>
-            <button type="submit" class="btn btn-primary btn-sm ms-1">Update color</button>
-            <button type="button" id="<%= staff_name.strip.downcase.gsub(' ', '-') %>" onclick="toggleVisibility('<%= staff_name.strip.downcase.gsub(' ', '-') %>')" class="btn btn-primary btn-sm ms-1 shift-hide-button" data-staffname="<%=staff_name%>">Hide</button>
+          <div class="d-flex">
+            <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
+            <input class="form-check-input checkbox-lg ms-1 shift-hide-button" id="user-<%= user[:id] %>" type="checkbox" onclick="toggleVisibility(<%= user[:id] %>)" checked>
           </div>
-        <% end %>
-        <br>
+        </div>
       <% end %>
     </div>
     <div class="col-md-10">
@@ -35,6 +37,77 @@
   </div>
 
   <br>
+
+  <!-- Modal -->
+
+  <div class="modal fade" id="unavailabilityModal" tabindex="-1" role="dialog" aria-labelledby="unavailabilityModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">New Unavailability</h5>
+          <button type="button" class="btn-close shift-cancel" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3 text-center row">
+            <div class="col-md-12 mb-3">
+              <%= label_tag :day, "Day of the week", class:"form-label" %>
+              <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), class: "form-control form-select", id: 'day' %>
+            </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="start-datetime">Start Time</label>
+                <div class="input-group">
+                  <%= text_field_tag "start_time", "", id: 'start-time', autocomplete: 'off', class: "form-control", required: true %>
+                  <button class="btn btn-outline-danger" id="start-time-clear" type="button">
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="end-datetime">End Date</label>
+                <div class="input-group">
+                  <%= text_field_tag "end_time", "", id: 'end-time', autocomplete: 'off', class: "form-control", required: true %>
+                  <button class="btn btn-outline-danger" id="end-time-clear" type="button">
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+              </div>
+
+            <div style="padding-left: 0.75rem; padding-right: 0.75rem" class="mb-3">
+              <%= label_tag :user_id, "User" %>
+              <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', required: true, class: "form-control form-select"} %>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary shift-cancel" data-bs-dismiss="modal">Close</button>
+          <button type="button" id="modal-save" class="btn btn-primary">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="toast-color-update-success" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          The color of the user has been successfully updated!
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+
+    <div id="toast-color-update-failed" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          The color of the user has not been updated... Please try again later.
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
 
   <%= javascript_pack_tag 'admin_availability_calendar' %>
 </div>

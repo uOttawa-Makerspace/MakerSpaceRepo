@@ -1,12 +1,12 @@
-.form-control-color {
+.form-control-color-shift {
   width: 2.5rem !important;
   height: auto !important;
   padding: 0.25rem !important;
 }
-.form-control-color:not(:disabled):not([readonly]) {
+.form-control-color-shift:not(:disabled):not([readonly]) {
   cursor: pointer !important;
 }
-.form-control-color::-webkit-color-swatch {
+.form-control-color-shift::-webkit-color-swatch {
   height: 1.25em !important;
   border-radius: 0.25rem !important;
 }
