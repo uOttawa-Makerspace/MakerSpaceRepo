@@ -91,7 +91,7 @@ a {
   text-decoration: none;
   color: inherit;
 
-  &::visited {
+  &:visited {
     color: #789;
   }
   //
@@ -267,7 +267,7 @@ td > .btn:not(:last-of-type) {
   font: 400 0.75rem "Raleway", helvetica, sans-serif;
   color: #aaa;
   margin-bottom: 0.5rem;
-
+}
 .checkbox-lg {
   width: 1.5rem;
   height: 1.5rem;
