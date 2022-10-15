@@ -1,8 +1,8 @@
 <section>
   <% if current_user.booking_approval %>
   <div class="navbar navbar-expand-xl navbar-light bg-light w-100">
-        <div class="container-fluid justify-content-start ">
-          <a class="navbar-brand" href="<%=  sub_space_booking_index_path  %>">Maker<strong>Room</strong></a>
+    <div class="container-fluid justify-content-start ">
+      <a class="navbar-brand" href="<%=  sub_space_booking_index_path  %>">Maker<strong>Room</strong></a>
 
     <% Space.all.each do |space| %>
       <% subspaces = SubSpace.where(space_id: space.id) %>
@@ -18,8 +18,11 @@
               <a class="dropdown-item" href="<%=  sub_space_booking_index_path(room:subspace.id)  %>"><%=  subspace.name  %></a>
             <%  end  %>
           </div>
-          <%  end  %>
-          <%  end  %>
+        </div>
+        <%  end  %>
+      <%  end  %>
+    </div>
+  </div>
 
   <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast bg-warning text-black" data-bs-autohide="false">
     <div class="toast-header">

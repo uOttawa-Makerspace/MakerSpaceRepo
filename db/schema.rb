@@ -10,8 +10,8 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_10_07_152219) do
 
+ActiveRecord::Schema.define(version: 2022_10_15_145358) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -457,7 +457,6 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
     t.datetime "updated_at", null: false
     t.string "mac_address"
     t.integer "space_id"
-    t.boolean "deleted", default: false
     t.index ["space_id"], name: "index_lab_sessions_on_space_id"
     t.index ["user_id"], name: "index_lab_sessions_on_user_id"
   end
@@ -777,7 +776,6 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
     t.boolean "featured", default: false
     t.string "youtube_link"
     t.integer "project_proposal_id"
-    t.boolean "deleted"
     t.index ["user_id"], name: "index_repositories_on_user_id"
   end
 
@@ -822,7 +820,6 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "google_event_id"
-    t.boolean "pending", default: true
     t.index ["space_id"], name: "index_shifts_on_space_id"
   end
 
@@ -872,6 +869,7 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
   end
 
+<<<<<<< HEAD
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
     t.string "color"
@@ -881,6 +879,8 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
   end
 
+=======
+>>>>>>> c51a159c (fixing minor issues with dashboard, approval)
   create_table "staff_spaces", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "space_id"
@@ -1017,7 +1017,6 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
     t.boolean "confirmed", default: false
     t.bigint "space_id"
     t.datetime "last_signed_in_time"
-    t.boolean "deleted"
     t.boolean "booking_approval", default: false
     t.string "otp_secret"
     t.integer "last_otp_at"
@@ -1142,7 +1141,6 @@ ActiveRecord::Schema.define(version: 2022_10_07_152219) do
   add_foreign_key "shifts", "spaces"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "staff_availabilities", "users"
-  add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"

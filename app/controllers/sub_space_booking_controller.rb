@@ -56,7 +56,7 @@ class SubSpaceBookingController < ApplicationController
     render json: User.all if current_user.admin? || current_user.staff?
   end
   def bookings
-    bookings = []
+    @bookings = []
     if params[:room].present?
       SubSpaceBooking
         .where(sub_space_id: params[:room])
@@ -80,11 +80,12 @@ class SubSpaceBookingController < ApplicationController
               end: booking.end_time,
               color: color
             }
-            bookings << event
+            @bookings << event
           end
         end
     end
-    render json: bookings
+
+    render json: @bookings
   end
 
   def create
@@ -177,7 +178,10 @@ class SubSpaceBookingController < ApplicationController
       flash[:alert] = "You are not authorized to view this page."
       redirect_to root_path
     end
-    bookings = SubSpaceBooking.all
+    @bookings =
+      SubSpaceBooking.where("start_time >= ?", Date.today).sort_by(&:start_time)
+    @old_bookings =
+      SubSpaceBooking.where("start_time < ?", Date.today).sort_by(&:start_time)
   end
 
   def approve
