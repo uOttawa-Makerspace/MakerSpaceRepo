@@ -4,6 +4,7 @@ class SubSpaceBookingController < ApplicationController
       redirect_to login_path, alert: "You must be logged in to view this page."
       return
     end
+    @subspace = SubSpace.find(params[:room])
   end
 
   def request_access
@@ -61,14 +62,14 @@ class SubSpaceBookingController < ApplicationController
       SubSpaceBooking
         .where(sub_space_id: params[:room])
         .each do |booking|
-          if booking.sub_space_booking_status.booking_status ==
-               BookingStatus::APPROVED ||
-               booking.sub_space_booking_status.booking_status ==
-                 BookingStatus::PENDING
+          puts booking.inspect
+          booking_status =
+            SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
+          if booking_status.booking_status_id == BookingStatus::APPROVED.id ||
+               booking_status.booking_status_id == BookingStatus::PENDING.id
             color = "#497979"
             title = "Space Booked"
-            if booking.sub_space_booking_status.booking_status ==
-                 BookingStatus::PENDING
+            if booking_status.booking_status_id == BookingStatus::PENDING.id
               color = "#FFA500"
               title = "Pending Approval"
             end
@@ -151,19 +152,21 @@ class SubSpaceBookingController < ApplicationController
     status =
       SubSpaceBookingStatus.new(
         sub_space_booking_id: booking.id,
-        booking_status:
+        booking_status_id:
           (
             if SubSpace.find(
                  params[:sub_space_booking][:sub_space_id]
                ).approval_required
-              BookingStatus::PENDINGsub_space_id
+              BookingStatus::PENDING.id
             else
-              BookingStatus::APPROVED
+              BookingStatus::APPROVED.id
             end
           )
       )
     status.save
+    puts status.inspect
     booking.sub_space_booking_status_id = status.id
+    puts booking.inspect
     booking.save
     flash[
       :notice
@@ -190,8 +193,13 @@ class SubSpaceBookingController < ApplicationController
       return
     end
 
-    booking = SubSpaceBookingStatus.find(params[:sub_space_booking_id])
-    booking.booking_status = BookingStatus::APPROVED
+    booking =
+      SubSpaceBookingStatus.find(
+        SubSpaceBooking.find(
+          params[:sub_space_booking_id]
+        ).sub_space_booking_status_id
+      )
+    booking.booking_status_id = BookingStatus::APPROVED.id
     booking.save
     redirect_to admin_sub_space_booking_index_path,
                 notice:
@@ -206,8 +214,13 @@ class SubSpaceBookingController < ApplicationController
                     alert: "You are not authorized to view this page."
       )
     end
-    booking = SubSpaceBookingStatus.find(params[:sub_space_booking_id])
-    booking.booking_status = BookingStatus::DECLINED
+    booking =
+      SubSpaceBookingStatus.find(
+        SubSpaceBooking.find(
+          params[:sub_space_booking_id]
+        ).sub_space_booking_status_id
+      )
+    booking.booking_status_id = BookingStatus::DECLINED.id
     booking.save
     redirect_to admin_sub_space_booking_index_path,
                 notice:

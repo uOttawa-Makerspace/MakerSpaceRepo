@@ -6,20 +6,22 @@
 
     <% Space.all.each do |space| %>
       <% subspaces = SubSpace.where(space_id: space.id) %>
-      <% if subspaces.length == 1 %>
-        <div class="nav-item ms-4"><%=  link_to(subspaces.last.name, sub_space_booking_index_path(room:subspaces.last.id), class:"nav-link")  %></div>
-      <%  else  %>
-        <div class="nav-item dropdown ms-4">
-          <a class="nav-link dropdown-toggle" role="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <%=  space.name  %>
-          </a>
-          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <% subspaces.each do |subspace| %>
-              <a class="dropdown-item" href="<%=  sub_space_booking_index_path(room:subspace.id)  %>"><%=  subspace.name  %></a>
-            <%  end  %>
-          </div>
-        </div>
-        <%  end  %>
+        <% if subspaces.length > 0 %>
+          <% if subspaces.length == 1 %>
+            <div class="nav-item ms-4"><%=  link_to(subspaces.last.name, sub_space_booking_index_path(room:subspaces.last.id), class:"nav-link")  %></div>
+          <%  else  %>
+            <div class="nav-item dropdown ms-4">
+              <a class="nav-link dropdown-toggle" role="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <%=  space.name  %>
+              </a>
+              <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <% subspaces.each do |subspace| %>
+                  <a class="dropdown-item" href="<%=  sub_space_booking_index_path(room:subspace.id)  %>"><%=  subspace.name  %></a>
+                <%  end  %>
+              </div>
+            </div>
+          <%  end  %>
+        <% end %>
       <%  end  %>
     </div>
   </div>
@@ -37,7 +39,7 @@
   </div>
   <div class="col-md-8 mx-auto">
     <%  if params[:room].present?  %>
-    <h3 class="text-center my-3">Availability Calendar</h3>
+    <h3 class="text-center my-3"> <%= @subspace.name %> Availability Calendar</h3>
     <div id="booked-calendar"></div>
     <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
       <div class="modal-dialog" role="document">

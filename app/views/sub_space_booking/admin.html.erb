@@ -235,18 +235,18 @@
         </div>
 
         <div class="card mb-3">
-          <div class="card-header" type="button" data-bs-toggle="collapse" data-bs-target="#booking-body" aria-expanded="true" aria-controls="booking-body">
+          <div class="card-header" type="button" data-bs-toggle="collapse" data-bs-target="#past-booking-body" aria-expanded="true" aria-controls="past-booking-body">
             <h5 class="card-title">Past Bookings</h5>
           </div>
-          <div class="card-body collapse show" id="booking-body">
-            <div class="accordion" id="pending-accordion">
+          <div class="card-body collapse show" id="past-booking-body">
+            <div class="accordion" id="past-pending-accordion">
               <div class="accordion-item">
-                <div class="accordion-header accordion-button" id="pendingHeader" type="button" data-bs-toggle="collapse" data-bs-target="#pendingBody" aria-expanded="true" aria-controls="pendingBody">
+                <div class="accordion-header accordion-button" id="pastPendingHeader" type="button" data-bs-toggle="collapse" data-bs-target="#pastPendingBody" aria-expanded="true" aria-controls="pastPendingBody">
                   <h5 class="mb-0 text-center w-100">
-                    Pending Bookings
+                    Expired Pending Bookings
                   </h5>
                 </div>
-                <div id="pendingBody" class="collapse show accordion-body" aria-labelledby="pendingHeader " data-bs-parent="#pending-accordion">
+                <div id="pastPendingBody" class="collapse show accordion-body" aria-labelledby="pastPendingHeader " data-bs-parent="#past-pending-accordion">
                   <div class="table-responsive">
                     <table class="table table-striped">
                       <thead class="text-center  table-primary">
@@ -278,14 +278,14 @@
                 </div>
               </div>
             </div>
-            <div class="accordion mb-3 mt-3" id="approved-accordion">
+            <div class="accordion mb-3 mt-3" id="past-approved-accordion">
               <div class="accordion-item">
-                <div class="accordion-header accordion-button" id="approvedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#approvedBody" aria-expanded="true" aria-controls="approvedBody">
+                <div class="accordion-header accordion-button" id="pastApprovedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#pastApprovedBody" aria-expanded="true" aria-controls="pastApprovedBody">
                   <h5 class="mb-0 text-center w-100">
                     Accepted Bookings
                   </h5>
                 </div>
-                <div id="approvedBody" class="collapse show accordion-body" aria-labelledby="approvedHeading" data-bs-parent="#approved-accordion">
+                <div id="pastApprovedBody" class="collapse show accordion-body" aria-labelledby="pastApprovedHeading" data-bs-parent="#past-approved-accordion">
                   <div class="table-responsive">
                     <table class="table table-striped">
                       <thead class="text-center  table-primary">
@@ -316,14 +316,14 @@
                 </div>
               </div>
             </div>
-            <div class="accordion mb-3" id="declined-accordion">
+            <div class="accordion mb-3" id="past-declined-accordion">
               <div class="accordion-item">
-                <div class="accordion-header accordion-button" id="declinedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#declinedBody" aria-expanded="true" aria-controls="declinedBody">
+                <div class="accordion-header accordion-button" id="pastDeclinedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#pastDeclinedBody" aria-expanded="true" aria-controls="pastDeclinedBody">
                   <h5 class="mb-0 text-center w-100">
                     Declined Bookings
                   </h5>
                 </div>
-                <div id="declinedBody" class="collapse show accordion-body" aria-labelledby="declinedHeading" data-bs-parent="#declined-accordion">
+                <div id="pastDeclinedBody" class="collapse show accordion-body" aria-labelledby="pastDeclinedHeading" data-bs-parent="#past-declined-accordion">
                   <div class="table-responsive">
                     <table class="table table-striped">
                       <thead class="text-center  table-primary">

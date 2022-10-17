@@ -104,7 +104,7 @@ if (bookedCalendarEl) {
           console.log(e);
           closeModal();
           Turbolinks.clearCache();
-          // Turbolinks.visit(window.location.href);
+          Turbolinks.visit(window.location.href);
         }
       })
       .catch((error) => {

@@ -10,8 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-
-ActiveRecord::Schema.define(version: 2022_10_15_145358) do
+ActiveRecord::Schema.define(version: 2022_10_17_150048) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -123,14 +122,8 @@ ActiveRecord::Schema.define(version: 2022_10_15_145358) do
   create_table "booking_statuses", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.bigint "booking_status_id"
-    t.bigint "sub_space_booking_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["booking_status_id"],
-            name: "index_booking_statuses_on_booking_status_id"
-    t.index ["sub_space_booking_id"],
-            name: "index_booking_statuses_on_sub_space_booking_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
@@ -776,6 +769,7 @@ ActiveRecord::Schema.define(version: 2022_10_15_145358) do
     t.boolean "featured", default: false
     t.string "youtube_link"
     t.integer "project_proposal_id"
+    t.boolean "deleted"
     t.index ["user_id"], name: "index_repositories_on_user_id"
   end
 
@@ -820,6 +814,7 @@ ActiveRecord::Schema.define(version: 2022_10_15_145358) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "google_event_id"
+    t.boolean "pending", default: true
     t.index ["space_id"], name: "index_shifts_on_space_id"
   end
 
@@ -869,7 +864,6 @@ ActiveRecord::Schema.define(version: 2022_10_15_145358) do
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
   end
 
-<<<<<<< HEAD
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
     t.string "color"
@@ -879,8 +873,6 @@ ActiveRecord::Schema.define(version: 2022_10_15_145358) do
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
   end
 
-=======
->>>>>>> c51a159c (fixing minor issues with dashboard, approval)
   create_table "staff_spaces", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "space_id"
@@ -1017,9 +1009,8 @@ ActiveRecord::Schema.define(version: 2022_10_15_145358) do
     t.boolean "confirmed", default: false
     t.bigint "space_id"
     t.datetime "last_signed_in_time"
+    t.boolean "deleted"
     t.boolean "booking_approval", default: false
-    t.string "otp_secret"
-    t.integer "last_otp_at"
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
@@ -1086,8 +1077,6 @@ ActiveRecord::Schema.define(version: 2022_10_15_145358) do
   add_foreign_key "badge_templates", "trainings"
   add_foreign_key "badges", "badge_templates"
   add_foreign_key "badges", "certifications"
-  add_foreign_key "booking_statuses", "booking_statuses"
-  add_foreign_key "booking_statuses", "sub_space_bookings"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
@@ -1141,12 +1130,15 @@ ActiveRecord::Schema.define(version: 2022_10_15_145358) do
   add_foreign_key "shifts", "spaces"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "staff_availabilities", "users"
+  add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"
-  add_foreign_key "sub_space_booking_statuses", "sub_space_bookings"
+  add_foreign_key "sub_space_booking_statuses",
+                  "sub_space_bookings",
+                  on_delete: :cascade
   add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
-  add_foreign_key "sub_space_bookings", "sub_spaces"
+  add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_spaces", "spaces"
   add_foreign_key "training_sessions", "trainings"
