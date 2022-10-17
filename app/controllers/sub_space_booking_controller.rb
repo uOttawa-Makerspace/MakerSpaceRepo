@@ -62,7 +62,6 @@ class SubSpaceBookingController < ApplicationController
       SubSpaceBooking
         .where(sub_space_id: params[:room])
         .each do |booking|
-          puts booking.inspect
           booking_status =
             SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
           if booking_status.booking_status_id == BookingStatus::APPROVED.id ||
@@ -164,9 +163,7 @@ class SubSpaceBookingController < ApplicationController
           )
       )
     status.save
-    puts status.inspect
     booking.sub_space_booking_status_id = status.id
-    puts booking.inspect
     booking.save
     flash[
       :notice

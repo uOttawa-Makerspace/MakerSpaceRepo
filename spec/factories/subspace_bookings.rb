@@ -7,11 +7,8 @@ FactoryBot.define do
     start_time { Time.zone.now }
     end_time { Time.zone.now + 1.hour }
     after :create do |booking|
-      booking.update(
-        sub_space_booking_status_id:
-          create(:sub_space_booking_status, sub_space_booking: booking).id
-      )
-      booking.save
+      status = create(:sub_space_booking_status, sub_space_booking: booking)
+      booking.update(sub_space_booking_status_id: status.id)
     end
   end
 end

@@ -162,7 +162,7 @@ RSpec.describe Admin::SpacesController, type: :controller do
           delete :delete_sub_space,
                  params: {
                    space_id: sub_space.space.id,
-                   name: sub_space.name
+                   id: sub_space.id
                  }
         }.to change(SubSpace, :count).by(-1)
         expect(flash[:notice]).to eq("Sub Space deleted!")
@@ -181,7 +181,7 @@ RSpec.describe Admin::SpacesController, type: :controller do
         patch :change_sub_space_approval,
               params: {
                 space_id: sub_space.space.id,
-                name: sub_space.name
+                id: sub_space.id
               }
         expect(response).to have_http_status(302)
         expect(SubSpace.last.approval_required).to eq(true)
