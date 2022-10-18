@@ -9,7 +9,7 @@ if (document.getElementById("clone-link-input")) {
   document.getElementById("clone-link-input").addEventListener("click", () => {
     const clone = document.getElementById("new-link-input").cloneNode(true);
     clone.removeAttribute("id");
-    clone.removeChild(clone.children[1]);
+    clone.removeChild(clone.children[2]);
     clone.children[0].value = null;
 
     const newChild = document.createElement("button");

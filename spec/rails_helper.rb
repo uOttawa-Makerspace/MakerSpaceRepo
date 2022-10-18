@@ -5,6 +5,7 @@ require "factory_bot"
 require "support/factory_bot"
 require "support/database_cleaner"
 require "simplecov"
+require "rspec/json_expectations"
 SimpleCov.start
 
 ENV["RAILS_ENV"] ||= "test"

@@ -58,6 +58,7 @@ class User < ApplicationRecord
                 image/gif
                 image/x-icon
                 image/svg+xml
+                image/webp
               ],
               if: -> { avatar.attached? }
             }
