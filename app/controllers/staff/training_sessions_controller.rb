@@ -123,18 +123,22 @@ class Staff::TrainingSessionsController < StaffDashboardController
       if BadgeTemplate.where(
            training_id: @current_training_session.training_id
          ).present? && @current_training_session.level == "Beginner"
-        badge_template_id =
+        badge_template =
           BadgeTemplate.find_by(
             training_id: @current_training_session.training_id
-          ).acclaim_template_id
-        response = Badge.acclaim_api_create_badge(user, badge_template_id)
+          )
+        response =
+          Badge.acclaim_api_create_badge(
+            graduate,
+            badge_template.acclaim_template_id
+          )
         if response.status == 201
           badge_data = JSON.parse(response.body)["data"]
           Badge.create(
             user_id: graduate.id,
             issued_to: graduate.name,
             acclaim_badge_id: badge_data["id"],
-            badge_template_id: badge_template_id,
+            badge_template_id: badge_template.id,
             certification: certification
           )
         else
