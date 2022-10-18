@@ -125,7 +125,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
          ).present? && @current_training_session.level == "Beginner"
         badge_template_id =
           BadgeTemplate.find_by(
-            training_id: @current_training_session.id
+            training_id: @current_training_session.training_id
           ).badge_template_id
         response = Badge.acclaim_api_create_badge(user, badge_template_id)
         if response.status == 201
