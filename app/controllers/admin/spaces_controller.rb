@@ -17,14 +17,68 @@ class Admin::SpacesController < AdminAreaController
     else
       flash[:alert] = "Something went wrong."
     end
+
     redirect_back(fallback_location: root_path)
+  end
+
+  def create_sub_space
+    if params[:name].present?
+      sub_space =
+        SubSpace.create(
+          name: params[:name],
+          space: Space.find(params[:space_id])
+        )
+      sub_space.approval_required =
+        params[:approval_required] == "1" ? true : false
+      sub_space.save
+      flash[:notice] = "Sub Space created!"
+    else
+      flash[:alert] = "Please enter a name for the sub space"
+    end
+    redirect_back(fallback_location: root_path)
+  end
+
+  def delete_sub_space
+    if params[:id].present?
+      if SubSpace.find(params[:id]).delete
+        flash[:notice] = "Sub Space deleted!"
+      else
+        flash[:alert] = "Something went wrong."
+      end
+    end
+    @sub_spaces = SubSpace.where(space: Space.find(params[:space_id]))
+    redirect_back(
+      fallback_location: edit_admin_space_path(id: params[:space_id])
+    )
+  end
+
+  def change_sub_space_approval
+    if params[:id].present?
+      subspace = SubSpace.find(params[:id])
+      if ContactInfo.where(space_id: subspace.space.id).blank?
+        flash[
+          :alert
+        ] = "Please add contact information for the associated space disabling automatic booking."
+        redirect_back(fallback_location: root_path)
+        return
+      end
+      subspace.update(approval_required: !subspace.approval_required)
+      subspace.save
+      flash[
+        :notice
+      ] = "Aproval for #{subspace.name} is now #{subspace.approval_required ? "manual" : "automatic"}"
+      redirect_back(
+        fallback_location: edit_admin_space_path(id: params[:space_id])
+      )
+    end
   end
 
   def edit
     @staff_needed_calendars = StaffNeededCalendar.where(space: params[:id])
     @space_staff_hours = SpaceStaffHour.where(space: params[:id])
     @new_training = Training.new
-    unless (@space = Space.find(params[:id]))
+    @sub_spaces = SubSpace.where(space: Space.find(params[:id]))
+    unless @space = Space.find(params[:id])
       flash[:alert] = "Not Found"
       redirect_back(fallback_location: root_path)
     end
@@ -68,7 +122,34 @@ class Admin::SpacesController < AdminAreaController
     end
     redirect_back(fallback_location: root_path)
   end
+  def set_max_booking_duration
+    if params[:max_hours].present? && params[:sub_space_id].present?
+      SubSpace.find(params[:sub_space_id]).update!(
+        maximum_booking_duration:
+          params[:max_hours].to_i == -1 ? nil : params[:max_hours].to_i
+      )
+      flash[:notice] = "Max booking duration updated!"
+      return
+    end
 
+    if params[:max_weekly_hours].present? && params[:sub_space_id].present?
+      SubSpace.find(params[:sub_space_id]).update!(
+        maximum_booking_hours_per_week:
+          (
+            if params[:max_weekly_hours].to_i == -1
+              nil
+            else
+              params[:max_weekly_hours].to_i
+            end
+          )
+      )
+      flash[:notice] = "Max weekly booking duration updated!"
+      return
+    end
+
+    flash[:alert] = "Something went wrong."
+    redirect_to edit_admin_space_path(id: params[:space_id])
+  end
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase

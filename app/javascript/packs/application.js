@@ -175,3 +175,30 @@ window.dragndrop = function (event) {
 window.dragover = function (event) {
   event.preventDefault();
 };
+window.toggleVisibility = (name) => {
+  document.getElementById(name).innerText = `${
+    document.getElementById(name).innerText == "Hide" ? "Show" : "Hide"
+  }`;
+  let staff_name = document.getElementById(name).dataset.staffname;
+  let allEvents = calendar.getEvents();
+  for (let ev of allEvents) {
+    if (ev.title.startsWith(staff_name)) {
+      ev.setProp(
+        "display",
+        document.getElementById(name).innerText == "Show" ? "none" : "block"
+      );
+    }
+  }
+};
+window.customNumberInput = function (event, input) {
+  event.preventDefault();
+  let target = input.attributes.target.value;
+  let targetEl = document.getElementById(target);
+  if (targetEl) {
+    if (parseInt(targetEl.value) && parseInt(input.attributes.step.value)) {
+      targetEl.value =
+        parseInt(targetEl.value) + parseInt(input.attributes.step.value);
+    }
+  }
+};
+
