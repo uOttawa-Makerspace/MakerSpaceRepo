@@ -31,12 +31,14 @@
     "expose-loader": "^1.0.0",
     "flatpickr": "^4.6.9",
     "font-awesome": "^4.7.0",
+    "husky": "^8.0.1",
     "jquery": "^3.5.1",
     "jquery-datetimepicker": "^2.5.21",
     "jquery-ui": "^1.13.0",
     "jquery-ui-dist": "^1.12.1",
     "js-cookie": "^2.2.1",
     "lightgallery": "^1.7.2",
+    "message-bus": "^0.0.6",
     "moment": "^2.29.2",
     "moment-timezone": "^0.5.35",
     "node": "^14.14.0",
@@ -53,8 +55,7 @@
     "trix": "^1.2.0",
     "turbolinks": "^5.2.0",
     "webpack": "^4.44.1",
-    "webpack-cli": "^3.3.12",
-    "husky": "^8.0.1"
+    "webpack-cli": "^3.3.12"
   },
   "devDependencies": {
     "@prettier/plugin-ruby": "^3.2.0",
