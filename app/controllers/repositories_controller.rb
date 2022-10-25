@@ -323,7 +323,6 @@ class RepositoriesController < SessionsController
   end
 
   def create_photos
-    puts params[:images]
     if params[:images].present?
       params[:images]
         .first(5)

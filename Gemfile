@@ -77,6 +77,7 @@ gem "message_bus"
 group :development, :test do
   gem "byebug", platform: :mri
   gem "rspec-rails", "~> 5.0.0"
+  gem "rspec-json_expectations"
   gem "faker", "~> 2.0.0"
   gem "railroady"
   gem "factory_bot_rails"

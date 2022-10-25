@@ -1,7 +1,8 @@
 <div class="bg-white printorder-padding">
   <br>
   <h1>List of prints / Laser
-    Cuts <%= link_to "New Print Order", new_print_order_path(:type => "3d"), { class: 'btn btn-primary' } %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), { class: 'btn btn-primary' } %>  <%= link_to "User page", index_new_print_orders_path, { class: 'btn btn-primary' } %></h1>
+    Cuts <%= link_to "New Print Order", new_print_order_path(:type => "3d"), { class: 'btn btn-primary' } %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), { class: 'btn btn-primary' } %>  <%= link_to "User page", index_new_print_orders_path, { class: 'btn btn-primary' } %>   <%= link_to "New Admin Page", admin_job_orders_path, class: 'btn btn-primary mb-1' if @user.staff? %>
+  </h1>
 
   <div>
     <%= form_with(url: print_orders_path, method: "get", class: "w-auto d-inline-block") do %>

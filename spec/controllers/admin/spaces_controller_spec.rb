@@ -125,4 +125,99 @@ RSpec.describe Admin::SpacesController, type: :controller do
       end
     end
   end
+
+  describe "PUT /create_sub_space" do
+    context "create a sub space" do
+      it "should create a sub space" do
+        sub_space_params = FactoryBot.attributes_for(:sub_space)
+        expect {
+          put :create_sub_space,
+              params: {
+                space_id: sub_space_params[:space].id,
+                name: sub_space_params[:name],
+                "/admin/spaces": {
+                  approval_required: 0
+                }
+              }
+        }.to change(SubSpace, :count).by(1)
+        expect(response).to have_http_status(302)
+        expect(flash[:notice]).to eq("Sub Space created!")
+      end
+
+      it "should fail creating a sub space" do
+        space = create(:space)
+        expect {
+          put :create_sub_space, params: { space_id: space.id, name: "" }
+        }.to change(SubSpace, :count).by(0)
+        expect(flash[:alert]).to eq("Please enter a name for the sub space")
+      end
+    end
+  end
+  describe "DELETE /delete_sub_space" do
+    context "destroy sub space" do
+      it "should delete the sub space" do
+        sub_space = create(:sub_space)
+        space = sub_space.space
+        expect {
+          delete :delete_sub_space,
+                 params: {
+                   space_id: sub_space.space.id,
+                   id: sub_space.id
+                 }
+        }.to change(SubSpace, :count).by(-1)
+        expect(flash[:notice]).to eq("Sub Space deleted!")
+        expect(response).to redirect_to edit_admin_space_path(id: space.id)
+      end
+    end
+  end
+  describe "PATCH/change_sub_space_approval" do
+    context "change sub space approval" do
+      it "should change the sub space approval" do
+        sub_space = create(:sub_space)
+        space = sub_space.space
+        contact =
+          ContactInfo.new(space_id: space.id, email: Faker::Internet.email)
+        contact.save
+        patch :change_sub_space_approval,
+              params: {
+                space_id: sub_space.space.id,
+                id: sub_space.id
+              }
+        expect(response).to have_http_status(302)
+        expect(SubSpace.last.approval_required).to eq(true)
+      end
+    end
+  end
+
+  describe "PATCH/set_max_booking_duration" do
+    context "set max booking duration" do
+      it "should set the max booking duration" do
+        space = create(:space)
+        subspace = create(:sub_space, space: space)
+        max_hours = Faker::Number.number(digits: 2)
+        patch :set_max_booking_duration,
+              params: {
+                space_id: space.id,
+                sub_space_id: subspace.id,
+                max_hours: max_hours
+              }
+        expect(flash[:notice]).to eq("Max booking duration updated!")
+        expect(SubSpace.last.maximum_booking_duration).to eq(max_hours)
+      end
+    end
+
+    it "should set the max booking hours per week" do
+      space = create(:space)
+      subspace = create(:sub_space, space: space)
+      max_hours = Faker::Number.number(digits: 2)
+      patch :set_max_booking_duration,
+            params: {
+              space_id: space.id,
+              sub_space_id: subspace.id,
+              max_weekly_hours: max_hours
+            }
+      expect(flash[:notice]).to eq("Max weekly booking duration updated!")
+      expect(SubSpace.last.maximum_booking_hours_per_week).to eq(max_hours)
+    end
+  end
 end

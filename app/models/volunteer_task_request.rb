@@ -35,7 +35,6 @@ class VolunteerTaskRequest < ApplicationRecord
         all
       else
         value = value.split("=").last.gsub("+", " ").gsub("%20", " ")
-        puts(value)
         where(
           "LOWER(users.name) like LOWER(?) OR
                  LOWER(volunteer_tasks.title) like LOWER(?)",

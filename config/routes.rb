@@ -228,6 +228,14 @@ Rails.application.routes.draw do
     resources :spaces, only: %i[index create edit] do
       delete "/edit/", as: "destroy", action: "destroy"
       post "/edit/", as: "update_name", action: "update_name"
+      put "/edit/", as: "create_sub_space", action: "create_sub_space"
+      patch "/edit/:sub_space_id",
+            as: "set_max_booking_duration",
+            action: "set_max_booking_duration"
+      delete "/edit/:id", as: "delete_sub_space", action: "delete_sub_space"
+      patch "/edit/:id",
+            as: "change_sub_space_approval",
+            action: "change_sub_space_approval"
 
       collection do
         post :update_max_capacity
@@ -248,7 +256,11 @@ Rails.application.routes.draw do
         get :get_shifts
         get :get_staff_needed
         get :get_external_staff_needed
+        get :pending_shifts
+        get :shift_suggestions
         post :update_color
+        post :confirm_shifts
+        post :clear_pending_shifts
       end
     end
 
@@ -323,6 +335,20 @@ Rails.application.routes.draw do
     get :populate_users
     post :import_excel
     get :refresh_capacity
+  end
+
+  resources :sub_space_booking, only: %i[index create] do
+    put :decline
+    put :approve
+
+    collection do
+      put :request_access
+      put :deny_access
+      put :approve_access
+      get :admin
+      get :bookings
+      get :users
+    end
   end
 
   resources :development_programs, only: [:index] do

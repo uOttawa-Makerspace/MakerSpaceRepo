@@ -190,3 +190,15 @@ window.toggleVisibility = (name) => {
     }
   }
 };
+window.customNumberInput = function (event, input) {
+  event.preventDefault();
+  let target = input.attributes.target.value;
+  let targetEl = document.getElementById(target);
+  if (targetEl) {
+    if (parseInt(targetEl.value) && parseInt(input.attributes.step.value)) {
+      targetEl.value =
+        parseInt(targetEl.value) + parseInt(input.attributes.step.value);
+    }
+  }
+};
+
