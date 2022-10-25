@@ -244,7 +244,6 @@ class UsersController < SessionsController
       if params[:password] == params[:password_confirmation]
         user_id = @user_verifier.verify(@user_token)
         expiry_date = @user_verifier.verify(@expiry_date_token)
-        puts(expiry_date)
         if User.find(user_id).present? && Time.now <= expiry_date
           @user = User.find(user_id)
           @user.pword = params[:password]

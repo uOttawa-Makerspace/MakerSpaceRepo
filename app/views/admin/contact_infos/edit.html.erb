@@ -12,6 +12,11 @@
               </div>
 
               <div class="mb-3 text-center">
+                <%= f.label :space_id, "Assosciated Space", class:"form-label" %>
+                <%= f.select :space_id, options_from_collection_for_select(Space.all, :id,:name, selected:nil), {}, {class: 'form-select form-control', required: true} %>
+              </div>
+
+              <div class="mb-3 text-center">
                 <%= f.label :url, "URL of the Space", class:"form-label" %>
                 <%= f.text_field :url, placeholder: "Write the url for the space", class: 'form-control' %>
               </div>

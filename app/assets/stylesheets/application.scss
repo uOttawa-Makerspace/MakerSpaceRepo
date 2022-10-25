@@ -91,9 +91,9 @@ a {
   text-decoration: none;
   color: inherit;
 
-  &::visited {
-    color: #789;
-  }
+  //&:visited {
+  //  color: #789;
+  //}
   //
   //&:focus{
   //  outline-style: none;
@@ -263,7 +263,11 @@ textarea:not(.form-control) {
 td > .btn:not(:last-of-type) {
   margin-bottom: 0.5rem;
 }
-
+.subtitle {
+  font: 400 0.75rem "Raleway", helvetica, sans-serif;
+  color: #aaa;
+  margin-bottom: 0.5rem;
+}
 .checkbox-lg {
   width: 1.5rem;
   height: 1.5rem;
