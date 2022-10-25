@@ -64,6 +64,49 @@ class RfidController < SessionsController
     end
   end
 
+  def update_kiosk(reader)
+    @space = Space.find(reader.space_id)
+    @certifications_on_space =
+      Proc.new do |user, space_id|
+        user
+          .certifications
+          .joins(:training, training: :spaces)
+          .where(trainings: { spaces: { id: space_id } })
+      end
+    @all_user_certs = Proc.new { |user| user.certifications }
+    begin
+      MessageBus.publish(
+        "/kiosk/#{@space.id}",
+        {
+          sign_in:
+            (
+              render_to_string(
+                partial: "staff_dashboard/signed_in_table",
+                locals: {
+                  space: @space,
+                  all_user_certs: @all_user_certs,
+                  certifications_on_space: @certifications_on_space
+                },
+                layout: false
+              )
+            ),
+          sign_out:
+            (
+              render_to_string(
+                partial: "staff_dashboard/signed_out_table",
+                locals: {
+                  space: @space,
+                  all_user_certs: @all_user_certs,
+                  certifications_on_space: @certifications_on_space
+                },
+                layout: false
+              )
+            )
+        }
+      )
+    rescue StandardError => e
+    end
+  end
   def check_session(rfid)
     active_sessions =
       rfid.user.lab_sessions.where("sign_out_time > ?", Time.zone.now)
@@ -80,6 +123,7 @@ class RfidController < SessionsController
     else
       new_session(rfid, new_location)
     end
+    update_kiosk(PiReader.find_by(pi_mac_address: params[:mac_address]))
   end
 
   def new_session(rfid, new_location)
