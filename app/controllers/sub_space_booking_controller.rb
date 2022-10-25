@@ -4,7 +4,7 @@ class SubSpaceBookingController < ApplicationController
       redirect_to login_path, alert: "You must be logged in to view this page."
       return
     end
-    @subspace = SubSpace.find(params[:room])
+    @subspace = SubSpace.find(params[:room]) if params[:room].present?
   end
 
   def request_access
