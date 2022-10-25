@@ -1,5 +1,6 @@
 <section class="page-contents">
 
+  <%= hidden_field_tag 'space_id', @space.id %>
   <div class="padding-10">
 
     <br>
@@ -82,5 +83,5 @@
     <br />
   </div>
 </section>
-
 <%= javascript_pack_tag 'staff_dashboard', 'data-turbolinks-track': 'reload' %>
+<%= javascript_pack_tag 'message-bus', 'data-turbolinks-track': 'reload' %>
