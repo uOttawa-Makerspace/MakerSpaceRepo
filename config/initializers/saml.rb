@@ -20,6 +20,10 @@ SamlIdp.configure do |config|
     "print.makerepo.com" => {
       metadata_url: "https://print.makerepo.com/saml/metadata",
       response_hosts: %w[print.makerepo.com localhost]
+    },
+    "wiki-server.makerepo.com" => {
+      metadata_url: "https://makerepo.com/saml/wiki_metadata",
+      response_hosts: %w[wiki-server.makerepo.com localhost]
     }
   }
 
