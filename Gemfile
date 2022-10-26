@@ -72,6 +72,7 @@ gem "syntax_tree", "~> 3.3.0"
 gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
 gem "stimulus-rails"
+gem "graphlient"
 
 group :development, :test do
   gem "byebug", platform: :mri
