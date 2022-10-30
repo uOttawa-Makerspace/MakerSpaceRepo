@@ -59,15 +59,19 @@ document.addEventListener("turbolinks:load", function () {
       !nav.classList.contains("static_pages") &&
       !nav.classList.contains("home")
     ) {
+      console.log("1");
       doTransition(false, false);
     } else if (
       navbarSupportedContent.clientHeight > 0 &&
       window.matchMedia("(max-width: 1200px)").matches
     ) {
+      console.log("2");
       doTransition(false, false);
     } else if (document.getElementById("flash").clientHeight > 0) {
+      console.log("3");
       doTransition(false, false);
     } else {
+      console.log("4");
       doTransition(true, false);
     }
   }
@@ -106,8 +110,10 @@ document.addEventListener("turbolinks:load", function () {
   });
 
   navToggler.addEventListener("click", () => {
-    if (navbarSupportedContent.clientHeight != 0) {
-      doTransition(false, false);
+    if (navbarSupportedContent.clientHeight == 0) {
+      window.matchMedia("(max-width: 1200px").matches
+        ? doTransition(false, false)
+        : doTransition(true, false);
     } else {
       window.scrollY < 10
         ? doTransition(true, false)
@@ -133,4 +139,5 @@ document.addEventListener("turbolinks:load", function () {
   flashObserver.observe(document.getElementById("flash"));
 
   check();
+  console.log("11");
 });
