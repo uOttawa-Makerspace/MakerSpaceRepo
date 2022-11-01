@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_09_19_202630) do
+ActiveRecord::Schema.define(version: 2022_11_01_121141) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -122,14 +122,8 @@ ActiveRecord::Schema.define(version: 2022_09_19_202630) do
   create_table "booking_statuses", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.bigint "booking_status_id"
-    t.bigint "sub_space_booking_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["booking_status_id"],
-            name: "index_booking_statuses_on_booking_status_id"
-    t.index ["sub_space_booking_id"],
-            name: "index_booking_statuses_on_sub_space_booking_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
@@ -338,6 +332,7 @@ ActiveRecord::Schema.define(version: 2022_09_19_202630) do
     t.decimal "service_fee", precision: 10, scale: 2, null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "stripe_transaction_id"
   end
 
   create_table "job_order_statuses", force: :cascade do |t|
@@ -911,8 +906,8 @@ ActiveRecord::Schema.define(version: 2022_09_19_202630) do
   create_table "sub_space_bookings", force: :cascade do |t|
     t.string "name"
     t.string "description"
-    t.datetime "start"
-    t.datetime "end"
+    t.datetime "start_time"
+    t.datetime "end_time"
     t.bigint "user_id"
     t.bigint "sub_space_id"
     t.datetime "created_at", precision: 6, null: false
@@ -929,6 +924,7 @@ ActiveRecord::Schema.define(version: 2022_09_19_202630) do
     t.bigint "space_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.boolean "approval_required", default: false
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
   end
 
@@ -1077,8 +1073,6 @@ ActiveRecord::Schema.define(version: 2022_09_19_202630) do
   add_foreign_key "badge_templates", "trainings"
   add_foreign_key "badges", "badge_templates"
   add_foreign_key "badges", "certifications"
-  add_foreign_key "booking_statuses", "booking_statuses"
-  add_foreign_key "booking_statuses", "sub_space_bookings"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"

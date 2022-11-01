@@ -75,7 +75,7 @@ class JobOrderMailer < ApplicationMailer
       if message.present?
         message.html_safe
       else
-        "Your Job Order ##{@job_order.id} has now been completed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders'>Job Order page</a> for details.".html_safe
+        "Your Job Order ##{@job_order.id} has now been completed. You can now <a href='#{pay_job_orders_url(token: Rails.application.message_verifier(:job_order_id).generate(@job_order.id))}'>Pay Online for your order here</a> or In-Store by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders'>Job Order page</a> for details.".html_safe
       end
 
     mail(
@@ -83,6 +83,30 @@ class JobOrderMailer < ApplicationMailer
       reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject: "Your Job Order ##{@job_order.id} has been completed"
+    )
+  end
+
+  def payment_succeeded(job_order_id)
+    JobOrder.where(id: job_order_id).present? ?
+      @job_order = JobOrder.find(job_order_id) :
+      return
+    mail(
+      to: @job_order.user.email,
+      reply_to: "makerspace@uottawa.ca",
+      bcc: "uottawa.makerepo@gmail.com",
+      subject: "Your Job Order ##{@job_order.id} is now ready for pickup"
+    )
+  end
+
+  def payment_failed(job_order_id)
+    JobOrder.where(id: job_order_id).present? ?
+      @job_order = JobOrder.find(job_order_id) :
+      return
+    mail(
+      to: @job_order.user.email,
+      reply_to: "makerspace@uottawa.ca",
+      bcc: "uottawa.makerepo@gmail.com",
+      subject: "Your Job Order Payment has failed for Order ##{@job_order.id}"
     )
   end
 

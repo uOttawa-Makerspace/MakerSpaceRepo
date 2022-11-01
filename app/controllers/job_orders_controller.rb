@@ -1,7 +1,13 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in,
-                except: %i[user_magic_approval user_magic_approval_confirmation]
+                except: %i[
+                  user_magic_approval
+                  user_magic_approval_confirmation
+                  pay
+                  stripe_success
+                  stripe_cancelled
+                ]
   before_action :grant_access,
                 only: %w[
                   admin
@@ -375,7 +381,15 @@ class JobOrdersController < ApplicationController
          nil,
          nil
        ) && params[:completed] == "true"
-      if params[:send_email].present? && params[:send_email] == "true"
+      # Bypass Payment if order is 0$
+      if @job_order.total_price === 0
+        @job_order.job_order_statuses << JobOrderStatus.create(
+          job_order: @job_order,
+          job_status: JobStatus::PAID,
+          user: @user
+        )
+        JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+      elsif params[:send_email].present? && params[:send_email] == "true"
         JobOrderMailer.send_job_completed(
           @job_order.id,
           params[:message]
@@ -466,6 +480,47 @@ class JobOrdersController < ApplicationController
 
   def invoice
     render pdf: "invoice", template: "job_orders/invoice.html.erb"
+  end
+
+  def pay
+    @token = params[:token]
+    verifier = Rails.application.message_verifier(:job_order_id)
+    if verifier.valid_message?(@token) &&
+         JobOrder.where(
+           id: verifier.verify(@token),
+           is_deleted: false
+         ).present? &&
+         JobStatus::COMPLETED ==
+           JobOrder
+             .where(id: verifier.verify(@token), is_deleted: false)
+             .first
+             .job_order_statuses
+             .last
+             .job_status
+      @job_order =
+        JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
+      @stripe_session =
+        Stripe::Checkout::Session.create(
+          success_url: stripe_success_job_orders_url,
+          cancel_url: stripe_cancelled_job_orders_url,
+          mode: "payment",
+          line_items: @job_order.generate_line_items,
+          billing_address_collection: "required",
+          client_reference_id: "job-order-#{@job_order.id}"
+        )
+      render "job_orders/pay"
+    else
+      flash[
+        :alert
+      ] = "The following Job Order Payment link is invalid or has expired. Please Sign In to look at the Job Order Page."
+      redirect_to job_orders_path
+    end
+  end
+
+  def stripe_success
+  end
+
+  def stripe_cancelled
   end
 
   private

@@ -40,6 +40,14 @@
                     <% end %>
                   </div>
                 </div>
+                <% elsif JobStatus::COMPLETED == jos.job_status %>
+                  <div class="alert alert-warning">
+                    <p><b>Action Required - Total Quote: <%= number_to_currency(jo.total_price) %></b></p>
+                    <div class="d-flex justify-content-between">
+                      <%= link_to "Pay Online", pay_job_orders_path(token: Rails.application.message_verifier(:job_order_id).generate(jo.id)), class: 'btn btn-primary' %>
+                      <a href="https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order" class="btn btn-primary">Pay In-Store</a>
+                    </div>
+                  </div>
               <% end %>
             <% end %>
           </li>
