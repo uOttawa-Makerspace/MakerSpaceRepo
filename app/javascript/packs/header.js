@@ -17,10 +17,12 @@ document.addEventListener("turbolinks:load", function () {
   var navbarSupportedContent = document.getElementById(
     "navbarSupportedContent"
   );
+  var navExpanded = navToggler.classList.contains("collapsed");
   var chevron = document.getElementsByClassName("down-indicator")[0];
   var cc_image_white = document.getElementById("myCcWhite");
   var cc_image_black = document.getElementById("myCcBlack");
   function doTransition(dark, animate) {
+    state = !dark;
     if (
       !(
         nav.classList.contains("static_pages") && nav.classList.contains("home")
@@ -59,19 +61,15 @@ document.addEventListener("turbolinks:load", function () {
       !nav.classList.contains("static_pages") &&
       !nav.classList.contains("home")
     ) {
-      console.log("1");
       doTransition(false, false);
     } else if (
       navbarSupportedContent.clientHeight > 0 &&
       window.matchMedia("(max-width: 1200px)").matches
     ) {
-      console.log("2");
       doTransition(false, false);
     } else if (document.getElementById("flash").clientHeight > 0) {
-      console.log("3");
       doTransition(false, false);
     } else {
-      console.log("4");
       doTransition(true, false);
     }
   }
@@ -110,15 +108,8 @@ document.addEventListener("turbolinks:load", function () {
   });
 
   navToggler.addEventListener("click", () => {
-    if (navbarSupportedContent.clientHeight == 0) {
-      window.matchMedia("(max-width: 1200px").matches
-        ? doTransition(false, false)
-        : doTransition(true, false);
-    } else {
-      window.scrollY < 10
-        ? doTransition(true, false)
-        : doTransition(false, false);
-    }
+    navExpanded = !navToggler.classList.contains("collapsed");
+    doTransition(!navExpanded, navExpanded);
   });
 
   window.addEventListener("resize", () => {
@@ -139,5 +130,4 @@ document.addEventListener("turbolinks:load", function () {
   flashObserver.observe(document.getElementById("flash"));
 
   check();
-  console.log("11");
 });
