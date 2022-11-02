@@ -17,7 +17,7 @@ document.addEventListener("turbolinks:load", function () {
   var navbarSupportedContent = document.getElementById(
     "navbarSupportedContent"
   );
-  var navExpanded = navToggler.classList.contains("collapsed");
+  var isCollapsed = navToggler.classList.contains("collapsed");
   var chevron = document.getElementsByClassName("down-indicator")[0];
   var cc_image_white = document.getElementById("myCcWhite");
   var cc_image_black = document.getElementById("myCcBlack");
@@ -108,15 +108,12 @@ document.addEventListener("turbolinks:load", function () {
   });
 
   navToggler.addEventListener("click", () => {
-    navExpanded = !navToggler.classList.contains("collapsed");
-    doTransition(!navExpanded, navExpanded);
+    isCollapsed = !navToggler.classList.contains("collapsed");
+    doTransition(!isCollapsed, isCollapsed);
   });
 
   window.addEventListener("resize", () => {
-    if (
-      window.matchMedia("(max-width: 1200px)").matches &&
-      navbarSupportedContent.clientHeight > 0
-    ) {
+    if (window.matchMedia("(max-width: 1200px)").matches && isCollapsed) {
       doTransition(false, false);
       return;
     }
