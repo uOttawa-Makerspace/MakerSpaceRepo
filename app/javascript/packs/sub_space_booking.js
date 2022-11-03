@@ -223,3 +223,29 @@ if (userSelect) {
     });
   }
 }
+
+document.addEventListener("turbolinks:load", () => {
+  console.log("DOM loaded");
+  let anchor = window.location.hash.substring(1);
+  console.log(anchor);
+  if (anchor === "") {
+    makeActive("booking-calendar-tab");
+  } else {
+    makeActive(anchor);
+  }
+});
+function makeActive(tab) {
+  let tabContent = document.getElementById(tab);
+  let tabButton = document.getElementById(tab + "-btn");
+  let tabButtons = document.getElementsByClassName("nav-link");
+  [...tabButtons].forEach((button) => {
+    button.classList.remove("active");
+  });
+  tabButton.classList.add("active");
+  let tabContents = document.getElementsByClassName("tab-content");
+  [...tabContents].forEach((content) => {
+    content.classList.remove("active");
+  });
+  tabContent.classList.add("active");
+  tabContent.classList.add("show");
+}

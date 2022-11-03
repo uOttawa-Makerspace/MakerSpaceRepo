@@ -79,19 +79,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       end
     end
 
-    describe "GET/admin" do
-      it "should return 302 and notify the user they are not permitted" do
-        get :admin
-        expect(flash[:alert]).to eq("You are not authorized to view this page.")
-      end
-      it "should return 200 and the admin page" do
-        @user = create(:user, :admin)
-        session[:user_id] = @user.id
-        get :admin
-        expect(response).to have_http_status(200)
-      end
-    end
-
     describe "POST/create" do
       it "should return 204 and create a booking" do
         post :create,

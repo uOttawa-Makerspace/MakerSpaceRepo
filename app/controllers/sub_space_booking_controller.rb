@@ -6,6 +6,16 @@ class SubSpaceBookingController < ApplicationController
     end
     @subspace = SubSpace.find(params[:room]) if params[:room].present?
     @bookings = SubSpaceBooking.where(user_id: current_user.id)
+    if current_user.admin?
+      @bookings =
+        SubSpaceBooking.where("start_time >= ?", Date.today).sort_by(
+          &:start_time
+        )
+      @old_bookings =
+        SubSpaceBooking.where("start_time < ?", Date.today).sort_by(
+          &:start_time
+        )
+    end
   end
 
   def request_access
@@ -34,14 +44,14 @@ class SubSpaceBookingController < ApplicationController
       ).save
       user.update(booking_approval: true)
       user.save!
-      redirect_to admin_sub_space_booking_index_path
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
     else
       user = UserBookingApproval.find(params[:id]).user
       UserBookingApproval.find(params[:id]).update(approved: true)
       UserBookingApproval.find(params[:id]).update(staff_id: current_user.id)
       user.booking_approval = true
       user.save!
-      redirect_to admin_sub_space_booking_index_path,
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access request approved successfully."
     end
   end
@@ -50,7 +60,7 @@ class SubSpaceBookingController < ApplicationController
     UserBookingApproval.find(params[:id]).destroy
     user.booking_approval = false
     user.save!
-    redirect_to admin_sub_space_booking_index_path,
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "Access request denied successfully."
   end
 
@@ -239,17 +249,6 @@ class SubSpaceBookingController < ApplicationController
     end
   end
 
-  def admin
-    unless current_user.admin? || current_user.staff?
-      flash[:alert] = "You are not authorized to view this page."
-      redirect_to root_path
-    end
-    @bookings =
-      SubSpaceBooking.where("start_time >= ?", Date.today).sort_by(&:start_time)
-    @old_bookings =
-      SubSpaceBooking.where("start_time < ?", Date.today).sort_by(&:start_time)
-  end
-
   def approve
     unless current_user.admin? || current_user.staff?
       redirect_to root_path, alert: "You are not authorized to view this page."
@@ -264,7 +263,8 @@ class SubSpaceBookingController < ApplicationController
       )
     booking.booking_status_id = BookingStatus::APPROVED.id
     booking.save
-    redirect_to admin_sub_space_booking_index_path,
+
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice:
                   "Booking for #{SubSpaceBooking.find(params[:sub_space_booking_id]).sub_space.name} approved successfully."
     BookingMailer.send_booking_approved(booking.id).deliver_now
@@ -285,7 +285,7 @@ class SubSpaceBookingController < ApplicationController
       )
     booking.booking_status_id = BookingStatus::DECLINED.id
     booking.save
-    redirect_to admin_sub_space_booking_index_path,
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice:
                   "Booking for #{SubSpaceBooking.find(params[:sub_space_booking_id]).sub_space.name} declined successfully."
   end
@@ -300,7 +300,7 @@ class SubSpaceBookingController < ApplicationController
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     booking.public = !booking.public
     booking.save
-    redirect_to admin_sub_space_booking_index_path,
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice:
                   "Booking made #{booking.public ? "public" : "private"} successfully."
   end
