@@ -13,6 +13,8 @@ RSpec.describe SubSpaceBookingController, type: :controller do
     @user = create(:user, :regular_user)
     session[:user_id] = @user.id
     session[:expires_at] = DateTime.tomorrow.end_of_day
+    @user.booking_approval = true
+    @user.save
   end
 
   describe "GET /bookings" do
@@ -24,7 +26,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       it "should return a 200 and list of bookings for the subspace" do
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
         get :bookings, params: { room: @subspace.id }
-        expect(response).to have_http_status(:success)
         expect(JSON.parse(response.body).length).to eq(1)
       end
 
@@ -36,7 +37,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         @other_booking =
           create(:sub_space_booking, sub_space: @other_subspace, user: @user)
         get :bookings, params: { room: @subspace.id }
-        expect(response).to have_http_status(:success)
         expect(JSON.parse(response.body).length).to eq(1)
       end
     end
@@ -45,7 +45,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       it "should return 302 and notify the user they are not permitted" do
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
         put :decline, params: { sub_space_booking_id: booking.id }
-        expect(response).to have_http_status(302)
         expect(flash[:alert]).to eq("You are not authorized to view this page.")
       end
       it "should return 302 and decline the booking" do
@@ -53,7 +52,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         session[:user_id] = @user.id
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
         put :decline, params: { sub_space_booking_id: booking.id }
-        expect(response).to have_http_status(302)
         expect(flash[:notice]).to eq(
           "Booking for #{booking.sub_space.name} declined successfully."
         )
@@ -66,7 +64,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       it "should return 302 and notify the user they are not permitted" do
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
         put :approve, params: { sub_space_booking_id: booking.id }
-        expect(response).to have_http_status(302)
         expect(flash[:alert]).to eq("You are not authorized to view this page.")
       end
       it "should return 302 and approve the booking" do
@@ -74,7 +71,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         session[:user_id] = @user.id
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
         put :approve, params: { sub_space_booking_id: booking.id }
-        expect(response).to have_http_status(302)
         expect(flash[:notice]).to eq(
           "Booking for #{booking.sub_space.name} approved successfully."
         )
@@ -86,7 +82,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
     describe "GET/admin" do
       it "should return 302 and notify the user they are not permitted" do
         get :admin
-        expect(response).to have_http_status(302)
         expect(flash[:alert]).to eq("You are not authorized to view this page.")
       end
       it "should return 200 and the admin page" do
@@ -109,7 +104,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
-        expect(response).to have_http_status(204)
         expect(flash[:notice]).to eq(
           "Booking for #{@subspace.name} created successfully."
         )
@@ -127,7 +121,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
-        expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
@@ -141,7 +134,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  name: Faker::Lorem.word
                }
              }
-        expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
@@ -155,7 +147,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
-        expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
@@ -169,7 +160,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
-        expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
@@ -187,7 +177,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
-        expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
@@ -207,7 +196,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  }
                }
         end
-        expect(response).to have_http_status(422)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 

@@ -1,4 +1,5 @@
 <section>
+
   <% if current_user.booking_approval %>
   <div class="navbar navbar-expand-xl navbar-light bg-light w-100">
     <div class="container-fluid justify-content-start ">
@@ -38,43 +39,97 @@
     </div>
   </div>
   <div class="col-md-8 mx-auto">
+    <ul class="nav nav-tabs nav-fill" id="booking-tab-list" role="tablist">
+        <button class="nav-link active" id="tab-calendar" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab" aria-controls="nav-calendar" aria-selected="true">Book</button>
+        <button class="nav-link" id="tab-booking" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab" aria-controls="nav-booking" aria-selected="false">My Bookings</button>
+        <%= link_to "Admin Panel", admin_sub_space_booking_index_path, class: "nav-link" if current_user.admin? %>
+    </ul>
+      <div class="tab-content" id="tabContent">
+        <div class="tab-pane fade show active" id="booking-calendar-tab" role="tabpanel" aria-labelledby="tab-calendar">
     <%  if params[:room].present?  %>
-    <h3 class="text-center my-3"> <%= @subspace.name %> Availability Calendar</h3>
-    <div id="booked-calendar"></div>
-    <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel">New Booking</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" id="bookClose" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3 text-center">
-              <label for="book-name" class="form-label">Name</label>
-              <input type="text" class="form-control" id="book-name" placeholder="John Doe">
-              <br>
-              <label for="book-description" class="form-label">Description</label>
-              <input type="text" class="form-control" id="book-description" placeholder="Meeting with John Doe">
-              <br>
-              <label for="book-start">Start Date</label>
-              <input id="book-start" autocomplete="false" class="form-control">
-              <br>
-              <label for="book-end">End Date</label>
-              <input id="book-end" autocomplete="false" class="form-control">
+      <h3 class="text-center my-3"> <%= @subspace.name %> Availability Calendar</h3>
+          <div id="booked-calendar"></div>
+          <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="exampleModalLabel">New Booking</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" id="bookClose" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-3 text-center">
+                    <label for="book-name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="book-name" placeholder="John Doe">
+                    <br>
+                    <label for="book-description" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="book-description" placeholder="Meeting with John Doe">
+                    <br>
+                    <label for="book-start">Start Date</label>
+                    <input id="book-start" autocomplete="false" class="form-control">
+                    <br>
+                    <label for="book-end">End Date</label>
+                    <input id="book-end" autocomplete="false" class="form-control">
+                    <br>
+                    <input type="checkbox" id="book-recurring" checked=false class="form-check-input">
+                    <label for="book-recurring">Is this a recurring booking?</label>
+                    <br>
+                    <div class="flatpickr">
+                    <label for="book-recurring-end" id="book-recurring-end-label">Recurring End Date</label>
+                    <input id="book-recurring-end" autocomplete="false" class="form-control">
+                    </div>
+
+                    <label for="book-recurring-type" id="book-recurring-type-label">Recurring Frequency</label>
+                    <select id="book-recurring-type" class="form-select form-control">
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" id="bookCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="button" id="bookSave" class="btn btn-primary">Book</button>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" id="bookCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" id="bookSave" class="btn btn-primary">Book</button>
+          <%  else  %>
+              <div class="alert mt-3 alert-warning text-center" role="alert">
+              Please select a room to view the calendar
+          <%  end  %>
+    </div>
+        </div>
+        <div class="tab-pane fade" id="booking-tab" role="tabpanel" aria-labelledby="tab-booking">
+          <div id="my-booking-table" class="mt-3">
+            <table class="table table-striped">
+              <thead class="table-primary text-center">
+                <tr>
+                  <th>Space</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Approved?</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @bookings.each do |booking| %>
+                  <tr>
+                    <td><%= booking.sub_space.name %></td>
+                    <td><%= booking.name %></td>
+                    <td><%= booking.description %></td>
+                    <td><%= booking.start_time.to_formatted_s(:short) %></td>
+                    <td><%= booking.end_time.to_formatted_s(:short)   %></td>
+                    <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? "Approved" : "Not Approved" %></td>
+                    <td><%= link_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class:"btn btn-danger" %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
-    </div>
-    <%  else  %>
-    <div class="alert mt-3 alert-warning text-center" role="alert">
-      Please select a room to view the calendar
-    </div>
-    <%  end  %>
+
+
   </div>
   <%  else  %>
     <% if UserBookingApproval.where(user:current_user).exists? && !UserBookingApproval.where(user:current_user).first.approved %>

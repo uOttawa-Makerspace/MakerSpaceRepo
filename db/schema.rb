@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_10_17_150048) do
+ActiveRecord::Schema.define(version: 2022_11_02_231600) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -168,6 +168,7 @@ ActiveRecord::Schema.define(version: 2022_10_17_150048) do
     t.boolean "active", default: true
     t.string "demotion_reason"
     t.bigint "demotion_staff_id"
+    t.boolean "deleted", default: false
     t.index ["demotion_staff_id"],
             name: "index_certifications_on_demotion_staff_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
@@ -450,6 +451,7 @@ ActiveRecord::Schema.define(version: 2022_10_17_150048) do
     t.datetime "updated_at", null: false
     t.string "mac_address"
     t.integer "space_id"
+    t.boolean "deleted", default: false
     t.index ["space_id"], name: "index_lab_sessions_on_space_id"
     t.index ["user_id"], name: "index_lab_sessions_on_user_id"
   end
@@ -904,6 +906,7 @@ ActiveRecord::Schema.define(version: 2022_10_17_150048) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "sub_space_booking_status_id"
+    t.boolean "public", default: false
     t.index ["sub_space_booking_status_id"],
             name: "index_sub_space_bookings_on_sub_space_booking_status_id"
     t.index ["sub_space_id"], name: "index_sub_space_bookings_on_sub_space_id"

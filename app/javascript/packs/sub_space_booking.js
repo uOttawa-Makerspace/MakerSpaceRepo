@@ -1,4 +1,4 @@
-import { Calendar } from "@fullcalendar/core";
+import { Calendar, elementClosest } from "@fullcalendar/core";
 import "@fullcalendar/common/main.css";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -7,6 +7,7 @@ let bookedCalendarEl = document.getElementById("booked-calendar");
 if (bookedCalendarEl) {
   function createEvent(arg) {
     let modal = document.getElementById("bookModal");
+    toggleRecurring();
     if (modal) {
       modal.style.display = "block";
       modal.classList.add("show");
@@ -28,9 +29,39 @@ if (bookedCalendarEl) {
     altInput: true,
     altFormat: "F j, Y at H:i",
   });
+  let recurring_picker = document
+    .getElementById("book-recurring-end")
+    .flatpickr({
+      enableTime: false,
+      altInput: true,
+      altFormat: "F j, Y",
+    });
+
   document.getElementById("bookCancel").addEventListener("click", closeModal);
   document.getElementById("bookClose").addEventListener("click", closeModal);
   document.getElementById("bookSave").addEventListener("click", bookEvent);
+  document
+    .getElementById("book-recurring")
+    .addEventListener("change", toggleRecurring);
+  function toggleRecurring() {
+    let recurring = document.getElementById("book-recurring");
+    let recurringElems = [
+      document.getElementById("book-recurring-end"),
+      document.getElementById("book-recurring-end-label"),
+      document.getElementById("book-recurring-type"),
+      document.getElementById("book-recurring-type-label"),
+      document.getElementsByClassName("flatpickr")[0],
+    ];
+    if (recurring.checked) {
+      recurringElems.forEach((elem) => {
+        elem.style.display = "block";
+      });
+    } else {
+      recurringElems.forEach((elem) => {
+        elem.style.display = "none";
+      });
+    }
+  }
   function closeModal() {
     let modal = document.getElementById("bookModal");
     if (modal) {
@@ -38,20 +69,21 @@ if (bookedCalendarEl) {
       modal.classList.remove("show");
       document.getElementById("book-name").value = "";
       document.getElementById("book-description").value = "";
+      recurring_picker.setDate(null);
     }
   }
   function bookEvent(e) {
-    let name = document.getElementById("book-name").value;
-    let description = document.getElementById("book-description").value;
-    let start_time = start_picker.selectedDates[0];
-    let end_time = end_picker.selectedDates[0];
     let data = {
       sub_space_booking: {
-        name: name,
-        description: description,
-        start_time: start_time,
-        end_time: end_time,
+        name: document.getElementById("book-name").value,
+        description: document.getElementById("book-description").value,
+        start_time: start_picker.selectedDates[0],
+        end_time: end_picker.selectedDates[0],
         sub_space_id: new URLSearchParams(window.location.search).get("room"),
+        recurring: document.getElementById("book-recurring").checked,
+        recurring_end: recurring_picker.selectedDates[0],
+        recurring_frequency: document.getElementById("book-recurring-type")
+          .value,
       },
     };
     let url = "/sub_space_booking";
@@ -113,7 +145,7 @@ if (bookedCalendarEl) {
   }
   let bookedCalendar = new Calendar(bookedCalendarEl, {
     plugins: [interactionPlugin, timeGridPlugin, listPlugin],
-    height: "50vh",
+    height: "auto",
     headerToolbar: {
       left: "prev,today,next",
       center: "",
