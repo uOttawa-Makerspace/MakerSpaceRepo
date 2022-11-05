@@ -1,5 +1,16 @@
+$pagination-border-radius: 0;
+$primary: #497979;
+$primary-light: rgba(59, 147, 147, 0.5);
+$navbar-light-color: rgba(0, 0, 0, 0.7);
+$navbar-light-hover-color: rgba(0, 0, 0, 1);
+$navbar-dark-color: rgba(255, 255, 255, 0.7);
+$navbar-dark-hover-color: rgba(255, 255, 255, 1);
+$body-top-padding: 6rem; // equivalent to navbar height
+$input-border-radius: 0.25rem !default;
+$enable-negative-margins: true;
+
+@import "bootstrap/scss/bootstrap";
 @import "shared/variables";
-@import "~bootstrap";
 
 html.saml-login {
   height: 100%;
