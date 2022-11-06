@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_11_01_121141) do
+ActiveRecord::Schema.define(version: 2022_11_06_105722) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -406,6 +406,8 @@ ActiveRecord::Schema.define(version: 2022_11_01_121141) do
     t.text "description"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "name_fr"
+    t.string "description_fr"
   end
 
   create_table "job_type_extras", force: :cascade do |t|
