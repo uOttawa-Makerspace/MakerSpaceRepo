@@ -5,7 +5,9 @@
 
     <% if !@your_volunteer_tasks.blank? %>
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
-
+      <div class="mx-auto mt-3">
+        <button id="task-hider" class="btn btn-primary" type="button">Hide Completed Task</button>
+        </div>
       <br />
 
       <div class="table-responsive">
@@ -28,7 +30,7 @@
 
           <tbody>
           <% @your_volunteer_tasks.each do |vt| %>
-            <tr>
+            <tr completed=<%= vt.status%>>
               <td class="action-cell">
                 <%=link_to "Edit", edit_volunteer_task_path(vt.id), class:"d-block w-100 btn btn-primary btn-sm" if current_user.staff?%>
                 <%=link_to "Show", volunteer_task_path(vt.id), class:"d-block w-100 btn btn-info btn-sm" %>
@@ -109,3 +111,16 @@
     <% end %>
   </div>
 </section>
+<script>
+let hider = document.getElementById('task-hider');
+// Select table rows with the completed attribute
+var completedRows = document.querySelectorAll('tr[completed="completed"]');
+hider.addEventListener("click", ()=>{
+  // Hide the completed rows
+  completedRows.forEach((row)=>{
+    row.style.display == "none" ? row.style.display = "table-row" : row.style.display = "none";
+  });
+  // Change the button text
+  hider.innerHTML = hider.innerHTML == "Hide Completed Task" ? "Show Completed Task" : "Hide Completed Task";
+});
+</script>

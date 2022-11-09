@@ -101,16 +101,30 @@ class VolunteerTasksController < ApplicationController
     @tasks_categories = %w[Events Projects Supervising Workshops Other]
     @certifications = Training.all
     @volunteers_in_task =
-      User.joins(:programs).where(
-        programs: {
-          program_type: Program::VOLUNTEER
-        },
-        id: @volunteer_task.volunteer_task_joins.pluck(:user_id)
+      User.where(
+        id:
+          VolunteerTaskJoin
+            .where(volunteer_task_id: @volunteer_task.id)
+            .where(user_type: "Volunteer")
+            .pluck(:user_id)
       )
     @staff_in_task =
-      User.where("users.role = ? OR users.role = ?", "staff", "admin").where(
-        id: @volunteer_task.volunteer_task_joins.pluck(:user_id)
+      User.where(
+        id:
+          VolunteerTaskJoin
+            .where(volunteer_task_id: @volunteer_task.id)
+            .where.not(user_type: "Volunteer")
+            .pluck(:user_id)
       )
+    @staff_available =
+      User
+        .where("users.role = ? OR users.role = ?", "staff", "admin")
+        .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+    @volunteers_available =
+      User
+        .joins(:programs)
+        .where(programs: { program_type: Program::VOLUNTEER })
+        .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
   end
 
   def update
@@ -158,60 +172,98 @@ class VolunteerTasksController < ApplicationController
 
   def add_volunteer_join(task_id)
     @volunteer_task = VolunteerTask.find(task_id)
-    if params[:staff_id].present? && (User.find(params[:staff_id]).staff?)
-      @volunteer_task_join =
-        VolunteerTaskJoin.new(
-          volunteer_task_id: @volunteer_task.id,
-          user_id: params[:staff_id]
-        )
-      if @volunteer_task_join.save
-        @volunteer_task_join.update(
-          user_type: User.find(params[:staff_id]).role.capitalize
-        )
-      else
-        flash[
-          :error
-        ] = "The staff could not be added to this task, please try again later."
+    if params[:staff_id].present?
+      params[:staff_id] = [params[:staff_id]] if !params[:staff_id].is_a?(Array)
+      params[:staff_id].each do |staff_id|
+        @volunteer_task_join =
+          VolunteerTaskJoin.new(
+            volunteer_task_id: @volunteer_task.id,
+            user_id: staff_id
+          )
+        if @volunteer_task_join.save
+          @volunteer_task_join.update(
+            user_type: User.find(staff_id).role.capitalize
+          )
+        else
+          flash[
+            :error
+          ] = "The staff could not be added to this task, please try again later."
+        end
       end
     end
     if params[:volunteer_id].present?
-      @volunteer_task_join =
-        VolunteerTaskJoin.new(
-          volunteer_task_id: @volunteer_task.id,
-          user_id: params[:volunteer_id]
-        )
-      unless @volunteer_task_join.save
-        flash[
-          :error
-        ] = "The volunteer could not be added to this task, please try again later."
+      if !params[:volunteer_id].is_a?(Array)
+        params[:volunteer_id] = [params[:volunteer_id]]
+      end
+      params[:volunteer_id].each do |volunteer_id|
+        @volunteer_task_join =
+          VolunteerTaskJoin.new(
+            volunteer_task_id: @volunteer_task.id,
+            user_id: volunteer_id
+          )
+        unless @volunteer_task_join.save
+          flash[
+            :error
+          ] = "The volunteer could not be added to this task, please try again later."
+        end
       end
     end
   end
 
   def remove_volunteer_join(task_id)
-    if params[:remove_staff_id].present? &&
-         (User.find(params[:remove_staff_id]).staff?)
-      @volunteer_join_staff =
-        VolunteerTaskJoin.find_by(
-          user_id: params[:remove_staff_id],
-          volunteer_task_id: task_id
-        )
-      unless @volunteer_join_staff.destroy
-        flash[
-          :error
-        ] = "The staff could not be delete from this task, please try again later."
+    if params[:remove_staff_id].present?
+      if !params[:remove_staff_id].is_a?(Array)
+        params[:remove_staff_id] = [params[:remove_staff_id]]
+      end
+      params[:remove_staff_id].each do |staff_id|
+        volunteer_task = VolunteerTask.find(task_id)
+        if volunteer_task.user_id == staff_id.to_i
+          users =
+            VolunteerTaskJoin
+              .where(volunteer_task_id: task_id)
+              .where.not(user_id: staff_id.to_i)
+          if users.present?
+            volunteer_task.update(user_id: users.first.user_id)
+            volunteer_task.save
+            VolunteerTaskJoin
+              .where(volunteer_task_id: task_id)
+              .where(user_id: staff_id.to_i)
+              .destroy_all
+          else
+            flash[
+              :error
+            ] = "There must be at least one staff member assigned to this task."
+            redirect_to edit_volunteer_task_path(task_id)
+          end
+        else
+          @volunteer_join_staff =
+            VolunteerTaskJoin.find_by(
+              user_id: staff_id,
+              volunteer_task_id: task_id
+            )
+          unless @volunteer_join_staff.destroy
+            flash[
+              :error
+            ] = "The staff could not be delete from this task, please try again later."
+          end
+        end
       end
     end
     if params[:remove_volunteer_id].present?
-      @volunteer_join_volunteer =
-        VolunteerTaskJoin.find_by(
-          user_id: params[:remove_volunteer_id],
-          volunteer_task_id: task_id
-        )
-      unless @volunteer_join_volunteer.destroy
-        flash[
-          :error
-        ] = "The volunteer could not be delete from this task, please try again later."
+      if !params[:remove_volunteer_id].is_a?(Array)
+        params[:remove_volunteer_id] = [params[:remove_volunteer_id]]
+      end
+      params[:remove_volunteer_id].each do |volunteer_id|
+        @volunteer_join_volunteer =
+          VolunteerTaskJoin.find_by(
+            user_id: volunteer_id,
+            volunteer_task_id: task_id
+          )
+        unless @volunteer_join_volunteer.destroy
+          flash[
+            :error
+          ] = "The volunteer could not be delete from this task, please try again later."
+        end
       end
     end
   end
