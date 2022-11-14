@@ -194,6 +194,8 @@ ActiveRecord::Schema.define(version: 2022_11_06_105722) do
     t.datetime "updated_at", precision: 6, null: false
     t.string "url"
     t.boolean "show_hours"
+    t.bigint "space_id"
+    t.index ["space_id"], name: "index_contact_infos_on_space_id"
   end
 
   create_table "course_names", force: :cascade do |t|
@@ -927,6 +929,8 @@ ActiveRecord::Schema.define(version: 2022_11_06_105722) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.boolean "approval_required", default: false
+    t.integer "maximum_booking_duration"
+    t.integer "maximum_booking_hours_per_week"
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
   end
 
@@ -972,6 +976,18 @@ ActiveRecord::Schema.define(version: 2022_11_06_105722) do
     t.index ["user_id"], name: "index_upvotes_on_user_id"
   end
 
+  create_table "user_booking_approvals", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.date "date"
+    t.string "comments"
+    t.bigint "staff_id"
+    t.boolean "approved"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["staff_id"], name: "index_user_booking_approvals_on_staff_id"
+    t.index ["user_id"], name: "index_user_booking_approvals_on_user_id"
+  end
+
   create_table "users", id: :serial, force: :cascade do |t|
     t.string "username"
     t.string "password"
@@ -1006,9 +1022,8 @@ ActiveRecord::Schema.define(version: 2022_11_06_105722) do
     t.boolean "confirmed", default: false
     t.bigint "space_id"
     t.datetime "last_signed_in_time"
-    t.string "otp_secret"
-    t.integer "last_otp_at"
     t.boolean "deleted"
+    t.boolean "booking_approval", default: false
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
@@ -1084,6 +1099,7 @@ ActiveRecord::Schema.define(version: 2022_11_06_105722) do
   add_foreign_key "certifications", "users", column: "demotion_staff_id"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
+  add_foreign_key "contact_infos", "spaces"
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
@@ -1132,9 +1148,11 @@ ActiveRecord::Schema.define(version: 2022_11_06_105722) do
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"
-  add_foreign_key "sub_space_booking_statuses", "sub_space_bookings"
+  add_foreign_key "sub_space_booking_statuses",
+                  "sub_space_bookings",
+                  on_delete: :cascade
   add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
-  add_foreign_key "sub_space_bookings", "sub_spaces"
+  add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_spaces", "spaces"
   add_foreign_key "training_sessions", "trainings"
@@ -1143,6 +1161,8 @@ ActiveRecord::Schema.define(version: 2022_11_06_105722) do
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
+  add_foreign_key "user_booking_approvals", "users"
+  add_foreign_key "user_booking_approvals", "users", column: "staff_id"
   add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
