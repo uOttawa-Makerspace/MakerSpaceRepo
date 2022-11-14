@@ -289,7 +289,6 @@ class Admin::ShiftsController < AdminAreaController
              StaffNeededCalendar.where(space_id: @space_id).as_json(
                only: %i[calendar_url color]
              )
-
   end
 
   def shift_suggestions

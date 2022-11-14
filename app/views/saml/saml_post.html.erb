@@ -1,17 +1,27 @@
 <%= render "saml/header" %>
 
-<p class="text-center" style="font-size: 2rem;"><%= t('saml.post.redirecting') %></p>
+<% if @saml_request.issuer === "wiki-server.makerepo.com" && !@current_user.staff? %>
+    <div class="alert alert-danger" role="alert">
+      Sorry... As you are not a Staff or Admin, you are not habilitated to login to the wiki.
+      <br><br> If you think this is an error, email <a href="mailto:uottawa.makerepo@gmail.com">uottawa.makerepo@gmail.com</a>.
+    </div>
+    <div class="alert alert-info" role="alert">
+      Please note that you can still use the wiki without logging in.
+    </div>
+<% else %>
+    <p class="text-center" style="font-size: 2rem;"><%= t('saml.post.redirecting') %></p>
 
-<%= form_tag saml_acs_url do %>
-  <%= hidden_field_tag("SAMLResponse", @saml_response) %>
-  <%= hidden_field_tag("RelayState", params[:RelayState]) %>
-  <%= submit_tag t('saml.post.redirect'), class: 'btn btn-primary btn-sm' %>
+    <%= form_tag saml_acs_url do %>
+      <%= hidden_field_tag("SAMLResponse", @saml_response) %>
+      <%= hidden_field_tag("RelayState", params[:RelayState]) %>
+      <%= submit_tag t('saml.post.redirect'), class: 'btn btn-primary btn-sm' %>
+    <% end %>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.forms[0].submit();
+        }, false);
+    </script>
 <% end %>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.forms[0].submit();
-    }, false);
-</script>
 
 <%= render "saml/footer" %>

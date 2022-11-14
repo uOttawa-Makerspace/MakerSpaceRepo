@@ -177,6 +177,7 @@ window.dragndrop = function (event) {
 window.dragover = function (event) {
   event.preventDefault();
 };
+
 window.toggleVisibility = (name) => {
   document.getElementById(name).innerText = `${
     document.getElementById(name).innerText == "Hide" ? "Show" : "Hide"
@@ -203,4 +204,3 @@ window.customNumberInput = function (event, input) {
     }
   }
 };
-
