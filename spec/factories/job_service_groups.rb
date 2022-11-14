@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :job_service_group do
-    name { Faker::Lorem.word }
+    name { Faker::Lorem.unique.word }
     description { Faker::Lorem.sentence }
     multiple { false }
     text_field { false }

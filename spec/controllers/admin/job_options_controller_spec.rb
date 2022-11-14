@@ -20,10 +20,10 @@ RSpec.describe Admin::JobOptionsController, type: :controller do
     context "logged as admin" do
       it "should create an option and redirect" do
         params = FactoryBot.attributes_for(:job_option)
-        expect { post :create, params: { job_option: params } }.to change(
-          JobOption,
-          :count
-        ).by(1)
+        job_option_count = JobOption.count
+        post :create, params: { job_option: params }
+        sleep 1
+        expect(JobOption.count).to eq(job_option_count + 1)
         expect(response).to redirect_to settings_job_orders_path
       end
     end
