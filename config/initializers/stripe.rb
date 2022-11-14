@@ -2,8 +2,7 @@ require "stripe"
 Stripe.api_key =
   Rails.application.credentials[Rails.env.to_sym][:stripe][:api_key]
 StripeEvent.signing_secret =
-  "whsec_6fac98a8f7cf1ba928c44b2e1488afccd5f32ab300fb092502cfcf1f5ff96a16"
-#  Rails.application.credentials[Rails.env.to_sym][:stripe][:webhook_secret_key]
+  Rails.application.credentials[Rails.env.to_sym][:stripe][:webhook_secret_key]
 
 StripeEvent.configure do |events|
   events.subscribe "payout.paid" do |event|
