@@ -5,6 +5,8 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import googleCalendarPlugin from "@fullcalendar/google-calendar";
 
+console.log("Hello World from Webpacker");
+
 // Modal
 const shiftModal = new bootstrap.Modal(document.getElementById("shiftModal"));
 
@@ -161,6 +163,11 @@ fetch("/admin/shifts/get_external_staff_needed", {
         } else {
           return 1;
         }
+      },
+      eventSourceSuccess: (content, xhr) => {
+        Object.keys(sourceShow).forEach((key) => {
+          hideShowEvents(key);
+        });
       },
     });
     calendar.render();
@@ -377,6 +384,7 @@ document
 
 // Toggle Staff Visibility
 window.toggleVisibility = (id) => {
+  console.log(id);
   let allEvents = calendar.getEvents();
   for (let ev of allEvents) {
     if (ev.extendedProps.userId === id) {
