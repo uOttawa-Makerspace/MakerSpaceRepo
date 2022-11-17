@@ -5,8 +5,6 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import googleCalendarPlugin from "@fullcalendar/google-calendar";
 
-console.log("Hello World from Webpacker");
-
 // Modal
 const shiftModal = new bootstrap.Modal(document.getElementById("shiftModal"));
 
@@ -16,6 +14,7 @@ let sourceShow = {
   transparent: "none",
   staffNeeded: "none",
 };
+let users = {};
 
 // Inputs
 const startDateTimeInput = document.getElementById("start-datetime");
@@ -167,6 +166,10 @@ fetch("/admin/shifts/get_external_staff_needed", {
       eventSourceSuccess: (content, xhr) => {
         Object.keys(sourceShow).forEach((key) => {
           hideShowEvents(key);
+        });
+        Object.keys(users).forEach((key) => {
+          let display = users[key] === "none" ? false : true;
+          document.getElementById(`user-${key}`).checked = display;
         });
       },
     });
@@ -345,10 +348,16 @@ const staffNeededEvent = (arg) => {
 
 // Hide/Show Events
 const hideShowEvents = (eventName) => {
+  console.log(eventName);
   let allEvents = calendar.getEvents();
   for (let ev of allEvents) {
     if (ev.source.id === eventName) {
       ev.setProp("display", sourceShow[eventName]);
+    } else if (eventName === "users") {
+      let display =
+        users[parseInt(ev.extendedProps.userId)] == "none" ? "none" : "block";
+      console.log(display);
+      ev.setProp("display", display);
     }
   }
 
@@ -384,16 +393,11 @@ document
 
 // Toggle Staff Visibility
 window.toggleVisibility = (id) => {
-  console.log(id);
-  let allEvents = calendar.getEvents();
-  for (let ev of allEvents) {
-    if (ev.extendedProps.userId === id) {
-      ev.setProp(
-        "display",
-        document.getElementById(`user-${id}`).checked ? "block" : "none"
-      );
-    }
-  }
+  let integerId = parseInt(id);
+  users[integerId] = document.getElementById(`user-${id}`).checked
+    ? "block"
+    : "none";
+  hideShowEvents("users");
 };
 
 // Update the staff's color
