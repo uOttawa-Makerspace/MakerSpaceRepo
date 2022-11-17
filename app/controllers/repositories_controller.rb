@@ -119,7 +119,10 @@ class RepositoriesController < SessionsController
       rescue FastImage::ImageFetchFailure,
              FastImage::UnknownImageType,
              FastImage::SizeNotFound => e
-        Airbrake.notify(e)
+        Airbrake.notify(
+          e,
+          { repository_id: @repository.id, image: params[:images] }
+        )
         flash[
           :alert
         ] = "Something went wrong while uploading photos, please try again later."
@@ -151,7 +154,10 @@ class RepositoriesController < SessionsController
       rescue FastImage::ImageFetchFailure,
              FastImage::UnknownImageType,
              FastImage::SizeNotFound => e
-        Airbrake.notify(e)
+        Airbrake.notify(
+          e,
+          { repository_id: @repository.id, image: params[:images] }
+        )
         flash[
           :alert_yellow
         ] = "Something went wrong while uploading photos, try uploading them again later. Other changes have been saved."
