@@ -3,7 +3,7 @@
 
     <div class="text-center">
 
-      <h2>New Job Order (Step 3/4)</h2>
+      <h2><%= t('job_orders.wizard.title', step: 3) %></h2>
 
       <div class="form-group col-lg-6 mx-auto">
         <% @options.each do |o| %>
@@ -25,7 +25,7 @@
                 <div class="text-start pt-2">
                   <ul class="list-group">
                     <li class="list-group-item text-center text-muted">
-                      (By Un-Checking, you will delete this file)
+                      <%= t('job_orders.wizard.step_3.by_unchecking') %>
                     </li>
                     <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
                       <div class="form-check">
@@ -46,7 +46,7 @@
 
         <% if @options.count == 0 %>
           <div class="alert alert-warning">
-            There are no options available to you right now. Please continue to the next step.
+            <%= t('job_orders.wizard.step_3.no_options') %>
           </div>
         <% end %>
       </div>
@@ -54,9 +54,9 @@
       <%= hidden_field_tag :change_options, true %>
       <%= hidden_field_tag :step, 4 %>
       <div class="text-center">
-        <%= link_to "Previous Step", job_order_steps_path(step: 2), class: "btn btn-primary mb-1" %>
-        <%= link_to('Delete Current Order', job_order_path(@job_order), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger mb-1") %>
-        <%= f.submit "Next Step", class: "btn btn-primary mb-1" %>
+        <%= link_to t('job_orders.wizard.previous_step'), job_order_steps_path(step: 2), class: "btn btn-primary mb-1" %>
+        <%= link_to(t('job_orders.wizard.delete_current_order'), job_order_path(@job_order), method: :delete, data: { confirm: t('job_orders.are_you_sure_you_want_to_delete') }, class: "btn btn-danger mb-1") %>
+        <%= f.submit t('job_orders.wizard.next_step'), class: "btn btn-primary mb-1" %>
       </div>
     </div>
   <% end %>
