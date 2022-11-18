@@ -273,8 +273,17 @@ class Admin::ShiftsController < AdminAreaController
     SpaceStaffHour
       .where(space_id: @space_id)
       .each do |shift|
+        title = ""
+        shift.training_level_id == nil ?
+          title = "Staff Needed" :
+          title =
+            "Staff Needed - #{TrainingLevel.find(shift.training_level_id).name}"
+        shift.course_name_id == nil ?
+          title = "Staff Needed" :
+          title +=
+            " - #{CourseName.find(shift.course_name_id).name} - #{shift.language}"
         event = {}
-        event["title"] = "Staff Needed"
+        event["title"] = title
         event["daysOfWeek"] = [shift.day]
         event["startTime"] = shift.start_time.strftime("%H:%M")
         event["endTime"] = shift.end_time.strftime("%H:%M")

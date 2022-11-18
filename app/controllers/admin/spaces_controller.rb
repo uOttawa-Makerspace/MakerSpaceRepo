@@ -47,16 +47,26 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def add_space_hours
+    puts params[:training_course]
     unless params[:space_id].present? && params[:day].present? &&
              params[:start_time].present? && params[:end_time].present? &&
-             SpaceStaffHour.create(
-               space_id: params[:space_id],
-               day: params[:day],
-               start_time: params[:start_time],
-               end_time: params[:end_time]
-             )
+             params[:language].present? && params[:training_course].present? &&
+             params[:training_level].present?
       flash[:notice] = "Make sure you sent all the information and try again."
+      redirect_to edit_admin_space_path(
+                    params[:space_id],
+                    fallback_location: root_path
+                  )
     end
+    SpaceStaffHour.create(
+      space_id: params[:space_id],
+      day: params[:day],
+      start_time: params[:start_time],
+      end_time: params[:end_time],
+      language: params[:language],
+      course_name_id: CourseName.find(params[:training_course]).id,
+      training_level_id: TrainingLevel.find(params[:training_level]).id
+    )
     redirect_back(fallback_location: root_path)
   end
 
@@ -67,6 +77,30 @@ class Admin::SpacesController < AdminAreaController
       flash[:notice] = "An issue occurred while deleting the slot."
     end
     redirect_back(fallback_location: root_path)
+  end
+
+  def add_training_levels
+    unless params[:space_id].present? && params[:name].present?
+      flash[:notice] = "Make sure you sent all the information and try again."
+      redirect_to edit_admin_space_path(
+                    params[:space_id],
+                    fallback_location: root_path
+                  )
+    end
+    training_level =
+      TrainingLevel.new(
+        space: Space.find(params[:space_id]),
+        name: params[:name]
+      )
+    if training_level.save
+      flash[:notice] = "Training Level added !"
+    else
+      flash[:notice] = "An issue occurred while adding the training level."
+    end
+    redirect_to edit_admin_space_path(
+                  params[:space_id],
+                  fallback_location: root_path
+                )
   end
 
   def destroy
