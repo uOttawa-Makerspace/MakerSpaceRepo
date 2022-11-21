@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_11_02_231600) do
+ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -168,7 +168,6 @@ ActiveRecord::Schema.define(version: 2022_11_02_231600) do
     t.boolean "active", default: true
     t.string "demotion_reason"
     t.bigint "demotion_staff_id"
-    t.boolean "deleted", default: false
     t.index ["demotion_staff_id"],
             name: "index_certifications_on_demotion_staff_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
@@ -346,6 +345,7 @@ ActiveRecord::Schema.define(version: 2022_11_02_231600) do
     t.decimal "service_fee", precision: 10, scale: 2, null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "stripe_transaction_id"
   end
 
   create_table "job_order_statuses", force: :cascade do |t|
@@ -419,6 +419,8 @@ ActiveRecord::Schema.define(version: 2022_11_02_231600) do
     t.text "description"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "name_fr"
+    t.string "description_fr"
   end
 
   create_table "job_type_extras", force: :cascade do |t|
@@ -451,7 +453,6 @@ ActiveRecord::Schema.define(version: 2022_11_02_231600) do
     t.datetime "updated_at", null: false
     t.string "mac_address"
     t.integer "space_id"
-    t.boolean "deleted", default: false
     t.index ["space_id"], name: "index_lab_sessions_on_space_id"
     t.index ["user_id"], name: "index_lab_sessions_on_user_id"
   end
@@ -840,7 +841,14 @@ ActiveRecord::Schema.define(version: 2022_11_02_231600) do
     t.bigint "space_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "language"
+    t.bigint "training_level_id"
+    t.bigint "course_name_id"
+    t.index ["course_name_id"],
+            name: "index_space_staff_hours_on_course_name_id"
     t.index ["space_id"], name: "index_space_staff_hours_on_space_id"
+    t.index ["training_level_id"],
+            name: "index_space_staff_hours_on_training_level_id"
   end
 
   create_table "spaces", id: :serial, force: :cascade do |t|
@@ -922,6 +930,14 @@ ActiveRecord::Schema.define(version: 2022_11_02_231600) do
     t.integer "maximum_booking_duration"
     t.integer "maximum_booking_hours_per_week"
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
+  end
+
+  create_table "training_levels", force: :cascade do |t|
+    t.string "name"
+    t.bigint "space_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
   create_table "training_sessions", id: :serial, force: :cascade do |t|
@@ -1131,7 +1147,9 @@ ActiveRecord::Schema.define(version: 2022_11_02_231600) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
+  add_foreign_key "space_staff_hours", "course_names"
   add_foreign_key "space_staff_hours", "spaces"
+  add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
@@ -1144,6 +1162,7 @@ ActiveRecord::Schema.define(version: 2022_11_02_231600) do
   add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_spaces", "spaces"
+  add_foreign_key "training_levels", "spaces"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"

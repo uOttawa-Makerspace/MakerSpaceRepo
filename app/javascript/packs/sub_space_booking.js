@@ -97,7 +97,6 @@ if (bookedCalendarEl) {
     fetch(request)
       .then((response) => response.text())
       .then((data) => {
-        console.log(data);
         try {
           let errors = JSON.parse(data)["errors"];
           for (let error of errors) {
@@ -223,29 +222,104 @@ if (userSelect) {
     });
   }
 }
-
-document.addEventListener("turbolinks:load", () => {
-  console.log("DOM loaded");
+document.addEventListener("turbolinks:render", ready);
+function ready() {
   let anchor = window.location.hash.substring(1);
-  console.log(anchor);
+  let pending_table = new URLSearchParams(window.location.search).get(
+    "pending_page"
+  );
+  let approved_table = new URLSearchParams(window.location.search).get(
+    "approved_page"
+  );
+  let denied_table = new URLSearchParams(window.location.search).get(
+    "denied_page"
+  );
+  let old_pending_table = new URLSearchParams(window.location.search).get(
+    "old_pending_page"
+  );
+  let old_approved_table = new URLSearchParams(window.location.search).get(
+    "old_approved_page"
+  );
+  let old_denied_table = new URLSearchParams(window.location.search).get(
+    "old_denied_page"
+  );
+  let urls = [
+    pending_table,
+    approved_table,
+    denied_table,
+    old_pending_table,
+    old_approved_table,
+    old_denied_table,
+  ];
+  let param = pending_table
+    ? "pending-accordion"
+    : approved_table
+    ? "approved-accordion"
+    : denied_table
+    ? "declined-accordion"
+    : old_pending_table
+    ? "past-pending-accordion"
+    : old_approved_table
+    ? "past-approved-accordion"
+    : old_denied_table
+    ? "past-declined-accordion"
+    : null;
   if (anchor === "") {
-    makeActive("booking-calendar-tab");
+    if (param) {
+      makeActive("booking-admin-tab", param);
+      // Remove urls from url bar
+      let url = new URL(window.location.href);
+      for (let u of urls) {
+        if (u) {
+          url.searchParams.delete(u);
+        }
+      }
+      window.history.replaceState({}, document.title, url.href);
+    } else {
+      makeActive("booking-calendar-tab", null);
+    }
   } else {
-    makeActive(anchor);
+    makeActive(anchor, null);
   }
-});
-function makeActive(tab) {
+}
+function makeActive(tab, param) {
   let tabContent = document.getElementById(tab);
   let tabButton = document.getElementById(tab + "-btn");
   let tabButtons = document.getElementsByClassName("nav-link");
+  if (!(tabContent && tabButton && tabButtons)) {
+    return;
+  }
   [...tabButtons].forEach((button) => {
     button.classList.remove("active");
   });
   tabButton.classList.add("active");
-  let tabContents = document.getElementsByClassName("tab-content");
+  let tabContents = document.getElementsByClassName("tab-pane");
   [...tabContents].forEach((content) => {
     content.classList.remove("active");
+    content.classList.remove("show");
   });
   tabContent.classList.add("active");
   tabContent.classList.add("show");
+  if (param && tab === "booking-admin-tab") {
+    let table = document.getElementById(param);
+    table.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+      inline: "nearest",
+    });
+    window.scrollBy(
+      0,
+      -7 * parseFloat(getComputedStyle(document.documentElement).fontSize)
+    );
+  }
 }
+let tabButtons = document.getElementsByClassName("nav-link");
+[...tabButtons].forEach((button) => {
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    let tab = button.id.split("-")[0];
+    makeActive(tab, null);
+  });
+});
+ready();

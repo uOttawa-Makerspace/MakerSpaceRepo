@@ -7,7 +7,7 @@ class ApplicationController < ActionController::Base
                        only: proc { |c| c.request.format == "application/json" }
   include ApplicationHelper
   require "zip"
-
+  require "will_paginate/array"
   before_action :set_locale
   before_action :set_last_seen_at,
                 if:
