@@ -292,7 +292,7 @@
 
                         <div class="accordion" id="accordion-<% training.name%>">
                           <div class="accordion-item">
-                            <div class="accordion-header" id="header-training-<% training.name%>" type="button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>"">
+                            <div class="accordion-header" id="header-training-<% training.name%>" type="button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>">
                               <div class="row">
                                 <div class="col-4"></div>
                                 <div class="col-4 text-center">
@@ -455,7 +455,7 @@
         <% end %>
       </div>
     </div>
-
+  </div>
 <!--      FOOTER Section-->
 <section id="user-show-links" class="m-5" style="margin-bottom: 20px!important;">
   <% active = params[:show].eql?("makes") ? ["#eee", "#5f9ea0", "#eee"] : params[:show].eql?("projects_assigned") ? ["#eee", "#eee", "#5f9ea0"] : ["#5f9ea0", "#eee", "#eee"] %>
@@ -528,7 +528,7 @@
 
 <div id="modal-window" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content"></div>
+    <div class="modal-content" id="cert-modal"></div>
   </div>
 </div>
 
@@ -570,4 +570,5 @@
       </div>
     </div>
   </div>
+</div>
 </div>

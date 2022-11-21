@@ -1,1 +1,1 @@
-document.getElementsByClassName("modal-content")[0].innerHTML =  "<%=escape_javascript(render :partial => 'admin/certifications/certification_modal', :locals => { :certification => @certification_modal }) %>";
+document.getElementById("cert-modal").innerHTML =  "<%=escape_javascript(render :partial => 'admin/certifications/certification_modal', :locals => { :certification => @certification_modal }) %>";

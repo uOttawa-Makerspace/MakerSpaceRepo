@@ -22,6 +22,10 @@ class SamlIdpController < ApplicationController
     render xml: SamlIdp.metadata.signed
   end
 
+  def wiki_metadata
+    render file: "public/assets/metadata.xml", content_type: "application/xml"
+  end
+
   def auth
     @current_user =
       case params[:submit]

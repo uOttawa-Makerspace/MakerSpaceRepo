@@ -30,7 +30,7 @@ class Space < ApplicationRecord
   def signed_in_users
     lab_sessions
       .where("sign_out_time > ?", Time.zone.now)
-      .reverse
+      .order(sign_out_time: :desc)
       .map(&:user)
       .uniq
   end
@@ -39,6 +39,7 @@ class Space < ApplicationRecord
     users =
       lab_sessions
         .where("sign_out_time < ?", Time.zone.now)
+        .order(sign_out_time: :desc)
         .last(20)
         .map(&:user)
         .uniq

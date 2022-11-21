@@ -48,6 +48,8 @@ require("packs/clipboard");
 //Shouldn't be necessary, remove when controllers load properly.
 import "../controllers";
 
+import tableSort from "table-sort-js/table-sort.js";
+
 // window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
 window.TomSelect = require("tom-select");
 window.bootstrap = require("bootstrap");
@@ -175,6 +177,7 @@ window.dragndrop = function (event) {
 window.dragover = function (event) {
   event.preventDefault();
 };
+
 window.toggleVisibility = (name) => {
   document.getElementById(name).innerText = `${
     document.getElementById(name).innerText == "Hide" ? "Show" : "Hide"
@@ -201,4 +204,3 @@ window.customNumberInput = function (event, input) {
     }
   }
 };
-
