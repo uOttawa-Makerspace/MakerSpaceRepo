@@ -1,0 +1,101 @@
+<section>
+  <% if current_user.booking_approval %>
+  <div class="navbar navbar-expand-xl navbar-light bg-light w-100">
+    <div class="container-fluid justify-content-start ">
+      <a class="navbar-brand" href="<%=  sub_space_booking_index_path  %>">Maker<strong>Room</strong></a>
+
+    <% Space.all.each do |space| %>
+      <% subspaces = SubSpace.where(space_id: space.id) %>
+        <% if subspaces.length > 0 %>
+          <% if subspaces.length == 1 %>
+            <div class="nav-item ms-4"><%=  link_to(subspaces.last.name, sub_space_booking_index_path(room:subspaces.last.id), class:"nav-link")  %></div>
+          <%  else  %>
+            <div class="nav-item dropdown ms-4">
+              <a class="nav-link dropdown-toggle" role="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <%=  space.name  %>
+              </a>
+              <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <% subspaces.each do |subspace| %>
+                  <a class="dropdown-item" href="<%=  sub_space_booking_index_path(room:subspace.id)  %>"><%=  subspace.name  %></a>
+                <%  end  %>
+              </div>
+            </div>
+          <%  end  %>
+        <% end %>
+      <%  end  %>
+    </div>
+  </div>
+
+  <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast bg-warning text-black" data-bs-autohide="false">
+    <div class="toast-header">
+      <strong id="toast_title" class="me-auto"></strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div id="toast_text" class="toast-body">
+    </div>
+  </div>
+
+    </div>
+  </div>
+  <div class="col-md-8 mx-auto">
+    <%  if params[:room].present?  %>
+    <h3 class="text-center my-3"> <%= @subspace.name %> Availability Calendar</h3>
+    <div id="booked-calendar"></div>
+    <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">New Booking</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" id="bookClose" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3 text-center">
+              <label for="book-name" class="form-label">Name</label>
+              <input type="text" class="form-control" id="book-name" placeholder="John Doe">
+              <br>
+              <label for="book-description" class="form-label">Description</label>
+              <input type="text" class="form-control" id="book-description" placeholder="Meeting with John Doe">
+              <br>
+              <label for="book-start">Start Date</label>
+              <input id="book-start" autocomplete="false" class="form-control">
+              <br>
+              <label for="book-end">End Date</label>
+              <input id="book-end" autocomplete="false" class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="bookCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" id="bookSave" class="btn btn-primary">Book</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <%  else  %>
+    <div class="alert mt-3 alert-warning text-center" role="alert">
+      Please select a room to view the calendar
+    </div>
+    <%  end  %>
+  </div>
+  <%  else  %>
+    <% if UserBookingApproval.where(user:current_user).exists? && !UserBookingApproval.where(user:current_user).first.approved %>
+    <div class="alert mt-3 alert-warning text-center" role="alert">
+      Your booking approval is pending
+    </div>
+    <%  else  %>
+  <div class="alert alert-info text-center">
+    <p class="fw-bold">
+      <i class="fa fa-info-circle"></i>
+      You do not have permission to book any rooms yet, please request access below.
+    </p>
+  </div>
+  <div class="mx-auto form col-4">
+    <%=  form_with url:request_access_sub_space_booking_index_path, method: :put do |f|  %>
+    <div class="input-group">
+      <%=  f.text_field :comments, class:"form-control", placeholder:"Comments (Optional)"   %>
+      <%=  f.submit "Request Access ", class: "btn btn-primary"  %></div>
+    <%  end  %>
+  </div>
+  <%  end %>
+  <%  end  %>
+
+</section>
