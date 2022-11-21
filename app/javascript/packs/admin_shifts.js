@@ -14,7 +14,6 @@ let sourceShow = {
   transparent: "none",
   staffNeeded: "none",
 };
-let users = {};
 
 // Inputs
 const startDateTimeInput = document.getElementById("start-datetime");
@@ -163,15 +162,6 @@ fetch("/admin/shifts/get_external_staff_needed", {
           return 1;
         }
       },
-      eventSourceSuccess: (content, xhr) => {
-        Object.keys(sourceShow).forEach((key) => {
-          hideShowEvents(key);
-        });
-        Object.keys(users).forEach((key) => {
-          let display = users[key] === "none" ? false : true;
-          document.getElementById(`user-${key}`).checked = display;
-        });
-      },
     });
     calendar.render();
   });
@@ -239,7 +229,7 @@ const populateUsers = (arg) => {
 const createCalendarEvent = () => {
   let selected_users = [];
   for (let option of userIdInput.options) {
-    if (option.selected) {
+    if (option.selected) {[]
       selected_users.push(option.value);
     }
   }
@@ -348,16 +338,10 @@ const staffNeededEvent = (arg) => {
 
 // Hide/Show Events
 const hideShowEvents = (eventName) => {
-  console.log(eventName);
   let allEvents = calendar.getEvents();
   for (let ev of allEvents) {
     if (ev.source.id === eventName) {
       ev.setProp("display", sourceShow[eventName]);
-    } else if (eventName === "users") {
-      let display =
-        users[parseInt(ev.extendedProps.userId)] == "none" ? "none" : "block";
-      console.log(display);
-      ev.setProp("display", display);
     }
   }
 
@@ -393,11 +377,15 @@ document
 
 // Toggle Staff Visibility
 window.toggleVisibility = (id) => {
-  let integerId = parseInt(id);
-  users[integerId] = document.getElementById(`user-${id}`).checked
-    ? "block"
-    : "none";
-  hideShowEvents("users");
+  let allEvents = calendar.getEvents();
+  for (let ev of allEvents) {
+    if (ev.extendedProps.userId === id) {
+      ev.setProp(
+        "display",
+        document.getElementById(`user-${id}`).checked ? "block" : "none"
+      );
+    }
+  }
 };
 
 // Update the staff's color

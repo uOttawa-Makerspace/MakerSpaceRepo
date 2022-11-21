@@ -33,3 +33,13 @@ function refreshCapacity() {
 }
 setInterval(refreshCapacity, 60000);
 refreshCapacity();
+
+document.addEventListener("DOMContentLoaded", function () {
+  MessageBus.start();
+  MessageBus.callbackInterval = 500;
+  let space_id = document.getElementById("space_id").value;
+  MessageBus.subscribe("/kiosk/" + space_id, function (data) {
+    document.getElementById("table-js-signed-in").innerHTML = data.sign_in;
+    document.getElementById("table-js-signed-out").innerHTML = data.sign_out;
+  });
+});

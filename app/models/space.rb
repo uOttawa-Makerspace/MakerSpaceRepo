@@ -14,6 +14,7 @@ class Space < ApplicationRecord
   has_many :staff_spaces
   has_many :space_staff_hour
   has_many :shifts, dependent: :destroy
+  has_many :sub_spaces, dependent: :destroy
   has_many :staff_needed_calendars, dependent: :destroy
 
   after_create :create_popular_hours
@@ -29,7 +30,7 @@ class Space < ApplicationRecord
   def signed_in_users
     lab_sessions
       .where("sign_out_time > ?", Time.zone.now)
-      .reverse
+      .order(sign_out_time: :desc)
       .map(&:user)
       .uniq
   end
@@ -38,6 +39,7 @@ class Space < ApplicationRecord
     users =
       lab_sessions
         .where("sign_out_time < ?", Time.zone.now)
+        .order(sign_out_time: :desc)
         .last(20)
         .map(&:user)
         .uniq
