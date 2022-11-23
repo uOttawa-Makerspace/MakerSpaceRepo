@@ -36,7 +36,7 @@
                 <div class="input-group-prepend">
                   <span class="input-group-text">$</span>
                 </div>
-                <%= number_field_tag "quote_service_per_unit_#{service.id}", @user.internal? ? service.internal_price : service.external_price, { step: "0.01", placeholder: "0.25", class: "form-control money-input", required: true } %>
+                <%= number_field_tag "quote_service_per_unit_#{service.id}", @job_order.user.internal? ? service.internal_price : service.external_price, { step: "0.01", placeholder: "0.25", class: "form-control money-input", required: true } %>
               </div>
             </div>
           </div>
