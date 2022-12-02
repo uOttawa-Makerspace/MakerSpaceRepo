@@ -31,6 +31,19 @@ const startPicker = startDateTimeInput.flatpickr({
   time_24hr: true,
   altInput: true,
   altFormat: "F j, Y at H:i",
+  onChange: (selectedDates, dateStr, instance) => {
+    console.log(endPicker);
+    populateUsers({
+      start: new Date(
+        Date.parse(selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+      end: new Date(
+        Date.parse(endPicker.selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+    });
+  },
 });
 
 const endPicker = endDateTimeInput.flatpickr({
@@ -38,6 +51,18 @@ const endPicker = endDateTimeInput.flatpickr({
   time_24hr: true,
   altInput: true,
   altFormat: "F j, Y at H:i",
+  onChange: (selectedDates, dateStr, instance) => {
+    populateUsers({
+      end: new Date(
+        Date.parse(selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+      start: new Date(
+        Date.parse(startPicker.selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+    });
+  },
 });
 
 const newShiftUserSelect = new TomSelect("#user-id", {
@@ -186,9 +211,11 @@ const populateUsers = (arg) => {
   if (arg.event) {
     startDate = arg.event.start;
     endDate = arg.event.end;
+    console.log(startDate, endDate);
   } else {
     startDate = arg.start;
     endDate = arg.end;
+    console.log(startDate, endDate);
   }
   let startHour = startDate.toUTCString().split(" ")[4].split(":")[0];
   let startMinute = startDate.toUTCString().split(" ")[4].split(":")[1];
@@ -203,6 +230,8 @@ const populateUsers = (arg) => {
     "Fri,": 5,
     "Sat,": 6,
   }[startDate.toUTCString().split(" ")[0]];
+  console.log(`${startHour}:${startMinute}`);
+  console.log(`${endHour}:${endMinute}`);
   fetch(
     `/admin/shifts/shift_suggestions?start=${startHour}:${startMinute}&end=${endHour}:${endMinute}&day=${weekDayInt}`,
     {
@@ -271,10 +300,14 @@ const createCalendarEvent = () => {
 };
 
 const openModal = (arg) => {
+  if (!arg) {
+    arg = { start: new Date(), end: new Date() };
+  }
   if (arg !== undefined && arg !== null) {
     startPicker.setDate(Date.parse(arg.startStr));
     endPicker.setDate(Date.parse(arg.endStr));
   }
+  console.log(arg);
   populateUsers(arg);
   shiftModal.show();
 };
