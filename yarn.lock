@@ -954,6 +954,15 @@
     "@fullcalendar/common" "~5.9.0"
     tslib "^2.1.0"
 
+"@fullcalendar/icalendar@5.9.0":
+  version "5.9.0"
+  resolved "https://registry.yarnpkg.com/@fullcalendar/icalendar/-/icalendar-5.9.0.tgz#7f8651e0c935194efc19c76594ee2a1b9b62c5ea"
+  integrity sha512-T6MPipPXAVP1hIyJGoXBuvRoJgFLROlHcfhSrVe7XCFDDhHGHUMmqXdsgBVoqbgnrizMIc3+PBkuq8UJl45YRQ==
+  dependencies:
+    "@fullcalendar/common" "~5.9.0"
+    ical.js "^1.4.0"
+    tslib "^2.1.0"
+
 "@fullcalendar/interaction@5.9.0":
   version "5.9.0"
   resolved "https://registry.yarnpkg.com/@fullcalendar/interaction/-/interaction-5.9.0.tgz#7211f89074cc89b9234a9333fc8ec346bd4ff3f3"
@@ -4275,6 +4284,11 @@ husky@^8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/husky/-/husky-8.0.1.tgz#511cb3e57de3e3190514ae49ed50f6bc3f50b3e9"
   integrity sha512-xs7/chUH/CKdOCs7Zy0Aev9e/dKOMZf3K1Az1nar3tzlv0jfqnYtu235bstsWTmXOR0EfINrPa97yy4Lz6RiKw==
+
+ical.js@^1.4.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/ical.js/-/ical.js-1.5.0.tgz#23213accd1d8f7248d01705acb06270a70d20662"
+  integrity sha512-7ZxMkogUkkaCx810yp0ZGKvq1ZpRgJeornPttpoxe6nYZ3NLesZe1wWMXDdwTkj/b5NtXT+Y16Aakph/ao98ZQ==
 
 iconv-lite@0.4.24:
   version "0.4.24"

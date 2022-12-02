@@ -4,6 +4,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import googleCalendarPlugin from "@fullcalendar/google-calendar";
+import iCalendarPlugin from "@fullcalendar/icalendar";
 
 // Modal
 const shiftModal = new bootstrap.Modal(document.getElementById("shiftModal"));
@@ -67,6 +68,7 @@ fetch("/admin/shifts/get_external_staff_needed", {
         timeGridPlugin,
         listPlugin,
         googleCalendarPlugin,
+        iCalendarPlugin,
       ],
       customButtons: {
         addNewEvent: {
@@ -125,10 +127,18 @@ fetch("/admin/shifts/get_external_staff_needed", {
         ...res.map((cal) => {
           return {
             id: "staffNeeded",
-            googleCalendarApiKey: "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
-            googleCalendarId: cal.calendar_url,
             color: cal.color,
             editable: false,
+            ...(cal.calendar_url.includes(".ics")
+              ? {
+                  format: "ics",
+                  url: `/admin/shifts/ics?staff_needed_calendar_id=${cal.id}`,
+                }
+              : {
+                  googleCalendarApiKey:
+                    "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
+                  googleCalendarId: cal.calendar_url,
+                }),
           };
         }),
       ],
@@ -215,7 +225,6 @@ const populateUsers = (arg) => {
   )
     .then((res) => res.json())
     .then((res) => {
-      console.log(res);
       res.forEach((user) => {
         userIdInput.tomselect.addOption({
           value: user.id,
