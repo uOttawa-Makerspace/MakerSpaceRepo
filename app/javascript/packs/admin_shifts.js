@@ -32,7 +32,6 @@ const startPicker = startDateTimeInput.flatpickr({
   altInput: true,
   altFormat: "F j, Y at H:i",
   onChange: (selectedDates, dateStr, instance) => {
-    console.log(endPicker);
     populateUsers({
       start: new Date(
         Date.parse(selectedDates[0]) -
@@ -211,11 +210,9 @@ const populateUsers = (arg) => {
   if (arg.event) {
     startDate = arg.event.start;
     endDate = arg.event.end;
-    console.log(startDate, endDate);
   } else {
     startDate = arg.start;
     endDate = arg.end;
-    console.log(startDate, endDate);
   }
   let startHour = startDate.toUTCString().split(" ")[4].split(":")[0];
   let startMinute = startDate.toUTCString().split(" ")[4].split(":")[1];
@@ -230,8 +227,6 @@ const populateUsers = (arg) => {
     "Fri,": 5,
     "Sat,": 6,
   }[startDate.toUTCString().split(" ")[0]];
-  console.log(`${startHour}:${startMinute}`);
-  console.log(`${endHour}:${endMinute}`);
   fetch(
     `/admin/shifts/shift_suggestions?start=${startHour}:${startMinute}&end=${endHour}:${endMinute}&day=${weekDayInt}`,
     {
@@ -244,7 +239,6 @@ const populateUsers = (arg) => {
   )
     .then((res) => res.json())
     .then((res) => {
-      console.log(res);
       res.forEach((user) => {
         userIdInput.tomselect.addOption({
           value: user.id,
