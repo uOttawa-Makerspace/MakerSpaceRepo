@@ -1,9 +1,12 @@
 class SubSpaceBookingController < ApplicationController
+  before_action :user_account
+  before_action :user_signed_in, only: %i[index request_access bookings]
+  before_action :user_approved, only: [:create]
+  before_action :user_admin_or_staff,
+                only: %i[approve deny approve_access deny_access users]
+  before_action :user_admin, only: %i[publish]
+  before_action :user_booking_belongs, only: [:delete]
   def index
-    unless signed_in?
-      redirect_to login_path, alert: "You must be logged in to view this page."
-      return
-    end
     @subspace = SubSpace.find(params[:room]) if params[:room].present?
     @bookings = SubSpaceBooking.where(user_id: current_user.id)
     if current_user.admin?
@@ -14,21 +17,21 @@ class SubSpaceBookingController < ApplicationController
           .map { |booking_status| booking_status.sub_space_booking }
           .select { |booking| booking.end_time > Time.now }
           .sort_by { |booking| booking.start_time }
-          .paginate(page: params[:pending_page], per_page: 2)
+          .paginate(page: params[:pending_page], per_page: 15)
       @approved_bookings =
         SubSpaceBookingStatus
           .where(booking_status_id: BookingStatus::APPROVED.id)
           .map { |booking_status| booking_status.sub_space_booking }
           .select { |booking| booking.end_time > Time.now }
           .sort_by { |booking| booking.start_time }
-          .paginate(page: params[:approved_page], per_page: 2)
+          .paginate(page: params[:approved_page], per_page: 15)
       @declined_bookings =
         SubSpaceBookingStatus
           .where(booking_status_id: BookingStatus::DECLINED.id)
           .map { |booking_status| booking_status.sub_space_booking }
           .select { |booking| booking.end_time > Time.now }
           .sort_by { |booking| booking.start_time }
-          .paginate(page: params[:denied_page], per_page: 2)
+          .paginate(page: params[:denied_page], per_page: 15)
       @old_pending_bookings =
         SubSpaceBookingStatus
           .where(booking_status_id: BookingStatus::PENDING.id)
@@ -36,7 +39,7 @@ class SubSpaceBookingController < ApplicationController
           .select { |booking| booking.end_time < Time.now }
           .sort_by { |booking| booking.start_time }
           .reverse
-          .paginate(page: params[:old_pending_page], per_page: 2)
+          .paginate(page: params[:old_pending_page], per_page: 15)
       @old_approved_bookings =
         SubSpaceBookingStatus
           .where(booking_status_id: BookingStatus::APPROVED.id)
@@ -44,7 +47,7 @@ class SubSpaceBookingController < ApplicationController
           .select { |booking| booking.end_time < Time.now }
           .sort_by { |booking| booking.start_time }
           .reverse
-          .paginate(page: params[:old_approved_page], per_page: 2)
+          .paginate(page: params[:old_approved_page], per_page: 15)
       @old_declined_bookings =
         SubSpaceBookingStatus
           .where(booking_status_id: BookingStatus::DECLINED.id)
@@ -52,7 +55,7 @@ class SubSpaceBookingController < ApplicationController
           .select { |booking| booking.end_time < Time.now }
           .sort_by { |booking| booking.start_time }
           .reverse
-          .paginate(page: params[:old_denied_page], per_page: 2)
+          .paginate(page: params[:old_denied_page], per_page: 15)
     end
   end
 
@@ -93,6 +96,7 @@ class SubSpaceBookingController < ApplicationController
                   notice: "Access request approved successfully."
     end
   end
+
   def deny_access
     user = UserBookingApproval.find(params[:id]).user
     UserBookingApproval.find(params[:id]).destroy
@@ -103,8 +107,9 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def users
-    render json: User.all if current_user.admin? || current_user.staff?
+    render json: User.all
   end
+
   def bookings
     @bookings = []
     if params[:room].present?
@@ -153,50 +158,24 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def create
-    unless signed_in?
-      redirect_to login_path, alert: "You must be logged in to view this page."
-      return
-    end
-    unless current_user.booking_approval || current_user.admin?
-      redirect_to root_path, alert: "You must be approved to book spaces."
-      return
-    end
-
     if params[:sub_space_booking][:recurring].present?
       if params[:sub_space_booking][:recurring] == true
         if params[:sub_space_booking][:recurring_end].present? &&
              params[:sub_space_booking][:recurring_frequency].present?
-          if params[:sub_space_booking][:recurring_frequency] == "weekly"
+          params[:sub_space_booking][:recurring_frequency] == "weekly" ?
+            recurrence = 7.days :
+            recurrence = 1.month
+          start_time = params[:sub_space_booking][:start_time].to_datetime
+          end_time = params[:sub_space_booking][:end_time].to_datetime
+          end_date = params[:sub_space_booking][:recurring_end].to_date
+          book(params)
+          while start_time < end_date
+            params[:sub_space_booking][:start_time] = start_time + recurrence
+            params[:sub_space_booking][:end_time] = end_time + recurrence
             start_time = params[:sub_space_booking][:start_time].to_datetime
             end_time = params[:sub_space_booking][:end_time].to_datetime
-            end_date = params[:sub_space_booking][:recurring_end].to_date
             book(params)
-            while start_time < end_date
-              params[:sub_space_booking][:start_time] = start_time + 7.days
-              params[:sub_space_booking][:end_time] = end_time + 7.days
-              start_time = params[:sub_space_booking][:start_time].to_datetime
-              end_time = params[:sub_space_booking][:end_time].to_datetime
-              book(params)
-            end
-          elsif params[:sub_space_booking][:recurring_frequency] == "monthly"
-            start_time = params[:sub_space_booking][:start_time].to_datetime
-            end_time = params[:sub_space_booking][:end_time].to_datetime
-            end_date = params[:sub_space_booking][:recurring_end].to_date
-            book(params)
-            while start_time < end_date
-              params[:sub_space_booking][:start_time] = start_time + 1.month
-              params[:sub_space_booking][:end_time] = end_time + 1.month
-              start_time = params[:sub_space_booking][:start_time].to_datetime
-              end_time = params[:sub_space_booking][:end_time].to_datetime
-              book(params)
-            end
-          else
-            redirect_to root_path, alert: "You must select a recurring type."
           end
-        else
-          redirect_to root_path,
-                      alert: "You must provide a recurring end date and type."
-          return
         end
       end
     else
@@ -288,11 +267,6 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def approve
-    unless current_user.admin? || current_user.staff?
-      redirect_to root_path, alert: "You are not authorized to view this page."
-      return
-    end
-
     booking =
       SubSpaceBookingStatus.find(
         SubSpaceBooking.find(
@@ -309,12 +283,6 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def decline
-    unless current_user.admin? || current_user.staff?
-      return(
-        redirect_to root_path,
-                    alert: "You are not authorized to view this page."
-      )
-    end
     booking =
       SubSpaceBookingStatus.find(
         SubSpaceBooking.find(
@@ -329,12 +297,6 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def publish
-    unless current_user.admin?
-      return(
-        redirect_to root_path,
-                    alert: "You are not authorized to view this page."
-      )
-    end
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     booking.public = !booking.public
     booking.save
@@ -363,6 +325,50 @@ class SubSpaceBookingController < ApplicationController
     booking.destroy
     redirect_to sub_space_booking_index_path,
                 notice: "Booking for #{subspaceName} deleted successfully."
+  end
+
+  private
+
+  def user_account
+    unless !current_user.nil?
+      redirect_to login_path, alert: "You must be logged in to view this page."
+      return
+    end
+  end
+  def user_signed_in
+    unless signed_in?
+      redirect_to login_path, alert: "You must be logged in to view this page."
+      return
+    end
+  end
+  def user_approved
+    unless current_user.booking_approval || current_user.admin?
+      redirect_to root_path,
+                  alert: "You must be approved to book to view this page."
+      return
+    end
+  end
+  def user_admin_or_staff
+    unless current_user.admin? || current_user.staff?
+      redirect_to root_path,
+                  alert: "You must be an admin or staff to view this page."
+      return
+    end
+  end
+  def user_admin
+    unless current_user.admin?
+      redirect_to root_path, alert: "You must be an admin to view this page."
+      return
+    end
+  end
+  def user_booking_belongs
+    unless SubSpaceBooking.find(params[:id]).user_id == current_user.id ||
+             current_user.admin?
+      redirect_to root_path,
+                  alert:
+                    "You must be the owner of this booking or an admin to delete it."
+      return
+    end
   end
 
   def sub_space_booking_params

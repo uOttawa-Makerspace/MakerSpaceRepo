@@ -224,26 +224,31 @@ if (userSelect) {
 }
 document.addEventListener("turbolinks:render", ready);
 function ready() {
-  let anchor = window.location.hash.substring(1);
-  let pending_table = new URLSearchParams(window.location.search).get(
+  [...document.getElementsByClassName("nav-link")].forEach((el) => {
+    el.addEventListener("click", (e) => {
+      console.log(e.target);
+    });
+  });
+  const anchor = window.location.hash.substring(1);
+  const pending_table = new URLSearchParams(window.location.search).get(
     "pending_page"
   );
-  let approved_table = new URLSearchParams(window.location.search).get(
+  const approved_table = new URLSearchParams(window.location.search).get(
     "approved_page"
   );
-  let denied_table = new URLSearchParams(window.location.search).get(
+  const denied_table = new URLSearchParams(window.location.search).get(
     "denied_page"
   );
-  let old_pending_table = new URLSearchParams(window.location.search).get(
+  const old_pending_table = new URLSearchParams(window.location.search).get(
     "old_pending_page"
   );
-  let old_approved_table = new URLSearchParams(window.location.search).get(
+  const old_approved_table = new URLSearchParams(window.location.search).get(
     "old_approved_page"
   );
-  let old_denied_table = new URLSearchParams(window.location.search).get(
+  const old_denied_table = new URLSearchParams(window.location.search).get(
     "old_denied_page"
   );
-  let urls = [
+  const urls = [
     pending_table,
     approved_table,
     denied_table,
@@ -251,7 +256,7 @@ function ready() {
     old_approved_table,
     old_denied_table,
   ];
-  let param = pending_table
+  const param = pending_table
     ? "pending-accordion"
     : approved_table
     ? "approved-accordion"
@@ -313,7 +318,7 @@ function makeActive(tab, param) {
     );
   }
 }
-let tabButtons = document.getElementsByClassName("nav-link");
+let tabButtons = document.getElementsByClassName("tab-link");
 [...tabButtons].forEach((button) => {
   button.addEventListener("click", (event) => {
     event.stopPropagation();

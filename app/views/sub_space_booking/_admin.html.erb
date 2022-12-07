@@ -78,7 +78,6 @@
                         <th>Booking Time</th>
                         <th>Public Booking</th>
                         <th>Actions</th>
-                        <th>Status</th>
                       </tr>
                       </thead>
                       <tbody>
@@ -97,7 +96,6 @@
                                 <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
                               </div>
                             </td>
-                            <td><%= SubSpaceBookingStatus.find(booking.sub_space_booking_status_id).booking_status_id %></td>
                           </tr>
                       <% end %>
                       </table>

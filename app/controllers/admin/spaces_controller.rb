@@ -46,10 +46,8 @@ class Admin::SpacesController < AdminAreaController
         .each do |booking|
           status =
             SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
-          status.sub_space_booking_id = nil
-          status.save
-          booking.sub_space_booking_status_id = nil
-          booking.save
+          status.update(sub_space_booking_id: nil)
+          booking.update(sub_space_booking_status_id: nil)
           status.destroy
           booking.destroy
         end
@@ -76,7 +74,6 @@ class Admin::SpacesController < AdminAreaController
         return
       end
       subspace.update(approval_required: !subspace.approval_required)
-      subspace.save
       flash[
         :notice
       ] = "Aproval for #{subspace.name} is now #{subspace.approval_required ? "manual" : "automatic"}"

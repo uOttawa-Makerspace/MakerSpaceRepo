@@ -11,9 +11,9 @@
     </div>
     <div class="col-md-8 mx-auto">
       <ul class="nav nav-tabs nav-fill" id="booking-tab-list" role="tablist">
-          <button class="nav-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab" aria-controls="booking-calendar-tab" aria-selected="true">Book</button>
-          <button class="nav-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab" aria-controls="booking-tab" aria-selected="false">My Bookings</button>
-          <% if current_user.admin?%><button class="nav-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab" aria-controls="booking-admin-tab" aria-selected="false">Admin Panel</button><%end%>
+          <button class="nav-link tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab" aria-controls="booking-calendar-tab" aria-selected="true">Book</button>
+          <button class="nav-link tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab" aria-controls="booking-tab" aria-selected="false">My Bookings</button>
+          <% if current_user.admin?%><button class="nav-link tab-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab" aria-controls="booking-admin-tab" aria-selected="false">Admin Panel</button><%end%>
       </ul>
       <div class="tab-content" id="tabContent">
         <div class="tab-pane active show" id="booking-calendar-tab" role="tabpanel" aria-labelledby="tab-calendar">
