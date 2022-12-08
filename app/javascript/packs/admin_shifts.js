@@ -43,6 +43,18 @@ const startPicker = startDateTimeInput.flatpickr({
   time_24hr: true,
   altInput: true,
   altFormat: "F j, Y at H:i",
+  onChange: (selectedDates, dateStr, instance) => {
+    populateUsers({
+      start: new Date(
+        Date.parse(selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+      end: new Date(
+        Date.parse(endPicker.selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+    });
+  },
 });
 
 const endPicker = endDateTimeInput.flatpickr({
@@ -50,6 +62,18 @@ const endPicker = endDateTimeInput.flatpickr({
   time_24hr: true,
   altInput: true,
   altFormat: "F j, Y at H:i",
+  onChange: (selectedDates, dateStr, instance) => {
+    populateUsers({
+      end: new Date(
+        Date.parse(selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+      start: new Date(
+        Date.parse(startPicker.selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+    });
+  },
 });
 
 const newShiftUserSelect = new TomSelect("#user-id", {
@@ -292,6 +316,9 @@ const createCalendarEvent = () => {
 };
 
 const openModal = (arg) => {
+  if (!arg) {
+    arg = { start: new Date(), end: new Date() };
+  }
   if (arg !== undefined && arg !== null) {
     startPicker.setDate(Date.parse(arg.startStr));
     endPicker.setDate(Date.parse(arg.endStr));
