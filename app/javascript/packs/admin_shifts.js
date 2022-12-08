@@ -180,8 +180,6 @@ fetch("/admin/shifts/get_external_staff_needed", {
         });
         hideShowEvents("check");
         return content;
-        // The events do not respect the display property
-        // hideShowEvents('check', 'check');
       },
     });
     calendar.render();
