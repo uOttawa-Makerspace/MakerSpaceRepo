@@ -234,9 +234,7 @@
     <% SubSpace.where(space: @space).each do |sub_space| %>
       <tr>
         <td><%= sub_space.name %></td>
-          <td><%= link_to "#{sub_space.approval_required ? "Enable" : "Disable"} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id:@space.id, id:sub_space.id), method: :patch, action: :change_sub_space_approval, class:"btn btn-primary btn-sm" %></td>
-          <%# Using text_field instead of number_field because it doesn't change the values, we still have to convert and %>
-          <%# it leaves ugly artifacts when the input type is set to number that our custom buttons replace.  %>
+          <td><%= link_to "#{sub_space.approval_required ? "Enable" : "Disable"} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id:@space.id, id:sub_space.id), method: :put, action: :change_sub_space_approval, class:"btn btn-primary btn-sm" %></td>
           <td>
             <%= form_tag admin_space_set_max_booking_duration_path(space_id:@space.id, sub_space_id:sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
               <button step=-1 target='max_hours_weekly' id='max_hours_decrement' class='btn btn-sm btn-outline-danger' onclick='customNumberInput(event,this)'><%= fa_icon('minus') %></button>
