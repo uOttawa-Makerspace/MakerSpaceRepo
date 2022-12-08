@@ -3,8 +3,8 @@ class SubSpaceBookingController < ApplicationController
   before_action :user_signed_in, only: %i[index request_access bookings]
   before_action :user_approved, only: [:create]
   before_action :user_admin_or_staff,
-                only: %i[approve deny approve_access deny_access users]
-  before_action :user_admin, only: %i[publish]
+                only: %i[approve decline approve_access deny_access users]
+  before_action :user_admin, only: [:publish]
   before_action :user_booking_belongs, only: [:delete]
   def index
     @subspace = SubSpace.find(params[:room]) if params[:room].present?

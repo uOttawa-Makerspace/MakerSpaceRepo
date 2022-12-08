@@ -31,7 +31,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
 
       it "should return a 200 and list of bookings for the subspace and only that subspace" do
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
-
         @other_space = create(:space)
         @other_subspace = create(:sub_space, space: @other_space)
         @other_booking =
@@ -43,9 +42,12 @@ RSpec.describe SubSpaceBookingController, type: :controller do
 
     describe "PUT/decline" do
       it "should return 302 and notify the user they are not permitted" do
+        @user = create(:user, :regular_user)
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
         put :decline, params: { sub_space_booking_id: booking.id }
-        expect(flash[:alert]).to eq("You are not authorized to view this page.")
+        expect(flash[:alert]).to eq(
+          "You must be an admin or staff to view this page."
+        )
       end
       it "should return 302 and decline the booking" do
         @user = create(:user, :admin)
@@ -62,9 +64,12 @@ RSpec.describe SubSpaceBookingController, type: :controller do
 
     describe "PUT/approve" do
       it "should return 302 and notify the user they are not permitted" do
+        @user = create(:user, :regular_user)
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
         put :approve, params: { sub_space_booking_id: booking.id }
-        expect(flash[:alert]).to eq("You are not authorized to view this page.")
+        expect(flash[:alert]).to eq(
+          "You must be an admin or staff to view this page."
+        )
       end
       it "should return 302 and approve the booking" do
         @user = create(:user, :admin)
