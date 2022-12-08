@@ -287,8 +287,19 @@ class Admin::ShiftsController < AdminAreaController
   def get_external_staff_needed
     render json:
              StaffNeededCalendar.where(space_id: @space_id).as_json(
-               only: %i[calendar_url color]
+               only: %i[calendar_url color id]
              )
+  end
+
+  def ics
+    if params[:staff_needed_calendar_id].present? &&
+         StaffNeededCalendar.where(
+           id: params[:staff_needed_calendar_id]
+         ).present?
+      snc = StaffNeededCalendar.find(params[:staff_needed_calendar_id])
+      ics_file = URI.open(snc.calendar_url).read
+      send_data(ics_file, filename: "snc_#{snc.id}.ics", type: "text/calendar")
+    end
   end
 
   def shift_suggestions
