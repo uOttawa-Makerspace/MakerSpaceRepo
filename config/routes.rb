@@ -237,9 +237,9 @@ Rails.application.routes.draw do
             as: "set_max_booking_duration",
             action: "set_max_booking_duration"
       delete "/edit/:id", as: "delete_sub_space", action: "delete_sub_space"
-      patch "/edit/:id",
-            as: "change_sub_space_approval",
-            action: "change_sub_space_approval"
+      put "/edit/:id",
+          as: "change_sub_space_approval",
+          action: "change_sub_space_approval"
 
       collection do
         post :update_max_capacity
@@ -344,12 +344,12 @@ Rails.application.routes.draw do
   resources :sub_space_booking, only: %i[index create] do
     put :decline
     put :approve
-
+    put :publish
+    delete :delete, path: "delete/:sub_space_booking_id"
     collection do
       put :request_access
       put :deny_access
       put :approve_access
-      get :admin
       get :bookings
       get :users
     end
