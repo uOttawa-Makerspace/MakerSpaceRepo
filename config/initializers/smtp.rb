@@ -1,5 +1,5 @@
 Rails.application.configure do
-  smtp_provider = Rails.env == "dev_server" ? :mailtrap : :amazon_ses # :sendinblue or :sendgrid (Send in blue limit is really low)
+  smtp_provider = :amazon_ses
   smtp_credentials =
     Rails.application.credentials[Rails.env.to_sym][:smtp][smtp_provider]
 
