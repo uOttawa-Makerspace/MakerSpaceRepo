@@ -179,4 +179,15 @@ RSpec.describe Admin::ShiftsController, type: :controller do
       end
     end
   end
+  describe "GET /get_shift" do
+    context "get shift" do
+      it "should get the specific shift" do
+        space = create(:space)
+        s1 = create(:shift, space_id: space.id, pending: false)
+        s2 = create(:shift)
+        get :get_shift, params: { id: s1.id }
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
 end
