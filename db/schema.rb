@@ -122,8 +122,14 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   create_table "booking_statuses", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
+    t.bigint "booking_status_id"
+    t.bigint "sub_space_booking_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.index ["booking_status_id"],
+            name: "index_booking_statuses_on_booking_status_id"
+    t.index ["sub_space_booking_id"],
+            name: "index_booking_statuses_on_sub_space_booking_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|

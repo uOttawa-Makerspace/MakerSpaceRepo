@@ -11,10 +11,17 @@ const shiftModal = new bootstrap.Modal(document.getElementById("shiftModal"));
 
 // Show
 let sourceShow = {
-  google: "none",
-  transparent: "none",
-  staffNeeded: "none",
+  google: document.getElementById("hide-show-google-events").checked
+    ? "block"
+    : "none",
+  transparent: document.getElementById("hide-show-unavailabilities").checked
+    ? "block"
+    : "none",
+  staffNeeded: document.getElementById("hide-show-staff-needed").checked
+    ? "block"
+    : "none",
 };
+let hiddenIds = {};
 
 // Inputs
 const startDateTimeInput = document.getElementById("start-datetime");
@@ -45,6 +52,18 @@ const startPicker = startDateTimeInput.flatpickr({
   time_24hr: true,
   altInput: true,
   altFormat: "F j, Y at H:i",
+  onChange: (selectedDates, dateStr, instance) => {
+    populateUsers({
+      start: new Date(
+        Date.parse(selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+      end: new Date(
+        Date.parse(endPicker.selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+    });
+  },
 });
 
 const endPicker = endDateTimeInput.flatpickr({
@@ -52,6 +71,18 @@ const endPicker = endDateTimeInput.flatpickr({
   time_24hr: true,
   altInput: true,
   altFormat: "F j, Y at H:i",
+  onChange: (selectedDates, dateStr, instance) => {
+    populateUsers({
+      end: new Date(
+        Date.parse(selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+      start: new Date(
+        Date.parse(startPicker.selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+    });
+  },
 });
 
 const newShiftUserSelect = new TomSelect("#user-id", {
@@ -176,6 +207,18 @@ fetch("/admin/shifts/get_external_staff_needed", {
           return 1;
         }
       },
+      eventSourceSuccess: (content, xhr) => {
+        content.forEach((event) => {
+          if (hiddenIds[event.userId] === "none") {
+            event.display = "none";
+          } else if (hiddenIds[event.userId] === "block") {
+            event.display = "block";
+          } else {
+          }
+        });
+        hideShowEvents("check");
+        return content;
+      },
     });
     calendar.render();
   });
@@ -294,6 +337,9 @@ const createCalendarEvent = () => {
 };
 
 const openModal = (arg) => {
+  if (!arg) {
+    arg = { start: new Date(), end: new Date() };
+  }
   if (arg !== undefined && arg !== null) {
     startPicker.setDate(Date.parse(arg.startStr));
     endPicker.setDate(Date.parse(arg.endStr));
@@ -408,21 +454,45 @@ const staffNeededEvent = (arg) => {
 
 // Hide/Show Events
 const hideShowEvents = (eventName) => {
-  let allEvents = calendar.getEvents();
-  for (let ev of allEvents) {
-    if (ev.source.id === eventName) {
-      ev.setProp("display", sourceShow[eventName]);
+  if (eventName !== "check") {
+    if (sourceShow[eventName] === "none") {
+      sourceShow[eventName] = "block";
+    } else {
+      sourceShow[eventName] = "none";
     }
   }
-
-  if (sourceShow[eventName] === "none") {
-    sourceShow[eventName] = "block";
-  } else {
-    sourceShow[eventName] = "none";
+  let allEvents = calendar.getEvents();
+  for (let ev of allEvents) {
+    if (eventName === "check") {
+      let display = sourceShow.hasOwnProperty(ev.source.id)
+        ? sourceShow[ev.source.id]
+        : "block";
+      ev.setProp("display", display);
+      if (ev.extendedProps.userId) {
+        ev.setProp(
+          "display",
+          hiddenIds[ev.extendedProps.userId] === "none" ? "none" : display
+        );
+      }
+    } else if (ev.source.id === eventName) {
+      ev.setProp("display", sourceShow[eventName]);
+      if (ev.extendedProps.userId) {
+        ev.setProp(
+          "display",
+          hiddenIds[ev.extendedProps.userId] === "none"
+            ? "none"
+            : sourceShow[eventName]
+        );
+      }
+    }
   }
   if (eventName === "transparent") {
     [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
-      el.checked = sourceShow[eventName] === "none";
+      let userId = el.id.substring(5);
+      el.checked =
+        hiddenIds[userId] === "none"
+          ? false
+          : sourceShow["transparent"] === "block";
     });
   }
 };
@@ -454,6 +524,9 @@ window.toggleVisibility = (id) => {
         "display",
         document.getElementById(`user-${id}`).checked ? "block" : "none"
       );
+      hiddenIds[id] = document.getElementById(`user-${id}`).checked
+        ? "block"
+        : "none";
     }
   }
 };
