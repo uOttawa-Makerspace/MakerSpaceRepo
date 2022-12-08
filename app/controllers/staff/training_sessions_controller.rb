@@ -119,6 +119,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
           user_id: graduate.id,
           training_session_id: @current_training_session.id
         )
+
       if BadgeTemplate.where(
            training_id: @current_training_session.training_id
          ).present? && @current_training_session.level == "Beginner"
