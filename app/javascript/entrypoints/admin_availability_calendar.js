@@ -4,6 +4,7 @@ import "@fullcalendar/common/main.css";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
+import bootstrap from "bootstrap";
 
 // Modal
 const unavailabilityModal = new bootstrap.Modal(

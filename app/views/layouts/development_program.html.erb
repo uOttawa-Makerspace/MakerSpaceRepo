@@ -3,9 +3,9 @@
   <head>
     <title>Development Program | <%= page_title(yield(:title)) %></title>
     <%= favicon_link_tag 'site-icon.jpg' %>
-    <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
+    <%= vite_javascript_tag 'application', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
-    <%= stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+    <%= vite_stylesheet_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= csrf_meta_tags %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
@@ -26,6 +26,6 @@
       </div>
     </section>
     <%= render 'layouts/footer' %>
-    <%= javascript_pack_tag controller_name if File.exists?("#{Rails.root}/app/javascript/packs/#{controller_name}.js") %>
+    <%= vite_javascript_tag controller_name if File.exists?("#{Rails.root}/app/javascript/packs/#{controller_name}.js") %>
   </body>
 </html>

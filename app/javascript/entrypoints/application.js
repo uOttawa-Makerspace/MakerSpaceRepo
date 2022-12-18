@@ -4,7 +4,7 @@
 // a relevant structure within app/javascript and only use these pack files to reference
 // that code so it'll be compiled.
 //
-// To reference this file, add <%= javascript_pack_tag 'application' %> to the appropriate
+// To reference this file, add <%= vite_javascript_tag 'application' %> to the appropriate
 // layout file, like app/views/layouts/application.html.erb
 
 // Uncomment to copy all static images under ../images to the output folder and reference
@@ -13,48 +13,33 @@
 //
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
-import "core-js/stable";
 import "regenerator-runtime/runtime";
-require("@rails/ujs").start();
-require("turbolinks").start();
-require("@rails/activestorage").start();
-// require("jquery");
-// require("jquery-ui")
-global.toastr = require("toastr");
-global.Chart = require("chart.js");
-require("trix");
-require("@shopify/buy-button-js");
-global.PhotoSwipe = require("photoswipe");
-global.PhotoSwipeUI_Default = require("photoswipe/dist/photoswipe-ui-default");
+import "trix";
+import "@shopify/buy-button-js";
+import "photoswipe";
+import "photoswipe/dist/photoswipe-ui-default";
 import "clipboard";
-import moment from "moment";
-// window.Cookies = require("js-cookie");
-require("@rails/actiontext");
-require("flatpickr/dist/flatpickr");
+import "flatpickr";
+import "./validation";
+import "./direct_uploads";
+import "./effects";
+import "./forms";
+import "./header";
+import "./page_jumping";
+import "./photo_gallery";
+import "./requests";
+import "./settings";
+import "./sorting";
+import "./accordion-load";
+import "./clipboard";
 
-require("packs/validation");
-require("packs/direct_uploads");
-require("packs/effects");
-require("packs/forms");
-require("packs/header");
-require("packs/page_jumping");
-require("packs/photo_gallery");
-require("packs/requests");
-require("packs/settings");
-require("packs/sorting");
-require("packs/vendor");
-require("packs/accordion-load");
-require("packs/clipboard");
-//Shouldn't be necessary, remove when controllers load properly.
 import "../controllers";
 
-// window.bootstrap = require('bootstrap/dist/js/bootstrap.bundle.js');
-window.TomSelect = require("tom-select");
-window.bootstrap = require("bootstrap");
-// import bsCustomFileInput from 'bs-custom-file-input'
-require("packs/toastr");
-// window.ActionCable = require("actioncable");
+import "tom-select";
+import "bootstrap";
+import "toastr/toastr";
 
+import "@fullcalendar/core/vdom";
 import { Calendar } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -81,28 +66,6 @@ document.addEventListener("turbolinks:load", () => {
     }
   }
 });
-
-// // needed since by default form-select doesn't register page:load events
-// document.addEventListener("turbolinks:load", () => {
-//     $('[data-radio-enable]').on('change', function () {
-//         var $inputs = $('input[type="radio"][name="' + $(this).attr('name') + '"]');
-
-//         $inputs.each(function () {
-//             var $input = $(this);
-//             var $target = $($input.data('radio-enable'));
-
-//             if ($input.prop('checked')){
-//                 $target.prop('disabled', false);
-//             } else {
-//                 $target.prop('disabled', true);
-//             }
-//         });
-//     }).trigger('change');
-
-//     $('.form-select').selectpicker({
-//         windowPadding: [80, 0, 0, 0]
-//     });
-// });
 
 window.clearEndDate = function () {
   document.getElementById("end_date").value = null;

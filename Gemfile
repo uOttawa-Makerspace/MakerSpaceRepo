@@ -65,6 +65,7 @@ gem "stimulus-rails"
 gem "graphlient"
 gem "sprockets-rails"
 gem "psych", "~> 4.0.0"
+gem "vite_rails"
 
 group :development, :test do
   gem "byebug", platform: :mri

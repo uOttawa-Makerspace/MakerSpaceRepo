@@ -3,9 +3,9 @@
 	<head>
 	  <title><%= page_title(yield(:title)) %></title>
 	  <%= favicon_link_tag 'site-icon.jpg' %>
-    <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
+    <%= vite_javascript_tag 'application', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
-    <%= stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+    <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= csrf_meta_tags %>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 	  <meta name="description" content="MakerRepo is the uOttawa Makerspace's platform. Share and download projects for 3D printers, CNCs, Arduino and much more!" />
@@ -23,6 +23,18 @@
     </script>
     <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
     <noscript>Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></noscript>
+    <%= vite_client_tag %>
+    <%= vite_javascript_tag 'application' %>
+    <!--
+      If using a TypeScript entrypoint file:
+        vite_typescript_tag 'application'
+
+      If using a .jsx or .tsx entrypoint, add the extension:
+        vite_javascript_tag 'application.jsx'
+
+      Visit the guide for more information: https://vite-ruby.netlify.app/guide/rails
+    -->
+
   </head>
 	<body>
 		<%= render 'layouts/header' %>
@@ -30,6 +42,6 @@
       <%= yield %>
     </main>
 		<%= render 'layouts/footer' %>
-    <%= javascript_pack_tag controller_name if File.exists?("#{Rails.root}/app/javascript/packs/#{controller_name}.js") %>
+    <%= vite_javascript_tag controller_name if File.exists?("#{Rails.root}/app/javascript/#{controller_name}.js") %>
 	</body>
 </html>
