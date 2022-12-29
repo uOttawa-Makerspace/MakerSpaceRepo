@@ -8,7 +8,7 @@
     <%= javascript_include_tag "vendor",      :debug => false %>
     <%= vite_javascript_tag 'application', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
-    <%= vite_stylesheet_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+    <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= csrf_meta_tags %>
     <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
 </head>
@@ -18,11 +18,11 @@
 		<div class="setting-grid">
 			<div class="setting-side-panel">
 				<ul>
-		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
+		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if
             current_page?(action: 'profile', controller: 'settings') %> >
 		      	<%= link_to 'Edit settings', settings_profile_path %>
 		      </li>
-		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
+		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if
             current_page?(action: 'admin', controller: 'settings') %> >
 		      	<%= link_to 'Account Settings', settings_admin_path %>
 		      </li>
