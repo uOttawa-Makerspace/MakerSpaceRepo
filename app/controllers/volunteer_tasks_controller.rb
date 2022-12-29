@@ -64,7 +64,7 @@ class VolunteerTasksController < ApplicationController
           .pluck(:name, :id)
       @staff =
         User
-          .where("users.role = ? OR users.role = ?", "staff", "admin")
+          .where(role: %w[staff admin])
           .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
           .pluck(:name, :id)
       @volunteers_in_task =
@@ -79,7 +79,7 @@ class VolunteerTasksController < ApplicationController
           .pluck(:name, :id)
       @staff_in_task =
         User
-          .where("users.role = ? OR users.role = ?", "staff", "admin")
+          .where(role: %w[staff admin])
           .where(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
           .pluck(:name, :id)
     end
@@ -118,7 +118,7 @@ class VolunteerTasksController < ApplicationController
       )
     @staff_available =
       User
-        .where("users.role = ? OR users.role = ?", "staff", "admin")
+        .where(role: %w[staff admin])
         .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
     @volunteers_available =
       User
