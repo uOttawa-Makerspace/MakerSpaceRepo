@@ -5,11 +5,11 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import googleCalendarPlugin from "@fullcalendar/google-calendar";
 import iCalendarPlugin from "@fullcalendar/icalendar";
-import bootstrap from "bootstrap";
+import modal from "bootstrap/js/dist/modal";
 import TomSelect from "tom-select";
 
 // Modal
-const shiftModal = new bootstrap.Modal(document.getElementById("shiftModal"));
+const shiftModal = new modal(document.getElementById("shiftModal"));
 
 // Show
 let sourceShow = {
