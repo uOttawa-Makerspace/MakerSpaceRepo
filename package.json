@@ -43,6 +43,7 @@
     "rails-erb-loader": "^5.5.2",
     "sass": "^1.57.0",
     "sortablejs": "^1.15.0",
+    "stimulus-vite-helpers": "^3.0.1",
     "toastr": "^2.1.4",
     "tom-select": "^2.2.2",
     "trix": "^2.0.3"

@@ -1502,8 +1502,8 @@ GEM
     factory_bot_rails (6.2.0)
       factory_bot (~> 6.2.0)
       railties (>= 5.0.0)
-    faker (2.0.0)
-      i18n (>= 0.7)
+    faker (3.1.0)
+      i18n (>= 1.8.11, < 2)
     faraday (0.17.6)
       multipart-post (>= 1.2, < 3)
     faraday_middleware (0.14.0)
@@ -1635,6 +1635,8 @@ GEM
       net-protocol
     net-ssh (7.0.1)
     nio4r (2.5.8)
+    nokogiri (1.13.10-aarch64-linux)
+      racc (~> 1.4)
     nokogiri (1.13.10-arm64-darwin)
       racc (~> 1.4)
     oauth2 (2.0.9)
@@ -1944,6 +1946,7 @@ GEM
       rubyzip (>= 1.0.0)
 
 PLATFORMS
+  aarch64-linux
   arm64-darwin-22
 
 DEPENDENCIES
@@ -1970,7 +1973,7 @@ DEPENDENCIES
   ed25519 (~> 1.2)
   excon
   factory_bot_rails
-  faker (~> 2.0.0)
+  faker (~> 3.1.0)
   faraday (~> 0.17.0)
   fastimage (~> 1.7.0)
   file_validators
