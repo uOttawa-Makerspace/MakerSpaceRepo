@@ -4,7 +4,7 @@ class BadgeTemplate < ApplicationRecord
   has_many :badge_requirements, dependent: :destroy
   has_many :badges
   has_many :proficient_projects
-  belongs_to :training
+  belongs_to :training, optional: true
 
   def self.acclaim_api_get_all_badge_templates
     response =

@@ -7,7 +7,7 @@ RSpec.describe JobTypeExtra, type: :model do
     end
 
     context "belong_to" do
-      it { should belong_to(:job_type) }
+      it { should belong_to(:job_type).without_validating_presence }
     end
   end
 

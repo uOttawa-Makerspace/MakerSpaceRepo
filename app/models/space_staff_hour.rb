@@ -1,5 +1,5 @@
 class SpaceStaffHour < ApplicationRecord
-  belongs_to :space
+  belongs_to :space, optional: true
 
   validates :day, presence: true
   validates :start_time, presence: true

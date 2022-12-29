@@ -23,9 +23,9 @@ RSpec.describe ProficientProject, type: :model do
     end
 
     context "belongs_to" do
-      it { should belong_to(:training) }
-      it { should belong_to(:badge_template) }
-      it { should belong_to(:drop_off_location) }
+      it { should belong_to(:training).without_validating_presence }
+      it { should belong_to(:badge_template).without_validating_presence }
+      it { should belong_to(:drop_off_location).without_validating_presence }
     end
 
     context "has_and_belongs_to_many" do

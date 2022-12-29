@@ -1,5 +1,5 @@
 class PopularHour < ApplicationRecord
-  belongs_to :space
+  belongs_to :space, optional: true
 
   def self.from_space(space_id)
     space = Space.find_by(id: space_id)

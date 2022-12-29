@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class OrderItem < ApplicationRecord
-  belongs_to :proficient_project
-  belongs_to :order
+  belongs_to :proficient_project, optional: true
+  belongs_to :order, optional: true
   validates :quantity,
             presence: true,
             numericality: {

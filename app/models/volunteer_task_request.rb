@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class VolunteerTaskRequest < ApplicationRecord
-  belongs_to :volunteer_task
-  belongs_to :user
+  belongs_to :volunteer_task, optional: true
+  belongs_to :user, optional: true
 
   scope :approved, -> { where(approval: true) }
   scope :rejected, -> { where(approval: false) }

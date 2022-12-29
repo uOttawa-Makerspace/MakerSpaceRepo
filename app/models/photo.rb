@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 class Photo < ApplicationRecord
-  belongs_to :repository
-  belongs_to :proficient_project
-  belongs_to :learning_module
-  belongs_to :project_proposal
+  belongs_to :repository, optional: true
+  belongs_to :proficient_project, optional: true
+  belongs_to :learning_module, optional: true
+  belongs_to :project_proposal, optional: true
 
   has_one_attached :image
 

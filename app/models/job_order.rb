@@ -1,8 +1,8 @@
 class JobOrder < ApplicationRecord
-  belongs_to :user
-  belongs_to :job_type
-  belongs_to :job_service_group
-  belongs_to :job_order_quote, dependent: :destroy
+  belongs_to :user, optional: true
+  belongs_to :job_type, optional: true
+  belongs_to :job_service_group, optional: true
+  belongs_to :job_order_quote, dependent: :destroy, optional: true
   has_many :job_order_options, dependent: :destroy
   has_many :job_order_statuses, dependent: :destroy
   has_and_belongs_to_many :job_services

@@ -3,8 +3,8 @@ require "rails_helper"
 RSpec.describe DiscountCode, type: :model do
   describe "Association" do
     context "belongs_to" do
-      it { should belong_to(:price_rule) }
-      it { should belong_to(:user) }
+      it { should belong_to(:price_rule).without_validating_presence }
+      it { should belong_to(:user).without_validating_presence }
     end
     context "has_many" do
       it { should have_many(:cc_moneys) }

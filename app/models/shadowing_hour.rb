@@ -1,6 +1,6 @@
 class ShadowingHour < ApplicationRecord
-  belongs_to :user
-  belongs_to :space
+  belongs_to :user, optional: true
+  belongs_to :space, optional: true
 
   def self.authorizer
     scope = "https://www.googleapis.com/auth/calendar"

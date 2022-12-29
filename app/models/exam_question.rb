@@ -1,6 +1,6 @@
 class ExamQuestion < ApplicationRecord
-  belongs_to :exam
-  belongs_to :question
+  belongs_to :exam, optional: true
+  belongs_to :question, optional: true
   has_one :exam_response
   has_one :user, through: :exam
 

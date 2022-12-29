@@ -10,7 +10,7 @@ RSpec.describe ProjectProposal, type: :model do
     end
 
     context "belongs_to" do
-      it { should belong_to(:user) }
+      it { should belong_to(:user).without_validating_presence }
     end
   end
 

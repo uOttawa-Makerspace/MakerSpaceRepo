@@ -2,8 +2,8 @@
 
 class DiscountCode < ApplicationRecord
   include ShopifyConcern
-  belongs_to :price_rule
-  belongs_to :user
+  belongs_to :price_rule, optional: true
+  belongs_to :user, optional: true
   has_many :cc_moneys, dependent: :destroy
   validates :shopify_discount_code_id, presence: true
   validates :code, presence: true

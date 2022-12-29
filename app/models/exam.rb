@@ -1,6 +1,6 @@
 class Exam < ApplicationRecord
-  belongs_to :user
-  belongs_to :training_session
+  belongs_to :user, optional: true
+  belongs_to :training_session, optional: true
   has_many :exam_questions, dependent: :destroy
   has_many :questions, through: :exam_questions
   has_many :exam_responses, through: :exam_questions

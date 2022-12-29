@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class Upvote < ApplicationRecord
-  belongs_to :user
-  belongs_to :comment
+  belongs_to :user, optional: true
+  belongs_to :comment, optional: true
 
   validates :comment_id, uniqueness: { scope: :user_id }
   validates :user_id, presence: true
