@@ -29,6 +29,7 @@ const endDateTimeInput = document.getElementById("end-datetime");
 const userIdInput = document.getElementById("user-id");
 const reasonInput = document.getElementById("reason");
 const modalSave = document.getElementById("modal-save");
+
 const modalDelete = document.getElementById("modal-delete");
 const modalClose = document.getElementById("modal-close");
 modalClose.addEventListener("click", () => {
@@ -41,6 +42,7 @@ modalClose.addEventListener("click", () => {
 modalSave.addEventListener("click", () => {
   createCalendarEvent();
 });
+
 modalDelete.addEventListener("click", () => {
   removeEvent(document.getElementById("shift-id").value, null);
 });
@@ -374,7 +376,6 @@ const modifyEvent = (arg) => {
       console.log("An error occurred: " + error.message);
     });
 };
-
 const removeEvent = (shift_id, bypass = false) => {
   let confirmation = bypass
     ? true
@@ -399,6 +400,7 @@ const removeEvent = (shift_id, bypass = false) => {
         } else {
           console.log("An error occurred");
         }
+        refreshPendingShifts();
       })
       .catch((error) => {
         console.log("An error occurred: " + error.message);
