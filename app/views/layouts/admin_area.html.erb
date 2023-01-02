@@ -3,9 +3,9 @@
 <head>
   <title>Admin Area | <%= page_title(yield(:title)) %></title>
   <%= favicon_link_tag 'site-icon.jpg' %>
-  <%= vite_javascript_tag 'application', 'data-turbolinks-track': 'reload' %>
-  <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
-  <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbolinks-track': 'reload' %>
+  <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
+  <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
+  <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
   <%= csrf_meta_tags %>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <meta name="description" content="MakerRepo is the uOttawa Makerspace's platform. Share and download projects for 3D printers, CNCs, Arduino and much more!" />

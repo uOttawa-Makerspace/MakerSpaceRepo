@@ -116,7 +116,7 @@
 // // let equipmentArray;
 // // let certificationArray;
 //
-// // $(document).on("turbolinks:load", function () {
+// // $(document).on("turbo:load", function () {
 //
 // //     $('body').on('click', 'button.link-list', function () {
 // //         let id = $('.main_ul')[0].childElementCount - 1;

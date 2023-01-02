@@ -1,4 +1,4 @@
-document.addEventListener("turbolinks:load", function () {
+document.addEventListener("turbo:load", function () {
   window.addEventListener(
     "load",
     function () {

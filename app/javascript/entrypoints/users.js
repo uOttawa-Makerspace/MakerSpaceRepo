@@ -1,4 +1,4 @@
-$(document).on("turbolinks:load", function () {
+$(document).on("turbo:load", function () {
   $("[data-show]")
     .on("change", function () {
       var selector = $(this).data("show");

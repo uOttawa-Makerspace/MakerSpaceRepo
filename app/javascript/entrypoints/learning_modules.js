@@ -2,7 +2,7 @@ import Sortable from "sortablejs";
 
 const sortables = [];
 
-document.addEventListener("turbolinks:load", () => {
+document.addEventListener("turbo:load", () => {
   const reorderElements = [...document.getElementsByClassName("reorder")];
   reorderElements.forEach((reorderElement) => {
     reorderElement.addEventListener("click", (e) => {

@@ -2,7 +2,7 @@
  * This class stores information about accordion states in local storage and sets states on page load.
  */
 
-document.addEventListener("turbolinks:load", () => {
+document.addEventListener("turbo:load", () => {
   let storageString = localStorage.getItem(location.pathname);
   let storage;
   if (storageString) {

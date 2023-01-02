@@ -24,7 +24,7 @@ window.change_color = function (radio) {
   }
 };
 
-document.addEventListener("turbolinks:load", () => {
+document.addEventListener("turbo:load", () => {
   let acrylic = document.getElementsByClassName("acrylic");
   let show = false;
   for (let i = 0; i < acrylic.length; i++) {

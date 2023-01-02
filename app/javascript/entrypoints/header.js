@@ -11,7 +11,7 @@
  * The transition function has 2 parameters whether we're setting it to dark mode and whether to animate the transition or not.
  */
 
-document.addEventListener("turbolinks:load", function () {
+document.addEventListener("turbo:load", function () {
   var nav = document.getElementById("header-navbar");
   var navToggler = document.getElementById("navbar-toggle-button");
   var navbarSupportedContent = document.getElementById(

@@ -13,7 +13,6 @@
 //
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
-import "../controllers";
 import "regenerator-runtime/runtime";
 import "trix";
 import "@shopify/buy-button-js";
@@ -46,7 +45,10 @@ import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 
-document.addEventListener("turbolinks:load", () => {
+import "@hotwired/turbo-rails";
+import { Turbo } from "@hotwired/turbo-rails";
+
+document.addEventListener("turbo:load", () => {
   let tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   tooltips.forEach((tooltip) => {
     return new bootstrap.Tooltip(tooltip);
@@ -91,8 +93,7 @@ window.setSpace = function () {
   })
     .then((response) => response.json())
     .then((data) => {
-      Turbolinks.clearCache();
-      Turbolinks.visit(window.location, { action: "replace" });
+      window.location.reload();
     })
     .catch((error) => {
       console.log(error);

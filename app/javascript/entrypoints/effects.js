@@ -20,7 +20,7 @@ function fadeIn(element, duration) {
     }
   }, periods);
 }
-document.addEventListener("turbolinks:load", function (event) {
+document.addEventListener("turbo:load", function (event) {
   // Can't find any references to this class other than this file and CSS. I can't tell where/if it gets assigned.
   // document.getElementsByClassName("select-styled").forEach(function(element){
   //   if (element.value == "Other"){
