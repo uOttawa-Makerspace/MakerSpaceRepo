@@ -48,6 +48,14 @@ import listPlugin from "@fullcalendar/list";
 import "@hotwired/turbo-rails";
 import { Turbo } from "@hotwired/turbo-rails";
 
+document.addEventListener("turbo:before-render", (event) => {
+  event.detail.newBody
+    .querySelectorAll("#noscript-warning")
+    .forEach((element) => {
+      element.remove();
+    });
+});
+
 document.addEventListener("turbo:load", () => {
   let tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   tooltips.forEach((tooltip) => {
