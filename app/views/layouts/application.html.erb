@@ -42,6 +42,6 @@
       <%= yield %>
     </main>
 		<%= render 'layouts/footer' %>
-    <%= vite_javascript_tag controller_name if File.exists?("#{Rails.root}/app/javascript/#{controller_name}.js") %>
+    <%= vite_javascript_tag controller_name if File.exists?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
 	</body>
 </html>
