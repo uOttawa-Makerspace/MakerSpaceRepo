@@ -38,12 +38,12 @@
           <% if @user.admin? %>
             <% username = project_proposal.user&.username %>
             <% if username %>
-              <td class="username"><%= link_to username, user_path(username) %></td>
+              <td><%= link_to username, user_path(username), class:"username" %></td>
             <% else %>
               <td><%= project_proposal.username %></td>
             <% end %>
             <% admin_username = project_proposal.admin&.username %>
-            <td class="admin_username"><%= link_to admin_username, user_path(admin_username) if admin_username.present? %></td>
+            <td><%= link_to admin_username, user_path(admin_username), class:"admin_username" if admin_username.present? %></td>
             <td><%= project_proposal.client_type %></td>
             <td><%= project_proposal.client %></td>
             <td><%= project_proposal.client_interest %></td>

@@ -152,7 +152,7 @@
         <% if @project_proposal.approved.present? && @project_proposal.admin_id.present? %>
           <% admin_username = @project_proposal.admin.username %>
           <div> This project was reviewed by / Ce projet a été revu par:
-            <p class="username"><%= link_to admin_username, user_path(admin_username) %></p>
+            <p><%= link_to admin_username, user_path(admin_username), class:"admin_username" %></p>
           </div>
         <% elsif @project_proposal.approved.present? %>
           <div class="title">This project was reviewed.</div>

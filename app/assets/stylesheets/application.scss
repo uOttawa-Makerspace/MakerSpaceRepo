@@ -90,7 +90,18 @@ p {
 a {
   text-decoration: none;
   color: inherit;
-
+  &:not(
+      .btn,
+      .nav-item,
+      .nav-link,
+      .dropdown-item,
+      .navbar-brand,
+      .overlay,
+      .username,
+      .admin_username
+    ) {
+    color: $primary !important;
+  }
   &::visited {
     color: #789;
   }
