@@ -29,5 +29,6 @@ jobs:
           chmod 600 config/deploy_id_rsa
           eval "$(ssh-agent -s)"
           ssh-add config/deploy_id_rsa
+          bundle install
           gem install capistrano
           BRANCH=${{ steps.extract_branch.outputs.branch }} bundle exec cap dev_server deploy
