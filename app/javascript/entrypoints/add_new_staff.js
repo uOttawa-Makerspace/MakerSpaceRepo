@@ -1,3 +1,5 @@
+import TomSelect from "tom-select";
+
 let staff_select = document.getElementById("new_staff_select");
 if (staff_select) {
   if (!staff_select.tomselect) {

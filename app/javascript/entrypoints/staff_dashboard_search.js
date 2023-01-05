@@ -1,3 +1,4 @@
+import TomSelect from "tom-select";
 if (!document.getElementById("user_dashboard_select").tomsselect) {
   new TomSelect("#user_dashboard_select", {
     searchField: ["name"],

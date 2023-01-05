@@ -1,4 +1,5 @@
 <section>
+<%= controller_name%>
   <%= form_for([:admin, @job_option]) do |f| %>
     <% if @job_option.errors.any? %>
       <div id="error_explanation">
@@ -57,11 +58,3 @@
   <% end %>
 
 </section>
-
-<script type="text/javascript" charset="utf-8">
-  if (document.getElementById("job_type_ids_option")){
-    if (!document.getElementById("job_type_ids_option").tomselect){
-      new TomSelect("#job_type_ids_option", {});
-    }
-  }
-</script>

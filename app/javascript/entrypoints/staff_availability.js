@@ -1,3 +1,4 @@
+import TomSelect from "tom-select";
 import "flatpickr";
 const start_time = document.getElementById("start_time").flatpickr({
   enableTime: true,

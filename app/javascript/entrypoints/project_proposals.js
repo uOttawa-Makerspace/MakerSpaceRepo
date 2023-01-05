@@ -1,3 +1,5 @@
+import TomSelect from "tom-select";
+
 if (document.getElementById("project_proposal_categories")) {
   if (!document.getElementById("project_proposal_categories").tomselect) {
     new TomSelect("#project_proposal_categories", {

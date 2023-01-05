@@ -1,3 +1,5 @@
+import TomSelect from "tom-select";
+
 let linkPP = document.querySelectorAll(".link-pp");
 linkPP.forEach((link) => {
   if (!link.tomselect) {

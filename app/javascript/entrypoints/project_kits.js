@@ -1,3 +1,5 @@
+import TomSelect from "tom-select";
+
 if (document.getElementById("kit_user_select")) {
   if (!document.getElementById("kit_user_select").tomselect) {
     new TomSelect("#kit_user_select", {

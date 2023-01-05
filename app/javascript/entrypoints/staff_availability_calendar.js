@@ -3,6 +3,7 @@ import "@fullcalendar/common/main.css";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
+import TomSelect from "tom-select";
 
 let calendarEl = document.getElementById("user_availabilities_calendar");
 const urlParams = new URLSearchParams(window.location.search);
@@ -133,3 +134,12 @@ let removeEvent = (arg) => {
       });
   }
 };
+if (document.getElementById("staff_id")) {
+  if (!document.getElementById("staff_id").tomselect) {
+    new TomSelect("#staff_id", {
+      maxItems: 1,
+      placeholder: "Select Staff",
+      maxOptions: null,
+    });
+  }
+}

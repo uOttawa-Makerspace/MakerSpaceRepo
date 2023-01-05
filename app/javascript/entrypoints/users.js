@@ -1,31 +1,22 @@
-$(document).on("turbo:load", function () {
-  $("[data-show]")
-    .on("change", function () {
-      var selector = $(this).data("show");
-      var show = $(this).prop("checked");
+document.addEventListener("turbo:load", function () {
+  var elements = document.querySelectorAll("[data-show], [data-hide]");
+  for (var i = 0; i < elements.length; i++) {
+    elements[i].addEventListener("change", function () {
+      var selector =
+        this.getAttribute("data-show") || this.getAttribute("data-hide");
+      var show = this.getAttribute("data-show") != null;
+      var hide = this.getAttribute("data-hide") != null;
+      var checked = this.checked;
 
-      if (show) {
-        $(selector).css("display", "block");
-      }
-    })
-    .each(function () {
-      if ($(this).prop("checked")) {
-        $(this).trigger("change");
+      if ((show && checked) || (hide && !checked)) {
+        document.querySelector(selector).style.display = show
+          ? "block"
+          : "none";
       }
     });
 
-  $("[data-hide]")
-    .on("change", function () {
-      var selector = $(this).data("hide");
-      var hide = $(this).prop("checked");
-
-      if (hide) {
-        $(selector).css("display", "none");
-      }
-    })
-    .each(function () {
-      if ($(this).prop("checked")) {
-        $(this).trigger("change");
-      }
-    });
+    if (elements[i].checked) {
+      elements[i].dispatchEvent(new Event("change"));
+    }
+  }
 });

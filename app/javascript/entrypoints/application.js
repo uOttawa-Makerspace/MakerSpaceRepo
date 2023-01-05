@@ -35,7 +35,6 @@ import "./clipboard";
 
 import "../controllers";
 
-import "tom-select";
 import "bootstrap";
 import "toastr/toastr";
 
@@ -47,6 +46,7 @@ import listPlugin from "@fullcalendar/list";
 
 import "@hotwired/turbo-rails";
 import { Turbo } from "@hotwired/turbo-rails";
+import { Tooltip } from "bootstrap";
 
 document.addEventListener("turbo:before-render", (event) => {
   event.detail.newBody
@@ -59,7 +59,7 @@ document.addEventListener("turbo:before-render", (event) => {
 document.addEventListener("turbo:load", () => {
   let tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   tooltips.forEach((tooltip) => {
-    return new bootstrap.Tooltip(tooltip);
+    return new Tooltip(tooltip);
   });
   let popovers = document.querySelectorAll('[data-bs-toggle="popover"]');
   popovers.forEach((popover) => {

@@ -1,3 +1,5 @@
+import TomSelect from "tom-select";
+
 [...document.getElementsByClassName("pp-status-button")].forEach(function (
   element
 ) {
