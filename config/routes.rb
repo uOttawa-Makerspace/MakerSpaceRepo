@@ -97,6 +97,7 @@ Rails.application.routes.draw do
       get :projects_assigned
       get :projects_completed
       get :user_projects
+      delete :destroy, path: "destroy/:id", as: "destroy"
     end
   end
 
@@ -219,7 +220,6 @@ Rails.application.routes.draw do
         #post 'bulk_add_certifications'
         patch "set_role"
         delete "delete_repository"
-        delete "delete_project_proposal"
         delete "delete_user"
         patch "restore_user"
         get "manage_roles"

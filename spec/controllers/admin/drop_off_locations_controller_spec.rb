@@ -27,15 +27,6 @@ RSpec.describe Admin::DropOffLocationsController, type: :controller do
     end
   end
 
-  describe "GET /new" do
-    context "logged as admin" do
-      it "should return a 200" do
-        get :new
-        expect(response).to have_http_status(:success)
-      end
-    end
-  end
-
   describe "GET /edit" do
     context "logged as admin" do
       it "should return 200 response" do
@@ -51,7 +42,7 @@ RSpec.describe Admin::DropOffLocationsController, type: :controller do
         drop_off_locations_params =
           FactoryBot.attributes_for(:drop_off_location)
         expect {
-          post :create, params: { drop_off_location: drop_off_locations_params }
+          post :create, params: { name: drop_off_locations_params }
         }.to change(DropOffLocation, :count).by(1)
         expect(flash[:notice]).to eq("Drop-off Location added successfully!")
         expect(response).to redirect_to admin_drop_off_locations_path

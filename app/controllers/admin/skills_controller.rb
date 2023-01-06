@@ -23,7 +23,7 @@ class Admin::SkillsController < AdminAreaController
   end
 
   def update
-    @skill.update(skills_params)
+    @skill.update(name: params[:skill][:name])
     if @skill.save
       flash[:notice] = "Skill renamed successfully"
     else
@@ -44,7 +44,7 @@ class Admin::SkillsController < AdminAreaController
   private
 
   def skills_params
-    params.require(:skill).permit(:name)
+    params.permit(:name, :skill)
   end
 
   def set_skill

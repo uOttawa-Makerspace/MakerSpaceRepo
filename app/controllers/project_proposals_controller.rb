@@ -144,7 +144,7 @@ class ProjectProposalsController < ApplicationController
     @project_proposal.user_id = @user.try(:id)
 
     respond_to do |format|
-      if verify_recaptcha(model: @project_proposal) && @project_proposal.save
+      if @project_proposal.save
         begin
           create_photos
         rescue FastImage::ImageFetchFailure,
@@ -325,6 +325,7 @@ class ProjectProposalsController < ApplicationController
   # DELETE /project_proposals/1
   # DELETE /project_proposals/1.json
   def destroy
+    return unless current_user.admin?
     @project_proposal.destroy
     respond_to do |format|
       format.html do

@@ -148,3 +148,15 @@ window.dragndrop = function (event) {
 window.dragover = function (event) {
   event.preventDefault();
 };
+// Replaces the jQuery confirm on button_to data=>confirm
+document.addEventListener("turbo:load", () => {
+  [...document.getElementsByTagName("button")].forEach((button) => {
+    button.addEventListener("click", (event) => {
+      if (button.dataset.confirm) {
+        if (!confirm(button.dataset.confirm)) {
+          event.preventDefault();
+        }
+      }
+    });
+  });
+});

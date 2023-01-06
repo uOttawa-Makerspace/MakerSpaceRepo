@@ -20,10 +20,10 @@
     <br></br>
     <% if @user.admin?%>
         Currently Featured: <%=  @repository.featured.to_s.upcase %><br></br>
-        <%= link_to "Feature / Unfeature", pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
+        <%= button_to "Feature / Unfeature", pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
             class: "btn btn-primary" %>
         <br></br>
-        <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
+        <%= button_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
             class: "btn btn-danger", data: {confirm: 'Are you sure?'} %>
     <% end %>
 
@@ -100,8 +100,7 @@
             add_like_repository_path, class: 'like', remote: true, method: :post) %>
         </span>
         <span class="make" style="color: white;">
-          <%= link_to(fa_icon('code-fork', text: 'Make'),
-            makes_new_path(@repository.user_username, @repository.id)) %>
+          <%= link_to fa_icon('code-fork', text: 'Make'), makes_new_path(@repository.user_username, @repository.id), class: 'make' %>
         </span>
       </div>
       <div class="repo-info-item">
@@ -138,7 +137,7 @@
         <div class="repo-info-item">
           <div class="title">Link to Project Proposal:</div>
           <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
-            <div class="mb-3">
+            <div class="mb-3 input-group">
               <%= f.hidden_field :repository_id, value: @repository.id %>
               <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "form-control", :id => "search_project_proposals"}) %>
               <br> </br>
@@ -151,7 +150,7 @@
         <div class="repo-info-item">
           <div class="title">Add an owner:</div>
           <%= form_for :repo_owner, url: {controller: "repositories", action: "add_owner"}, method: :patch do |f| %>
-              <div class="mb-3">
+              <div class="mb-3 input-group">
                 <%= f.hidden_field :repository_id, value: @repository.id %>
                 <%= f.select(:owner_id, "" , {prompt: "Choose..."} , {:class => "search_users_add form-control", :id => "search_users_add"}) %>
                 <br> </br>
@@ -164,7 +163,7 @@
           <div class="repo-info-item">
             <div class="title">Remove an owner:</div>
             <%= form_for :repo_owner, url: {controller: "repositories", action: "remove_owner"}, method: :patch do |f| %>
-                <div class="mb-3">
+                <div class="mb-3 input-group">
                   <%= f.hidden_field :repository_id, value: @repository.id %>
                   <%= f.select(:owner_id, @owners.pluck(:name, :id) , {prompt: "Choose..."} , {:class => "search_users_remove form-control", :id => "search_users_remove"}) %>
                   <br> </br>
@@ -219,7 +218,7 @@
            <% end %>
           <%= content_tag :div, time_ago_in_words(comment.created_at) << " ago", class: 'time' %><br>
           <% if ((@user.admin?) || (@user.id.equal? comment.user_id))%>
-            <%= link_to (fa_icon('times')), {controller: :comments, action: :destroy, id: comment.id}, method: :delete, data: { confirm: "Are you sure?" },  class: 'x-comment-button' %>
+            <%= button_to (fa_icon('times')), {controller: :comments, action: :destroy, id: comment.id}, method: :delete, data: { confirm: "Are you sure?" },  class: 'x-comment-button' %>
           <% end %>
         </div>
         <div class="comment-content">

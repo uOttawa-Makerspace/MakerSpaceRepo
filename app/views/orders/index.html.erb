@@ -108,7 +108,7 @@
                   </td>
                   <td><p><%= order.total %></p></td>
                   <td>
-                    <%= link_to "Delete", order, method: :delete, data: {confirm: "Are you sure? This will give back the CC points used to purchase this order."}, class: "btn btn-danger" %>
+                    <%= button_to "Delete", order, method: :delete, data: {confirm: "Are you sure? This will give back the CC points used to purchase this order."}, class: "btn btn-danger" %>
                   </td>
                 </tr>
               <% end %>

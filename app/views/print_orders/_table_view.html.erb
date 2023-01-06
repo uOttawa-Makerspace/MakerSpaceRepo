@@ -233,7 +233,7 @@
 <% end %>
 <% if index == 1 || index == 2 || index == 3 %>
   <td>
-    <%= link_to 'Invoice', print_order_path(prints), method: :get, class: "btn btn-primary", target: '_blank' %>
+    <%= button_to 'Invoice', print_order_path(prints), method: :get, class: "btn btn-primary", target: '_blank' %>
   </td>
 <% end %>
 <td>

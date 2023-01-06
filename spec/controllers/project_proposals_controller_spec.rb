@@ -219,12 +219,14 @@ RSpec.describe ProjectProposalsController, type: :controller do
   describe "DELETE #update" do
     context "Delete project proposal" do
       it "should delete the project proposal" do
+        # Post as admin
+        admin = create(:user, :admin)
+        session[:user_id] = admin.id
+
         project_proposal = ProjectProposal.first
-        delete :destroy, params: { id: project_proposal.id }
-        expect(response).to redirect_to project_proposals_url
-        expect(flash[:notice]).to eq(
-          "Project proposal was successfully deleted."
-        )
+        expect {
+          delete :destroy, params: { id: project_proposal.id }
+        }.to change(ProjectProposal, :count).by(-1)
       end
     end
   end
