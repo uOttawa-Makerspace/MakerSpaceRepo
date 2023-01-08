@@ -137,6 +137,7 @@ Rails.application.routes.draw do
   namespace :search, path: "/", as: nil do
     get "explore"
     get "search"
+    get "likes"
     get "category/:slug", as: "category", action: "category"
     get "category/:slug/featured", as: "featured", action: "featured"
     get "equipment/:slug", as: "equipment", action: "equipment"

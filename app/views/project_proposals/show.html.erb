@@ -43,35 +43,41 @@
     </div>
 
     <div class="repo-desc">
-      <% if @user.staff? %>
         <div class="card">
           <div class="card-header">
             Client Information / Information sur le client
           </div>
           <div class="card-body">
-            <div class="word-break">
-              <b>Client:</b> <%= @project_proposal.client %>
-              <br>
-              <b>Client type / Type de client :</b> <%= @project_proposal.client_type %>
-              <br>
-              <b>Client interest / Interets du client :</b> <%= @project_proposal.client_interest %>
-              <br>
-              <b>Client Background / Contexte du client :</b>
-              <span style="word-break: break-word">
-                <%= @project_proposal.client_background.html_safe %>
-              </span>
-            </div>
+            <% if signed_in? %>
+              <div class="word-break">
+                <b>Client:</b> <%= @project_proposal.client %>
+                <br>
+                <b>Client type / Type de client :</b> <%= @project_proposal.client_type %>
+                <br>
+                <b>Client interest / Interets du client :</b> <%= @project_proposal.client_interest %>
+                <br>
+                <b>Client Background / Contexte du client :</b>
+                <span style="word-break: break-word">
+                  <%= @project_proposal.client_background.html_safe %>
+                </span>
+              </div>
 
-            <% if @project_proposal.supervisor_background.present? %>
-              <b>Supervisor Background:</b>
-              <span style="word-break: break-word">
-                <%= @project_proposal.supervisor_background.html_safe %>
-              </span>
+              <% if @project_proposal.supervisor_background.present? %>
+                <b>Supervisor Background:</b>
+                <span style="word-break: break-word">
+                  <%= @project_proposal.supervisor_background.html_safe %>
+                </span>
+              <% end %>
+            <% else %>
+              <div class="word-break">
+                <div class="alert alert-info">
+                  Please <%= link_to "sign in", login_path, class:"text-decoration-underline" %> to view client info.
+                </div>
+              </div>
             <% end %>
           </div>
         </div>
         <br>
-      <% end %>
 
       <% if @project_proposal.description.present? %>
         <div class="card">
