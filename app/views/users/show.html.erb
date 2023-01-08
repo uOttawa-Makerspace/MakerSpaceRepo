@@ -112,44 +112,54 @@
             <a class="nav-link active" id="home-tab" data-bs-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">About</a>
           </li>
           <% if !@repo_user.deleted? %>
-          <li class="nav-item">
-            <a class="nav-link" id="skills-tab" data-bs-toggle="tab" href="#profile-skills" role="tab" aria-controls="profile" aria-selected="false">Skills</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="badges-tab" data-bs-toggle="tab" href="#badges-manager" role="tab" aria-controls="profile" aria-selected="false">Badges</a>
-          </li>
-          <li class="nav-item">
-            <a href="#programs-manager" class="nav-link" id="programs-tab" data-bs-toggle="tab" role="tab" aria-controls="profile" aria-selected="false">Programs</a>
-          </li>
-          <% if @user.staff? || @user == @repo_user %>
             <li class="nav-item">
-              <a class="nav-link" id="unavailabilities-tab" data-bs-toggle="tab" href="#unavailabilities-manager" role="tab" aria-controls="profile" aria-selected="false">Staff Unavailabilities</a>
+              <a class="nav-link" id="skills-tab" data-bs-toggle="tab" href="#profile-skills" role="tab" aria-controls="profile" aria-selected="false">Skills</a>
             </li>
-          <% end %>
-          <% if @user.staff? %>
             <li class="nav-item">
-              <a class="nav-link text-danger" id="certifications-tab" data-bs-toggle="tab" href="#certifications-manager" role="tab" aria-controls="profile" aria-selected="false">Certifications</a>
+              <a class="nav-link" id="badges-tab" data-bs-toggle="tab" href="#badges-manager" role="tab" aria-controls="profile" aria-selected="false">Badges</a>
             </li>
-          <% end %>
-          <% if @user.admin? %>
             <li class="nav-item">
-              <a class="nav-link text-danger" id="roles-tab" data-bs-toggle="tab" href="#role-manager" role="tab" aria-controls="profile" aria-selected="false">Role
-                Manager</a>
+              <a href="#programs-manager" class="nav-link" id="programs-tab" data-bs-toggle="tab" role="tab" aria-controls="profile" aria-selected="false">Programs</a>
             </li>
-            <% if @repo_user.staff? %>
-              <li class="nav-item">
-                <a class="nav-link text-danger" id="staff-tab" data-bs-toggle="tab" href="#staff-manager" role="tab" aria-controls="profile" aria-selected="false">
-                  Staff Manager
-                </a>
-              </li>
+
+            <!--- Staff Tabs -->
+            <% if @user.staff? %>
+              <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Staff</a>
+                <ul class="dropdown-menu">
+                  <li class="nav-item">
+                    <a class="nav-link text-secondary" id="unavailabilities-tab" data-bs-toggle="tab" href="#unavailabilities-manager" role="tab" aria-controls="profile" aria-selected="false">Staff Unavailabilities</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link text-secondary" id="certifications-tab" data-bs-toggle="tab" href="#certifications-manager" role="tab" aria-controls="profile" aria-selected="false">Certifications</a>
+                  </li>
+                </ul>
+              </div>
             <% end %>
+
+            <!--- Admin Tabs -->
             <% if @user.admin? %>
-              <li class="nav-item">
-                <a class="nav-link text-danger" id="users-tab" data-bs-toggle="tab" href="#user-delete" role="tab" aria-controls="profile" aria-selected="false">
-                  Delete User
-                </a>
-              </li>
-                <% end %>
+              <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle text-danger" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Admin</a>
+                <ul class="dropdown-menu">
+                  <li class="nav-item">
+                    <a class="nav-link text-danger" id="roles-tab" data-bs-toggle="tab" href="#role-manager" role="tab" aria-controls="profile" aria-selected="false">Role
+                      Manager</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link text-danger" id="users-tab" data-bs-toggle="tab" href="#user-delete" role="tab" aria-controls="profile" aria-selected="false">
+                      Delete User
+                    </a>
+                  </li>
+                  <% if @repo_user.staff? %>
+                    <li class="nav-item">
+                      <a class="nav-link text-danger" id="staff-tab" data-bs-toggle="tab" href="#staff-manager" role="tab" aria-controls="profile" aria-selected="false">
+                        Staff Manager
+                      </a>
+                    </li>
+                  <% end %>
+                </ul>
+              </div>
             <% end %>
           <% else %>
             <li class="nav-item">

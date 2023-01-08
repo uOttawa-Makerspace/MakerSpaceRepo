@@ -1,18 +1,18 @@
 <% if @drafts.count > 0 %>
   <div class="alert alert-warning alert-dismissible fade show col-md-12 text-center">
     <i class="fa fa-warning"></i>
-    <p class="font-weight-bold">The following Job Orders have been partly created, but haven't been submitted yet.</p>
+    <p class="font-weight-bold"><%= t('job_orders.public_page.job_orders_partly_created') %></p>
     <% @drafts.each do |draft| %>
-      <p><%= link_to "Order ##{draft.id}", job_order_steps_path(job_order_id: draft.id, step: 1) %></p>
+      <p><%= link_to "#{t('job_orders.public_page.order')} ##{draft.id}", job_order_steps_path(job_order_id: draft.id, step: 1) %></p>
     <% end %>
-    <button type="button" class="btn-close" data-dismiss="alert">&times;</button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
 <% end %>
 
 <div class="text-center">
   <h2>My Job Orders</h2>
-  <%= link_to "Create a new Job Order", new_job_orders_path, class: 'btn btn-primary mb-1' %>
-  <%= link_to "Admin Page", admin_job_orders_path, class: 'btn btn-primary mb-1' if @user.staff? %>
+  <%= link_to t('job_orders.public_page.create_a_new_job_order'), new_job_orders_path, class: 'btn btn-primary mb-1' %>
+  <%= link_to t("job_orders.public_page.admin_page"), admin_job_orders_path, class: 'btn btn-primary mb-1' if @user.staff? %>
   <br><br>
 </div>
 <% if @job_orders.count > 0 %>
@@ -24,7 +24,7 @@
 <% else %>
   <div class="text-center">
     <div class="alert alert-info col-lg-6 mx-auto" role="alert">
-      You do not have any Job Orders currently. You can can create one <%= link_to "here", new_job_orders_path, class: 'alert-link' %>.
+      <%= t('job_orders.public_page.no_job_orders') %> <%= link_to t('job_orders.public_page.here'), new_job_orders_path, class: 'alert-link' %>.
     </div>
   </div>
 <% end %>
@@ -35,7 +35,7 @@
       <div class="card-header" id="headingOne">
         <h2 class="mb-0">
           <button class="btn btn-link btn-block text-center" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-            Archived Orders
+            <%= t("job_orders.public_page.archived_orders") %>
           </button>
         </h2>
       </div>

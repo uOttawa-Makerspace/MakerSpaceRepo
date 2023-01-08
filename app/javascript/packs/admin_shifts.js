@@ -4,6 +4,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import googleCalendarPlugin from "@fullcalendar/google-calendar";
+import Turbolinks from "turbolinks";
 import iCalendarPlugin from "@fullcalendar/icalendar";
 
 // Modal
@@ -11,10 +12,17 @@ const shiftModal = new bootstrap.Modal(document.getElementById("shiftModal"));
 
 // Show
 let sourceShow = {
-  google: "none",
-  transparent: "none",
-  staffNeeded: "none",
+  google: document.getElementById("hide-show-google-events").checked
+    ? "block"
+    : "none",
+  transparent: document.getElementById("hide-show-unavailabilities").checked
+    ? "block"
+    : "none",
+  staffNeeded: document.getElementById("hide-show-staff-needed").checked
+    ? "block"
+    : "none",
 };
+let hiddenIds = {};
 
 // Inputs
 const startDateTimeInput = document.getElementById("start-datetime");
@@ -23,8 +31,21 @@ const userIdInput = document.getElementById("user-id");
 const reasonInput = document.getElementById("reason");
 const modalSave = document.getElementById("modal-save");
 
+const modalDelete = document.getElementById("modal-delete");
+const modalClose = document.getElementById("modal-close");
+modalClose.addEventListener("click", () => {
+  if (modalDelete.classList.contains("d-block")) {
+    modalDelete.classList.remove("d-block");
+    modalDelete.classList.add("d-none");
+  }
+});
+
 modalSave.addEventListener("click", () => {
   createCalendarEvent();
+});
+
+modalDelete.addEventListener("click", () => {
+  removeEvent(document.getElementById("shift-id").value, null);
 });
 
 const startPicker = startDateTimeInput.flatpickr({
@@ -32,6 +53,18 @@ const startPicker = startDateTimeInput.flatpickr({
   time_24hr: true,
   altInput: true,
   altFormat: "F j, Y at H:i",
+  onChange: (selectedDates, dateStr, instance) => {
+    populateUsers({
+      start: new Date(
+        Date.parse(selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+      end: new Date(
+        Date.parse(endPicker.selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+    });
+  },
 });
 
 const endPicker = endDateTimeInput.flatpickr({
@@ -39,6 +72,18 @@ const endPicker = endDateTimeInput.flatpickr({
   time_24hr: true,
   altInput: true,
   altFormat: "F j, Y at H:i",
+  onChange: (selectedDates, dateStr, instance) => {
+    populateUsers({
+      end: new Date(
+        Date.parse(selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+      start: new Date(
+        Date.parse(startPicker.selectedDates[0]) -
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+    });
+  },
 });
 
 const newShiftUserSelect = new TomSelect("#user-id", {
@@ -147,7 +192,7 @@ fetch("/admin/shifts/get_external_staff_needed", {
       },
       eventClick: (arg) => {
         if (arg.event.source.id === "shifts") {
-          removeEvent(arg);
+          editShift(arg);
         } else if (arg.event.source.id === "staffNeeded") {
           staffNeededEvent(arg);
         }
@@ -172,6 +217,18 @@ fetch("/admin/shifts/get_external_staff_needed", {
           return 1;
         }
       },
+      eventSourceSuccess: (content, xhr) => {
+        content.forEach((event) => {
+          if (hiddenIds[event.userId] === "none") {
+            event.display = "none";
+          } else if (hiddenIds[event.userId] === "block") {
+            event.display = "block";
+          } else {
+          }
+        });
+        hideShowEvents("check");
+        return content;
+      },
     });
     calendar.render();
   });
@@ -191,47 +248,54 @@ const refreshPendingShifts = () => {
 };
 
 const populateUsers = (arg) => {
-  userIdInput.tomselect.clearOptions();
-  let startDate, endDate;
-  if (arg.event) {
-    startDate = arg.event.start;
-    endDate = arg.event.end;
-  } else {
-    startDate = arg.start;
-    endDate = arg.end;
-  }
-  let startHour = startDate.toUTCString().split(" ")[4].split(":")[0];
-  let startMinute = startDate.toUTCString().split(" ")[4].split(":")[1];
-  let endHour = endDate.toUTCString().split(" ")[4].split(":")[0];
-  let endMinute = endDate.toUTCString().split(" ")[4].split(":")[1];
-  let weekDayInt = {
-    "Sun,": 0,
-    "Mon,": 1,
-    "Tue,": 2,
-    "Wed,": 3,
-    "Thu,": 4,
-    "Fri,": 5,
-    "Sat,": 6,
-  }[startDate.toUTCString().split(" ")[0]];
-  fetch(
-    `/admin/shifts/shift_suggestions?start=${startHour}:${startMinute}&end=${endHour}:${endMinute}&day=${weekDayInt}`,
-    {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+  return new Promise((resolve, reject) => {
+    userIdInput.tomselect.clear();
+    userIdInput.tomselect.clearOptions();
+    let startDate, endDate;
+    if (arg.event) {
+      startDate = arg.event.start;
+      endDate = arg.event.end;
+    } else {
+      startDate = arg.start;
+      endDate = arg.end;
     }
-  )
-    .then((res) => res.json())
-    .then((res) => {
-      res.forEach((user) => {
-        userIdInput.tomselect.addOption({
-          value: user.id,
-          text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,
+    let startHour = startDate.toUTCString().split(" ")[4].split(":")[0];
+    let startMinute = startDate.toUTCString().split(" ")[4].split(":")[1];
+    let endHour = endDate.toUTCString().split(" ")[4].split(":")[0];
+    let endMinute = endDate.toUTCString().split(" ")[4].split(":")[1];
+    let weekDayInt = {
+      "Sun,": 0,
+      "Mon,": 1,
+      "Tue,": 2,
+      "Wed,": 3,
+      "Thu,": 4,
+      "Fri,": 5,
+      "Sat,": 6,
+    }[startDate.toUTCString().split(" ")[0]];
+    fetch(
+      `/admin/shifts/shift_suggestions?start=${startHour}:${startMinute}&end=${endHour}:${endMinute}&day=${weekDayInt}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then((res) => res.json())
+      .then((res) => {
+        res.forEach((user) => {
+          userIdInput.tomselect.addOption({
+            value: user.id,
+            text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,
+          });
         });
+        resolve();
+      })
+      .catch((err) => {
+        reject(err);
       });
-    });
+  });
 };
 
 // Calendar CRUD
@@ -273,6 +337,9 @@ const createCalendarEvent = () => {
       shiftModal.hide();
       calendar.unselect();
       refreshPendingShifts();
+      if (modalDelete.classList.contains("d-block")) {
+        removeEvent(document.getElementById("shift-id").value, true);
+      }
     })
     .catch((error) => {
       console.log("An error occurred: " + error.message);
@@ -280,12 +347,21 @@ const createCalendarEvent = () => {
 };
 
 const openModal = (arg) => {
+  if (!arg) {
+    arg = { start: new Date(), end: new Date() };
+  }
   if (arg !== undefined && arg !== null) {
     startPicker.setDate(Date.parse(arg.startStr));
     endPicker.setDate(Date.parse(arg.endStr));
   }
-  populateUsers(arg);
-  shiftModal.show();
+  if (arg.event) {
+    if (arg.event.source.id === "shifts") {
+      document.getElementById("shift-id").value = arg.event.id;
+    }
+  }
+  populateUsers(arg).then(() => {
+    shiftModal.show();
+  });
 };
 const modifyEvent = (arg) => {
   fetch("/admin/shifts/" + arg.event.id, {
@@ -310,10 +386,12 @@ const modifyEvent = (arg) => {
       console.log("An error occurred: " + error.message);
     });
 };
-
-const removeEvent = (arg) => {
-  if (confirm("Are you sure you want to delete this event?")) {
-    fetch("/admin/shifts/" + arg.event.id, {
+const removeEvent = (shift_id, bypass = false) => {
+  let confirmation = bypass
+    ? true
+    : confirm("Are you sure you want to delete this shift?");
+  if (confirmation) {
+    fetch("/admin/shifts/" + shift_id, {
       method: "DELETE",
       headers: {
         Accept: "application/json",
@@ -323,7 +401,12 @@ const removeEvent = (arg) => {
     })
       .then((response) => {
         if (response.ok) {
-          arg.event.remove();
+          calendar.refetchEvents();
+          refreshPendingShifts();
+          shiftModal.hide();
+          document.getElementById("shift-id").value = "";
+          modalDelete.classList.remove("d-block");
+          modalDelete.classList.add("d-none");
         } else {
           console.log("An error occurred");
         }
@@ -333,6 +416,40 @@ const removeEvent = (arg) => {
         console.log("An error occurred: " + error.message);
       });
   }
+};
+
+const editShift = (arg) => {
+  document.getElementById("shift-id").value = arg.event.id;
+  modalDelete.classList.remove("d-none");
+  modalDelete.classList.add("d-block");
+  fetch("/admin/shifts/get_shift?id=" + arg.event.id, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      startPicker.setDate(Date.parse(data.start_datetime));
+      endPicker.setDate(Date.parse(data.end_datetime));
+      reasonInput.value = data.reason;
+      populateUsers({
+        start: new Date(
+          Date.parse(data.start_datetime) +
+            new Date().getTimezoneOffset() * 60 * 1000
+        ),
+        end: new Date(
+          Date.parse(data.end_datetime) +
+            new Date().getTimezoneOffset() * 60 * 1000
+        ),
+      }).then(() => {
+        data.users.forEach((user) => {
+          userIdInput.tomselect.addItem(user.id);
+        });
+      });
+      shiftModal.show();
+    });
 };
 
 const staffNeededEvent = (arg) => {
@@ -347,21 +464,45 @@ const staffNeededEvent = (arg) => {
 
 // Hide/Show Events
 const hideShowEvents = (eventName) => {
-  let allEvents = calendar.getEvents();
-  for (let ev of allEvents) {
-    if (ev.source.id === eventName) {
-      ev.setProp("display", sourceShow[eventName]);
+  if (eventName !== "check") {
+    if (sourceShow[eventName] === "none") {
+      sourceShow[eventName] = "block";
+    } else {
+      sourceShow[eventName] = "none";
     }
   }
-
-  if (sourceShow[eventName] === "none") {
-    sourceShow[eventName] = "block";
-  } else {
-    sourceShow[eventName] = "none";
+  let allEvents = calendar.getEvents();
+  for (let ev of allEvents) {
+    if (eventName === "check") {
+      let display = sourceShow.hasOwnProperty(ev.source.id)
+        ? sourceShow[ev.source.id]
+        : "block";
+      ev.setProp("display", display);
+      if (ev.extendedProps.userId) {
+        ev.setProp(
+          "display",
+          hiddenIds[ev.extendedProps.userId] === "none" ? "none" : display
+        );
+      }
+    } else if (ev.source.id === eventName) {
+      ev.setProp("display", sourceShow[eventName]);
+      if (ev.extendedProps.userId) {
+        ev.setProp(
+          "display",
+          hiddenIds[ev.extendedProps.userId] === "none"
+            ? "none"
+            : sourceShow[eventName]
+        );
+      }
+    }
   }
   if (eventName === "transparent") {
     [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
-      el.checked = sourceShow[eventName] === "none";
+      let userId = el.id.substring(5);
+      el.checked =
+        hiddenIds[userId] === "none"
+          ? false
+          : sourceShow["transparent"] === "block";
     });
   }
 };
@@ -393,6 +534,9 @@ window.toggleVisibility = (id) => {
         "display",
         document.getElementById(`user-${id}`).checked ? "block" : "none"
       );
+      hiddenIds[id] = document.getElementById(`user-${id}`).checked
+        ? "block"
+        : "none";
     }
   }
 };

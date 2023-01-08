@@ -10,8 +10,9 @@ const unavailabilityModal = new bootstrap.Modal(
   document.getElementById("unavailabilityModal")
 );
 
-// Show Unavailabilities
+// Show state
 let showUnavailabilities = "block";
+let hiddenIds = {};
 
 // Inputs
 const dayInput = document.getElementById("day");
@@ -101,38 +102,78 @@ const calendar = new Calendar(calendarEl, {
       url: `/admin/shifts/get_availabilities`,
     },
   ],
+  eventSourceSuccess: (content, xhr) => {
+    content.forEach((event) => {
+      if (hiddenIds[event.userId] === "none") {
+        event.display = "none";
+      } else if (hiddenIds[event.userId] === "block") {
+        event.display = "block";
+      } else {
+        event.display = showUnavailabilities;
+      }
+    });
+    return content;
+    // The events do not respect the display property
+    // hideShowEvents('check', 'check');
+  },
 });
 
 calendar.render();
+
+// Hide/Show Events
+const hideShowEvents = (event, eventName) => {
+  let allEvents = calendar.getEvents();
+  for (let ev of allEvents) {
+    if (eventName === "id") {
+      if (ev.extendedProps.userId === event) {
+        ev.setProp("display", hiddenIds[event] === "block" ? "block" : "none");
+      }
+    } else {
+      if (hiddenIds[ev.extendedProps.userId] === "none") {
+        ev.setProp("display", "none");
+        continue;
+      }
+      ev.setProp("display", showUnavailabilities);
+    }
+  }
+  if (eventName === "unavailabilities") {
+    [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
+      let id = el.id.split("-")[1];
+      if (!(hiddenIds[id] === "none")) {
+        el.checked = showUnavailabilities === "block";
+      }
+      showUnavailabilities = document.getElementById(
+        "hide-show-unavailabilities"
+      ).checked
+        ? "block"
+        : "none";
+    });
+  } else if (eventName === "id") {
+    document.querySelectorAll(`[data-user-id="${event}"]`).forEach((el) => {
+      el.checked = hiddenIds[event] === "block";
+    });
+  }
+  if (eventName === "check") {
+    for (let e of calendar.getEvents()) {
+      e.setProp("display", showUnavailabilities);
+    }
+  }
+};
 
 // Hide/Show unavailabilities toggle
 document
   .getElementById("hide-show-unavailabilities")
   .addEventListener("click", () => {
     showUnavailabilities = showUnavailabilities === "block" ? "none" : "block";
-    let allEvents = calendar.getEvents();
-    allEvents.forEach((event) => {
-      event.setProp(
-        "display",
-        showUnavailabilities === "block" ? "block" : "none"
-      );
-    });
-    [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
-      el.checked = showUnavailabilities === "block";
-    });
+    hideShowEvents(showUnavailabilities, "unavailabilities");
   });
 
 // Hide/Show unavailabilities for a single staff
 window.toggleVisibility = (id) => {
-  let allEvents = calendar.getEvents();
-  for (let ev of allEvents) {
-    if (ev.extendedProps.userId === id) {
-      ev.setProp(
-        "display",
-        document.getElementById(`user-${id}`).checked ? "block" : "none"
-      );
-    }
-  }
+  hiddenIds[id] = document.getElementById(`user-${id}`).checked
+    ? "block"
+    : "none";
+  hideShowEvents(id, "id");
 };
 
 // Update the user's color

@@ -267,6 +267,14 @@ class Admin::ShiftsController < AdminAreaController
     render json: shifts
   end
 
+  def get_shift
+    shift = Shift.find(params[:id])
+    render json: {
+             **shift.as_json,
+             users: shift.users.map { |u| { id: u.id, name: u.name } }
+           }
+  end
+
   def get_staff_needed
     staff_needed = []
 
