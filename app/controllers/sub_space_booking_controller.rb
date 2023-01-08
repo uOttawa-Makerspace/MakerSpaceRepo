@@ -221,8 +221,8 @@ class SubSpaceBookingController < ApplicationController
         SubSpaceBooking
           .where(sub_space_id: booking.sub_space.id)
           .where(user_id: current_user.id)
-          .where("start_time >= ?", Date.today.beginning_of_week)
-          .where("start_time <= ?", Date.today.end_of_week)
+          .where("start_time >= ?", DateTime.now.beginning_of_week)
+          .where("start_time <= ?", DateTime.now.end_of_week)
       total_duration = 0 - duration
       user_bookings.each do |booking|
         total_duration += booking.end_time - booking.start_time
