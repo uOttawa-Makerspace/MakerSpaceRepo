@@ -97,6 +97,7 @@ Rails.application.routes.draw do
       get :projects_assigned
       get :projects_completed
       get :user_projects
+      delete :destroy, path: "destroy/:id", as: "destroy"
     end
   end
 
@@ -136,6 +137,7 @@ Rails.application.routes.draw do
   namespace :search, path: "/", as: nil do
     get "explore"
     get "search"
+    get "likes"
     get "category/:slug", as: "category", action: "category"
     get "category/:slug/featured", as: "featured", action: "featured"
     get "equipment/:slug", as: "equipment", action: "equipment"
@@ -219,7 +221,6 @@ Rails.application.routes.draw do
         #post 'bulk_add_certifications'
         patch "set_role"
         delete "delete_repository"
-        delete "delete_project_proposal"
         delete "delete_user"
         patch "restore_user"
         get "manage_roles"

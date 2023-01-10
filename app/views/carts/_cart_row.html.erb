@@ -7,7 +7,7 @@
     <%= form_for order_item, url: {remote: true} do |f| %>
         <%= f.hidden_field :quantity, value: order_item.quantity.to_i %>
         <%= f.hidden_field :proficient_project_id, value: proficient_project.id %>
-        <%= link_to '<i class="fa fa-trash"></i>'.html_safe, order_item, {data: {confirm: "Are you sure you wish to delete the proficient project '#{order_item.proficient_project.title}' from your cart?"}, method: :delete, remote: true, class: "btn btn-danger"} %>
+        <%= button_to '<i class="fa fa-trash"></i>'.html_safe, order_item, {data: {confirm: "Are you sure you wish to delete the proficient project '#{order_item.proficient_project.title}' from your cart?"}, method: :delete, remote: true, class: "btn btn-danger"} %>
     <% end %>
   </td>
 </tr>

@@ -33,7 +33,7 @@
             <%= f.hidden_field :demotion_reason, value: nil %>
             <%= f.submit "Reinstate", data: { confirm: 'Are you sure that you want to reinstate this certification?' }, class:"btn btn-success btn-sm d-block w-100 mb-1 me-0" %>
           <% end %>
-          <%=link_to "Delete", { controller: :certifications, action: :destroy, id: demotion.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this certification? This action cannot be undone.' }, class:"btn btn-danger btn-sm d-block w-100 mb-1 me-0" %>
+          <%=button_to "Delete", { controller: :certifications, action: :destroy, id: demotion.id }, method: :delete, data: { confirm: 'Are you sure that you want to delete this certification? This action cannot be undone.' }, class:"btn btn-danger btn-sm d-block w-100 mb-1 me-0" %>
         </td>
       </tr>
     <% end %>

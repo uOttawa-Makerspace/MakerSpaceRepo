@@ -90,7 +90,23 @@ p {
 a {
   text-decoration: none;
   color: inherit;
-
+  &:not(
+      .btn,
+      .nav-item,
+      .nav-link,
+      .dropdown-item,
+      .navbar-brand,
+      .overlay,
+      .username,
+      .admin_username,
+      .user_name,
+      .edit-repo-link,
+      .certify-button,
+      .like,
+      .make
+    ) {
+    color: $primary !important;
+  }
   &::visited {
     color: #789;
   }
@@ -98,6 +114,9 @@ a {
   //&:focus{
   //  outline-style: none;
   //}
+}
+.tags > a {
+  color: #fff !important;
 }
 body {
   background-color: #fff;

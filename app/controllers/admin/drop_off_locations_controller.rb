@@ -23,7 +23,7 @@ class Admin::DropOffLocationsController < AdminAreaController
   end
 
   def update
-    @location.update(drop_off_location_params)
+    @location.update(name: params[:drop_off_location][:name])
     if @location.save
       flash[:notice] = "Drop-off Location renamed successfully"
     else
@@ -44,7 +44,7 @@ class Admin::DropOffLocationsController < AdminAreaController
   private
 
   def drop_off_location_params
-    params.require(:drop_off_location).permit(:name)
+    params.permit(:name, drop_off_location: [:name])
   end
 
   def set_location

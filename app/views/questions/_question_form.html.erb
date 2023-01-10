@@ -39,7 +39,7 @@
       <%= render partial: 'answers', locals: {f: f} %>
     </div>
     <div class="col-12">
-      <%= link_to 'Add Answer', add_answer_questions_path(id: @question.id), method: :post, class: 'btn btn-info text-white float-start' %>
+      <%= button_to 'Add Answer', add_answer_questions_path(id: @question.id), method: :post, class: 'btn btn-info text-white float-start' %>
     </div>
     <br />
     <br />

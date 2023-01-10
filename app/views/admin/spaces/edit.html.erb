@@ -33,7 +33,7 @@
           <td><%= needed_staff.week_day %></td>
           <td><%= needed_staff.start_time.strftime("%H:%M")  %></td>
           <td><%= needed_staff.end_time.strftime("%H:%M")  %></td>
-          <td><%=link_to "Delete", { controller: "admin/spaces", action: :delete_space_hour, space_staff_hour_id: needed_staff.id }, method: :delete,
+          <td><%=button_to "Delete", { controller: "admin/spaces", action: :delete_space_hour, space_staff_hour_id: needed_staff.id }, method: :delete,
                           data: { confirm: 'Are you sure that you want to delete this slot?' },
                           class:"btn btn-danger btn-sm d-block w-100 mb-1 me-0" %></td>
         </tr>
@@ -132,7 +132,7 @@
         <tr>
           <td><%= raspi.pi_mac_address %></td>
           <td><%= raspi.space.name %></td>
-          <td><%= link_to fa_icon('times'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: nil }), method: :patch, action: :update, path: '/' %></td>
+          <td><%= button_to fa_icon('times'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: nil }), method: :patch, action: :update, path: '/', class:"btn btn-default" %></td>
         </tr>
       <% end %>
     </table>
@@ -152,7 +152,7 @@
         <tr>
           <td><%= raspi.pi_mac_address %></td>
           <td>unknown</td>
-          <td><%= link_to fa_icon('check'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: @space.id }), method: :patch, action: :update, path: '/' %></td>
+          <td><%= button_to fa_icon('check'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: @space.id }), method: :patch, action: :update, path: '/', class:"btn btn-default" %></td>
         </tr>
       <% end %>
     </table>
@@ -191,7 +191,7 @@
           <td><%= training.name %></td>
           <td><%= training.training_sessions.length %></td>
           <td><%= training.certifications.length %></td>
-          <td><%= link_to fa_icon('times'), admin_training_url(id: training.id), method: :delete, action: :destroy,
+          <td><%= button_to fa_icon('times'), admin_training_url(id: training.id), method: :delete, action: :destroy, class:"btn btn-default",
                           data: { confirm: 'Deleting a training will delete ALL its Sessions and Certifications! Ok to confirm' } %></td>
         </tr>
       <% end %>

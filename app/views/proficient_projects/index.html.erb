@@ -32,7 +32,7 @@
                         <% pp_bought.include?(pp) ? opacity = '' : opacity = 'w3-opacity-max' %>
                         <div class="col-md-4 mb-5 mt-3 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %> <%= return_border_color(pp.level) %>" style="border-width:2px !important;">
                           <div class="<%= opacity %>">
-                            <form class="py-3">
+                            <div class="py-3">
                               <div class="row">
                                 <div class="col-3">
                                   <%=link_to "Edit", edit_proficient_project_path(pp.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
@@ -41,10 +41,10 @@
                                   <p><h6 class="text-center my-auto"><strong><%= pp.training.name %></strong></h6></p>
                                 </div>
                                 <div class="col-3 float-end">
-                                  <%=link_to 'Delete', proficient_project_path(pp.id), method: :delete, class: "btn btn-danger float-end", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Learning Module.'} if current_user.admin?%>
+                                  <%=button_to 'Delete', proficient_project_path(pp.id), method: :delete, class: "btn btn-danger float-end", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Learning Module.'} if current_user.admin?%>
                                 </div>
                               </div>
-                            </form>
+                            </div>
                             <% if pp.photos.present? %>
                               <% if @user_order_items.where(proficient_project: pp, status:  ['In progress', 'Waiting for approval']).present? %>
                                 <a href="<%= proficient_project_path(pp.id) %>">

@@ -76,7 +76,7 @@
                         training_report_staff_training_session_path(id:sesh.id, format: "xlsx" ),
                         action: :training_report,
                         class:"btn btn-info btn-sm d-block w-100" %>
-              <%=link_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"btn btn-sm btn-danger d-block w-100"%>
+              <%=button_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"btn btn-sm btn-danger d-block w-100 my-2"%>
             <br></br>
             </td>
           </tr>

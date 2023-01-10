@@ -27,9 +27,9 @@
           <a class="dropdown-item" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
           <% if signed_in? %>
             <a class="dropdown-item" href="/project_proposals/user_projects"><%= t('navbar.your_projects') %></a>
+            <a class="dropdown-item" href="/project_proposals/projects_assigned"><%= t('navbar.assigned_projects') %></a>
           <% end %>
           <a class="dropdown-item" href="/project_proposals"><%= t('navbar.proposed_projects') %></a>
-          <a class="dropdown-item" href="/project_proposals/projects_assigned"><%= t('navbar.assigned_projects') %></a>
           <a class="dropdown-item" href="/project_proposals/projects_completed"><%= t('navbar.completed_projects') %></a>
         </div>
       </li>

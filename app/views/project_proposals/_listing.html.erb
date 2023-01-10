@@ -38,12 +38,12 @@
           <% if @user.admin? %>
             <% username = project_proposal.user&.username %>
             <% if username %>
-              <td class="username"><%= link_to username, user_path(username) %></td>
+              <td><%= link_to username, user_path(username), class:"username" %></td>
             <% else %>
               <td><%= project_proposal.username %></td>
             <% end %>
             <% admin_username = project_proposal.admin&.username %>
-            <td class="admin_username"><%= link_to admin_username, user_path(admin_username) if admin_username.present? %></td>
+            <td><%= link_to admin_username, user_path(admin_username), class:"admin_username" if admin_username.present? %></td>
             <td><%= project_proposal.client_type %></td>
             <td><%= project_proposal.client %></td>
             <td><%= project_proposal.client_interest %></td>
@@ -55,15 +55,15 @@
           <% if @user.admin? %>
             <% if title == "Pending Project Proposals" %>
               <td>
-                <%= link_to 'Approve', approve_project_proposals_path(:id => project_proposal.id), method: :post, class: "btn btn-success d-block w-100 btn-sm", data: { confirm: 'Are you sure?' }  %>
-                <%= link_to 'Disapprove', decline_project_proposals_path(id: project_proposal.id), method: :post, class: "btn btn-danger d-block w-100 btn-sm", data: { confirm: 'Are you sure?' }  %>
+                <%= button_to 'Approve', approve_project_proposals_path(:id => project_proposal.id), method: :post, class: "btn btn-success d-block w-100 btn-sm my-2", data: { confirm: 'Are you sure?' }  %>
+                <%= button_to 'Disapprove', decline_project_proposals_path(id: project_proposal.id), method: :post, class: "btn btn-danger d-block w-100 btn-sm", data: { confirm: 'Are you sure?' }  %>
               </td>
               <% end %>
               <td>
               <%= link_to 'Show', project_proposal_path(project_proposal.slug), class: "btn btn-success d-block w-100 btn-sm" %>
               <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "btn btn-primary d-block w-100 btn-sm" %>
-              <%= link_to 'Delete', project_proposal, method: :delete,
-                                                  class: "btn btn-danger d-block w-100 btn-sm", data: { confirm: 'Are you sure?' } %>
+              <%= button_to 'Delete', project_proposal, method: :delete,
+                                                  class: "btn btn-danger d-block w-100 btn-sm my-2", data: { confirm: 'Are you sure?' } %>
               </td>
           <% elsif action_flag %>
               <td><%= link_to 'Show', project_proposal, class: "btn btn-success d-block w-100 btn-sm" %></td>

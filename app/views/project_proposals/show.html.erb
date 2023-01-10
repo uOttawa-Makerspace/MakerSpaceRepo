@@ -20,10 +20,10 @@
     <% end %>
 
     <% if @user.admin? %>
-      <%= link_to "Approve/Approuver", approve_project_proposals_path(:id => @project_proposal.id), method: :post,
+      <%= button_to "Approve/Approuver", approve_project_proposals_path(:id => @project_proposal.id), method: :post,
                   class: "btn btn-success", data: { confirm: 'Are you sure? This will approve the project.' } %>
-      <%= link_to "Decline/Désapprouver ", decline_project_proposals_path(id: @project_proposal.id), method: :post,
-                  class: "btn btn-danger", data: { confirm: 'Are you sure? This will decline the project.' } %>
+      <%= button_to "Decline/Désapprouver ", decline_project_proposals_path(id: @project_proposal.id), method: :post,
+                  class: "btn btn-danger my-2", data: { confirm: 'Are you sure? This will decline the project.' } %>
     <% end %>
 
     <br><br>
@@ -43,35 +43,41 @@
     </div>
 
     <div class="repo-desc">
-      <% if @user.staff? %>
         <div class="card">
           <div class="card-header">
             Client Information / Information sur le client
           </div>
           <div class="card-body">
-            <div class="word-break">
-              <b>Client:</b> <%= @project_proposal.client %>
-              <br>
-              <b>Client type / Type de client :</b> <%= @project_proposal.client_type %>
-              <br>
-              <b>Client interest / Interets du client :</b> <%= @project_proposal.client_interest %>
-              <br>
-              <b>Client Background / Contexte du client :</b>
-              <span style="word-break: break-word">
-                <%= @project_proposal.client_background.html_safe %>
-              </span>
-            </div>
+            <% if signed_in? %>
+              <div class="word-break">
+                <b>Client:</b> <%= @project_proposal.client %>
+                <br>
+                <b>Client type / Type de client :</b> <%= @project_proposal.client_type %>
+                <br>
+                <b>Client interest / Interets du client :</b> <%= @project_proposal.client_interest %>
+                <br>
+                <b>Client Background / Contexte du client :</b>
+                <span style="word-break: break-word">
+                  <%= @project_proposal.client_background.html_safe %>
+                </span>
+              </div>
 
-            <% if @project_proposal.supervisor_background.present? %>
-              <b>Supervisor Background:</b>
-              <span style="word-break: break-word">
-                <%= @project_proposal.supervisor_background.html_safe %>
-              </span>
+              <% if @project_proposal.supervisor_background.present? %>
+                <b>Supervisor Background:</b>
+                <span style="word-break: break-word">
+                  <%= @project_proposal.supervisor_background.html_safe %>
+                </span>
+              <% end %>
+            <% else %>
+              <div class="word-break">
+                <div class="alert alert-info">
+                  Please <%= link_to "sign in", login_path, class:"text-decoration-underline" %> to view client info.
+                </div>
+              </div>
             <% end %>
           </div>
         </div>
         <br>
-      <% end %>
 
       <% if @project_proposal.description.present? %>
         <div class="card">
@@ -146,13 +152,13 @@
       <br>
 
       <% if @user.admin? %>
-        <%= link_to "Delete / Supprimer", delete_project_proposal_admin_users_path(id: @project_proposal.id), method: :delete,
+        <%= button_to "Delete / Supprimer", destroy_project_proposals_path(id:@project_proposal.id), method: :delete,
                     class: "btn btn-danger", data: { confirm: 'Are you sure?' } %>
         <br><br>
         <% if @project_proposal.approved.present? && @project_proposal.admin_id.present? %>
           <% admin_username = @project_proposal.admin.username %>
           <div> This project was reviewed by / Ce projet a été revu par:
-            <p class="username"><%= link_to admin_username, user_path(admin_username) %></p>
+            <p><%= link_to admin_username, user_path(admin_username), class:"admin_username" %></p>
           </div>
         <% elsif @project_proposal.approved.present? %>
           <div class="title">This project was reviewed.</div>
@@ -225,23 +231,23 @@
       <% end %>
       <% if @user.id.present? %>
         <div class="repo-info-item">
-          <%= link_to "Document Project / Documenter un projet", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
+          <%= button_to "Document Project / Documenter un projet", new_repository_path(@user.username, :project_proposal_id => @project_proposal.id), method: :get,
                       class: "btn btn-success",
                       data: { confirm: 'This action will create a repository related to this project proposal' } %>
         </div>
       <% end %>
       <% if @user.admin? %>
         <div class="repo-info-item">
-          <%= link_to "Create Revision / Créer une révision", create_revision_project_proposals_path(old_project_proposal_id: @project_proposal.id), method: :post, class: "btn btn-success" %>
+          <%= button_to "Create Revision / Créer une révision", create_revision_project_proposals_path(old_project_proposal_id: @project_proposal.id), method: :post, class: "btn btn-success" %>
         </div>
       <% end %>
       <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
       <div class="repo-info-item">
         <% if @project_join.present? %>
-          <%= link_to "Leave Project / Partir du projet", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
+          <%= button_to "Leave Project / Partir du projet", unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
                       class: "btn btn-danger", data: { confirm: 'Are you sure that you want to join this project?' } %>
         <% elsif @user.id.present? %>
-          <%= link_to "Join Project / Se joindre au projet", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
+          <%= button_to "Join Project / Se joindre au projet", join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
                       class: "btn btn-primary", data: { confirm: 'Are you sure that you want to join this project?' } %>
         <% end %>
       </div>

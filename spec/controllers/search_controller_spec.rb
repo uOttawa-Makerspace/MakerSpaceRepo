@@ -213,13 +213,13 @@ RSpec.describe SearchController, type: :controller do
       it "should get all the repo with the right category" do
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "Internet of Things")
-        get :category, params: { slug: "internet-of-things" }
+        get :explore, params: { category: "internet-of-things" }
         expect(@controller.instance_variable_get(:@repositories).count).to eq(1)
         expect(response).to have_http_status(:success)
       end
 
       it "should get no results" do
-        get :category, params: { slug: "internet-of-things" }
+        get :explore, params: { category: "internet-of-things" }
         expect(@controller.instance_variable_get(:@repositories).count).to eq(0)
         expect(response).to have_http_status(:success)
       end
@@ -227,7 +227,11 @@ RSpec.describe SearchController, type: :controller do
       it "should get the featured results" do
         repo = create(:repository, featured: true)
         Category.create(repository_id: repo.id, name: "Internet of Things")
-        get :category, params: { slug: "internet-of-things", featured: "yes" }
+        get :explore,
+            params: {
+              category: "internet-of-things",
+              featured: "yes"
+            }
         expect(@controller.instance_variable_get(:@repositories).count).to eq(1)
         expect(response).to have_http_status(:success)
       end

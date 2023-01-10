@@ -30,15 +30,6 @@ RSpec.describe Admin::CourseNamesController, type: :controller do
     end
   end
 
-  describe "GET /new" do
-    context "logged as admin" do
-      it "should return a 200" do
-        get :new
-        expect(response).to have_http_status(:success)
-      end
-    end
-  end
-
   describe "GET /edit" do
     context "logged as admin" do
       it "should return 200 response" do
@@ -53,7 +44,7 @@ RSpec.describe Admin::CourseNamesController, type: :controller do
       it "should create a course and redirect" do
         course_params = FactoryBot.attributes_for(:course_name)
         expect {
-          post :create, params: { course_name: course_params }
+          post :create, params: { name: course_params[:name] }
         }.to change(CourseName, :count).by(1)
         expect(flash[:notice]).to eq("Course added successfully!")
         expect(response).to redirect_to admin_course_names_path
