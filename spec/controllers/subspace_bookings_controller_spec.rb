@@ -250,5 +250,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         )
       end
     end
+
   end
 end

@@ -158,6 +158,15 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def create
+    booking = SubSpaceBooking.new(sub_space_booking_params)
+    if !booking.valid?
+      render json: {
+               errors: booking.errors.full_messages
+             },
+             status: :unprocessable_entity
+      return
+    end
+
     if params[:sub_space_booking][:recurring].present?
       if params[:sub_space_booking][:recurring] == true
         if params[:sub_space_booking][:recurring_end].present? &&
