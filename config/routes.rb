@@ -294,7 +294,7 @@ Rails.application.routes.draw do
         post "add_area"
         post "add_printer"
         # post 'rename_category'
-        patch "update_i_printed_it"
+        patch "update_job_order_processed"
         post "remove_category"
         post "remove_area"
         post "remove_printer"

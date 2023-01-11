@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_11_18_162233) do
+ActiveRecord::Schema.define(version: 2023_01_11_164604) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -45,7 +45,7 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.string "content_type"
     t.text "metadata"
     t.bigint "byte_size", null: false
-    t.string "checksum", null: false
+    t.string "checksum"
     t.datetime "created_at", null: false
     t.string "service_name", null: false
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
@@ -122,14 +122,8 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   create_table "booking_statuses", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.bigint "booking_status_id"
-    t.bigint "sub_space_booking_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["booking_status_id"],
-            name: "index_booking_statuses_on_booking_status_id"
-    t.index ["sub_space_booking_id"],
-            name: "index_booking_statuses_on_sub_space_booking_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
@@ -288,6 +282,13 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.bigint "job_option_id", null: false
     t.index ["job_option_id"], name: "index_job_options_types_on_job_option_id"
     t.index ["job_type_id"], name: "index_job_options_types_on_job_type_id"
+  end
+
+  create_table "job_order_messages", force: :cascade do |t|
+    t.text "name"
+    t.text "message"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "job_order_options", force: :cascade do |t|
@@ -564,13 +565,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "expired_at"
-  end
-
-  create_table "print_order_messages", force: :cascade do |t|
-    t.text "name"
-    t.text "message"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "print_orders", id: :serial, force: :cascade do |t|
@@ -857,14 +851,7 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.bigint "space_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.string "language"
-    t.bigint "training_level_id"
-    t.bigint "course_name_id"
-    t.index ["course_name_id"],
-            name: "index_space_staff_hours_on_course_name_id"
     t.index ["space_id"], name: "index_space_staff_hours_on_space_id"
-    t.index ["training_level_id"],
-            name: "index_space_staff_hours_on_training_level_id"
   end
 
   create_table "spaces", id: :serial, force: :cascade do |t|
@@ -946,14 +933,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.integer "maximum_booking_duration"
     t.integer "maximum_booking_hours_per_week"
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
-  end
-
-  create_table "training_levels", force: :cascade do |t|
-    t.string "name"
-    t.bigint "space_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
   create_table "training_sessions", id: :serial, force: :cascade do |t|
@@ -1044,6 +1023,8 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.boolean "confirmed", default: false
     t.bigint "space_id"
     t.datetime "last_signed_in_time"
+    t.string "otp_secret"
+    t.integer "last_otp_at"
     t.boolean "deleted"
     t.boolean "booking_approval", default: false
     t.index ["space_id"], name: "index_users_on_space_id"
@@ -1112,8 +1093,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   add_foreign_key "badge_templates", "trainings"
   add_foreign_key "badges", "badge_templates"
   add_foreign_key "badges", "certifications"
-  add_foreign_key "booking_statuses", "booking_statuses"
-  add_foreign_key "booking_statuses", "sub_space_bookings"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
@@ -1165,10 +1144,8 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
-  add_foreign_key "space_staff_hours", "course_names"
   add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
-  add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
@@ -1181,7 +1158,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_spaces", "spaces"
-  add_foreign_key "training_levels", "spaces"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe PrintOrderMessage, type: :model do
+RSpec.describe JobOrderMessage, type: :model do
   describe "Validations" do
     context "presence" do
       it { should validate_presence_of(:name) }
