@@ -228,6 +228,7 @@
       <th>Automatic Booking Approval</th>
       <th>Maximum Hours per Booking</th>
       <th>Maximum Hours per Week</th>
+      <th>Default booking privacy</th>
       <th>Delete Sub Space</th>
     </tr>
     </thead>
@@ -252,6 +253,9 @@
               <%= submit_tag "Set Hours", class: "btn btn-primary btn-sm" %>
             <% end %>
             <i>to disable the limit, use -1</i>
+          </td>
+          <td>
+            <%= button_to "Make #{sub_space.default_public ? "Private" : "Public"} by default", admin_space_change_sub_space_default_public_path(space_id:@space.id, id:sub_space.id), method: :post, action: :change_sub_space_default_public, class:"btn #{sub_space.default_public ? " btn-secondary" : " btn-primary"}" %>
           </td>
         <td><%= link_to "Destroy", admin_space_delete_sub_space_path(space_id:@space.id, id:sub_space.id), method: :delete, action: :delete_sub_space,
                         data: { confirm: 'Are you sure you want to delete this sub space ?' }, class:"btn btn-danger" %></td>

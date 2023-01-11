@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_11_18_162233) do
+ActiveRecord::Schema.define(version: 2023_01_11_183713) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -20,8 +20,8 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.text "body"
     t.string "record_type", null: false
     t.bigint "record_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
     t.index %w[record_type record_id name],
             name: "index_action_text_rich_texts_uniqueness",
             unique: true
@@ -45,7 +45,7 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.string "content_type"
     t.text "metadata"
     t.bigint "byte_size", null: false
-    t.string "checksum", null: false
+    t.string "checksum"
     t.datetime "created_at", null: false
     t.string "service_name", null: false
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
@@ -122,14 +122,8 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   create_table "booking_statuses", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.bigint "booking_status_id"
-    t.bigint "sub_space_booking_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["booking_status_id"],
-            name: "index_booking_statuses_on_booking_status_id"
-    t.index ["sub_space_booking_id"],
-            name: "index_booking_statuses_on_sub_space_booking_id"
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
@@ -196,21 +190,15 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.string "email"
     t.string "address"
     t.string "phone_number"
+    t.string "url"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.string "url"
     t.boolean "show_hours"
     t.bigint "space_id"
     t.index ["space_id"], name: "index_contact_infos_on_space_id"
   end
 
   create_table "course_names", force: :cascade do |t|
-    t.string "name"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-  end
-
-  create_table "courses", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
@@ -272,6 +260,23 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.integer "score"
     t.integer "training_session_id"
     t.datetime "expired_at"
+  end
+
+  create_table "friendly_id_slugs", id: :serial, force: :cascade do |t|
+    t.string "slug", null: false
+    t.integer "sluggable_id", null: false
+    t.string "sluggable_type", limit: 50
+    t.string "scope"
+    t.datetime "created_at"
+    t.index %w[slug sluggable_type scope],
+            name:
+              "index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope",
+            unique: true
+    t.index %w[slug sluggable_type],
+            name: "index_friendly_id_slugs_on_slug_and_sluggable_type"
+    t.index ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
+    t.index ["sluggable_type"],
+            name: "index_friendly_id_slugs_on_sluggable_type"
   end
 
   create_table "job_options", force: :cascade do |t|
@@ -590,8 +595,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.text "staff_comments"
     t.boolean "expedited"
     t.integer "order_type", default: 0
-    t.text "email"
-    t.text "name"
     t.datetime "timestamp_approved"
     t.string "final_file_file_name"
     t.string "final_file_content_type"
@@ -629,17 +632,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.datetime "updated_at", null: false
     t.string "model"
     t.string "number"
-    t.string "status", default: "true"
-    t.string "availability", default: "true"
-    t.string "color", default: "FF0000"
-    t.string "rfid"
-  end
-
-  create_table "procedures", force: :cascade do |t|
-    t.integer "version_number"
-    t.string "comments"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
@@ -805,12 +797,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.index ["user_id"], name: "index_rfids_on_user_id"
   end
 
-  create_table "sd_signins", id: :serial, force: :cascade do |t|
-    t.integer "printer_id"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
   create_table "shadowing_hours", force: :cascade do |t|
     t.bigint "user_id"
     t.string "event_id"
@@ -826,7 +812,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
     t.bigint "space_id"
-    t.bigint "user_id"
     t.datetime "start_datetime"
     t.datetime "end_datetime"
     t.datetime "created_at", precision: 6, null: false
@@ -834,7 +819,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.string "google_event_id"
     t.boolean "pending", default: true
     t.index ["space_id"], name: "index_shifts_on_space_id"
-    t.index ["user_id"], name: "index_shifts_on_user_id"
   end
 
   create_table "shifts_users", id: false, force: :cascade do |t|
@@ -857,14 +841,7 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.bigint "space_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.string "language"
-    t.bigint "training_level_id"
-    t.bigint "course_name_id"
-    t.index ["course_name_id"],
-            name: "index_space_staff_hours_on_course_name_id"
     t.index ["space_id"], name: "index_space_staff_hours_on_space_id"
-    t.index ["training_level_id"],
-            name: "index_space_staff_hours_on_training_level_id"
   end
 
   create_table "spaces", id: :serial, force: :cascade do |t|
@@ -931,6 +908,7 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "sub_space_booking_status_id"
     t.boolean "public", default: false
+    t.boolean "blocking", default: false
     t.index ["sub_space_booking_status_id"],
             name: "index_sub_space_bookings_on_sub_space_booking_status_id"
     t.index ["sub_space_id"], name: "index_sub_space_bookings_on_sub_space_id"
@@ -945,15 +923,8 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.boolean "approval_required", default: false
     t.integer "maximum_booking_duration"
     t.integer "maximum_booking_hours_per_week"
+    t.boolean "default_public", default: false
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
-  end
-
-  create_table "training_levels", force: :cascade do |t|
-    t.string "name"
-    t.bigint "space_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
   create_table "training_sessions", id: :serial, force: :cascade do |t|
@@ -982,8 +953,8 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "space_id"
-    t.string "description"
     t.bigint "skill_id"
+    t.string "description"
     t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end
@@ -1030,8 +1001,8 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
     t.integer "reputation", default: 0
     t.string "role", default: "regular_user"
     t.boolean "terms_and_conditions"
-    t.string "program"
     t.integer "student_id"
+    t.string "program"
     t.string "how_heard_about_us"
     t.string "identity"
     t.string "year_of_study"
@@ -1112,8 +1083,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   add_foreign_key "badge_templates", "trainings"
   add_foreign_key "badges", "badge_templates"
   add_foreign_key "badges", "certifications"
-  add_foreign_key "booking_statuses", "booking_statuses"
-  add_foreign_key "booking_statuses", "sub_space_bookings"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
@@ -1165,10 +1134,7 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
-  add_foreign_key "space_staff_hours", "course_names"
-  add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
-  add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
@@ -1181,7 +1147,6 @@ ActiveRecord::Schema.define(version: 2022_11_18_162233) do
   add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_spaces", "spaces"
-  add_foreign_key "training_levels", "spaces"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"

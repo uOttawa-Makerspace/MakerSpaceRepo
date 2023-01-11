@@ -56,6 +56,7 @@
                     <label for="book-name" class="form-label">Name</label>
                     <input type="text" class="form-control" id="book-name" placeholder="John Doe">
                     <br>
+                    <div id="TimeSlot"></div>
                     <label for="book-description" class="form-label">Description</label>
                     <input type="text" class="form-control" id="book-description" placeholder="Meeting with John Doe">
                     <br>
@@ -77,6 +78,10 @@
                       <option value="weekly">Weekly</option>
                       <option value="monthly">Monthly</option>
                     </select>
+                    <% if current_user.admin? %>
+                      <input type="checkbox" id="book-blocking" !checked class="form-check-input">
+                      <label for="book-blocking">Block from booking in this timeframe?</label>
+                    <% end %>
                   </div>
                 </div>
                 <div class="modal-footer">
@@ -103,7 +108,7 @@
                   <th>Start</th>
                   <th>End</th>
                   <th>Approved?</th>
-                  <th>Delete</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -115,7 +120,10 @@
                     <td><%= booking.start_time.to_formatted_s(:short) %></td>
                     <td><%= booking.end_time.to_formatted_s(:short)   %></td>
                     <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? "Approved" : "Not Approved" %></td>
-                    <td><%= link_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class:"btn btn-danger" %></td>
+                    <td class="input-group">
+                    <%= button_to 'Edit', sub_space_booking_edit_path(booking.id), method: :get, class:"btn btn-secondary", form_style:"border: none;background: none;", form_class:"" if booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
+                    <%= link_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class:"btn btn-danger" %>
+                    </td>
                   </tr>
                 <% end %>
               </tbody>

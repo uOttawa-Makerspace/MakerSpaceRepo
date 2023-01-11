@@ -1,0 +1,45 @@
+<section>
+  <div>
+    <h2 class="text-center">Edit Volunteer Task</h2>
+    <div class="container my-5">
+      <div class="row">
+        <div class="col-lg-12">
+          <%= form_for @sub_space_booking, url: {controller: "sub_space_booking", action: "update"}, :html => { :id => "bookingEdit", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+            <div class="row">
+              <div class="col-md-12">
+                <div class="mb-3 form-floating w-50 mx-auto">
+                  <%= f.text_field :name, class: 'form-control', required: true %>
+                  <%= f.label :name, "Name", class:"form-label"  %>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="mb-3 form-floating w-50 mx-auto">
+                  <%= f.text_area :description ,class: 'form-control', required: true %>
+                  <%= f.label :description, "Task Description", class:"form-label"  %>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="text-center"><b>Time Slot:</b></div> <br />
+                <div class="mb-3 form-floating w-50 mx-auto">
+                  <%= f.text_field :start_time, class:"form-control mb-3" %>
+                  <%= f.label :start_time, 'Start Time', class:"form-label"  %>
+                </div>
+                <div class="mb-3 form-floating w-50 mx-auto">
+                  <%= f.text_field :end_time, class:"form-control" %>
+                  <%= f.label :end_time, 'End Time', class:"form-label"  %>
+                  </div>
+                </div>
+              </div>
+              <%= f.hidden_field :sub_space_booking_id, value: @sub_space_booking.id %>
+
+              <div class="col-lg-12 text-center">
+                <br>
+                <%= f.submit "Update", class: "btn btn-secondary btn-xl" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
