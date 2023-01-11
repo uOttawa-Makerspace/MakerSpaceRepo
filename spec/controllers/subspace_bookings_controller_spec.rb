@@ -1,6 +1,5 @@
 require "rails_helper"
 require "rspec/mocks/standalone"
-
 RSpec.describe SubSpaceBookingController, type: :controller do
   before(:all) do
     stub_const("BookingStatus::PENDING", create(:booking_status, :pending))
@@ -39,8 +38,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         expect(JSON.parse(response.body).length).to eq(1)
       end
     end
+  end
 
-    describe "PUT/decline" do
+  describe "PUT/decline" do
+    context "decline booking" do
       it "should return 302 and notify the user they are not permitted" do
         @user = create(:user, :regular_user)
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
@@ -49,6 +50,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
           "You must be an admin or staff to view this page."
         )
       end
+
       it "should return 302 and decline the booking" do
         @user = create(:user, :admin)
         session[:user_id] = @user.id
@@ -61,8 +63,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         expect(JSON.parse(response.body).length).to eq(0)
       end
     end
+  end
 
-    describe "PUT/approve" do
+  describe "PUT/approve" do
+    context "approve booking" do
       it "should return 302 and notify the user they are not permitted" do
         @user = create(:user, :regular_user)
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
@@ -83,8 +87,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         expect(JSON.parse(response.body).length).to eq(1)
       end
     end
+  end
 
-    describe "POST/create" do
+  describe "POST/create" do
+    context "create booking" do
       it "should return 204 and create a booking" do
         post :create,
              params: {
@@ -214,9 +220,113 @@ RSpec.describe SubSpaceBookingController, type: :controller do
           "Booking for #{subspace.name} created successfully."
         )
       end
+
+      it "should return 422 and notify the user they can not book during a blocked timeslot" do
+        @user = create(:user, :admin)
+        session[:user_id] = @user.id
+        subspace = create(:sub_space, space: @space)
+        now = DateTime.now
+        anHourFromNow = DateTime.now + 1.hour
+        twoHoursFromNow = DateTime.now + 2.hour
+        threeHoursFromNow = DateTime.now + 3.hour
+        post :create,
+             format: :json,
+             params: {
+               sub_space_booking: {
+                 sub_space_id: subspace.id,
+                 start_time: anHourFromNow,
+                 end_time: twoHoursFromNow,
+                 name: Faker::Lorem.word,
+                 description: Faker::Lorem.sentence,
+                 blocking: true
+               }
+             }
+        post :create,
+             format: :json,
+             params: {
+               sub_space_booking: {
+                 sub_space_id: subspace.id,
+                 start_time: DateTime.now,
+                 end_time: twoHoursFromNow,
+                 name: Faker::Lorem.word,
+                 description: Faker::Lorem.sentence
+               }
+             }
+        expect(JSON.parse(response.body)["errors"].length).to eq(1)
+      end
+
+      it "should return 422 and notify the user they can not book during a blocked timeslot" do
+        @user = create(:user, :admin)
+        session[:user_id] = @user.id
+        subspace = create(:sub_space, space: @space)
+        now = DateTime.now
+        anHourFromNow = DateTime.now + 1.hour
+        twoHoursFromNow = DateTime.now + 2.hour
+        threeHoursFromNow = DateTime.now + 3.hour
+        post :create,
+             params: {
+               sub_space_booking: {
+                 sub_space_id: subspace.id,
+                 start_time: anHourFromNow,
+                 end_time: twoHoursFromNow,
+                 name: Faker::Lorem.word,
+                 description: Faker::Lorem.sentence,
+                 blocking: true
+               }
+             }
+        post :create,
+             params: {
+               sub_space_booking: {
+                 sub_space_id: subspace.id,
+                 start_time: anHourFromNow,
+                 end_time: threeHoursFromNow,
+                 name: Faker::Lorem.word,
+                 description: Faker::Lorem.sentence
+               }
+             }
+        expect(flash[:alert]).to eq(
+          "You cannot book this space as it is blocked for the selected time period."
+        )
+      end
     end
 
-    describe "DELETE/delete" do
+    it "should return 422 and notify the user they can not book during a blocked timeslot" do
+      @user = create(:user, :admin)
+      session[:user_id] = @user.id
+      subspace = create(:sub_space, space: @space)
+      now = DateTime.now
+      anHourFromNow = DateTime.now + 1.hour
+      twoHoursFromNow = DateTime.now + 2.hour
+      threeHoursFromNow = DateTime.now + 3.hour
+      post :create,
+           params: {
+             sub_space_booking: {
+               sub_space_id: subspace.id,
+               start_time: anHourFromNow,
+               end_time: twoHoursFromNow,
+               name: Faker::Lorem.word,
+               description: Faker::Lorem.sentence,
+               blocking: true
+             }
+           }
+      post :create,
+           params: {
+             sub_space_booking: {
+               sub_space_id: subspace.id,
+               start_time: now,
+               end_time: threeHoursFromNow,
+               name: Faker::Lorem.word,
+               description: Faker::Lorem.sentence
+             }
+           }
+      expect(flash[:alert]).to eq(
+        "You cannot book this space as it is blocked for the selected time period."
+      )
+    end
+  end
+
+  describe "DELETE/delete" do
+    context "delete booking" do
       it "should return 302 and delete the booking" do
         @user = create(:user, :admin)
         @booking_user = create(:user)
