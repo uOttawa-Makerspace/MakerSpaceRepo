@@ -32,13 +32,47 @@ if (document.getElementById("volunteer_id")) {
     new TomSelect("#volunteer_id", {
       plugins: ["remove_button"],
       maxItems: null,
+      closeAfterSelect: true,
     });
   }
 }
 if (document.getElementById("staff_id")) {
   if (!document.getElementById("staff_id").tomselect) {
     new TomSelect("#staff_id", {
-      maxItems: 1,
+      plugins: ["remove_button"],
+      maxItems: null,
+      closeAfterSelect: true,
     });
   }
+}
+if (document.getElementById("remove_staff_id")) {
+  if (!document.getElementById("remove_staff_id").tomselect) {
+    new TomSelect("#remove_staff_id", {
+      plugins: ["remove_button"],
+      maxItems: null,
+      closeAfterSelect: true,
+    });
+  }
+}
+if (document.getElementById("remove_volunteer_id")) {
+  if (!document.getElementById("remove_volunteer_id").tomselect) {
+    new TomSelect("#remove_volunteer_id", {
+      plugins: ["remove_button"],
+      maxItems: null,
+      closeAfterSelect: true,
+    });
+  }
+}
+let hider = document.getElementById("task-hider");
+if (hider) {
+  var completedRows = document.querySelectorAll('tr[completed="completed"]');
+  hider.addEventListener("click", () => {
+    completedRows.forEach((row) => {
+      row.classList.toggle("d-none");
+    });
+    hider.innerHTML =
+      hider.innerHTML == "Hide Completed Task"
+        ? "Show Completed Task"
+        : "Hide Completed Task";
+  });
 }

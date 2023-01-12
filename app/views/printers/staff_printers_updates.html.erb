@@ -12,12 +12,23 @@
       <% @printer_types.each do |type| %>
         <div class="mb-3">
           <h2><%= type %></h2>
-          <% Printer.get_printer_ids(type).each do |printer_id| %>
-            <% last_session = Printer.get_last_number_session(printer_id) %>
-            <%= "Printer Number: #{Printer.find(printer_id).number} | Last User:" %>
-            <b class="username"><%= link_to last_session.user.username.capitalize, user_path(last_session.user.username) %></b>
-            <%= last_session.created_at.strftime(" | %A, %m/%d/%Y at %I:%M%p") if last_session %>
-          <% end %>
+          <table class="table table-striped">
+            <thead class="table-primary text-center">
+              <th>Printer Number</th>
+              <th>User</th>
+              <th>Time</th>
+            </thead>
+            <tbody>
+              <% Printer.get_printer_ids(type).sort_by {|printer| Printer.get_last_number_session(printer).created_at }.reverse.each do |printer_id| %>
+                          <% last_session = Printer.get_last_number_session(printer_id) %>
+                <tr>
+                  <td><%=Printer.find(printer_id).number%></td>
+                  <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
+                  <td><%= last_session.created_at.strftime("%a, %d %b %Y at %I:%M%p") if last_session %></td>
+                </tr>
+              <% end %>
+
+          </table>
         </div>
       <% end %>
 
