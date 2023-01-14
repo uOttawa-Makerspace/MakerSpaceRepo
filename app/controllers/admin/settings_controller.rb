@@ -7,7 +7,7 @@ class Admin::SettingsController < AdminAreaController
     @equip_option = EquipmentOption.new
     @cat_option = CategoryOption.new
     @pi_option = PiReader.new
-    @i_printed_it = PrintOrderMessage.find_by(name: "I_Printed_It")
+    @job_order_processed_message = JobOrderMessage.find_by(name: "processed")
     @area_option = AreaOption.new
     @printer = Printer.new
   end
@@ -145,11 +145,11 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
 
-  def update_i_printed_it
-    if params[:print_order_message].present? &&
-         params[:print_order_message][:message].present?
-      PrintOrderMessage.find_by(name: "I_Printed_It").update(
-        message: params[:print_order_message][:message]
+  def update_job_order_processed
+    if params[:job_order_message].present? &&
+         params[:job_order_message][:message].present?
+      PrintOrderMessage.find_by(name: "processed").update(
+        message: params[:job_order_message][:message]
       )
       flash[:notice] = "Message updated successfully!"
     else

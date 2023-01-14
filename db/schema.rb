@@ -295,6 +295,13 @@ ActiveRecord::Schema.define(version: 2023_01_11_183713) do
     t.index ["job_type_id"], name: "index_job_options_types_on_job_type_id"
   end
 
+  create_table "job_order_messages", force: :cascade do |t|
+    t.text "name"
+    t.text "message"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
   create_table "job_order_options", force: :cascade do |t|
     t.bigint "job_order_id", null: false
     t.bigint "job_option_id", null: false
@@ -569,13 +576,6 @@ ActiveRecord::Schema.define(version: 2023_01_11_183713) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "expired_at"
-  end
-
-  create_table "print_order_messages", force: :cascade do |t|
-    t.text "name"
-    t.text "message"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "print_orders", id: :serial, force: :cascade do |t|
@@ -1015,6 +1015,8 @@ ActiveRecord::Schema.define(version: 2023_01_11_183713) do
     t.boolean "confirmed", default: false
     t.bigint "space_id"
     t.datetime "last_signed_in_time"
+    t.string "otp_secret"
+    t.integer "last_otp_at"
     t.boolean "deleted"
     t.boolean "booking_approval", default: false
     t.index ["space_id"], name: "index_users_on_space_id"
@@ -1134,6 +1136,7 @@ ActiveRecord::Schema.define(version: 2023_01_11_183713) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
+  add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"

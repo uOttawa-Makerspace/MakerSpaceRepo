@@ -217,8 +217,8 @@ en:
       no_job_orders: "You do not have any Job Orders currently. You can can create one"
       here: "here"
       action_required_total_quote: "Action Required - Total Quote:"
-      pay_online: "Pay Online"
-      pay_in_store: "Pay In-Store"
+      pay_online: "Pay by Credit Card"
+      pay_in_store: "Pay with cash or FOAP"
       cannot_edit_this_order: "Cannot edit this order"
     wizard:
       title: "New Job Order (Step %{step}/4)"
