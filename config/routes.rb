@@ -240,6 +240,9 @@ Rails.application.routes.draw do
       put "/edit/:id",
           as: "change_sub_space_approval",
           action: "change_sub_space_approval"
+      post "/edit/:id",
+           as: "change_sub_space_default_public",
+           action: "change_sub_space_default_public"
 
       collection do
         post :update_max_capacity
@@ -294,7 +297,7 @@ Rails.application.routes.draw do
         post "add_area"
         post "add_printer"
         # post 'rename_category'
-        patch "update_i_printed_it"
+        patch "update_job_order_processed"
         post "remove_category"
         post "remove_area"
         post "remove_printer"
@@ -347,6 +350,8 @@ Rails.application.routes.draw do
     put :decline
     put :approve
     put :publish
+    get :edit
+    patch :update
     delete :delete, path: "delete/:sub_space_booking_id"
     collection do
       put :request_access

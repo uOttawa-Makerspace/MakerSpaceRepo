@@ -260,7 +260,7 @@ class JobOrdersController < ApplicationController
 
   def completed_email_modal
     @message =
-      "Your Job Order ##{@job_order.id} has now been completed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders'>Job Order page</a> for details."
+      JobOrderMessage.find_by(name: "processed").retrieve_message(@job_order.id)
     render layout: false
   end
 

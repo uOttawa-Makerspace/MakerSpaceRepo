@@ -1,6 +1,5 @@
 require "rails_helper"
 require "rspec/mocks/standalone"
-
 RSpec.describe SubSpaceBookingController, type: :controller do
   before(:all) do
     stub_const("BookingStatus::PENDING", create(:booking_status, :pending))
@@ -39,8 +38,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         expect(JSON.parse(response.body).length).to eq(1)
       end
     end
+  end
 
-    describe "PUT/decline" do
+  describe "PUT/decline" do
+    context "decline booking" do
       it "should return 302 and notify the user they are not permitted" do
         @user = create(:user, :regular_user)
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
@@ -49,6 +50,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
           "You must be an admin or staff to view this page."
         )
       end
+
       it "should return 302 and decline the booking" do
         @user = create(:user, :admin)
         session[:user_id] = @user.id
@@ -61,8 +63,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         expect(JSON.parse(response.body).length).to eq(0)
       end
     end
+  end
 
-    describe "PUT/approve" do
+  describe "PUT/approve" do
+    context "approve booking" do
       it "should return 302 and notify the user they are not permitted" do
         @user = create(:user, :regular_user)
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
@@ -83,8 +87,10 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         expect(JSON.parse(response.body).length).to eq(1)
       end
     end
+  end
 
-    describe "POST/create" do
+  describe "POST/create" do
+    context "create booking" do
       it "should return 204 and create a booking" do
         post :create,
              params: {
@@ -251,5 +257,42 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       end
     end
 
+  end
+
+  describe "DELETE/delete" do
+    context "delete booking" do
+      it "should return 302 and delete the booking" do
+        @user = create(:user, :admin)
+        @booking_user = create(:user)
+        session[:user_id] = @user.id
+        @booking =
+          create(:sub_space_booking, sub_space: @subspace, user: @booking_user)
+        delete :delete, params: { sub_space_booking_id: @booking.id }
+        expect(flash[:notice]).to eq(
+          "Booking for #{@booking.sub_space.name} deleted successfully."
+        )
+      end
+      it "should return 302 and delete the booking" do
+        @booking_user = create(:user)
+        session[:user_id] = @booking_user.id
+        @booking =
+          create(:sub_space_booking, sub_space: @subspace, user: @booking_user)
+        delete :delete, params: { sub_space_booking_id: @booking.id }
+        expect(flash[:notice]).to eq(
+          "Booking for #{@booking.sub_space.name} deleted successfully."
+        )
+      end
+      it "should return 302 and not delete the booking" do
+        @user = create(:user)
+        @booking_user = create(:user)
+        session[:user_id] = @user.id
+        @booking =
+          create(:sub_space_booking, sub_space: @subspace, user: @booking_user)
+        delete :delete, params: { sub_space_booking_id: @booking.id }
+        expect(flash[:alert]).to eq(
+          "You must be the owner of this booking or an admin to delete it."
+        )
+      end
+    end
   end
 end
