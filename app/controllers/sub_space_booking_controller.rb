@@ -362,8 +362,8 @@ class SubSpaceBookingController < ApplicationController
     end
   end
   def user_booking_belongs
-    unless SubSpaceBooking.find(params[:id]).user_id == current_user.id ||
-             current_user.admin?
+    unless SubSpaceBooking.find(params[:sub_space_booking_id]).user_id ==
+             current_user.id || current_user.admin?
       redirect_to root_path,
                   alert:
                     "You must be the owner of this booking or an admin to delete it."
