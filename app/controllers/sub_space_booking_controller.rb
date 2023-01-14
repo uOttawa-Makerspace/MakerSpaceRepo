@@ -5,7 +5,7 @@ class SubSpaceBookingController < ApplicationController
   before_action :user_admin_or_staff,
                 only: %i[approve decline approve_access deny_access users]
   before_action :user_admin, only: [:publish]
-  before_action :user_booking_belongs, only: [:delete]
+  before_action :user_booking_belongs, only: %i[delete edit update]
   def index
     @subspace = SubSpace.find(params[:room]) if params[:room].present?
     @bookings = SubSpaceBooking.where(user_id: current_user.id)
@@ -124,6 +124,13 @@ class SubSpaceBookingController < ApplicationController
             if booking_status.booking_status_id == BookingStatus::PENDING.id
               color = booking.user == current_user ? "#B5A500" : "#FFA500"
             end
+            if booking.blocking
+              color = "#ABABABFF"
+              title = "Space Blocked" if (
+                !booking.public &&
+                  ((!current_user.admin?) || booking.user != current_user)
+              )
+            end
             title = "#{booking.name} - #{booking.description}"
             title =
               (
@@ -158,6 +165,10 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def create
+    if params[:sub_space_booking][:blocking] && !current_user.admin?
+      flash[:alert] = "You do not have permission to block a space."
+      redirect_to sub_space_booking_index_path
+    end
     if params[:sub_space_booking][:recurring].present?
       if params[:sub_space_booking][:recurring] == true
         if params[:sub_space_booking][:recurring_end].present? &&
@@ -194,6 +205,35 @@ class SubSpaceBookingController < ApplicationController
              status: :unprocessable_entity
       return
     end
+    if params[:sub_space_booking][:blocking] != "true" &&
+         SubSpaceBooking
+           .where(sub_space_id: params[:sub_space_booking][:sub_space_id])
+           .where(blocking: true)
+           .where.not(id: booking.id)
+           .where(
+             "(start_time, end_time) OVERLAPS (?,?)",
+             params[:sub_space_booking][:start_time].to_datetime,
+             params[:sub_space_booking][:end_time].to_datetime
+           )
+           .any?
+      booking.destroy
+      respond_to do |format|
+        format.json do
+          render json: {
+                   errors: ["TimeSlot This time slot is already booked."]
+                 },
+                 status: :unprocessable_entity
+        end
+        format.html do
+          flash[:alert] = "This time slot is already booked."
+          redirect_to sub_space_booking_index_path(
+                        anchor: "booking-calendar-tab",
+                        room: params[:sub_space_booking][:sub_space_id]
+                      )
+        end
+      end
+      return
+    end
 
     # Check time violations
     duration = (booking.end_time - booking.start_time) / 1.hour
@@ -228,7 +268,6 @@ class SubSpaceBookingController < ApplicationController
         total_duration += booking.end_time - booking.start_time
       end
       total_duration = total_duration / 1.hour
-      # Check if the total duration is within the maximum duration per week
       if total_duration > booking.sub_space.maximum_booking_hours_per_week
         render json: {
                  errors: [
@@ -257,12 +296,29 @@ class SubSpaceBookingController < ApplicationController
       )
     status.save
     booking.sub_space_booking_status_id = status.id
+    booking.public =
+      SubSpace.find(params[:sub_space_booking][:sub_space_id]).default_public
     booking.save
     flash[
       :notice
     ] = "Booking for #{booking.sub_space.name} created successfully."
     if booking.sub_space.approval_required
       BookingMailer.send_booking_needs_approval(booking.id).deliver_now
+    end
+  end
+  def edit
+    @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+  end
+
+  def update
+    @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+    if @sub_space_booking.update(sub_space_booking_params)
+      redirect_to sub_space_booking_index_path(
+                    anchor: "booking-calendar-tab",
+                    room: @sub_space_booking.sub_space_id
+                  )
+    else
+      render "edit"
     end
   end
 
@@ -323,7 +379,7 @@ class SubSpaceBookingController < ApplicationController
     booking.save
     status.destroy
     booking.destroy
-    redirect_to sub_space_booking_index_path,
+    redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
                 notice: "Booking for #{subspaceName} deleted successfully."
   end
 
@@ -377,7 +433,8 @@ class SubSpaceBookingController < ApplicationController
       :end_time,
       :name,
       :description,
-      :sub_space_id
+      :sub_space_id,
+      :blocking
     )
   end
 end
