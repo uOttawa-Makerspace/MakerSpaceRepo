@@ -83,6 +83,19 @@ class Admin::SpacesController < AdminAreaController
     end
   end
 
+  def change_sub_space_default_public
+    if params[:id].present?
+      subspace = SubSpace.find(params[:id])
+      subspace.update(default_public: !subspace.default_public)
+      flash[
+        :notice
+      ] = "Bookings in #{subspace.name} are #{subspace.default_public ? "public" : "private"} by default"
+      redirect_back(
+        fallback_location: edit_admin_space_path(id: params[:space_id])
+      )
+    end
+  end
+
   def edit
     @staff_needed_calendars = StaffNeededCalendar.where(space: params[:id])
     @space_staff_hours = SpaceStaffHour.where(space: params[:id])
