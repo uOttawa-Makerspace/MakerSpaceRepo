@@ -165,6 +165,14 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def create
+    booking = SubSpaceBooking.new(sub_space_booking_params)
+    if !booking.valid?
+      render json: {
+               errors: booking.errors.full_messages
+             },
+             status: :unprocessable_entity
+      return
+    end
     if params[:sub_space_booking][:blocking] && !current_user.admin?
       flash[:alert] = "You do not have permission to block a space."
       redirect_to sub_space_booking_index_path
