@@ -10,3 +10,7 @@
   height: 1.25em !important;
   border-radius: 0.25rem !important;
 }
+.scroll-col {
+  overflow-y: scroll;
+  max-height: 65vh;
+}
