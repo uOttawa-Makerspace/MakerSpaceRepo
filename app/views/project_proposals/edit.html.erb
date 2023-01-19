@@ -9,7 +9,7 @@
       <%= f.label :username, "Name/Nom", class: "form-label" %>
       <div>What is your name? <br> Quel est votre nom?</div>
       <%= f.text_field :username, class: 'form-control', autofocus: true, required: true %>
-      
+
     </div>
     <br>
     <div class="mb-3 required">
@@ -22,7 +22,7 @@
       <%= f.label :title, "Title", class: "form-label" %>
       <div>Great project titles are short and memorable.</div>
       <%= f.text_field :title, class: 'form-control', required: true %>
-      
+
     </div>
     <br>
     <div class="mb-3 required">
@@ -200,7 +200,7 @@
     <br>
     <br>
     <br>
-    <%= f.submit "Update Project Proposal/Modifier la proposition de projet", class: "btn btn-primary", data: {disable_with: false} %>
+    <%= f.submit "Update Project Proposal/Modifier la proposition de projet", class: "btn btn-primary", id:"waiting-save-button", data: {disable_with: false} %>
     <span id="status-save"></span>
     <% if flash[:alert] %>
       <div id="alert"><%= flash[:alert] %></div>
