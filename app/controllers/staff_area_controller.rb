@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class StaffAreaController < SessionsController
-  before_action :current_user, :ensure_staff, :default_space, :define_spaces
+  before_action :current_user, :default_space, :define_spaces
+  before_action :ensure_staff, except: %i[dismiss]
 
   private
 
