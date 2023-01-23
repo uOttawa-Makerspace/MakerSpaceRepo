@@ -1,17 +1,17 @@
 <div class="px-2" data-controller="launch-modal">
   <h1 class="text-center">List of Job Orders</h1>
   <div class="text-center">
-    <%= link_to "New Job Order", new_job_orders_path, {class: 'btn btn-primary mb-1'} %>
-    <%= link_to "Client Page", job_orders_path, {class: 'btn btn-primary mb-1'} %>
-    <%= link_to "Settings Page", settings_job_orders_path, {class: 'btn btn-primary mb-1'} %>
-    <%= link_to "Old Admin Page", print_orders_path, {class: 'btn btn-primary mb-1'} %>
+    <%= link_to 'New Job Order', new_job_orders_path, { class: 'btn btn-primary mb-1' } %>
+    <%= link_to 'Client Page', job_orders_path, { class: 'btn btn-primary mb-1' } %>
+    <%= link_to 'Settings Page', settings_job_orders_path, { class: 'btn btn-primary mb-1' } %>
+    <%= link_to 'Old Admin Page', print_orders_path, { class: 'btn btn-primary mb-1' } %>
   </div>
 
   <div class="py-1">
-    <%= form_with(url: admin_job_orders_path, method: "get", class: "form-inline") do %>
+    <%= form_with(url: admin_job_orders_path, method: 'get', class: 'form-inline') do %>
       <label class="my-1 mr-1" for="start_date">Filter by date</label>
-      <%= select_tag(:query_date, options_for_select([['All', 0], ['1 Month', 30], ['3 Months', 90], ['6 Months', 180], ['12 Months', 365]], :selected => session[:query_date]), { :class => 'form-select mr-1' }) %>
-      <%= submit_tag("Search", class: "btn btn-primary mt-1 mt-md-0") %>
+      <%= select_tag(:query_date, options_for_select([['All', 0], ['1 Month', 30], ['3 Months', 90], ['6 Months', 180], ['12 Months', 365]], selected: session[:query_date]), { class: 'form-select mr-1' }) %>
+      <%= submit_tag('Search', class: 'btn btn-primary mt-1 mt-md-0') %>
     <% end %>
   </div>
 

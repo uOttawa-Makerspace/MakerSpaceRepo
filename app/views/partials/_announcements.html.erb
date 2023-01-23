@@ -2,7 +2,7 @@
   <% Announcement.active.admins.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
     <div class="alert alert-secondary text-center alert-dismissible fade show" role="alert">
       <b>To Admins:</b> <%= a.description %>
-      <%= button_to "", dismiss_announcements_path(announcement_id:a.id), method: :put, class: "btn-close", data: { 'bs-dismiss': "alert" }, remote: true %>
+      <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' }, remote: true %>
     </div>
   <% end %>
 <% end %>
@@ -11,7 +11,7 @@
   <% Announcement.active.staff.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
     <div class="alert alert-info text-center alert-dismissible fade show" role="alert">
       <b>To Staff:</b> <%= a.description %>
-      <%= button_to "", dismiss_announcements_path(announcement_id:a.id), method: :put, class: "btn-close", data: { 'bs-dismiss': "alert" }, remote: true %>
+      <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' }, remote: true %>
     </div>
   <% end %>
 <% end %>
@@ -20,17 +20,17 @@
   <% Announcement.active.all_users.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
     <div class="alert alert-primary text-center alert-dismissible fade show" role="alert">
       <b>To All Users: </b><%= a.description %>
-      <%= button_to "", dismiss_announcements_path(announcement_id:a.id), method: :put, class: "btn-close", data: { 'bs-dismiss': "alert" }, remote: true %>
+      <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' }, remote: true %>
     </div>
   <% end %>
 <% end %>
 
 <% unless Announcement.active.all_users.blank? %>
-    <%  Announcement.active.all_users.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a|  %>
+    <% Announcement.active.all_users.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
         <div class="alert alert-primary text-center alert-dismissible fade show" role="alert">
-            <b>To All Visitors: </b><%=  a.description  %>
+            <b>To All Visitors: </b><%= a.description %>
             <% if signed_in? %>
-                <%= button_to "", dismiss_announcements_path(announcement_id:a.id), method: :put, class: "btn-close", data: { 'bs-dismiss': "alert" }, remote: true %>
+                <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' }, remote: true %>
             <% else %>
               <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             <% end %>
@@ -42,7 +42,7 @@
   <% Announcement.active.volunteers.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
     <div class="alert alert-warning text-center alert-dismissible fade show" role="alert">
       <b>To Volunteers:</b> <%= a.description %>
-      <%= button_to "", dismiss_announcements_path(announcement_id:a.id), method: :put, class: "btn-close", data: { 'bs-dismiss': "alert" }, remote: true %>
+      <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' }, remote: true %>
     </div>
   <% end %>
 <% end %>

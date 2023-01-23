@@ -1,4 +1,4 @@
-<% provide(:title, "Contact") %>
+<% provide(:title, 'Contact') %>
 
 <section id="contact-us">
 
@@ -10,15 +10,15 @@
       <div class="card">
         <div class="card-body">
           <h5 class="card-title">
-            <a href="<%= space.url if space.url.present? %>" target="_blank">
+            <a href="<%= space.url.presence %>" target="_blank">
               <%= space.name %>
             </a>
           </h5>
           <p class="card-text">
           <ul class="fa-ul">
-            <li><%= fa_icon("envelope-o li", text: space.email) %></li>
-            <li><%= fa_icon("map-marker li", text: space.address) if space.address.present? %></li>
-            <li><%= fa_icon("phone li", text: space.phone_number) if space.phone_number.present? %></li>
+            <li><%= fa_icon('envelope-o li', text: space.email) %></li>
+            <li><%= fa_icon('map-marker li', text: space.address) if space.address.present? %></li>
+            <li><%= fa_icon('phone li', text: space.phone_number) if space.phone_number.present? %></li>
           </ul>
           </p>
         </div>

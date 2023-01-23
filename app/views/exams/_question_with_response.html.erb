@@ -6,7 +6,7 @@
   <% if question.images.attached? %>
     <% question.images.each do |img| %>
       <a href="#">
-        <%= image_tag(img, alt: 'Picture related to the questions', class:"d-inline-block mx-auto") %>
+        <%= image_tag(img, alt: 'Picture related to the questions', class: 'd-inline-block mx-auto') %>
       </a>
     <% end %>
   <% end %>
@@ -17,12 +17,12 @@
     <div class="form-check">
 
     <% if response.answer.eql?(a) %>
-    <input name=<%=question.id%> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)" checked=true>
+    <input name=<%= question.id %> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)" checked=true>
     <label for=<%= a.id %> class="form-check-label d-block">
     <%= a.description %>
     </label>
     <% else %>
-    <input name=<%=question.id%> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+    <input name=<%= question.id %> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
     <label for=<%= a.id %> class="form-check-label">
     <%= a.description %>
     <% end %>

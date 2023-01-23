@@ -1,39 +1,39 @@
 <section>
   <h2 class="text-center fw-bold py-3">Edting <b><%= @training.name.capitalize %></b> Training</h2>
-  <%= form_for @training, url: {controller: "admin/trainings", action: "update"} do |f| %>
+  <%= form_for @training, url: { controller: 'admin/trainings', action: 'update' } do |f| %>
     <div class="container">
       <div class="row">
         <div class="col-md-12 form-group">
-          <%= f.label :name, 'Name:', class:"form-label" %>
-          <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
+          <%= f.label :name, 'Name:', class: 'form-label' %>
+          <%= f.text_field :name, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
         </div>
         <br />
 
         <div class="form-check-inline">
-          <%= f.label :space, 'Spaces:', class:"form-label" %> <br />
+          <%= f.label :space, 'Spaces:', class: 'form-label' %> <br />
           <%= f.collection_check_boxes(:space_ids, @spaces, :id, :name) do |b| %>
-            <%= b.label(:"data-value" => b.value) { b.check_box(class: "form-check-input", style:"margin-left:1rem;margin-right:0.5rem;") + b.text } %>
+            <%= b.label("data-value": b.value) { b.check_box(class: 'form-check-input', style: 'margin-left:1rem;margin-right:0.5rem;') + b.text } %>
           <% end %>
         </div>
           <div class="col-md-12 form-group">
-            <%= f.label :description, 'Description:', class:"form-label" %>
-            <%= f.text_area :description, placeholder: "Write an description...", class: 'form-control', required: true %>
+            <%= f.label :description, 'Description:', class: 'form-label' %>
+            <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control', required: true %>
           </div>
           <br /><br />
           <div class="col-md-12 form-group">
-            <%= f.label :skill_id, "Skill Type:", class:"form-label" %>
-            <%= f.select :skill_id, options_for_select(@skills, selected: f.object.skill_id), {include_blank: false}, {class: "form-control form-select"} %>
+            <%= f.label :skill_id, 'Skill Type:', class: 'form-label' %>
+            <%= f.select :skill_id, options_for_select(@skills, selected: f.object.skill_id), { include_blank: false }, { class: 'form-control form-select' } %>
           </div>
 
         <div class="col-md-12 form-group my-3 text-center">
-          <%= f.submit "Update Training", class: "btn btn-secondary btn-xl text-uppercase" %>
+          <%= f.submit 'Update Training', class: 'btn btn-secondary btn-xl text-uppercase' %>
         </div>
       </div>
     </div>
   <% end %>
 
-  <%= link_to "Delete", {controller: "admin/trainings", action: :destroy, id: @training.id}, method: :delete,
-              data: {confirm: 'Are you sure that you want to delete this training. This will delete all the training sessions as well.?'},
-              class: "btn btn-danger float-end" %>
+  <%= link_to 'Delete', { controller: 'admin/trainings', action: :destroy, id: @training.id }, method: :delete,
+                                                                                               data: { confirm: 'Are you sure that you want to delete this training. This will delete all the training sessions as well.?' },
+                                                                                               class: 'btn btn-danger float-end' %>
   <br><br>
 </section>
