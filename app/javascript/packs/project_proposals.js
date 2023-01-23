@@ -144,3 +144,26 @@ if (document.getElementById("new-photo-input")) {
     el.parentElement.remove();
   });
 });
+if (document.getElementById("ignore_past_experiences")) {
+  let urls = document
+    .getElementById("ignore_past_experiences")
+    .value.split("|");
+  console.log(urls);
+  if (urls[0] != "") {
+    for (let i = 1; i < urls.length; i++) {
+      if (urls[i] == "") continue;
+      urls[i] = urls[i].split(",")[1];
+      let listItem = document.createElement("li");
+      let listDiv = document.createElement("div");
+      let listInput = document.createElement("input");
+      listDiv.classList.add("mb-3");
+      listInput.classList.add("form-control");
+      listInput.setAttribute("type", "text");
+      listInput.placeholder = "Ajoutez un lien / Add a link";
+      listInput.value = urls[i];
+      listDiv.appendChild(listInput);
+      listItem.appendChild(listDiv);
+      document.getElementsByClassName("main_ul")[0].appendChild(listItem);
+    }
+  }
+}

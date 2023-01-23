@@ -157,7 +157,7 @@
     <div class="mb-3">
       <%= f.label :past_experiences, "Past experiences / Tentatives précédentes", class: "form-label" %>
       <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split("|")[0] : f.object.past_experiences %>
-
+      <%= hidden_field_tag 'ignore_past_experiences', f.object.past_experiences.nil? ? '' : f.object.past_experiences %>
       <div id="linkRef">
         <button type="button" id="link-list" class="btn btn-primary link-list btn-sm mb-3">Ajouter un lien / Add a link</button>
         <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer le dernier lien / Remove last link</button>
@@ -205,26 +205,7 @@
     <% if flash[:alert] %>
       <div id="alert"><%= flash[:alert] %></div>
     <% end %>
-
-    <script type="text/javascript" charset="utf-8">
-        let urls = '<%= !f.object.past_experiences.nil? ? f.object.past_experiences.split("|")[1] : "" %>'.split(",");
-        if (urls[0] != "") {
-            for (let i = 0; i < urls.length; i++) {
-                let listItem = document.createElement("li");
-                let listDiv = document.createElement("div");
-                let listInput = document.createElement("input");
-                listDiv.classList.add("mb-3");
-                listInput.classList.add("form-control");
-                listInput.setAttribute("type", "text");
-                listInput.placeholder = "Ajoutez un lien / Add a link"
-                listInput.value = urls[i];
-                listDiv.appendChild(listInput);
-                listItem.appendChild(listDiv);
-                document.getElementsByClassName("main_ul")[0].appendChild(listItem);
-            }
-        }
-    </script>
-<% end %>
+  <% end %>
 </section>
 
 
