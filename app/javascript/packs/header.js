@@ -157,4 +157,15 @@ document.addEventListener("turbolinks:load", function () {
         });
       });
   }
+  function removeQuickAccessLink(id) {
+    fetch(`/quick_access_links/destroy/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+    }).then((response) => {
+      Turbolinks.visit(window.location.href);
+    });
+  }
 });

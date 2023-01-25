@@ -1,19 +1,18 @@
-<div class="dropdown my-2">
+<div class="dropdown mt-2 pb-0">
     <div class="menu-icon dropdown-toggle " type="button" id="quick-access-dropdown" data-bs-toggle="dropdown"
         aria-expanded="false">
         <%= fa_icon('bars') %>
     </div>
-    <ul class="dropdown-menu" aria-labelledby="quick-access-dropdown">
+    <ul class="dropdown-menu" aria-labelledby="quick-access-dropdown" id="quick-access-links-dropdown">
         <h3 class="dropdown-header">Quick Access</h3>
         <% QuickAccessLink.where(user: current_user).each do |link| %>
-            <li class="mx-3">
-                <div class="mx-auto frequent mb-2 p-2" onclick="Turbolinks.visit('<%= link.path %>')">
-                    <%= link.name %></button>
+            <li class="dropdown-item" onclick="Turbolinks.visit('<%= link.path %>')" >
+                <%= link.name %>
             </li>
         <% end %>
-        <div class="dropdown-divider"></div>
-        <li class="mx-3">
-            <div id="add-new-quick-access" class="mx-auto frequent mb-2 p-2">Pin Page</div>
+        <div class="m-0 dropdown-divider"></div>
+        <li class="text-light bg-primary dropdown-item" id="add-new-quick-access" >
+         <%= fa_icon("thumb-tack") %> Pin Page</button>
         </li>
     </ul>
 </div>

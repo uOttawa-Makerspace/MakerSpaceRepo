@@ -34,4 +34,9 @@ class QuickAccessLinksController < ApplicationController
     )
     redirect_to user_path(current_user.username), notice: "Link updated"
   end
+
+  def delete
+    QuickAccessLink.find(params[:id]).destroy
+    redirect_to user_path(current_user.username), notice: "Link deleted"
+  end
 end

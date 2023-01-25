@@ -1,21 +1,14 @@
 @import "lib";
 @import "./shared/variables";
 
-.frequent {
-  display: block;
-  border-radius: 0.25rem;
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #497979;
-  text-decoration: none;
-  transition: all 0.2s;
-  border-bottom: black 1px solid;
-  box-shadow: 0px 0px 10px #497979ab;
+#add-new-quick-access:hover {
+  color: #000 !important;
 }
-
-.frequent:hover {
-  background-color: #dfdfdfab;
-  transform: scale(1.1);
+#quick-access-links-dropdown > li {
+  cursor: pointer;
+}
+#quick-access-links-dropdown {
+  padding-bottom: 0px !important;
 }
 .menu-icon {
   padding: 0.25rem 0.5rem;
@@ -24,12 +17,9 @@
   border-radius: 0.5rem;
   width: fit-content;
 }
+
 .menu-icon i {
   font-size: 1.5rem;
-}
-
-.frequent-links.active {
-  display: block;
 }
 
 section#home-header {
