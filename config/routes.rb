@@ -557,6 +557,6 @@ Rails.application.routes.draw do
 
   namespace :quick_access_links do
     post :create
-    patch :update, path: "update/:id", as: "update"
+    post :update, path: "update/:id", as: "update"
   end
 end

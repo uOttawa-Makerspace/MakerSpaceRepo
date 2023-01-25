@@ -2,7 +2,7 @@
     <div class="col-md-6">
       Current Quick Access Paths:
       <% QuickAccessLink.where(user_id: current_user).each do |quick_access| %>
-      <%= form_with url: quick_access_links_update_path(quick_access.id), method: 'patch', controller: 'quick_access_links' do %>
+      <%= form_with url: quick_access_links_update_path(quick_access.id), method: 'post', controller: 'quick_access_links' do %>
           <%= hidden_field_tag :user, current_user.id %>
           <%= hidden_field_tag :quick_access_id, quick_access.id %>
           <div class="row g-2">

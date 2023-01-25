@@ -133,4 +133,28 @@ document.addEventListener("turbolinks:load", function () {
   flashObserver.observe(document.getElementById("flash"));
 
   check();
+
+  if (document.getElementById("add-new-quick-access")) {
+    document
+      .getElementById("add-new-quick-access")
+      .addEventListener("click", () => {
+        // Get window title and path
+        let title = document.title;
+        let path = window.location.pathname;
+        // Send request to server
+        fetch("/quick_access_links/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            accept: "application/json",
+          },
+          body: JSON.stringify({
+            name: title,
+            path: path,
+          }),
+        }).then((response) => {
+          Turbolinks.visit(window.location.href);
+        });
+      });
+  }
 });
