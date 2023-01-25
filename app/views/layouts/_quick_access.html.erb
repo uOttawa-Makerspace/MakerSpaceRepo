@@ -1,0 +1,15 @@
+<div class="dropdown my-2">
+    <div class="menu-icon dropdown-toggle " type="button" id="quick-access-dropdown" data-bs-toggle="dropdown"
+        aria-expanded="false">
+        <%= fa_icon('bars') %>
+    </div>
+    <ul class="dropdown-menu" aria-labelledby="quick-access-dropdown">
+        <h3 class="dropdown-header">Quick Access</h3>
+        <% QuickAccessLink.where(user: current_user).each do |link| %>
+            <li class="mx-3">
+                <div class="mx-auto frequent mb-2 p-2" onclick="Turbolinks.visit('<%= link.path %>')">
+                    <%= link.name %></button>
+            </li>
+        <% end %>
+    </ul>
+</div>
