@@ -141,9 +141,6 @@ link_to ("Tapped at #{space} " + time_ago_in_words(rfid.updated_at) + ' ago'),
           <div class="tab-pane fade" id="badges-manager" role="tabpanel" aria-labelledby="badges-tab">
             <%= render partial: 'users/tabs/badges', locals: { acclaim_data: @acclaim_data } %>
           </div>
-          <div class="tab-pane fade" id="quick-access-manager" role="tabpanel" aria-labelledby="quick-access-tab">
-            <%= render partial: 'users/tabs/quick_access', locals: { user: @user, repo_user: @repo_user } %>
-          </div>
           <div class="tab-pane fade" id="programs-manager" role="tabpanel" aria-labelledby="badges-tab">
             <%= render partial: 'users/tabs/programs', locals: { user: @user, repo_user: @repo_user } %>
           </div>
@@ -162,6 +159,9 @@ link_to ("Tapped at #{space} " + time_ago_in_words(rfid.updated_at) + ' ago'),
           <% if @user.admin? %>
             <div class="tab-pane fade" id="role-manager" role="tabpanel" aria-labelledby="profile-tab">
                 <%= render partial: 'users/tabs/roles', locals: { user: @user, repo_user: @repo_user } %>
+            </div>
+            <div class="tab-pane fade" id="quick-access-manager" role="tabpanel" aria-labelledby="quick-access-tab">
+              <%= render partial: 'users/tabs/quick_access', locals: { user: @user, repo_user: @repo_user } %>
             </div>
           <% end %>
           <% if @repo_user.staff? %>

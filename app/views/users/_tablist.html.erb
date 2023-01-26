@@ -15,10 +15,7 @@
     <a href="#programs-manager" class="nav-link" id="programs-tab" data-bs-toggle="tab" role="tab"
       aria-controls="profile" aria-selected="false">Programs</a>
   </li>
-  <li class="nav-item">
-    <a class="nav-link" id="quick-access-tab" data-bs-toggle="tab" href="#quick-access-manager" role="tab"
-      aria-controls="profile" aria-selected="false">Quick Access</a>
-  </li>
+
   <!--- Staff Tabs -->
   <% if @user.staff? %>
     <div class="nav-item dropdown">
@@ -48,6 +45,10 @@
           <a class="nav-link text-danger" id="roles-tab" data-bs-toggle="tab" href="#role-manager"
             role="tab" aria-controls="profile" aria-selected="false">Role
             Manager</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-danger" id="quick-access-tab" data-bs-toggle="tab" href="#quick-access-manager" role="tab"
+            aria-controls="profile" aria-selected="false">Quick Access</a>
         </li>
         <li class="nav-item">
           <a class="nav-link text-danger" id="users-tab" data-bs-toggle="tab" href="#user-delete"
