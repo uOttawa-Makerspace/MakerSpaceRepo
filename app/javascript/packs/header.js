@@ -168,4 +168,14 @@ document.addEventListener("turbolinks:load", function () {
       Turbolinks.visit(window.location.href);
     });
   }
+  if (document.getElementById("quick-access-bar-toggle")) {
+    document
+      .getElementById("quick-access-bar-toggle")
+      .addEventListener("click", () => {
+        document
+          .getElementById("quick-access-container")
+          .classList.toggle("stowed");
+        document.getElementById("quick-access-bar").classList.toggle("stowed");
+      });
+  }
 });

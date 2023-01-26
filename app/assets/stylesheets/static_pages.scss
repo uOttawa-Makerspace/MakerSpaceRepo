@@ -1,25 +1,25 @@
 @import "lib";
 @import "./shared/variables";
 
-#add-new-quick-access:hover {
-  color: #000 !important;
+#quick-access-bar {
+  position: fixed;
+  top: 4rem;
+  width: 100%;
+  z-index: 50;
 }
-#quick-access-links-dropdown > li {
+#quick-access-bar.stowed {
+  width: 1rem;
+  transition: width 0.5s ease-in-out;
+}
+#quick-access-container {
+  transition: transform 0.15s ease-in-out;
+}
+#quick-access-container.stowed {
+  transform: translateY(-100%);
+  transition: transform 0.15s ease-in-out;
+}
+#add-new-quick-access {
   cursor: pointer;
-}
-#quick-access-links-dropdown {
-  padding-bottom: 0px !important;
-}
-.menu-icon {
-  padding: 0.25rem 0.5rem;
-  background-color: #497979;
-  color: white;
-  border-radius: 0.5rem;
-  width: fit-content;
-}
-
-.menu-icon i {
-  font-size: 1.5rem;
 }
 
 section#home-header {

@@ -13,9 +13,8 @@
           </button>
         </div>
       </form>
-      <%= render 'layouts/quick_access_link' if signed_in? %>
 
-    <ul class="navbar-nav me-auto align-items-xl-baseline">
+      <ul class="navbar-nav me-auto align-items-xl-baseline">
       <li class="nav-item">
         <a class="nav-link" href="/explore"><%= t('navbar.explore') %></a>
       </li>
@@ -27,7 +26,7 @@
         <div class="dropdown-menu">
           <a class="dropdown-item" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
           <% if signed_in? %>
-            <a class="dropdown-item" href="/project_proposals/user_projects"><%= t('navbar.your_projects') %></a>
+          <a class="dropdown-item" href="/project_proposals/user_projects"><%= t('navbar.your_projects') %></a>
           <% end %>
           <a class="dropdown-item" href="/project_proposals"><%= t('navbar.proposed_projects') %></a>
           <a class="dropdown-item" href="/project_proposals/projects_assigned"><%= t('navbar.assigned_projects') %></a>
@@ -54,8 +53,8 @@
     <ul class="navbar-nav ms-auto align-items-xl-baseline">
 
       <% unless signed_in? %>
-        <li class="nav-item"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
-        <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
+      <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
         <% else %>
         <li class="nav-item">
           <%= link_to(t('navbar.buy_cc_money'), cc_moneys_path, class: 'nav-link') %>
@@ -101,13 +100,14 @@
         <li class="nav-item">
           <%= link_to t('name', locale: locale), url_for(request.query_parameters.merge(locale: locale)), class: 'nav-link' %>
         </li>
-      <% end %>
-    </ul>
+        <% end %>
+      </ul>
   </div>
-  </div>
+</div>
 </nav>
 
 <%= render 'static_pages/login_modal' unless signed_in? %>
+<%= render 'layouts/quick_access_link' if current_user.admin? %>
 
 <div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
   <%= render 'layouts/flash' %>
