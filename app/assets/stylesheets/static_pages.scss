@@ -15,7 +15,7 @@
   transition: transform 0.15s ease-in-out;
 }
 #quick-access-container.stowed {
-  transform: translateY(-100%);
+  display: none;
   transition: transform 0.15s ease-in-out;
 }
 #add-new-quick-access {
