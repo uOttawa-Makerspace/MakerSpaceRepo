@@ -15,11 +15,12 @@
       <table class="table sessions-table  table-striped">
         <thead class="table-primary">
          <tr>
-           <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Description <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Public<span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Active?<span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Created By<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Description <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Public<span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Active?<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Created By<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+           <th>Dismissed By<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
            <th class="action-header">Action</th>
          </tr>
         </thead>
@@ -49,6 +50,11 @@
               <br />
             </td>
 
+
+            <td>
+              <span data-bs-toggle="tooltip" title="<%= User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).size > 5 ? User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).take(5).join(", ") + " And more" : User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).join(", ") %>">Dismissed by: <%= AnnouncementDismiss.where(announcement_id: a.id).count > 0 ? "#{AnnouncementDismiss.where(announcement_id: a.id).count} User#{'s'.pluralize(AnnouncementDismiss.where(announcement_id: a.id).count)}" : "No one" %>
+              </span>
+            </td>
             <td class="action-cell">
               <%= link_to 'Edit', edit_admin_announcement_path(a.id), class: 'btn btn-primary d-block w-100 btn-sm mt-0' if current_user.staff? %>
               <%= link_to 'Show', admin_announcement_path(a.id), class: 'btn btn-info d-block w-100 btn-sm mt-0' %>
