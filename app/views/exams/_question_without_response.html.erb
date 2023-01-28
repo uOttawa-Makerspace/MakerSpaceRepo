@@ -6,7 +6,7 @@
   <% if question.images.attached? %>
   <% question.images.each do |img| %>
       <a href="#">
-        <%= image_tag(img, alt: 'Image related to the question', class:"d-inline-block mx-auto") %>
+        <%= image_tag(img, alt: 'Image related to the question', class: 'd-inline-block mx-auto') %>
       </a>
   <% end %>
 <% end %>
@@ -16,7 +16,7 @@
 <form class="text-start">
   <% question.answers.randomize_answers.each do |a| %>
   <div class="form-check">
-    <input name=<%=question.id%> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+    <input name=<%= question.id %> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
     <label class="form-check-label d-block" for=<%= a.id %>>
     <%= a.description %>
     </label>

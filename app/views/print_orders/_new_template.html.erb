@@ -1,11 +1,11 @@
 <div class="content">
 
   <p style="font-size: 18px">ID #<%= prints.id %> | File : <%= prints.file.filename if prints.file.attached? %> |
-    <%= link_to " <b>Action Required</b>".html_safe, "", "data-bs-toggle": "modal", "data-bs-target": "#modal-approve-#{prints.id}" if prints.approved and prints.user_approval == nil %>
-    <%= link_to 'Cancel Order', print_order_path(prints), class: 'btn btn-danger btn-sm', method: :delete, data: { confirm: 'Are you sure?' } if prints.approved == nil %>
+    <%= link_to ' <b>Action Required</b>'.html_safe, '', "data-bs-toggle": 'modal', "data-bs-target": "#modal-approve-#{prints.id}" if prints.approved && prints.user_approval.nil? %>
+    <%= link_to 'Cancel Order', print_order_path(prints), class: 'btn btn-danger btn-sm', method: :delete, data: { confirm: 'Are you sure?' } if prints.approved.nil? %>
   </p>
 
-  <%= link_to 'Show Invoice', print_order_path(prints), class: 'btn btn-sm btn-primary', target: '_blank' if prints.approved == true %>
+  <%= link_to 'Show Invoice', print_order_path(prints), class: 'btn btn-sm btn-primary', target: '_blank', rel: 'noopener' if prints.approved == true %>
 
 
   <ul class="progress-tracker progress-tracker--text progress-tracker--center progress-row">
@@ -38,14 +38,14 @@
                 <b>Quoted price : <%= number_to_currency(prints.quote) %>$</b>
                 <%= "<p>Staff comments: #{prints.staff_comments}</p>".html_safe unless prints.staff_comments.empty? %>
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
-                  <%= f.hidden_field :user_approval, :value => true %>
-                  <%= f.hidden_field :timestamp_approved, :value => DateTime.now %>
-                  <%= f.submit "I accept the quote", class: 'btn btn-primary', 'aria-label': "I accept the quote of #{prints.quote} $", data: {confirm: 'Are you sure?'} %>
+                  <%= f.hidden_field :user_approval, value: true %>
+                  <%= f.hidden_field :timestamp_approved, value: DateTime.now %>
+                  <%= f.submit 'I accept the quote', class: 'btn btn-primary', 'aria-label': "I accept the quote of #{prints.quote} $", data: { confirm: 'Are you sure?' } %>
                 <% end %>
                 <br>
                 <%= form_for prints, url: print_order_path(prints) do |f| %>
-                  <%= f.hidden_field :user_approval, :value => false %>
-                  <%= f.submit "I don't accept it", class: 'btn btn-danger', 'aria-label': "I DO NOT accept the quote of #{prints.quote} $", data: {confirm: 'Are you sure?'} %>
+                  <%= f.hidden_field :user_approval, value: false %>
+                  <%= f.submit "I don't accept it", class: 'btn btn-danger', 'aria-label': "I DO NOT accept the quote of #{prints.quote} $", data: { confirm: 'Are you sure?' } %>
                 <% end %>
               </div>
               <div class="modal-footer">
@@ -70,7 +70,7 @@
             <div class="progress-text">
               <h4 class="progress-title mb-0"><%= file %></h4><p><%= prints.updated_at.to_formatted_s(:short) if prints.updated_at.present? %></p>
               <% if file == "Waiting on Admin's approval" %>
-                <%= link_to "Edit submission", edit_print_order_path(prints.id) %>
+                <%= link_to 'Edit submission', edit_print_order_path(prints.id) %>
               <% end %>
             </div>
           </li>
@@ -96,7 +96,7 @@
           <li class="progress-step is-complete">
             <div class="progress-marker"></div>
             <div class="progress-text">
-              <h4 class="progress-title m-0"><%= file %></h4><%= prints.updated_at.to_formatted_s(:short) if file == "Printed" && prints.updated_at.present? %><%= prints.timestamp_approved.to_formatted_s(:short) if file == "Approved by you" && prints.timestamp_approved.present? %>
+              <h4 class="progress-title m-0"><%= file %></h4><%= prints.updated_at.to_formatted_s(:short) if file == 'Printed' && prints.updated_at.present? %><%= prints.timestamp_approved.to_formatted_s(:short) if file == 'Approved by you' && prints.timestamp_approved.present? %>
             </div>
           </li>
         <% end %>

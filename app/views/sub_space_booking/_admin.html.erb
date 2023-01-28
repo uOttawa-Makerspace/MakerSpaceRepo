@@ -17,8 +17,8 @@
 
                   <div class="table-responsive">
                     <div class="apple_pagination">
-                      <%= page_entries_info @pending_bookings, :model => 'subspace_booking' %>
-                      <%= will_paginate @pending_bookings, :container => false, :param_name => 'pending_page' %>
+                      <%= page_entries_info @pending_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @pending_bookings, container: false, param_name: 'pending_page' %>
                     </div>
                     <table class="table table-striped">
                       <thead class="text-center  table-primary">
@@ -33,14 +33,14 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <% @pending_bookings.each do |booking|%>
+                      <% @pending_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + " - " + booking.sub_space.name   %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                             <td><%= booking.user.email %></td>
-                            <td><%= booking.start_time.to_formatted_s(:short)    %> to <%= booking.end_time.to_s(:time)   %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
                             <td>
                               <div class="btn-group" role="group">
                                 <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
@@ -64,8 +64,8 @@
                 <div id="approvedBody" class="collapse show accordion-body" aria-labelledby="approvedHeading" data-bs-parent="#approved-accordion">
                   <div class="table-responsive">
                     <div class="apple_pagination">
-                        <%= page_entries_info @approved_bookings, :model => 'subspace_booking' %>
-                        <%= will_paginate @approved_bookings, :container => false, :param_name => 'approved_page' %>
+                        <%= page_entries_info @approved_bookings, model: 'subspace_booking' %>
+                        <%= will_paginate @approved_bookings, container: false, param_name: 'approved_page' %>
                     </div>
                     <table class="table table-striped">
                       <thead class="text-center  table-primary">
@@ -81,18 +81,18 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <% @approved_bookings.each do |booking|%>
+                      <% @approved_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + " - " + booking.sub_space.name   %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                             <td><%= booking.user.email %></td>
-                            <td><%= booking.start_time.to_formatted_s(:short)    %> to <%= booking.end_time.to_s(:time)   %></td>
-                            <td><%= booking.public ? "Public" : "Private"%></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
+                            <td><%= booking.public ? 'Public' : 'Private' %></td>
                             <td>
                               <div class="btn-group" role="group">
-                                <%= link_to booking.public ? "Make Private" : "Make Public", sub_space_booking_publish_path(booking), method: :put, class: 'btn text-nowrap' + (booking.public ? ' btn-secondary' : ' btn-primary') %>
+                                <%= link_to booking.public ? 'Make Private' : 'Make Public', sub_space_booking_publish_path(booking), method: :put, class: 'btn text-nowrap' + (booking.public ? ' btn-secondary' : ' btn-primary') %>
                                 <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
                               </div>
                             </td>
@@ -113,8 +113,8 @@
                 <div id="declinedBody" class="collapse show accordion-body" aria-labelledby="declinedHeading" data-bs-parent="#declined-accordion">
                   <div class="table-responsive">
                     <div class="apple_pagination">
-                      <%= page_entries_info @declined_bookings, :model => 'subspace_booking' %>
-                      <%= will_paginate @declined_bookings, :container => false, :param_name => 'denied_page' %>
+                      <%= page_entries_info @declined_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @declined_bookings, container: false, param_name: 'denied_page' %>
                     </div>
                     <table class="table table-striped">
                       <thead class="text-center  table-primary">
@@ -129,14 +129,14 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <% @declined_bookings.each do |booking|%>
+                      <% @declined_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + " - " + booking.sub_space.name   %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                             <td><%= booking.user.email %></td>
-                            <td><%= booking.start_time.to_formatted_s(:short)    %> to <%= booking.end_time.to_s(:time)   %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
                             <td>
                               <div class="btn-group" role="group">
                                 <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
@@ -157,12 +157,12 @@
             <h5 class="card-title">Manage User Booking Permissions</h5>
           </div>
           <div class="card-body collapse show" id="user-body"  aria-labelledby="user-heading" data-bs-parent="#user-card">
-            <%=  form_with url:approve_access_sub_space_booking_index_path, method: :put do |f|  %>
+            <%= form_with url: approve_access_sub_space_booking_index_path, method: :put do |f| %>
               <div class="input-group mb-3">
-                <%=  f.select :user_id, [], {}, {class: "form-select form-control", id:"user_booking_select"} %>
-                <%=  f.submit "Permit Access ", class: "btn btn-primary"  %>
+                <%= f.select :user_id, [], {}, { class: 'form-select form-control', id: 'user_booking_select' } %>
+                <%= f.submit 'Permit Access ', class: 'btn btn-primary' %>
               </div>
-            <%  end  %>
+            <% end %>
             <div class="accordion mb-3" id="user-approval-accordion">
               <div class="accordion-item">
                 <div class="accordion-header accordion-button" id="user-approval-header" type="button" data-bs-toggle="collapse" data-bs-target="#userApprovalBody" aria-expanded="true" aria-controls="userApprovalBody">
@@ -182,7 +182,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <% UserBookingApproval.where(approved:false).each do |user_booking_approval|%>
+                    <% UserBookingApproval.where(approved: false).each do |user_booking_approval| %>
                       <tr>
                         <td><%= user_booking_approval.user.name %></td>
                         <td><%= user_booking_approval.user.email %></td>
@@ -221,7 +221,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <% UserBookingApproval.where(approved: true).each do |user_booking_approval|%>
+                    <% UserBookingApproval.where(approved: true).each do |user_booking_approval| %>
                       <tr>
                         <td><%= user_booking_approval.user.name %></td>
                         <td><%= user_booking_approval.user.email %></td>
@@ -258,8 +258,8 @@
                 <div id="pastPendingBody" class="collapse show accordion-body" aria-labelledby="pastPendingHeader " data-bs-parent="#past-pending-accordion">
                   <div class="table-responsive">
                     <div class="apple_pagination">
-                      <%= page_entries_info @old_pending_bookings, :model => 'subspace_booking' %>
-                      <%= will_paginate @old_pending_bookings, :container => false, :param_name => 'old_pending_page' %>
+                      <%= page_entries_info @old_pending_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @old_pending_bookings, container: false, param_name: 'old_pending_page' %>
                     </div>
                     <table class="table table-striped">
                       <thead class="text-center  table-primary">
@@ -273,14 +273,14 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <% @old_pending_bookings.each do |booking|%>
+                      <% @old_pending_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + " - " + booking.sub_space.name   %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                             <td><%= booking.user.email %></td>
-                            <td><%= booking.start_time.to_formatted_s(:short)    %> to <%= booking.end_time.to_s(:time)   %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
                           </tr>
                       <% end %>
                       </table>
@@ -298,8 +298,8 @@
                 <div id="pastApprovedBody" class="collapse show accordion-body" aria-labelledby="pastApprovedHeading" data-bs-parent="#past-approved-accordion">
                   <div class="table-responsive">
                     <div class="apple_pagination">
-                      <%= page_entries_info @old_approved_bookings, :model => 'subspace_booking' %>
-                      <%= will_paginate @old_approved_bookings, :container => false, :param_name => 'old_approved_page' %>
+                      <%= page_entries_info @old_approved_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @old_approved_bookings, container: false, param_name: 'old_approved_page' %>
                     </div>
                     <table class="table table-striped">
                       <thead class="text-center  table-primary">
@@ -313,14 +313,14 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <% @old_approved_bookings.each do |booking|%>
+                      <% @old_approved_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + " - " + booking.sub_space.name   %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                             <td><%= booking.user.email %></td>
-                            <td><%= booking.start_time.to_formatted_s(:short)    %> to <%= booking.end_time.to_s(:time)   %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
                           </tr>
                       <% end %>
                       </table>
@@ -338,8 +338,8 @@
                 <div id="pastDeclinedBody" class="collapse show accordion-body" aria-labelledby="pastDeclinedHeading" data-bs-parent="#past-declined-accordion">
                   <div class="table-responsive">
                     <div class="apple_pagination">
-                      <%= page_entries_info @old_declined_bookings, :model => 'subspace_booking' %>
-                      <%= will_paginate @old_declined_bookings, :container => false, :param_name => 'old_denied_page' %>
+                      <%= page_entries_info @old_declined_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @old_declined_bookings, container: false, param_name: 'old_denied_page' %>
                     </div>
                     <table class="table table-striped">
                       <thead class="text-center  table-primary">
@@ -353,14 +353,14 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <% @old_declined_bookings.each do |booking|%>
+                      <% @old_declined_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + " - " + booking.sub_space.name   %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                             <td><%= booking.user.email %></td>
-                            <td><%= booking.start_time.to_formatted_s(:short)    %> to <%= booking.end_time.to_s(:time)   %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
                           </tr>
                       <% end %>
                       </table>

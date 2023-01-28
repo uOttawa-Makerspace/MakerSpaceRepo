@@ -1,4 +1,4 @@
-<% provide(:title, "My Likes") %>
+<% provide(:title, 'My Likes') %>
 <section id="repositories-index">
   <div class="like-title">My Likes</div>
   <section class="repository-filter">
@@ -18,8 +18,8 @@
   <% @repositories.each_with_index do |repository, i| %>
     <div class="repository-container">
 
-      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(@photos[repository.id].image)}')"  %> >
-        <%= link_to "", repository_path(repository.user_username, repository.id), class: 'link' %>
+      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(@photos[repository.id].image)}')" %> >
+        <%= link_to '', repository_path(repository.user_username, repository.id), class: 'link' %>
       </div>
 
       <div class="repo-info">
@@ -27,7 +27,7 @@
           <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.id) %></div>
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-          <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+          <div><%= time_ago_in_words(repository.created_at) << ' ago' %></div>
         </div>
       </div>
     </div>

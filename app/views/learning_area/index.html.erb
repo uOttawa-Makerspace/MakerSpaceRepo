@@ -5,9 +5,9 @@
 
       <div class="accordion col-md-12" id="training-accordion">
         <% @skills.each do |skill| %>
-          <% next unless skill.trainings.present? %>
+          <% next if skill.trainings.blank? %>
           <% skill.trainings.each do |training| %>
-            <% next unless training.learning_modules.present? %>
+            <% next if training.learning_modules.blank? %>
             <div class="accordion-item">
               <div class="accordion-header" id="header-training-training-<%= training.id %>">
                 <div class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#training-training-<%= training.id %>">
@@ -65,14 +65,14 @@
                                 <form class="py-3">
                                   <div class="row">
                                     <div class="col-4">
-                                      <%= link_to "Edit", edit_learning_area_path(learning_module.id), class: "btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
+                                      <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-primary', style: 'opacity: 0.5' if current_user.admin? %>
                                     </div>
                                     <div class="col-4">
                                       <p><h6 class="text-center my-auto">
                                       <strong><%= learning_module.training.name %></strong></h6></p>
                                     </div>
                                     <div class="col-4 float-end">
-                                      <%= link_to 'Delete', learning_area_path(learning_module.id), method: :delete, class: "btn btn-danger", style: "opacity: 0.5", data: { confirm: 'Are you sure? This will delete the Learning Module.' } if current_user.admin? %>
+                                      <%= link_to 'Delete', learning_area_path(learning_module.id), method: :delete, class: 'btn btn-danger', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Learning Module.' } if current_user.admin? %>
                                     </div>
                                   </div>
                                 </form>
@@ -86,7 +86,7 @@
                                   <p><%= learning_module.level %></p>
                                 </div>
                                 <div>
-                                  <% @learning_module_track.call(learning_module).present? ? status = @learning_module_track.call(learning_module).first.status : status = 'Not Started' %>
+                                  <% status = @learning_module_track.call(learning_module).present? ? @learning_module_track.call(learning_module).first.status : 'Not Started' %>
                                   <button type='button' class='btn <%= return_button_class(status) %> disabled mb-2'><%= status %></button>
                                 </div>
                               </div>

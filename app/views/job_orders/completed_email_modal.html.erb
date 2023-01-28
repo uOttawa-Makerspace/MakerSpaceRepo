@@ -14,7 +14,7 @@
             <p>Send email to user</p>
             <%= hidden_field_tag :completed, true %>
             <%= hidden_field_tag :send_email, true %>
-            <%= f.submit "Job Completed", class: "btn btn-primary" %>
+            <%= f.submit 'Job Completed', class: 'btn btn-primary' %>
           </div>
         <% end %>
       </div>
@@ -23,7 +23,7 @@
         <%= form_for @job_order, url: job_order_processed_path(@job_order) do |f| %>
           <%= hidden_field_tag :completed, true %>
           <%= hidden_field_tag :send_email, false %>
-          <%= f.submit "Job Completed", class: "btn btn-danger" %>
+          <%= f.submit 'Job Completed', class: 'btn btn-danger' %>
         <% end %>
       </div>
     </div>

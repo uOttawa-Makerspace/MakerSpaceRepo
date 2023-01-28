@@ -2,7 +2,7 @@
   <div class="row">
     <div class="col-md-8">
 
-      <p><%= link_to "Back to Print Order Home", index_new_print_orders_path, class: "btn btn-primary" %></p>
+      <p><%= link_to 'Back to Print Order Home', index_new_print_orders_path, class: 'btn btn-primary' %></p>
       <br>
 
       <% if @print_order.order_type != "laser" %>
@@ -27,14 +27,14 @@
         available : Cash / Debit Card (Visa Debit or Mastercard Debit Only) / Credit Card (Visa / Mastercard) ***
       </p>
 
-      <%= form_for @print_order, multipart: true, url: {controller: "print_orders", action: "update_submission"} do |f| %>
+      <%= form_for @print_order, multipart: true, url: { controller: 'print_orders', action: 'update_submission' } do |f| %>
 
         <%= hidden_field_tag :id, @print_order.id %>
 
         <% if @print_order.order_type != 1 %>
           <div class="mb-3">
             <label>STL File</label>
-            <%= f.file_field :file, style: "display: block!important;" %>
+            <%= f.file_field :file, style: 'display: block!important;' %>
             <p>Current file : <%= @print_order.file.filename %></p>
           </div>
 
@@ -43,28 +43,28 @@
               <legend class="col-form-label col-sm-2 pt-0">Material</legend>
               <div class="col-sm-10">
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" id="PLA" name="print_order[material]" value="PLA" <%= return_checked(@print_order.material, "PLA") %>>
+                  <input type="radio" class="form-check-input" id="PLA" name="print_order[material]" value="PLA" <%= return_checked(@print_order.material, 'PLA') %>>
                   PLA<br>
                   <label class="form-check-label label-size">
                     (Most used material in 3D Printers)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" id="ABS" name="print_order[material]" value="ABS" <%= return_checked(@print_order.material, "ABS") %>>
+                  <input type="radio" class="form-check-input" id="ABS" name="print_order[material]" value="ABS" <%= return_checked(@print_order.material, 'ABS') %>>
                   ABS<br>
                   <label class="form-check-label label-size">
                     (Stronger than PLA)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" id="SST" name="print_order[material]" value="SST" <%= return_checked(@print_order.material, "SST") %>>
+                  <input type="radio" class="form-check-input" id="SST" name="print_order[material]" value="SST" <%= return_checked(@print_order.material, 'SST') %>>
                   Dimension SST ABS<br>
                   <label class="form-check-label label-size">
                     (Printer that uses ABS and soluble supports)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" id="M2Onyx" name="print_order[material]" value="M2 Onyx" <%= return_checked(@print_order.material, "M2 Onyx") %>>
+                  <input type="radio" class="form-check-input" id="M2Onyx" name="print_order[material]" value="M2 Onyx" <%= return_checked(@print_order.material, 'M2 Onyx') %>>
                   MarkForged Mark II Onyx (please specify continuous filaments in comments)<br>
                   <label class="form-check-label label-size">
                     (Filament with Nylon and chopped parts of carbon fiber)
@@ -83,21 +83,21 @@
               <legend class="col-form-label col-sm-2 pt-0">Quality</legend>
               <div class="col-sm-10">
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" name="print_order[comments]" value="Low Quality" <%= return_checked(@print_order.comments, "Low Quality") %>>
+                  <input type="radio" class="form-check-input" name="print_order[comments]" value="Low Quality" <%= return_checked(@print_order.comments, 'Low Quality') %>>
                   Low Quality<br>
                   <label class="form-check-label label-size">
                     (Short time and small price, 0.3mm Layer Height, 15% infill, supports if needed)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" name="print_order[comments]" value="Medium Quality" <%= return_checked(@print_order.comments, "Medium Quality") %>>
+                  <input type="radio" class="form-check-input" name="print_order[comments]" value="Medium Quality" <%= return_checked(@print_order.comments, 'Medium Quality') %>>
                   Medium Quality<br>
                   <label class="form-check-label label-size">
                     (Medium time and medium price, 0.2mm Layer Height, 15% infill, supports if needed)
                   </label>
                 </div>
                 <div class="form-check">
-                  <input type="radio" class="form-check-input" name="print_order[comments]" value="High Quality" <%= return_checked(@print_order.comments, "High Quality") %>> High
+                  <input type="radio" class="form-check-input" name="print_order[comments]" value="High Quality" <%= return_checked(@print_order.comments, 'High Quality') %>> High
                   Quality<br>
                   <label class="form-check-label label-size">
                     (Long time, more expensive, 0.1mm Layer Height, 20% infill, supports if needed)
@@ -115,7 +115,7 @@
           <div class="mb-3">
             <label>SVG File</label>
             <label class="label-size">(Please put cut lines as 0.001 Inch and everything at 100% Opacity)</label>
-            <%= f.file_field :file, style: "display: block!important;" %>
+            <%= f.file_field :file, style: 'display: block!important;' %>
             <p>Current file : <%= @print_order.file.filename %></p>
           </div>
 
@@ -172,13 +172,13 @@
             <legend class="col-form-label col-sm-2 pt-0">Expedited, extra charge ($20 CAD)</legend>
             <div class="col-sm-10">
               <div class="form-check">
-                <%= f.radio_button(:expedited, false, class: "form-check-input") %>
+                <%= f.radio_button(:expedited, false, class: 'form-check-input') %>
                 <label class="form-check-label" for="gridRadios3">
                   No
                 </label>
               </div>
               <div class="form-check">
-                <%= f.radio_button(:expedited, true, class: "form-check-input") %>
+                <%= f.radio_button(:expedited, true, class: 'form-check-input') %>
                 <label class="form-check-label" for="gridRadios3">
                   Yes
                 </label>

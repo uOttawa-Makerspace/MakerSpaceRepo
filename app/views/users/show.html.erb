@@ -17,15 +17,15 @@
       <!--      MORE INFO Section-->
       <div class="profile-work">
         <p>MORE INFO</p>
-        <%= fa_icon "location-arrow", text: @repo_user.location if @repo_user.location.present? %><br/>
-        <%= fa_icon "clock-o", text: "Joined on #{@repo_user.created_at.strftime("%B %d %Y")}" %><br/>
+        <%= fa_icon 'location-arrow', text: @repo_user.location if @repo_user.location.present? %><br/>
+        <%= fa_icon 'clock-o', text: "Joined on #{@repo_user.created_at.strftime('%B %d %Y')}" %><br/>
         <% if @github_username.present? %>
-          <%= fa_icon "github-alt" %>
+          <%= fa_icon 'github-alt' %>
           <%= link_to @github_username, "https://github.com/#{@github_username}" %><br/>
         <% end %>
         <% if @repo_user.url.present? %>
-          <%= fa_icon("link") %>
-          <%= link_to "#{@repo_user.url.gsub(/\Ahttps?:\/\//, '')}", @repo_user.url %> <br/>
+          <%= fa_icon('link') %>
+          <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br/>
         <% end %>
         <p>SKILLS</p>
         <% @certifications.each do |certification| %>
@@ -54,13 +54,13 @@
           <div class="col-md-9">
             <h3><%= @repo_user.name %></h3>
             <h6><%= @repo_user.username %></h6>
-            <%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <b><%= @repo_user.get_total_cc %></b>
+            <%= image_tag('cc.png', alt: 'CC', class: 'ccs') %>: <b><%= @repo_user.get_total_cc %></b>
             <p class="proile-rating">REPUTATION : <span><%= @repo_user.reputation %></span></p>
           </div>
           <div class="col-md-3">
             <!--      EDIT PROFILE Section-->
             <div>
-              <%= link_to fa_icon("cog", text: 'Edit Profile'), settings_profile_path, class: 'btn btn-secondary rounded-pill mb-2' if @repo_user.eql?(@user) %>
+              <%= link_to fa_icon('cog', text: 'Edit Profile'), settings_profile_path, class: 'btn btn-secondary rounded-pill mb-2' if @repo_user.eql?(@user) %>
               <% if @user.staff? %>
                 <%= render 'users/flag' %>
                 <div class="row mx-auto mb-2">
@@ -78,7 +78,7 @@
                   <% if @repo_user.rfid.present? %>
                     <div class="dropdown">
                       <button class="btn btn-outline-success dropdown-toggle" type="button" id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <%= fa_icon "check", text: "RFID Card Set" %>
+                        <%= fa_icon 'check', text: 'RFID Card Set' %>
                       </button>
                       <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
                         <h5 class="dropdown-header">RFID Card Set</h5>
@@ -88,14 +88,17 @@
                   <% else %>
                     <div class="dropdown">
                       <button class="btn btn-outline-danger dropdown-toggle" type="button" id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <%= fa_icon "ban", text: "RFID Card Not Set" %>
+                        <%= fa_icon 'ban', text: 'RFID Card Not Set' %>
                       </button>
                       <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
                         <h5 class="dropdown-header text-center">Un-Registered Cards</h5>
                         <% Rfid.recent_unset.first(5).each do |rfid| %>
-                          <% space = PiReader.find_by(pi_mac_address: rfid.mac_address).space.name rescue "unknown" %>
-                          <%=
-                            link_to ("Tapped at #{space} " + time_ago_in_words(rfid.updated_at) + " ago"),
+                          <% space = begin
+                                       PiReader.find_by(pi_mac_address: rfid.mac_address).space.name
+                                     rescue StandardError
+                                       'unknown'
+                                     end %>
+link_to ("Tapped at #{space} " + time_ago_in_words(rfid.updated_at) + ' ago'),
                                     staff_dashboard_link_rfid_path(user_id: @repo_user.id, card_number: rfid.card_number),
                                     action: :link_rfid, method: :put, class: 'dropdown-item' %>
                         <% end %>
@@ -204,7 +207,7 @@
               <label>Faculty</label>
             </div>
             <div class="col-md-6">
-              <label class="right-side"><%= @repo_user.faculty.present? ? @repo_user.faculty : "-" %></label>
+              <label class="right-side"><%= @repo_user.faculty.presence || '-' %></label>
             </div>
           </div>
           <div class="row mb-1">
@@ -212,7 +215,7 @@
               <label>Program</label>
             </div>
             <div class="col-md-6">
-              <label class="right-side"><%= @repo_user.program.present? ? @repo_user.program : "-" %></label>
+              <label class="right-side"><%= @repo_user.program.presence || '-' %></label>
             </div>
           </div>
           <div class="row mb-1">
@@ -220,7 +223,7 @@
               <label>Year of study</label>
             </div>
             <div class="col-md-6">
-              <label class="right-side"><%= @repo_user.year_of_study.present? ? @repo_user.year_of_study : "-" %></label>
+              <label class="right-side"><%= @repo_user.year_of_study.presence || '-' %></label>
             </div>
           </div>
           <div class="row mb-1">
@@ -228,7 +231,7 @@
               <label>Identity</label>
             </div>
             <div class="col-md-6">
-              <label class="right-side"><%= @repo_user.identity.present? ? @repo_user.identity.capitalize : "-" %></label>
+              <label class="right-side"><%= @repo_user.identity.present? ? @repo_user.identity.capitalize : '-' %></label>
             </div>
           </div>
           <% end %>
@@ -243,10 +246,10 @@
                       <div class="col-md-3">
                         <% if badges.badge_url.present? %>
                           <a target="_blank" class="w-100" href="<%= @acclaim_badge_url + badges.acclaim_badge_id %>">
-                            <%= image_tag(badges.badge_template.image_url, :style => "width: inherit", alt: 'Badge') %>
+                            <%= image_tag(badges.badge_template.image_url, style: 'width: inherit', alt: 'Badge') %>
                           </a>
                         <% else %>
-                          <%= image_tag(badges.badge_template.image_url, alt: 'Badge', :style => "width: inherit", 'data-bs-toggle' => "modal", 'data-bs-target' => "#pending_modal") %>
+                          <%= image_tag(badges.badge_template.image_url, alt: 'Badge', :style => 'width: inherit', 'data-bs-toggle' => 'modal', 'data-bs-target' => '#pending_modal') %>
                         <% end %>
                       </div>
                     <% end %>
@@ -260,15 +263,15 @@
           <div class="row">
             <div class="col-md-6">
               <% if @user.staff? %>
-                <%= form_tag(change_programs_users_path, method: "post") do %>
+                <%= form_tag(change_programs_users_path, method: 'post') do %>
                   <div class="field form-group">
                     <div class="checkbox-inline">
                       <%= hidden_field_tag :user_id, @repo_user.id %>
-                      <%= check_box_tag :dev_program, '1', @programs.include?(Program::DEV_PROGRAM), class:"form-check-input" %>
-                      <%= label_tag :dev_program, Program::DEV_PROGRAM, class:"form-label" %>
+                      <%= check_box_tag :dev_program, '1', @programs.include?(Program::DEV_PROGRAM), class: 'form-check-input' %>
+                      <%= label_tag :dev_program, Program::DEV_PROGRAM, class: 'form-label' %>
                       <br>
-                      <%= check_box_tag :volunteer, '1', @programs.include?(Program::VOLUNTEER), class:"form-check-input" %>
-                      <%= label_tag :volunteer, Program::VOLUNTEER, class:"form-label" %>
+                      <%= check_box_tag :volunteer, '1', @programs.include?(Program::VOLUNTEER), class: 'form-check-input' %>
+                      <%= label_tag :volunteer, Program::VOLUNTEER, class: 'form-label' %>
                     </div>
                   </div>
                   <button type="submit" class="btn btn-success">Change Programs</button>
@@ -283,14 +286,14 @@
         </div>
 
         <div class="tab-pane fade" id="unavailabilities-manager" role="tabpanel" aria-labelledby="unavailabilities-tab">
-          <%= link_to 'See Staff Unavailabilities', staff_availabilities_path, class: "btn btn-primary" %>
+          <%= link_to 'See Staff Unavailabilities', staff_availabilities_path, class: 'btn btn-primary' %>
         </div>
 
           <div class="tab-pane fade" id="profile-skills" role="tabpanel" aria-labelledby="profile-tab">
             <div class="col-md-12">
               <% @skills.each do |skill| %>
 
-              <div class="accordion mb-3" id="accordion-skill-<%=skill.name%>">
+              <div class="accordion mb-3" id="accordion-skill-<%= skill.name %>">
                 <div class="accordion-item">
                   <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#trainings-skill-<%= skill.id %>" aria-expanded="false" aria-controls="trainings-<%= skill.id %>">
                 <h6 id="header-skill-<%= skill.name %>">
@@ -300,9 +303,9 @@
                   <div id="trainings-skill-<%= skill.id %>" class="accordion-collapse collapse">
                     <% skill.trainings.each do |training| %>
 
-                        <div class="accordion" id="accordion-<% training.name%>">
+                        <div class="accordion" id="accordion-<% training.name %>">
                           <div class="accordion-item">
-                            <div class="accordion-header" id="header-training-<% training.name%>" type="button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>">
+                            <div class="accordion-header" id="header-training-<% training.name %>" type="button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>">
                               <div class="row">
                                 <div class="col-4"></div>
                                 <div class="col-4 text-center">
@@ -314,7 +317,7 @@
                               </div>
                             </div>
 
-                            <div id="training-<%= training.id %>" class="accordion-collapse collapse" aria-labelledby="header-<% training.name%>" data-bs-parent="#accordion-<% training.name%>">
+                            <div id="training-<%= training.id %>" class="accordion-collapse collapse" aria-labelledby="header-<% training.name %>" data-bs-parent="#accordion-<% training.name %>">
                               <div class="accordion-body">
                                 <% if training.description.present? %>
                                   <div class="jumbotron card bg-light text-center text-wrap">
@@ -326,7 +329,7 @@
                                   <% badge = @repo_user.highest_badge(training) %>
                                   <% unless badge.nil? %>
                                     <div class="col-lg-4 text-center">
-                                      <%= image_tag(badge.badge_template.image_url, alt: 'Badge', :style => "width: 150px") %>
+                                      <%= image_tag(badge.badge_template.image_url, alt: 'Badge', style: 'width: 150px') %>
                                     </div>
                                     <div class="col-lg-8 my-auto">
                                       <b><%= badge.badge_template.badge_name %>
@@ -380,10 +383,10 @@
                   </td>
                   <td><%= certification.trainer %></td>
                   <td>
-                    <%= if (@user.admin? || (@user.name == certification.trainer))
-                          link_to certification.created_at.strftime("%B %d, %Y"), staff_training_session_path(id: certification.training_session.id), style: "text-decoration:underline;"
+                    <%= if @user.admin? || (@user.name == certification.trainer)
+                          link_to certification.created_at.strftime('%B %d, %Y'), staff_training_session_path(id: certification.training_session.id), style: 'text-decoration:underline;'
                         else
-                          certification.created_at.strftime("%B %d, %Y")
+                          certification.created_at.strftime('%B %d, %Y')
                         end
                     %>
                   </td>
@@ -405,7 +408,7 @@
                   <label>Current role</label>
                 </div>
                 <div class="col-md-6">
-                  <label class="right-side"><%= @repo_user.role.gsub("_", " ").capitalize %></label>
+                  <label class="right-side"><%= @repo_user.role.gsub('_', ' ').capitalize %></label>
                 </div>
               </div>
               <div class="row">
@@ -414,13 +417,13 @@
                 </div>
                 <div class="col-md-6 float-end">
                   <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
-                    <%= radio_button_tag :role, "admin", @repo_user.admin?, class: "form-check-input" %>
-                    <%= label_tag :role_admin, "Admin", class:"form-label" %> <br/>
-                    <%= radio_button_tag :role, "staff", @repo_user.staff? && !@repo_user.admin?, class: "form-check-input" %>
-                    <%= label_tag :role_staff,"Staff", class:"form-label" %> <br/>
-                    <%= radio_button_tag :role, "regular_user", !(@repo_user.staff? || @repo_user.admin?), class: "form-check-input" %>
-                    <%= label_tag :role_regular, "Regular", class:"form-label" %> <br/>
-                    <%= submit_tag "Update", class: "btn btn-primary" %>
+                    <%= radio_button_tag :role, 'admin', @repo_user.admin?, class: 'form-check-input' %>
+                    <%= label_tag :role_admin, 'Admin', class: 'form-label' %> <br/>
+                    <%= radio_button_tag :role, 'staff', @repo_user.staff? && !@repo_user.admin?, class: 'form-check-input' %>
+                    <%= label_tag :role_staff, 'Staff', class: 'form-label' %> <br/>
+                    <%= radio_button_tag :role, 'regular_user', !(@repo_user.staff? || @repo_user.admin?), class: 'form-check-input' %>
+                    <%= label_tag :role_regular, 'Regular', class: 'form-label' %> <br/>
+                    <%= submit_tag 'Update', class: 'btn btn-primary' %>
                   <% end %>
                 </div>
               </div>
@@ -429,13 +432,13 @@
 
           <% if @repo_user.staff? %>
             <div class="tab-pane fade" id="staff-manager" role="tabpanel" aria-labelledby="profile-tab">
-              <%= form_tag(change_space_list_staff_spaces_path, method: "post") do %>
+              <%= form_tag(change_space_list_staff_spaces_path, method: 'post') do %>
                 <div class="field form-group">
                   <div class="checkbox-inline">
                     <%= hidden_field_tag :user_id, @repo_user.id %>
                     <% @space_list.each do |space| %>
-                      <%= check_box_tag "space[]", space.id, @staff_spaces.include?(space.id), class:"form-check-input" %>
-                      <%= label_tag "space[]", space.name %>
+                      <%= check_box_tag 'space[]', space.id, @staff_spaces.include?(space.id), class: 'form-check-input' %>
+                      <%= label_tag 'space[]', space.name %>
                       <br>
                     <% end %>
                   </div>
@@ -459,7 +462,7 @@
             <div class="row mb-1 text-center">
               <span style="font-weight:bold;color:#E91D1D"> Restoring a user will remove the deleted flag from their profile.</span>
               <br></br>
-              <%= link_to "Restore User", restore_user_admin_users_path(id: @repo_user.id), method: :patch, class: "btn btn-success w-25 mx-auto" %>
+              <%= link_to 'Restore User', restore_user_admin_users_path(id: @repo_user.id), method: :patch, class: 'btn btn-success w-25 mx-auto' %>
             </div>
           </div>
         <% end %>
@@ -468,7 +471,11 @@
   </div>
 <!--      FOOTER Section-->
 <section id="user-show-links" class="m-5" style="margin-bottom: 20px!important;">
-  <% active = params[:show].eql?("makes") ? ["#eee", "#5f9ea0", "#eee"] : params[:show].eql?("projects_assigned") ? ["#eee", "#eee", "#5f9ea0"] : ["#5f9ea0", "#eee", "#eee"] %>
+  <% active = if params[:show].eql?('makes')
+                ['#eee', '#5f9ea0', '#eee']
+              else
+                params[:show].eql?('projects_assigned') ? ['#eee', '#eee', '#5f9ea0'] : ['#5f9ea0', '#eee', '#eee']
+              end %>
   <%= link_to "#{user_path(show: :repositories)}#user-show-links", style: 'border-color:' << active[0] do %>
     <span class="number"><%= @repositories.count %></span> REPOS
   <% end %>
@@ -482,25 +489,29 @@
 
 <section id="repositories-container" class="m-5">
   <% if @repositories.empty? or params[:show].eql?('makes') and @makes.empty? %>
-    <%= content_tag :div, "#{@repo_user.username} doesn't have any repositories yet.", class: "empty-repo" %>
+    <%= tag.div("#{@repo_user.username} doesn't have any repositories yet.", class: 'empty-repo') %>
   <% else %>
     <div class="apple_pagination">
-      <%= page_entries_info @repositories, :model => 'Repository' %>
-      <%= will_paginate @repositories, :container => false %>
+      <%= page_entries_info @repositories, model: 'Repository' %>
+      <%= will_paginate @repositories, container: false %>
     </div>
     <br>
   <% end %>
-  <% repos = params[:show].eql?('makes') ? @makes : params[:show].eql?('projects_assigned') ? @joined_projects : @repositories %>
+  <% repos = if params[:show].eql?('makes')
+               @makes
+             else
+               params[:show].eql?('projects_assigned') ? @joined_projects : @repositories
+             end %>
   <% if repos != @joined_projects %>
     <% repos.each do |repository| %>
       <div class="repository-container">
-        <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if (repository.photos.present? and repository.photos.first.present? and repository.photos.first.image.attached?)}')" %> >
+        <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.present? && repository.photos.first.present? && repository.photos.first.image.attached?}')" %> >
           <% if repository.user_username.eql?(@user.username) %>
-            <%= link_to "Delete", repository_path(repository.user_username, repository.id),
-                        method: :delete, data: { confirm: "Are you sure? Once you delete the repository there is no coming back!" }, class: 'btn btn-danger btn-sm float-end m-1', style: 'display: none' %>
-            <%= link_to "Edit", edit_repository_path(repository.user_username, repository.id), class: 'btn btn-secondary btn-sm float-end m-1', style: 'display: none' %>
+            <%= link_to 'Delete', repository_path(repository.user_username, repository.id),
+                        method: :delete, data: { confirm: 'Are you sure? Once you delete the repository there is no coming back!' }, class: 'btn btn-danger btn-sm float-end m-1', style: 'display: none' %>
+            <%= link_to 'Edit', edit_repository_path(repository.user_username, repository.id), class: 'btn btn-secondary btn-sm float-end m-1', style: 'display: none' %>
           <% end %>
-          <%= link_to "", repository_path(repository.user_username, repository.slug), class: 'link' %>
+          <%= link_to '', repository_path(repository.user_username, repository.slug), class: 'link' %>
         </div>
 
         <div class="repo-info">
@@ -508,7 +519,7 @@
             <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
             <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %></div>
             <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-            <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+            <div><%= time_ago_in_words(repository.created_at) << ' ago' %></div>
           </div>
         </div>
       </div>
@@ -528,7 +539,7 @@
         <tbody>
         <tr>
           <td class="titlepp"><%= joined_project.project_proposal.title %></td>
-          <td><%= link_to 'Show', joined_project.project_proposal, class: "green-button" %></td>
+          <td><%= link_to 'Show', joined_project.project_proposal, class: 'green-button' %></td>
         </tr>
     <% end %>
     </tbody>
@@ -571,10 +582,10 @@
           <div class="mb-3 attach">
           <%= form_tag(delete_user_admin_users_path(id: @repo_user.id), method: :delete)  do %>
             <span> Please re-enter your password to confirm your identity.</span>
-            <%= hidden_field_tag "id", @repo_user.id%>
-            <%= label_tag :delete_user, "Are you sure you want to delete this user?", class:"form-label mb-3" %>
+            <%= hidden_field_tag 'id', @repo_user.id %>
+            <%= label_tag :delete_user, 'Are you sure you want to delete this user?', class: 'form-label mb-3' %>
             <%= password_field_tag :password, nil, placeholder: t('sessions.login.password'), class: 'form-control mb-3' %>
-            <%= submit_tag "Delete", class: "btn btn-danger" %>
+            <%= submit_tag 'Delete', class: 'btn btn-danger' %>
           <% end %>
           </div>
       </div>
