@@ -2,10 +2,13 @@
     <%= fa_icon 'bars', class: 'nav-link ms-4', id: 'quick-access-bar-toggle' %>
     <div class="container-fluid  flex-row align-self-end" id="quick-access-container">
         <ul class="navbar-nav mr-auto d-flex flex-row">
+        <%=  %>
             <% QuickAccessLink.where(user: current_user).each do |link| %>
                 <li class="nav-item mx-2">
                     <a class="nav-link d-inline" href="<%= link.path %>"><%= link.name %></a>
-                    <%= link_to fa_icon('times', class: 'text-danger d-inline'), quick_access_links_delete_path(link), method: :delete, remote: true %>
+                    <% if link.path == request.path_info %>
+                        <%= link_to fa_icon('times', class: 'text-danger d-inline'), quick_access_links_delete_path(link), method: :delete, remote: true %>
+                    <% end %>
                 </li>
             <% end %>
         </ul>

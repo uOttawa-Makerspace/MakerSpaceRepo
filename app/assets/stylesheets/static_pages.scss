@@ -8,15 +8,15 @@
   z-index: 50;
 }
 #quick-access-bar.stowed {
-  width: 1rem;
-  transition: width 0.5s ease-in-out;
+  width: 0;
 }
 #quick-access-container {
-  transition: transform 0.15s ease-in-out;
+  display: flex;
+  transition: display 0.15s ease-in-out;
 }
 #quick-access-container.stowed {
   display: none;
-  transition: transform 0.15s ease-in-out;
+  transition: display 0.15s ease-in-out;
 }
 #add-new-quick-access {
   cursor: pointer;

@@ -33,13 +33,13 @@ document.addEventListener("turbolinks:load", function () {
       nav.classList.add("transition");
     }
     if (dark) {
-      nav.classList.add("bg-dark-gradient");
+      nav.classList.add("bg-transparent");
       nav.classList.add("navbar-dark");
 
       nav.classList.remove("navbar-light");
       nav.classList.remove("bg-light");
       if (qa) {
-        qa.classList.add("bg-dark-gradient");
+        qa.classList.add("bg-transparent");
         qa.classList.add("navbar-dark");
         qa.classList.remove("navbar-light");
         qa.classList.remove("bg-light");
@@ -56,12 +56,12 @@ document.addEventListener("turbolinks:load", function () {
       nav.classList.add("navbar-light");
 
       nav.classList.remove("navbar-dark");
-      nav.classList.remove("bg-dark-gradient");
+      nav.classList.remove("bg-transparent");
       if (qa) {
         qa.classList.add("bg-light");
         qa.classList.add("navbar-light");
         qa.classList.remove("navbar-dark");
-        qa.classList.remove("bg-dark-gradient");
+        qa.classList.remove("bg-transparent");
         document.getElementById("quick-access-bar-toggle").style.color =
           "black";
       }
@@ -158,7 +158,7 @@ document.addEventListener("turbolinks:load", function () {
       .getElementById("add-new-quick-access")
       .addEventListener("click", () => {
         // Get window title and path
-        let title = document.title;
+        let title = window.location.href.split("/").at(-1);
         let path = window.location.pathname;
         // Send request to server
         fetch("/quick_access_links/create", {
@@ -175,17 +175,6 @@ document.addEventListener("turbolinks:load", function () {
           Turbolinks.visit(window.location.href);
         });
       });
-  }
-  function removeQuickAccessLink(id) {
-    fetch(`/quick_access_links/destroy/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        accept: "application/json",
-      },
-    }).then((response) => {
-      Turbolinks.visit(window.location.href);
-    });
   }
   if (document.getElementById("quick-access-bar-toggle")) {
     document
