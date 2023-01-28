@@ -558,6 +558,6 @@ Rails.application.routes.draw do
   namespace :quick_access_links do
     post :create
     post :update, path: "update/:id", as: "update"
-    delete :destroy, path: "destroy/:id", as: "destroy"
+    delete :delete, path: "delete/:id", as: "delete"
   end
 end

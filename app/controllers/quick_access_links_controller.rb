@@ -13,13 +13,20 @@ class QuickAccessLinksController < ApplicationController
   end
 
   def create
-    QuickAccessLink.create(
-      user_id: current_user.id,
-      name: params[:name],
-      path: params[:path]
-    )
-    redirect_to user_path(current_user.username),
-                notice: "Quick access link created"
+    qal =
+      QuickAccessLink.new(
+        user_id: current_user.id,
+        name: params[:name],
+        path: params[:path]
+      )
+    if qal.save
+      redirect_back fallback_location: root_path,
+                    notice: "Quick access link created"
+    else
+      redirect_back fallback_location: root_path,
+                    notice:
+                      "Quick access link not created, #{qal.errors.full_messages.join(", ")}"
+    end
   end
 
   def update
@@ -37,6 +44,6 @@ class QuickAccessLinksController < ApplicationController
 
   def delete
     QuickAccessLink.find(params[:id]).destroy
-    redirect_to user_path(current_user.username), notice: "Link deleted"
+    redirect_back fallback_location: root_path, notice: "Link deleted"
   end
 end

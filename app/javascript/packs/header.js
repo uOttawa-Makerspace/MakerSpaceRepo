@@ -13,6 +13,7 @@
 
 document.addEventListener("turbolinks:load", function () {
   var nav = document.getElementById("header-navbar");
+  var qa = document.getElementById("quick-access-bar");
   var navToggler = document.getElementById("navbar-toggle-button");
   var navbarSupportedContent = document.getElementById(
     "navbarSupportedContent"
@@ -37,6 +38,15 @@ document.addEventListener("turbolinks:load", function () {
 
       nav.classList.remove("navbar-light");
       nav.classList.remove("bg-light");
+      if (qa) {
+        qa.classList.add("bg-dark-gradient");
+        qa.classList.add("navbar-dark");
+        qa.classList.remove("navbar-light");
+        qa.classList.remove("bg-light");
+        document.getElementById("quick-access-bar-toggle").style.color =
+          "white";
+      }
+
       if (cc_image_white && cc_image_black) {
         cc_image_white.style.display = "inline";
         cc_image_black.style.display = "none";
@@ -47,6 +57,15 @@ document.addEventListener("turbolinks:load", function () {
 
       nav.classList.remove("navbar-dark");
       nav.classList.remove("bg-dark-gradient");
+      if (qa) {
+        qa.classList.add("bg-light");
+        qa.classList.add("navbar-light");
+        qa.classList.remove("navbar-dark");
+        qa.classList.remove("bg-dark-gradient");
+        document.getElementById("quick-access-bar-toggle").style.color =
+          "black";
+      }
+
       if (cc_image_white && cc_image_black) {
         cc_image_white.style.display = "none";
         cc_image_black.style.display = "inline";
