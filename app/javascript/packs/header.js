@@ -12,15 +12,16 @@
  */
 
 document.addEventListener("turbolinks:load", function () {
-  var nav = document.getElementById("header-navbar");
-  var qa = document.getElementById("quick-access-bar");
-  var navToggler = document.getElementById("navbar-toggle-button");
-  var navbarSupportedContent = document.getElementById(
+  const nav = document.getElementById("header-navbar");
+  const qa = document.getElementById("quick-access-bar");
+  const qaToggle = document.getElementById("quick-access-bar-toggle");
+  const navToggler = document.getElementById("navbar-toggle-button");
+  const navbarSupportedContent = document.getElementById(
     "navbarSupportedContent"
   );
-  var chevron = document.getElementsByClassName("down-indicator")[0];
-  var cc_image_white = document.getElementById("myCcWhite");
-  var cc_image_black = document.getElementById("myCcBlack");
+  const chevron = document.getElementsByClassName("down-indicator")[0];
+  const cc_image_white = document.getElementById("myCcWhite");
+  const cc_image_black = document.getElementById("myCcBlack");
   function doTransition(dark, animate) {
     if (
       !(
@@ -43,8 +44,8 @@ document.addEventListener("turbolinks:load", function () {
         qa.classList.add("navbar-dark");
         qa.classList.remove("navbar-light");
         qa.classList.remove("bg-light");
-        document.getElementById("quick-access-bar-toggle").style.color =
-          "white";
+        qaToggle.classList.remove("text-dark");
+        qaToggle.classList.add("text-white");
       }
 
       if (cc_image_white && cc_image_black) {
@@ -62,8 +63,8 @@ document.addEventListener("turbolinks:load", function () {
         qa.classList.add("navbar-light");
         qa.classList.remove("navbar-dark");
         qa.classList.remove("bg-transparent");
-        document.getElementById("quick-access-bar-toggle").style.color =
-          "black";
+        qaToggle.classList.remove("text-white");
+        qaToggle.classList.add("text-dark");
       }
 
       if (cc_image_white && cc_image_black) {
@@ -158,7 +159,7 @@ document.addEventListener("turbolinks:load", function () {
       .getElementById("add-new-quick-access")
       .addEventListener("click", () => {
         // Get window title and path
-        let title = window.location.href.split("/").at(-1);
+        let title = document.title.split(" | MakerRepo").at(0);
         let path = window.location.pathname;
         // Send request to server
         fetch("/quick_access_links/create", {
@@ -183,7 +184,6 @@ document.addEventListener("turbolinks:load", function () {
         document
           .getElementById("quick-access-container")
           .classList.toggle("stowed");
-        document.getElementById("quick-access-bar").classList.toggle("stowed");
       });
   }
 });
