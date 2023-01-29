@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_01_19_170357) do
+ActiveRecord::Schema.define(version: 2023_01_25_153616) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -748,6 +748,15 @@ ActiveRecord::Schema.define(version: 2023_01_19_170357) do
     t.bigint "training_id", null: false
   end
 
+  create_table "quick_access_links", force: :cascade do |t|
+    t.string "name"
+    t.string "path"
+    t.bigint "user_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_quick_access_links_on_user_id"
+  end
+
   create_table "repo_files", id: :serial, force: :cascade do |t|
     t.integer "repository_id"
     t.datetime "created_at", null: false
@@ -1140,6 +1149,7 @@ ActiveRecord::Schema.define(version: 2023_01_19_170357) do
   add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
   add_foreign_key "project_kits", "users"
+  add_foreign_key "quick_access_links", "users"
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"

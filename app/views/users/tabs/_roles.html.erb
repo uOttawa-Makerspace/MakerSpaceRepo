@@ -1,0 +1,26 @@
+<div class="row mb-1">
+  <div class="col-md-6">
+    <label>Current role</label>
+  </div>
+  <div class="col-md-6">
+    <label class="right-side">
+      <%= @repo_user.role.gsub('_', ' ').capitalize %>
+    </label>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6">
+    <label>Update Role</label>
+  </div>
+  <div class="col-md-6 float-end">
+    <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
+      <%= radio_button_tag :role, 'admin', @repo_user.admin?, class: 'form-check-input' %>
+      <%= label_tag :role_admin, 'Admin', class: 'form-label' %> <br />
+      <%= radio_button_tag :role, 'staff', @repo_user.staff? && !@repo_user.admin?, class: 'form-check-input' %>
+      <%= label_tag :role_staff, 'Staff', class: 'form-label' %> <br />
+      <%= radio_button_tag :role, 'regular_user', !(@repo_user.staff? || @repo_user.admin?), class: 'form-check-input' %>
+      <%= label_tag :role_regular, 'Regular', class: 'form-label' %> <br />
+      <%= submit_tag 'Update', class: 'btn btn-primary' %>
+    <% end %>
+  </div>
+</div>

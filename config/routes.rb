@@ -554,4 +554,10 @@ Rails.application.routes.draw do
     post :create, path: "/:id"
     delete :destroy, path: "/:id/destroy"
   end
+
+  namespace :quick_access_links do
+    post :create
+    post :update, path: "update/:id", as: "update"
+    delete :delete, path: "delete/:id", as: "delete"
+  end
 end
