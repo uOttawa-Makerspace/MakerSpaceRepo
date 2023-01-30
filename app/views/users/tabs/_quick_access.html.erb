@@ -1,5 +1,5 @@
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-xxl-6">
       Current Quick Access Paths:
       <% QuickAccessLink.where(user_id: current_user).each do |quick_access| %>
         <%= form_with url: quick_access_links_update_path(quick_access.id), method: 'post', controller: 'quick_access_links' do %>
@@ -23,12 +23,12 @@
             </div>
         <% end %>
         <div class="col-md  d-flex w-100 justify-content-center align-items-center">
-          <%= button_to 'Delete', quick_access_links_delete_path(quick_access), method: 'delete', controller: 'quick_access_links', class: 'btn btn-danger form-control', form_class:'w-100' %>
+          <%= button_to 'Delete', quick_access_links_delete_path(quick_access), method: 'delete', controller: 'quick_access_links', class: 'btn btn-danger form-control', form_class: 'w-100' %>
         </div>
       <% end %>
       </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-xxl-6">
       New Quick Access Path:
       <%= form_with url: quick_access_links_create_path, method: 'post', controller: 'quick_access_links' do %>
         <div class="row g-2">
