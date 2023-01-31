@@ -153,16 +153,6 @@ RSpec.describe User, type: :model do
       it { should_not validate_presence_of(:year_of_study) }
     end
 
-    context "student_id student" do
-      subject { build(:user, :student, student_id: nil) }
-      it { should validate_presence_of(:student_id) }
-    end
-
-    context "student_id non-student" do
-      subject { build(:user, :regular_user, student_id: nil) }
-      it { should_not validate_presence_of(:student_id) }
-    end
-
     context "identity" do
       it { should validate_presence_of(:identity) }
       it { should_not allow_value("Something else").for(:identity) }

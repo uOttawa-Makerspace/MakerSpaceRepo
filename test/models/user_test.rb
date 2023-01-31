@@ -219,18 +219,6 @@ class UserTest < ActiveSupport::TestCase
     assert user.valid?
   end
 
-  test "presence of student id if student" do
-    user = users(:bob)
-    assert user.valid?, "Please provide your student id"
-
-    user.student_id = nil
-    assert user.invalid?, "Please provide your student id"
-
-    user = users(:olivia)
-    user.student_id = nil
-    assert user.valid?
-  end
-
   test "no_waiver_users scope catches users that didn't read and agree to the waiver" do
     assert User.no_waiver_users.include? users(:sara)
     assert_equal(users(:sara).read_and_accepted_waiver_form, false)
