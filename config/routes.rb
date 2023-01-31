@@ -248,6 +248,7 @@ Rails.application.routes.draw do
         post :update_max_capacity
         post :add_space_hours
         delete :delete_space_hour
+        post :add_training_levels
         put :update_staff_needed_calendars
       end
     end
