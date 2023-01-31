@@ -14,7 +14,7 @@
   <body>
     <%= render 'layouts/header' %>
     
-    <%= render :partial => 'partials/announcements' %>
+    <%= render partial: 'partials/announcements' %>
 
     <%= render 'layouts/development_program_header' %>
 
@@ -26,6 +26,6 @@
       </div>
     </section>
     <%= render 'layouts/footer' %>
-    <%= javascript_pack_tag controller_name if File.exists?("#{Rails.root}/app/javascript/packs/#{controller_name}.js") %>
+    <%= javascript_pack_tag controller_name if File.exist?("#{Rails.root}/app/javascript/packs/#{controller_name}.js") %>
   </body>
 </html>

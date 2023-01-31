@@ -4,8 +4,8 @@
   <title>Volunteer Program | <%= page_title(yield(:title)) %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <%= favicon_link_tag 'site-icon.jpg' %>
-    <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
-    <%= javascript_include_tag "vendor",      :debug => false %>
+    <%= stylesheet_link_tag 'vendor', media: 'all', debug: false %>
+    <%= javascript_include_tag 'vendor', debug: false %>
     <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
@@ -15,7 +15,7 @@
 <body data-no-turbolink="true">
 	<%= render 'layouts/header' %>
 
-  <%= render :partial => 'partials/announcements' %>
+  <%= render partial: 'partials/announcements' %>
 
   <%= render 'layouts/volunteer_header' %>
 
@@ -30,6 +30,6 @@
   </section>
 
   <%= render 'layouts/footer' %>
-  <%= javascript_pack_tag controller_name if File.exists?("#{Rails.root}/app/javascript/packs/#{controller_name}.js") %>
+  <%= javascript_pack_tag controller_name if File.exist?("#{Rails.root}/app/javascript/packs/#{controller_name}.js") %>
 </body>
 </html>

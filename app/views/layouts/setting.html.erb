@@ -4,8 +4,8 @@
   <title>Settings | MakerRepo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <%= favicon_link_tag 'site-icon.jpg' %>
-    <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
-    <%= javascript_include_tag "vendor",      :debug => false %>
+    <%= stylesheet_link_tag 'vendor', media: 'all', debug: false %>
+    <%= javascript_include_tag 'vendor', debug: false %>
     <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
@@ -18,16 +18,16 @@
 		<div class="setting-grid">
 			<div class="setting-side-panel">
 				<ul>
-		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
+		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if
             current_page?(action: 'profile', controller: 'settings') %> >
 		      	<%= link_to 'Edit settings', settings_profile_path %>
 		      </li>
-		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if 
+		      <li class="setting-menu-item" <%= 'style= font-weight:400;color:#5f9ea0;' if
             current_page?(action: 'admin', controller: 'settings') %> >
 		      	<%= link_to 'Account Settings', settings_admin_path %>
 		      </li>
 		      <li>
-		      <%= link_to "View Profile", user_path(@user.username) if current_page?(action: 'profile', controller: 'settings') || current_page?(action: 'admin', controller: 'settings')%>
+		      <%= link_to 'View Profile', user_path(@user.username) if current_page?(action: 'profile', controller: 'settings') || current_page?(action: 'admin', controller: 'settings') %>
 		      </li>
 				</ul>
 			</div>

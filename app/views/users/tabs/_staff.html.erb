@@ -1,0 +1,13 @@
+<%= form_tag(change_space_list_staff_spaces_path, method: 'post') do %>
+<div class="field form-group">
+  <div class="checkbox-inline">
+    <%= hidden_field_tag :user_id, @repo_user.id %>
+    <% @space_list.each do |space| %>
+      <%= check_box_tag 'space[]', space.id, @staff_spaces.include?(space.id), class: 'form-check-input' %>
+      <%= label_tag 'space[]', space.name %>
+      <br>
+    <% end %>
+  </div>
+</div>
+<button type="submit" class="btn btn-success mt-2">Change staff spaces</button>
+<% end %>

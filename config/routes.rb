@@ -248,6 +248,7 @@ Rails.application.routes.draw do
         post :update_max_capacity
         post :add_space_hours
         delete :delete_space_hour
+        post :add_training_levels
         put :update_staff_needed_calendars
       end
     end
@@ -466,7 +467,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :announcements
+  resources :announcements do
+    collection { put :dismiss }
+  end
 
   resources :volunteer_task_joins, only: [:create] do
     collection { post :remove }
@@ -551,5 +554,11 @@ Rails.application.routes.draw do
   namespace :comments do
     post :create, path: "/:id"
     delete :destroy, path: "/:id/destroy"
+  end
+
+  namespace :quick_access_links do
+    post :create
+    post :update, path: "update/:id", as: "update"
+    delete :delete, path: "delete/:id", as: "delete"
   end
 end
