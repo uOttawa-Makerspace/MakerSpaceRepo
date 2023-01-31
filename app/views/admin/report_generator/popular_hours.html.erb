@@ -1,4 +1,4 @@
-<% provide(:title, "Reports") %>
+<% provide(:title, 'Reports') %>
 <section>
   <h1 class="text-center py-4 fw-bold">Popular Hours</h1>
 
@@ -6,19 +6,19 @@
     <div style=" display: flex; justify-content: center;">
       <div class="row align-items-center">
         <div class="mb-3 col-md-4" style="width: 300px">
-          <%= label_tag(:start_date, "From", class:"form-label") %>
-          <%= date_field_tag(:start_date, 1.month.ago.beginning_of_month.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields)) %>
+          <%= label_tag(:start_date, 'From', class: 'form-label') %>
+          <%= date_field_tag(:start_date, 1.month.ago.beginning_of_month.strftime('%Y-%m-%d'), class: %w[form-control range-type-date-range-fields]) %>
         </div>
 
         <div class="mb-3 col-md-4" style="width: 300px">
-          <%= label_tag(:end_date, "To", class:"form-label") %>
-          <%= date_field_tag(:end_date, DateTime.now.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields)) %>
+          <%= label_tag(:end_date, 'To', class: 'form-label') %>
+          <%= date_field_tag(:end_date, DateTime.now.strftime('%Y-%m-%d'), class: %w[form-control range-type-date-range-fields]) %>
         </div>
 
         <div class="mb-3 col-md-4">
           <label for="end_date">Start</label>
           <br>
-          <%= button_tag("Generate", {class: "btn btn-primary"}) %>
+          <%= button_tag('Generate', { class: 'btn btn-primary' }) %>
         </div>
 
       </div>
@@ -29,14 +29,14 @@
   <ul class="nav nav-tabs">
     <% @spaces.each do |space| %>
       <li class="nav-item">
-        <a class="nav-link  <%= @space.name == space.name ? "active" : "" %>" data-bs-toggle="tab" href="#<%= space.name.gsub(" ", "-") %>"><%= space.name %></a>
+        <a class="nav-link  <%= @space.name == space.name ? 'active' : '' %>" data-bs-toggle="tab" href="#<%= space.name.gsub(' ', '-') %>"><%= space.name %></a>
       </li>
     <% end %>
   </ul>
 
   <div class="tab-content">
     <% @spaces.each do |space| %>
-      <div class="tab-pane container <%= @space.name == space.name ? "active" : "" %>" id="<%= space.name.gsub(" ", "-") %>">
+      <div class="tab-pane container <%= @space.name == space.name ? 'active' : '' %>" id="<%= space.name.gsub(' ', '-') %>">
         <br>
         <% popular_hours = PopularHour.from_space(space.id) %>
 
@@ -50,10 +50,10 @@
 
               <div class="col-4">
                 <h3 class="text-center"><%= @weekdays[popular_hour.first.day] if popular_hour.present? %></h3>
-                <canvas id="<%= space.name.gsub(" ", "-") %>-<%= popular_hour.first.day if popular_hour.present? %>" width="450" height="300"></canvas>
+                <canvas id="<%= space.name.gsub(' ', '-') %>-<%= popular_hour.first.day if popular_hour.present? %>" width="450" height="300"></canvas>
               </div>
               <script type="text/javascript" charset="utf-8">
-                  var ctx = document.getElementById('<%= space.name.gsub(" ", "-") %>-<%= popular_hour.first.day if popular_hour.present? %>').getContext('2d');
+                  var ctx = document.getElementById('<%= space.name.gsub(' ', '-') %>-<%= popular_hour.first.day if popular_hour.present? %>').getContext('2d');
                   var myChart = new Chart(ctx, {
                       type: 'bar',
                       data: {

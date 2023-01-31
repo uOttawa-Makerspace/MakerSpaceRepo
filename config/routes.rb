@@ -237,9 +237,12 @@ Rails.application.routes.draw do
             as: "set_max_booking_duration",
             action: "set_max_booking_duration"
       delete "/edit/:id", as: "delete_sub_space", action: "delete_sub_space"
-      patch "/edit/:id",
-            as: "change_sub_space_approval",
-            action: "change_sub_space_approval"
+      put "/edit/:id",
+          as: "change_sub_space_approval",
+          action: "change_sub_space_approval"
+      post "/edit/:id",
+           as: "change_sub_space_default_public",
+           action: "change_sub_space_default_public"
 
       collection do
         post :update_max_capacity
@@ -261,8 +264,10 @@ Rails.application.routes.draw do
         get :get_shifts
         get :get_staff_needed
         get :get_external_staff_needed
+        get :get_shift
         get :pending_shifts
         get :shift_suggestions
+        get :ics
         post :update_color
         post :confirm_shifts
         post :clear_pending_shifts
@@ -293,7 +298,7 @@ Rails.application.routes.draw do
         post "add_area"
         post "add_printer"
         # post 'rename_category'
-        patch "update_i_printed_it"
+        patch "update_job_order_processed"
         post "remove_category"
         post "remove_area"
         post "remove_printer"
@@ -345,12 +350,14 @@ Rails.application.routes.draw do
   resources :sub_space_booking, only: %i[index create] do
     put :decline
     put :approve
-
+    put :publish
+    get :edit
+    patch :update
+    delete :delete, path: "delete/:sub_space_booking_id"
     collection do
       put :request_access
       put :deny_access
       put :approve_access
-      get :admin
       get :bookings
       get :users
     end
@@ -460,7 +467,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :announcements
+  resources :announcements do
+    collection { put :dismiss }
+  end
 
   resources :volunteer_task_joins, only: [:create] do
     collection { post :remove }
@@ -545,5 +554,11 @@ Rails.application.routes.draw do
   namespace :comments do
     post :create, path: "/:id"
     delete :destroy, path: "/:id/destroy"
+  end
+
+  namespace :quick_access_links do
+    post :create
+    post :update, path: "update/:id", as: "update"
+    delete :delete, path: "delete/:id", as: "delete"
   end
 end

@@ -1,7 +1,7 @@
 <%= form_for(@price_rule) do |f| %>
   <% if @price_rule.errors.any? %>
     <div id="error_explanation">
-      <h2><%= pluralize(@price_rule.errors.count, "error") %> prohibited this price_rule from being saved:</h2>
+      <h2><%= pluralize(@price_rule.errors.count, 'error') %> prohibited this price_rule from being saved:</h2>
 
       <ul>
       <% @price_rule.errors.full_messages.each do |message| %>
@@ -13,24 +13,24 @@
 
   <div class="text-center">
     <div class="col-lg-4 text-center mx-auto">
-      <%= f.label :title, 'Title of the price rule', class:"form-label" %>
-      <%= f.text_field :title, class: "form-control", required: true %>
+      <%= f.label :title, 'Title of the price rule', class: 'form-label' %>
+      <%= f.text_field :title, class: 'form-control', required: true %>
     </div>
     <div class="mb-3 col-lg-4 mx-auto">
-      <%= f.label :value, 'Value of the price rule (In $)', class:"form-label" %>
-      <%= f.number_field :value, class: "form-control",  min: 0, required: true %>
+      <%= f.label :value, 'Value of the price rule (In $)', class: 'form-label' %>
+      <%= f.number_field :value, class: 'form-control', min: 0, required: true %>
     </div>
     <div class="mb-3 col-lg-4 mx-auto">
-      <%= f.label :cc, 'Value of the price rule (In CC Points)', class:"form-label" %>
-      <%= f.number_field :cc, class: "form-control", min: 0, required: true %>
+      <%= f.label :cc, 'Value of the price rule (In CC Points)', class: 'form-label' %>
+      <%= f.number_field :cc, class: 'form-control', min: 0, required: true %>
     </div>
     <div class="mb-3 col-lg-4 mx-auto">
-      <%= f.label :expired_at, 'When the Price Rule should expire', class:"form-label" %>
-      <%= f.date_field :expired_at, class: "form-control" %>
+      <%= f.label :expired_at, 'When the Price Rule should expire', class: 'form-label' %>
+      <%= f.date_field :expired_at, class: 'form-control' %>
     </div>
     <br />
     <div class="actions">
-      <%= f.submit class: "btn btn-primary" %>
+      <%= f.submit class: 'btn btn-primary' %>
     </div>
   </div>
 <% end %>

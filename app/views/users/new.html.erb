@@ -10,44 +10,37 @@
         <hr/>
       </div>
     </div>
-    <%= form_for @new_user, html: {class: 'form'} do |form| %>
+    <%= form_for @new_user, html: { class: 'form' } do |form| %>
       <div class="row">
         <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
           <div class="mb-3">
             <%= form.label :name, t('users.new.form.full_name'), class: 'required' %>
             <%= form.text_field :name, class: 'form-control' %>
-            <%= content_tag :div, @new_user.errors[:name].first, class: 'invalid-feedback' %>
           </div>
 
           <div class="mb-3">
             <%= form.label :email, t('users.new.form.email_address'), class: 'required' %>
             <%= form.email_field :email, class: 'form-control' %>
-            <%= content_tag :div, @new_user.errors[:email].first, class: 'invalid-feedback' %>
           </div>
 
           <div class="mb-3">
             <%= form.label :username, t('users.new.form.username'), class: 'required' %>
             <%= form.text_field :username, class: 'form-control' %>
-            <%= content_tag :div, @new_user.errors[:username].first, class: 'invalid-feedback' %>
           </div>
 
           <div class="mb-3">
             <%= form.label :password, t('users.new.form.password'), class: 'required' %>
             <%= form.password_field :password, class: 'form-control' %>
-            <%= content_tag :p, t('users.new.form.password_hint'), class: 'small text-muted' %>
-            <%= content_tag :div, @new_user.errors[:password].first, class: 'invalid-feedback' %>
           </div>
 
           <div class="mb-3">
             <%= form.label :password_confirmation, t('users.new.form.password_confirmation'), class: 'required' %>
             <%= form.password_field :password_confirmation, class: 'form-control' %>
-            <%= content_tag :div, @new_user.errors[:password_confirmation].first, class: 'invalid-feedback' %>
           </div>
 
           <div class="mb-3">
             <%= form.label :gender, t('users.new.form.gender'), class: 'required' %>
-            <%= form.select :gender, [[t('users.new.form.male'), "Male"], [t('users.new.form.female'), "Female"], [t('users.new.form.other'), "Other"], [t('users.new.form.no_specify'), "Prefer not to specify"]], {prompt: t('users.new.form.choose')}, {class: 'form-control form-select'} %>
-            <%= content_tag :div, @new_user.errors[:gender].first, class: 'invalid-feedback' %>
+            <%= form.select :gender, [[t('users.new.form.male'), 'Male'], [t('users.new.form.female'), 'Female'], [t('users.new.form.other'), 'Other'], [t('users.new.form.no_specify'), 'Prefer not to specify']], { prompt: t('users.new.form.choose') }, { class: 'form-control form-select' } %>
           </div>
 
           <div class="mb-3">
@@ -73,55 +66,50 @@
               <%= form.label :identity, t('users.new.form.community_member'), class: 'form-check-label', value: 'community_member' %>
             </div>
 
-            <%= content_tag :div, @new_user.errors[:identity].first, class: 'invalid-feedback d-block' %>
           </div>
 
           <fieldset id="students-only">
             <div class="mb-3">
               <%= form.label :student_id, t('users.new.form.student_number'), class: 'required' %>
               <%= form.text_field :student_id, class: 'form-control' %>
-              <%= content_tag :div, @new_user.errors[:student_id].first, class: 'invalid-feedback' %>
             </div>
 
             <div class="mb-3">
               <%= form.label :faculty, t('users.new.form.faculty'), class: 'required' %>
               <%= form.select :faculty, [
-                  [t('users.new.form.arts'), "Arts"], [t('users.new.form.civil_law'), "Civil Law"],
-                  [t('users.new.form.common_law'), "Common Law"], [t('users.new.form.education'), "Education"],
-                  [t('users.new.form.engineering'), "Engineering"], [t('users.new.form.health_sciences'), "Health Sciences"],
-                  [t('users.new.form.medicine'), "Medicine"], [t('users.new.form.science'), "Science"],
-                  [t('users.new.form.social_sciences'), "Social Sciences"], [t('users.new.form.telfer'), "Telfer School of Management"]], {prompt: t('users.new.form.choose')}, {class: 'form-control form-select'} %>
-              <%= content_tag :div, @new_user.errors[:faculty].first, class: 'invalid-feedback' %>
+                    [t('users.new.form.arts'), 'Arts'], [t('users.new.form.civil_law'), 'Civil Law'],
+                    [t('users.new.form.common_law'), 'Common Law'], [t('users.new.form.education'), 'Education'],
+                    [t('users.new.form.engineering'), 'Engineering'], [t('users.new.form.health_sciences'), 'Health Sciences'],
+                    [t('users.new.form.medicine'), 'Medicine'], [t('users.new.form.science'), 'Science'],
+                    [t('users.new.form.social_sciences'), 'Social Sciences'], [t('users.new.form.telfer'), 'Telfer School of Management']
+                  ], { prompt: t('users.new.form.choose') }, { class: 'form-control form-select' } %>
             </div>
 
             <div class="mb-3">
               <% programs = ProgramList.fetch_all %>
               <%= form.label :program, t('users.new.form.program'), class: 'required' %>
-              <%= form.select :program, programs, {prompt: t('users.new.form.choose')}, {class: 'form-control form-select', 'data-live-search': 'true'} %>
-              <%= content_tag :div, @new_user.errors[:program].first, class: 'invalid-feedback' %>
+              <%= form.select :program, programs, { prompt: t('users.new.form.choose') }, { class: 'form-control form-select', 'data-live-search': 'true' } %>
             </div>
 
             <div class="mb-3">
               <%= form.label :year_of_study, t('users.new.form.year_of_study'), class: 'required' %>
-              <%= form.select :year_of_study, (1..10).to_a.map{|n| [n, n]}, {prompt: t('users.new.form.choose')}, class: 'form-control form-select' %>
-              <%= content_tag :div, @new_user.errors[:year_of_study].first, class: 'invalid-feedback' %>
+              <%= form.select :year_of_study, (1..10).to_a.map { |n| [n, n] }, { prompt: t('users.new.form.choose') }, class: 'form-control form-select' %>
             </div>
           </fieldset>
 
           <div class="mb-3">
             <%= form.label :use, t('users.new.form.makerrepo_for_what') %>
             <%= form.select :use, [
-                [t('users.new.form.course'), "Course"],
-                [t('users.new.form.personal_projects'), "Personal Projects"],
-                [t('users.new.form.business'), "Business"],
-                [t('users.new.form.other'), "Other"]], {prompt: t('users.new.form.choose')}, {class: 'form-control form-select'} %>
-            <%= content_tag :div, @new_user.errors[:use].first, class: 'invalid-feedback' %>
+                  [t('users.new.form.course'), 'Course'],
+                  [t('users.new.form.personal_projects'), 'Personal Projects'],
+                  [t('users.new.form.business'), 'Business'],
+                  [t('users.new.form.other'), 'Other']
+                ], { prompt: t('users.new.form.choose') }, { class: 'form-control form-select' } %>
           </div>
 
           <div class="mb-3">
             <%= form.label :how_heard_about_us, t('users.new.form.how_heard_about_us') %>
             <%= form.text_area :how_heard_about_us, class: 'form-control' %>
-            <%= content_tag :div, @new_user.errors[:how_heard_about_us].first, class: 'invalid-feedback' %>
           </div>
         </div>
         <div class="col-xl-10 offset-xl-1 col-12">
@@ -139,7 +127,7 @@
               <%= form.check_box :read_and_accepted_waiver_form, class: 'form-check-input' %>
               <%= form.label :read_and_accepted_waiver_form, t('users.new.form.accept_waiver_html') + '<span class="required"></span>'.html_safe, class: 'form-check-label' %>
               <% @new_user.errors[:read_and_accepted_waiver_form].each do |err| %>
-                <%= content_tag :div, err, class: 'invalid-feedback' %>
+                <%= tag.div(err, class: 'invalid-feedback') %>
               <% end %>
             </div>
           </div>

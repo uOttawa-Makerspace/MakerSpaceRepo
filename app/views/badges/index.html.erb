@@ -6,8 +6,8 @@
 <br>
 <div class="by-5 row row-cols-lg-auto g-3 align-items-center">
     <div class="input-group">
-      <%= fa_icon 'search', class: "fa-2x pe-2 form-group-text" %>
-      <%= text_field_tag(:search, "", placeholder: "Search by Badge Name, User, Description ...", class: 'form-control', id: "search_bar") %>
+      <%= fa_icon 'search', class: 'fa-2x pe-2 form-group-text' %>
+      <%= text_field_tag(:search, '', placeholder: 'Search by Badge Name, User, Description ...', class: 'form-control', id: 'search_bar') %>
     </div>
 </div>
 
@@ -21,7 +21,7 @@
   <div class="row">
     <% @order_items.each do |order_item| %>
       <div class="col-md-4" style="opacity: 0.3;">
-        <%= image_tag(order_item.proficient_project.badge_template.image_url, :style => "width: inherit", :alt => "Logo for #{order_item.proficient_project.badge_template.badge_name}") %>
+        <%= image_tag(order_item.proficient_project.badge_template.image_url, style: 'width: inherit', alt: "Logo for #{order_item.proficient_project.badge_template.badge_name}") %>
       </div>
     <% end %>
   </div>

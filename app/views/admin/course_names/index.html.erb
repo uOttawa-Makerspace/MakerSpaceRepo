@@ -1,7 +1,7 @@
 <section>
     <h2 class="text-center fw-bold py-3">Admin Course Manager</h2>
 
-    <p class="text-center"><%= link_to "New Course", new_admin_course_name_path, class: "btn btn-secondary" %></p>
+    <p class="text-center"><%= link_to 'New Course', new_admin_course_name_path, class: 'btn btn-secondary' %></p>
     <br />
    <table class="table table-striped mb-3">
    <thead class="table-primary">
@@ -13,7 +13,7 @@
       <% @courses.each do |t| %>
         <tr>
           <td><%= t.name %></td>
-          <td><%= link_to "Edit", edit_admin_course_name_path(t.id), class:"btn btn-primary" %></td>
+          <td><%= link_to 'Edit', edit_admin_course_name_path(t.id), class: 'btn btn-primary' %></td>
         </tr>
       <% end %>
 

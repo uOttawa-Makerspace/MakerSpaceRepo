@@ -20,6 +20,13 @@ class AnnouncementsController < StaffAreaController
   def show
   end
 
+  def dismiss
+    AnnouncementDismiss.create(
+      announcement_id: params[:announcement_id],
+      user_id: current_user.id
+    )
+  end
+
   def edit
   end
 

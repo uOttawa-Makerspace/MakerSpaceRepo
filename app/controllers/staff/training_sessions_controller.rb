@@ -113,12 +113,28 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def certify_trainees
     error = false
+    duplicates = 0
     @current_training_session.users.each do |graduate|
+      # Skip if user already has a certifications that match the training id and training level
+      if graduate
+           .certifications
+           .where(
+             training_session_id:
+               TrainingSession.where(
+                 training_id: @current_training_session.training_id,
+                 level: @current_training_session.level
+               ).pluck(:id)
+           )
+           .present?
+        duplicates += 1
+        next
+      end
       certification =
         Certification.new(
           user_id: graduate.id,
           training_session_id: @current_training_session.id
         )
+
       if BadgeTemplate.where(
            training_id: @current_training_session.training_id
          ).present? && @current_training_session.level == "Beginner"
@@ -155,7 +171,15 @@ class Staff::TrainingSessionsController < StaffDashboardController
     respond_to do |format|
       format.html do
         redirect_to staff_dashboard_index_path,
-                    notice: "Training Session Completed Successfully"
+                    notice:
+                      "Training Session Completed Successfully" +
+                        (
+                          if duplicates > 0
+                            " (#{duplicates} duplicates skipped)"
+                          else
+                            ""
+                          end
+                        )
       end
       format.json { render json: { certified: !error } }
     end

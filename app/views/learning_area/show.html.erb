@@ -1,8 +1,8 @@
-<% provide(:title, "Learning Area") %>
+<% provide(:title, 'Learning Area') %>
 <section class="card w3-card-2 <%= return_border_color(@learning_module.level) %>">
   <div>
-    <%=link_to 'Delete', learning_area_path, method: :delete, class: "btn btn-danger float-start ms-5 mt-5", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.'} if current_user.admin?%>
-    <%=link_to "Edit", edit_learning_area_path(@learning_module.id), class:"btn btn-primary float-end me-5 mt-5", style: "opacity: 0.5" if current_user.admin?%>
+    <%= link_to 'Delete', learning_area_path, method: :delete, class: 'btn btn-danger float-start ms-5 mt-5', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } if current_user.admin? %>
+    <%= link_to 'Edit', edit_learning_area_path(@learning_module.id), class: 'btn btn-primary float-end me-5 mt-5', style: 'opacity: 0.5' if current_user.admin? %>
   </div>
   <div class="col-lg-7 mx-auto">
     <br />
@@ -16,11 +16,11 @@
         <br />
         <% if @learning_module_track.blank? %>
           <div class="alert alert-success">
-            <%= link_to "Start", start_learning_module_track_index_path(learning_module_id: @learning_module.id), class: "btn btn-primary" %>
+            <%= link_to 'Start', start_learning_module_track_index_path(learning_module_id: @learning_module.id), class: 'btn btn-primary' %>
           </div>
         <% elsif @learning_module_track.first.status == 'In progress' %>
           <div class="alert alert-primary">
-            <%= link_to "Change to Completed", completed_learning_module_track_index_path(learning_module_id: @learning_module.id), class: "btn btn-primary" %>
+            <%= link_to 'Change to Completed', completed_learning_module_track_index_path(learning_module_id: @learning_module.id), class: 'btn btn-primary' %>
           </div>
         <% elsif @learning_module_track.first.status == 'Completed' %>
           <div class="alert alert-info">
@@ -35,11 +35,11 @@
             <%= @learning_module.description.html_safe %>
           </div>
           <div id="show-photo">
-            <%= image_tag @photos.first.image, alt: 'Learning Area First Picture', data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+            <%= image_tag @photos.first.image, alt: 'Learning Area First Picture', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
           </div>
           <div id="photo-slide">
             <% @photos.each do |p| %>
-              <%= image_tag p.image, alt: 'Learning Area Picture', data: { width: p.width, height: p.height} %>
+              <%= image_tag p.image, alt: 'Learning Area Picture', data: { width: p.width, height: p.height } %>
             <% end %>
           </div>
           <br />
@@ -60,7 +60,7 @@
 <% @videos.each do |f| %>
   <% f.video.each do |video| %>
     <div class="imgbox">
-      <%= video_tag url_for(video), controls: true, controlslist: "nodownload", class: "center-fit" if f.video.attached? %>
+      <%= video_tag url_for(video), controls: true, controlslist: 'nodownload', class: 'center-fit' if f.video.attached? %>
     </div>
     <br/>
   <% end %>

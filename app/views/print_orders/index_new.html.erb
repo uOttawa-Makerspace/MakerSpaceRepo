@@ -1,7 +1,7 @@
 <h1 class="text-center">List of prints / Laser cuts</h1>
 <div class="text-center">
-  <%= link_to "New Print Order", new_print_order_path(:type => "3d"), {class: 'btn btn-primary'} %>  <%= link_to "New Laser Cut Order", new_print_order_path(:type => "laser"), {class: 'btn btn-primary'} %>
-  <%= link_to "Staff Page", print_orders_path, {class: 'btn btn-primary'} if @user.staff? %>
+  <%= link_to 'New Print Order', new_print_order_path(type: '3d'), { class: 'btn btn-primary' } %>  <%= link_to 'New Laser Cut Order', new_print_order_path(type: 'laser'), { class: 'btn btn-primary' } %>
+  <%= link_to 'Staff Page', print_orders_path, { class: 'btn btn-primary' } if @user.staff? %>
   <br><br>
 </div>
 
@@ -9,12 +9,12 @@
 
   <div class="alert alert-warning text-center">
     <i class="fa fa-warning"></i>
-    This system is now deprecated. Please use the new <%= link_to "Job Order System", job_orders_path %>.
+    This system is now deprecated. Please use the new <%= link_to 'Job Order System', job_orders_path %>.
     <i class="fa fa-warning"></i>
 
     <br><br>
 
-    You will still be able to access old Print Orders, but you will not be able to create new ones. To create new ones, please click <%= link_to "here", new_job_orders_path %>.
+    You will still be able to access old Print Orders, but you will not be able to create new ones. To create new ones, please click <%= link_to 'here', new_job_orders_path %>.
   </div>
 
   <hr/>

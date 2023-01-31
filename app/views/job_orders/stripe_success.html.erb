@@ -2,8 +2,14 @@
   <i class="fa fa-check-circle fa-5x mb-3 text-success"></i>
   <h1>You have successfully completed the payment your Job Order!</h1>
 
-  <h2 class="fs-4"> Please note that it can take up to 5 business days to approve payment on some Canadian Debit Cards. You will
-    receive a follow-up email once the payment has been successfully completed or failed.</h2>
+  <h2 class="fs-4">
+    Please note that it can take up to 5 business days to approve payment on some Canadian Debit Cards.
+    <br>
+    You will receive a follow-up email once the payment has been successfully completed or failed.
+  </h2>
+
+  <%= link_to 'Back to Job Orders', job_orders_path, class: 'btn btn-primary' %>
+
   <hr>
   <p>
     Having trouble or have any questions? Contact Us!

@@ -40,7 +40,18 @@ class Admin::SpacesController < AdminAreaController
 
   def delete_sub_space
     if params[:id].present?
-      if SubSpace.find(params[:id]).delete
+      subspace = SubSpace.find(params[:id])
+      SubSpaceBooking
+        .where(sub_space: subspace)
+        .each do |booking|
+          status =
+            SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
+          status.update(sub_space_booking_id: nil)
+          booking.update(sub_space_booking_status_id: nil)
+          status.destroy
+          booking.destroy
+        end
+      if subspace.delete
         flash[:notice] = "Sub Space deleted!"
       else
         flash[:alert] = "Something went wrong."
@@ -63,10 +74,22 @@ class Admin::SpacesController < AdminAreaController
         return
       end
       subspace.update(approval_required: !subspace.approval_required)
-      subspace.save
       flash[
         :notice
       ] = "Aproval for #{subspace.name} is now #{subspace.approval_required ? "manual" : "automatic"}"
+      redirect_back(
+        fallback_location: edit_admin_space_path(id: params[:space_id])
+      )
+    end
+  end
+
+  def change_sub_space_default_public
+    if params[:id].present?
+      subspace = SubSpace.find(params[:id])
+      subspace.update(default_public: !subspace.default_public)
+      flash[
+        :notice
+      ] = "Bookings in #{subspace.name} are #{subspace.default_public ? "public" : "private"} by default"
       redirect_back(
         fallback_location: edit_admin_space_path(id: params[:space_id])
       )

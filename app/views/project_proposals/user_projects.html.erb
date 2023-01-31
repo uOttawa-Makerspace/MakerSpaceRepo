@@ -1,7 +1,7 @@
-<% provide(:title, "User Projects") %>
+<% provide(:title, 'User Projects') %>
 
 <div>
-  <% provide(:title, "Project Proposals") %>
+  <% provide(:title, 'Project Proposals') %>
 
   <div class="accordion" id="user_project_proposal_accordion">
     <div class="card">
@@ -15,7 +15,7 @@
 
       <div id="proposals_joined" class="accordion-collapse collapse" aria-labelledby="prosals_joined_header" data-bs-parent="#user_project_proposal_accordion">
         <div class="accordion-body">
-          <%= render :partial => 'listing', :locals => {:title => "Project Proposals Joined", :project_proposals => @project_proposals_joined, param_name: "page_pending"} %>
+          <%= render partial: 'listing', locals: { title: 'Project Proposals Joined', project_proposals: @project_proposals_joined, param_name: 'page_pending' } %>
         </div>
       </div>
     </div>
@@ -29,7 +29,7 @@
       </div>
       <div id="proposals_pending" class="accordion-collapse collapse">
         <div class="accordion-body">
-          <%= render :partial => 'listing', :locals => {:title => "Pending Project Proposals", :project_proposals => @user_pending_project_proposals, param_name: "page_pending"} %>
+          <%= render partial: 'listing', locals: { title: 'Pending Project Proposals', project_proposals: @user_pending_project_proposals, param_name: 'page_pending' } %>
         </div>
       </div>
     </div>
@@ -43,7 +43,7 @@
       </div>
       <div id="proposals_accepted" class="accordion-collapse collapse">
         <div class="accordion-body">
-          <%= render :partial => 'listing', :locals => {:title => "Approved Project Proposals", :project_proposals => @approved_project_proposals, param_name: "page_pending"} %>
+          <%= render partial: 'listing', locals: { title: 'Approved Project Proposals', project_proposals: @approved_project_proposals, param_name: 'page_pending' } %>
         </div>
       </div>
     </div>
