@@ -1,34 +1,34 @@
 <section>
   <br>
     <h2 class="text-center fw-bold">New Training</h2>
-    <%= form_for @new_training, url: {controller: "admin/trainings", action: "create"} do |f| %>
+    <%= form_for @new_training, url: { controller: 'admin/trainings', action: 'create' } do |f| %>
       <div class="container">
         <div class="row text-center">
           <div class="col-md-12 form-floating">
-            <%= f.text_field :name, placeholder: "Write an unique name...", class: 'form-control', required: true %>
-            <%= f.label "Name", class:"form-label" %>
+            <%= f.text_field :name, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
+            <%= f.label 'Name', class: 'form-label' %>
           </div>
 
           <div class="col-md-12 form-floating my-2">
-            <%= f.text_area :description, placeholder: "Write an description...", class: 'form-control', required: true %>
-            <%= f.label "Description", class:"form-label" %>
+            <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control', required: true %>
+            <%= f.label 'Description', class: 'form-label' %>
           </div>
 
           <div class="form-check-inline">
           <%= f.collection_check_boxes(:space_ids, @spaces, :id, :name) do |b| %>
-            <%= b.label(:"data-value" => b.value, class:"form-check-label") { b.check_box(class: "form-check-input", style:"margin-left:1rem;margin-right:0.5rem;") + b.text } %>
+            <%= b.label("data-value": b.value, class: 'form-check-label') { b.check_box(class: 'form-check-input', style: 'margin-left:1rem;margin-right:0.5rem;') + b.text } %>
           <% end %>
           </div>
 
           <br><br>
 
           <div class="col-md-12 form-group">
-            <%= f.label(:skill_id, "Skill Type", class:"form-label") %>
-            <%= f.select :skill_id, options_for_select(@skills), {include_blank: false}, {class: "form-control form-select"} %>
+            <%= f.label(:skill_id, 'Skill Type', class: 'form-label') %>
+            <%= f.select :skill_id, options_for_select(@skills), { include_blank: false }, { class: 'form-control form-select' } %>
           </div>
 
           <div class="col-md-12 form-group my-5">
-            <%= f.submit "Create Training", class: "btn btn-secondary btn-xl text-uppercase" %>
+            <%= f.submit 'Create Training', class: 'btn btn-secondary btn-xl text-uppercase' %>
           </div>
         </div>
       </div>

@@ -1,24 +1,24 @@
 <section class="page-contents">
   <div class="edit-column">
 
-    <h2 class="text-center">Edit <%=@volunteer_hour.user.name.titleize + "'s"%> Hour Tracking</h2>
+    <h2 class="text-center">Edit <%= "#{@volunteer_hour.user.name.titleize}'s" %> Hour Tracking</h2>
 
     <h5 class="text-center">This volunteer hour: <b><%= @volunteer_hour.total_time %> hours</b></h5>
 
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
-          <%= form_for @volunteer_hour, url: {controller: "volunteer_hours", action: "update"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+          <%= form_for @volunteer_hour, url: { controller: 'volunteer_hours', action: 'update' }, html: { id: 'volunteerForm', class: 'needs-validation', novalidate: 'novalidate' } do |f| %>
             <div class="row">
               <div class="col-md-12">
                 <div class="mb-3 text-center">
-                  <%= f.label :volunteer_task, "Volunteer Task", class:"form-label"  %>
-                  <%= f.select :volunteer_task_id, @volunteer_tasks, {}, {class: 'form-control form-select', 'data-live-search': 'true'} %>
+                  <%= f.label :volunteer_task, 'Volunteer Task', class: 'form-label' %>
+                  <%= f.select :volunteer_task_id, @volunteer_tasks, {}, { class: 'form-control form-select', 'data-live-search': 'true' } %>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <%= f.label :date_of_task, "Date you worked in a task", class:"form-label"  %>
+                  <%= f.label :date_of_task, 'Date you worked in a task', class: 'form-label' %>
                   <%= f.date_field :date_of_task, class: 'form-control', required: true %>
                   <div class="invalid-feedback">
                     Please select a date.
@@ -26,7 +26,7 @@
                 </div>
               </div>
               <div class="col-md-6">
-                <%= f.label :amount_of_hours_worked, class:"form-label"  %>
+                <%= f.label :amount_of_hours_worked, class: 'form-label' %>
                 <div class="input-group">
                   <input id="hours" class="form-control col-4" type="number" required="required" placeholder="Hours" min="0" value="<%= @hour %>">
                   <span class="input-group-text">:</span>
@@ -35,22 +35,22 @@
                     Please select the amount of hours worked. (Minutes: Multiple of 5, Min -> 0, Max -> 60)
                   </div>
                 </div>
-                <%= f.hidden_field :total_time, id: "total_time_hidden" %>
+                <%= f.hidden_field :total_time, id: 'total_time_hidden' %>
               </div>
               <% if current_user.staff? && !@volunteer_hour.approval.nil? %>
                 <div class="col-md-12">
                   <div class="mb-3 text-center">
-                    <%= f.label :approval, "Volunteer hour approved?", class:"form-label"  %>
+                    <%= f.label :approval, 'Volunteer hour approved?', class: 'form-label' %>
                     <br />
                     <%= f.radio_button :approval, true %>
-                    <%= label :approval, 'Yes', class:"form-label"  %>
+                    <%= label :approval, 'Yes', class: 'form-label' %>
                     <%= f.radio_button :approval, false %>
-                    <%= label :approval, 'No', class:"form-label"  %>
+                    <%= label :approval, 'No', class: 'form-label' %>
                   </div>
                 </div>
               <% end %>
               <div class="col-lg-12 text-center">
-                <%= f.submit "Update Volunteer Hour", class: "btn btn-secondary btn-xl text-uppercase" %>
+                <%= f.submit 'Update Volunteer Hour', class: 'btn btn-secondary btn-xl text-uppercase' %>
               </div>
             </div>
           <% end %>

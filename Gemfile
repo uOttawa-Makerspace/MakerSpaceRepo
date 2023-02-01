@@ -66,6 +66,7 @@ gem "graphlient"
 gem "sprockets-rails"
 gem "psych", "~> 4.0.0"
 gem "vite_rails"
+gem "message_bus"
 
 group :development, :test do
   gem "byebug", platform: :mri
@@ -90,6 +91,7 @@ group :development do
   gem "letter_opener" # Open emails in development
   gem "rubocop-rails"
   gem "web-console"
+  gem "erb_lint", require: false
 
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"

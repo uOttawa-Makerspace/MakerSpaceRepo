@@ -1,4 +1,4 @@
-<% provide(:title, "My Likes") %>
+<% provide(:title, 'My Likes') %>
 <section id="repositories-index">
   <div class="like-title">My Likes</div>
   <div class="row">
@@ -6,14 +6,14 @@
       <section class="repository-filter">
         <div id="sort-header" class="dropdown">
           <button class="btn btn-outline-primary dropdown-toggle" type="button" id="sort-dropdown-menu" data-bs-toggle="dropdown">
-            <%=t("home.sort.by") %>
-            <%= t("home.sort." + params[:sort]) unless params[:sort].blank? %>
+            <%= t('home.sort.by') %>
+            <%= t("home.sort.#{params[:sort]}") if params[:sort].present? %>
           </button>
           <ul id="sort-filter" class="dropdown-menu">
-            <li><%= link_to t("home.sort.newest"), likes_user_path(sort: :newest, category: params[:category]), class:"dropdown-item" %></li>
-            <li><%= link_to t("home.sort.most_likes"), likes_user_path(sort: :most_likes, category: params[:category]), class:"dropdown-item" %></li>
-            <li><%= link_to t("home.sort.most_makes"), likes_user_path(sort: :most_makes, category: params[:category]), class:"dropdown-item" %></li>
-            <li><%= link_to t("home.sort.recently_updated"), likes_user_path(sort: :recently_updated, category: params[:category]), class:"dropdown-item" %></li>
+            <li><%= link_to t('home.sort.newest'), likes_user_path(sort: :newest, category: params[:category]), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.sort.most_likes'), likes_user_path(sort: :most_likes, category: params[:category]), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.sort.most_makes'), likes_user_path(sort: :most_makes, category: params[:category]), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.sort.recently_updated'), likes_user_path(sort: :recently_updated, category: params[:category]), class: 'dropdown-item' %></li>
           </ul>
         </div>
         <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
@@ -23,20 +23,20 @@
       <section class="repository-filter">
         <div id="category-header" class="dropdown">
           <button class="btn btn-outline-primary dropdown-toggle" type="button" id="category-dropdown-menu" data-bs-toggle="dropdown">
-            <%= t("home.categories.filter") %>
-            <%= t("home.categories." + params[:category]) unless params[:category].blank? %>
+            <%= t('home.categories.filter') %>
+            <%= t("home.categories.#{params[:category]}") if params[:category].present? %>
           </button>
           <ul id="category-filter" class="dropdown-menu">
-            <li><%= link_to 'All / Tous', likes_user_path(category: nil), class:"dropdown-item" %></li>
-            <li><%= link_to t("home.categories.wearables"), likes_user_path(category: "wearable"),class:"dropdown-item" %></li>
-            <li><%= link_to t("home.categories.mobile_development"), likes_user_path(category: "mobile-development"),class:"dropdown-item" %></li>
-            <li><%= link_to t("home.categories.gng_2101"), likes_user_path(category: "gng2101/gng2501"),class:"dropdown-item" %></li>
-            <li><%= link_to t("home.categories.health_sciences"), likes_user_path(category: "health-sciences"),class:"dropdown-item" %></li>
-            <li><%= link_to t("home.categories.iot"), likes_user_path(category: "internet-of-things"),class:"dropdown-item" %></li>
-            <li><%= link_to t("home.categories.gng_1103"), likes_user_path(category: "gng1103/gng1503"),class:"dropdown-item" %></li>
-            <li><%= link_to t("home.categories.vr"), likes_user_path(category: "virtual-reality"),class:"dropdown-item" %></li>
-            <li><%= link_to t("home.categories.team_projects"), likes_user_path(category: "uottawa-team-projects"),class:"dropdown-item" %></li>
-            <li><%= link_to t("home.categories.other_projects"), likes_user_path(category: "other-projects"),class:"dropdown-item" %></li>
+            <li><%= link_to 'All / Tous', likes_user_path(category: nil), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.categories.wearables'), likes_user_path(category: 'wearable'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.categories.mobile_development'), likes_user_path(category: 'mobile-development'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.categories.gng_2101'), likes_user_path(category: 'gng2101/gng2501'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.categories.health_sciences'), likes_user_path(category: 'health-sciences'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.categories.iot'), likes_user_path(category: 'internet-of-things'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.categories.gng_1103'), likes_user_path(category: 'gng1103/gng1503'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.categories.vr'), likes_user_path(category: 'virtual-reality'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.categories.team_projects'), likes_user_path(category: 'uottawa-team-projects'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('home.categories.other_projects'), likes_user_path(category: 'other-projects'), class: 'dropdown-item' %></li>
           </ul>
         </div>
       </section>
@@ -46,8 +46,8 @@
   <% @repositories.each_with_index do |repository, i| %>
     <div class="repository-container">
 
-      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(@photos[repository.id].image)}')"  %> >
-        <%= link_to "", repository_path(repository.user_username, repository.id), class: 'link' %>
+      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(@photos[repository.id].image)}')" %> >
+        <%= link_to '', repository_path(repository.user_username, repository.id), class: 'link' %>
       </div>
 
       <div class="repo-info">
@@ -55,11 +55,11 @@
           <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.id) %></div>
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-          <div><%= time_ago_in_words(repository.created_at) << " ago" %></div>
+          <div><%= time_ago_in_words(repository.created_at) << ' ago' %></div>
         </div>
       </div>
     </div>
   <% end %>
   </section>
-  <%= paginate @repositories if !@repositories.empty? %>
+  <%= paginate @repositories unless @repositories.empty? %>
 </section>

@@ -162,10 +162,46 @@ class JobOrder < ApplicationRecord
     job_order_quote.total_price
   end
 
+  def generate_line_items
+    price_data = [
+      self.generate_line_item("Service Fees", job_order_quote.service_fee)
+    ]
+
+    job_order_quote.job_order_quote_services.each do |s|
+      price_data << self.generate_line_item(
+        "#{s.job_service.job_service_group.name} - #{s.job_service.name} (#{s.quantity} #{s.job_service.unit.present? ? s.job_service.unit : "unit"})",
+        s.cost
+      )
+    end
+    job_order_quote.job_order_quote_options.each do |o|
+      price_data << self.generate_line_item(o.job_option.name, o.amount)
+    end
+    job_order_quote.job_order_quote_type_extras.each do |e|
+      price_data << self.generate_line_item(e.job_type_extra.name, e.price)
+    end
+
+    price_data
+  end
+
   def expedited?
     job_order_options
       .joins(:job_option)
       .where(job_option: { name: "Expedited" })
       .present?
+  end
+
+  private
+
+  def generate_line_item(name, unit_amount)
+    {
+      quantity: 1,
+      price_data: {
+        currency: "cad",
+        product_data: {
+          name: name
+        },
+        unit_amount: (unit_amount.to_f * 100).to_i
+      }
+    }
   end
 end

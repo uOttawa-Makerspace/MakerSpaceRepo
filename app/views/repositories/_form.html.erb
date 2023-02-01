@@ -1,7 +1,7 @@
 <%= form_for(@respository) do |f| %>
   <% if @respository.errors.any? %>
     <div id="error_explanation">
-      <h2><%= pluralize(@respository.errors.count, "error") %> prohibited this respository from being saved:</h2>
+      <h2><%= pluralize(@respository.errors.count, 'error') %> prohibited this respository from being saved:</h2>
 
       <ul>
       <% @respository.errors.full_messages.each do |message| %>
@@ -12,6 +12,6 @@
   <% end %>
 
   <div class="actions">
-    <%= f.submit  %>
+    <%= f.submit %>
   </div>
 <% end %>

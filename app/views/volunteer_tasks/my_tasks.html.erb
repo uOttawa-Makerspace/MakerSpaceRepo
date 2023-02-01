@@ -5,7 +5,9 @@
 
     <% if !@your_volunteer_tasks.blank? %>
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
-
+      <div class="mx-auto mt-3">
+        <button id="task-hider" class="btn btn-primary" type="button">Hide Completed Task</button>
+        </div>
       <br />
 
       <div class="table-responsive">
@@ -13,35 +15,37 @@
 
           <tr>
             <th class="action-header">Action</th>
-            <th>CC/Hours<span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Title <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
+            <th>CC/Hours<span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Title <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Status<span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
 <!--            <th>Responsable Staff<span onclick="sortTable('sessions-table', 4)"><%#=fa_icon('arrow-down')%></span></th>-->
 <!--            <th>Users<span onclick="sortTable('sessions-table', 5)"><%#=fa_icon('arrow-down')%></span></th>-->
-            <th>Certifications Needed<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Space<span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+            <th>Certifications Needed<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Space<span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 6)"><%= fa_icon('arrow-down') %></span></th>
             <% if current_user.staff? %>
-              <th>Created by <span onclick="sortTable('sessions-table', 7)"><%=fa_icon('arrow-down')%></span></th>
+              <th>Created by <span onclick="sortTable('sessions-table', 7)"><%= fa_icon('arrow-down') %></span></th>
             <% end %>
           </tr>
 
           <tbody>
           <% @your_volunteer_tasks.each do |vt| %>
-            <tr>
+            <tr completed=<%= vt.status %>>
               <td class="action-cell">
-                <%=link_to "Edit", edit_volunteer_task_path(vt.id), class:"d-block w-100 btn btn-primary btn-sm" if current_user.staff?%>
-                <%=link_to "Show", volunteer_task_path(vt.id), class:"d-block w-100 btn btn-info btn-sm" %>
-                <%=button_to "Delete", { controller: :volunteer_tasks ,action: :destroy, id: vt.id }, method: :delete,
-                           data: { confirm: 'Are you sure that you want to delete this volunteer task? If you delete it, it will also delete all the volunteers hours related to it.' },
-                           class:"d-block w-100 btn btn-danger btn-sm" if current_user.staff?%>
+                <%= link_to 'Edit', edit_volunteer_task_path(vt.id), class: 'd-block w-100 btn btn-primary btn-sm' if current_user.staff? %>
+                <%= link_to 'Show', volunteer_task_path(vt.id), class: 'd-block w-100 btn btn-info btn-sm' %>
+                <%= if current_user.staff?
+                      button_to 'Delete', { controller: :volunteer_tasks, action: :destroy, id: vt.id }, method: :delete,
+                                                                                                         data: { confirm: 'Are you sure that you want to delete this volunteer task? If you delete it, it will also delete all the volunteers hours related to it.' },
+                                                                                                         class: 'd-block w-100 btn btn-danger btn-sm'
+                    end %>
               </td>
 
               <td>
-                <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
+                <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
                 <%= vt.cc %>
                 <br />
-                <%= vt.hours%> hours
+                <%= vt.hours %> hours
               </td>
 
               <td>
@@ -78,7 +82,7 @@
                   <% end %>
                 <% else %>
                   None
-                <% end  %>
+                <% end %>
               </td>
 
               <td>
@@ -86,9 +90,9 @@
               </td>
 
               <td>
-                <%= vt.created_at.strftime("%m/%e/%Y") %>
+                <%= vt.created_at.strftime('%m/%e/%Y') %>
                 <br>
-                <%= vt.created_at.strftime("%I:%M %p").downcase() %>
+                <%= vt.created_at.strftime('%I:%M %p').downcase %>
               </td>
 
               <% if current_user.staff? %>
@@ -109,3 +113,16 @@
     <% end %>
   </div>
 </section>
+<script>
+let hider = document.getElementById('task-hider');
+// Select table rows with the completed attribute
+var completedRows = document.querySelectorAll('tr[completed="completed"]');
+hider.addEventListener("click", ()=>{
+  // Hide the completed rows
+  completedRows.forEach((row)=>{
+    row.style.display == "none" ? row.style.display = "table-row" : row.style.display = "none";
+  });
+  // Change the button text
+  hider.innerHTML = hider.innerHTML == "Hide Completed Task" ? "Show Completed Task" : "Hide Completed Task";
+});
+</script>

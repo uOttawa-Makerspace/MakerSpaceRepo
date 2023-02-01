@@ -1,43 +1,43 @@
 <section class="page-contents">
   <div class="text-center padding">
 
-    <h2 class="pt-2 mb-5">New <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: "set_space_id", id: "set_space_id", :class => "form-select", :onchange => 'setSpace()', style: 'width: 50%; padding: 2px;' %></strong>
+    <h2 class="pt-2 mb-5">New <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: 'set_space_id', class: 'form-select', onchange: 'setSpace()', style: 'width: 50%; padding: 2px;' %></strong>
       Training Session</h2>
 
-    <%= form_for @new_training_session, :url => { :action => "create", controller: 'staff/training_sessions'} do |f| %>
+    <%= form_for @new_training_session, url: { action: 'create', controller: 'staff/training_sessions' } do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
       <div class="mb-3">
-        <% label_tag 'training_id', class:"form-label" %>
-        <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name ASC'), 'id', 'name'), prompt: 'Select training', class: "form-control form-select", required: true %><br>
+        <% label_tag 'training_id', class: 'form-label' %>
+        <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name ASC'), 'id', 'name'), prompt: 'Select training', class: 'form-control form-select', required: true %><br>
       </div>
       <div class="mb-3">
-        <% label_tag 'level', class:"form-label" %>
-        <%= select_tag 'level', options_for_select(@levels), prompt: 'Select level', class: "form-control form-select", required: true %><br>
+        <% label_tag 'level', class: 'form-label' %>
+        <%= select_tag 'level', options_for_select(@levels), prompt: 'Select level', class: 'form-control form-select', required: true %><br>
       </div>
       <div class="mb-3">
-        <% label_tag 'course', class:"form-label" %>
-        <%= select_tag 'course', options_for_select(@course_names), prompt: 'Select course', class: "form-control form-select", required: true %><br>
+        <% label_tag 'course', class: 'form-label' %>
+        <%= select_tag 'course', options_for_select(@course_names), prompt: 'Select course', class: 'form-control form-select', required: true %><br>
       </div>
       <% if @user.admin? %>
-        <% label_tag 'user_id', class:"form-label" %>
-        <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: ['staff', 'admin']).order('name ASC'), 'id', 'name'), prompt: 'Select instructor', class: "form-control form-select", required: true %><br>
+        <% label_tag 'user_id', class: 'form-label' %>
+        <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Select instructor', class: 'form-control form-select', required: true %><br>
       <% end %>
     <br />
       <table class="staff-table table text-center table-striped" id="staff-users-table">
-        <h3>Users Inside <%=@space.name%></h3>
+        <h3>Users Inside <%= @space.name %></h3>
         <thead class="table-primary">
         <tr>
-          <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <%=fa_icon('arrow-down')%></th>
-          <th>Name <span onclick="sortTable('staff-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Email <span onclick="sortTable('staff-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Signed In <span onclick="sortTable('staff-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-          <th>Certifications <span onclick="sortTable('staff-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+          <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <%= fa_icon('arrow-down') %></th>
+          <th>Name <span onclick="sortTable('staff-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Email <span onclick="sortTable('staff-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Signed In <span onclick="sortTable('staff-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Certifications <span onclick="sortTable('staff-table', 4)"><%= fa_icon('arrow-down') %></span></th>
         </tr>
         </thead>
         <% @space.signed_in_users.each do |user| %>
           <tr id="<%= return_no_waiver_id(user) %>">
             <td class="action-cell">
-               <%= check_box_tag 'training_session_users[]', value=user.id, false, class:"form-check-input" %>
+               <%= check_box_tag 'training_session_users[]', value = user.id, false, class: 'form-check-input' %>
             </td>
 
             <td class="user-name">
@@ -45,11 +45,11 @@
             </td>
 
             <td class="email-cell" style="horizontal-alginment:center;">
-              <%= user.email  %>
+              <%= user.email %>
             </td>
 
             <td class="signed-in-cell" style="horizontal-alginment:center;">
-              <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + " ago"  %>
+              <%= "#{time_ago_in_words(user.lab_sessions.last.sign_in_time)} ago" %>
             </td>
 
             <td class="certifications-cell">
@@ -61,7 +61,7 @@
                       <div id="cert-details" style="display:inline">
                         <%= certification.training.name %> <br />
                         <%= certification.trainer %> <br />
-                        <%= certification.updated_at.strftime("%B %d, %Y") %>
+                        <%= certification.updated_at.strftime('%B %d, %Y') %>
                       </div>
                       <br />
                     </div>
@@ -73,7 +73,7 @@
         <% end %>
       </table>
       <br />
-      <%= submit_tag "Begin Training", class:"btn btn-secondary"%>
+      <%= submit_tag 'Begin Training', class: 'btn btn-secondary' %>
     <% end %>
   </div>
 </section>

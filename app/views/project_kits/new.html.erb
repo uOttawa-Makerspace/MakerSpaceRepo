@@ -5,14 +5,14 @@
   </div>
   <%= form_for(@kit) do |f| %>
     <div class="mb-3">
-      <%= f.label :user_id, "User", class:"form-label" %>
-      <%= f.select(:user_id, "", {prompt: "Choose User..."}, {:class => "kit_user_select form-control form-select", :id => "kit_user_select"}) %>
+      <%= f.label :user_id, 'User', class: 'form-label' %>
+      <%= f.select(:user_id, '', { prompt: 'Choose User...' }, { class: 'kit_user_select form-control form-select', id: 'kit_user_select' }) %>
       <br>
-      <%= f.label :proficient_project_id, "Related Proficient Project", class:"form-label" %>
-      <%= f.select(:proficient_project_id, options_for_select(@proficient_projects), {:include_blank => true}, class: "form-control form-select") %>
+      <%= f.label :proficient_project_id, 'Related Proficient Project', class: 'form-label' %>
+      <%= f.select(:proficient_project_id, options_for_select(@proficient_projects), { include_blank: true }, class: 'form-control form-select') %>
     </div>
     <div class="text-center">
-      <%= f.submit "Create Kit request", class: "btn btn-primary" %>
+      <%= f.submit 'Create Kit request', class: 'btn btn-primary' %>
       <br/>
     </div>
   <% end %>

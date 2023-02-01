@@ -5,20 +5,20 @@
         <div class="jumbotron card bg-light text-center">
           <h1 class="title"><%= t('home.welcome_html') %></h1>
 
-          <%= render :partial => 'partials/announcements' %>
+          <%= render partial: 'partials/announcements' %>
 
           <p class="lead mb-4"><%= t('home.welcome_desc_html') %></p>
           <% if signed_in? %>
-            <p><%= link_to t('home.my_profile'), user_path(current_user.username), class: "btn btn-primary btn-lg" %></p>
+            <p><%= link_to t('home.my_profile'), user_path(current_user.username), class: 'btn btn-primary btn-lg' %></p>
             <hr class="my-3"/>
-            <%= render :partial => 'programs', locals: {status: current_user.return_program_status} %>
+            <%= render partial: 'programs', locals: { status: current_user.return_program_status } %>
 
-          <% else  %>
-            <p><%= link_to t('home.sign_up'), user_path('new'), class: "btn btn-primary btn-lg" %></p>
+          <% else %>
+            <p><%= link_to t('home.sign_up'), user_path('new'), class: 'btn btn-primary btn-lg' %></p>
             <hr class="my-3"/>
-            <%= render :partial => 'interested_volunteer' %>
+            <%= render partial: 'interested_volunteer' %>
             <hr />
-            <%= render :partial => 'interested_dev_program' %>
+            <%= render partial: 'interested_dev_program' %>
 
         <% end %>
 
@@ -40,47 +40,47 @@
       <h1><%= t('home.categories_title') %></h1>
     </div>
     <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag "wearables_optimized.jpg", class: "background", alt: 'Wearable' %>
-      <%= link_to t("home.categories.wearables"), explore_path(category: "wearable"), class: "overlay" %>
+      <%= image_tag 'wearables_optimized.jpg', class: 'background', alt: 'Wearable' %>
+      <%= link_to t('home.categories.wearables'), explore_path(category: 'wearable'), class: 'overlay' %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag "motherboard_optimized.jpg", class: "background", alt: 'Mobile Development' %>
-      <%= link_to t("home.categories.mobile_development"), explore_path(category: "mobile-development"), class: "overlay" %>
+      <%= image_tag 'motherboard_optimized.jpg', class: 'background', alt: 'Mobile Development' %>
+      <%= link_to t('home.categories.mobile_development'), explore_path(category: 'mobile-development'), class: 'overlay' %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag "2101_optimized.jpg", class: "background", alt: 'GNG 2101' %>
-      <%= link_to t("home.categories.gng_2101"), explore_path(category: "gng2101/gng2501"), class: "overlay" %>
+      <%= image_tag '2101_optimized.jpg', class: 'background', alt: 'GNG 2101' %>
+      <%= link_to t('home.categories.gng_2101'), explore_path(category: 'gng2101/gng2501'), class: 'overlay' %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag "bio-medical_optimized.jpg", class: "background", alt: 'Health Sciences' %>
-      <%= link_to t("home.categories.health_sciences"), explore_path(category: "health-sciences"), class: "overlay" %>
+      <%= image_tag 'bio-medical_optimized.jpg', class: 'background', alt: 'Health Sciences' %>
+      <%= link_to t('home.categories.health_sciences'), explore_path(category: 'health-sciences'), class: 'overlay' %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag "iot_optimized.jpg", class: "background", alt: 'Internet of Things' %>
-      <%= link_to t("home.categories.iot"), explore_path(category: "internet-of-things"), class: "overlay" %>
+      <%= image_tag 'iot_optimized.jpg', class: 'background', alt: 'Internet of Things' %>
+      <%= link_to t('home.categories.iot'), explore_path(category: 'internet-of-things'), class: 'overlay' %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag "1103_optimized.jpg", class: "background", alt: 'GNG 1103' %>
-      <%= link_to t("home.categories.gng_1103"), explore_path(category: "gng1103/gng1503"), class: "overlay" %>
+      <%= image_tag '1103_optimized.jpg', class: 'background', alt: 'GNG 1103' %>
+      <%= link_to t('home.categories.gng_1103'), explore_path(category: 'gng1103/gng1503'), class: 'overlay' %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag "vr_optimized.jpg", class: "background", alt: 'Virtual Reality' %>
-      <%= link_to t("home.categories.vr"), explore_path(category: "virtual-reality"), class: "overlay" %>
+      <%= image_tag 'vr_optimized.jpg', class: 'background', alt: 'Virtual Reality' %>
+      <%= link_to t('home.categories.vr'), explore_path(category: 'virtual-reality'), class: 'overlay' %>
     </div>
 
     <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag "uoteams_optimized.jpg", class: "background", alt: 'UOttawa Team Projects' %>
-      <%= link_to t("home.categories.team_projects"), explore_path(category: "uottawa-team-projects"), class: "overlay" %>
+      <%= image_tag 'uoteams_optimized.jpg', class: 'background', alt: 'UOttawa Team Projects' %>
+      <%= link_to t('home.categories.team_projects'), explore_path(category: 'uottawa-team-projects'), class: 'overlay' %>
     </div>
     <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag "other_optimized.jpg", class: "background", alt: 'Other Projects' %>
-      <%= link_to t("home.categories.other_projects"), explore_path(category: "other-projects"), class: "overlay" %>
+      <%= image_tag 'other_optimized.jpg', class: 'background', alt: 'Other Projects' %>
+      <%= link_to t('home.categories.other_projects'), explore_path(category: 'other-projects'), class: 'overlay' %>
     </div>
   </div>
 </section>

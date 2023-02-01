@@ -3,20 +3,20 @@
   <div class="col-md-9 p-1">
     <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
       <div class="mb-3 mb-0">
-        <%= select_tag(:username, "", prompt: "Choose User...", :class => "form-control form-select", :id => "user_dashboard_select") %>
+        <%= select_tag(:username, '', prompt: 'Choose User...', class: 'form-control form-select', id: 'user_dashboard_select') %>
       </div>
     <% end %>
   </div>
   <div class="col-auto p-1 mb-auto ms-auto">
-         <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: "sign_in_user_fastsearch", remote: true do %>
-           <%= hidden_field_tag :added_users, "", { :id => "sign_in_user_fastsearch_username" } %>
-           <%= submit_tag "Sign In", class: 'btn btn-primary form-control ' %>
+         <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: 'sign_in_user_fastsearch', remote: true do %>
+           <%= hidden_field_tag :added_users, '', { id: 'sign_in_user_fastsearch_username' } %>
+           <%= submit_tag 'Sign In', class: 'btn btn-primary form-control ' %>
          <% end %>
          </div>
   <div class="col-auto p-1 mb-auto me-auto">
-         <%= form_tag staff_dashboard_user_profile_path, method: :get, id: "search_user_fastsearch" do %>
-           <%= hidden_field_tag :username, "", { :id => "search_user_fastsearch_username" } %>
-           <%= button_tag "Search", onclick: 'searchForm()', class: 'btn btn-secondary form-control' %>
+         <%= form_tag staff_dashboard_user_profile_path, method: :get, id: 'search_user_fastsearch' do %>
+           <%= hidden_field_tag :username, '', { id: 'search_user_fastsearch_username' } %>
+           <%= button_tag 'Search', onclick: 'searchForm()', class: 'btn btn-secondary form-control' %>
          <% end %>
          </div>
 
@@ -38,18 +38,18 @@
           <div style="flex-grow: 1">
             <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
               <div class="input-group mb-3">
-                <%= text_field_tag(:query, "", placeholder: "Name, email, username", :class => "form-control", 'aria-describedby': "button-addon2", style: "font-size: inherit;") %>
+                <%= text_field_tag(:query, '', placeholder: 'Name, email, username', class: 'form-control', 'aria-describedby': 'button-addon2', style: 'font-size: inherit;') %>
                 <button class="btn btn-primary" type="submit" id="button-addon2">Search</button>
               </div>
             <% end %>
           </div>
         </div>
         <div class="row">
-          <%= form_tag staff_dashboard_import_excel_path, method: :post, :multipart => true, class: "w-100" do %>
+          <%= form_tag staff_dashboard_import_excel_path, method: :post, multipart: true, class: 'w-100' do %>
             <p>Upload Excel File to log in users (Emails, names and usernames, first column only)</p>
             <div class="input-group mb-3">
-              <%= file_field_tag :file, style: "display: inline;", class: "form-control form-control-input-excel", id: "excel-input" %>
-              <%= submit_tag "Import File", class: "btn btn-primary" %>
+              <%= file_field_tag :file, style: 'display: inline;', class: 'form-control form-control-input-excel', id: 'excel-input' %>
+              <%= submit_tag 'Import File', class: 'btn btn-primary' %>
             </div>
           <% end %>
         </div>

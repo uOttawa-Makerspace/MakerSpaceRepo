@@ -2,7 +2,7 @@
   <div class="row">
     <div class="col-md-8">
 
-      <p><%= link_to "Back to Print Order Home", index_new_print_orders_path, class: "btn btn-primary" %></p>
+      <p><%= link_to 'Back to Print Order Home', index_new_print_orders_path, class: 'btn btn-primary' %></p>
 
       <br>
       <% if params['type'] != "laser" %>
@@ -28,7 +28,7 @@
         <% if params['type'] != "laser" %>
           <div class="mb-3">
             <label>STL File</label>
-            <%= f.file_field :file, style: "display: block!important;", :required => true, 'aria-label': 'STL File' %>
+            <%= f.file_field :file, style: 'display: block!important;', required: true, 'aria-label': 'STL File' %>
           </div>
 
           <fieldset class="mb-3">
@@ -124,14 +124,14 @@
             </div>
           </fieldset>
 
-          <%= f.hidden_field :order_type, :value => 0 %>
+          <%= f.hidden_field :order_type, value: 0 %>
 
         <% else %>
 
           <div class="mb-3">
             <label>SVG File</label>
             <label class="label-size">(Please put cut lines as 0.001 Inch and everything at 100% Opacity)</label>
-            <%= f.file_field :file, style: "display: block!important;", :required => true, 'aria-label': 'SVG File' %>
+            <%= f.file_field :file, style: 'display: block!important;', required: true, 'aria-label': 'SVG File' %>
           </div>
           <fieldset class="mb-3">
             <div class="row">
@@ -180,7 +180,7 @@
             </div>
           </fieldset>
 
-          <%= f.hidden_field :order_type, :value => 1 %>
+          <%= f.hidden_field :order_type, value: 1 %>
 
         <% end %>
 
@@ -188,7 +188,7 @@
 
         <div class="mb-3">
           <label>If you are in a <b>competitive team</b> please submit your signed off drawing for this part. (It needs to be a <b>PDF</b>)</label>
-          <%= f.file_field :pdf_form, style: "display: block!important;", 'aria-label': 'SVG File' %>
+          <%= f.file_field :pdf_form, style: 'display: block!important;', 'aria-label': 'SVG File' %>
         </div>
 
         <br>
@@ -222,7 +222,7 @@
           </div>
         </fieldset>
 
-        <%= f.hidden_field :user_id, :value => current_user.id %>
+        <%= f.hidden_field :user_id, value: current_user.id %>
 
         <div class="mb-3">
           <button class="btn btn-primary" type="submit">Submit Request</button>

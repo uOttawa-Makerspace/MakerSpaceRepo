@@ -1,33 +1,33 @@
 <section class="page-contents">
   <div>
-    <h2 class="text-center pt-2 mb-5">Viewing <strong><%=@user.name.titleize + "'s"%></strong> Training Sessions</h2>
+    <h2 class="text-center pt-2 mb-5">Viewing <strong><%= "#{@user.name.titleize}'s" %></strong> Training Sessions</h2>
     <div class="input-group w-50 mx-auto">
     <input type="text" class="form-control " id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
-    <%= fa_icon 'search', class: "input-group-text fa-2x pe-2" %>
+    <%= fa_icon 'search', class: 'input-group-text fa-2x pe-2' %>
     </div>
     <br />
     <table class="sessions-table table table-striped text-center mx-auto mb-3">
     <thead class="table-primary">
       <tr>
-        <th>Date <span onclick="sortTable('sessions-table', 0)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Training <span onclick="sortTable('sessions-table', 1)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Space <span onclick="sortTable('sessions-table', 3)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Course <span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Status <span onclick="sortTable('sessions-table', 5)"><%=fa_icon('arrow-down')%></span></th>
-        <th>Users <span onclick="sortTable('sessions-table', 6)"><%=fa_icon('arrow-down')%></span></th>
+        <th>Date <span onclick="sortTable('sessions-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Training <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Space <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Course <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Status <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Users <span onclick="sortTable('sessions-table', 6)"><%= fa_icon('arrow-down') %></span></th>
         <th class="action-header">Action</th>
       </tr>
     </thead>
       <tbody>
-        <% @sessions = TrainingSession.where(user_id: @user.id).paginate(:page => params[:page], :per_page => 50) %>
+        <% @sessions = TrainingSession.where(user_id: @user.id).paginate(page: params[:page], per_page: 50) %>
         <%= will_paginate @sessions, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
         <% @sessions.each do |sesh| %>
           <tr>
             <td class="date-cell">
-              <%= sesh.created_at.strftime("%I:%M %p").downcase() %>
+              <%= sesh.created_at.strftime('%I:%M %p').downcase %>
               <br>
-              <%= sesh.created_at.strftime("%b %e %Y").downcase() %>
+              <%= sesh.created_at.strftime('%b %e %Y').downcase %>
             </td>
 
             <td class="training-cell">
@@ -61,7 +61,7 @@
                   <div id="sesh-users" style="display:inline">
                     <% sesh.users.each do |user| %>
                       <div class="clickable-username">
-                        <%= link_to user.name, user_path(user.username), class: "user-link" %> <br>
+                        <%= link_to user.name, user_path(user.username), class: 'user-link' %> <br>
                       </div>
                     <% end %>
                   </div>
@@ -71,12 +71,12 @@
 
             <td class="action-cell">
             <br>
-              <%=link_to "Visit", staff_training_session_path(sesh), class:"btn btn-success btn-sm d-block w-100" %>
-              <%=link_to "Download",
-                        training_report_staff_training_session_path(id:sesh.id, format: "xlsx" ),
-                        action: :training_report,
-                        class:"btn btn-info btn-sm d-block w-100" %>
-              <%=button_to "Destroy", { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class:"btn btn-sm btn-danger d-block w-100 my-2"%>
+              <%= link_to 'Visit', staff_training_session_path(sesh), class: 'btn btn-success btn-sm d-block w-100' %>
+              <%= link_to 'Download',
+                          training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'),
+                          action: :training_report,
+                          class: 'btn btn-info btn-sm d-block w-100' %>
+              <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'btn btn-sm btn-danger d-block w-100 my-2' %>
             <br></br>
             </td>
           </tr>

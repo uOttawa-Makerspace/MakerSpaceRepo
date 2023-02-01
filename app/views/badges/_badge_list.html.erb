@@ -3,8 +3,8 @@
   <h2 style="text-align: center"><b>Badges</b></h2>
 
   <div class="apple_pagination">
-  <%= page_entries_info @acclaim_data, :model => 'badge' %>
-  <%= will_paginate @acclaim_data, :container => false %>
+  <%= page_entries_info @acclaim_data, model: 'badge' %>
+  <%= will_paginate @acclaim_data, container: false %>
 </div>
 <br>
 <div style="width: 100%;" class="row">
@@ -22,10 +22,10 @@
 
       <% if badges.badge_url.present? %>
         <a style="width: 150px;" target="_blank" href="<%= badges.badge_url %>">
-          <%= image_tag(badges.badge_template.image_url, :style => "width: inherit;display:block; margin:0 auto;", alt: "Badge image: #{badges.badge_template.badge_name}") %>
+          <%= image_tag(badges.badge_template.image_url, style: 'width: inherit;display:block; margin:0 auto;', alt: "Badge image: #{badges.badge_template.badge_name}") %>
         </a>
       <% else %>
-        <%= image_tag(badges.badge_template.image_url, :style => "width: 150px; display:block; margin:0 auto;", "data-bs-toggle" => "tooltip", :title => badges.issued_to + " didn't accept the badge yet", :alt => badges.issued_to + " didn't accept the badge yet") %>
+        <%= image_tag(badges.badge_template.image_url, :style => 'width: 150px; display:block; margin:0 auto;', 'data-bs-toggle' => 'tooltip', :title => "#{badges.issued_to} didn't accept the badge yet", :alt => "#{badges.issued_to} didn't accept the badge yet") %>
       <% end %>
     </div>
 
@@ -33,8 +33,8 @@
 </div>
 <br>
 <div class="apple_pagination">
-  <%= page_entries_info @acclaim_data, :model => 'badge' %>
-  <%= will_paginate @acclaim_data, :container => false %>
+  <%= page_entries_info @acclaim_data, model: 'badge' %>
+  <%= will_paginate @acclaim_data, container: false %>
 </div>
 
 <% rescue %>

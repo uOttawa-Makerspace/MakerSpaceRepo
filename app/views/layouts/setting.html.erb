@@ -4,8 +4,8 @@
   <title>Settings | MakerRepo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <%= favicon_link_tag 'site-icon.jpg' %>
-    <%= stylesheet_link_tag    "vendor",      :media => "all", :debug => false %>
-    <%= javascript_include_tag "vendor",      :debug => false %>
+    <%= stylesheet_link_tag 'vendor', media: 'all', debug: false %>
+    <%= javascript_include_tag 'vendor', debug: false %>
     <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
     <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
@@ -27,7 +27,7 @@
 		      	<%= link_to 'Account Settings', settings_admin_path %>
 		      </li>
 		      <li>
-		      <%= link_to "View Profile", user_path(@user.username) if current_page?(action: 'profile', controller: 'settings') || current_page?(action: 'admin', controller: 'settings')%>
+		      <%= link_to 'View Profile', user_path(@user.username) if current_page?(action: 'profile', controller: 'settings') || current_page?(action: 'admin', controller: 'settings') %>
 		      </li>
 				</ul>
 			</div>

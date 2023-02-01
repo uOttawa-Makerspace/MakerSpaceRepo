@@ -49,6 +49,7 @@ class Admin::ContactInfosController < AdminAreaController
       :phone_number,
       :url,
       :show_hours,
+      :space_id,
       opening_hour_attributes: %i[students public summer]
     )
   end

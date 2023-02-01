@@ -1,11 +1,11 @@
 <div>
-  <% provide(:title, "Project Proposals") %>
+  <% provide(:title, 'Project Proposals') %>
   <div class="by-5">
     <%= form_tag(project_proposals_path, method: :get) do %>
       <div class="d-flex justify-content-center">
-        <%= fa_icon 'search', class: "fa-2x pe-2" %>
+        <%= fa_icon 'search', class: 'fa-2x pe-2' %>
         <div class="col-md-4 search_bar" >
-        <%= text_field_tag(:search, "", placeholder: "Search", class: 'form-control') %>
+        <%= text_field_tag(:search, '', placeholder: 'Search', class: 'form-control') %>
         </div>
         <%# If search exists in the params, display back button %>
         <% if params[:search] && !params[:search].empty? %>

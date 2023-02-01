@@ -12,4 +12,12 @@ class JobStatus < ApplicationRecord
   PAID = JobStatus.find_by(name: "Paid")
   PICKED_UP = JobStatus.find_by(name: "Picked-Up")
   DECLINED = JobStatus.find_by(name: "Declined")
+
+  def t_name
+    I18n.locale == :fr ? name_fr : name
+  end
+
+  def t_description
+    I18n.locale == :fr ? description_fr : description
+  end
 end

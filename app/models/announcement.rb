@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class Announcement < ApplicationRecord
-  belongs_to :user, optional: true
+  has_many :announcement_dismisses, dependent: :destroy
+  belongs_to :user
   scope :active,
         -> {
           where(active: true).where(

@@ -113,7 +113,7 @@
               <table role="presentation" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;" width="100%">
                 <tr>
                   <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">
-                    <%= image_tag("ceed.png", alt: "CEED Logo", width: 120, height: 34, border: 0, style: "border:0; outline:none; text-decoration:none; display:block;") %>
+                    <%= image_tag('ceed.png', alt: 'CEED Logo', width: 120, height: 34, border: 0, style: 'border:0; outline:none; text-decoration:none; display:block;') %>
                     <br>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
 
@@ -125,7 +125,7 @@
 
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                       Your Job Order with ID #<%= @job_order.id %> has been approved. Check the
-                      <%=  %><a href="<%= user_magic_approval_job_orders_url(token: @hash) %>">Job Order page</a> to approve or deny the quote.
+  %><a href="<%= user_magic_approval_job_orders_url(token: @hash) %>">Job Order page</a> to approve or deny the quote.
                     </p>
 
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
@@ -134,7 +134,7 @@
 
                       <% @job_order.job_order_quote.job_order_quote_services.each do |s| %>
                         <%= s.job_service.job_service_group.name %> - <%= s.job_service.name %>
-                        (<%= "#{s.quantity} #{s.job_service.unit.present? ? s.job_service.unit : 'unit'}" %>) : CAD <%= number_to_currency(s.cost) %>
+                        (<%= "#{s.quantity} #{s.job_service.unit.presence || 'unit'}" %>) : CAD <%= number_to_currency(s.cost) %>
                         <br>
                       <% end %>
 

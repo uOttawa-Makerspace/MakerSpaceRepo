@@ -1,7 +1,13 @@
 class JobOrdersController < ApplicationController
   before_action :current_user
   before_action :signed_in,
-                except: %i[user_magic_approval user_magic_approval_confirmation]
+                except: %i[
+                  user_magic_approval
+                  user_magic_approval_confirmation
+                  pay
+                  stripe_success
+                  stripe_cancelled
+                ]
   before_action :grant_access,
                 only: %w[
                   admin
@@ -85,17 +91,17 @@ class JobOrdersController < ApplicationController
           params[:job_order][:job_service_ids] = @job_order.job_services.last.id
         end
         unless @job_order.update(job_order_params)
-          error << "Please make sure you have a uploaded a valid filetype."
+          error << t("job_orders.alerts.please_upload_valid_file_type")
         end
       end
 
       if params[:change_options].present? && params[:change_options] == "true"
         unless @job_order.add_options(params)
-          error = "The options have not successfully been saved."
+          error = t("job_orders.alerts.options_have_not_been_saved")
         end
       end
     else
-      error << "The Job Order hasn't been found."
+      error << t("job_orders.alerts.job_order_not_found")
     end
 
     if error.length > 0
@@ -103,7 +109,7 @@ class JobOrdersController < ApplicationController
                     @job_order,
                     step: (params[:step].to_i - 1)
                   )
-      flash[:alert] = "An error occurred while saving the job order step. " +
+      flash[:alert] = t("job_orders.alerts.error_while_saving_step") +
         error.join(", ")
     else
       @step = @job_order.max_step if (@job_order.max_step < @step)
@@ -135,11 +141,11 @@ class JobOrdersController < ApplicationController
             user: @user
           )
           JobOrderMailer.send_job_submitted(@job_order.id).deliver_now
-          flash[
-            :notice
-          ] = "Your job order has been submitted for staff approval!"
+          flash[:notice] = t(
+            "job_orders.alerts.job_order_submitted_for_approval"
+          )
         else
-          flash[:notice] = "Your job order has been updated!"
+          flash[:notice] = t("job_orders.alerts.job_order_updated")
         end
         redirect_to job_orders_path
       else
@@ -164,9 +170,7 @@ class JobOrdersController < ApplicationController
         redirect_to new_job_orders_path
       end
     else
-      flash[
-        :alert
-      ] = "An error occurred while trying to create the Job Order. Please try again."
+      flash[:alert] = t("job_orders.alerts.error_while_trying_to_create")
       render "new"
     end
   end
@@ -191,9 +195,7 @@ class JobOrdersController < ApplicationController
         JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
       render "job_orders/magic_approval"
     else
-      flash[
-        :alert
-      ] = "The following Job Order Approval link is invalid or has expired. Please Sign In to look at the Job Order Page."
+      flash[:alert] = t("job_orders.alerts.approval_magic_link_expired")
       redirect_to job_orders_path
     end
   end
@@ -218,9 +220,7 @@ class JobOrdersController < ApplicationController
       end
       render "job_orders/magic_approval_confirmation"
     else
-      flash[
-        :alert
-      ] = "An error occurred while trying to accept or deny the Job Order. Please try again."
+      flash[:alert] = t("job_orders.alerts.error_accept_deny_order")
       redirect_to job_orders_path
     end
   end
@@ -260,7 +260,7 @@ class JobOrdersController < ApplicationController
 
   def completed_email_modal
     @message =
-      "Your Job Order ##{@job_order.id} has now been completed. You can now pay for your order online by following <a href='https://wiki.makerepo.com/wiki/How_to_pay_for_an_Order'>these instructions</a>. You can check the <a href='https://makerepo.com/job_orders'>Job Order page</a> for details."
+      JobOrderMessage.find_by(name: "processed").retrieve_message(@job_order.id)
     render layout: false
   end
 
@@ -343,13 +343,12 @@ class JobOrdersController < ApplicationController
     end
 
     if !error
-      flash[
-        :notice
-      ] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
+      flash[:notice] = t(
+        "job_orders.alerts.updated_job_status_to_x",
+        status: @job_order.job_order_statuses.last.job_status.t_name
+      )
     else
-      flash[
-        :alert
-      ] = "An error occurred while updating the Job Order Status. Please try again later."
+      flash[:alert] = t("job_orders.alerts.error_while_updating")
     end
     respond_to do |format|
       format.html { redirect_to admin_job_orders_path }
@@ -375,7 +374,15 @@ class JobOrdersController < ApplicationController
          nil,
          nil
        ) && params[:completed] == "true"
-      if params[:send_email].present? && params[:send_email] == "true"
+      # Bypass Payment if order is 0$
+      if @job_order.total_price === 0
+        @job_order.job_order_statuses << JobOrderStatus.create(
+          job_order: @job_order,
+          job_status: JobStatus::PAID,
+          user: @user
+        )
+        JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+      elsif params[:send_email].present? && params[:send_email] == "true"
         JobOrderMailer.send_job_completed(
           @job_order.id,
           params[:message]
@@ -468,6 +475,45 @@ class JobOrdersController < ApplicationController
     render pdf: "invoice", template: "job_orders/invoice", formats: [:html]
   end
 
+  def pay
+    @token = params[:token]
+    verifier = Rails.application.message_verifier(:job_order_id)
+    if verifier.valid_message?(@token) &&
+         JobOrder.where(
+           id: verifier.verify(@token),
+           is_deleted: false
+         ).present? &&
+         JobStatus::COMPLETED ==
+           JobOrder
+             .where(id: verifier.verify(@token), is_deleted: false)
+             .first
+             .job_order_statuses
+             .last
+             .job_status
+      @job_order =
+        JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
+      @stripe_session =
+        Stripe::Checkout::Session.create(
+          success_url: stripe_success_job_orders_url,
+          cancel_url: stripe_cancelled_job_orders_url,
+          mode: "payment",
+          line_items: @job_order.generate_line_items,
+          billing_address_collection: "required",
+          client_reference_id: "job-order-#{@job_order.id}"
+        )
+      render "job_orders/pay"
+    else
+      flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
+      redirect_to job_orders_path
+    end
+  end
+
+  def stripe_success
+  end
+
+  def stripe_cancelled
+  end
+
   private
 
   def set_job_order
@@ -488,20 +534,18 @@ class JobOrdersController < ApplicationController
       if @user.admin? | @user.staff? || @user.id == jo.user_id
         @job_order = jo
       else
-        flash[:alert] = "You do not have permission to view this job order."
+        flash[:alert] = t("job_orders.alerts.no_permission")
         redirect_to new_job_orders_path
       end
     else
-      flash[:alert] = "You do not have permission to view this job order."
+      flash[:alert] = t("job_orders.alerts.no_permission")
       redirect_to new_job_orders_path
     end
   end
 
   def allow_edit
     unless @job_order.allow_edit? || @user.admin?
-      flash[
-        :alert
-      ] = "You cannot edit this Job Order. Please contact makerspace@uottawa.ca for assistance."
+      flash[:alert] = t("job_orders.alerts.cannot_edit")
       redirect_to job_orders_path
     end
   end
@@ -524,7 +568,7 @@ class JobOrdersController < ApplicationController
 
   def grant_access
     unless current_user.staff? || current_user.admin?
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = t("job_orders.alerts.cannot_access_area")
       redirect_to root_path
     end
   end
@@ -568,13 +612,12 @@ class JobOrdersController < ApplicationController
     end
 
     if !error
-      flash[
-        :notice
-      ] = "You have updated the Job Order Status to: #{@job_order.job_order_statuses.last.job_status.name}!"
+      flash[:notice] = t(
+        "job_orders.alerts.updated_job_status_to_x",
+        status: @job_order.job_order_statuses.last.job_status.t_name
+      )
     else
-      flash[
-        :alert
-      ] = "An error occurred while updating the Job Order Status. Please try again later."
+      flash[:alert] = t("job_orders.alerts.error_while_updating")
     end
 
     if redirect_link == nil

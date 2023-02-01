@@ -41,7 +41,6 @@ class Certification < ApplicationRecord
         end
       end
     else
-      errors.add(:string, "Something went wrong.")
       return false
     end
     true

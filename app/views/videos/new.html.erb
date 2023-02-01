@@ -1,4 +1,4 @@
-<% provide(:title, "New Video") %>
+<% provide(:title, 'New Video') %>
 <section class="card">
   <div class="col-lg-7 mx-auto">
     <br />
@@ -9,14 +9,14 @@
         <h5>Proficient Projects</h5>
         <div class="mb-3">
           <%= form_for @new_video do |f| %>
-            <%= f.select :proficient_project_id, options_for_select(@proficient_projects),{:include_blank => 'Choose a Project...'}, class: "form-control form-select", id: "select_proficient_id", :onchange => 'setProficientProject()', required: true %>
+            <%= f.select :proficient_project_id, options_for_select(@proficient_projects), { include_blank: 'Choose a Project...' }, class: 'form-control form-select', id: 'select_proficient_id', onchange: 'setProficientProject()', required: true %>
             <p id="proficient_project"></p>
             <div class="d-none" id="choose_video">
-                <%= f.file_field :video, direct_upload: true, accept: "video/*", :onchange => 'fetch_attachment_name()', id: "video", style: "display: none;", multiple: true %>
+                <%= f.file_field :video, direct_upload: true, accept: 'video/*', onchange: 'fetch_attachment_name()', id: 'video', style: 'display: none;', multiple: true %>
                 <label for="video" class="custom-instructable-upload-video" id="video-label">Choose Video...</label>
               <div class="text-center mb-5" id="video-name"></div>
               <br />
-              <%= f.submit "Upload Video", class: "btn btn-secondary" %>
+              <%= f.submit 'Upload Video', class: 'btn btn-secondary' %>
             </div>
           <% end %>
         </div>
@@ -25,14 +25,14 @@
         <h5>Learning Modules</h5>
         <div class="mb-3">
           <%= form_for @new_video do |f| %>
-            <%= f.select :learning_module_id, options_for_select(@learning_modules),{:include_blank => 'Choose a Module...'}, class: "form-control form-select", id: "select_module_id", :onchange => 'setLearningModule()', required: true %>
+            <%= f.select :learning_module_id, options_for_select(@learning_modules), { include_blank: 'Choose a Module...' }, class: 'form-control form-select', id: 'select_module_id', onchange: 'setLearningModule()', required: true %>
             <p id="learning_module"></p>
             <div class="d-none" id="choose_video_2">
-              <%= f.file_field :video, direct_upload: true, accept: "video/*", :onchange => 'fetch_attachment_name_2()', id: "video-2", style: "display: none;", multiple: true %>
+              <%= f.file_field :video, direct_upload: true, accept: 'video/*', onchange: 'fetch_attachment_name_2()', id: 'video-2', style: 'display: none;', multiple: true %>
               <label for="video-2" class="custom-instructable-upload-video" id="video-label-2">Choose Video...</label>
               <div class="text-center mb-5" id="video-name-2"></div>
               <br />
-              <%= f.submit "Upload Video", class: "btn btn-secondary" %>
+              <%= f.submit 'Upload Video', class: 'btn btn-secondary' %>
             </div>
           <% end %>
         </div>

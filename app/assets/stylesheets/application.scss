@@ -90,26 +90,16 @@ p {
 a {
   text-decoration: none;
   color: inherit;
-  &:not(
-      .btn,
-      .nav-item,
-      .nav-link,
-      .dropdown-item,
-      .navbar-brand,
-      .overlay,
-      .username,
-      .admin_username,
-      .user_name,
-      .edit-repo-link,
-      .certify-button,
-      .like,
-      .make
-    ) {
+  &:not(.btn, .nav-item, .nav-link, .dropdown-item, .navbar-brand, .overlay, .username, .admin_username, .user_name, .edit-repo-link, .certify-button, .like, .make) {
     color: $primary !important;
   }
   &::visited {
     color: #789;
   }
+
+  //&:visited {
+  //  color: #789;
+  //}
   //
   //&:focus{
   //  outline-style: none;
@@ -279,7 +269,14 @@ textarea:not(.form-control) {
     padding-right: 20px;
   }
 }
+
 td > .btn:not(:last-of-type) {
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font: 400 0.75rem "Raleway", helvetica, sans-serif;
+  color: #aaa;
   margin-bottom: 0.5rem;
 }
 

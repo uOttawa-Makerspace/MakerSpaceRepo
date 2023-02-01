@@ -1,0 +1,22 @@
+<section>
+  <div class="text-center pb-4">
+    <h2 class="fw-bold py-3">New Drop-Off Location</h2>
+    <div class="float-end">
+      <%= link_to 'Back', admin_drop_off_locations_path %>
+    </div>
+    <br />
+    <%= form_for @new_location, url: { controller: 'admin/drop_off_locations', action: 'create' } do |f| %>
+      <div class="container">
+        <div class="row text-center">
+          <div class="col-md-12 form-group">
+            Name: <%= f.text_field :name, placeholder: 'Write a location', class: 'form-control', required: true %>
+          </div>
+
+          <div class="col-md-12 form-group my-1">
+            <%= f.submit 'Create Location', class: 'btn btn-secondary btn-xl' %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</section>

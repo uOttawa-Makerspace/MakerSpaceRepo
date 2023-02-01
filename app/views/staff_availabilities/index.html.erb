@@ -9,8 +9,8 @@
     <div class="d-flex justify-content-center">
       <%= form_tag staff_availabilities_path, method: :get do %>
         <div class="input-group mb-3">
-          <%= label_tag :staff_id, "User", class: 'input-group-text' %>
-          <%= select_tag :staff_id, options_for_select(StaffSpace.all.joins(:user).order('users.name ASC').distinct.pluck('users.name', 'users.id'), selected: (params[:staff_id].present? ? params[:staff_id] : @user.id.to_s)), class: "form-select", include_blank:"Select Staff" %>
+          <%= label_tag :staff_id, 'User', class: 'input-group-text' %>
+          <%= select_tag :staff_id, options_for_select(StaffSpace.all.joins(:user).order('users.name ASC').distinct.pluck('users.name', 'users.id'), selected: (params[:staff_id].presence || @user.id.to_s)), class: 'form-select', include_blank: 'Select Staff' %>
           <button class="btn btn-outline-secondary" type="submit">Go</button>
         </div>
       <% end %>
@@ -23,21 +23,21 @@
 
   <br>
 
-  <%= link_to "New Staff Unavailability", new_staff_availability_path, class: "btn btn-primary m-1", style: 'color: #fff;' %>
+  <%= link_to 'New Staff Unavailability', new_staff_availability_path, class: 'btn btn-primary m-1', style: 'color: #fff;' %>
 
   <br><br>
 
-  <% if !@user_availabilities.blank?  %>
+  <% if !@user_availabilities.blank? %>
     <h3>My availabilities</h3>
     <%= render 'staff_availabilities/staff_table', availabilities: @user_availabilities %>
   <% else %>
     <div class="m-5">
-      You did not add any availabilities. Create one <%= link_to "here", new_staff_availability_url %>
+      You did not add any availabilities. Create one <%= link_to 'here', new_staff_availability_url %>
     </div>
     <br>
   <% end %>
 
-  <% if @user.admin? && @staff_availabilities.present?  %>
+  <% if @user.admin? && @staff_availabilities.present? %>
     <h3>Staff unavailabilities</h3>
     <%= render 'staff_availabilities/staff_table', availabilities: @staff_availabilities %>
   <% end %>

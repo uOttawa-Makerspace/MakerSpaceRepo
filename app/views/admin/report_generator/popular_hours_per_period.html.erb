@@ -1,4 +1,4 @@
-<% provide(:title, "Reports") %>
+<% provide(:title, 'Reports') %>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.0"></script>
 
 <section>
@@ -8,19 +8,19 @@
       <div style=" display: flex; justify-content: center;">
         <div class="row align-items-center">
           <div class="mb-3 col-md-4" style="width: 300px">
-            <%= label_tag(:start_date, "From", class:"form-label") %>
-            <%= date_field_tag(:start_date, params[:start_date], class: %w(form-control range-type-date-range-fields),) %>
+            <%= label_tag(:start_date, 'From', class: 'form-label') %>
+            <%= date_field_tag(:start_date, params[:start_date], class: %w[form-control range-type-date-range-fields]) %>
           </div>
 
           <div class="mb-3 col-md-4" style="width: 300px">
-            <%= label_tag(:end_date, "To", class:"form-label") %>
-            <%= date_field_tag(:end_date, params[:end_date], class: %w(form-control range-type-date-range-fields)) %>
+            <%= label_tag(:end_date, 'To', class: 'form-label') %>
+            <%= date_field_tag(:end_date, params[:end_date], class: %w[form-control range-type-date-range-fields]) %>
           </div>
 
           <div class="mb-3 col-md-4">
             <label for="end_date">Start</label>
             <br>
-            <%= button_tag("Generate", { class: "btn btn-primary" }) %>
+            <%= button_tag('Generate', { class: 'btn btn-primary' }) %>
           </div>
         </div>
       </div>
@@ -30,14 +30,14 @@
   <ul class="nav nav-tabs">
     <% @spaces.each do |space| %>
       <li class="nav-item">
-        <a class="nav-link  <%= @space.name == space.name ? "active" : "" %>" data-bs-toggle="tab" href="#<%= space.name.gsub(" ", "_") %>"><%= space.name %></a>
+        <a class="nav-link  <%= @space.name == space.name ? 'active' : '' %>" data-bs-toggle="tab" href="#<%= space.name.gsub(' ', '_') %>"><%= space.name %></a>
       </li>
     <% end %>
   </ul>
 
   <div class="tab-content">
     <% @spaces.each do |space| %>
-      <div class="tab-pane container <%= @space.name == space.name ? "active" : "" %>" id="<%= space.name.gsub(" ", "_") %>">
+      <div class="tab-pane container <%= @space.name == space.name ? 'active' : '' %>" id="<%= space.name.gsub(' ', '_') %>">
         <br>
         <span style="text-align: center!important; display: block;">The following stats are being updated automatically over time. It takes the average per hour for every day of the week and every spaces.</span>
         <div class="row">
@@ -45,10 +45,10 @@
             <br>
             <div class="col-4">
               <h3 class="text-center"><%= @weekdays[weekday] %></h3>
-              <canvas id="<%= space.name.gsub(" ", "-") %>-<%= weekday %>" width="450" height="300"></canvas>
+              <canvas id="<%= space.name.gsub(' ', '-') %>-<%= weekday %>" width="450" height="300"></canvas>
             </div>
             <script type="text/javascript" charset="utf-8">
-                var ctx = document.getElementById('<%= space.name.gsub(" ", "-") %>-<%= weekday %>').getContext('2d');
+                var ctx = document.getElementById('<%= space.name.gsub(' ', '-') %>-<%= weekday %>').getContext('2d');
                 var myChart = new Chart(ctx, {
                     type: 'bar',
                     data: {

@@ -3,10 +3,10 @@
   <span><%= prints.user.email %></span>
 </th>
 
-<td><%= ((prints.user.identity == "undergrad") or (prints.user.identity == "grad") or (prints.user.identity == "faculty_member")) ? "Internal" : "External" %></td>
+<td><%= (prints.user.identity == 'undergrad') || (prints.user.identity == 'grad') || (prints.user.identity == 'faculty_member') ? 'Internal' : 'External' %></td>
 
 <% if prints.order_type == 0 and prints.grams %>
-  <td>3D Printing (<%= prints.grams %> <%= prints.sst? ? "h" : "g" %>)</td>
+  <td>3D Printing (<%= prints.grams %> <%= prints.sst? ? 'h' : 'g' %>)</td>
 <% elsif prints.order_type == 0 %>
   <td>3D Printing</td>
 <% elsif prints.order_type == 1 %>
@@ -21,15 +21,15 @@
 
 <td>
   <%= prints.material %>
-  <%= "<br>".html_safe if prints.comments.present? %>
+  <%= '<br>'.html_safe if prints.comments.present? %>
   <%= prints.comments %>
-  <%= "<br>".html_safe if prints.comments_box.present? %>
+  <%= '<br>'.html_safe if prints.comments_box.present? %>
   <%= prints.comments_box %>
 </td>
 
 <td>
   <% if prints.file.attached? %>
-    <%= link_to "Download", rails_blob_path(prints.file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+    <%= link_to 'Download', rails_blob_path(prints.file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
     <br>
     <span style="word-break: break-all;"><%= prints.file.filename %></span>
   <% else %>
@@ -38,7 +38,7 @@
 </td>
 <td>
   <% if prints.pdf_form.attached? %>
-    <%= link_to "Download", rails_blob_path(prints.pdf_form, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+    <%= link_to 'Download', rails_blob_path(prints.pdf_form, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
     <br>
     <span style="word-break: break-all;"><%= prints.pdf_form.filename %></span>
   <% else %>
@@ -46,10 +46,10 @@
   <% end %>
 </td>
 <td>
-  <%= link_to "Edit Quote", print_order_edit_approval_path(prints.id), class: "btn btn-sm btn-primary", style: "margin-bottom: 10px;" + "<br>".html_safe if (prints.approved? && !prints.user_approval?) %>
+  <%= link_to 'Edit Quote', print_order_edit_approval_path(prints.id), class: 'btn btn-sm btn-primary', style: "margin-bottom: 10px;#{'<br>'.html_safe}" if prints.approved? && !prints.user_approval? %>
   <% if prints.final_file.attached? %>
     <% prints.final_file.each do |final_file| %>
-      <%= link_to "Download", rails_blob_path(final_file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+      <%= link_to 'Download', rails_blob_path(final_file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
       <br>
       <span style="word-break: break-all;"><%= final_file.filename %></span>
     <% end %>
@@ -86,14 +86,14 @@
       <% if @user.admin? %>
         <br>
         <%= form_for prints, url: print_order_path(prints) do |f| %>
-          <%= f.hidden_field :user_approval, :value => true %>
-          <%= f.hidden_field :timestamp_approved, :value => DateTime.now %>
-          <%= f.submit "I accept the quote", class: 'btn btn-primary', 'aria-label': "I accept the quote of #{prints.quote} $", data: { confirm: "#{"Here are the comments from the staff: " + prints.staff_comments + "." unless prints.staff_comments.empty? } Are you sure?" } %>
+          <%= f.hidden_field :user_approval, value: true %>
+          <%= f.hidden_field :timestamp_approved, value: DateTime.now %>
+          <%= f.submit 'I accept the quote', class: 'btn btn-primary', 'aria-label': "I accept the quote of #{prints.quote} $", data: { confirm: "#{"Here are the comments from the staff: #{prints.staff_comments}." unless prints.staff_comments.empty?} Are you sure?" } %>
         <% end %>
         <br>
         <%= form_for prints, url: print_order_path(prints) do |f| %>
-          <%= f.hidden_field :user_approval, :value => false %>
-          <%= f.submit "I don't accept it", class: 'btn btn-danger', 'aria-label': "I DO NOT accept the quote of #{prints.quote} $", data: { confirm: "#{"Here are the comments from the staff: " + prints.staff_comments + "." unless prints.staff_comments.empty? } Are you sure?" } %>
+          <%= f.hidden_field :user_approval, value: false %>
+          <%= f.submit "I don't accept it", class: 'btn btn-danger', 'aria-label': "I DO NOT accept the quote of #{prints.quote} $", data: { confirm: "#{"Here are the comments from the staff: #{prints.staff_comments}." unless prints.staff_comments.empty?} Are you sure?" } %>
         <% end %>
       <% end %>
     <% end %>
@@ -116,8 +116,8 @@
   <% elsif prints.user_approval and prints.approved %>
     <td>
       <%= form_for prints, url: print_order_path(prints) do |f| %>
-        <%= f.hidden_field :staff_id, :value => @user.id %>
-        <%= f.submit 'I will print it', class: "btn btn-primary", data: { confirm: "Please read the following instructions : #{prints.comments_for_staff.present? ? prints.comments_for_staff : "No instructions given"}" } %>
+        <%= f.hidden_field :staff_id, value: @user.id %>
+        <%= f.submit 'I will print it', class: 'btn btn-primary', data: { confirm: "Please read the following instructions : #{prints.comments_for_staff.presence || 'No instructions given'}" } %>
       <% end %>
     </td>
   <% else %>
@@ -159,13 +159,13 @@
 
                       <div class="ps-5 ps-5 text-center">
                         <div class="text-start">
-                          <input id="x-<%= prints.id %>" value="<%= PrintOrderMessage.find_by(name: "I_Printed_It").retrieve_message(prints.id) %>" type="hidden" name="email_message">
+                          <input id="x-<%= prints.id %>" value="<%= PrintOrderMessage.find_by(name: 'I_Printed_It').retrieve_message(prints.id) %>" type="hidden" name="email_message">
                           <trix-editor input="x-<%= prints.id %>"></trix-editor>
                         </div>
                         <br>
                         <p>Send email to user</p>
-                        <%= f.hidden_field :printed, :value => true, id: "printed-email-true-#{prints.id}" %>
-                        <%= f.submit "I Printed it", class: "btn btn-primary" %>
+                        <%= f.hidden_field :printed, value: true, id: "printed-email-true-#{prints.id}" %>
+                        <%= f.submit 'I Printed it', class: 'btn btn-primary' %>
                       </div>
 
                     <% end %>
@@ -173,9 +173,9 @@
                   <div class="col-md-12 text-center">
                     <p>Do not send email to user</p>
                     <%= form_for prints, url: print_order_path(prints), html: { id: "email-false-#{prints.id}" } do |f| %>
-                      <%= f.hidden_field :printed, :value => true, id: "printed-email-false-#{prints.id}" %>
+                      <%= f.hidden_field :printed, value: true, id: "printed-email-false-#{prints.id}" %>
                       <%= hidden_field_tag :email_false, true %>
-                      <%= f.submit "I Printed it", class: "btn btn-danger" %>
+                      <%= f.submit 'I Printed it', class: 'btn btn-danger' %>
                     <% end %>
                   </div>
                 </div>
@@ -210,8 +210,8 @@
       <% if prints.printed? %>
         Price : <%= number_to_currency(prints.quote) %>
         <%= form_for prints, url: print_order_path(prints, table_id: "print-#{prints.id}", index: index), remote: true, format: :js do |f| %>
-          <%= f.hidden_field :payed, :value => 'true' %>
-          <%= f.submit 'Paid?', class: "btn btn-primary", data: { confirm: "Are you sure the client paid ?" } %>
+          <%= f.hidden_field :payed, value: 'true' %>
+          <%= f.submit 'Paid?', class: 'btn btn-primary', data: { confirm: 'Are you sure the client paid ?' } %>
         <% end %>
       <% end %>
     <% end %>
@@ -224,8 +224,8 @@
       <br>
       <% if prints.payed? %>
         <%= form_for prints, url: print_order_path(prints, table_id: "print-#{prints.id}", index: index), remote: true, format: :js do |f| %>
-          <%= f.hidden_field :picked_up, :value => 'true' %>
-          <%= f.submit 'Picked Up', class: "btn btn-primary", data: { confirm: "Are you sure the client picked-up the item?" } %>
+          <%= f.hidden_field :picked_up, value: 'true' %>
+          <%= f.submit 'Picked Up', class: 'btn btn-primary', data: { confirm: 'Are you sure the client picked-up the item?' } %>
         <% end %>
       <% end %>
     <% end %>
@@ -233,12 +233,12 @@
 <% end %>
 <% if index == 1 || index == 2 || index == 3 %>
   <td>
-    <%= button_to 'Invoice', print_order_path(prints), method: :get, class: "btn btn-primary", target: '_blank' %>
+    <%= button_to 'Invoice', print_order_path(prints), method: :get, class: 'btn btn-primary', target: '_blank' %>
   </td>
 <% end %>
 <td>
   <% if @user.admin? %>
-    <%= button_to 'Delete', print_order_path(prints), method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %>
+    <%= button_to 'Delete', print_order_path(prints), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
   <% else %>
     Can not delete
   <% end %>

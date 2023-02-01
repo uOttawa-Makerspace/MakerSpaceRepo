@@ -1,0 +1,374 @@
+<section>
+  <div class="title">Booking Admin Panel</div>
+  <div class="container mx-auto">
+        <div class="card mb-3">
+          <div class="card-header" type="button" data-bs-toggle="collapse" data-bs-target="#booking-body" aria-expanded="true" aria-controls="booking-body">
+            <h5 class="card-title">Manage Bookings</h5>
+          </div>
+          <div class="card-body collapse show" id="booking-body">
+            <div class="accordion" id="pending-accordion">
+              <div class="accordion-item">
+                <div class="accordion-header accordion-button" id="pendingHeader" type="button" data-bs-toggle="collapse" data-bs-target="#pendingBody" aria-expanded="true" aria-controls="pendingBody">
+                  <h5 class="mb-0 text-center w-100">
+                    Pending Bookings
+                  </h5>
+                </div>
+                <div id="pendingBody" class="collapse show accordion-body" aria-labelledby="pendingHeader " data-bs-parent="#pending-accordion">
+
+                  <div class="table-responsive">
+                    <div class="apple_pagination">
+                      <%= page_entries_info @pending_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @pending_bookings, container: false, param_name: 'pending_page' %>
+                    </div>
+                    <table class="table table-striped">
+                      <thead class="text-center  table-primary">
+                      <tr>
+                        <th>Room</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Booking Time</th>
+                        <th>Actions</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <% @pending_bookings.each do |booking| %>
+                          <tr>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
+                            <td><%= booking.name %></td>
+                            <td><%= booking.description %></td>
+                            <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
+                            <td><%= booking.user.email %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
+                            <td>
+                              <div class="btn-group" role="group">
+                                <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
+                                <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
+                              </div>
+                            </td>
+                          </tr>
+                      <% end %>
+                      </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="accordion mb-3 mt-3" id="approved-accordion">
+              <div class="accordion-item">
+                <div class="accordion-header accordion-button" id="approvedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#approvedBody" aria-expanded="true" aria-controls="approvedBody">
+                  <h5 class="mb-0 text-center w-100">
+                    Accepted Bookings
+                  </h5>
+                </div>
+                <div id="approvedBody" class="collapse show accordion-body" aria-labelledby="approvedHeading" data-bs-parent="#approved-accordion">
+                  <div class="table-responsive">
+                    <div class="apple_pagination">
+                        <%= page_entries_info @approved_bookings, model: 'subspace_booking' %>
+                        <%= will_paginate @approved_bookings, container: false, param_name: 'approved_page' %>
+                    </div>
+                    <table class="table table-striped">
+                      <thead class="text-center  table-primary">
+                      <tr>
+                        <th>Room</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Booking Time</th>
+                        <th>Public Booking</th>
+                        <th>Actions</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <% @approved_bookings.each do |booking| %>
+                          <tr>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
+                            <td><%= booking.name %></td>
+                            <td><%= booking.description %></td>
+                            <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
+                            <td><%= booking.user.email %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
+                            <td><%= booking.public ? 'Public' : 'Private' %></td>
+                            <td>
+                              <div class="btn-group" role="group">
+                                <%= link_to booking.public ? 'Make Private' : 'Make Public', sub_space_booking_publish_path(booking), method: :put, class: "btn text-nowrap#{booking.public ? ' btn-secondary' : ' btn-primary'}" %>
+                                <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
+                              </div>
+                            </td>
+                          </tr>
+                      <% end %>
+                      </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="accordion mb-3" id="declined-accordion">
+              <div class="accordion-item">
+                <div class="accordion-header accordion-button" id="declinedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#declinedBody" aria-expanded="true" aria-controls="declinedBody">
+                  <h5 class="mb-0 text-center w-100">
+                    Declined Bookings
+                  </h5>
+                </div>
+                <div id="declinedBody" class="collapse show accordion-body" aria-labelledby="declinedHeading" data-bs-parent="#declined-accordion">
+                  <div class="table-responsive">
+                    <div class="apple_pagination">
+                      <%= page_entries_info @declined_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @declined_bookings, container: false, param_name: 'denied_page' %>
+                    </div>
+                    <table class="table table-striped">
+                      <thead class="text-center  table-primary">
+                      <tr>
+                        <th>Room</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Booking Time</th>
+                        <th>Actions</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <% @declined_bookings.each do |booking| %>
+                          <tr>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
+                            <td><%= booking.name %></td>
+                            <td><%= booking.description %></td>
+                            <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
+                            <td><%= booking.user.email %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
+                            <td>
+                              <div class="btn-group" role="group">
+                                <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
+                              </div>
+                            </td>
+                          </tr>
+                      <% end %>
+                      </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-3" id="user-card">
+          <div class="card-header" id="user-header" type="button" data-bs-toggle="collapse" data-bs-target="#user-body" aria-expanded="true" aria-controls="user-body">
+            <h5 class="card-title">Manage User Booking Permissions</h5>
+          </div>
+          <div class="card-body collapse show" id="user-body"  aria-labelledby="user-heading" data-bs-parent="#user-card">
+            <%= form_with url: approve_access_sub_space_booking_index_path, method: :put do |f| %>
+              <div class="input-group mb-3">
+                <%= f.select :user_id, [], {}, { class: 'form-select form-control', id: 'user_booking_select' } %>
+                <%= f.submit 'Permit Access ', class: 'btn btn-primary' %>
+              </div>
+            <% end %>
+            <div class="accordion mb-3" id="user-approval-accordion">
+              <div class="accordion-item">
+                <div class="accordion-header accordion-button" id="user-approval-header" type="button" data-bs-toggle="collapse" data-bs-target="#userApprovalBody" aria-expanded="true" aria-controls="userApprovalBody">
+                  <h5 class="mb-0 text-center w-100">
+                    Users Pending Booking Approval
+                  </h5>
+                </div>
+                <div class="accordion-body collapse show" aria-labelledby="user-approval-header" data-bs-parent="#user-approval-accordion" id="userApprovalBody">
+                  <table class="table table-striped">
+                    <thead class="text-center  table-primary">
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Comments</th>
+                      <th>Date of Request</th>
+                      <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <% UserBookingApproval.where(approved: false).each do |user_booking_approval| %>
+                      <tr>
+                        <td><%= user_booking_approval.user.name %></td>
+                        <td><%= user_booking_approval.user.email %></td>
+                        <td><%= user_booking_approval.comments %></td>
+                        <td><%= user_booking_approval.created_at.to_formatted_s(:short) %></td>
+                        <td>
+                          <div class="btn-group" role="group">
+                            <%= link_to 'Approve', approve_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-success' %>
+                            <%= link_to 'Reject', deny_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-danger' %>
+                          </div>
+                        </td>
+                      </tr>
+                    <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="accordion mb-3" id="user-approved-accordion">
+              <div class="accordion-item">
+                <div class="accordion-header accordion-button" id="user-approved-header" type="button" data-bs-toggle="collapse" data-bs-target="#userApprovedBody" aria-expanded="true" aria-controls="userApprovedBody">
+                  <h5 class="mb-0 text-center w-100">
+                    Users with Booking Approval
+                  </h5>
+                </div>
+                <div class="accordion-body collapse show" aria-labelledby="user-approved-header" data-bs-parent="#user-approved-accordion" id="userApprovedBody">
+                  <table class="table table-striped">
+                    <thead class="text-center  table-primary">
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Comments</th>
+                      <th>Date of Request</th>
+                      <th>Approved by</th>
+                      <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <% UserBookingApproval.where(approved: true).each do |user_booking_approval| %>
+                      <tr>
+                        <td><%= user_booking_approval.user.name %></td>
+                        <td><%= user_booking_approval.user.email %></td>
+                        <td><%= user_booking_approval.comments %></td>
+                        <td><%= user_booking_approval.created_at.to_formatted_s(:short) %></td>
+                        <td><%= user_booking_approval.staff.name %></td>
+                        <td>
+                          <div class="btn-group" role="group">
+                            <%= link_to 'Revoke', deny_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-danger' %>
+                          </div>
+                        </td>
+                      </tr>
+                    <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header" type="button" data-bs-toggle="collapse" data-bs-target="#past-booking-body" aria-expanded="true" aria-controls="past-booking-body">
+            <h5 class="card-title">Past Bookings</h5>
+          </div>
+          <div class="card-body collapse show" id="past-booking-body">
+            <div class="accordion" id="past-pending-accordion">
+              <div class="accordion-item">
+                <div class="accordion-header accordion-button" id="pastPendingHeader" type="button" data-bs-toggle="collapse" data-bs-target="#pastPendingBody" aria-expanded="true" aria-controls="pastPendingBody">
+                  <h5 class="mb-0 text-center w-100">
+                    Expired Pending Bookings
+                  </h5>
+                </div>
+                <div id="pastPendingBody" class="collapse show accordion-body" aria-labelledby="pastPendingHeader " data-bs-parent="#past-pending-accordion">
+                  <div class="table-responsive">
+                    <div class="apple_pagination">
+                      <%= page_entries_info @old_pending_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @old_pending_bookings, container: false, param_name: 'old_pending_page' %>
+                    </div>
+                    <table class="table table-striped">
+                      <thead class="text-center  table-primary">
+                      <tr>
+                        <th>Room</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Booking Time</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <% @old_pending_bookings.each do |booking| %>
+                          <tr>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
+                            <td><%= booking.name %></td>
+                            <td><%= booking.description %></td>
+                            <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
+                            <td><%= booking.user.email %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
+                          </tr>
+                      <% end %>
+                      </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="accordion mb-3 mt-3" id="past-approved-accordion">
+              <div class="accordion-item">
+                <div class="accordion-header accordion-button" id="pastApprovedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#pastApprovedBody" aria-expanded="true" aria-controls="pastApprovedBody">
+                  <h5 class="mb-0 text-center w-100">
+                    Accepted Bookings
+                  </h5>
+                </div>
+                <div id="pastApprovedBody" class="collapse show accordion-body" aria-labelledby="pastApprovedHeading" data-bs-parent="#past-approved-accordion">
+                  <div class="table-responsive">
+                    <div class="apple_pagination">
+                      <%= page_entries_info @old_approved_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @old_approved_bookings, container: false, param_name: 'old_approved_page' %>
+                    </div>
+                    <table class="table table-striped">
+                      <thead class="text-center  table-primary">
+                      <tr>
+                        <th>Room</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Booking Time</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <% @old_approved_bookings.each do |booking| %>
+                          <tr>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
+                            <td><%= booking.name %></td>
+                            <td><%= booking.description %></td>
+                            <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
+                            <td><%= booking.user.email %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
+                          </tr>
+                      <% end %>
+                      </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="accordion mb-3" id="past-declined-accordion">
+              <div class="accordion-item">
+                <div class="accordion-header accordion-button" id="pastDeclinedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#pastDeclinedBody" aria-expanded="true" aria-controls="pastDeclinedBody">
+                  <h5 class="mb-0 text-center w-100">
+                    Declined Bookings
+                  </h5>
+                </div>
+                <div id="pastDeclinedBody" class="collapse show accordion-body" aria-labelledby="pastDeclinedHeading" data-bs-parent="#past-declined-accordion">
+                  <div class="table-responsive">
+                    <div class="apple_pagination">
+                      <%= page_entries_info @old_declined_bookings, model: 'subspace_booking' %>
+                      <%= will_paginate @old_declined_bookings, container: false, param_name: 'old_denied_page' %>
+                    </div>
+                    <table class="table table-striped">
+                      <thead class="text-center  table-primary">
+                      <tr>
+                        <th>Room</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Booking Time</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <% @old_declined_bookings.each do |booking| %>
+                          <tr>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
+                            <td><%= booking.name %></td>
+                            <td><%= booking.description %></td>
+                            <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
+                            <td><%= booking.user.email %></td>
+                            <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
+                          </tr>
+                      <% end %>
+                      </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+</section>

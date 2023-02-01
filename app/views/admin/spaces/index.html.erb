@@ -1,20 +1,20 @@
 <section>
-  <h2 class="fw-bold py-3 text-center"><%= link_to "Spaces Manager", admin_spaces_path %></h2>
+  <h2 class="fw-bold py-3 text-center"><%= link_to 'Spaces Manager', admin_spaces_path %></h2>
   <br>
 
   <h2>Select a Space To Edit </h2>
   <div class="list-group">
     <% Space.all.each do |space| %>
-      <%= button_to ("Edit " + space.name), edit_admin_space_path(id: space.id), method: :get, class: "list-group-item list-group-item-action" %>
+      <%= button_to "Edit #{space.name}", edit_admin_space_path(id: space.id), method: :get, class: 'list-group-item list-group-item-action' %>
     <% end %>
   </div>
   <br>
   <h3>Create a new space by giving it a unique name </h3>
-  <%= form_for admin_spaces_path, :url => {:action => "create", controller: 'admin/spaces'} do |f| %>
+  <%= form_for admin_spaces_path, url: { action: 'create', controller: 'admin/spaces' } do |f| %>
     <div class="mb-3">
-      <%= text_field_tag 'space_params[name]', nil, placeholder: 'Enter a unique name', class: "form-control" %>
+      <%= text_field_tag 'space_params[name]', nil, placeholder: 'Enter a unique name', class: 'form-control' %>
     </div>
-    <%= submit_tag "Create", class: "btn btn-primary" %>
+    <%= submit_tag 'Create', class: 'btn btn-primary' %>
   <% end %>
   <br></br>
 </section>

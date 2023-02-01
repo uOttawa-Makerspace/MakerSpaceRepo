@@ -7,7 +7,7 @@
   <%= link_to jo.user.name, user_path(jo.user.username) %>
   <%= jo.user.email %>
 </td>
-<td><%= jo.user.internal? ? "Internal" : "External" %></td>
+<td><%= jo.user.internal? ? 'Internal' : 'External' %></td>
 <td><%= jo.id %></td>
 <td><%= jo.created_at.to_formatted_s(:long_ordinal) %></td></td>
 <td>
@@ -21,19 +21,21 @@
   <% jo.job_order_options.each do |option| %>
     <li><%= option.job_option.name %></li>
     <% if option.option_file.attached? %>
-      <%= link_to "Download", rails_blob_path(option.option_file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+      <%= link_to 'Download', rails_blob_path(option.option_file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
       <br>
       <span style="word-break: break-all;"><%= option.option_file.filename %></span>
     <% end %>
   <% end %>
 </td>
 <td>
-  <a class="link-primary" data-action="click->launch-modal#launchCommentsModal" data-id="<%= jo.id %>" data-comments="<%= simple_format(jo.comments) %>"><%= simple_format(jo.comments.truncate(40)) %></a>
+  <% if jo.comments.present? %>
+    <a class="link-primary" data-action="click->launch-modal#launchCommentsModal" data-id="<%= jo.id %>" data-comments="<%= simple_format(jo.comments) %>"><%= simple_format(jo.comments.truncate(40)) %></a>
+  <% end %>
 </td>
 <td>
   <% if jo.user_files.attached? %>
     <% jo.user_files.each do |file| %>
-      <%= link_to "Download", rails_blob_path(file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+      <%= link_to 'Download', rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
       <br>
       <span style="word-break: break-all;"><%= file.filename %></span>
     <% end %>
@@ -44,7 +46,7 @@
 <td>
   <% if jo.staff_files.attached? %>
     <% jo.staff_files.each do |file| %>
-      <%= link_to "Download", rails_blob_path(file, disposition: 'attachment'), class: "btn btn-primary btn-sm" %>
+      <%= link_to 'Download', rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
       <br>
       <span style="word-break: break-all;"><%= file.filename %></span>
     <% end %>
@@ -64,17 +66,17 @@
     <button class="btn btn-primary btn-sm btn-block" data-action="click->launch-modal#launchQuoteModal" data-id="<%= jo.id %>">Approve</button>
     <button class="btn btn-danger btn-sm btn-block" data-action="click->launch-modal#launchDeclineModal" data-id="<%= jo.id %>">Deny</button>
   <% elsif [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(jo.job_order_statuses.last.job_status) %>
-    <%= button_to "Approve", job_order_user_approval_path(jo, approved: true), method: :patch, remote: true, format: :js, class: "btn btn-primary btn-sm btn-block my-2", data: { confirm: "Are you sure you want to approve the Job Order on behalf of the user?" } %>
-    <%= button_to "Reject", job_order_user_approval_path(jo, approved: false), method: :patch, remote: true, format: :js, class: "btn btn-danger btn-sm btn-block", data: { confirm: "Are you sure you want to decline the Job Order on behalf of the user?" } %>
-    <%= button_to "Reminder", job_order_resend_quote_email_path(jo), method: :patch, remote: true, format: :js, class: "btn btn-info btn-sm btn-block my-2", data: { confirm: "Are you sure you want to resend a quote reminder email?" } %>
+    <%= button_to 'Approve', job_order_user_approval_path(jo, approved: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want to approve the Job Order on behalf of the user?' } %>
+    <%= button_to 'Reject', job_order_user_approval_path(jo, approved: false), method: :patch, remote: true, format: :js, class: 'btn btn-danger btn-sm btn-block', data: { confirm: 'Are you sure you want to decline the Job Order on behalf of the user?' } %>
+    <%= button_to 'Reminder', job_order_resend_quote_email_path(jo), method: :patch, remote: true, format: :js, class: 'btn btn-info btn-sm btn-block my-2', data: { confirm: 'Are you sure you want to resend a quote reminder email?' } %>
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::WAITING_PROCESSED %>
-    <%= button_to "Start Processing", job_order_start_processing_path(jo, start_processing: true), method: :patch, remote: true, format: :js, class: "btn btn-primary btn-sm btn-block my-2", data: { confirm: "Are you sure you want to start the processing off the part?" } %>
+    <%= button_to 'Start Processing', job_order_start_processing_path(jo, start_processing: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want to start the processing off the part?' } %>
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::BEING_PROCESSED %>
     <button class="btn btn-primary btn-sm btn-block" data-action="click->launch-modal#launchCompletedEmailModal" data-id="<%= jo.id %>">Completed</button>
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::COMPLETED %>
-    <%= button_to "Paid?", job_order_paid_path(jo, paid: true), method: :patch, remote: true, format: :js, class: "btn btn-primary btn-sm btn-block my-2", data: { confirm: "Are you sure you want set the Job Order as paid?" } %>
+    <%= button_to 'Paid?', job_order_paid_path(jo, paid: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want set the Job Order as paid?' } %>
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::PAID %>
-    <%= button_to "Picked-Up?", job_order_picked_up_path(jo, picked_up: true), method: :patch, remote: true, format: :js, class: "btn btn-primary btn-sm btn-block my-2", data: { confirm: "Are you sure you want set the Job Order as Picked-Up?" } %>
+    <%= button_to 'Picked-Up?', job_order_picked_up_path(jo, picked_up: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want set the Job Order as Picked-Up?' } %>
   <% else %>
     Not action available
   <% end %>
@@ -91,7 +93,7 @@
 </td>
 <td>
   <% if @user.admin? %>
-    <%= link_to('Delete', job_order_path(jo), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: "btn btn-danger btn-sm") %>
+    <%= link_to('Delete', job_order_path(jo), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: 'btn btn-danger btn-sm') %>
   <% else %>
     Can not delete
   <% end %>
