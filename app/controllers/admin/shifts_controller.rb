@@ -125,8 +125,8 @@ class Admin::ShiftsController < AdminAreaController
 
   def copy_to_next_week
     end_of_week_param = DateTime.parse(params[:end_of_week])
-    start_of_week = end_of_week_param.beginning_of_week
-    end_of_week = end_of_week_param.end_of_week
+    start_of_week = end_of_week_param.beginning_of_week - 1.day
+    end_of_week = end_of_week_param.end_of_week - 1.day
     new_shifts = []
     Shift
       .where(space_id: @space_id, start_datetime: start_of_week..end_of_week)
