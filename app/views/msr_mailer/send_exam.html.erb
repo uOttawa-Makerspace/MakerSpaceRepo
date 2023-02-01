@@ -113,13 +113,13 @@
               <table role="presentation" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;" width="100%">
                 <tr>
                   <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">
-                    <%= image_tag("ceed.png", alt: "CEED Logo", width: 120, height: 34, border: 0, style: "border:0; outline:none; text-decoration:none; display:block;") %>
+                    <%= image_tag('ceed.png', alt: 'CEED Logo', width: 120, height: 34, border: 0, style: 'border:0; outline:none; text-decoration:none; display:block;') %>
                     <br>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                       You are receiving this email because you were in the <b><%= @training_session.training.name %> at uOttawa.</b> </br>
                       Sign in to your account: <a href="http://makerepo.com/login" target="_blank"> Log In </a> <br />
-                      and check all the exams available <%= link_to "Exams", exams_url %>. <br />
+                      and check all the exams available <%= link_to 'Exams', exams_url %>. <br />
                       You have 3 days to complete the exam. <br />
                     </p>
                     <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">

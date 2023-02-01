@@ -4,7 +4,7 @@
     <div class="container">
       <div class="row my-5">
         <div class="mx-auto col-md-4 text-center">
-          <b>Total CCs:</b> <%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <b><%= current_user.get_total_cc %></b>
+          <b>Total CCs:</b> <%= image_tag('cc.png', alt: 'CC', class: 'ccs') %>: <b><%= current_user.get_total_cc %></b>
           <br />
         </div>
         <div class="mx-auto col-md-4 text-center">
@@ -24,11 +24,11 @@
             <table class="table sessions-table-2">
 
               <tr>
-                <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%=fa_icon('arrow-down')%></span></th>
-                <th>Date Updated <span onclick="sortTable('sessions-table-2', 1)"><%=fa_icon('arrow-down')%></span></th>
-                <th>CC/Hours<span onclick="sortTable('sessions-table-2', 2)"><%=fa_icon('arrow-down')%></span></th>
-                <th>Task<span onclick="sortTable('sessions-table-2', 3)"><%=fa_icon('arrow-down')%></span></th>
-                <th>Status<span onclick="sortTable('sessions-table', 4)"><%=fa_icon('arrow-down')%></span></th>
+                <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0)"><%= fa_icon('arrow-down') %></span></th>
+                <th>Date Updated <span onclick="sortTable('sessions-table-2', 1)"><%= fa_icon('arrow-down') %></span></th>
+                <th>CC/Hours<span onclick="sortTable('sessions-table-2', 2)"><%= fa_icon('arrow-down') %></span></th>
+                <th>Task<span onclick="sortTable('sessions-table-2', 3)"><%= fa_icon('arrow-down') %></span></th>
+                <th>Status<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
               </tr>
 
               <tbody>
@@ -36,22 +36,22 @@
               <% @processed_volunteer_task_requests.each do |vtr| %>
                 <tr>
                   <td>
-                    <%= vtr.created_at.strftime("%Y-%m-%d") %>
+                    <%= vtr.created_at.strftime('%Y-%m-%d') %>
                     <br>
-                    <%= vtr.created_at.strftime("%I:%M %p").downcase() %>
+                    <%= vtr.created_at.strftime('%I:%M %p').downcase %>
                   </td>
 
                   <td>
-                    <%= vtr.updated_at.strftime("%Y-%m-%d") %>
+                    <%= vtr.updated_at.strftime('%Y-%m-%d') %>
                     <br>
-                    <%= vtr.updated_at.strftime("%I:%M %p").downcase() %>
+                    <%= vtr.updated_at.strftime('%I:%M %p').downcase %>
                   </td>
 
                   <td>
-                    <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
+                    <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
                     <%= vtr.volunteer_task.cc %>
                     <br />
-                    <%= vtr.volunteer_task.hours%> hours
+                    <%= vtr.volunteer_task.hours %> hours
                   </td>
 
                   <td class = "username">
@@ -115,7 +115,7 @@
                               <% badge = @user.highest_badge(training) %>
                               <% unless badge.nil? %>
                                 <div class="col-lg-4 text-center">
-                                  <%= image_tag(badge.badge_template.image_url, alt: 'Badge', :style => "width: 150px") %>
+                                  <%= image_tag(badge.badge_template.image_url, alt: 'Badge', style: 'width: 150px') %>
                                 </div>
                                 <div class="col-lg-8 my-auto">
                                   <b><%= badge.badge_template.badge_name %>

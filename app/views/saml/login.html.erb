@@ -1,4 +1,4 @@
-<%= render "saml/header" %>
+<%= render 'saml/header' %>
 
 <div class="help">
   <% if not @current_user.nil? %>
@@ -24,23 +24,23 @@
     </div>
   <% else %>
     <div class="mb-3">
-      <%= text_field_tag :username, params[:username], :autocapitalize => "off", :autocorrect => "off", :autofocus => "autofocus", :spellcheck => "false", :class => "form-control", :placeholder => t("saml.login.username_or_email") %>
+      <%= text_field_tag :username, params[:username], autocapitalize: 'off', autocorrect: 'off', autofocus: 'autofocus', spellcheck: 'false', class: 'form-control', placeholder: t('saml.login.username_or_email') %>
     </div>
 
     <div class="mb-3">
-      <%= password_field_tag :password, params[:password], :class => "form-control", :placeholder => t("saml.login.password") %>
+      <%= password_field_tag :password, params[:password], class: 'form-control', placeholder: t('saml.login.password') %>
     </div>
 
     <div class="mb-3">
       <button class="btn btn-primary w-100" type="submit" name="submit" value="sign_in"><%= t('saml.login.sign_in') %></button>
     </div>
 
-    <a class="btn btn-link w-100" href="<%= user_path 'forgot_password' %>"><%= t("saml.login.forgot_password") %></a>
+    <a class="btn btn-link w-100" href="<%= user_path 'forgot_password' %>"><%= t('saml.login.forgot_password') %></a>
 
     <hr/>
 
-    <a class="btn btn-light w-100" href="<%= user_path 'new' %>"><%= t("saml.login.create_account") %></a>
+    <a class="btn btn-light w-100" href="<%= user_path 'new' %>"><%= t('saml.login.create_account') %></a>
   <% end %>
 <% end %>
 
-<%= render "saml/footer" %>
+<%= render 'saml/footer' %>

@@ -1,4 +1,4 @@
-<% provide(:title, "Reports") %>
+<% provide(:title, 'Reports') %>
 <section>
   <br>
   <h1 class="text-center fw-bold">Reports</h1>
@@ -7,54 +7,54 @@
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
-          <%= radio_button_tag(:range_type, :semester, true, class: "form-check-input", data: {'radio-enable': '.range-type-semester-fields'}) %>
-          <%= label_tag(:range_type_semester, "Semester", class: "form-check-label") %>
+          <%= radio_button_tag(:range_type, :semester, true, class: 'form-check-input', data: { 'radio-enable': '.range-type-semester-fields' }) %>
+          <%= label_tag(:range_type_semester, 'Semester', class: 'form-check-label') %>
         </div>
       </div>
 
       <div class="mb-3 col-md-4">
-        <%= label_tag(:term, "Term", class:"form-label") %>
-        <%= select_tag(:term, options_for_select([["Winter", :winter], ["Spring/Summer", :summer], ["Fall", :fall]]), class: %w(form-control form-select range-type-semester-fields)) %>
+        <%= label_tag(:term, 'Term', class: 'form-label') %>
+        <%= select_tag(:term, options_for_select([['Winter', :winter], ['Spring/Summer', :summer], ['Fall', :fall]]), class: %w[form-control form-select range-type-semester-fields]) %>
       </div>
 
       <div class="mb-3 col-md-4">
-        <%= label_tag(:year, "Year", class:"form-label") %>
-        <%= number_field_tag(:year, DateTime.now.year, class: %w(form-control range-type-semester-fields)) %>
+        <%= label_tag(:year, 'Year', class: 'form-label') %>
+        <%= number_field_tag(:year, DateTime.now.year, class: %w[form-control range-type-semester-fields]) %>
       </div>
     </div>
 
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
-          <%= radio_button_tag(:range_type, :date_range, false, class: "form-check-input", data: {'radio-enable': '.range-type-date-range-fields'}) %>
-          <%= label_tag(:range_type_date_range, "Date Range", class: "form-check-label") %>
+          <%= radio_button_tag(:range_type, :date_range, false, class: 'form-check-input', data: { 'radio-enable': '.range-type-date-range-fields' }) %>
+          <%= label_tag(:range_type_date_range, 'Date Range', class: 'form-check-label') %>
         </div>
       </div>
 
       <div class="mb-3 col-md-4">
-        <%= label_tag(:from_date, "From", class:"form-label") %>
-        <%= date_field_tag(:from_date, 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields),) %>
+        <%= label_tag(:from_date, 'From', class: 'form-label') %>
+        <%= date_field_tag(:from_date, 1.week.ago.beginning_of_week.strftime('%Y-%m-%d'), class: %w[form-control range-type-date-range-fields]) %>
       </div>
 
       <div class="mb-3 col-md-4">
-        <%= label_tag(:to_date, "To", class:"form-label") %>
-        <%= date_field_tag(:to_date, 1.week.ago.end_of_week.strftime("%Y-%m-%d"), class: %w(form-control range-type-date-range-fields)) %>
+        <%= label_tag(:to_date, 'To', class: 'form-label') %>
+        <%= date_field_tag(:to_date, 1.week.ago.end_of_week.strftime('%Y-%m-%d'), class: %w[form-control range-type-date-range-fields]) %>
       </div>
     </div>
 
     <hr />
 
-    <%= label_tag(:type, "Report Type" , class: "form-label") %>
+    <%= label_tag(:type, 'Report Type', class: 'form-label') %>
     <% @report_types.each_index do |report| %>
       <div class="form-check">
-        <%= radio_button_tag(:type, @report_types[report][1], false, class: "form-check-input")%>
-        <%= label_tag(:type, @report_types[report][0], class: "form-check-label", style: "font-size: 16px;") %>
+        <%= radio_button_tag(:type, @report_types[report][1], false, class: 'form-check-input') %>
+        <%= label_tag(:type, @report_types[report][0], class: 'form-check-label', style: 'font-size: 16px;') %>
         <br>
       </div>
     <% end %>
     <br>
 
-    <%= button_tag("Generate", {class: "btn btn-primary"}) %>
+    <%= button_tag('Generate', { class: 'btn btn-primary' }) %>
   <% end %>
   <br>
 </section>

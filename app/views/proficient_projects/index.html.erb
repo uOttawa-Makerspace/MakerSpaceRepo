@@ -5,9 +5,9 @@
 
       <div class="col-md-12 accordion">
         <% @skills.each do |skill| %>
-          <% next unless skill.trainings.present? %>
+          <% next if skill.trainings.blank? %>
           <% skill.trainings.each do |training| %>
-            <% next unless training.proficient_projects.present? %>
+            <% next if training.proficient_projects.blank? %>
               <div class="card"  id="accordion-<%= training.id %>">
                   <div class="accordion-button card-header" id="header-<%= training.id %>" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="true" aria-controls="training-<%= training.id %>">
                     <div class="col-4 float-end"></div>
@@ -29,19 +29,19 @@
                       <% pp_bought = @proficient_projects_bought.call(training) %>
 
                       <% @all_proficient_projects.call(training).order(:level).rotate(@advanced_pp_count.call(training)).each do |pp| %>
-                        <% pp_bought.include?(pp) ? opacity = '' : opacity = 'w3-opacity-max' %>
+                        <% opacity = pp_bought.include?(pp) ? '' : 'w3-opacity-max' %>
                         <div class="col-md-4 mb-5 mt-3 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %> <%= return_border_color(pp.level) %>" style="border-width:2px !important;">
                           <div class="<%= opacity %>">
                             <form class="py-3">
                               <div class="row">
                                 <div class="col-3">
-                                  <%=link_to "Edit", edit_proficient_project_path(pp.id), class:"btn btn-primary", style: "opacity: 0.5" if current_user.admin? %>
+                                  <%= link_to 'Edit', edit_proficient_project_path(pp.id), class: 'btn btn-primary', style: 'opacity: 0.5' if current_user.admin? %>
                                 </div>
                                 <div class="col-6">
                                   <p><h6 class="text-center my-auto"><strong><%= pp.training.name %></strong></h6></p>
                                 </div>
                                 <div class="col-3 float-end">
-                                  <%=link_to 'Delete', proficient_project_path(pp.id), method: :delete, class: "btn btn-danger float-end", style: "opacity: 0.5", data: {confirm: 'Are you sure? This will delete the Learning Module.'} if current_user.admin?%>
+                                  <%= link_to 'Delete', proficient_project_path(pp.id), method: :delete, class: 'btn btn-danger float-end', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Learning Module.' } if current_user.admin? %>
                                 </div>
                               </div>
                             </form>
@@ -63,17 +63,17 @@
                                   <div class="projects-image" style="background-image: url(<%= url_for(pp.photos.first.image) %>);">
                                   </div>
                                 </a>
-                              <% end  %>
+                              <% end %>
                             <% end %>
                             <div>
-                              <b class="float-end pt-2  text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + " Ccs" %></b>
+                              <b class="float-end pt-2  text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : pp.cc.to_s + ' Ccs' %></b>
                               <br />
                               <br />
                               <h6 class="fw-bold text-center"><strong><%= pp.title %></strong></h6>
                               <p><%= pp.level %></p>
                             </div>
                           </div>
-                          <%= render "/proficient_projects/proficient_project_row", proficient_project: pp, order_item: @order_item, user_order_items: @user_order_items %>
+                          <%= render '/proficient_projects/proficient_project_row', proficient_project: pp, order_item: @order_item, user_order_items: @user_order_items %>
                         </div>
                       <% end %>
 

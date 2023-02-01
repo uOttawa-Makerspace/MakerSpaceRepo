@@ -13,8 +13,8 @@
         </select>
       </div>
       <div class="col">
-        <%= label_tag :user_id, "User" %>
-        <%= select_tag(:user_id, {prompt: "Choose User..."} , {:class => "user_select form-control", :id => "user_select"}) %>
+        <%= label_tag :user_id, 'User' %>
+        <%= select_tag(:user_id, { prompt: 'Choose User...' }, { class: 'user_select form-control', id: 'user_select' }) %>
         <br>
       </div>
     </div>
@@ -23,17 +23,17 @@
 
     <div class="row">
       <div class="col">
-        <%= text_field_tag "datepicker_start", nil, autocomplete: 'off', class: "form-control" %>
+        <%= text_field_tag 'datepicker_start', nil, autocomplete: 'off', class: 'form-control' %>
       </div>
         <span>TO</span>
       <div class="col">
-        <%= text_field_tag "datepicker_end", nil, autocomplete: 'off', class: "form-control" %>
+        <%= text_field_tag 'datepicker_end', nil, autocomplete: 'off', class: 'form-control' %>
       </div>
     </div>
 
     <br>
 
-    <%= submit_tag "Add Event", class: "btn btn-primary" %>
+    <%= submit_tag 'Add Event', class: 'btn btn-primary' %>
 
   <% end %>
 </section>

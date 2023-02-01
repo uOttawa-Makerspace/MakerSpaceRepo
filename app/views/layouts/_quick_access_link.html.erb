@@ -1,0 +1,25 @@
+<div class="navbar navbar-expand-xl navbar-light bg-light" id="quick-access-bar">
+    <span>
+      <%= fa_icon 'bars', class: 'nav-link ms-4', id: 'quick-access-bar-toggle' %>
+    </span>
+    <div class="container-fluid flex-row align-self-end text-white" id="quick-access-container">
+        <ul class="navbar-nav mr-auto d-flex flex-row">
+            <% QuickAccessLink.where(user: current_user).each do |link| %>
+                <li class="nav-item mx-2">
+                    <a class="nav-link d-inline" href="<%= link.path %>"><%= link.name %></a>
+                </li>
+            <% end %>
+        </ul>
+        <ul class="navbar-nav ml-auto d-flex flex-row">
+          <% if QuickAccessLink.where(user: current_user).where(path: request.path_info).present? %>
+            <li class="text-danger nav-item mx-auto">
+              <%= link_to "#{fa_icon('thumb-tack')} Unpin Page".html_safe, quick_access_links_delete_path(QuickAccessLink.where(user: current_user).where(path: request.path_info).first.id), method: :delete, remote: true %>
+            </li>
+          <% else %>
+            <li class="text-primary nav-item mx-auto" id="add-new-quick-access">
+              <%= fa_icon('thumb-tack') %> Pin Page
+            </li>
+          <% end %>
+        </ul>
+    </div>
+</div>

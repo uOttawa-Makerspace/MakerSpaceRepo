@@ -3,11 +3,11 @@
 <div class="container my-5">
   <div class="row">
     <div class="col-lg-12">
-      <%= form_for @new_question, url: {controller: "questions", action: "create"}, :html => { class:"needs-validation", novalidate: 'novalidate', multipart: true } do |f| %>
+      <%= form_for @new_question, url: { controller: 'questions', action: 'create' }, html: { class: 'needs-validation', novalidate: 'novalidate', multipart: true } do |f| %>
         <div class="row">
           <div class="col-md-12">
             <div class="mb-3 text-center">
-              <%= f.text_area :description, placeholder: "Write your question here...", class: 'form-control', required: true %>
+              <%= f.text_area :description, placeholder: 'Write your question here...', class: 'form-control', required: true %>
               <div class="invalid-feedback">
                 Please provide the question description.
               </div>
@@ -15,19 +15,19 @@
               Categories:
               <br />
               <div class="mt-3">
-                <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name',false), {}, {multiple: true, :id => "questions_trainings", :class => "form-control form-select"} %>
+                <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', false), {}, { multiple: true, id: 'questions_trainings', class: 'form-control form-select' } %>
               </div>
               <br />
 
               <div class="mb-3">
-                <%= f.label 'level', class:"form-label" %>
-                <%= f.select 'level', options_for_select(@levels), {prompt: 'Select level'}, class: "form-control form-select", required: true %><br>
+                <%= f.label 'level', class: 'form-label' %>
+                <%= f.select 'level', options_for_select(@levels), { prompt: 'Select level' }, class: 'form-control form-select', required: true %><br>
               </div>
               <br />
               <br />
 
               <div class="text-center">
-                <%= f.file_field :images, id: "pictureInput", multiple: true %>
+                <%= f.file_field :images, id: 'pictureInput', multiple: true %>
               </div>
               <br />
               <br />
@@ -46,28 +46,28 @@
                 <%= af.rich_text_area :description, placeholder: "Answer #{i}: Write the answer description here...", class: "form-control h-auto #{return_answer_border_color(af.object)}", required: true %>
                 <div class="invalid-feedback">Please provide Answers</div>
                 <br />
-                <% i+=1 %>
+                <% i += 1 %>
               <% end %>
             </div>
           </div>
 
           <div class="row col-12">
             <div class="col-4">
-              <%= link_to "", new_question_path(n_answers: params[:n_answers].to_i - 1), class: 'float-start btn minus-button plus-button-large', title: 'Remove answers', 'data-bs-toggle' => 'tooltip', 'data-placement' => 'top' %>
+              <%= link_to '', new_question_path(n_answers: params[:n_answers].to_i - 1), class: 'float-start btn minus-button plus-button-large', title: 'Remove answers', 'data-bs-toggle' => 'tooltip', 'data-placement' => 'top' %>
             </div>
             <div class="col-2 text-center">
-              <%= link_to "2", new_question_path(n_answers: 2), class: 'btn circle-button', title: '2 answers', 'data-bs-toggle' => 'tooltip', 'data-placement' => 'top' %>
+              <%= link_to '2', new_question_path(n_answers: 2), class: 'btn circle-button', title: '2 answers', 'data-bs-toggle' => 'tooltip', 'data-placement' => 'top' %>
             </div>
             <div class="col-2 text-center">
-              <%= link_to "4", new_question_path(n_answers: 4), class: 'btn circle-button', title: '4 answers', 'data-bs-toggle' => 'tooltip', 'data-placement' => 'top' %>
+              <%= link_to '4', new_question_path(n_answers: 4), class: 'btn circle-button', title: '4 answers', 'data-bs-toggle' => 'tooltip', 'data-placement' => 'top' %>
             </div>
             <div class="col-4">
-              <%= link_to "", new_question_path(n_answers: params[:n_answers].to_i + 1), class: 'float-end btn plus-button plus-button-large', title: 'Add more answers', 'data-bs-toggle' => 'tooltip', 'data-placement' => 'top' %>
+              <%= link_to '', new_question_path(n_answers: params[:n_answers].to_i + 1), class: 'float-end btn plus-button plus-button-large', title: 'Add more answers', 'data-bs-toggle' => 'tooltip', 'data-placement' => 'top' %>
             </div>
           </div>
 
           <div class="col-lg-12 text-center my-5">
-            <%= f.submit "Create question", class: "btn btn-secondary btn-xl text-uppercase" %>
+            <%= f.submit 'Create question', class: 'btn btn-secondary btn-xl text-uppercase' %>
           </div>
         </div>
       <% end %>

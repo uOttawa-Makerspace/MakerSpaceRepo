@@ -16,19 +16,19 @@
     <% @processed_volunteer_task_requests.each do |vtr| %>
       <tr>
         <td>
-          <%= vtr.created_at.strftime("%Y-%m-%d") %>
+          <%= vtr.created_at.strftime('%Y-%m-%d') %>
           <br>
-          <%= vtr.created_at.strftime("%I:%M %p").downcase() %>
+          <%= vtr.created_at.strftime('%I:%M %p').downcase %>
         </td>
 
         <td>
-          <%= vtr.updated_at.strftime("%Y-%m-%d") %>
+          <%= vtr.updated_at.strftime('%Y-%m-%d') %>
           <br>
-          <%= vtr.updated_at.strftime("%I:%M %p").downcase() %>
+          <%= vtr.updated_at.strftime('%I:%M %p').downcase %>
         </td>
 
         <td>
-          <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
+          <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
           <%= vtr.volunteer_task.cc %>
           <br/>
           <%= vtr.volunteer_task.hours %> hours
