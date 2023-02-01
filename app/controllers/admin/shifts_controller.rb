@@ -142,7 +142,7 @@ class Admin::ShiftsController < AdminAreaController
             pending: true
           )
         shift.users.each { |user| new_shift.users << user }
-        if !new_shift.save!
+        if !new_shift.save
           new_shifts.each(&:destroy)
           redirect_to shifts_admin_shifts_path,
                       alert: "There was an error copying shifts."
