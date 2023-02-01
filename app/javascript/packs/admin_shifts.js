@@ -122,10 +122,16 @@ fetch("/admin/shifts/get_external_staff_needed", {
             openModal();
           },
         },
+        copyToNextWeek: {
+          text: "Copy to next week",
+          click: () => {
+            copyToNextWeek();
+          },
+        },
       },
       headerToolbar: {
         left: "prev,today,next",
-        center: "",
+        center: "copyToNextWeek",
         right: "addNewEvent,timeGridWeek,timeGridDay",
       },
       contentHeight: "auto",
@@ -348,6 +354,29 @@ const createCalendarEvent = () => {
     });
   modalSave.disabled = false;
   modalSave.querySelector("span").classList.add("d-none");
+};
+
+const copyToNextWeek = () => {
+  fetch("/admin/shifts/copy_to_next_week", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      end_of_week: calendar.currentData.dateProfile.currentRange.end,
+    }),
+  }).then((response) => {
+    if (response.ok) {
+      calendar.refetchEvents();
+      calendar.gotoDate(
+        new Date(
+          calendar.currentData.dateProfile.currentRange.end.getTime() +
+            1000 * 60 * 60 * 24
+        )
+      );
+    }
+  });
 };
 
 const openModal = (arg) => {
