@@ -123,6 +123,38 @@ class Admin::ShiftsController < AdminAreaController
     end
   end
 
+  def copy_to_next_week
+    end_of_week_param = DateTime.parse(params[:end_of_week])
+    start_of_week = end_of_week_param.beginning_of_week
+    end_of_week = end_of_week_param.end_of_week
+    new_shifts = []
+    Shift
+      .where(space_id: @space_id, start_datetime: start_of_week..end_of_week)
+      .each do |shift|
+        new_start = shift.start_datetime + 1.week
+        new_end = shift.end_datetime + 1.week
+        new_shift =
+          Shift.create(
+            space_id: @space_id,
+            start_datetime: new_start,
+            end_datetime: new_end,
+            reason: shift.reason,
+            pending: true
+          )
+        shift.users.each { |user| new_shift.users << user }
+        if !new_shift.save!
+          new_shifts.each(&:destroy)
+          redirect_to shifts_admin_shifts_path,
+                      alert: "There was an error copying shifts."
+
+          return
+        else
+          new_shifts << new_shift
+        end
+      end
+    render json: { status: "ok" }
+  end
+
   def update
     if params[:shift].present?
       respond_to do |format|
