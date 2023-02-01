@@ -5,7 +5,6 @@ namespace :csv do
     test_spreadsheet = Rails.root.join(args[:path])
 
     CSV.foreach(test_spreadsheet) do |row|
-      student_id = row[2]
       name = row[3]
       email = row[6]
       training = row[10]
