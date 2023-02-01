@@ -96,7 +96,6 @@ FactoryBot.define do
       program { "BASc in Software Engineering" }
       faculty { "Engineering" }
       year_of_study { 2020 }
-      student_id { 234_139_242 }
       gender { "Female" }
     end
 

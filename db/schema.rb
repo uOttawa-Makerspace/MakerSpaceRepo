@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_01_25_153616) do
+ActiveRecord::Schema.define(version: 2023_01_31_191201) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1059,7 +1059,6 @@ ActiveRecord::Schema.define(version: 2023_01_25_153616) do
     t.integer "reputation", default: 0
     t.string "role", default: "regular_user"
     t.boolean "terms_and_conditions"
-    t.integer "student_id"
     t.string "program"
     t.string "how_heard_about_us"
     t.string "identity"

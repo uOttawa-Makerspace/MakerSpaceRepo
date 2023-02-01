@@ -221,6 +221,41 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         )
       end
     end
+
+    describe "DELETE/delete" do
+      it "should return 302 and delete the booking" do
+        @user = create(:user, :admin)
+        @booking_user = create(:user)
+        session[:user_id] = @user.id
+        @booking =
+          create(:sub_space_booking, sub_space: @subspace, user: @booking_user)
+        delete :delete, params: { sub_space_booking_id: @booking.id }
+        expect(flash[:notice]).to eq(
+          "Booking for #{@booking.sub_space.name} deleted successfully."
+        )
+      end
+      it "should return 302 and delete the booking" do
+        @booking_user = create(:user)
+        session[:user_id] = @booking_user.id
+        @booking =
+          create(:sub_space_booking, sub_space: @subspace, user: @booking_user)
+        delete :delete, params: { sub_space_booking_id: @booking.id }
+        expect(flash[:notice]).to eq(
+          "Booking for #{@booking.sub_space.name} deleted successfully."
+        )
+      end
+      it "should return 302 and not delete the booking" do
+        @user = create(:user)
+        @booking_user = create(:user)
+        session[:user_id] = @user.id
+        @booking =
+          create(:sub_space_booking, sub_space: @subspace, user: @booking_user)
+        delete :delete, params: { sub_space_booking_id: @booking.id }
+        expect(flash[:alert]).to eq(
+          "You must be the owner of this booking or an admin to delete it."
+        )
+      end
+    end
   end
 
   describe "DELETE/delete" do
