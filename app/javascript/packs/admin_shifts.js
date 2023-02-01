@@ -300,6 +300,8 @@ const populateUsers = (arg) => {
 
 // Calendar CRUD
 const createCalendarEvent = () => {
+  modalSave.disabled = true;
+  modalSave.querySelector("span").classList.remove("d-none");
   let selected_users = [];
   for (let option of userIdInput.options) {
     if (option.selected) {
@@ -344,6 +346,8 @@ const createCalendarEvent = () => {
     .catch((error) => {
       console.log("An error occurred: " + error.message);
     });
+  modalSave.disabled = false;
+  modalSave.querySelector("span").classList.add("d-none");
 };
 
 const openModal = (arg) => {
