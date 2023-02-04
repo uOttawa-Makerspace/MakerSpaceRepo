@@ -35,7 +35,7 @@ RSpec.describe SessionsController, type: :controller do
                password: "abc123"
              }
         expect(response).to have_http_status(200)
-        expect(flash[:alert]).to eq("Incorrect username or password.")
+        expect(flash[:alert]).to eq("Incorrect password.")
       end
     end
   end
