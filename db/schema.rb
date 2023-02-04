@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_01_11_183713) do
+ActiveRecord::Schema.define(version: 2023_02_04_180926) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -45,7 +45,7 @@ ActiveRecord::Schema.define(version: 2023_01_11_183713) do
     t.string "content_type"
     t.text "metadata"
     t.bigint "byte_size", null: false
-    t.string "checksum"
+    t.string "checksum", null: false
     t.datetime "created_at", null: false
     t.string "service_name", null: false
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
@@ -1015,10 +1015,11 @@ ActiveRecord::Schema.define(version: 2023_01_11_183713) do
     t.boolean "confirmed", default: false
     t.bigint "space_id"
     t.datetime "last_signed_in_time"
-    t.string "otp_secret"
-    t.integer "last_otp_at"
     t.boolean "deleted"
     t.boolean "booking_approval", default: false
+    t.boolean "locked", default: false
+    t.datetime "locked_until"
+    t.integer "auth_attempts", default: 0
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
@@ -1136,7 +1137,6 @@ ActiveRecord::Schema.define(version: 2023_01_11_183713) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
-  add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"

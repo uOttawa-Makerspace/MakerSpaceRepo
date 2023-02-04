@@ -50,6 +50,8 @@ class User < ApplicationRecord
   has_many :job_orders, dependent: :destroy
   has_many :job_order_statuses
 
+  MAX_AUTH_ATTEMPTS = 5
+
   validates :avatar,
             file_content_type: {
               allow: %w[
@@ -170,7 +172,16 @@ class User < ApplicationRecord
 
   def self.authenticate(username_email, password)
     user = User.username_or_email(username_email)
-    user if user && user.pword == password
+    if user.pword == password
+      user.update(auth_attempts: 0)
+      return user
+    end
+    user.update(auth_attempts: user.auth_attempts + 1)
+    if user.auth_attempts >= MAX_AUTH_ATTEMPTS
+      user.update(locked: true)
+      user.update(locked_until: 5.minute.from_now)
+      return nil
+    end
   end
 
   def self.username_or_email(username_email)
