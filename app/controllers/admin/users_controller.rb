@@ -196,6 +196,20 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
+  def unlock_user
+    if @user.admin?
+      unlock_user = User.find(params[:id])
+      unlock_user.locked = !unlock_user.locked
+      unlock_user.locked_until = unlock_user.locked ? 99.years.from_now : nil
+      unlock_user.auth_attempts = unlock_user.locked ? 5 : 0
+      unlock_user.save!
+      redirect_to user_path(unlock_user.username),
+                  notice: "User #{unlock_user.locked ? "locked" : "unlocked"}!"
+    else
+      redirect_to root_path, alert: "You do not have permission to do that!"
+    end
+  end
+
   def set_role
     @user = User.find(params[:id])
     @user.role = params[:role]

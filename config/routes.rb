@@ -225,6 +225,8 @@ Rails.application.routes.draw do
         delete "delete_project_proposal"
         delete "delete_user"
         patch "restore_user"
+        put "unlock_user"
+        put "lock_user"
         get "manage_roles"
       end
     end
