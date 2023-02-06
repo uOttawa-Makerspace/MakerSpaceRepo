@@ -993,7 +993,6 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.string "avatar_content_type"
     t.integer "avatar_file_size"
     t.datetime "avatar_updated_at"
-    t.string "access_token"
     t.string "name"
     t.string "gender"
     t.string "faculty"
@@ -1017,6 +1016,7 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.datetime "last_signed_in_time"
     t.boolean "deleted"
     t.boolean "booking_approval", default: false
+    t.string "access_token"
     t.boolean "locked", default: false
     t.datetime "locked_until"
     t.integer "auth_attempts", default: 0

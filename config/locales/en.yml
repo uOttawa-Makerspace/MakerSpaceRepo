@@ -75,7 +75,7 @@ en:
         email_address: "Email Address"
         username: "Username"
         password: "Password"
-        password_hint: "Your password must be a minimum of 8 characters long and use at least one capital letter, one lowercase letter, and one digit."
+        password_hint: "Your password must be 10 characters, use 5 unique characters, and not be a commonly used password."
         password_confirmation: "Password Confirmation"
         gender: "Gender"
         male: "Male"
@@ -131,7 +131,7 @@ en:
               invalid: "Your username may only contain alphanumeric characters."
               too_long: "Your name must be less than %{count} characters."
             password:
-              invalid: "Your password must be a minimum of 8 characters long and use at least one capital letter, one lowercase letter, and one digit."
+              invalid: "Your password must contain 10 characters, 5 unique characters, and not be a commonly used password."
             password_confirmation:
               confirmation: "Passwords do not match."
             email:

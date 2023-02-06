@@ -439,4 +439,10 @@ class MsrMailer < ApplicationMailer
       subject: "STRIPE TRANSFER MAKERSPACE: #{date}"
     )
   end
+
+  def unlock_account(user, user_hash)
+    @user = user
+    @user_hash = user_hash
+    mail(to: @user.email, subject: "Unlock your MakerRepo Account")
+  end
 end

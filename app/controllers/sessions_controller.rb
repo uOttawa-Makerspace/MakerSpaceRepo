@@ -7,6 +7,25 @@ class SessionsController < ApplicationController
   before_action :update_activity_time
   before_action :current_user, only: [:login]
   before_action :authorized_repo_ids
+  before_action :rate_limit, only: [:login_authentication]
+
+  def rate_limit
+    ip = request.env["REMOTE_ADDR"]
+    key = "login_#{ip}"
+    count = Rails.cache.fetch(key)
+    puts "count: #{count}"
+    unless count
+      puts "setting count"
+      Rails.cache.write(key, 1, expires_in: 1.minute)
+      count = 1
+    end
+    Rails.cache.write(key, count.to_i + 1, expires_in: 1.minute)
+    puts "count: #{count}"
+    if count.to_i > 10
+      puts "too many requests"
+      render status: 429, json: { error: "Too many requests" }
+    end
+  end
 
   def login_authentication
     if User.username_or_email(params[:username_email])
@@ -73,7 +92,9 @@ class SessionsController < ApplicationController
         if user
           error_message =
             (
-              if user.auth_attempts > 1
+              if user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
+                "Your account has been locked due to too many failed login attempts. You can try again in #{distance_of_time_in_words user.locked_until, DateTime.now}."
+              elsif user.auth_attempts > 1
                 "Incorrect password. You have #{User::MAX_AUTH_ATTEMPTS - user.auth_attempts} attempts left before your account is locked."
               else
                 "Incorrect password."

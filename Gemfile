@@ -74,6 +74,7 @@ gem "syntax_tree-rbs"
 gem "stimulus-rails"
 gem "graphlient"
 gem "message_bus"
+gem "nobspw"
 
 group :development, :test do
   gem "byebug", platform: :mri

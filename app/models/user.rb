@@ -87,12 +87,7 @@ class User < ApplicationRecord
             },
             on: :create
 
-  validates :password,
-            presence: true,
-            confirmation: true,
-            format: {
-              with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/
-            }
+  validates :password, presence: true, password: true, confirmation: true
 
   validates :gender,
             presence: true,
@@ -180,6 +175,8 @@ class User < ApplicationRecord
     if user.auth_attempts >= MAX_AUTH_ATTEMPTS
       user.update(locked: true)
       user.update(locked_until: 5.minute.from_now)
+      user_hash = Rails.application.message_verifier("unlock").generate(user.id)
+      MsrMailer.unlock_account(user, user_hash).deliver_now
       return nil
     end
   end
