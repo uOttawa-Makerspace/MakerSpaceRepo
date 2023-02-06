@@ -13,18 +13,12 @@ class SessionsController < ApplicationController
     ip = request.env["REMOTE_ADDR"]
     key = "login_#{ip}"
     count = Rails.cache.fetch(key)
-    puts "count: #{count}"
     unless count
-      puts "setting count"
       Rails.cache.write(key, 1, expires_in: 1.minute)
       count = 1
     end
     Rails.cache.write(key, count.to_i + 1, expires_in: 1.minute)
-    puts "count: #{count}"
-    if count.to_i > 10
-      puts "too many requests"
-      render status: 429, json: { error: "Too many requests" }
-    end
+    render status: 429, json: { error: "Too many requests" } if count.to_i > 10
   end
 
   def login_authentication
