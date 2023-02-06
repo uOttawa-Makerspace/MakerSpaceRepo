@@ -1,20 +1,20 @@
 <nav class="navbar navbar-expand-xl navbar-light fixed-top <%= controller_name %> <%= action_name %> bg-light" id="header-navbar">
-<div class="container-fluid">
-  <a class="navbar-brand" href="/">Maker<strong>Repo</strong></a>
-  <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarSupportedContent">
-    <form class="w-auto d-inline-block form-search" action="/search" method="get">
-      <div class="input-group">
-        <input class="form-control" name="q" id="q" placeholder="<%= t('navbar.search') %>" aria-label="Search">
-        <button class="btn btn-primary" type="submit" style="height: auto" aria-label="Search">
-          <i class="fa fa-search"></i>
-        </button>
-      </div>
-    </form>
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Maker<strong>Repo</strong></a>
+    <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <form class="w-auto d-inline-block form-search" action="/search" method="get">
+        <div class="input-group">
+          <input class="form-control" name="q" id="q" placeholder="<%= t('navbar.search') %>" aria-label="Search">
+          <button class="btn btn-primary" type="submit" style="height: auto" aria-label="Search">
+            <i class="fa fa-search"></i>
+          </button>
+        </div>
+      </form>
 
-    <ul class="navbar-nav me-auto align-items-xl-baseline">
+      <ul class="navbar-nav me-auto align-items-xl-baseline">
       <li class="nav-item">
         <a class="nav-link" href="/explore"><%= t('navbar.explore') %></a>
       </li>
@@ -26,7 +26,7 @@
         <div class="dropdown-menu">
           <a class="dropdown-item" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
           <% if signed_in? %>
-            <a class="dropdown-item" href="/project_proposals/user_projects"><%= t('navbar.your_projects') %></a>
+          <a class="dropdown-item" href="/project_proposals/user_projects"><%= t('navbar.your_projects') %></a>
           <% end %>
           <a class="dropdown-item" href="/project_proposals"><%= t('navbar.proposed_projects') %></a>
           <a class="dropdown-item" href="/project_proposals/projects_assigned"><%= t('navbar.assigned_projects') %></a>
@@ -45,7 +45,7 @@
           <a class="dropdown-item" href="http://volunteer.makerepo.com/"><%= t('navbar.volunteering') %></a>
           <a class="dropdown-item" href="https://wiki.makerepo.com/wiki/Main_Page"><%= t('navbar.resources') %></a>
           <a class="dropdown-item" href="https://makerstore.ca/"><%= t('navbar.makerstore') %></a>
-          <%= link_to("MakerRoom", sub_space_booking_index_path, class:"dropdown-item") %>
+          <%= link_to('MakerRoom', sub_space_booking_index_path, class: 'dropdown-item') %>
         </div>
       </li>
     </ul>
@@ -53,11 +53,11 @@
     <ul class="navbar-nav ms-auto align-items-xl-baseline">
 
       <% unless signed_in? %>
-        <li class="nav-item"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
-        <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
-      <% else %>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
+      <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
+        <% else %>
         <li class="nav-item">
-          <%= link_to(t('navbar.buy_cc_money'), cc_moneys_path, class: "nav-link") %>
+          <%= link_to(t('navbar.buy_cc_money'), cc_moneys_path, class: 'nav-link') %>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
@@ -72,42 +72,44 @@
             <a class="dropdown-item" href="<%= user_path(@user.username) %>"><%= t('navbar.user.profile') %></a>
             <a class="dropdown-item" href="<%= likes_user_path(@user.username) %>"><%= t('navbar.user.liked') %></a>
             <a class="dropdown-item" href="<%= settings_profile_path %>"><%= t('navbar.user.settings') %></a>
-            <%= link_to(t('navbar.user.admin_area'), admin_report_generator_popular_hours_path, class: "dropdown-item") if @user.admin? %>
-            <%= link_to(t('navbar.user.staff_area'), staff_dashboard_index_path, class: "dropdown-item") if @user.staff? %>
-            <%= link_to(t('navbar.user.volunteer_area'), volunteers_path, class: "dropdown-item") if (@user.volunteer? || @user.staff? || @user.admin?) %>
-            <%= link_to(t('navbar.user.development_program'), development_programs_path, class: "dropdown-item") if (@user.dev_program? || @user.staff? || @user.admin?) %>
-            <%= link_to(t('navbar.user.exams'), exams_path, class: "dropdown-item") if (!@user.exams.blank?) %>
+            <%= link_to(t('navbar.user.admin_area'), admin_report_generator_popular_hours_path, class: 'dropdown-item') if @user.admin? %>
+            <%= link_to(t('navbar.user.staff_area'), staff_dashboard_index_path, class: 'dropdown-item') if @user.staff? %>
+            <%= link_to(t('navbar.user.volunteer_area'), volunteers_path, class: 'dropdown-item') if @user.volunteer? || @user.staff? || @user.admin? %>
+            <%= link_to(t('navbar.user.development_program'), development_programs_path, class: 'dropdown-item') if @user.dev_program? || @user.staff? || @user.admin? %>
+            <%= link_to(t('navbar.user.exams'), exams_path, class: 'dropdown-item') if @user.exams.present? %>
             <a class="dropdown-item" href="<%= job_orders_path %>"><%= t('navbar.user.joborder') %></a>
-            <%= link_to(t('navbar.user.joborder_admin'), admin_job_orders_path, class: "dropdown-item") if (@user.staff? || @user.admin?) %>
-            <%= link_to("Booking Admin", sub_space_booking_index_path(anchor:"booking-admin-tab"), class:"dropdown-item") if (@user.staff? || @user.admin?) %>
+            <%= link_to(t('navbar.user.joborder_admin'), admin_job_orders_path, class: 'dropdown-item') if @user.staff? || @user.admin? %>
+            <%= link_to('Booking Admin', sub_space_booking_index_path(anchor: 'booking-admin-tab'), class: 'dropdown-item') if @user.staff? || @user.admin? %>
             <a class="dropdown-item" href="<%= help_path %>"><%= t('navbar.user.help') %></a>
             <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
           </div>
 
-        <li class="nav-item">
-          <%= image_tag("cc_white.png", alt: "CC", class: "ccs", id: "myCcWhite", style: "display:none") %>
-          <%= image_tag("cc.png", alt: "CC", class: "ccs hidden", id: "myCcBlack") %>
-        </li>
+          <li class="nav-item">
+            <%= image_tag('cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite', style: 'display:none') %>
+            <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
+          </li>
         <li class="nav-item">
           <b class="nav-link"><%= current_user.get_total_cc %></b>
         </li>
-        </li>
+      </li>
         <% end %>
 
-      <li class="navbar-divider"></li>
+        <li class="navbar-divider"></li>
 
-      <% locales_change.each do |locale| %>
+        <% locales_change.each do |locale| %>
         <li class="nav-item">
           <%= link_to t('name', locale: locale), url_for(request.query_parameters.merge(locale: locale)), class: 'nav-link' %>
         </li>
-      <% end %>
-    </ul>
+        <% end %>
+      </ul>
   </div>
-  </div>
+</div>
 </nav>
 
-<%= render 'static_pages/login_modal' if !signed_in? %>
+<%= render 'static_pages/login_modal' unless signed_in? %>
+<%= render 'layouts/quick_access_link' if current_user.admin? %>
 
 <div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
   <%= render 'layouts/flash' %>
 </div>
+

@@ -1,3 +1,3 @@
-<% provide(:title, "Projects Completed") %>
+<% provide(:title, 'Projects Completed') %>
 
-<%= render :partial => 'listing', :locals => {:title => "Project Proposals Completed", :project_proposals => @completed_project_proposals, param_name: "page"} %>
+<%= render partial: 'listing', locals: { title: 'Project Proposals Completed', project_proposals: @completed_project_proposals, param_name: 'page' } %>

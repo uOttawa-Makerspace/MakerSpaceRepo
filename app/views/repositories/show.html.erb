@@ -1,30 +1,30 @@
-<% provide(:title, "#{@repository.title}") %>
+<% provide(:title, @repository.title.to_s) %>
 
 <section id="show-repository">
 
   <section id="repository-photos">
     <% if @repository.youtube_link.present? %>
       <%= youtube_video(@repository.youtube_link) %>
-    <% end%>
+    <% end %>
       <div id="show-photo">
         <% if @photos.present? and @photos.first.image.attached? %>
-          <%= image_tag @photos.first.image, alt: 'Repository Main image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height)} %>
+          <%= image_tag @photos.first.image, alt: 'Repository Main image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
         <% end %>
       </div>
     <div id="photo-slide">
       <% @photos.each do |p| %>
-        <%= image_tag p.image, alt: 'Repository Image', data: { width: p.width, height: p.height} %>
+        <%= image_tag p.image, alt: 'Repository Image', data: { width: p.width, height: p.height } %>
       <% end %>
     </div>
 
     <br></br>
-    <% if @user.admin?%>
-        Currently Featured: <%=  @repository.featured.to_s.upcase %><br></br>
-        <%= link_to "Feature / Unfeature", pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
-            class: "btn btn-primary" %>
+    <% if @user.admin? %>
+        Currently Featured: <%= @repository.featured.to_s.upcase %><br></br>
+        <%= link_to 'Feature / Unfeature', pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
+                                                                                                                    class: 'btn btn-primary' %>
         <br></br>
-        <%= link_to "Delete", delete_repository_admin_users_path(id: @repository.id), method: :delete,
-            class: "btn btn-danger", data: {confirm: 'Are you sure?'} %>
+        <%= link_to 'Delete', delete_repository_admin_users_path(id: @repository.id), method: :delete,
+                                                                                      class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
     <% end %>
 
 
@@ -39,18 +39,18 @@
   <section id="info">
 
   <% if @repository.users.pluck(:email).include?(@user.email) || @user.role.eql?("admin") %>
-    <%= link_to fa_icon("pencil", text: 'Edit project'),
-      edit_repository_path(@repository.user_username, @repository.id), class: 'edit-repo-link' %>
+    <%= link_to fa_icon('pencil', text: 'Edit project'),
+                edit_repository_path(@repository.user_username, @repository.id), class: 'edit-repo-link' %>
   <% end %>
 
     <div id="repo-title">
       <%= @repository.title %>
     </div>
     <div id="misc">
-      <span class="misc-item"><%= fa_icon "heart" %><span class="like-count"><%= @repository.like %></span></span>
-      <span class="misc-item"><%= fa_icon "code-fork", text: @repository.makes.count %></span>
-      <span class="misc-item"><%= link_to fa_icon("comments"), "#repo-comments" %>
-        <span class="comment-count"><%= link_to @repository.comments.count, "#repo-comments" %></span>
+      <span class="misc-item"><%= fa_icon 'heart' %><span class="like-count"><%= @repository.like %></span></span>
+      <span class="misc-item"><%= fa_icon 'code-fork', text: @repository.makes.count %></span>
+      <span class="misc-item"><%= link_to fa_icon('comments'), '#repo-comments' %>
+        <span class="comment-count"><%= link_to @repository.comments.count, '#repo-comments' %></span>
       </span>
     </div>
     <div id="repo-info">
@@ -62,15 +62,15 @@
       </div>
       <div class="repo-info-item">
         <div class="title">PUBLISHED ON</div>
-        <div class="date"><%= @repository.created_at.strftime("%b %e %Y") %></div>
+        <div class="date"><%= @repository.created_at.strftime('%b %e %Y') %></div>
       </div>
       <% if @files.present? %>
       <div class="repo-info-item">
-        <table><tr><td class="title">PROJECT FILES</td><td><span id="download-zip" class="bg-download"><%= link_to fa_icon("download", text: "Download"), download_files_repositories_path(@repository.user_username, @repository.id), :id => "download-zip-link" %></span></td></tr></table>
+        <table><tr><td class="title">PROJECT FILES</td><td><span id="download-zip" class="bg-download"><%= link_to fa_icon('download', text: 'Download'), download_files_repositories_path(@repository.user_username, @repository.id), id: 'download-zip-link' %></span></td></tr></table>
         <div class="files-show">
         <% @files.each do |f| %>
           <div class="file-item-show">
-            <u><%= fa_icon "file-text-o" %> <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank' %></u><span><%= f.file.byte_size/1000 %> KB</span>
+            <u><%= fa_icon 'file-text-o' %> <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank', rel: 'noopener' %></u><span><%= f.file.byte_size / 1000 %> KB</span>
           </div>
         <% end %>
         </div>
@@ -97,11 +97,11 @@
       <div class="repo-info-item">
         <span class="like" style="color: white;">
           <%= link_to(fa_icon('heart', text: 'Like'),
-            add_like_repository_path, class: 'like', remote: true, method: :post) %>
+                      add_like_repository_path, class: 'like', remote: true, method: :post) %>
         </span>
         <span class="make" style="color: white;">
           <%= link_to(fa_icon('code-fork', text: 'Make'),
-            makes_new_path(@repository.user_username, @repository.id)) %>
+                      makes_new_path(@repository.user_username, @repository.id)) %>
         </span>
       </div>
       <div class="repo-info-item">
@@ -137,12 +137,12 @@
       <% if @repository.users.pluck(:email).include?(@user.email) || @user.admin? || @user.staff? %>
         <div class="repo-info-item">
           <div class="title">Link to Project Proposal:</div>
-          <%= form_for :repo, url: {controller: "repositories", action: "link_to_pp"}, method: :patch do |f| %>
+          <%= form_for :repo, url: { controller: 'repositories', action: 'link_to_pp' }, method: :patch do |f| %>
             <div class="mb-3">
               <%= f.hidden_field :repository_id, value: @repository.id %>
-              <%= f.select(:project_proposal_id, @project_proposals , {prompt: "Choose..."} , {:class => "form-control", :id => "search_project_proposals"}) %>
+              <%= f.select(:project_proposal_id, @project_proposals, { prompt: 'Choose...' }, { class: 'form-control', id: 'search_project_proposals' }) %>
               <br> </br>
-              <%= f.submit "Link", class: "btn btn-primary" %>
+              <%= f.submit 'Link', class: 'btn btn-primary' %>
             </div>
           <% end %>
           </div>
@@ -150,12 +150,12 @@
 
         <div class="repo-info-item">
           <div class="title">Add an owner:</div>
-          <%= form_for :repo_owner, url: {controller: "repositories", action: "add_owner"}, method: :patch do |f| %>
+          <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_owner' }, method: :patch do |f| %>
               <div class="mb-3">
                 <%= f.hidden_field :repository_id, value: @repository.id %>
-                <%= f.select(:owner_id, "" , {prompt: "Choose..."} , {:class => "search_users_add form-control", :id => "search_users_add"}) %>
+                <%= f.select(:owner_id, '', { prompt: 'Choose...' }, { class: 'search_users_add form-control', id: 'search_users_add' }) %>
                 <br> </br>
-                <%= f.submit "Add", class: "btn btn-success" %>
+                <%= f.submit 'Add', class: 'btn btn-success' %>
               </div>
           <% end %>
           </div>
@@ -163,12 +163,12 @@
 
           <div class="repo-info-item">
             <div class="title">Remove an owner:</div>
-            <%= form_for :repo_owner, url: {controller: "repositories", action: "remove_owner"}, method: :patch do |f| %>
+            <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_owner' }, method: :patch do |f| %>
                 <div class="mb-3">
                   <%= f.hidden_field :repository_id, value: @repository.id %>
-                  <%= f.select(:owner_id, @owners.pluck(:name, :id) , {prompt: "Choose..."} , {:class => "search_users_remove form-control", :id => "search_users_remove"}) %>
+                  <%= f.select(:owner_id, @owners.pluck(:name, :id), { prompt: 'Choose...' }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
                   <br> </br>
-                  <%= f.submit "Remove", class: "btn btn-danger" %>
+                  <%= f.submit 'Remove', class: 'btn btn-danger' %>
                 </div>
             <% end %>
           </div>
@@ -180,46 +180,44 @@
 
   <section id="repo-comments">
     <div class="title">Comments</div>
-    <%= form_for("Comments", url: comments_create_path, id: 'comment', remote: true ) do%>
+    <%= form_for('Comments', url: comments_create_path, id: 'comment', remote: true) do %>
       <div style="max-width: 50rem" class="mb-3">
         <%= hidden_field_tag :content %>
         <trix-editor input="content"></trix-editor>
       </div>
-      <%= submit_tag 'Post comment', class: "btn btn-primary" %>
+      <%= submit_tag 'Post comment', class: 'btn btn-primary' %>
     <% end %>
 
     <div id="comment-filters">
-      <% if params['comment_filter'].eql?('newest')
-        then bold = %w(font-weight:700 font-weight:400)
-        else bold = %w(font-weight:400 font-weight:700)
-        end %>
-      <%= link_to "Top votes", repository_path(comment_filter: :top) + "#repo-comments", style: bold.last %>
-      <%= link_to "Newest", repository_path(comment_filter: :newest) + "#repo-comments", style: bold.first %>
+      <% bold = if params['comment_filter'].eql?('newest')
+        then %w[font-weight:700 font-weight:400]
+                else %w[font-weight:400 font-weight:700]
+                end %>
+      <%= link_to 'Top votes', repository_path(comment_filter: :top) + '#repo-comments', style: bold.last %>
+      <%= link_to 'Newest', repository_path(comment_filter: :newest) + '#repo-comments', style: bold.first %>
     </div>
     <div id="comment-container">
-      <% @comments.each do |comment|%>
+      <% @comments.each do |comment| %>
       <div class="comment">
         <div class="comment-upvote">
-          <%=
-            vote = @vote.flatten.include?(comment.id)
+vote = @vote.flatten.include?(comment.id)
             color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999'
             link_to fa_icon('angle-up'), vote_path(comment_id: comment.id,
-            voted: vote, downvote: 'f'), class: 'vote upvote', remote: true, method: :post, style: "color: #{color}"
+                                                   voted: vote, downvote: 'f'), class: 'vote upvote', remote: true, method: :post, style: "color: #{color}"
           %>
           <div class="upvote upvote-<%= comment.id %>"><%= comment.upvote %></div>
-          <%=
-            color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999'
+color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999'
             link_to fa_icon('angle-down'), vote_path(comment_id: comment.id,
-            voted: vote, downvote: 't'), class: 'vote downvote', remote: true, method: :post, style: "color: #{color}"
+                                                     voted: vote, downvote: 't'), class: 'vote downvote', remote: true, method: :post, style: "color: #{color}"
           %>
         </div>
         <div class="comment-header">
           <%= link_to user_path(comment.username) do %>
-            <div><%= comment.username %><%= content_tag :div, comment.user.reputation, class: 'rep' %> </div>
+            <div><%= comment.username %><%= tag.div(comment.user.reputation, class: 'rep') %> </div>
            <% end %>
-          <%= content_tag :div, time_ago_in_words(comment.created_at) << " ago", class: 'time' %><br>
-          <% if ((@user.admin?) || (@user.id.equal? comment.user_id))%>
-            <%= link_to (fa_icon('times')), {controller: :comments, action: :destroy, id: comment.id}, method: :delete, data: { confirm: "Are you sure?" },  class: 'x-comment-button' %>
+          <%= tag.div(time_ago_in_words(comment.created_at) << ' ago', class: 'time') %><br>
+          <% if ((@user.admin?) || (@user.id.equal? comment.user_id)) %>
+            <%= link_to fa_icon('times'), { controller: :comments, action: :destroy, id: comment.id }, method: :delete, data: { confirm: 'Are you sure?' }, class: 'x-comment-button' %>
           <% end %>
         </div>
         <div class="comment-content">

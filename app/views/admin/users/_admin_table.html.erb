@@ -12,11 +12,11 @@
       <td class="name-cell"><%= admin.name %></td>
       <td class="email-cell"><%= admin.email %></td>
       <td class="w-auto">
-        <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch, format: "js", remote: true do %>
-          <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]]%>
-          <%= select_tag(:role, options_for_select(@roles, selected: admin.role), class: "form-control form-select d-inline w-auto") %>
-          <%= submit_tag "Change", class: "btn btn-primary btn-sm form-control d-inline w-auto" %>
+        <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch, format: 'js', remote: true do %>
+          <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]] %>
+          <%= select_tag(:role, options_for_select(@roles, selected: admin.role), class: 'form-control form-select d-inline w-auto') %>
+          <%= submit_tag 'Change', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
         <% end %>
       </td>
     </tr>
-    <%end%>
+    <% end %>

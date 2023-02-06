@@ -113,14 +113,14 @@
               <table role="presentation" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;" width="100%">
                 <tr>
                   <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">
-                    <%= image_tag("ceed.png", alt: "CEED Logo", width: 120, height: 34, border: 0, style: "border:0; outline:none; text-decoration:none; display:block;") %>
+                    <%= image_tag('ceed.png', alt: 'CEED Logo', width: 120, height: 34, border: 0, style: 'border:0; outline:none; text-decoration:none; display:block;') %>
                     <br>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                       You have successfully bought CC Money for <a href="https://makerepo.com">MakerRepo.com</a>!<br>
                       The amount of CCs is: <b><%= @cc %> CCs</b>.<br>
-                      You can link them to your makerepo account by going on this <%= link_to "link", link_cc_to_user_cc_moneys_url(token: @hash) %>. <br>
-                      If the link doesn't work, you can copy the following link : <%= link_cc_to_user_cc_moneys_url(token: @hash)  %>
+                      You can link them to your makerepo account by going on this <%= link_to 'link', link_cc_to_user_cc_moneys_url(token: @hash) %>. <br>
+                      If the link doesn't work, you can copy the following link : <%= link_cc_to_user_cc_moneys_url(token: @hash) %>
                  </p>
                     <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
                       <tbody>

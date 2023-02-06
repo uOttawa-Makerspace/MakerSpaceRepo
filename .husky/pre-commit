@@ -2,3 +2,5 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 npx lint-staged
+changed_files=$(git diff --name-only HEAD --diff-filter=ACM | grep -E '\.(erb)$')
+bundle exec erblint --autocorrect $changed_files

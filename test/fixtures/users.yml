@@ -17,7 +17,6 @@ bob:
   identity: undergrad
   program: Biomedical
   year_of_study: 3
-  student_id: 1234567
   created_at: <%= 1.month.ago %>
   read_and_accepted_waiver_form: true
 

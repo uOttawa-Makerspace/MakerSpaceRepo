@@ -39,11 +39,11 @@ class Space < ApplicationRecord
     users =
       lab_sessions
         .where("sign_out_time < ?", Time.zone.now)
-        .order(sign_out_time: :desc)
+        .where.not(user: signed_in_users)
+        .order(sign_out_time: :asc)
         .last(20)
         .map(&:user)
         .uniq
-    signed_in_users.each { |user| users.delete(user) }
     users
   end
 

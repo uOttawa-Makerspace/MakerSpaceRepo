@@ -1,35 +1,35 @@
-<% provide(:title, "Edit user") %>
+<% provide(:title, 'Edit user') %>
 
 <section>
-  <%= form_for @edit_admin_user, url: {controller: "admin/users", action: "update"}, html: { class: "edit_admin_user" } do |f| %>
-    <%= link_to fa_icon("search", text: 'View user'), admin_user_path(@edit_admin_user), class: 'edit-user-link' %>
+  <%= form_for @edit_admin_user, url: { controller: 'admin/users', action: 'update' }, html: { class: 'edit_admin_user' } do |f| %>
+    <%= link_to fa_icon('search', text: 'View user'), admin_user_path(@edit_admin_user), class: 'edit-user-link' %>
     <div class="setting-title">Edit user: <%= @edit_admin_user.username %></div>
     <br>
-    <%= f.label :gender, class: "form-label profile-label" %>
-    <%= f.text_field :gender, class: "profile-text" %>
+    <%= f.label :gender, class: 'form-label profile-label' %>
+    <%= f.text_field :gender, class: 'profile-text' %>
 
-    <%= f.label :faculty, class: "form-label profile-label" %>
-    <%= f.text_field :faculty, class: "profile-text" %>
+    <%= f.label :faculty, class: 'form-label profile-label' %>
+    <%= f.text_field :faculty, class: 'profile-text' %>
 
-    <%= f.label :use, class: "form-label profile-label" %>
-    <%= f.text_field :use, class: "profile-text" %>
+    <%= f.label :use, class: 'form-label profile-label' %>
+    <%= f.text_field :use, class: 'profile-text' %>
 
-    <%= f.label :role, class: "form-label profile-label" %><br>
-    <%= f.radio_button(:role, "regular_user", {class:"form-check-input"}) %>
-    <%= f.label :role_regular, "Regular User", class: "form-check-label radio-label" %>
-    <%= f.radio_button(:role, "admin", {class:"form-check-input"}) %>
-    <%= f.label :role_admin, "Admin", class: "form-check-label radio-label" %>
-
-    <br><br>
-    <%= f.label :rfid, class: "form-label profile-label" %>
-    <%= f.select :rfid, rfid_options_list(@rfids, @edit_admin_user), {}, {class: "profile-select form-select form-control"} %>
+    <%= f.label :role, class: 'form-label profile-label' %><br>
+    <%= f.radio_button(:role, 'regular_user', { class: 'form-check-input' }) %>
+    <%= f.label :role_regular, 'Regular User', class: 'form-check-label radio-label' %>
+    <%= f.radio_button(:role, 'admin', { class: 'form-check-input' }) %>
+    <%= f.label :role_admin, 'Admin', class: 'form-check-label radio-label' %>
 
     <br><br>
-    <%= f.label :certifications, class: "form-label profile-label" %>
-    <%= f.select :certifications, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), {}, {class: "profile-select form-select form-control", include_blank: "Select a certification..." }%>
+    <%= f.label :rfid, class: 'form-label profile-label' %>
+    <%= f.select :rfid, rfid_options_list(@rfids, @edit_admin_user), {}, { class: 'profile-select form-select form-control' } %>
+
+    <br><br>
+    <%= f.label :certifications, class: 'form-label profile-label' %>
+    <%= f.select :certifications, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), {}, { class: 'profile-select form-select form-control', include_blank: 'Select a certification...' } %>
     <br><br>
 
-    <%= f.submit "Update User", class: "btn btn-primary" %>
+    <%= f.submit 'Update User', class: 'btn btn-primary' %>
 
     <br><br>
 
@@ -37,8 +37,8 @@
     <span style="font-weight:bold;color:#E91D1D"> Deleting a user will erase all associated data including certifications, repositories, etc.</span>
     <br></br>
 
-    <%= link_to "Delete User", delete_user_admin_users_path(id: @edit_admin_user.id), method: :delete,
-                class: "btn btn-danger", data: {confirm: 'Are you sure?'} %>
+    <%= link_to 'Delete User', delete_user_admin_users_path(id: @edit_admin_user.id), method: :delete,
+                                                                                      class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
     <br>
     <br>
 

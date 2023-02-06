@@ -1,4 +1,4 @@
-<% provide(:title, "Settings") %>
+<% provide(:title, 'Settings') %>
 
 <div class="edit-column">
   <div class="setting-title">Account Setting</div>
@@ -7,21 +7,21 @@
   <%= form_for @user, url: change_password_user_path(@user.username) do |f| %>
 
     <div class="mb-3">
-    <%= f.label :old_password, "Old Password", class: "form-label profile-label" %>
-    <%= content_tag :span, flash[:alert], class: 'form-error' if flash[:alert] %>
-    <%= f.password_field :old_password, value: nil, class: "profile-text form-control", autofocus: true %>
+    <%= f.label :old_password, 'Old Password', class: 'form-label profile-label' %>
+    <%= tag.span(flash[:alert], class: 'form-error') if flash[:alert] %>
+    <%= f.password_field :old_password, value: nil, class: 'profile-text form-control', autofocus: true %>
     </div>
     <div class="mb-3">
-    <%= f.label :password, "New Password", class: "form-label profile-label" %>
-    <%= content_tag :span, @user.errors[:password].first, class: 'form-error' %>
-    <%= f.password_field :password, value: nil, class: "profile-text form-control" %>
+    <%= f.label :password, 'New Password', class: 'form-label profile-label' %>
+    <%= tag.span(@user.errors[:password].first, class: 'form-error') %>
+    <%= f.password_field :password, value: nil, class: 'profile-text form-control' %>
     </div>
     <div class="mb-3">
-    <%= f.label :password_confirmation, "New Password Confirmation", class: "form-label profile-label" %>
-    <%= content_tag :span, @user.errors[:password_confirmation].first, class: 'form-error' %>
-    <%= f.password_field :password_confirmation, class: "profile-text form-control" %>
+    <%= f.label :password_confirmation, 'New Password Confirmation', class: 'form-label profile-label' %>
+    <%= tag.span(@user.errors[:password_confirmation].first, class: 'form-error') %>
+    <%= f.password_field :password_confirmation, class: 'profile-text form-control' %>
     </div>
-    <%= f.submit "Update Password", class: "btn btn-secondary" %>
+    <%= f.submit 'Update Password', class: 'btn btn-secondary' %>
 
   <% end %>
 
@@ -31,12 +31,12 @@
   <%= form_tag change_email_users_path, method: :get do %>
 
     <div class="mb-3">
-      <%= label_tag :new_email, "New Email", class: "form-label profile-label" %>
-      <%= email_field_tag :new_email, "", {:class => "profile-text form-control", :autofocus => true} %>
-      <%= label_tag :confirm_new_email, "Confirm the New Email", class: "form-label profile-label" %>
-      <%= email_field_tag :confirm_new_email, "", {:class => "profile-text form-control", :autofocus => true} %>
+      <%= label_tag :new_email, 'New Email', class: 'form-label profile-label' %>
+      <%= email_field_tag :new_email, '', { class: 'profile-text form-control', autofocus: true } %>
+      <%= label_tag :confirm_new_email, 'Confirm the New Email', class: 'form-label profile-label' %>
+      <%= email_field_tag :confirm_new_email, '', { class: 'profile-text form-control', autofocus: true } %>
     </div>
-    <%= submit_tag "Update Email", class: "btn btn-secondary" %>
+    <%= submit_tag 'Update Email', class: 'btn btn-secondary' %>
 
   <% end %>
 
@@ -51,14 +51,14 @@
       You currently do not have a github account linked to MakerRepo.
       <br><br>
     </div>
-    <%= link_to fa_icon("github", text: 'Authorize access to your Github'),
-      github_authorize_path, class: 'btn btn-secondary' %>
+    <%= link_to fa_icon('github', text: 'Authorize access to your Github'),
+                github_authorize_path, class: 'btn btn-secondary' %>
   <% else %>
     <div class="github-info">
       Connected as: <%= link_to "@#{@client.login}", @client_info.html_url %>
       <%= "(#{@client.user.name})" if @client.user.name.present? %>
-      <%= link_to fa_icon("github", text: ' Revoke access...'),
-        github_unauthorize_path, class: 'github-unauth' %>
+      <%= link_to fa_icon('github', text: ' Revoke access...'),
+                  github_unauthorize_path, class: 'github-unauth' %>
     </div>
   <% end %>
 
@@ -72,6 +72,6 @@
 
   <%= link_to 'Delete your account', @user, method: :delete, data:
     { confirm: 'Are you positive that you want to delete your account?' },
-    class: 'delete' %><br><br><br><br>
+                                            class: 'delete' %><br><br><br><br>
 
 </div>

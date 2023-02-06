@@ -5,22 +5,22 @@
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
-          <%= form_for @badge_template, url: {controller: "badge_templates", action: "update"} do |f| %>
+          <%= form_for @badge_template, url: { controller: 'badge_templates', action: 'update' } do |f| %>
             <div class="row">
               <div class="col-md-12">
                 <div class="mb-3 text-center">
-                  <%= f.label :training_id, "Training related to the badge templates", class:"form-label" %>
-                  <%= f.select(:training_id, options_for_select(Training.all.pluck(:name, :id), selected: f.object.training_id), {:include_blank => true}, {class: 'form-control form-select'}) %>
+                  <%= f.label :training_id, 'Training related to the badge templates', class: 'form-label' %>
+                  <%= f.select(:training_id, options_for_select(Training.all.pluck(:name, :id), selected: f.object.training_id), { include_blank: true }, { class: 'form-control form-select' }) %>
                 </div>
               </div>
               <div class="col-md-12">
                 <div class="mb-3 text-center">
-                  <%= f.label :training_level, "Training related to the badge templates", class:"form-label" %>
-                  <%= f.select(:training_level, options_for_select(['Beginner', 'Intermediate', 'Advanced'], selected: f.object.training_level), {:include_blank => true}, {class: 'form-control form-select'}) %>
+                  <%= f.label :training_level, 'Training related to the badge templates', class: 'form-label' %>
+                  <%= f.select(:training_level, options_for_select(%w[Beginner Intermediate Advanced], selected: f.object.training_level), { include_blank: true }, { class: 'form-control form-select' }) %>
                 </div>
               </div>
               <div class="col-lg-12 text-center">
-                <%= f.submit "Update Badge Template", class: "btn btn-secondary btn-xl" %>
+                <%= f.submit 'Update Badge Template', class: 'btn btn-secondary btn-xl' %>
                 <br><br>
               </div>
             </div>

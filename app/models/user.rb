@@ -107,8 +107,6 @@ class User < ApplicationRecord
 
   validates :year_of_study, presence: true, if: :student?
 
-  validates :student_id, presence: true, if: :student?
-
   validates :identity,
             presence: true,
             inclusion: {

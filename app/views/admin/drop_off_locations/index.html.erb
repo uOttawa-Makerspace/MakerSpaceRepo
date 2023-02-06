@@ -2,7 +2,7 @@
   <div class="text-center pb-4">
     <h2 class="fw-bold py-3">Drop-Off Location Manager</h2>
 
-    <p class="text-center"><%= link_to "New Location", new_admin_drop_off_location_path, class: "btn btn-secondary" %></p>
+    <p class="text-center"><%= link_to 'New Location', new_admin_drop_off_location_path, class: 'btn btn-secondary' %></p>
     <br />
     <table class="table table-striped mb-5">
       <thead class="table-primary">
@@ -14,7 +14,7 @@
       <% @locations.each do |t| %>
         <tr>
           <td><%= t.name %></td>
-          <td><%= link_to "Edit", edit_admin_drop_off_location_path(t.id), class:"btn btn-primary" %></td>
+          <td><%= link_to 'Edit', edit_admin_drop_off_location_path(t.id), class: 'btn btn-primary' %></td>
         </tr>
       <% end %>
     </table>

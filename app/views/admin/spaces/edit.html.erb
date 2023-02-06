@@ -5,11 +5,11 @@
   <h4>Max Capacity</h4>
 
   <div class="mb-3">
-    <%= form_for update_max_capacity_admin_spaces_path, url: { controller: "admin/spaces", action: "update_max_capacity" }, method: :post do |f| %>
+    <%= form_for update_max_capacity_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_max_capacity' }, method: :post do |f| %>
       <div class="input-group">
       <%= hidden_field_tag :space_id, @space.id %> <br>
-      <%= number_field_tag :max_capacity, @space.max_capacity, { class: "form-control", placeholder:"Maximum Capacity"} %>
-      <%= f.submit "Update Max Capacity", class: "btn btn-primary", data: { confirm: 'Are your sure you want to update the maximum capacity of the space ?' } %>
+      <%= number_field_tag :max_capacity, @space.max_capacity, { class: 'form-control', placeholder: 'Maximum Capacity' } %>
+      <%= f.submit 'Update Max Capacity', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the maximum capacity of the space ?' } %>
       </div>
     <% end %>
   </div>
@@ -20,11 +20,14 @@
 
   <div class="responsive-table">
     <table class="table  table-striped">
-      <thead class="table-primary">
+      <thead class="table-primary text-center">
       <tr>
         <th scope="col">Day</th>
         <th scope="col">Start Time</th>
         <th scope="col">End Time</th>
+        <th scope="col">Language</th>
+        <th scope="col">Course</th>
+        <th scope="col">Training</th>
         <th scope="col">Action</th>
       </tr>
       </thead>
@@ -34,6 +37,9 @@
           <td><%= needed_staff.week_day %></td>
           <td><%= needed_staff.start_time.strftime("%H:%M")  %></td>
           <td><%= needed_staff.end_time.strftime("%H:%M")  %></td>
+          <td><%= needed_staff.language %></td>
+          <td><%= needed_staff.course_name_id ? CourseName.find(needed_staff.course_name_id).name.capitalize : "No Course" %></td>
+          <td><%= needed_staff.training_level_id ? TrainingLevel.find(needed_staff.training_level_id).name.capitalize : "None" %></td>
           <td><%=link_to "Delete", { controller: "admin/spaces", action: :delete_space_hour, space_staff_hour_id: needed_staff.id }, method: :delete,
                           data: { confirm: 'Are you sure that you want to delete this slot?' },
                           class:"btn btn-danger btn-sm d-block w-100 mb-1 me-0" %></td>
@@ -44,28 +50,42 @@
   </div>
 
   <div class="mb-3">
-    <%= form_for add_space_hours_admin_spaces_path, url: { controller: "admin/spaces", action: "add_space_hours" }, method: :post do |f| %>
+    <%= form_for add_space_hours_admin_spaces_path, url: { controller: 'admin/spaces', action: 'add_space_hours' }, method: :post do |f| %>
       <div class="row">
-        <div class="col-md-12">
+        <div class="col-md-12 d-flex justify-content-between">
           <div class="mb-3 text-center">
-            <%= label_tag :day, "Day of the week", class:"form-label" %>
-            <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), { class: "form-control form-select"} %>
+            <%= label_tag :day, 'Day of the week', class: 'form-label' %>
+            <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), { class: 'form-control form-select' } %>
+          </div>
+          <div class="mb-3 text-center">
+            <%= label_tag :language, "Language of Instruction", class:"form-label" %>
+            <%= select_tag :language, options_for_select(['English','French']), { class: "form-control form-select"} %>
+          </div>
+          <div class="mb-3 text-center">
+            <%= label_tag :training_level, "Level of Training", class:"form-label" %>
+            <%# By seed.rb, none is id 1 of training levels#%>
+            <%= select_tag :training_level, options_for_select(TrainingLevel.where(space_id:@space.id).pluck(:name,:id),0), { class: "form-control form-select"} %>
+          </div>
+          <div class="mb-3 text-center">
+            <%= label_tag :training_course, "Course Code Option", class:"form-label" %>
+            <%# By seed.rb, no course is id 1 of courses#%>
+            <%= select_tag :training_course, options_for_select(CourseName.all.pluck(:name,:id),6), { class: "form-control form-select", selected: "no course"} %>
           </div>
         </div>
 
         <div class="mb-3 col-md-6 text-center">
-          <%= label_tag :start_time, 'Start Time (24h format)', class:"form-label" %>
+          <%= label_tag :start_time, 'Start Time (24h format)', class: 'form-label' %>
           <div class="input-group">
-            <%= text_field_tag "start_time", {}, {id: 'start_time', autocomplete: 'off', class: "form-control", required: true} %>
+            <%= text_field_tag 'start_time', {}, { id: 'start_time', autocomplete: 'off', class: 'form-control', required: true } %>
             <button class="btn btn-outline-danger" id="start_time_clear" type="button">
               <i class="fa fa-times w3-text-red"></i>
             </button>
           </div>
         </div>
         <div class="col-md-6">
-          <%= label_tag :end_time, 'End Time (24h format)', class:"form-label" %>
+          <%= label_tag :end_time, 'End Time (24h format)', class: 'form-label' %>
           <div class="input-group">
-            <%= text_field_tag "end_time", {}, {id: 'end_time', autocomplete: 'off', class: "form-control", required: true} %>
+            <%= text_field_tag 'end_time', {}, { id: 'end_time', autocomplete: 'off', class: 'form-control', required: true } %>
             <button class="btn btn-outline-danger" id="end_time_clear" type="button">
               <i class="fa fa-times w3-text-red"></i>
             </button>
@@ -74,8 +94,20 @@
 
         <div class="col-lg-12 text-center">
           <%= hidden_field_tag :space_id, @space.id %> <br>
-          <%= f.submit "Add a new slot where staffs are needed", class: "btn btn-primary" %>
+          <%= f.submit 'Add a new slot where staffs are needed', class: 'btn btn-primary' %>
         </div>
+      </div>
+    <% end %>
+  </div>
+  <br>
+  <h4>New Training Level for Space</h4>
+  <div class="mb-3 d-inline-block">
+    <%= form_for add_training_levels_admin_spaces_path, url: { controller: "admin/spaces", action: "add_training_levels" }, method: :post do |f| %>
+      <div class="input-group">
+        <%= label_tag :name, "Level of Training", class:"input-group-text" %>
+        <%= text_field_tag :name, "", { class: "form-control", multiple: true, data: { role: "tagsinput" } } %>
+        <%= hidden_field_tag :space_id, @space.id %> <br>
+        <%= f.submit "New level", class: "btn btn-primary" %>
       </div>
     <% end %>
   </div>
@@ -87,14 +119,14 @@
     <h4>Staff Needed Calendar</h4>
     <p>You can add here all the Public Google Calendars or ICS files you want to be displayed as Staff Needed.</p>
     <p>Please <b>Paste the ID</b> of the <b>Public Google Agenda</b> (NOT the link). Follow <a href="https://docs.simplecalendar.io/find-google-calendar-id/" rel="noopener noreferrer" target="_blank" >this link</a> for help retrieving it or paste the full ICS link.</p>
-    <%= form_for update_staff_needed_calendars_admin_spaces_path, url: { controller: "admin/spaces", action: "update_staff_needed_calendars", space_id: @space.id }, method: :put do |f| %>
+    <%= form_for update_staff_needed_calendars_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_staff_needed_calendars', space_id: @space.id }, method: :put do |f| %>
       <div id="link-container">
         <% @staff_needed_calendars.each_with_index do |snc, i| %>
           <div class="d-flex upload-file-input mb-2" <%= 'id=new-link-input' if i == 0 %>>
             <input type="color" name="staff_needed_calendar_color[]" class="form-control form-control-color" value="<%= snc.color %>" title="Choose your color">
             <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control' } %>
             <button class="btn <%= i == 0 ? 'btn-success' : 'btn-danger original-button' %> ms-2" type="button" <%= 'id=clone-link-input' if i == 0 %>>
-              <i class="fa fa-<%= i == 0 ? "plus" : "trash" %>"></i>
+              <i class="fa fa-<%= i == 0 ? 'plus' : 'trash' %>"></i>
             </button>
           </div>
         <% end %>
@@ -102,14 +134,14 @@
         <% unless @staff_needed_calendars.count > 0 %>
           <div class="d-flex upload-file-input mb-2" id="new-link-input">
             <input type="color" name="staff_needed_calendar_color[]" class="form-control form-control-color" value="#000" title="Choose your color">
-            <%= text_field_tag 'staff_needed_calendar[]', "",  { class: 'form-control' }%>
+            <%= text_field_tag 'staff_needed_calendar[]', '', { class: 'form-control' } %>
             <button class="btn btn-success ms-2" type="button" id="clone-link-input">
               <i class="fa fa-plus"></i>
             </button>
           </div>
         <% end %>
       </div>
-      <%= f.submit "Update Calendar Links", class: "btn btn-primary" %>
+      <%= f.submit 'Update Calendar Links', class: 'btn btn-primary' %>
     <% end %>
 
   </div>
@@ -134,7 +166,7 @@
         <tr>
           <td><%= raspi.pi_mac_address %></td>
           <td><%= raspi.space.name %></td>
-          <td><%= link_to fa_icon('times'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: nil }), method: :patch, action: :update, path: '/', class:"w3-text-red" %></td>
+          <td><%= link_to fa_icon('times'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: nil }), method: :patch, action: :update, path: '/', class: 'w3-text-red' %></td>
         </tr>
       <% end %>
     </table>
@@ -154,7 +186,7 @@
         <tr>
           <td><%= raspi.pi_mac_address %></td>
           <td>unknown</td>
-          <td><%= link_to fa_icon('check'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: @space.id }), method: :patch, action: :update, path: '/', class:"w3-text-green" %></td>
+          <td><%= link_to fa_icon('check'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: @space.id }), method: :patch, action: :update, path: '/', class: 'w3-text-green' %></td>
         </tr>
       <% end %>
     </table>
@@ -165,11 +197,11 @@
   <h2 class="fw-bold mb-3">Manage Trainings</h2>
   <div>
     <h3>New <%= @space.name %> Training:</h3>
-    <%= form_for @new_training, :url => { :action => "create", controller: 'admin/trainings' } do |f| %>
+    <%= form_for @new_training, url: { action: 'create', controller: 'admin/trainings' } do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
       <div class="input-group">
-      <%= f.text_field :name, placeholder: 'Enter a unique name', class: "form-control" %>
-        <%= submit_tag "Add", class: "btn btn-primary" %>
+      <%= f.text_field :name, placeholder: 'Enter a unique name', class: 'form-control' %>
+        <%= submit_tag 'Add', class: 'btn btn-primary' %>
       </div>
     <% end %>
 
@@ -189,7 +221,7 @@
           <td><%= training.training_sessions.length %></td>
           <td><%= training.certifications.length %></td>
           <td><%= link_to fa_icon('times'), admin_training_url(id: training.id), method: :delete, action: :destroy,
-                          data: { confirm: 'Deleting a training will delete ALL its Sessions and Certifications! Ok to confirm' }, class:"w3-text-red" %></td>
+                                                                                 data: { confirm: 'Deleting a training will delete ALL its Sessions and Certifications! Ok to confirm' }, class: 'w3-text-red' %></td>
         </tr>
       <% end %>
     </table>
@@ -200,9 +232,9 @@
   <%= form_for admin_spaces_path, action: :update_name, method: :post do |f| %>
     <div class="mb-3 input-group">
 
-      <%= text_field_tag :name, "", class: "form-control", placeholder:"New Space Name" %>
+      <%= text_field_tag :name, '', class: 'form-control', placeholder: 'New Space Name' %>
       <%= hidden_field_tag :space_id, @space.id %> <br>
-      <%= f.submit "Edit name", class: "btn btn-primary", data: { confirm: 'Are your sure you want to change the name of the space ?' } %>
+      <%= f.submit 'Edit name', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to change the name of the space ?' } %>
     </div>
   <% end %>
   <br>
@@ -211,13 +243,13 @@
     <div class="mb-3 input-group">
       <div class="input-group-text">
         <div class="form-check form-check-inline">
-        <%= check_box_tag :approval_required, 1, false, class:"form-check-input" %>
-        <%= label_tag :approval_required, "Require Approval", class:"form-check-label" %>
+        <%= check_box_tag :approval_required, 1, false, class: 'form-check-input' %>
+        <%= label_tag :approval_required, 'Require Approval', class: 'form-check-label' %>
         </div>
       </div>
-      <%= text_field_tag :name, "", class: "form-control", placeholder:"Subspace Name" %>
+      <%= text_field_tag :name, '', class: 'form-control', placeholder: 'Subspace Name' %>
       <%= hidden_field_tag :space_id, @space.id %>
-      <%= f.submit "Create new sub space", class: "btn btn-primary" %>
+      <%= f.submit 'Create new sub space', class: 'btn btn-primary' %>
     </div>
   <% end %>
   <h3>Sub Spaces</h3>
@@ -235,30 +267,30 @@
     <% SubSpace.where(space: @space).each do |sub_space| %>
       <tr>
         <td><%= sub_space.name %></td>
-          <td><%= link_to "#{sub_space.approval_required ? "Enable" : "Disable"} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id:@space.id, id:sub_space.id), method: :put, action: :change_sub_space_approval, class:"btn btn-primary btn-sm" %></td>
+          <td><%= link_to "#{sub_space.approval_required ? 'Enable' : 'Disable'} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id: @space.id, id: sub_space.id), method: :put, action: :change_sub_space_approval, class: 'btn btn-primary btn-sm' %></td>
           <td>
-            <%= form_tag admin_space_set_max_booking_duration_path(space_id:@space.id, sub_space_id:sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
+            <%= form_tag admin_space_set_max_booking_duration_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
               <button step=-1 target='max_hours_weekly' id='max_hours_decrement' class='btn btn-sm btn-outline-danger' onclick='customNumberInput(event,this)'><%= fa_icon('minus') %></button>
-              <%= text_field_tag :max_hours, sub_space.maximum_booking_duration.nil? ? -1 : sub_space.maximum_booking_duration, class: "form-control" %>
+              <%= text_field_tag :max_hours, sub_space.maximum_booking_duration.nil? ? -1 : sub_space.maximum_booking_duration, class: 'form-control' %>
               <button step=1 target='max_hours_weekly' id='max_hours_increment' class='btn btn-sm btn-outline-success' onclick='customNumberInput(event,this)'><%= fa_icon('plus') %></button>
-              <%= submit_tag "Set Hours", class: "btn btn-primary btn-sm" %>
+              <%= submit_tag 'Set Hours', class: 'btn btn-primary btn-sm' %>
             <% end %>
             <i>to disable the limit, use -1</i>
           </td>
           <td>
-            <%= form_tag admin_space_set_max_booking_duration_path(space_id:@space.id, sub_space_id:sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
+            <%= form_tag admin_space_set_max_booking_duration_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
               <button step=-1 target='max_hours_weekly' id='max_hours_decrement' class='btn btn-sm btn-outline-danger' onclick='customNumberInput(event,this)'><%= fa_icon('minus') %></button>
-              <%= text_field_tag :max_hours_weekly, sub_space.maximum_booking_hours_per_week.nil? ? -1 : sub_space.maximum_booking_hours_per_week, class: "form-control" %>
+              <%= text_field_tag :max_hours_weekly, sub_space.maximum_booking_hours_per_week.nil? ? -1 : sub_space.maximum_booking_hours_per_week, class: 'form-control' %>
               <button step=1 target='max_hours_weekly' id='max_hours_increment' class='btn btn-sm btn-outline-success' onclick='customNumberInput(event,this)'><%= fa_icon('plus') %></button>
-              <%= submit_tag "Set Hours", class: "btn btn-primary btn-sm" %>
+              <%= submit_tag 'Set Hours', class: 'btn btn-primary btn-sm' %>
             <% end %>
             <i>to disable the limit, use -1</i>
           </td>
           <td>
-            <%= button_to "Make #{sub_space.default_public ? "Private" : "Public"} by default", admin_space_change_sub_space_default_public_path(space_id:@space.id, id:sub_space.id), method: :post, action: :change_sub_space_default_public, class:"btn #{sub_space.default_public ? " btn-secondary" : " btn-primary"}" %>
+            <%= button_to "Make #{sub_space.default_public ? 'Private' : 'Public'} by default", admin_space_change_sub_space_default_public_path(space_id: @space.id, id: sub_space.id), method: :post, action: :change_sub_space_default_public, class: "btn #{sub_space.default_public ? ' btn-secondary' : ' btn-primary'}" %>
           </td>
-        <td><%= link_to "Destroy", admin_space_delete_sub_space_path(space_id:@space.id, id:sub_space.id), method: :delete, action: :delete_sub_space,
-                        data: { confirm: 'Are you sure you want to delete this sub space ?' }, class:"btn btn-danger" %></td>
+        <td><%= link_to 'Destroy', admin_space_delete_sub_space_path(space_id: @space.id, id: sub_space.id), method: :delete, action: :delete_sub_space,
+                                                                                                             data: { confirm: 'Are you sure you want to delete this sub space ?' }, class: 'btn btn-danger' %></td>
       </tr>
     <% end %>
   </table>
@@ -273,9 +305,9 @@
     <br>
     <%= form_for admin_spaces_path, action: :destroy, method: :delete do |f| %>
       <div class="mb-3 input-group">
-      <%= text_field_tag :admin_input, "", class: "form-control" %>
+      <%= text_field_tag :admin_input, '', class: 'form-control' %>
       <%= hidden_field_tag :id, @space.id %>
-      <%= f.submit "DESTROY", class: "btn btn-danger", data: { confirm: 'Are your sure you want to completely DELETE this space and all related informaion?! Ok to confirm' } %>
+      <%= f.submit 'DESTROY', class: 'btn btn-danger', data: { confirm: 'Are your sure you want to completely DELETE this space and all related informaion?! Ok to confirm' } %>
       </div>
     <% end %>
   </div>

@@ -2,8 +2,8 @@
   <div class="d-flex justify-content-center">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
       <div class="input-group mb-3">
-        <%= label_tag :space_id, "Space", class: 'input-group-text' %>
-        <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: "form-select" %>
+        <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
+        <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: 'form-select' %>
         <%= hidden_field_tag :shifts, true %>
         <button class="btn btn-outline-secondary" type="submit">Go</button>
       </div>
@@ -11,11 +11,11 @@
   </div>
 
   <div id="pending-shift-partial">
-    <%= render partial: 'pending_shifts', locals: {pending_shifts: @pending_shifts} %>
+    <%= render partial: 'pending_shifts', locals: { pending_shifts: @pending_shifts } %>
   </div>
 
   <div class="row">
-    <div class="col-md-2">
+    <div class="col-md-2 scroll-col">
       <div class="form-check mb-2">
         <input class="form-check-input checkbox-lg me-2 mt-0" type="checkbox" value="" id="hide-show-unavailabilities" checked>
         <label class="form-check-label" for="hide-show-unavailabilities">
@@ -69,8 +69,8 @@
             <label for="end-datetime">End Date</label>
             <input id="end-datetime" autocomplete="false" class="form-control">
             <br>
-            <%= label_tag :user_id, "User to select" %>
-            <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true} %>
+            <%= label_tag :user_id, 'User to select' %>
+            <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true } %>
             <br>
             <label for="reason">Reason</label>
             <select id="reason" class="form-select">
@@ -85,7 +85,9 @@
         <div class="modal-footer input-group">
           <button type="button" id="modal-delete" class="d-none btn btn-danger">Delete Shift</button>
           <button type="button" id="modal-close" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" id="modal-save" class="btn btn-primary">Save</button>
+          <button type="button" id="modal-save" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            Save</button>
         </div>
       </div>
     </div>
