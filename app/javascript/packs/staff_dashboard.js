@@ -31,15 +31,28 @@ function refreshCapacity() {
           data;
     });
 }
+function refreshTables() {
+  let token = Array.from(
+    document.querySelectorAll(`[data-user-id]`),
+    (el) => el.dataset.userId
+  ).join("");
+  let url = "/staff_dashboard/refresh_tables?token=" + token;
+  fetch(url)
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data);
+      if (!data.error) {
+        if (document.getElementById("table-js-signed-out")) {
+          document.getElementById("table-js-signed-out").innerHTML =
+            data.signed_out;
+        }
+        if (document.getElementById("table-js-signed-in")) {
+          document.getElementById("table-js-signed-in").innerHTML =
+            data.signed_in;
+        }
+      }
+    });
+}
 setInterval(refreshCapacity, 60000);
 refreshCapacity();
-
-document.addEventListener("DOMContentLoaded", function () {
-  MessageBus.start();
-  MessageBus.callbackInterval = 500;
-  let space_id = document.getElementById("space_id").value;
-  MessageBus.subscribe("/kiosk/" + space_id, function (data) {
-    document.getElementById("table-js-signed-in").innerHTML = data.sign_in;
-    document.getElementById("table-js-signed-out").innerHTML = data.sign_out;
-  });
-});
+setInterval(refreshTables, 15000);

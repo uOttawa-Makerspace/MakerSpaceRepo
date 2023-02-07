@@ -74,38 +74,6 @@ class RfidController < SessionsController
           .where(trainings: { spaces: { id: space_id } })
       end
     @all_user_certs = Proc.new { |user| user.certifications }
-    begin
-      MessageBus.publish(
-        "/kiosk/#{@space.id}",
-        {
-          sign_in:
-            (
-              render_to_string(
-                partial: "staff_dashboard/signed_in_table",
-                locals: {
-                  space: @space,
-                  all_user_certs: @all_user_certs,
-                  certifications_on_space: @certifications_on_space
-                },
-                layout: false
-              )
-            ),
-          sign_out:
-            (
-              render_to_string(
-                partial: "staff_dashboard/signed_out_table",
-                locals: {
-                  space: @space,
-                  all_user_certs: @all_user_certs,
-                  certifications_on_space: @certifications_on_space
-                },
-                layout: false
-              )
-            )
-        }
-      )
-    rescue StandardError => e
-    end
   end
   def check_session(rfid)
     active_sessions =

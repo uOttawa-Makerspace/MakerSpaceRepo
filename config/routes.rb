@@ -345,6 +345,7 @@ Rails.application.routes.draw do
     get :populate_users
     post :import_excel
     get :refresh_capacity
+    get :refresh_tables
   end
 
   resources :sub_space_booking, only: %i[index create] do
