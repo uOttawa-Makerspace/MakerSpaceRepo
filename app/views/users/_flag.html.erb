@@ -9,21 +9,21 @@
         Flags:
         <br>
         <div id="flag-modal">
-          <%= render :partial => 'flag_list', locals: {repo_user: @repo_user} %>
+          <%= render partial: 'flag_list', locals: { repo_user: @repo_user } %>
         </div>
-        <%= form_tag(flag_users_path, :method => "post") do %>
+        <%= form_tag(flag_users_path, method: 'post') do %>
           <%= hidden_field_tag :flagged_user, nil, value: @repo_user.id %>
           <div class="mb-3">
-            <%= text_field_tag :flag_message, nil, placeholder: "Message", class: "form-control" %>
+            <%= text_field_tag :flag_message, nil, placeholder: 'Message', class: 'form-control' %>
           </div>
           <button type="submit" class="btn btn-success">Add flag</button>
         <% end %>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <%= form_tag(unflag_users_path, :method => "post") do %>
+        <%= form_tag(unflag_users_path, method: 'post') do %>
           <%= hidden_field_tag :flagged_user, nil, value: @repo_user.id %>
-          <%= submit_tag "Remove Flags", class: "btn btn-danger" %>
+          <%= submit_tag 'Remove Flags', class: 'btn btn-danger' %>
         <% end %>
       </div>
     </div>

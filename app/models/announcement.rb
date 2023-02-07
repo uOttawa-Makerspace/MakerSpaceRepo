@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Announcement < ApplicationRecord
+  has_many :announcement_dismisses, dependent: :destroy
   belongs_to :user
   scope :active,
         -> {

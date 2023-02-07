@@ -93,3 +93,10 @@ end
 %w[MTC Makerspace].each do |location_name|
   DropOffLocation.create(name: location_name)
 end
+
+# Training Levels, add to all spaces
+%w[None Basic].each do |level_name|
+  Space.all.each do |space|
+    TrainingLevel.find_or_create_by(name: level_name, space_id: space.id)
+  end
+end

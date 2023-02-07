@@ -1,21 +1,21 @@
 <section id="new-repo">
 
-  <%= form_for @repo, url: {controller: "makes", action: "create"}, html: { multipart: true, class: "makes_new", id: "makes_new" } do |f| %>
-    <%= f.label :title, "Name", class:"form-label" %>
+  <%= form_for @repo, url: { controller: 'makes', action: 'create' }, html: { multipart: true, class: 'makes_new', id: 'makes_new' } do |f| %>
+    <%= f.label :title, 'Name', class: 'form-label' %>
     <div>Great repository names are short and memorable.</div>
     <span class="autocomplete-wrapper">
-      <%= f.text_field :title, class: 'repo repo-autocomplete', id: "repository_title" %>
+      <%= f.text_field :title, class: 'repo repo-autocomplete', id: 'repository_title' %>
       <span class="loader"></span> 
     </span>
     
-    <%= f.label :description, class:"form-label" %>
+    <%= f.label :description, class: 'form-label' %>
     <%= f.text_area :description, class: 'repo' %>
 
     <div class="mb-3 required">
-      <%= label_tag :photo, "Gallery", class:"form-label" %>
+      <%= label_tag :photo, 'Gallery', class: 'form-label' %>
       <div>A maximum of five photos can be uploaded per repository.</div>
       <div class="input-group mb-3">
-        <%= file_field_tag 'images[]', type: :files, multiple: true, class: "form-control image-upload", aria_label: "Select Pictures / Selectionner des images" %>
+        <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
         <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
           <i class="fa fa-plus"></i>
         </button>
@@ -23,14 +23,14 @@
     </div>
     <div class="repo-image">
         <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
-          <%= fa_icon 'cloud-upload'%>
+          <%= fa_icon 'cloud-upload' %>
           <p>Drag &amp; Drop</p>
         </div>
     </div>
 
     <div id="image-container"></div>
 
-  <%= f.submit "Create Repository", class: "save-button" %>
+  <%= f.submit 'Create Repository', class: 'save-button' %>
     <span id="status-save"></span>
 
   <% end %>

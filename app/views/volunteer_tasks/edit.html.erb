@@ -6,11 +6,11 @@
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
-          <%= form_for @volunteer_task, url: {controller: "volunteer_tasks", action: "update"}, :html => { :id => "volunteerForm", class:"needs-validation", novalidate: 'novalidate' } do |f| %>
+          <%= form_for @volunteer_task, url: { controller: 'volunteer_tasks', action: 'update' }, html: { id: 'volunteerForm', class: 'needs-validation', novalidate: 'novalidate' } do |f| %>
             <div class="row">
               <div class="col-md-12">
                 <div class="mb-3 text-center">
-                  <%= f.label :title, "Title", class:"form-label"  %>
+                  <%= f.label :title, 'Title', class: 'form-label' %>
                   <%= f.text_field :title, class: 'form-control', required: true %>
                   <div class="invalid-feedback">
                     Please provide a title.
@@ -19,8 +19,8 @@
               </div>
               <div class="col-md-12">
                 <div class="mb-3 text-center">
-                  <%= f.label :description, "Task Description", class:"form-label"  %>
-                  <%= f.text_area :description ,class: 'form-control', required: true %>
+                  <%= f.label :description, 'Task Description', class: 'form-label' %>
+                  <%= f.text_area :description, class: 'form-control', required: true %>
                   <div class="invalid-feedback">
                     Please provide a description.
                   </div>
@@ -29,11 +29,11 @@
               <div class="mx-auto col-md-4 text-center">
                 <b>Status:</b> <br />
                 <div class="d-inline-block text-start form-check">
-                  <%= f.radio_button :status, 'open', :style => 'display:inline',class:"form-check-input" %>
-                  <%= f.label :status, 'Open', :style => 'display:inline', class:"form-label"  %>
+                  <%= f.radio_button :status, 'open', style: 'display:inline', class: 'form-check-input' %>
+                  <%= f.label :status, 'Open', style: 'display:inline', class: 'form-label' %>
                   <br />
-                  <%= f.radio_button :status, 'completed', :style => 'display:inline',class:"form-check-input" %>
-                  <%= f.label :status, 'Completed', :style => 'display:inline', class:"form-label"  %>
+                  <%= f.radio_button :status, 'completed', style: 'display:inline', class: 'form-check-input' %>
+                  <%= f.label :status, 'Completed', style: 'display:inline', class: 'form-label' %>
                   <br />
                   <br />
                 </div>
@@ -42,8 +42,8 @@
                 <b>Space:</b> <br />
                 <div class="d-inline-block text-start form-check">
                   <% Space.all.order(name: :asc).each do |s| %>
-                    <%= f.radio_button :space_id, s.id, :style => 'display:inline',class:"form-check-input" %>
-                    <%= f.label :space_id, s.name.capitalize, :style => 'display:inline', class:"form-label"  %>
+                    <%= f.radio_button :space_id, s.id, style: 'display:inline', class: 'form-check-input' %>
+                    <%= f.label :space_id, s.name.capitalize, style: 'display:inline', class: 'form-label' %>
                     <br />
                   <% end %>
                   <%#= f.radio_button :space_id, Space.find_by(name: "Makerspace").id, checked: true, :style => 'display:inline' %>
@@ -58,7 +58,7 @@
               <div class="mx-auto col-md-4 text-center">
                 <b>How many can join this task?</b> <br />
                 <div class="d-inline-block text-center">
-                  <%= f.number_field :joins, class: "form-control" %>
+                  <%= f.number_field :joins, class: 'form-control' %>
                   <br />
                   <br />
                 </div>
@@ -67,7 +67,7 @@
               <div class="mx-auto col-md-4 text-center">
                 <b>Choose a category:</b> <br />
                 <div class="d-inline-block text-center">
-                  <%= f.select(:category, @tasks_categories, {prompt: "Category..."} , {:class => "form-control form-select"}) %>
+                  <%= f.select(:category, @tasks_categories, { prompt: 'Category...' }, { class: 'form-control form-select' }) %>
                   <br />
                   <br />
                 </div>
@@ -75,7 +75,7 @@
               <div class="mx-auto col-md-4 text-center">
                 <b>CCs:</b> <br />
                 <div class="d-inline-block text-center">
-                  <%= f.number_field :cc, class: "form-control" %>
+                  <%= f.number_field :cc, class: 'form-control' %>
                   <br />
                   <br />
                 </div>
@@ -83,38 +83,38 @@
               <div class="mx-auto col-md-4 text-center">
                 <b>Hours:</b> <br />
                 <div class="d-inline-block text-center">
-                  <%= f.number_field :hours, step: 0.01,  class: "form-control" %>
+                  <%= f.number_field :hours, step: 0.01, class: 'form-control' %>
                   <br />
                   <br />
                 </div>
               </div>
               <div class="col-md-12 text-center">
-                <%= label :certifications_id, "Certifications", class:"form-label"  %>
-                <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name', :selected => (@volunteer_task.require_trainings.pluck(:training_id) if @volunteer_task.require_trainings.present?)), {:multiple => true, :id => "task_certifications", :class => "form-control form-select task_certifications"} %>
+                <%= label :certifications_id, 'Certifications', class: 'form-label' %>
+                <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name', selected: (@volunteer_task.require_trainings.pluck(:training_id) if @volunteer_task.require_trainings.present?)), { multiple: true, id: 'task_certifications', class: 'form-control form-select task_certifications' } %>
                 <br><br>
               </div>
               <div class="col-md-6">
-                <%= label_tag :staff_id, "Add Staff Responsible for the Task:", class: 'form-label fw-bold' %>
-                <%= select_tag :staff_id, options_from_collection_for_select(@staff_available, 'id', 'name'), {prompt: "Choose Staff", class: 'form-control form-select', 'data-live-search': 'true', multiple:true} %>
+                <%= label_tag :staff_id, 'Add Staff Responsible for the Task:', class: 'form-label fw-bold' %>
+                <%= select_tag :staff_id, options_from_collection_for_select(@staff_available, 'id', 'name'), { prompt: 'Choose Staff', class: 'form-control form-select', 'data-live-search': 'true', multiple: true } %>
               </div>
               <div class="col-md-6">
                 <%= label_tag :volunteer_id, 'Add Volunteer to this Task:', class: 'form-label fw-bold' %>
-                <%= select_tag :volunteer_id, options_from_collection_for_select(@volunteers_available, 'id', 'name'), {prompt: "Choose Volunteer", class: 'form-control form-select', 'data-live-search': 'true', multiple:true} %>
+                <%= select_tag :volunteer_id, options_from_collection_for_select(@volunteers_available, 'id', 'name'), { prompt: 'Choose Volunteer', class: 'form-control form-select', 'data-live-search': 'true', multiple: true } %>
                 <br><br>
               </div>
 
               <div class="col-md-6">
-                <%= label_tag :remove_staff_id, "Remove Staff Responsible for the Task:", class: 'form-label fw-bold' %>
-                <%= select_tag :remove_staff_id, options_from_collection_for_select(@staff_in_task, 'id', 'name'), {prompt: "Choose Staff", class: 'form-control form-select', 'data-live-search': 'true', multiple:true} %>
+                <%= label_tag :remove_staff_id, 'Remove Staff Responsible for the Task:', class: 'form-label fw-bold' %>
+                <%= select_tag :remove_staff_id, options_from_collection_for_select(@staff_in_task, 'id', 'name'), { prompt: 'Choose Staff', class: 'form-control form-select', 'data-live-search': 'true', multiple: true } %>
               </div>
               <div class="col-md-6">
                 <%= label_tag :remove_volunteer_id, 'Remove Volunteer to this Task:', class: 'form-label fw-bold' %>
-                <%= select_tag :remove_volunteer_id, options_from_collection_for_select(@volunteers_in_task, 'id', 'name'), {prompt: "Choose Volunteer", class: 'form-control form-select', 'data-live-search': 'true', multiple:true} %>
+                <%= select_tag :remove_volunteer_id, options_from_collection_for_select(@volunteers_in_task, 'id', 'name'), { prompt: 'Choose Volunteer', class: 'form-control form-select', 'data-live-search': 'true', multiple: true } %>
               </div>
 
               <div class="col-lg-12 text-center">
                 <br>
-                <%= f.submit "Update Volunteer Task", class: "btn btn-secondary btn-xl text-uppercase" %>
+                <%= f.submit 'Update Volunteer Task', class: 'btn btn-secondary btn-xl text-uppercase' %>
               </div>
             </div>
           <% end %>

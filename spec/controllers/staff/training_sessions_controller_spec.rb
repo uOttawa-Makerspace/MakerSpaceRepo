@@ -128,6 +128,26 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
         expect(response).to redirect_to staff_dashboard_index_path
         expect(flash[:notice]).to eq("Training Session Completed Successfully")
       end
+
+      it "should create certifications for all users in training session and catch the duplicate" do
+        training_session = create(:training_session_with_users, :basic_training)
+        # Give the first user a certification for a different training session, same training and level
+        expect(training_session.users.count).to eq(5)
+        post :certify_trainees, params: { id: training_session }
+        training_session.users.each do |user|
+          expect(
+            Certification.find_by(
+              user_id: user.id,
+              training_session_id: training_session.id
+            ).present?
+          ).to eq(true)
+        end
+        post :certify_trainees, params: { id: training_session }
+        expect(response).to redirect_to staff_dashboard_index_path
+        expect(flash[:notice]).to eq(
+          "Training Session Completed Successfully (5 duplicates skipped)"
+        )
+      end
     end
   end
 

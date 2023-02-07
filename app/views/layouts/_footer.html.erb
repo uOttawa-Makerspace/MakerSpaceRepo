@@ -7,6 +7,6 @@
     <li><%= link_to t('footer.help'), help_path %></li>
   </ul>
   <div class="copyright text-primary">
-    <%= t('footer.copyright_html') % Time.now.year %>
+    <%= t('footer.copyright_html') % Time.zone.now.year %>
   </div>
 </footer>

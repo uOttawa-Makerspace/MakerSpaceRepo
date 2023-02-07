@@ -107,7 +107,7 @@
         <table>
           <tr>
             <td class="title">
-              <%= wicked_pdf_image_tag "ceed-makerspace-logo-250.jpg" %>
+              <%= wicked_pdf_image_tag 'ceed-makerspace-logo-250.jpg' %>
             </td>
 
             <td>
@@ -132,7 +132,7 @@
             <td>
               Client : <%= @print_order.user.name %>
               <br>
-              Date : <%= @print_order.updated_at.strftime("%Y/%m/%d") %>
+              Date : <%= @print_order.updated_at.strftime('%Y/%m/%d') %>
             </td>
           </tr>
         </table>

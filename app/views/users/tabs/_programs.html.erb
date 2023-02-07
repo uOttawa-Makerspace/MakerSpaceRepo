@@ -1,0 +1,25 @@
+<div class="row">
+    <div class="col-md-6">
+      <% if @user.staff? %>
+        <%= form_tag(change_programs_users_path, method: 'post') do %>
+          <div class="field form-group">
+            <div class="checkbox-inline">
+              <%= hidden_field_tag :user_id, @repo_user.id %>
+              <%= check_box_tag :dev_program, '1', @programs.include?(Program::DEV_PROGRAM), class: 'form-check-input' %>
+              <%= label_tag :dev_program, Program::DEV_PROGRAM, class: 'form-label' %>
+              <br>
+              <%= check_box_tag :volunteer, '1', @programs.include?(Program::VOLUNTEER), class: 'form-check-input' %>
+              <%= label_tag :volunteer, Program::VOLUNTEER, class: 'form-label' %>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-success">Change Programs</button>
+        <% end %>
+      <% else %>
+        <% @repo_user.programs.each do |p| %>
+          <label>
+            <%= p.program_type %>
+          </label>
+        <% end %>
+      <% end %>
+    </div>
+  </div>

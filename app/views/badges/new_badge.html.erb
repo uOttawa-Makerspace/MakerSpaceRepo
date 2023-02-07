@@ -4,17 +4,17 @@
     <h2><b>New Badge to user</b></h2>
     <p>You can only grant badges that the user can normally get through a proficient project.</p>
   </div>
-  <%= form_for(@badges, url: {controller: "badges", action: "grant_badge"}, :html => {:method => :get}) do |f| %>
+  <%= form_for(@badges, url: { controller: 'badges', action: 'grant_badge' }, html: { method: :get }) do |f| %>
     <div class="mb-3">
-      <%= f.label :user_id, "User", class:"form-label" %>
-      <%= f.select(:user_id, "" , {prompt: "Choose User..."} , {:class => "grant_user_select form", :id => "grant_user_select"}) %>
+      <%= f.label :user_id, 'User', class: 'form-label' %>
+      <%= f.select(:user_id, '', { prompt: 'Choose User...' }, { class: 'grant_user_select form', id: 'grant_user_select' }) %>
       <br>
-      <%= f.label :badge_template_id, "Badge that will be acquired", class:"form-label" %>
-      <%= f.select(:badge_template_id, options_for_select(@badge_templates), {:include_blank => true}, {:class => "form-control form-select"}) %>
+      <%= f.label :badge_template_id, 'Badge that will be acquired', class: 'form-label' %>
+      <%= f.select(:badge_template_id, options_for_select(@badge_templates), { include_blank: true }, { class: 'form-control form-select' }) %>
       <br>
       <br>
       <div class="text-center">
-        <%= f.submit "Add badge to user", class: "btn btn-primary" %>
+        <%= f.submit 'Add badge to user', class: 'btn btn-primary' %>
         <br />
       </div>
     </div>
@@ -23,16 +23,16 @@
   <div class="col-lg-12 text-center mb-4">
     <h2><b>Revoke Badge from user</b></h2>
   </div>
-  <%= form_for(@badges, url: {controller: "badges", action: "revoke_badge"}, :html => {:method => :get}) do |f| %>
+  <%= form_for(@badges, url: { controller: 'badges', action: 'revoke_badge' }, html: { method: :get }) do |f| %>
     <div class="mb-3">
-      <%= label :user_id, "User", class:"form-label"  %>
-      <%= f.select(:user_id, "" , {prompt: "Choose User..."} , {:class => "link_pp revoke_user_select", :id => "revoke_user_select"}) %>
+      <%= label :user_id, 'User', class: 'form-label' %>
+      <%= f.select(:user_id, '', { prompt: 'Choose User...' }, { class: 'link_pp revoke_user_select', id: 'revoke_user_select' }) %>
       <br>
-      <%= f.label :acclaim_badge_id, "Badge that will be revoked", class:"form-label" %>
-      <%= f.select(:acclaim_badge_id, options_for_select(@badge_templates), {:include_blank => true}, {:class => "form-control form-select", :id => "badge_select"}) %>
+      <%= f.label :acclaim_badge_id, 'Badge that will be revoked', class: 'form-label' %>
+      <%= f.select(:acclaim_badge_id, options_for_select(@badge_templates), { include_blank: true }, { class: 'form-control form-select', id: 'badge_select' }) %>
       <br>
       <div class="text-center">
-        <%= f.submit "Revoke badge to user", class: "btn btn-danger" %>
+        <%= f.submit 'Revoke badge to user', class: 'btn btn-danger' %>
         <br />
       </div>
     </div>

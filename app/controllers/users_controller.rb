@@ -473,7 +473,6 @@ class UsersController < SessionsController
       :description,
       :terms_and_conditions,
       :program,
-      :student_id,
       :how_heard_about_us,
       :year_of_study,
       :identity,
