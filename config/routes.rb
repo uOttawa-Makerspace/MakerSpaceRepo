@@ -518,6 +518,7 @@ Rails.application.routes.draw do
       post :unflag
       get :change_email
       put :remove_flag
+      get :unlock_account
     end
 
     get "likes", on: :member

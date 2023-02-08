@@ -105,7 +105,7 @@ RSpec.describe User, type: :model do
 
     context "password" do
       it { should_not allow_value("abc").for(:password) }
-      it { should allow_value("AbCdE123").for(:password) }
+      it { should allow_value("aJ2^6amjseHvD#FtV").for(:password) }
       it { should validate_presence_of(:password) }
     end
 
