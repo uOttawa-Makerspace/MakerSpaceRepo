@@ -225,6 +225,7 @@ Rails.application.routes.draw do
         delete "delete_project_proposal"
         delete "delete_user"
         patch "restore_user"
+        put "toggle_lock_user"
         get "manage_roles"
       end
     end
@@ -346,6 +347,7 @@ Rails.application.routes.draw do
     get :populate_users
     post :import_excel
     get :refresh_capacity
+    get :refresh_tables
   end
 
   resources :sub_space_booking, only: %i[index create] do

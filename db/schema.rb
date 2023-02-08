@@ -45,7 +45,7 @@ ActiveRecord::Schema.define(version: 2023_01_31_191201) do
     t.string "content_type"
     t.text "metadata"
     t.bigint "byte_size", null: false
-    t.string "checksum"
+    t.string "checksum", null: false
     t.datetime "created_at", null: false
     t.string "service_name", null: false
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
@@ -1050,6 +1050,9 @@ ActiveRecord::Schema.define(version: 2023_01_31_191201) do
     t.datetime "last_signed_in_time"
     t.boolean "deleted"
     t.boolean "booking_approval", default: false
+    t.boolean "locked", default: false
+    t.datetime "locked_until"
+    t.integer "auth_attempts", default: 0
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
