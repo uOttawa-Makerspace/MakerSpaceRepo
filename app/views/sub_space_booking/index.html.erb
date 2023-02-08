@@ -1,6 +1,6 @@
 <section>
 
-  <% if current_user.booking_approval %>
+  <% if current_user.booking_approval || current_user.admin? %>
     <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast bg-warning text-black" data-bs-autohide="false">
     <div class="toast-header">
       <strong id="toast_title" class="me-auto"></strong>
@@ -140,7 +140,7 @@
   <%  else  %>
     <% if UserBookingApproval.where(user:current_user).exists? && !UserBookingApproval.where(user:current_user).first.approved %>
     <div class="alert mt-3 alert-warning text-center" role="alert">
-      Your booking approval is pending
+      Your request to access MakerRoom is now pending approval.
     </div>
     <%  else  %>
   <div class="alert alert-info text-center">
