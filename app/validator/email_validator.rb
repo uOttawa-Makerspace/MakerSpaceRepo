@@ -28,6 +28,7 @@ class EmailValidator < ActiveModel::EachValidator
   end
 
   def validate_each(record, attribute, value)
+    return if value.blank?
     email = value.split("@")
     return if email.size != 2
 
@@ -36,10 +37,11 @@ class EmailValidator < ActiveModel::EachValidator
     check_domains.each do |correct_domain|
       return if domain == correct_domain
       distance = levenshtein_distance(domain, correct_domain)
-      if 1 <= distance && distance <= 4
-        record.errors[
-          attribute
-        ] << "Check your email address. Did you mean #{correct_domain}?"
+      if 1 <= distance && distance < 3
+        record.errors.add(
+          attribute,
+          "Check your email domain. Did you mean #{correct_domain}? Not #{domain}"
+        )
         return
       end
     end
