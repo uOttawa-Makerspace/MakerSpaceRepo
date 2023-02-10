@@ -77,7 +77,7 @@ class User < ApplicationRecord
               maximum: 20
             }
 
-  validates :email, presence: true, uniqueness: true
+  validates :email, presence: true, uniqueness: true, email: true
 
   validates :how_heard_about_us, length: { maximum: 250 }
 
