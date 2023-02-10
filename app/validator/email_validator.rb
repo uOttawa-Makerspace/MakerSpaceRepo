@@ -29,18 +29,24 @@ class EmailValidator < ActiveModel::EachValidator
 
   def validate_each(record, attribute, value)
     return if value.blank?
+
     email = value.split("@")
     return if email.size != 2
 
     domain = email[1]
+    seen = Rails.cache.read("email_domain_#{domain}")
+    return if seen && seen > 1
+    seen = seen.nil? ? 1 : seen + 1
+    Rails.cache.write("email_domain_#{domain}", seen, expires_in: 1.day)
+
     check_domains = %w[gmail.com yahoo.com hotmail.com outlook.com uottawa.ca]
     check_domains.each do |correct_domain|
       return if domain == correct_domain
       distance = levenshtein_distance(domain, correct_domain)
-      if 1 <= distance && distance < 3
+      if 1 <= distance && distance <= 3
         record.errors.add(
           attribute,
-          "Check your email domain. Did you mean #{correct_domain}? Not #{domain}"
+          "Check your email domain. Did you mean #{correct_domain}?"
         )
         return
       end
