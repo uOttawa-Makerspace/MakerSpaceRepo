@@ -269,7 +269,7 @@ RSpec.describe User, type: :model do
 
     context "#username_or_email" do
       it "should return nothing" do
-        create(:user, :regular_user, email: "a@b.com")
+        create(:user, :regular_user, email: "a@gmail.com")
         expect(User.username_or_email("abc")).to be_nil
       end
 
@@ -286,13 +286,13 @@ RSpec.describe User, type: :model do
 
     context "#authenticate" do
       it "should return nothing" do
-        create(:user, :regular_user, email: "a@b.com")
-        expect(User.authenticate("a@b.com", "somethingelse")).to be_nil
+        create(:user, :regular_user, email: "a@gmail.com")
+        expect(User.authenticate("a@gmail.com", "somethingelse")).to be_nil
       end
 
       it "should return the user" do
-        user = create(:user, :regular_user, email: "a@b.com")
-        expect(User.authenticate("a@b.com", "asa32A353#").id).to eq(user.id)
+        user = create(:user, :regular_user, email: "a@gmail.com")
+        expect(User.authenticate("a@gmail.com", "asa32A353#").id).to eq(user.id)
       end
     end
 
