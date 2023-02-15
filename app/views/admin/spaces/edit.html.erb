@@ -35,14 +35,14 @@
       <% @space.space_staff_hour.order(:day, :start_time).each do |needed_staff| %>
         <tr>
           <td><%= needed_staff.week_day %></td>
-          <td><%= needed_staff.start_time.strftime("%H:%M")  %></td>
-          <td><%= needed_staff.end_time.strftime("%H:%M")  %></td>
+          <td><%= needed_staff.start_time.strftime('%H:%M') %></td>
+          <td><%= needed_staff.end_time.strftime('%H:%M') %></td>
           <td><%= needed_staff.language %></td>
-          <td><%= needed_staff.course_name_id ? CourseName.find(needed_staff.course_name_id).name.capitalize : "No Course" %></td>
-          <td><%= needed_staff.training_level_id ? TrainingLevel.find(needed_staff.training_level_id).name.capitalize : "None" %></td>
-          <td><%=link_to "Delete", { controller: "admin/spaces", action: :delete_space_hour, space_staff_hour_id: needed_staff.id }, method: :delete,
-                          data: { confirm: 'Are you sure that you want to delete this slot?' },
-                          class:"btn btn-danger btn-sm d-block w-100 mb-1 me-0" %></td>
+          <td><%= needed_staff.course_name_id ? CourseName.find(needed_staff.course_name_id).name.capitalize : 'No Course' %></td>
+          <td><%= needed_staff.training_level_id ? TrainingLevel.find(needed_staff.training_level_id).name.capitalize : 'None' %></td>
+          <td><%= link_to 'Delete', { controller: 'admin/spaces', action: :delete_space_hour, space_staff_hour_id: needed_staff.id }, method: :delete,
+                                                                                                                                      data: { confirm: 'Are you sure that you want to delete this slot?' },
+                                                                                                                                      class: 'btn btn-danger btn-sm d-block w-100 mb-1 me-0' %></td>
         </tr>
       <% end %>
       </tbody>
@@ -58,18 +58,18 @@
             <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), { class: 'form-control form-select' } %>
           </div>
           <div class="mb-3 text-center">
-            <%= label_tag :language, "Language of Instruction", class:"form-label" %>
-            <%= select_tag :language, options_for_select(['English','French']), { class: "form-control form-select"} %>
+            <%= label_tag :language, 'Language of Instruction', class: 'form-label' %>
+            <%= select_tag :language, options_for_select(%w[English French]), { class: 'form-control form-select' } %>
           </div>
           <div class="mb-3 text-center">
-            <%= label_tag :training_level, "Level of Training", class:"form-label" %>
+            <%= label_tag :training_level, 'Level of Training', class: 'form-label' %>
             <%# By seed.rb, none is id 1 of training levels#%>
-            <%= select_tag :training_level, options_for_select(TrainingLevel.where(space_id:@space.id).pluck(:name,:id),0), { class: "form-control form-select"} %>
+            <%= select_tag :training_level, options_for_select(TrainingLevel.where(space_id: @space.id).pluck(:name, :id), 0), { class: 'form-control form-select' } %>
           </div>
           <div class="mb-3 text-center">
-            <%= label_tag :training_course, "Course Code Option", class:"form-label" %>
+            <%= label_tag :training_course, 'Course Code Option', class: 'form-label' %>
             <%# By seed.rb, no course is id 1 of courses#%>
-            <%= select_tag :training_course, options_for_select(CourseName.all.pluck(:name,:id),6), { class: "form-control form-select", selected: "no course"} %>
+            <%= select_tag :training_course, options_for_select(CourseName.all.pluck(:name, :id), 6), { class: 'form-control form-select', selected: 'no course' } %>
           </div>
         </div>
 
@@ -102,12 +102,12 @@
   <br>
   <h4>New Training Level for Space</h4>
   <div class="mb-3 d-inline-block">
-    <%= form_for add_training_levels_admin_spaces_path, url: { controller: "admin/spaces", action: "add_training_levels" }, method: :post do |f| %>
+    <%= form_for add_training_levels_admin_spaces_path, url: { controller: 'admin/spaces', action: 'add_training_levels' }, method: :post do |f| %>
       <div class="input-group">
-        <%= label_tag :name, "Level of Training", class:"input-group-text" %>
-        <%= text_field_tag :name, "", { class: "form-control", multiple: true, data: { role: "tagsinput" } } %>
+        <%= label_tag :name, 'Level of Training', class: 'input-group-text' %>
+        <%= text_field_tag :name, '', { class: 'form-control', multiple: true, data: { role: 'tagsinput' } } %>
         <%= hidden_field_tag :space_id, @space.id %> <br>
-        <%= f.submit "New level", class: "btn btn-primary" %>
+        <%= f.submit 'New level', class: 'btn btn-primary' %>
       </div>
     <% end %>
   </div>

@@ -155,8 +155,8 @@
     <%= f.text_field :youtube_link, class: 'repo' %>
     <br>
     <div class="mb-3">
-      <%= f.label :past_experiences, "Past experiences / Tentatives précédentes", class: "form-label" %>
-      <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split("|")[0] : f.object.past_experiences %>
+      <%= f.label :past_experiences, 'Past experiences / Tentatives précédentes', class: 'form-label' %>
+      <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split('|')[0] : f.object.past_experiences %>
       <%= hidden_field_tag 'ignore_past_experiences', f.object.past_experiences.nil? ? '' : f.object.past_experiences %>
       <div id="linkRef">
         <button type="button" id="link-list" class="btn btn-primary link-list btn-sm mb-3">Ajouter un lien / Add a link</button>
@@ -200,7 +200,7 @@
     <br>
     <br>
     <br>
-    <%= f.submit "Update Project Proposal/Modifier la proposition de projet", class: "btn btn-primary", id:"waiting-save-button", data: {disable_with: false} %>
+    <%= f.submit 'Update Project Proposal/Modifier la proposition de projet', class: 'btn btn-primary', id: 'waiting-save-button', data: { disable_with: false } %>
     <span id="status-save"></span>
     <% if flash[:alert] %>
       <div id="alert"><%= flash[:alert] %></div>

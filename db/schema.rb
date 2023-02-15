@@ -919,7 +919,7 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.datetime "updated_at", precision: 6, null: false
     t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
-  
+
   create_table "sub_space_booking_statuses", force: :cascade do |t|
     t.bigint "sub_space_booking_id"
     t.datetime "created_at", precision: 6, null: false

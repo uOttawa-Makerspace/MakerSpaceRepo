@@ -206,7 +206,7 @@ class Admin::SpacesController < AdminAreaController
                   fallback_location: root_path
                 )
   end
-  
+
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
