@@ -13,35 +13,35 @@
       <ul class="nav nav-tabs nav-fill" id="booking-tab-list" role="tablist">
           <button class="nav-link tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab" aria-controls="booking-calendar-tab" aria-selected="true">Book</button>
           <button class="nav-link tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab" aria-controls="booking-tab" aria-selected="false">My Bookings</button>
-          <% if current_user.admin?%><button class="nav-link tab-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab" aria-controls="booking-admin-tab" aria-selected="false">Admin Panel</button><%end%>
+          <% if current_user.admin? %><button class="nav-link tab-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab" aria-controls="booking-admin-tab" aria-selected="false">Admin Panel</button><% end %>
       </ul>
       <div class="tab-content" id="tabContent">
         <div class="tab-pane active show" id="booking-calendar-tab" role="tabpanel" aria-labelledby="tab-calendar">
           <div class="navbar navbar-expand-xl navbar-light bg-light w-100">
             <div class="container-fluid justify-content-start ">
-              <a class="navbar-brand" href="<%=  sub_space_booking_index_path  %>">Maker<strong>Room</strong></a>
+              <a class="navbar-brand" href="<%= sub_space_booking_index_path %>">Maker<strong>Room</strong></a>
               <% Space.all.each do |space| %>
                 <% subspaces = SubSpace.where(space_id: space.id) %>
                   <% if subspaces.length > 0 %>
                     <% if subspaces.length == 1 %>
-                      <div class="nav-item ms-4"><%=  link_to(subspaces.last.name, sub_space_booking_index_path(room:subspaces.last.id), class:"nav-link")  %></div>
-                    <%  else  %>
+                      <div class="nav-item ms-4"><%= link_to(subspaces.last.name, sub_space_booking_index_path(room: subspaces.last.id), class: 'nav-link') %></div>
+                    <% else %>
                       <div class="nav-item dropdown ms-4">
                         <a class="nav-link dropdown-toggle" role="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                          <%=  space.name  %>
+                          <%= space.name %>
                         </a>
                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                           <% subspaces.each do |subspace| %>
-                            <a class="dropdown-item" href="<%=  sub_space_booking_index_path(room:subspace.id)  %>"><%=  subspace.name  %></a>
-                          <%  end  %>
+                            <a class="dropdown-item" href="<%= sub_space_booking_index_path(room: subspace.id) %>"><%= subspace.name %></a>
+                          <% end %>
                         </div>
                       </div>
-                    <%  end  %>
+                    <% end %>
                   <% end %>
-                <%  end  %>
+                <% end %>
               </div>
             </div>
-          <%  if params[:room].present?  %>
+          <% if params[:room].present? %>
             <h3 class="text-center my-3"> <%= @subspace.name %> Availability Calendar</h3>
             <div id="booked-calendar"></div>
             <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
@@ -95,7 +95,7 @@
             <div class="alert mt-3 alert-warning text-center" role="alert">
               Please select a room to view the calendar
             </div>
-          <%  end  %>
+          <% end %>
         </div>
         <div class="tab-pane fade" id="booking-tab" role="tabpanel" aria-labelledby="tab-booking">
           <div id="my-booking-table" class="mt-3">
@@ -118,11 +118,11 @@
                     <td><%= booking.name %></td>
                     <td><%= booking.description %></td>
                     <td><%= booking.start_time.to_formatted_s(:short) %></td>
-                    <td><%= booking.end_time.to_formatted_s(:short)   %></td>
-                    <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? "Approved" : "Not Approved" %></td>
+                    <td><%= booking.end_time.to_formatted_s(:short) %></td>
+                    <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? 'Approved' : 'Not Approved' %></td>
                     <td class="input-group">
-                    <%= button_to 'Edit', sub_space_booking_edit_path(booking.id), method: :get, class:"btn btn-secondary", form_style:"border: none;background: none;", form_class:"" if booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
-                    <%= link_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class:"btn btn-danger" %>
+                    <%= button_to 'Edit', sub_space_booking_edit_path(booking.id), method: :get, class: 'btn btn-secondary', form_style: 'border: none;background: none;', form_class: '' if booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
+                    <%= link_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
                     </td>
                   </tr>
                 <% end %>
@@ -130,19 +130,19 @@
             </table>
           </div>
         </div>
-        <% if current_user.admin?%>
+        <% if current_user.admin? %>
           <div class="tab-pane fade" id="booking-admin-tab" role="tabpanel" aria-labelledby="tab-admin">
             <%= render 'admin' %>
           </div>
         <% end %>
       </div>
     </div>
-  <%  else  %>
+  <% else %>
     <% if UserBookingApproval.where(user:current_user).exists? && !UserBookingApproval.where(user:current_user).first.approved %>
     <div class="alert mt-3 alert-warning text-center" role="alert">
       Your request to access MakerRoom is now pending approval.
     </div>
-    <%  else  %>
+    <% else %>
   <div class="alert alert-info text-center">
     <p class="fw-bold">
       <i class="fa fa-info-circle"></i>
@@ -150,13 +150,13 @@
     </p>
   </div>
   <div class="mx-auto form col-4">
-    <%=  form_with url:request_access_sub_space_booking_index_path, method: :put do |f|  %>
+    <%= form_with url: request_access_sub_space_booking_index_path, method: :put do |f| %>
     <div class="input-group">
-      <%=  f.text_field :comments, class:"form-control", placeholder:"Comments (Optional)"   %>
-      <%=  f.submit "Request Access ", class: "btn btn-primary"  %></div>
-    <%  end  %>
+      <%= f.text_field :comments, class: 'form-control', placeholder: 'Comments (Optional)' %>
+      <%= f.submit 'Request Access ', class: 'btn btn-primary' %></div>
+    <% end %>
   </div>
-  <%  end %>
-  <%  end  %>
+  <% end %>
+  <% end %>
 
 </section>

@@ -2,13 +2,13 @@
   <div class="text-center">
 
     <h2>Volunteer Task: <%= @volunteer_task.title.capitalize %></h2>
-    <%= link_to "Edit", edit_volunteer_task_path(@volunteer_task), class: "btn btn-primary" %>
+    <%= link_to 'Edit', edit_volunteer_task_path(@volunteer_task), class: 'btn btn-primary' %>
     <br><br>
 
     <h6><b>Category:</b> <%= @volunteer_task.category.capitalize %></h6>
     <br />
 
-    <h6><%= image_tag("cc.png", alt: "CC", class: "ccs") %>: <%= @volunteer_task.cc %></h6>
+    <h6><%= image_tag('cc.png', alt: 'CC', class: 'ccs') %>: <%= @volunteer_task.cc %></h6>
     <br />
 
     <div class="jumbotron card bg-light text-center text-wrap">
@@ -21,7 +21,7 @@
       <br />
       <% if @volunteer_task_request.blank? %>
         <%= link_to "Send 'Task Complete'", create_request_volunteer_task_requests_path(id: @volunteer_task.id),
-                    class: "btn btn-primary", data: {confirm: "This will complete this task. Are you sure it is finished?"} %>
+                    class: 'btn btn-primary', data: { confirm: 'This will complete this task. Are you sure it is finished?' } %>
         <br />
         <br />
       <% else %>
@@ -39,10 +39,10 @@
           <p>Join this task:</p>
 
           <% if @volunteer_task.volunteer_task_joins.active.user_type_volunteer.count < @volunteer_task.joins || current_user.staff? %>
-            <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
+            <%= form_for @new_volunteer_join, url: { controller: 'volunteer_task_joins', action: 'create' } do |f| %>
               <div>
                 <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-                <%= f.submit "Join", class: "btn btn-primary" %>
+                <%= f.submit 'Join', class: 'btn btn-primary' %>
               </div>
               <br />
             <% end %>
@@ -60,10 +60,10 @@
 
     <% else %>
       <% if @volunteer_task.volunteer_task_joins.active.user_type_volunteer.count < @volunteer_task.joins || current_user.staff? %>
-        <%= form_for @new_volunteer_join, url: {controller: "volunteer_task_joins", action: "create"} do |f| %>
+        <%= form_for @new_volunteer_join, url: { controller: 'volunteer_task_joins', action: 'create' } do |f| %>
           <div>
             <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%= f.submit "Join", class: "btn btn-primary" %>
+            <%= f.submit 'Join', class: 'btn btn-primary' %>
           </div>
           <br />
         <% end %>
@@ -90,16 +90,16 @@
 
       <div class="col-6">
         <h5>Responsible Staff:</h5>
-        <% @volunteer_task.volunteer_task_joins.active.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?", "Staff", "Admin").find_each do |staff_join| %>
-          <%= link_to staff_join.user.name.titleize, user_path(staff_join.user.username), class: "username" %>
+        <% @volunteer_task.volunteer_task_joins.active.where('volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?', 'Staff', 'Admin').find_each do |staff_join| %>
+          <%= link_to staff_join.user.name.titleize, user_path(staff_join.user.username), class: 'username' %>
           <br />
         <% end %>
       </div>
 
       <div class="col-6">
         <h5>Responsible Volunteers:</h5>
-        <% @volunteer_task.volunteer_task_joins.active.where(user_type: "Volunteer").find_each do |volunteer_join| %>
-          <%= link_to volunteer_join.user.name.titleize, user_path(volunteer_join.user.username), class: "username" %>
+        <% @volunteer_task.volunteer_task_joins.active.where(user_type: 'Volunteer').find_each do |volunteer_join| %>
+          <%= link_to volunteer_join.user.name.titleize, user_path(volunteer_join.user.username), class: 'username' %>
           <br />
         <% end %>
       </div>
@@ -114,7 +114,7 @@
           <% @required_trainings.find_each do |rt| %>
             <%= rt.training.name.capitalize %>
             <br />
-          <% end  %>
+          <% end %>
         <% else %>
           <p>No certification needed.</p>
         <% end %>

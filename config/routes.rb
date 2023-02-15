@@ -249,6 +249,7 @@ Rails.application.routes.draw do
         post :update_max_capacity
         post :add_space_hours
         delete :delete_space_hour
+        post :add_training_levels
         put :update_staff_needed_calendars
       end
     end
@@ -271,6 +272,7 @@ Rails.application.routes.draw do
         post :update_color
         post :confirm_shifts
         post :clear_pending_shifts
+        post :copy_to_next_week
       end
     end
 
@@ -345,6 +347,7 @@ Rails.application.routes.draw do
     get :populate_users
     post :import_excel
     get :refresh_capacity
+    get :refresh_tables
   end
 
   resources :sub_space_booking, only: %i[index create] do
@@ -467,7 +470,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :announcements
+  resources :announcements do
+    collection { put :dismiss }
+  end
 
   resources :volunteer_task_joins, only: [:create] do
     collection { post :remove }
@@ -513,6 +518,7 @@ Rails.application.routes.draw do
       post :unflag
       get :change_email
       put :remove_flag
+      get :unlock_account
     end
 
     get "likes", on: :member
@@ -552,5 +558,11 @@ Rails.application.routes.draw do
   namespace :comments do
     post :create, path: "/:id"
     delete :destroy, path: "/:id/destroy"
+  end
+
+  namespace :quick_access_links do
+    post :create
+    post :update, path: "update/:id", as: "update"
+    delete :delete, path: "delete/:id", as: "delete"
   end
 end

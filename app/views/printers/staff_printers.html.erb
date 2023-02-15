@@ -2,7 +2,7 @@
 
     <div class="title">Manage 3D-Printers Usage</div>
 
-    <div class="text-center my-3"><%= link_to "View Last Updates All 3D-Printers", staff_printers_updates_printers_path, class: 'btn btn-secondary'%></div>
+    <div class="text-center my-3"><%= link_to 'View Last Updates All 3D-Printers', staff_printers_updates_printers_path, class: 'btn btn-secondary' %></div>
 
     <% @printer_types.each do |type| %>
       <div>
@@ -12,16 +12,16 @@
           <div class="mb-2"><%= "Last Update: Printer Number: #{Printer.get_last_model_session(type[:name]).printer.number} |
                 User: #{Printer.get_last_model_session(type[:name]).user.username.capitalize}" %></div>
         <% end %>
-        <%= form_for :printer, url: {controller: "printers", action: "link_printer_to_user"}, method: :patch do |f| %>
+        <%= form_for :printer, url: { controller: 'printers', action: 'link_printer_to_user' }, method: :patch do |f| %>
           <div class="row mb-3">
             <div class="col-md-5">
-              <%= f.select(:printer_id, @printers.where(:model => type[:name]).pluck(:number, :id) , {prompt: "Choose Number..."} , {:class => "link_pp form-control form-select", :id => "options"}) %>
+              <%= f.select(:printer_id, @printers.where(model: type[:name]).pluck(:number, :id), { prompt: 'Choose Number...' }, { class: 'link_pp form-control form-select', id: 'options' }) %>
             </div>
             <div class="col-md-5">
-              <%= f.select(:user_id, @list_users, {prompt: "Choose User..."} , {:class => "link_pp form-control form-select", id: type[:id]}) %>
+              <%= f.select(:user_id, @list_users, { prompt: 'Choose User...' }, { class: 'link_pp form-control form-select', id: type[:id] }) %>
             </div>
             <div class="col-md-2 justify-content-center align-self-center">
-              <%= f.submit "Submit", class: 'btn btn-secondary' %>
+              <%= f.submit 'Submit', class: 'btn btn-secondary' %>
             </div>
           </div>
         <% end %>

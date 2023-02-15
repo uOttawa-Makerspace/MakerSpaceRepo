@@ -2,7 +2,7 @@
 <h2 class="text-center"><b>Price Rules</b></h2>
 <br />
 <div class="text-center">
-  <%= link_to 'New Price rule', new_price_rule_path, class: "btn btn-secondary" %>
+  <%= link_to 'New Price rule', new_price_rule_path, class: 'btn btn-secondary' %>
 </div>
 <br />
 <br />
@@ -23,10 +23,10 @@
         <% if price_rule.has_discount_codes? %>
           <td>Cannot Edit</td>
         <% else %>
-          <td><%= link_to 'Edit', edit_price_rule_path(price_rule), class: "btn btn-primary" %></td>
+          <td><%= link_to 'Edit', edit_price_rule_path(price_rule), class: 'btn btn-primary' %></td>
         <% end %>
-        <td scope="row"><%= price_rule.expired_at.present? ? price_rule.expired_at.strftime("%b %d, %Y") : "Not defined" %></td>
-        <td><%= link_to 'Destroy', price_rule, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %></td>
+        <td scope="row"><%= price_rule.expired_at.present? ? price_rule.expired_at.strftime('%b %d, %Y') : 'Not defined' %></td>
+        <td><%= link_to 'Destroy', price_rule, method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %></td>
       </tr>
     <% end %>
   </tbody>

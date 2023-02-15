@@ -1,6 +1,6 @@
 <section>
   <h2 class="text-center fw-bold py-3">Admin's Trainings Manager</h2>
-  <p class="text-center"><%= link_to "New Training", new_admin_training_path, class: "btn btn-secondary" %></p>
+  <p class="text-center"><%= link_to 'New Training', new_admin_training_path, class: 'btn btn-secondary' %></p>
   <br />
   <table class="table table-striped mb-5">
   <thead class="table-primary">
@@ -30,10 +30,10 @@
           </td>
           <td>
             <% spaces.each do |s| %>
-              <%= t.certifications.joins(:training_session).where("training_sessions.space_id = ?", s.id).count %> <br />
+              <%= t.certifications.joins(:training_session).where('training_sessions.space_id = ?', s.id).count %> <br />
             <% end %>
           </td>
-        <td><%= link_to "Edit", edit_admin_training_path(t.id), class: "btn btn-primary" %></td>
+        <td><%= link_to 'Edit', edit_admin_training_path(t.id), class: 'btn btn-primary' %></td>
       </tr>
     <% end %>
 

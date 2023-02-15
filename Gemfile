@@ -73,7 +73,8 @@ gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
 gem "stimulus-rails"
 gem "graphlient"
-gem "message_bus"
+gem "nobspw"
+
 
 group :development, :test do
   gem "byebug", platform: :mri
@@ -98,6 +99,7 @@ group :development do
   gem "letter_opener" # Open emails in development
   gem "rubocop-rails"
   gem "web-console"
+  gem "erb_lint", require: false
 
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"

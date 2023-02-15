@@ -28,6 +28,43 @@ class StaffDashboardController < StaffAreaController
     respond_to { |format| format.js }
   end
 
+  def refresh_tables
+    if params[:token] == @space.signed_in_users.pluck(:id).join("")
+      return render json: { error: "No changes" }
+    end
+    @users = User.order(id: :desc).limit(10)
+    @certifications_on_space =
+      Proc.new do |user, space_id|
+        user
+          .certifications
+          .joins(:training, training: :spaces)
+          .where(trainings: { spaces: { id: space_id } })
+      end
+    @all_user_certs = Proc.new { |user| user.certifications }
+    render json: {
+             signed_out:
+               render_to_string(
+                 partial: "staff_dashboard/signed_out_table",
+                 locals: {
+                   space: @space,
+                   all_user_certs: @all_user_certs,
+                   certifications_on_space: @certifications_on_space
+                 },
+                 formats: [:html]
+               ),
+             signed_in:
+               render_to_string(
+                 partial: "staff_dashboard/signed_in_table",
+                 locals: {
+                   space: @space,
+                   all_user_certs: @all_user_certs,
+                   certifications_on_space: @certifications_on_space
+                 },
+                 formats: [:html]
+               )
+           }
+  end
+
   def import_excel
     begin
       file = params[:file]
