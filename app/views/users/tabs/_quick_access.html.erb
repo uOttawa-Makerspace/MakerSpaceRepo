@@ -1,0 +1,53 @@
+<div class="row">
+    <div class="col-md-6">
+      Current Quick Access Paths:
+      <% QuickAccessLink.where(user_id: current_user).each do |quick_access| %>
+        <%= form_with url: quick_access_links_update_path(quick_access.id), method: 'post', controller: 'quick_access_links' do %>
+            <%= hidden_field_tag :user, current_user.id %>
+            <%= hidden_field_tag :quick_access_id, quick_access.id %>
+            <div class="row g-2">
+              <div class="col-md">
+                <div class="form-floating mb-3">
+                  <%= text_field_tag :name, quick_access.name, class: 'form-control' %>
+                  <label for="name">Name</label>
+                </div>
+              </div>
+              <div class="col-md">
+                <div class="form-floating">
+                  <%= text_field_tag :path, quick_access.path, class: 'form-control' %>
+                  <label for="path">Path</label>
+                </div>
+              </div>
+              <div class="col-md d-flex justify-content-center align-items-center">
+                <%= submit_tag 'Change', class: 'btn btn-success form-control' %>
+            </div>
+        <% end %>
+        <div class="col-md  d-flex w-100 justify-content-center align-items-center">
+          <%= button_to 'Delete', quick_access_links_delete_path(quick_access), method: 'delete', controller: 'quick_access_links', class: 'btn btn-danger form-control', form_class: 'w-100' %>
+        </div>
+      <% end %>
+      </div>
+    </div>
+    <div class="col-md-6">
+      New Quick Access Path:
+      <%= form_with url: quick_access_links_create_path, method: 'post', controller: 'quick_access_links' do %>
+        <div class="row g-2">
+          <div class="col-md">
+            <div class="form-floating mb-3">
+              <%= text_field_tag :name, nil, class: 'form-control', placeholder: 'Name' %>
+              <label for="name">Name</label>
+            </div>
+          </div>
+          <div class="col-md">
+            <div class="form-floating">
+              <%= text_field_tag :path, nil, class: 'form-control', placeholder: 'Path' %>
+              <label for="path">Path</label>
+            </div>
+          </div>
+          <div class="col-md d-flex justify-content-center align-items-center">
+            <%= submit_tag 'Create', class: 'btn btn-success form-control' %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>

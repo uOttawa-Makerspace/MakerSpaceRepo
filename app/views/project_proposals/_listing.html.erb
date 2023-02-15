@@ -3,7 +3,7 @@
 
 <% if project_proposals.present? %>
 
-  <div><%= will_paginate project_proposals, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, param_name: (local_variables.include?(:param_name) ? param_name : "page") %></div>
+  <div><%= will_paginate project_proposals, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, param_name: (local_variables.include?(:param_name) ? param_name : 'page') %></div>
 
   <% action_flag = project_proposals.first.approved %>
 
@@ -51,22 +51,22 @@
           <% end %>
           <td><%= project_proposal.title %></td>
           <td><% project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
-          <td><%= project_proposal.created_at.strftime("%Y/%m/%d - %H:%M")%></td>
+          <td><%= project_proposal.created_at.strftime('%Y/%m/%d - %H:%M') %></td>
           <% if @user.admin? %>
             <% if title == "Pending Project Proposals" %>
               <td>
-                <%= link_to 'Approve', approve_project_proposals_path(:id => project_proposal.id), method: :post, class: "btn btn-success d-block w-100 btn-sm", data: { confirm: 'Are you sure?' }  %>
-                <%= link_to 'Disapprove', decline_project_proposals_path(id: project_proposal.id), method: :post, class: "btn btn-danger d-block w-100 btn-sm", data: { confirm: 'Are you sure?' }  %>
+                <%= link_to 'Approve', approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-success d-block w-100 btn-sm', data: { confirm: 'Are you sure?' } %>
+                <%= link_to 'Disapprove', decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-danger d-block w-100 btn-sm', data: { confirm: 'Are you sure?' } %>
               </td>
               <% end %>
               <td>
-              <%= link_to 'Show', project_proposal_path(project_proposal.slug), class: "btn btn-success d-block w-100 btn-sm" %>
-              <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: "btn btn-primary d-block w-100 btn-sm" %>
+              <%= link_to 'Show', project_proposal_path(project_proposal.slug), class: 'btn btn-success d-block w-100 btn-sm' %>
+              <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: 'btn btn-primary d-block w-100 btn-sm' %>
               <%= link_to 'Delete', project_proposal, method: :delete,
-                                                  class: "btn btn-danger d-block w-100 btn-sm", data: { confirm: 'Are you sure?' } %>
+                                                      class: 'btn btn-danger d-block w-100 btn-sm', data: { confirm: 'Are you sure?' } %>
               </td>
           <% elsif action_flag %>
-              <td><%= link_to 'Show', project_proposal, class: "btn btn-success d-block w-100 btn-sm" %></td>
+              <td><%= link_to 'Show', project_proposal, class: 'btn btn-success d-block w-100 btn-sm' %></td>
           <% end %>
         </tr>
       <% end %>

@@ -1,4 +1,4 @@
-<h2 class="text-center pt-2 mb-5">Question in <strong>"<%= @question.trainings.map(&:name).join(", ").html_safe if @question.trainings.present? %>"</strong></h2>
+<h2 class="text-center pt-2 mb-5">Question in <strong>"<%= @question.trainings.map(&:name).join(', ').html_safe if @question.trainings.present? %>"</strong></h2>
 
 <div class="text-start word-break">
   <h2><b><%= @question.description %></b></h2>
@@ -8,7 +8,7 @@
   <% if @question.images.attached? %>
     <% @question.images.each do |img| %>
       <a href="#">
-        <%= image_tag(img, alt: 'Image related question', style: 'border:1px solid #021a40;', class:"d-inline-block mx-auto") %>
+        <%= image_tag(img, alt: 'Image related question', style: 'border:1px solid #021a40;', class: 'd-inline-block mx-auto') %>
       </a>
     <% end %>
   <% end %>
@@ -22,6 +22,6 @@
       <div class="correct-answers"><%= a.description %></div>
     <% else %>
       <div class="answers"><%= a.description %></div>
-    <% end  %>
+    <% end %>
   <% end %>
 </div>

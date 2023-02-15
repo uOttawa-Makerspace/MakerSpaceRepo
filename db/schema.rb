@@ -59,6 +59,16 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
             unique: true
   end
 
+  create_table "announcement_dismisses", force: :cascade do |t|
+    t.bigint "announcement_id", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["announcement_id"],
+            name: "index_announcement_dismisses_on_announcement_id"
+    t.index ["user_id"], name: "index_announcement_dismisses_on_user_id"
+  end
+
   create_table "announcements", id: :serial, force: :cascade do |t|
     t.text "description"
     t.string "public_goal"
@@ -738,6 +748,15 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.bigint "training_id", null: false
   end
 
+  create_table "quick_access_links", force: :cascade do |t|
+    t.string "name"
+    t.string "path"
+    t.bigint "user_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_quick_access_links_on_user_id"
+  end
+
   create_table "repo_files", id: :serial, force: :cascade do |t|
     t.integer "repository_id"
     t.datetime "created_at", null: false
@@ -841,7 +860,14 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.bigint "space_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "language"
+    t.bigint "training_level_id"
+    t.bigint "course_name_id"
+    t.index ["course_name_id"],
+            name: "index_space_staff_hours_on_course_name_id"
     t.index ["space_id"], name: "index_space_staff_hours_on_space_id"
+    t.index ["training_level_id"],
+            name: "index_space_staff_hours_on_training_level_id"
   end
 
   create_table "spaces", id: :serial, force: :cascade do |t|
@@ -884,6 +910,14 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.string "color"
     t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
+  end
+
+  create_table "training_levels", force: :cascade do |t|
+    t.string "name"
+    t.bigint "space_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
   create_table "sub_space_booking_statuses", force: :cascade do |t|
@@ -1081,6 +1115,8 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
   add_foreign_key "active_storage_variant_records",
                   "active_storage_blobs",
                   column: "blob_id"
+  add_foreign_key "announcement_dismisses", "announcements"
+  add_foreign_key "announcement_dismisses", "users"
   add_foreign_key "badge_requirements", "badge_templates"
   add_foreign_key "badge_requirements", "proficient_projects"
   add_foreign_key "badge_templates", "trainings"
@@ -1131,17 +1167,22 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
   add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
   add_foreign_key "project_kits", "users"
+  add_foreign_key "quick_access_links", "users"
   add_foreign_key "repo_files", "repositories"
   add_foreign_key "repositories", "users"
   add_foreign_key "rfids", "users"
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
+  add_foreign_key "space_staff_hours", "course_names"
+  add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
+  add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
+  add_foreign_key "training_levels", "spaces"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"
   add_foreign_key "sub_space_booking_statuses",
                   "sub_space_bookings",

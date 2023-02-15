@@ -5,21 +5,21 @@
     <div class="col-6">
     <h3 class="py-1">Users to be made staff</h3>
         <div class="mb-3">
-        <%= label_tag(:new_staff, "Add new staff members", class:"form-label") %>
-        <%= select_tag(:new_staff, "", prompt: "Choose User...", :class => "new_staff_select form-control w-75", :id => "new_staff_select", multiple: true) %>
+        <%= label_tag(:new_staff, 'Add new staff members', class: 'form-label') %>
+        <%= select_tag(:new_staff, '', prompt: 'Choose User...', class: 'new_staff_select form-control w-75', id: 'new_staff_select', multiple: true) %>
     </div>
     <div id="new-staff-list">
     </div>
     </div>
     <div class="col-6">
     <h3 class="py-1">Assigned Spaces</h3>
-    <%= form_tag(bulk_add_users_staff_spaces_path, method: "post") do %>
+    <%= form_tag(bulk_add_users_staff_spaces_path, method: 'post') do %>
       <div class="field form-group">
         <div class="checkbox-inline">
           <% @space_list.each do |space| %>
-            <%= check_box_tag "space_ids[]", space.id, false, class:"form-check-input" %>
-            <%= label_tag "space[]", space.name %>
-            <%= hidden_field_tag "user_ids[]", [] %>
+            <%= check_box_tag 'space_ids[]', space.id, false, class: 'form-check-input' %>
+            <%= label_tag 'space[]', space.name %>
+            <%= hidden_field_tag 'user_ids[]', [] %>
             <br>
           <% end %>
         </div>

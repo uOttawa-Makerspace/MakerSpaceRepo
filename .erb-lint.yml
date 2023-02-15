@@ -1,0 +1,35 @@
+EnableDefaultLinters: false
+linters:
+  SpaceAroundErbTag:
+    enabled: true
+  Rubocop:
+    enabled: true
+    exclude:
+      - "**/vendor/**/*"
+      - "**/vendor/**/.*"
+      - "bin/**"
+      - "db/**/*"
+      - "spec/**/*"
+      - "config/**/*"
+      - "node_modules/**/*"
+    rubocop_config:
+      inherit_from:
+        - .rubocop.yml
+      Rails/OutputSafety:
+        Enabled: false
+      Style/FrozenStringLiteralComment:
+        Enabled: false
+      Layout/InitialIndentation:
+        Enabled: false
+      Layout/TrailingEmptyLines:
+        Enabled: false
+      Layout/LineLength:
+        Enabled: false
+      Lint/UselessAssignment:
+        Enabled: false
+      Style/NumericPredicate:
+        Enabled: false
+      Rails/FilePath:
+        Enabled: false
+      Style/GlobalVars:
+        Enabled: false

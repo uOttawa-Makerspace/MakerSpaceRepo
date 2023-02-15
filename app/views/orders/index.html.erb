@@ -1,4 +1,4 @@
-<% provide(:title, "Orders") %>
+<% provide(:title, 'Orders') %>
 
 <section class="p-5">
   <div class="container">
@@ -10,12 +10,12 @@
     <div class="text-center">
       <% if !@orders.present? %>
         <p class="text-center">
-          You have no orders. Please check our <%= link_to "projects", proficient_projects_path, class: "text-info" %> and add some items to your cart.
+          You have no orders. Please check our <%= link_to 'projects', proficient_projects_path, class: 'text-info' %> and add some items to your cart.
         </p>
       <% else %>
         <div class="apple_pagination">
-          <%= page_entries_info @orders, :model => 'order' %>
-          <%= will_paginate @orders, :container => false %>
+          <%= page_entries_info @orders, model: 'order' %>
+          <%= will_paginate @orders, container: false %>
         </div>
         <div class="table-responsive">
           <table class="table table-striped">
@@ -37,7 +37,7 @@
                       <p><b><%= link_to order_item.proficient_project.title, proficient_project_path(order_item.proficient_project.id) %></b> / <%= order_item.quantity %></p>
                     <% end %>
                   </td>
-                  <td><p><%= order.created_at.strftime("%Y/%m/%d") %></p></td>
+                  <td><p><%= order.created_at.strftime('%Y/%m/%d') %></p></td>
                   <td><p><%= order.subtotal %></p></td>
                   <td><p><%= order.order_status.name %></p></td>
                   <td>
@@ -69,8 +69,8 @@
           </p>
         <% else %>
           <div class="apple_pagination">
-            <%= page_entries_info @all_orders, :model => 'order' %>
-            <%= will_paginate @all_orders, :container => false %>
+            <%= page_entries_info @all_orders, model: 'order' %>
+            <%= will_paginate @all_orders, container: false %>
           </div>
 
           <div class="table-responsive">
@@ -96,7 +96,7 @@
                       <p><b><%= link_to order_item.proficient_project.title, proficient_project_path(order_item.proficient_project.id) %></b> / <%= order_item.quantity %></p>
                     <% end %>
                   </td>
-                  <td><p><%= order.created_at.strftime("%Y/%m/%d") %></p></td>
+                  <td><p><%= order.created_at.strftime('%Y/%m/%d') %></p></td>
                   <td><p><%= order.subtotal %></p></td>
                   <td><p><%= order.order_status.name %></p></td>
                   <td>
@@ -108,7 +108,7 @@
                   </td>
                   <td><p><%= order.total %></p></td>
                   <td>
-                    <%= link_to "Delete", order, method: :delete, data: {confirm: "Are you sure? This will give back the CC points used to purchase this order."}, class: "btn btn-danger" %>
+                    <%= link_to 'Delete', order, method: :delete, data: { confirm: 'Are you sure? This will give back the CC points used to purchase this order.' }, class: 'btn btn-danger' %>
                   </td>
                 </tr>
               <% end %>
