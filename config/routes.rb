@@ -272,6 +272,7 @@ Rails.application.routes.draw do
         post :update_color
         post :confirm_shifts
         post :clear_pending_shifts
+        post :copy_to_next_week
       end
     end
 
@@ -346,6 +347,7 @@ Rails.application.routes.draw do
     get :populate_users
     post :import_excel
     get :refresh_capacity
+    get :refresh_tables
   end
 
   resources :sub_space_booking, only: %i[index create] do
@@ -516,6 +518,7 @@ Rails.application.routes.draw do
       post :unflag
       get :change_email
       put :remove_flag
+      get :unlock_account
     end
 
     get "likes", on: :member

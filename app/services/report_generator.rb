@@ -600,7 +600,6 @@ class ReportGenerator
                           user.identity,
                           user.faculty,
                           user.year_of_study,
-                          user.student_id,
                           user.created_at.localtime.strftime("%Y-%m-%d %H:%M")
                         ]
         end
@@ -681,8 +680,7 @@ class ReportGenerator
             end
 
             sheet.add_row [
-                            certification.user.student_id,
-                            certification.user.name,
+                            certification.username,
                             certification.user.email,
                             certification.training_session.training.name,
                             certification.training_session.created_at.strftime(
@@ -835,10 +833,10 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        table_header(sheet, ["Name", "Email", "Student Number"])
+        table_header(sheet, %w[Name Email])
 
         session.users.each do |student|
-          sheet.add_row [student.name, student.email, student.student_id]
+          sheet.add_row [student.name, student.email]
         end
       end
 
@@ -866,14 +864,10 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        table_header(sheet, ["Name", "Email", "Student Number"])
+        table_header(sheet, %w[Name Email])
 
         lab_sessions.each do |lab_session|
-          sheet.add_row [
-                          lab_session.user.name,
-                          lab_session.user.email,
-                          lab_session.user.student_id
-                        ]
+          sheet.add_row [lab_session.user.name, lab_session.user.email]
         end
       end
 

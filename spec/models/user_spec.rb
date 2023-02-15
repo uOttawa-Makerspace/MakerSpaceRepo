@@ -105,7 +105,7 @@ RSpec.describe User, type: :model do
 
     context "password" do
       it { should_not allow_value("abc").for(:password) }
-      it { should allow_value("AbCdE123").for(:password) }
+      it { should allow_value("aJ2^6amjseHvD#FtV").for(:password) }
       it { should validate_presence_of(:password) }
     end
 
@@ -151,16 +151,6 @@ RSpec.describe User, type: :model do
     context "year_of_study non-student" do
       subject { build(:user, :regular_user, year_of_study: nil) }
       it { should_not validate_presence_of(:year_of_study) }
-    end
-
-    context "student_id student" do
-      subject { build(:user, :student, student_id: nil) }
-      it { should validate_presence_of(:student_id) }
-    end
-
-    context "student_id non-student" do
-      subject { build(:user, :regular_user, student_id: nil) }
-      it { should_not validate_presence_of(:student_id) }
     end
 
     context "identity" do
@@ -279,7 +269,7 @@ RSpec.describe User, type: :model do
 
     context "#username_or_email" do
       it "should return nothing" do
-        create(:user, :regular_user, email: "a@b.com")
+        create(:user, :regular_user, email: "a@gmail.com")
         expect(User.username_or_email("abc")).to be_nil
       end
 
@@ -296,13 +286,13 @@ RSpec.describe User, type: :model do
 
     context "#authenticate" do
       it "should return nothing" do
-        create(:user, :regular_user, email: "a@b.com")
-        expect(User.authenticate("a@b.com", "somethingelse")).to be_nil
+        create(:user, :regular_user, email: "a@gmail.com")
+        expect(User.authenticate("a@gmail.com", "somethingelse")).to be_nil
       end
 
       it "should return the user" do
-        user = create(:user, :regular_user, email: "a@b.com")
-        expect(User.authenticate("a@b.com", "asa32A353#").id).to eq(user.id)
+        user = create(:user, :regular_user, email: "a@gmail.com")
+        expect(User.authenticate("a@gmail.com", "asa32A353#").id).to eq(user.id)
       end
     end
 

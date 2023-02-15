@@ -279,8 +279,7 @@ RSpec.describe UsersController, type: :controller do
                   identity: "undergrad",
                   program: "BASc in Software Engineering",
                   faculty: "Engineering",
-                  year_of_study: 1,
-                  student_id: 300_123_456
+                  year_of_study: 1
                 }
               }
         expect(response).to redirect_to settings_profile_path
@@ -331,8 +330,8 @@ RSpec.describe UsersController, type: :controller do
                 username: User.last.username,
                 user: {
                   old_password: "asa32A353#",
-                  password: "Password2",
-                  password_confirmation: "Password2"
+                  password: "v3ryS3cur3P4ssw0rd",
+                  password_confirmation: "v3ryS3cur3P4ssw0rd"
                 }
               }
         @newpass = User.find(User.last.id).password

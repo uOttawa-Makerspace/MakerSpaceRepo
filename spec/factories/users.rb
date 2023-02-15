@@ -2,7 +2,7 @@ FactoryBot.define do
   factory :user do
     read_and_accepted_waiver_form { true }
     active { true }
-    email { Faker::Internet.unique.email }
+    email { Faker::Internet.unique.username + "@uottawa.ca" }
     name { Faker::Name.name }
     username { Faker::Name.unique.first_name }
     wallet { 1000 }
@@ -18,7 +18,6 @@ FactoryBot.define do
     trait :regular_user_not_confirmed do
       confirmed { false }
     end
-
     trait :regular_user_with_certifications do
       after(:create) do |user|
         create(:certification, :"3d_printing", user_id: user.id)
@@ -91,12 +90,11 @@ FactoryBot.define do
     end
 
     trait :student do
-      password { "fda3A353$" }
+      password { "dQxjW4#6fcUF7m!rX" }
       identity { "undergrad" }
       program { "BASc in Software Engineering" }
       faculty { "Engineering" }
       year_of_study { 2020 }
-      student_id { 234_139_242 }
       gender { "Female" }
     end
 

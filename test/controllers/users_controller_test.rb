@@ -208,7 +208,6 @@ class UsersControllerTest < ActionController::TestCase
               name: "John",
               gender: "Male",
               identity: "grad",
-              student_id: 9_876_543,
               faculty: "arts",
               program: "Honours BA in English",
               year_of_study: "3"
@@ -219,7 +218,6 @@ class UsersControllerTest < ActionController::TestCase
     assert_equal "John", @user.name
     assert_equal "Male", @user.gender
     assert_equal "grad", @user.identity
-    assert_equal 9_876_543, @user.student_id
     assert_equal "arts", @user.faculty
     assert_equal "Honours BA in English", @user.program
     assert_equal "3", @user.year_of_study
