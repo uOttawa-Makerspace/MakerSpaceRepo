@@ -1,6 +1,7 @@
 class RepositoriesController < SessionsController
   include BCrypt
   before_action :current_user, :check_session
+  before_action :check_exists
   before_action :signed_in, except: %i[index show download download_files]
   before_action :set_repository,
                 only: %i[
@@ -14,6 +15,10 @@ class RepositoriesController < SessionsController
                   pass_authenticate
                 ]
   before_action :check_auth, only: [:show]
+
+  def check_exists
+    redirect_to root_path, alert: "Repository not found" unless @repository
+  end
 
   def show
     if @repository.private? && !@check_passed
@@ -276,7 +281,7 @@ class RepositoriesController < SessionsController
 
   def check_auth
     @check_passed =
-      if @authorized == true || @user.admin? || @user.staff? ||
+      if @authorized || @user.admin? || @user.staff? ||
            (@repository.user_username == @user.username)
         true
       else
