@@ -1174,7 +1174,6 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
   add_foreign_key "space_staff_hours", "course_names"
-  add_foreign_key "shifts", "users"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "users"
