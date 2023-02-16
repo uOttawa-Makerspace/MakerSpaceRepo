@@ -276,7 +276,7 @@ class RepositoriesController < SessionsController
 
   def check_auth
     @check_passed =
-      if @authorized == true || @user.admin? || @user.staff? ||
+      if @authorized || @user.admin? || @user.staff? ||
            (@repository.user_username == @user.username)
         true
       else
@@ -294,6 +294,7 @@ class RepositoriesController < SessionsController
       else
         Repository.find_by(title: id)
       end
+    redirect_to root_path, alert: "Repository not found" unless @repository
   end
 
   def repository_params
