@@ -237,6 +237,7 @@ fetch("/admin/shifts/get_external_staff_needed", {
       },
     });
     calendar.render();
+    document.getElementById("hide-show-unavailabilities").click();
   });
 
 // Refresh pending Shifts
