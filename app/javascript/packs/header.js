@@ -178,12 +178,26 @@ document.addEventListener("turbolinks:load", function () {
       });
   }
   if (document.getElementById("quick-access-bar-toggle")) {
+    let storedState = localStorage.getItem("quick-access-bar-stowed");
+    if (storedState == "true") {
+      document
+        .getElementById("quick-access-container")
+        .classList.toggle("stowed");
+      document.getElementById("quick-access-bar").classList.toggle("stowed");
+    }
     document
       .getElementById("quick-access-bar-toggle")
       .addEventListener("click", () => {
         document
           .getElementById("quick-access-container")
           .classList.toggle("stowed");
+        document.getElementById("quick-access-bar").classList.toggle("stowed");
+        localStorage.setItem(
+          "quick-access-bar-stowed",
+          document
+            .getElementById("quick-access-container")
+            .classList.contains("stowed")
+        );
       });
   }
 });

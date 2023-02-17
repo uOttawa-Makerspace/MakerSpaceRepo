@@ -1,5 +1,5 @@
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-xxl-6">
       Current Quick Access Paths:
       <% QuickAccessLink.where(user_id: current_user).each do |quick_access| %>
         <%= form_with url: quick_access_links_update_path(quick_access.id), method: 'post', controller: 'quick_access_links' do %>
@@ -28,7 +28,7 @@
       <% end %>
       </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-xxl-6">
       New Quick Access Path:
       <%= form_with url: quick_access_links_create_path, method: 'post', controller: 'quick_access_links' do %>
         <div class="row g-2">

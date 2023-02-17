@@ -49,6 +49,7 @@ class User < ApplicationRecord
   has_and_belongs_to_many :shifts, dependent: :destroy
   has_many :job_orders, dependent: :destroy
   has_many :job_order_statuses
+  has_many :coupon_codes, dependent: :destroy # GoDaddy temp replacement for discount codes
 
   MAX_AUTH_ATTEMPTS = 5
 
