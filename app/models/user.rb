@@ -166,6 +166,7 @@ class User < ApplicationRecord
 
   def self.authenticate(username_email, password)
     user = User.username_or_email(username_email)
+    return nil unless user
     if user.pword == password
       user.update(auth_attempts: 0)
       return user

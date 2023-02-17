@@ -1,4 +1,3 @@
-console.log("Hello World");
 if (document.getElementById("questions_trainings")) {
   if (!document.getElementById("questions_trainings").tomselect) {
     new TomSelect("#questions_trainings", {

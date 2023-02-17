@@ -13,7 +13,7 @@
 
               <div class="mb-3 text-center">
                 <%= f.label :space_id, 'Assosciated Space', class: 'form-label' %>
-                <%= f.select :space_id, options_from_collection_for_select(Space.all, :id, :name, selected: nil), {}, { class: 'form-select form-control', required: true } %>
+                <%= f.select :space_id, options_from_collection_for_select(Space.all, :id, :name, selected: @contact_info.space_id.nil? ? nil : @contact_info.space_id), {}, { class: 'form-select form-control', required: true } %>
               </div>
 
               <div class="mb-3 text-center">
