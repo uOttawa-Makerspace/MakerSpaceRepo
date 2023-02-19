@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_02_04_180926) do
+ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -206,6 +206,16 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.boolean "show_hours"
     t.bigint "space_id"
     t.index ["space_id"], name: "index_contact_infos_on_space_id"
+  end
+
+  create_table "coupon_codes", force: :cascade do |t|
+    t.string "code"
+    t.integer "cc_cost"
+    t.integer "dollar_cost"
+    t.bigint "user_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_coupon_codes_on_user_id"
   end
 
   create_table "course_names", force: :cascade do |t|
@@ -912,14 +922,6 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end
 
-  create_table "training_levels", force: :cascade do |t|
-    t.string "name"
-    t.bigint "space_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.index ["space_id"], name: "index_training_levels_on_space_id"
-  end
-
   create_table "sub_space_booking_statuses", force: :cascade do |t|
     t.bigint "sub_space_booking_id"
     t.datetime "created_at", precision: 6, null: false
@@ -959,6 +961,14 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.integer "maximum_booking_hours_per_week"
     t.boolean "default_public", default: false
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
+  end
+
+  create_table "training_levels", force: :cascade do |t|
+    t.string "name"
+    t.bigint "space_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
   create_table "training_sessions", id: :serial, force: :cascade do |t|
@@ -1027,6 +1037,7 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.string "avatar_content_type"
     t.integer "avatar_file_size"
     t.datetime "avatar_updated_at"
+    t.string "access_token"
     t.string "name"
     t.string "gender"
     t.string "faculty"
@@ -1049,7 +1060,6 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
     t.datetime "last_signed_in_time"
     t.boolean "deleted"
     t.boolean "booking_approval", default: false
-    t.string "access_token"
     t.boolean "locked", default: false
     t.datetime "locked_until"
     t.integer "auth_attempts", default: 0
@@ -1131,6 +1141,7 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
   add_foreign_key "contact_infos", "spaces"
+  add_foreign_key "coupon_codes", "users"
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
@@ -1180,7 +1191,6 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
-  add_foreign_key "training_levels", "spaces"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"
   add_foreign_key "sub_space_booking_statuses",
                   "sub_space_bookings",
@@ -1189,6 +1199,7 @@ ActiveRecord::Schema.define(version: 2023_02_04_180926) do
   add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_spaces", "spaces"
+  add_foreign_key "training_levels", "spaces"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"
