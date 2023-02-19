@@ -498,38 +498,30 @@ const staffNeededEvent = (arg) => {
 
 // Hide/Show Events
 const hideShowEvents = (eventName) => {
-  if (eventName !== "check") {
-    if (sourceShow[eventName] === "none") {
-      sourceShow[eventName] = "block";
-    } else {
-      sourceShow[eventName] = "none";
-    }
-  }
   let allEvents = calendar.getEvents();
-  for (let ev of allEvents) {
-    if (eventName === "check") {
-      let display = sourceShow.hasOwnProperty(ev.source.id)
-        ? sourceShow[ev.source.id]
-        : "block";
-      ev.setProp("display", display);
-      if (ev.extendedProps.userId) {
-        ev.setProp(
-          "display",
-          hiddenIds[ev.extendedProps.userId] === "none" ? "none" : display
-        );
-      }
-    } else if (ev.source.id === eventName) {
-      ev.setProp("display", sourceShow[eventName]);
-      if (ev.extendedProps.userId) {
-        ev.setProp(
-          "display",
-          hiddenIds[ev.extendedProps.userId] === "none"
-            ? "none"
-            : sourceShow[eventName]
-        );
-      }
-    }
+  if (eventName !== "check") {
+    sourceShow[eventName] = sourceShow[eventName] === "none" ? "block" : "none";
   }
+
+  let eventsToProcess = [];
+  if (eventName === "check") {
+    eventsToProcess = allEvents.filter((ev) =>
+      sourceShow.hasOwnProperty(ev.source.id)
+    );
+  } else {
+    eventsToProcess = allEvents.filter((ev) => ev.source.id === eventName);
+  }
+
+  calendar.batchRendering(() => {
+    for (let ev of eventsToProcess) {
+      let display = sourceShow[ev.source.id] || "block";
+      ev.setProp(
+        "display",
+        hiddenIds[ev.extendedProps.userId] === "none" ? "none" : display
+      );
+    }
+  });
+
   if (eventName === "transparent") {
     [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
       let userId = el.id.substring(5);
