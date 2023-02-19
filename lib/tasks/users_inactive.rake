@@ -9,7 +9,7 @@ namespace :users_inactive do
       if user.last_seen_at.present? && user.last_seen_at < 1.year.ago &&
            user.last_signed_in_time.present? &&
            user.last_signed_in_time < 1.year.ago
-        # MsrMailer.send_inactive_email(user).deliver_now
+           MsrMailer.send_inactive_email(user).deliver_now
         user.update(active: false)
       end
     end
