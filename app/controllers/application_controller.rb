@@ -3,6 +3,7 @@
 class ApplicationController < ActionController::Base
   # Prevent CSRF attacks by raising an exception.
   # For APIs, you may want to use :null_session instead.
+  rescue_from ActionController::ParameterMissing, with: :parameter_missing
   protect_from_forgery with: :null_session,
                        only: proc { |c| c.request.format == "application/json" }
   include ApplicationHelper
@@ -50,6 +51,13 @@ class ApplicationController < ActionController::Base
       format.html { redirect_to login_path(back_to: request.fullpath) }
       format.js { render js: "window.location.href = '#{login_path}'" }
       format.json { render json: "redirect" }
+    end
+  end
+
+  def parameter_missing(exception)
+    respond_to do |format|
+      format.html { redirect_to root_path, alert: exception.message }
+      format.json { render json: { error: exception.message }, status: 400 }
     end
   end
 end
