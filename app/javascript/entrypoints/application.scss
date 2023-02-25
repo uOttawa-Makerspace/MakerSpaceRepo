@@ -28,3 +28,19 @@ a {
 .dropdown-item:active {
   background-color: #497979 !important;
 }
+@media (prefers-reduced-motion: reduce) {
+  .form-control:not(#q, .inanimate) {
+    transition: none;
+  }
+}
+
+.form-control:not(#q, .inanimate) {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: all 0.5s ease-in-out;
+}
+
+.form-control.visible:not(#q, .inanimate) {
+  opacity: 1;
+  transform: translateX(0);
+}

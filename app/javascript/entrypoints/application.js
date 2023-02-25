@@ -160,3 +160,20 @@ document.addEventListener("turbo:load", () => {
     });
   });
 });
+document.addEventListener("turbo:load", () => {
+  const formControls = document.querySelectorAll(".form-control");
+
+  function handleIntersection(entries) {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("visible");
+      }
+    });
+  }
+
+  const observer = new IntersectionObserver(handleIntersection);
+
+  formControls.forEach((formControl) => {
+    observer.observe(formControl);
+  });
+});
