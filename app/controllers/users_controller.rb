@@ -25,7 +25,6 @@ class UsersController < SessionsController
 
   def create
     @new_user = User.new(user_params)
-    puts @new_user.errors.full_messages unless @new_user.valid?
     @new_user.pword = params[:user][:password] if @new_user.valid?
 
     respond_to do |format|

@@ -91,8 +91,10 @@ class User < ApplicationRecord
   validates :password,
             confirmation: true,
             presence: true,
-            password: true,
-            if: -> { new_record? || changes[:password] }
+            password: {
+              name: :username,
+              email: :email
+            }
 
   validates :gender,
             presence: true,
