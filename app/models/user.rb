@@ -49,6 +49,9 @@ class User < ApplicationRecord
   has_and_belongs_to_many :shifts, dependent: :destroy
   has_many :job_orders, dependent: :destroy
   has_many :job_order_statuses
+  has_many :coupon_codes, dependent: :destroy # GoDaddy temp replacement for discount codes
+
+  MAX_AUTH_ATTEMPTS = 5
 
   validates :avatar,
             file_content_type: {
@@ -75,7 +78,7 @@ class User < ApplicationRecord
               maximum: 20
             }
 
-  validates :email, presence: true, uniqueness: true
+  validates :email, presence: true, uniqueness: true, email: true
 
   validates :how_heard_about_us, length: { maximum: 250 }
 
@@ -86,11 +89,10 @@ class User < ApplicationRecord
             on: :create
 
   validates :password,
-            presence: true,
             confirmation: true,
-            format: {
-              with: /(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}/
-            }
+            presence: true,
+            password: true,
+            if: -> { new_record? || changes[:password] }
 
   validates :gender,
             presence: true,
@@ -168,7 +170,19 @@ class User < ApplicationRecord
 
   def self.authenticate(username_email, password)
     user = User.username_or_email(username_email)
-    user if user && user.pword == password
+    return nil unless user
+    if user.pword == password
+      user.update(auth_attempts: 0)
+      return user
+    end
+    user.update(auth_attempts: user.auth_attempts + 1)
+    if user.auth_attempts >= MAX_AUTH_ATTEMPTS
+      user.update(locked: true)
+      user.update(locked_until: 5.minute.from_now)
+      user_hash = Rails.application.message_verifier("unlock").generate(user.id)
+      MsrMailer.unlock_account(user, user_hash).deliver_now
+      return nil
+    end
   end
 
   def self.username_or_email(username_email)

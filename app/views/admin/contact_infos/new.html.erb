@@ -6,34 +6,34 @@
         <%= form_for @contact_info, url: { controller: 'contact_infos', action: 'create' }, html: { class: 'needs-validation form-floating', novalidate: 'novalidate' } do |f| %>
           <div class="row">
             <div class="col-md-12">
-              <div class="mb-3 text-center form-floating">
-                <%= f.text_field :name, placeholder: "Write the space's name here", class: 'form-control', required: true %>
-                <%= f.label :name, 'Name of the Space', class: 'form-label' %>
+              <div class="mb-3">
+                <%= f.label :name, 'Select a Space or enter a custom name', class: 'form-label' %>
+                <%= f.select :space_id, options_from_collection_for_select(Space.all, :id, :name), {}, class: 'form-select form-control' %>
               </div>
 
-              <div class="mb-3 text-center form-floating">
+              <div class="mb-3 form-floating">
                 <%= f.text_field :url, placeholder: 'Write the url for the space', class: 'form-control' %>
                 <%= f.label :url, 'URL of the Space', class: 'form-label' %>
               </div>
 
-              <div class="mb-3 text-center form-floating">
+              <div class="mb-3 form-floating">
                 <%= f.email_field :email, placeholder: "Write the space's email here", class: 'form-control', required: true %>
                 <%= f.label :email, 'Email', class: 'form-label' %>
               </div>
 
-              <div class="mb-3 text-center form-floating">
+              <div class="mb-3 form-floating">
                 <%= f.text_field :address, placeholder: "Write the space's address here", class: 'form-control' %>
                 <%= f.label :address, 'Address', class: 'form-label' %>
               </div>
 
-              <div class="mb-3 text-center form-floating">
+              <div class="mb-3 form-floating">
                 <%= f.text_field :phone_number, placeholder: "Write the space's phone number", class: 'form-control' %>
                 <%= f.label :phone_number, 'Phone Number', class: 'form-label' %>
               </div>
 
               <div class="mb-3">
-                <%= f.label :show_hours, 'Show Hours', class: 'form-label' %>
                 <%= f.check_box(:show_hours, checked: true) %>
+                <%= f.label :show_hours, 'Show Hours', class: 'form-label' %>
               </div>
 
               <div class="mb-3">
@@ -57,3 +57,5 @@
     </div>
   </div>
 </section>
+
+<%= javascript_pack_tag 'contact_infos' %>

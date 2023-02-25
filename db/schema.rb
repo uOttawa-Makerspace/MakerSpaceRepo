@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_01_31_191201) do
+ActiveRecord::Schema[7.0].define(version: 2023_02_16_013131) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -206,6 +206,16 @@ ActiveRecord::Schema[7.0].define(version: 2023_01_31_191201) do
     t.boolean "show_hours"
     t.bigint "space_id"
     t.index ["space_id"], name: "index_contact_infos_on_space_id"
+  end
+
+  create_table "coupon_codes", force: :cascade do |t|
+    t.string "code"
+    t.integer "cc_cost"
+    t.integer "dollar_cost"
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_coupon_codes_on_user_id"
   end
 
   create_table "course_names", force: :cascade do |t|
@@ -1050,6 +1060,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_01_31_191201) do
     t.datetime "last_signed_in_time", precision: nil
     t.boolean "deleted"
     t.boolean "booking_approval", default: false
+    t.boolean "locked", default: false
+    t.datetime "locked_until", precision: nil
+    t.integer "auth_attempts", default: 0
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
@@ -1128,6 +1141,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_01_31_191201) do
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
   add_foreign_key "contact_infos", "spaces"
+  add_foreign_key "coupon_codes", "users"
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"

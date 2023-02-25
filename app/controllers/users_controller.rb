@@ -9,6 +9,7 @@ class UsersController < SessionsController
                   resend_confirmation
                   reset_password_confirmation
                   reset_password_form
+                  unlock_account
                 ]
   before_action :signed_in,
                 except: %i[
@@ -19,10 +20,12 @@ class UsersController < SessionsController
                   confirm
                   reset_password_confirmation
                   reset_password_form
+                  unlock_account
                 ]
 
   def create
     @new_user = User.new(user_params)
+    puts @new_user.errors.full_messages unless @new_user.valid?
     @new_user.pword = params[:user][:password] if @new_user.valid?
 
     respond_to do |format|
@@ -112,6 +115,28 @@ class UsersController < SessionsController
       flash[
         :alert
       ] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+    end
+    redirect_to root_path
+  end
+
+  def unlock_account
+    @user_token = params[:token]
+    @user_verifier = Rails.application.message_verifier("unlock")
+    if @user_verifier.valid_message?(@user_token)
+      user_id = @user_verifier.verify(@user_token)
+      if User.find(user_id).present?
+        user = User.find(user_id)
+        if user.locked?
+          user.update(locked: false)
+          user.update(auth_attempts: 0)
+          user.update(locked_until: nil)
+          flash[:notice] = "The account has been unlocked!"
+        end
+      else
+        flash[:alert] = "We can not find that user. Please try again.."
+      end
+    else
+      flash[:alert] = "Invalid Token"
     end
     redirect_to root_path
   end
@@ -246,6 +271,11 @@ class UsersController < SessionsController
         expiry_date = @user_verifier.verify(@expiry_date_token)
         if User.find(user_id).present? && Time.now <= expiry_date
           @user = User.find(user_id)
+          if @user.locked?
+            @user.update(locked: false)
+            @user.update(auth_attempts: 0)
+            @user.update(locked_until: nil)
+          end
           @user.pword = params[:password]
           if @user.save!
             MsrMailer.confirm_password_change(@user).deliver_now

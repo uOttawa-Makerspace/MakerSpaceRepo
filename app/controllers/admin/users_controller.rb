@@ -191,6 +191,22 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
+  def toggle_lock_user
+    if @user.admin?
+      toggle_lock_user = User.find(params[:id])
+      toggle_lock_user.locked = !toggle_lock_user.locked
+      toggle_lock_user.locked_until =
+        toggle_lock_user.locked ? 99.years.from_now : nil
+      toggle_lock_user.auth_attempts = toggle_lock_user.locked ? 5 : 0
+      toggle_lock_user.save!
+      redirect_to user_path(toggle_lock_user.username),
+                  notice:
+                    "User #{toggle_lock_user.locked ? "locked" : "unlocked"}!"
+    else
+      redirect_to root_path, alert: "You do not have permission to do that!"
+    end
+  end
+
   def set_role
     @user = User.find(params[:id])
     @user.role = params[:role]

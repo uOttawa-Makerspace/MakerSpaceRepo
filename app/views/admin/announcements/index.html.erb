@@ -14,15 +14,15 @@
     <div class="table-responsive">
       <table class="table sessions-table  table-striped">
         <thead class="table-primary">
-         <tr>
-           <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Description <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Public<span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Active?<span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Created By<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Dismissed By<span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
-           <th class="action-header">Action</th>
-         </tr>
+          <tr>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Description <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Public<span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Active?<span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Created By<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Dismissed By<span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="action-header">Action</th>
+          </tr>
         </thead>
         <tbody>
         <% @announcements.each do |a| %>

@@ -35,7 +35,6 @@
     "husky": "^8.0.1",
     "js-cookie": "^2.2.1",
     "lightgallery": "^1.7.2",
-    "message-bus": "^0.0.6",
     "moment": "^2.29.2",
     "moment-timezone": "^0.5.35",
     "node-sass": "^8.0.0",

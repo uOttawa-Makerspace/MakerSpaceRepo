@@ -68,10 +68,13 @@
           <div class="col-md-3">
             <!--      EDIT PROFILE Section-->
             <div>
-              <%= if @repo_user.eql?(@user)
-                    link_to fa_icon('cog', text: 'Edit Profile'), settings_profile_path,
-                            class: 'btn btn-secondary rounded-pill mb-2'
-                  end %>
+              <div class="d-flex flex-column">
+                <% if current_user.admin? %>
+                <%= link_to fa_icon(@repo_user.locked? ? 'unlock' : 'lock'), toggle_lock_user_admin_users_path(id: @repo_user), method: :put, class: "btn rounded-pill mb-2#{@repo_user.locked? ? ' btn-success' : ' btn-danger'}" %>
+                <% end %>
+                <%= link_to fa_icon('cog', text: 'Edit Profile'), settings_profile_path, class: 'btn btn-secondary rounded-pill mb-2' if @repo_user.eql?(@user) %>
+              </div>
+
               <% if @user.staff? %>
                 <%= render 'users/flag' %>
                 <div class="row mx-auto mb-2">
@@ -114,7 +117,7 @@
                              rescue StandardError
                                'unknown'
                              end %>
-link_to ("Tapped at #{space} " + time_ago_in_words(rfid.updated_at) + ' ago'),
+                        <%= link_to "Tapped at #{space} #{time_ago_in_words(rfid.updated_at)} ago",
                                     staff_dashboard_link_rfid_path(user_id: @repo_user.id, card_number: rfid.card_number),
                                     action: :link_rfid, method: :put, class: 'dropdown-item' %>
                         <% end %>

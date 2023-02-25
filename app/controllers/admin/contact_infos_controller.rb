@@ -9,6 +9,14 @@ class Admin::ContactInfosController < AdminAreaController
   end
 
   def create
+    if Space.find_by(id: params[:contact_info][:space_id]).blank?
+      params[:contact_info][:name] = params[:contact_info][:space_id]
+      params[:contact_info][:space_id] = nil
+    else
+      params[:contact_info][:name] = Space.find(
+        params[:contact_info][:space_id]
+      ).name
+    end
     contact_info = ContactInfo.new(contact_infos_params)
     if contact_info.save!
       redirect_to admin_contact_infos_path

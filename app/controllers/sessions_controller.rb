@@ -1,12 +1,53 @@
 # frozen_string_literal: true
 
 class SessionsController < ApplicationController
+  include ActionView::Helpers::DateHelper
+
   before_action :session_expiry, except: [:login_authentication]
   before_action :update_activity_time
   before_action :current_user, only: [:login]
   before_action :authorized_repo_ids
+  before_action :rate_limit, only: [:login_authentication]
+
+  def rate_limit
+    ip = request.env["REMOTE_ADDR"]
+    key = "login_#{ip}"
+    count = Rails.cache.fetch(key)
+    unless count
+      Rails.cache.write(key, 1, expires_in: 1.minute)
+      count = 1
+    end
+    Rails.cache.write(key, count.to_i + 1, expires_in: 1.minute)
+    render status: 429, json: { error: "Too many requests" } if count.to_i > 10
+  end
 
   def login_authentication
+    if User.username_or_email(params[:username_email])
+      user = User.username_or_email(params[:username_email])
+      if user.locked?
+        if user.locked_until < DateTime.now
+          user.update(locked: false)
+          user.update(auth_attempts: 0)
+        else
+          respond_to do |format|
+            format.html do
+              flash[
+                :alert
+              ] = "Your account has been locked due to too many failed login attempts. Please contact an administrator to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}."
+              render :login
+            end
+            format.json do
+              render json: {
+                       error:
+                         "Your account has been locked due to too many failed login attempts. Please contact an administrator to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}."
+                     },
+                     status: :unprocessable_entity
+            end
+          end
+          return
+        end
+      end
+    end
     @user = sign_in(params[:username_email], params[:password])
 
     respond_to do |format|
@@ -41,15 +82,28 @@ class SessionsController < ApplicationController
         format.json { render json: { role: :guest }, status: :ok }
       else
         @user = User.new
+        user = User.username_or_email(params[:username_email])
+        if user
+          error_message =
+            (
+              if user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
+                "Your account has been locked due to too many failed login attempts. You can try again in #{distance_of_time_in_words user.locked_until, DateTime.now}."
+              elsif user.auth_attempts > 1
+                "Incorrect password. You have #{User::MAX_AUTH_ATTEMPTS - user.auth_attempts} attempts left before your account is locked."
+              else
+                "Incorrect password."
+              end
+            )
+        else
+          error_message =
+            "Could not find user with email or username #{params[:username_email]}"
+        end
         format.html do
-          flash[:alert] = "Incorrect username or password."
+          flash[:alert] = error_message
           render :login
         end
         format.json do
-          render json: {
-                   error: "Incorrect username or password."
-                 },
-                 status: :unprocessable_entity
+          render json: { error: error_message }, status: :unprocessable_entity
         end
       end
     end

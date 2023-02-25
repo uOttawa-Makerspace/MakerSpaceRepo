@@ -1,6 +1,7 @@
+
 <tbody id="table-js-signed-in">
     <% @space.signed_in_users.each do |user| %>
-        <tr class="drop-rows" id="<%= return_no_waiver_id(user) %>">
+        <tr class="drop-rows" id="<%= return_no_waiver_id(user) %>" data-user-id=<%= user.id %>>
             <td class="drop-username-cell">
                 <%= link_to(tag.drop_username(user.name), user_url(user.username)) %>
             </td>

@@ -43,7 +43,7 @@ RSpec.describe StaffDashboardController, type: :controller do
     context "import excel" do
       it "should sign in users using the excel file" do
         create(:user, :regular_user, username: "Bob1")
-        create(:user, :regular_user, email: "bob@bob.com")
+        create(:user, :regular_user, email: "bob@uottawa.ca")
         create(:user, :regular_user, name: "Bob Bob Bob")
         expect {
           post :import_excel,
@@ -63,7 +63,7 @@ RSpec.describe StaffDashboardController, type: :controller do
           "Please note that 3 user(s) did not get signed in because they were not found in the system."
         )
         expect(flash[:alert]).to eq(
-          "Users with error: john doe 123, johnnnnnn, joeeee@joeeee.com"
+          "Users with error: john doe 123, johnnnnnn, joeeee@uottawa.ca"
         )
       end
     end
