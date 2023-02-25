@@ -3,7 +3,8 @@ import "@fullcalendar/common/main.css";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
-document.addEventListener("turbolinks:load", function () {
+import TomSelect from "tom-select";
+document.addEventListener("turbo:load", function () {
   let bookedCalendarEl = document.getElementById("booked-calendar");
   if (bookedCalendarEl) {
     function createEvent(arg) {
@@ -141,8 +142,8 @@ document.addEventListener("turbolinks:load", function () {
           } catch (e) {
             console.log(e);
             closeModal();
-            Turbolinks.clearCache();
-            Turbolinks.visit(
+            Turbo.clearCache();
+            Turbo.visit(
               window.location.href.split("?")[0] +
                 "?room=" +
                 new URLSearchParams(window.location.search).get("room") +
@@ -257,7 +258,7 @@ document.addEventListener("turbolinks:load", function () {
     });
   }
 });
-document.addEventListener("turbolinks:render", ready);
+document.addEventListener("turbo:render", ready);
 function ready() {
   const anchor = window.location.hash.substring(1);
   const pending_table = new URLSearchParams(window.location.search).get(

@@ -166,7 +166,7 @@ class SubSpaceBookingController < ApplicationController
 
   def create
     booking = SubSpaceBooking.new(sub_space_booking_params)
-    if !booking.valid?
+    unless booking.valid?
       render json: {
                errors: booking.errors.full_messages
              },
@@ -396,7 +396,6 @@ class SubSpaceBookingController < ApplicationController
   def user_account
     unless !current_user.nil?
       redirect_to login_path, alert: "You must be logged in to view this page."
-      return
     end
   end
   def user_signed_in
@@ -409,20 +408,17 @@ class SubSpaceBookingController < ApplicationController
     unless current_user.booking_approval || current_user.admin?
       redirect_to root_path,
                   alert: "You must be approved to book to view this page."
-      return
     end
   end
   def user_admin_or_staff
     unless current_user.admin? || current_user.staff?
       redirect_to root_path,
                   alert: "You must be an admin or staff to view this page."
-      return
     end
   end
   def user_admin
     unless current_user.admin?
       redirect_to root_path, alert: "You must be an admin to view this page."
-      return
     end
   end
   def user_booking_belongs
@@ -431,7 +427,6 @@ class SubSpaceBookingController < ApplicationController
       redirect_to root_path,
                   alert:
                     "You must be the owner of this booking or an admin to delete it."
-      return
     end
   end
 

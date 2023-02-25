@@ -1,6 +1,5 @@
 import TomSelect from "tom-select";
 import "flatpickr";
-console.log("volunteers.js loaded");
 document.addEventListener("turbo:load", function () {
   if (document.getElementById("user_select")) {
     if (!document.getElementById("user_select").tomselect) {

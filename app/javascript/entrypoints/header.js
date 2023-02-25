@@ -1,3 +1,4 @@
+import { Turbo } from "@hotwired/turbo-rails";
 /**
  *
  * This JS deals with the navbar
@@ -173,7 +174,7 @@ document.addEventListener("turbo:load", function () {
             path: path,
           }),
         }).then((response) => {
-          Turbolinks.visit(window.location.href);
+          Turbo.visit(window.location.href);
         });
       });
   }

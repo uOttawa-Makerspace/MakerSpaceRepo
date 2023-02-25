@@ -55,3 +55,34 @@ window.addEventListener(
   },
   false
 );
+if (document.getElementById("remove_staff_id")) {
+  if (!document.getElementById("remove_staff_id").tomselect) {
+    new TomSelect("#remove_staff_id", {
+      plugins: ["remove_button"],
+      maxItems: null,
+      closeAfterSelect: true,
+    });
+  }
+}
+if (document.getElementById("remove_volunteer_id")) {
+  if (!document.getElementById("remove_volunteer_id").tomselect) {
+    new TomSelect("#remove_volunteer_id", {
+      plugins: ["remove_button"],
+      maxItems: null,
+      closeAfterSelect: true,
+    });
+  }
+}
+let hider = document.getElementById("task-hider");
+if (hider) {
+  const completedRows = document.querySelectorAll('tr[completed="completed"]');
+  hider.addEventListener("click", () => {
+    completedRows.forEach((row) => {
+      row.classList.toggle("d-none");
+    });
+    hider.innerHTML =
+      hider.innerHTML === "Hide Completed Task"
+        ? "Show Completed Task"
+        : "Hide Completed Task";
+  });
+}
