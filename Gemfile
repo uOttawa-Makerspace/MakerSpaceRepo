@@ -66,7 +66,7 @@ gem "graphlient"
 gem "sprockets-rails"
 gem "psych", "~> 4.0.0"
 gem "vite_rails"
-gem "message_bus"
+gem "nobspw"
 
 group :development, :test do
   gem "byebug", platform: :mri

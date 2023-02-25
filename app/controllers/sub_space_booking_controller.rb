@@ -8,7 +8,8 @@ class SubSpaceBookingController < ApplicationController
   before_action :user_booking_belongs, only: %i[delete edit update]
   def index
     @subspace = SubSpace.find(params[:room]) if params[:room].present?
-    @bookings = SubSpaceBooking.where(user_id: current_user.id)
+    @bookings =
+      SubSpaceBooking.where(user_id: current_user.id).order(:start_time)
     if current_user.admin?
       # Need to get the booking status from the sub space booking status table for the booking
       @pending_bookings =

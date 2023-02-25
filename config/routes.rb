@@ -3,6 +3,8 @@
 Rails.application.routes.draw do
   resources :price_rules, only: %i[index new create destroy edit update]
   resources :discount_codes, only: %i[new index create]
+  resources :coupon_codes, only: %i[index new create destroy edit update]
+
   resources :custom_webhooks do
     collection { post :orders_paid }
   end
@@ -226,6 +228,7 @@ Rails.application.routes.draw do
         delete "delete_repository"
         delete "delete_user"
         patch "restore_user"
+        put "toggle_lock_user"
         get "manage_roles"
       end
     end
@@ -347,6 +350,7 @@ Rails.application.routes.draw do
     get :populate_users
     post :import_excel
     get :refresh_capacity
+    get :refresh_tables
   end
 
   resources :sub_space_booking, only: %i[index create] do
@@ -517,6 +521,7 @@ Rails.application.routes.draw do
       post :unflag
       get :change_email
       put :remove_flag
+      get :unlock_account
     end
 
     get "likes", on: :member
