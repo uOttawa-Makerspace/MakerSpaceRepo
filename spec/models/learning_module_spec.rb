@@ -9,7 +9,7 @@ RSpec.describe LearningModule, type: :model do
     end
 
     context "belongs_to" do
-      it { should belong_to(:training) }
+      it { should belong_to(:training).without_validating_presence }
     end
   end
 

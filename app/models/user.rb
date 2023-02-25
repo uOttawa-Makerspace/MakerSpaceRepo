@@ -3,7 +3,7 @@
 class User < ApplicationRecord
   include BCrypt
   include ActiveModel::Serialization
-  belongs_to :space
+  belongs_to :space, optional: true
   has_one :rfid, dependent: :destroy
   has_many :upvotes, dependent: :destroy
   has_many :comments, dependent: :destroy
@@ -88,7 +88,13 @@ class User < ApplicationRecord
             },
             on: :create
 
-  validates :password, presence: true, password: true, confirmation: true
+  validates :password,
+            confirmation: true,
+            presence: true,
+            password: {
+              name: :username,
+              email: :email
+            }
 
   validates :gender,
             presence: true,

@@ -256,7 +256,6 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         )
       end
     end
-
   end
 
   describe "DELETE/delete" do

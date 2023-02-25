@@ -39,7 +39,7 @@
       <%= render partial: 'answers', locals: { f: f } %>
     </div>
     <div class="col-12">
-      <%= link_to 'Add Answer', add_answer_questions_path(id: @question.id), method: :post, class: 'btn btn-info text-white float-start' %>
+      <%= button_to 'Add Answer', add_answer_questions_path(id: @question.id), method: :post, class: 'btn btn-info text-white float-start' %>
     </div>
     <br />
     <br />
@@ -48,29 +48,5 @@
       <%= f.submit 'Update Question', class: 'btn btn-secondary btn-xl text-uppercase' %>
     </div>
   </div>
-  <script>
-if (document.getElementById("questions_trainings")) {
-    if (!document.getElementById("questions_trainings").tomselect) {
-        new TomSelect("#questions_trainings", {
-            plugins: {
-                "clear_button": { title: "Clear" }
-            },
-        });
-    }
-}
-document.getElementById("pictureInput").addEventListener('change', function (event) {
-    var files = event.target.files;
-    var image = files;
-    for (var i = 0; i < files.length; i++) {
-        var reader = new FileReader();
-        reader.onload = function (file) {
-            var img = new Image();
-            img.src = file.target.result;
-            document.getElementById('image-target').insertBefore(img, null);
-        }
-        reader.readAsDataURL(image[i]);
-    }
-});
-</script>
 
 <% end %>

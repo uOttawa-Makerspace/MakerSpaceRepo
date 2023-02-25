@@ -19,8 +19,8 @@
                 <% if repository.user_username.eql?(@user.username) %>
                     <%= link_to 'Delete', repository_path(repository.user_username, repository.id), method:
                         :delete, data: {
-                          confirm: 'Are you sure? Once you delete the repository there is no coming back!'
-                        },
+                                   confirm: 'Are you sure? Once you delete the repository there is no coming back!'
+                                 },
                                                                                                     class: 'btn btn-danger btn-sm float-end m-1', style: 'display: none' %>
                     <%= link_to 'Edit', edit_repository_path(repository.user_username, repository.id),
                                 class: 'btn btn-secondary btn-sm float-end m-1', style: 'display: none' %>

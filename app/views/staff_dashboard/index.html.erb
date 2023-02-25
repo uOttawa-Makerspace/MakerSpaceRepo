@@ -14,7 +14,7 @@
     </h2>
 
     <div style="float:right;">
-      <%= link_to 'Download Excel Template', asset_path('excel/ImportUsersTemplate.xlsx'), download: 'ImportUsersTemplate.xlsx', class: 'btn btn-secondary' %>
+      <%= link_to 'Download Excel Template', asset_path('excel/ImportUsersTemplate.xlsx', skip_pipeline: true), download: 'ImportUsersTemplate.xlsx', class: 'btn btn-secondary' %>
       <%= link_to 'Download Summary',
                   staff_dashboard_present_users_report_path(format: 'xlsx'),
                   action: :training_report,
@@ -35,7 +35,7 @@
       <div class="container text-center mx-auto">
         <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary mx-auto text-center' %>
       </div>
-      <table class="staff-users-table text-center mb-5 table table-striped table-sort table-arrows">
+      <table class="staff-users-table text-center mb-5 table table-striped" >
         <thead class="table-primary">
           <tr>
             <th class="name-header">Name</th>
@@ -83,4 +83,4 @@
     <br />
   </div>
 </section>
-<%= javascript_pack_tag 'staff_dashboard', 'data-turbolinks-track': 'reload' %>
+<%= vite_javascript_tag 'staff_dashboard', 'data-turbo-track': 'reload' %>

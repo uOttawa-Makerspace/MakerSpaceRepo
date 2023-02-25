@@ -70,8 +70,8 @@
         <%= link_to 'Download',
                     training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'),
                     action: :training_report,
-                    class: 'btn btn-info d-block w-100 btn-sm' %>
-        <%= link_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'btn btn-danger d-block w-100 btn-sm' %>
+                    class: 'btn btn-info d-block w-100 btn-sm my-2' %>
+        <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'btn btn-danger d-block w-100 btn-sm' %>
         <br></br>
       </td>
 

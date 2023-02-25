@@ -50,8 +50,8 @@
             </td>
             <% if current_user.staff? %>
             <td class="action-cell">
-                <%= link_to fa_icon('times'), { controller: :volunteer_task_requests, action: :update_approval, id: vtr.id, approval: false }, method: :put, class: 'x-button' %>
-                <%= link_to fa_icon('check'), { controller: :volunteer_task_requests, action: :update_approval, id: vtr.id, approval: true }, method: :put, class: 'check-button' %>
+                <%= button_to fa_icon('times'), { controller: :volunteer_task_requests, action: :update_approval, id: vtr.id, approval: false }, method: :put, class: 'btn btn-default x-button' %>
+                <%= button_to fa_icon('check'), { controller: :volunteer_task_requests, action: :update_approval, id: vtr.id, approval: true }, method: :put, class: 'btn btn-default check-button' %>
             </td>
             <% end %>
 

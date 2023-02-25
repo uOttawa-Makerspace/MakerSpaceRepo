@@ -113,7 +113,7 @@ div.declined {
 
 .username {
   @include transition(100ms);
-  color: #19c1a5;
+  color: #19c1a5 !important;
   font-weight: 500;
 
   i {
@@ -128,7 +128,7 @@ div.declined {
 
 .admin_username {
   @include transition(100ms);
-  color: blue;
+  color: #357777 !important;
   font-weight: 500;
 
   i {
@@ -137,7 +137,7 @@ div.declined {
   }
 
   &:hover {
-    color: dodgerblue;
+    color: dodgerblue !important;
   }
 }
 

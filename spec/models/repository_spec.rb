@@ -14,8 +14,8 @@ RSpec.describe Repository, type: :model do
     end
 
     context "belongs_to" do
-      it { should belong_to(:project_proposal) }
-      it { should belong_to(:parent) }
+      it { should belong_to(:project_proposal).without_validating_presence }
+      it { should belong_to(:parent).without_validating_presence }
     end
 
     context "has_and_belongs_to_many" do

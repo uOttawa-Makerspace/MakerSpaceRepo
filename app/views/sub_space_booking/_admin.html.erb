@@ -35,7 +35,7 @@
                       <tbody>
                       <% @pending_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
@@ -83,7 +83,7 @@
                       <tbody>
                       <% @approved_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
@@ -92,7 +92,7 @@
                             <td><%= booking.public ? 'Public' : 'Private' %></td>
                             <td>
                               <div class="btn-group" role="group">
-                                <%= link_to booking.public ? 'Make Private' : 'Make Public', sub_space_booking_publish_path(booking), method: :put, class: 'btn text-nowrap' + (booking.public ? ' btn-secondary' : ' btn-primary') %>
+                                <%= link_to booking.public ? 'Make Private' : 'Make Public', sub_space_booking_publish_path(booking), method: :put, class: "btn text-nowrap#{booking.public ? ' btn-secondary' : ' btn-primary'}" %>
                                 <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
                               </div>
                             </td>
@@ -131,7 +131,7 @@
                       <tbody>
                       <% @declined_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
@@ -275,7 +275,7 @@
                       <tbody>
                       <% @old_pending_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
@@ -315,7 +315,7 @@
                       <tbody>
                       <% @old_approved_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
@@ -355,7 +355,7 @@
                       <tbody>
                       <% @old_declined_bookings.each do |booking| %>
                           <tr>
-                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : booking.sub_space.space.name + ' - ' + booking.sub_space.name %></td>
+                            <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
                             <td><%= booking.name %></td>
                             <td><%= booking.description %></td>
                             <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>

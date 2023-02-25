@@ -49,7 +49,7 @@
             </td>
 
             <td class="signed-in-cell" style="horizontal-alginment:center;">
-              <%= time_ago_in_words(user.lab_sessions.last.sign_in_time) + ' ago' %>
+              <%= "#{time_ago_in_words(user.lab_sessions.last.sign_in_time)} ago" %>
             </td>
 
             <td class="certifications-cell">
@@ -77,13 +77,3 @@
     <% end %>
   </div>
 </section>
-<script>
-    if (document.getElementById("user_id")){
-      if (!document.getElementById("user_id").tomselect){
-        new TomSelect("#user_id", {
-            placeholder: "Select a user",
-            maxItems: 1,
-            plugins: ['remove_button'],
-        });
-    }}
-</script>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_02_16_013131) do
+ActiveRecord::Schema[7.0].define(version: 2023_02_16_013131) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -20,8 +20,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.text "body"
     t.string "record_type", null: false
     t.bigint "record_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index %w[record_type record_id name],
             name: "index_action_text_rich_texts_uniqueness",
             unique: true
@@ -32,7 +32,7 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "record_type", null: false
     t.bigint "record_id", null: false
     t.bigint "blob_id", null: false
-    t.datetime "created_at", null: false
+    t.datetime "created_at", precision: nil, null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
     t.index %w[record_type record_id name blob_id],
             name: "index_active_storage_attachments_uniqueness",
@@ -45,8 +45,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "content_type"
     t.text "metadata"
     t.bigint "byte_size", null: false
-    t.string "checksum", null: false
-    t.datetime "created_at", null: false
+    t.string "checksum"
+    t.datetime "created_at", precision: nil, null: false
     t.string "service_name", null: false
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
@@ -62,8 +62,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "announcement_dismisses", force: :cascade do |t|
     t.bigint "announcement_id", null: false
     t.bigint "user_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["announcement_id"],
             name: "index_announcement_dismisses_on_announcement_id"
     t.index ["user_id"], name: "index_announcement_dismisses_on_user_id"
@@ -74,27 +74,27 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "public_goal"
     t.integer "user_id"
     t.boolean "active", default: true
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.date "end_date"
   end
 
   create_table "answers", id: :serial, force: :cascade do |t|
     t.integer "question_id"
     t.boolean "correct", default: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "area_options", id: :serial, force: :cascade do |t|
     t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "badge_requirements", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.integer "badge_template_id"
     t.integer "proficient_project_id"
     t.index ["badge_template_id"],
@@ -107,8 +107,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.text "acclaim_template_id"
     t.text "badge_description"
     t.text "badge_name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "image_url"
     t.string "list_of_skills"
     t.bigint "training_id"
@@ -118,8 +118,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
 
   create_table "badges", id: :serial, force: :cascade do |t|
     t.string "issued_to"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "acclaim_badge_id"
     t.integer "user_id"
     t.string "badge_url"
@@ -132,15 +132,15 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "booking_statuses", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
     t.integer "repository_id"
     t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.integer "category_option_id"
     t.integer "project_proposal_id"
     t.index ["category_option_id"],
@@ -150,16 +150,16 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
 
   create_table "category_options", id: :serial, force: :cascade do |t|
     t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "cc_moneys", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.integer "volunteer_task_id"
     t.integer "cc"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.integer "proficient_project_id"
     t.integer "order_id"
     t.integer "discount_code_id"
@@ -172,8 +172,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
 
   create_table "certifications", id: :serial, force: :cascade do |t|
     t.integer "user_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.integer "training_session_id"
     t.boolean "active", default: true
     t.string "demotion_reason"
@@ -188,8 +188,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "repository_id"
     t.text "content"
     t.integer "upvote", default: 0
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "username"
     t.index ["repository_id"], name: "index_comments_on_repository_id"
     t.index ["user_id"], name: "index_comments_on_user_id"
@@ -201,8 +201,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "address"
     t.string "phone_number"
     t.string "url"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.boolean "show_hours"
     t.bigint "space_id"
     t.index ["space_id"], name: "index_contact_infos_on_space_id"
@@ -213,15 +213,15 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "cc_cost"
     t.integer "dollar_cost"
     t.bigint "user_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_coupon_codes_on_user_id"
   end
 
   create_table "course_names", force: :cascade do |t|
     t.string "name"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "discount_codes", id: :serial, force: :cascade do |t|
@@ -230,56 +230,56 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "shopify_discount_code_id"
     t.string "code"
     t.integer "usage_count"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["price_rule_id"], name: "index_discount_codes_on_price_rule_id"
     t.index ["user_id"], name: "index_discount_codes_on_user_id"
   end
 
   create_table "drop_off_locations", force: :cascade do |t|
     t.string "name"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "equipment", id: :serial, force: :cascade do |t|
     t.integer "repository_id"
     t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["repository_id"], name: "index_equipment_on_repository_id"
   end
 
   create_table "equipment_options", id: :serial, force: :cascade do |t|
     t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "exam_questions", id: :serial, force: :cascade do |t|
     t.integer "exam_id"
     t.integer "question_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "exam_responses", id: :serial, force: :cascade do |t|
     t.integer "exam_question_id"
     t.integer "answer_id"
     t.boolean "correct"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "exams", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.string "category"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "status", default: "not started"
     t.integer "score"
     t.integer "training_session_id"
-    t.datetime "expired_at"
+    t.datetime "expired_at", precision: nil
   end
 
   create_table "friendly_id_slugs", id: :serial, force: :cascade do |t|
@@ -287,7 +287,7 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "sluggable_id", null: false
     t.string "sluggable_type", limit: 50
     t.string "scope"
-    t.datetime "created_at"
+    t.datetime "created_at", precision: nil
     t.index %w[slug sluggable_type scope],
             name:
               "index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope",
@@ -304,8 +304,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.text "description"
     t.boolean "need_files", default: false, null: false
     t.decimal "fee", precision: 10, scale: 2, null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "job_options_types", id: false, force: :cascade do |t|
@@ -318,15 +318,15 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "job_order_messages", force: :cascade do |t|
     t.text "name"
     t.text "message"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "job_order_options", force: :cascade do |t|
     t.bigint "job_order_id", null: false
     t.bigint "job_option_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["job_option_id"], name: "index_job_order_options_on_job_option_id"
     t.index ["job_order_id"], name: "index_job_order_options_on_job_order_id"
   end
@@ -334,8 +334,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "job_order_quote_options", force: :cascade do |t|
     t.bigint "job_option_id", null: false
     t.integer "amount", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "job_order_quote_id"
     t.index ["job_option_id"],
             name: "index_job_order_quote_options_on_job_option_id"
@@ -348,8 +348,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.decimal "quantity", precision: 10, scale: 2, null: false
     t.decimal "per_unit", precision: 10, scale: 2, null: false
     t.bigint "job_order_quote_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["job_order_quote_id"],
             name: "index_job_order_quote_services_on_job_order_quote_id"
     t.index ["job_service_id"],
@@ -360,8 +360,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.bigint "job_type_extra_id"
     t.bigint "job_order_quote_id"
     t.decimal "price", precision: 10, scale: 2
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["job_order_quote_id"],
             name: "index_job_order_quote_type_extras_on_job_order_quote_id"
     t.index ["job_type_extra_id"],
@@ -370,16 +370,16 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
 
   create_table "job_order_quotes", force: :cascade do |t|
     t.decimal "service_fee", precision: 10, scale: 2, null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "stripe_transaction_id"
   end
 
   create_table "job_order_statuses", force: :cascade do |t|
     t.bigint "job_order_id"
     t.bigint "job_status_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["job_order_id"], name: "index_job_order_statuses_on_job_order_id"
     t.index ["job_status_id"], name: "index_job_order_statuses_on_job_status_id"
@@ -391,8 +391,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.bigint "job_type_id"
     t.bigint "job_order_quote_id"
     t.text "staff_comments"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "job_service_group_id"
     t.text "comments"
     t.text "user_comments"
@@ -419,8 +419,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.boolean "multiple", default: false
     t.integer "text_field", default: 0
     t.bigint "job_type_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["job_type_id"], name: "index_job_service_groups_on_job_type_id"
   end
 
@@ -432,8 +432,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.decimal "internal_price", precision: 10, scale: 2
     t.decimal "external_price", precision: 10, scale: 2
     t.bigint "job_service_group_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "job_order_id"
     t.boolean "user_created", default: false
     t.index ["job_order_id"], name: "index_job_services_on_job_order_id"
@@ -444,8 +444,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "job_statuses", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "name_fr"
     t.string "description_fr"
   end
@@ -454,8 +454,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.bigint "job_type_id"
     t.string "name"
     t.decimal "price", precision: 10, scale: 2
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "description"
     t.index ["job_type_id"], name: "index_job_type_extras_on_job_type_id"
   end
@@ -468,16 +468,16 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "file_label", default: "File"
     t.text "file_description"
     t.decimal "service_fee", precision: 10, scale: 2
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "lab_sessions", id: :serial, force: :cascade do |t|
     t.integer "user_id"
-    t.datetime "sign_in_time"
-    t.datetime "sign_out_time"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "sign_in_time", precision: nil
+    t.datetime "sign_out_time", precision: nil
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "mac_address"
     t.integer "space_id"
     t.index ["space_id"], name: "index_lab_sessions_on_space_id"
@@ -488,8 +488,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "status", default: "In progress"
     t.bigint "learning_module_id"
     t.bigint "user_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["learning_module_id"],
             name: "index_learning_module_tracks_on_learning_module_id"
     t.index ["user_id"], name: "index_learning_module_tracks_on_user_id"
@@ -499,8 +499,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "training_id"
     t.string "title"
     t.text "description"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "level", default: "Beginner"
     t.integer "order"
   end
@@ -508,8 +508,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "likes", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.integer "repository_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["repository_id"], name: "index_likes_on_repository_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
   end
@@ -519,8 +519,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "public"
     t.string "summer"
     t.bigint "contact_info_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"
   end
 
@@ -530,34 +530,34 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.decimal "unit_price", precision: 12, scale: 3
     t.decimal "total_price", precision: 12, scale: 3
     t.integer "quantity"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "status", default: "In progress"
   end
 
   create_table "order_statuses", id: :serial, force: :cascade do |t|
     t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "orders", id: :serial, force: :cascade do |t|
     t.integer "order_status_id"
     t.decimal "subtotal", precision: 12, scale: 3
     t.decimal "total", precision: 12, scale: 3
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
   end
 
   create_table "photos", id: :serial, force: :cascade do |t|
     t.integer "repository_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "image_file_name"
     t.string "image_content_type"
     t.integer "image_file_size"
-    t.datetime "image_updated_at"
+    t.datetime "image_updated_at", precision: nil
     t.integer "height"
     t.integer "width"
     t.integer "proficient_project_id"
@@ -569,8 +569,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "pi_readers", id: :serial, force: :cascade do |t|
     t.string "pi_mac_address"
     t.string "pi_location"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.integer "space_id"
     t.index ["space_id"], name: "index_pi_readers_on_space_id"
   end
@@ -581,8 +581,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "hour"
     t.integer "day"
     t.integer "count", default: 0
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.float "previous_mean", default: 0.0
     t.index ["space_id"], name: "index_popular_hours_on_space_id"
   end
@@ -593,9 +593,9 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "value"
     t.integer "cc"
     t.integer "usage_limit"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.datetime "expired_at"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "expired_at", precision: nil
   end
 
   create_table "print_orders", id: :serial, force: :cascade do |t|
@@ -603,23 +603,23 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.boolean "approved"
     t.boolean "printed"
     t.text "comments"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "file_file_name"
     t.string "file_content_type"
     t.integer "file_file_size"
-    t.datetime "file_updated_at"
+    t.datetime "file_updated_at", precision: nil
     t.float "quote"
     t.integer "staff_id"
     t.boolean "user_approval"
     t.text "staff_comments"
     t.boolean "expedited"
     t.integer "order_type", default: 0
-    t.datetime "timestamp_approved"
+    t.datetime "timestamp_approved", precision: nil
     t.string "final_file_file_name"
     t.string "final_file_content_type"
     t.integer "final_file_file_size"
-    t.datetime "final_file_updated_at"
+    t.datetime "final_file_updated_at", precision: nil
     t.float "grams"
     t.float "service_charge"
     t.float "price_per_hour"
@@ -636,20 +636,20 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.boolean "payed"
     t.boolean "picked_up"
     t.boolean "clean_part"
-    t.datetime "timestamp_printed"
+    t.datetime "timestamp_printed", precision: nil
     t.string "comments_box"
   end
 
   create_table "printer_sessions", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.integer "printer_id"
   end
 
   create_table "printers", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "model"
     t.string "number"
   end
@@ -658,8 +658,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "training_id"
     t.string "title"
     t.text "description"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "level", default: "Beginner"
     t.integer "cc", default: 0
     t.integer "badge_template_id"
@@ -679,16 +679,16 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "programs", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.string "program_type"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.boolean "active", default: true
   end
 
   create_table "project_joins", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.integer "project_proposal_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "project_kits", force: :cascade do |t|
@@ -696,8 +696,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.bigint "proficient_project_id"
     t.string "name"
     t.boolean "delivered", default: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "learning_module_id"
     t.index ["learning_module_id"],
             name: "index_project_kits_on_learning_module_id"
@@ -713,8 +713,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "title"
     t.text "description"
     t.string "youtube_link"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "username"
     t.string "email"
     t.string "client"
@@ -736,19 +736,19 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "project_requirements", id: :serial, force: :cascade do |t|
     t.integer "proficient_project_id"
     t.integer "required_project_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "questions", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.text "description"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "image_file_name"
     t.string "image_content_type"
     t.integer "image_file_size"
-    t.datetime "image_updated_at"
+    t.datetime "image_updated_at", precision: nil
     t.integer "training_id"
     t.string "level", default: "Beginner"
   end
@@ -762,19 +762,19 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "name"
     t.string "path"
     t.bigint "user_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_quick_access_links_on_user_id"
   end
 
   create_table "repo_files", id: :serial, force: :cascade do |t|
     t.integer "repository_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "file_file_name"
     t.string "file_content_type"
     t.integer "file_file_size"
-    t.datetime "file_updated_at"
+    t.datetime "file_updated_at", precision: nil
     t.integer "proficient_project_id"
     t.integer "learning_module_id"
     t.integer "project_proposal_id"
@@ -785,8 +785,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "user_id"
     t.string "title"
     t.string "description"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "category"
     t.string "license"
     t.string "github"
@@ -813,15 +813,15 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "require_trainings", id: :serial, force: :cascade do |t|
     t.integer "volunteer_task_id"
     t.integer "training_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "rfids", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.string "card_number"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "mac_address"
     t.index ["user_id"], name: "index_rfids_on_user_id"
   end
@@ -829,10 +829,10 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "shadowing_hours", force: :cascade do |t|
     t.bigint "user_id"
     t.string "event_id"
-    t.datetime "start_time"
-    t.datetime "end_time"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "start_time", precision: nil
+    t.datetime "end_time", precision: nil
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "space_id"
     t.index ["space_id"], name: "index_shadowing_hours_on_space_id"
     t.index ["user_id"], name: "index_shadowing_hours_on_user_id"
@@ -841,10 +841,10 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
     t.bigint "space_id"
-    t.datetime "start_datetime"
-    t.datetime "end_datetime"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "start_datetime", precision: nil
+    t.datetime "end_datetime", precision: nil
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "google_event_id"
     t.boolean "pending", default: true
     t.index ["space_id"], name: "index_shifts_on_space_id"
@@ -859,8 +859,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
 
   create_table "skills", force: :cascade do |t|
     t.text "name"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "space_staff_hours", force: :cascade do |t|
@@ -868,8 +868,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.time "end_time"
     t.integer "day"
     t.bigint "space_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "language"
     t.bigint "training_level_id"
     t.bigint "course_name_id"
@@ -882,8 +882,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
 
   create_table "spaces", id: :serial, force: :cascade do |t|
     t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.integer "max_capacity"
     t.integer "destroy_admin_id"
   end
@@ -898,8 +898,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "day"
     t.time "start_time"
     t.time "end_time"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
   end
 
@@ -907,16 +907,16 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "calendar_url", null: false
     t.string "color"
     t.bigint "space_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
   end
 
   create_table "staff_spaces", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "space_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "color"
     t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
@@ -924,8 +924,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
 
   create_table "sub_space_booking_statuses", force: :cascade do |t|
     t.bigint "sub_space_booking_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "booking_status_id"
     t.index ["booking_status_id"],
             name: "index_sub_space_booking_statuses_on_booking_status_id"
@@ -936,12 +936,12 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "sub_space_bookings", force: :cascade do |t|
     t.string "name"
     t.string "description"
-    t.datetime "start_time"
-    t.datetime "end_time"
+    t.datetime "start_time", precision: nil
+    t.datetime "end_time", precision: nil
     t.bigint "user_id"
     t.bigint "sub_space_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "sub_space_booking_status_id"
     t.boolean "public", default: false
     t.boolean "blocking", default: false
@@ -954,8 +954,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "sub_spaces", force: :cascade do |t|
     t.string "name"
     t.bigint "space_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.boolean "approval_required", default: false
     t.integer "maximum_booking_duration"
     t.integer "maximum_booking_hours_per_week"
@@ -966,16 +966,16 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "training_levels", force: :cascade do |t|
     t.string "name"
     t.bigint "space_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
   create_table "training_sessions", id: :serial, force: :cascade do |t|
     t.integer "training_id"
     t.integer "user_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "course"
     t.integer "space_id"
     t.string "level", default: "Beginner"
@@ -994,8 +994,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
 
   create_table "trainings", id: :serial, force: :cascade do |t|
     t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.integer "space_id"
     t.bigint "skill_id"
     t.string "description"
@@ -1006,8 +1006,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "upvotes", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.integer "comment_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.boolean "downvote"
     t.index ["comment_id"], name: "index_upvotes_on_comment_id"
     t.index ["user_id"], name: "index_upvotes_on_user_id"
@@ -1019,8 +1019,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "comments"
     t.bigint "staff_id"
     t.boolean "approved"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["staff_id"], name: "index_user_booking_approvals_on_staff_id"
     t.index ["user_id"], name: "index_user_booking_approvals_on_user_id"
   end
@@ -1029,14 +1029,14 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "username"
     t.string "password"
     t.string "url"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.text "description"
     t.string "email"
     t.string "avatar_file_name"
     t.string "avatar_content_type"
     t.integer "avatar_file_size"
-    t.datetime "avatar_updated_at"
+    t.datetime "avatar_updated_at", precision: nil
     t.string "access_token"
     t.string "name"
     t.string "gender"
@@ -1051,25 +1051,25 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.string "year_of_study"
     t.boolean "read_and_accepted_waiver_form", default: false
     t.boolean "active", default: true
-    t.datetime "last_seen_at"
+    t.datetime "last_seen_at", precision: nil
     t.integer "wallet", default: 0
     t.boolean "flagged"
     t.string "flag_message", default: ""
     t.boolean "confirmed", default: false
     t.bigint "space_id"
-    t.datetime "last_signed_in_time"
+    t.datetime "last_signed_in_time", precision: nil
     t.boolean "deleted"
     t.boolean "booking_approval", default: false
     t.boolean "locked", default: false
-    t.datetime "locked_until"
+    t.datetime "locked_until", precision: nil
     t.integer "auth_attempts", default: 0
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 
   create_table "videos", id: :serial, force: :cascade do |t|
     t.integer "proficient_project_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.boolean "processed", default: false, null: false
     t.bigint "learning_module_id"
     t.index ["learning_module_id"], name: "index_videos_on_learning_module_id"
@@ -1080,10 +1080,10 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   create_table "volunteer_hours", id: :serial, force: :cascade do |t|
     t.integer "volunteer_task_id", null: false
     t.integer "user_id", null: false
-    t.datetime "date_of_task"
+    t.datetime "date_of_task", precision: nil
     t.decimal "total_time", precision: 9, scale: 2, default: "0.0"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.boolean "approval"
   end
 
@@ -1091,8 +1091,8 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "user_id"
     t.integer "volunteer_task_id"
     t.string "user_type", default: "Volunteer"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.boolean "active", default: true
   end
 
@@ -1100,16 +1100,16 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
     t.integer "user_id"
     t.integer "volunteer_task_id"
     t.boolean "approval"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "volunteer_tasks", id: :serial, force: :cascade do |t|
     t.string "title", default: ""
     t.text "description", default: ""
     t.integer "user_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "status", default: "open"
     t.integer "space_id"
     t.integer "joins", default: 1
@@ -1199,7 +1199,6 @@ ActiveRecord::Schema.define(version: 2023_02_16_013131) do
   add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_spaces", "spaces"
-  add_foreign_key "training_levels", "spaces"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"

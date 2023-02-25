@@ -1,5 +1,5 @@
 class StaffAvailability < ApplicationRecord
-  belongs_to :user
+  belongs_to :user, optional: true
 
   validates :day, presence: true
   validates :start_time, presence: true

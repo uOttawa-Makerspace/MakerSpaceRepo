@@ -49,6 +49,7 @@ fr:
     my_profile: "Mon profil"
     categories_title: "Catégories"
     categories:
+      filter: "Filtrer par"
       wearables: "Technologie portable"
       mobile_development: "Développment mobile"
       gng_2101: "GNG 2501"
@@ -58,6 +59,12 @@ fr:
       vr: "Réalité virtuelle"
       team_projects: "Projets d'équipe uOttawa"
       other_projects: "Autres projets"
+    sort:
+      by: "Trier par"
+      newest: "Plus récent"
+      most_likes: "Plus d'Aimes"
+      most_makes: "Plus de fabrications"
+      recently_updated: "Récemment mis à jour"
   footer:
     about: "À propos"
     tos: "Conditions d'utilisation"

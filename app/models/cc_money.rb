@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class CcMoney < ApplicationRecord
-  belongs_to :user
-  belongs_to :volunteer_task
-  belongs_to :proficient_project
-  belongs_to :order
-  belongs_to :discount_code
+  belongs_to :user, optional: true
+  belongs_to :volunteer_task, optional: true
+  belongs_to :proficient_project, optional: true
+  belongs_to :order, optional: true
+  belongs_to :discount_code, optional: true
 
   def self.create_cc_money_from_approval(volunteer_task_id, volunteer_id, cc)
     create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, cc: cc)

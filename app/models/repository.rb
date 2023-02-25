@@ -5,7 +5,7 @@ class Repository < ApplicationRecord
   require "bcrypt"
 
   has_and_belongs_to_many :users
-  belongs_to :project_proposal
+  belongs_to :project_proposal, optional: true
   has_many :photos, dependent: :destroy
   has_many :repo_files, dependent: :destroy
   has_many :categories, dependent: :destroy
@@ -13,7 +13,10 @@ class Repository < ApplicationRecord
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
   has_many :makes, class_name: "Repository", foreign_key: "make_id"
-  belongs_to :parent, class_name: "Repository", foreign_key: "make_id"
+  belongs_to :parent,
+             class_name: "Repository",
+             foreign_key: "make_id",
+             optional: true
   paginates_per 12
 
   scope :public_repos, -> { where(share_type: "public") }

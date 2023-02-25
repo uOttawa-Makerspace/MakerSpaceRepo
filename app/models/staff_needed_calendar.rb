@@ -1,3 +1,3 @@
 class StaffNeededCalendar < ApplicationRecord
-  belongs_to :space
+  belongs_to :space, optional: true
 end

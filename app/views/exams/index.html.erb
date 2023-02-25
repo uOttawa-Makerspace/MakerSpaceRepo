@@ -45,8 +45,8 @@
                   <br />
                 <% end %>
                 <%= if current_user.admin?
-                      link_to 'Delete', { controller: :exams, action: :destroy, id: e.id }, method: :delete,
-                                                                                            data: { confirm: 'Are you sure that you want to delete this exam?' }
+                      button_to 'Delete', { controller: :exams, action: :destroy, id: e.id }, method: :delete,
+                                                                                              data: { confirm: 'Are you sure that you want to delete this exam?' }, class: 'btn btn-danger my-2'
                     end %>
               </td>
             </tr>

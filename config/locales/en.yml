@@ -49,6 +49,7 @@ en:
     my_profile: "My Profile"
     categories_title: "Categories"
     categories:
+      filter: "Filter by"
       wearables: "Wearables"
       mobile_development: "Mobile Development"
       gng_2101: "GNG 2101"
@@ -58,6 +59,12 @@ en:
       vr: "Virtual Reality"
       team_projects: "uOttawa Team Projects"
       other_projects: "Other Projects"
+    sort:
+      by: "Sort by"
+      newest: "Newest"
+      most_likes: "Most Likes"
+      most_makes: "Most Makes"
+      recently_updated: "Recently Updated"
   footer:
     about: "About"
     tos: "Terms of Service"

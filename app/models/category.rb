@@ -1,5 +1,5 @@
 class Category < ApplicationRecord
-  belongs_to :repository
-  belongs_to :category_option
-  belongs_to :project_proposal
+  belongs_to :repository, optional: true
+  belongs_to :category_option, optional: true
+  belongs_to :project_proposal, optional: true
 end
