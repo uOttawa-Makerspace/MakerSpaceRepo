@@ -3,7 +3,7 @@ class CouponCodesController < DevelopmentProgramsController
 
   def index
     @coupon_codes = CouponCode.unclaimed
-    @user_codes = CouponCode.claimed
+    @user_codes = CouponCode.claimed if current_user.admin?
     @coupon_code = CouponCode.new
   end
 
@@ -19,11 +19,14 @@ class CouponCodesController < DevelopmentProgramsController
 
   def edit
     @coupon_code = CouponCode.find(params[:id])
+    render :edit
+  end
+
+  def update
+    @coupon_code = CouponCode.find(params[:id])
     if @coupon_code.update(coupon_code_params)
       redirect_to coupon_codes_path,
                   notice: "Coupon code was successfully updated."
-    else
-      render :edit
     end
   end
 
