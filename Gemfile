@@ -85,6 +85,7 @@ group :development, :test do
   gem "spring", "~> 2.1.0"
   gem "listen", "~> 3.2.1"
   gem "spring-watcher-listen", "~> 2.0.0"
+  gem "parallel_tests"
 end
 
 group :development do
@@ -99,7 +100,6 @@ group :development do
   gem "rubocop-rails"
   gem "web-console"
   gem "erb_lint", require: false
-  gem "parallel_tests"
 
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
@@ -114,5 +114,5 @@ group :test do
   gem "selenium-webdriver", "~> 3.142.7"
   gem "shoulda-matchers", "~> 4.0"
   gem "test-prof", "~> 1.0"
-  gem "parallel_tests"
+  gem "rspec-retry"
 end

@@ -11,7 +11,7 @@ development:
 
 test:
   <<: *default
-  database: <%= "#{Rails.application.credentials[Rails.env.to_sym][:database][:name]}#{ENV['TEST_ENV_NUMBER'] || 'makerspacerepo_test'}" %>
+  database: <%= "#{Rails.application.credentials[Rails.env.to_sym][:database][:name]}#{ENV['TEST_ENV_NUMBER']}" || 'makerspacerepo_test' %>
 
 production:
   <<: *default

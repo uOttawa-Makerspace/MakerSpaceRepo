@@ -13,9 +13,20 @@ RSpec.describe Program, type: :model do
         should validate_presence_of(:user).with_message("A user is required.")
       end
       it do
-        should validate_uniqueness_of(:user).scoped_to(
-                 :program_type
-               ).with_message("An user can only join a program once")
+        user = create(:user)
+        program_type = create(:program).program_type
+        # create an existing record to test uniqueness
+        existing_record =
+          create(:program, user: user, program_type: program_type)
+
+        # create a new record with the same user and program type
+        new_record = build(:program, user: user, program_type: program_type)
+
+        # expect the new record to be invalid and to have the correct error message
+        expect(new_record).not_to be_valid
+        expect(new_record.errors[:user]).to include(
+          "An user can only join a program once"
+        )
       end
       it do
         should validate_presence_of(:program_type).with_message(
