@@ -212,7 +212,10 @@ class StaffDashboardController < StaffAreaController
     status ?
       flash[:notice] = "Space changed successfully" :
       flash[:alert] = "Something went wrong"
-    redirect_back(fallback_location: root_path)
+    respond_to do |format|
+      format.html { redirect_to staff_dashboard_index_path }
+      format.json { render json: { status: status ? "ok" : "error" } }
+    end
   end
 
   def link_rfid
