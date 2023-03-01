@@ -432,6 +432,9 @@ class ProjectProposalsController < ApplicationController
   # Use callbacks to share common setup or constraints between actions.
   def set_project_proposal
     @project_proposal = ProjectProposal.find(params[:id])
+    unless @project_proposal
+      redirect_to root_path, alert: "Project proposal not found"
+    end
   end
 
   # Never trust parameters from the scary internet, only allow the white list through.
