@@ -1,107 +1,107 @@
-require "rails_helper"
+# frozen_string_literal: true
 
-RSpec.describe DiscountCodesController, type: :controller do
-  describe "GET /index" do
-    before(:context) do
-      @user = create(:user, :regular_user)
-      @admin = create(:user, :admin)
-      Program.create(user_id: @user.id, program_type: Program::DEV_PROGRAM)
-      # create(:discount_code, :unused, user: @user)
-      # create(:discount_code, :unused, user: @admin)
-      create(:coupon_code, user: @user)
-      create(:coupon_code, :claimed)
-    end
+class DiscountCodesController < DevelopmentProgramsController
+  before_action :check_and_set_price_rule_expiration, only: :create
+  before_action :check_user_wallet, only: :create
 
-    context "logged as regular user" do
-      it "should return 200" do
-        session[:user_id] = @user.id
-        get :index
-        expect(response).to have_http_status(:success)
-        # expect(@controller.instance_variable_get(:@discount_codes).count).to eq(
-        #   1
-        # )
-        expect(@controller.instance_variable_get(:@discount_codes).count).to eq(
-          0
-        )
+  def index
+    # Temporarily replaced with code for GoDaddy. This is the shopify version
+    # user_discount_codes = current_user.coupon_codes
+    user_discount_codes = current_user.discount_codes
+    @discount_codes =
+      user_discount_codes # .includes(:price_rule) # .not_used
+        .order(created_at: :desc)
+    # @expired_codes = user_discount_codes.used_code.includes(:price_rule)
+    @expired_codes = []
+    @coupon_codes = CouponCode.where(user_id: current_user)
+    @all_discount_codes =
+      # DiscountCode.includes(:price_rule).order(
+      #   created_at: :desc
+      # ) if current_user.admin?
+      CouponCode.all.order(created_at: :desc) if current_user.admin?
+  end
+
+  def new
+    @price_rules =
+      # PriceRule.where("expired_at > ? OR expired_at IS NULL", DateTime.now)
+      CouponCode.unclaimed.distinct.pluck(:dollar_cost, :cc_cost)
+  end
+
+  def create
+    # cc_money_payment = CcMoney.make_new_payment(current_user, @price_rule.cc)
+    cc_money_payment =
+      CcMoney.make_new_payment(current_user, @price_rule.cc_cost)
+    # if cc_money_payment.present?
+    if cc_money_payment.present? && cc_money_payment.save
+      #   @discount_code = current_user.discount_codes.new
+      if @price_rule.update(user: current_user)
+        flash[:notice] = "Discount Code created"
+      else
+        cc_money_payment.destroy
+        flash[:alert] = "Discount Code not created properly!"
       end
+    else
+      flash[:alert] = "Payment not processed"
     end
+    redirect_to discount_codes_path
+    #   @discount_code.code = DiscountCode.generate_code
+    #   @discount_code.price_rule = @price_rule
+    #   shopify_discount_code = @discount_code.shopify_api_create_discount_code
+    #   if shopify_discount_code.present?
+    #     @discount_code.shopify_discount_code_id = shopify_discount_code.id
+    #     @discount_code.usage_count = shopify_discount_code.usage_count
+    #     if @discount_code.save
+    #       cc_money_payment.update(discount_code: @discount_code)
+    #       flash[:notice] = "Discount Code created"
+    #     else
+    #       cc_money_payment.destroy
+    #       flash[:notice] = "Discount Code not created properly!"
+    #     end
+    #   else
+    #     cc_money_payment.destroy
+    #     flash[:notice] = "Shopify API not working"
+    #   end
+    # else
+    #   flash[:notice] = "Payment not processed"
+    # end
+    # redirect_to discount_codes_path
+  end
 
-    context "logged as admin" do
-      it "should return 200" do
-        session[:user_id] = @admin.id
-        get :index
-        expect(response).to have_http_status(:success)
-        expect(
-          @controller.instance_variable_get(:@all_discount_codes).count
-        ).to eq(2)
-      end
+  private
+
+  def check_and_set_price_rule_expiration
+    # @price_rule = PriceRule.find_by(id: params[:price_rule_id])
+    # unless @price_rule.expired_at.nil? || @price_rule.expired_at > DateTime.now
+    #   flash[:alert] = "This coupon is expired"
+    #   redirect_to new_discount_code_path
+    # end
+    # @price_rule = CouponCode.find_by(id: params[:price_rule_id])
+    @price_rule =
+      CouponCode.unclaimed.find_by(dollar_cost: params[:dollar_cost])
+    unless @price_rule
+      flash[:alert] = "Can not find coupon for $#{params[:dollar_cost]} off"
+      redirect_to new_discount_code_path
     end
-
-    after :context do
-      DiscountCode.destroy_all
+    unless @price_rule.user.nil?
+      flash[:alert] = "This coupon is already claimed"
+      redirect_to new_discount_code_path
     end
   end
 
-  describe "Actions" do
-    before(:context) do
-      # @shopify_price_rule_id = PriceRule.create_price_rule("10$ Coupon", 10)
-      # @price_rule =
-      #   create(
-      #     :price_rule,
-      #     shopify_price_rule_id: @shopify_price_rule_id,
-      #     value: 10
-      #   )
-      @price_rule = create(:coupon_code)
-      @price_rule_2 = create(:coupon_code)
-      @price_rule_3 = create(:coupon_code)
-      @user = create(:user, :regular_user)
-      Program.create(user_id: @user.id, program_type: Program::DEV_PROGRAM)
-      CcMoney.create(user_id: @user.id, cc: 1000)
-    end
+  def webhook_params
+    params.except(:controller, :action, :type)
+  end
 
-    before(:each) { session[:user_id] = @user.id }
+  def set_price_rule
+    @price_rule = PriceRule.find_by(id: params[:price_rule_id])
+  end
 
-    context "GET /new" do
-      it "should return 200" do
-        get :new
-        expect(response).to have_http_status(:success)
-        # expect(@controller.instance_variable_get(:@price_rules).count).to eq(3)
-      end
-    end
-
-    context "POST /create" do
-      it "should be redirecting to discount code path and creating a discount code" do
-        expect {
-          post :create, params: { price_rule_id: @price_rule.id }
-          # }.to change(DiscountCode, :count).by(1)
-        }.to change(CouponCode.claimed, :count).by(1)
-        expect(response).to redirect_to discount_codes_path
-        expect(flash[:notice]).to eq("Discount Code created")
-      end
-    end
-
-    context "POST /create with expired price rule /check_and_set_price_rule_expiration" do
-      it "should not create a discount code and redirect to new discount code path" do
-        price_rule = create(:price_rule, expired_at: DateTime.yesterday)
-        expect {
-          post :create, params: { price_rule_id: price_rule.id }
-        }.to change(DiscountCode, :count).by(0)
-        expect(response).to redirect_to new_discount_code_path
-        expect(flash[:alert]).to eq("This coupon is already claimed")
-      end
-    end
-
-    context "POST /create with no CC points" do
-      it "should fail to create the discount code and redirect to root" do
-        CcMoney.create(user_id: @user.id, cc: -1000)
-        post :create, params: { price_rule_id: @price_rule.id }
-        expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("Not enough CC points")
-      end
-    end
-
-    after :context do
-      # PriceRule.delete_price_rule_from_shopify(@shopify_price_rule_id)
+  def check_user_wallet
+    current_user.update_wallet
+    # unless current_user.wallet >= @price_rule.cc
+    unless current_user.wallet >= @price_rule.cc_cost
+      flash[:alert] = "Not enough CC points"
+      redirect_back(fallback_location: root_path)
     end
   end
 end

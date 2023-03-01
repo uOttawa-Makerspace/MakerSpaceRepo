@@ -1,0 +1,31 @@
+<section>
+    <h2 class="text-center py-3 fw-bold">Edit Coupon</h2>
+    <div class="container my-3">
+        <div class="row">
+            <div class="col-lg-12">
+                <%= form_for @coupon_code, html: { class: 'row mb-5' } do |f| %>
+                    <div class="col-3 d-inline">
+                        <div class="form-group form-floating">
+                            <%= f.text_field :code, class: 'form-control' %>
+                            <%= f.label :code %>
+                        </div>
+                    </div>
+                    <div class="col-3 d-inline">
+                        <div class="form-group form-floating">
+                            <%= f.number_field :cc_cost, class: 'form-control' %>
+                            <%= f.label :cc_cost %>
+                        </div>
+                    </div>
+                    <div class="col-3 d-inline">
+                        <div class="form-group form-floating">
+                            <%= f.number_field :dollar_cost, class: 'form-control' %>
+                            <%= f.label :dollar_cost, 'Dollars off' %>
+                        </div>
+                    </div>
+                    <div class="col-3 d-inline"><%= f.submit 'Edit Coupon Code', class: 'btn btn-primary' %>
+                    </div>
+                <% end %>
+            </div>
+        </div>
+    </div>
+</section>
