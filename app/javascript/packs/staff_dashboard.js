@@ -40,7 +40,6 @@ function refreshTables() {
   fetch(url)
     .then((response) => response.json())
     .then((data) => {
-      console.log(data);
       if (!data.error) {
         if (document.getElementById("table-js-signed-out")) {
           document.getElementById("table-js-signed-out").innerHTML =
