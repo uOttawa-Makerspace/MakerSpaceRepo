@@ -12,7 +12,8 @@
         <div class="col-md-12" style="padding-right: 5px; padding-left: 0px; margin-bottom: 5px;">
           <div class="card" style="width: 100%;  border: 5px dotted #bbb;">
             <div class="card-body">
-              <h5 class="card-title"><%= discount_code.price_rule.title %></h5>
+              <!--<h5 class="card-title"><%# <%= discount_code.price_rule.title %></h5> !-->
+              <h5 class="card-title"><%= discount_code.title %></h5>
               <p class="card-text">
                 Use code : <span id="coupon-<%= discount_code.id %>"><%= discount_code.code %></span>
                 <a tabIndex="0" class="clipboard-btn btn btn-info float-end" role="button" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Copied !" data-bs-placement="left" data-clipboard-action="copy" data-clipboard-target="#coupon-<%= discount_code.id %>">Copy</a>
@@ -56,9 +57,10 @@
 <!--  </div>-->
 <!--</div>-->
 
-<% if current_user.admin? && @all_discount_codes.present? %>
+<%# <% if current_user.admin? && @all_discount_codes.present? %>
+<% if false %> <!-- We don't need to see this, we can use the manage coupon view !-->
   <div class="container my-5">
-    <h1 class="text-center"> All Discount Codes Claimed</h1>
+    <h1 class="text-center">(Admin View) All Discount Codes</h1>
     <div class="table-responsive">
       <table class="table table-striped">
       <thead class="table-primary">

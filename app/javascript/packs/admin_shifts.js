@@ -331,23 +331,30 @@ const createCalendarEvent = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      calendar.addEvent(
-        {
-          title: data.name,
-          start: data.start,
-          end: data.end,
-          allDay: false,
-          id: data["id"],
-          color: data.color,
-          className: data.className,
-        },
-        "shifts"
-      );
-      shiftModal.hide();
-      calendar.unselect();
-      refreshPendingShifts();
-      if (modalDelete.classList.contains("d-block")) {
-        removeEvent(document.getElementById("shift-id").value, true);
+      if (data.error) {
+        const toast = new bootstrap.Toast(
+          document.getElementById("toast-color-shift-failed")
+        );
+        toast.show();
+      } else {
+        calendar.addEvent(
+          {
+            title: data.name,
+            start: data.start,
+            end: data.end,
+            allDay: false,
+            id: data["id"],
+            color: data.color,
+            className: data.className,
+          },
+          "shifts"
+        );
+        shiftModal.hide();
+        calendar.unselect();
+        refreshPendingShifts();
+        if (modalDelete.classList.contains("d-block")) {
+          removeEvent(document.getElementById("shift-id").value, true);
+        }
       }
     })
     .catch((error) => {

@@ -75,7 +75,6 @@ gem "stimulus-rails"
 gem "graphlient"
 gem "nobspw"
 
-
 group :development, :test do
   gem "byebug", platform: :mri
   gem "rspec-rails", "~> 5.0.0"
@@ -113,4 +112,5 @@ group :test do
   gem "rails-controller-testing"
   gem "selenium-webdriver", "~> 3.142.7"
   gem "shoulda-matchers", "~> 4.0"
+  gem "rspec-retry"
 end
