@@ -57,7 +57,14 @@ class RepositoriesController < SessionsController
           File.open(downloaded_file_path, "wb") do |downloaded_file|
             downloaded_file.write(file.file.download)
           end
-          zip.add(file.file.filename, downloaded_file_path)
+          if zip.find_entry(file.file.filename)
+            filename =
+              file.file.filename.to_s.split(".")[0] + "_1." +
+                file.file.filename.to_s.split(".")[1]
+          else
+            filename = file.file.filename
+          end
+          zip.add(filename, downloaded_file_path)
         end
       end
     end
@@ -71,7 +78,7 @@ class RepositoriesController < SessionsController
       File.open(file_location, "r") do |f|
         send_data f.read,
                   type: "application/zip",
-                  filename: "makerepo_file_#{@repository.id.to_s}"
+                  filename: "makerepo_file_#{@repository.id.to_s}.zip"
       end
       File.delete(file_location)
     else
