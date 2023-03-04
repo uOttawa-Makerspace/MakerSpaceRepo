@@ -44,6 +44,13 @@ class Space < ApplicationRecord
         .last(20)
         .map(&:user)
         .uniq
+
+    users =
+      users
+        .sort_by do |user|
+          user.lab_sessions.where(space: self).last.sign_out_time
+        end
+        .reverse
     users
   end
 

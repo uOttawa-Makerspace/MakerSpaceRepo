@@ -541,7 +541,6 @@ Rails.application.routes.draw do
           constraints: {
             id: %r{[^/]+}
           }
-      get ":id/download", as: "download", action: "download"
       get :populate_users
       patch :link_to_pp
       patch :add_owner
