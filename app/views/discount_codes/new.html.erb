@@ -16,7 +16,7 @@
 <!--            <p class="card-text">Coupon Price : <%#= price_rule.cc %> CCs</p>-->
             <p class="card-text">Coupon Price : <%= price_rule[1] %> CCs</p>
             <%#= link_to 'Redeem', discount_codes_path(price_rule_id: price_rule.id), method: :post, class: 'btn btn-info d-block w-100', data: { confirm: "Are you sure you want to buy the coupon for #{price_rule.cc} CCs ? You can't undo this action." } %>
-            <%= link_to 'Redeem', discount_codes_path(dollar_cost: price_rule[0]), method: :post, class: 'btn btn-info d-block w-100', data: { confirm: "Are you sure you want to buy the coupon for #{price_rule[1]} CCs ? You can't undo this action." } %>
+            <%= button_to 'Redeem', discount_codes_path(dollar_cost: price_rule[0]), method: :post, class: 'btn btn-info d-block w-100', data: { confirm: "Are you sure you want to buy the coupon for #{price_rule[1]} CCs ? You can't undo this action." } %>
           </div>
         </div>
       <% end %>

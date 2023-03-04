@@ -70,7 +70,7 @@
             <div>
               <div class="d-flex flex-column">
                 <% if current_user.admin? %>
-                <%= link_to fa_icon(@repo_user.locked? ? 'unlock' : 'lock'), toggle_lock_user_admin_users_path(id: @repo_user), method: :put, class: "btn rounded-pill mb-2#{@repo_user.locked? ? ' btn-success' : ' btn-danger'}" %>
+                <%= button_to fa_icon(@repo_user.locked? ? 'unlock' : 'lock'), toggle_lock_user_admin_users_path(id: @repo_user), method: :put, class: "btn rounded-pill w-100 mb-2#{@repo_user.locked? ? ' btn-success' : ' btn-danger'}" %>
                 <% end %>
                 <%= link_to fa_icon('cog', text: 'Edit Profile'), settings_profile_path, class: 'btn btn-secondary rounded-pill mb-2' if @repo_user.eql?(@user) %>
               </div>

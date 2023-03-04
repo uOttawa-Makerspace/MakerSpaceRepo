@@ -160,9 +160,8 @@ document.addEventListener("turbo:load", () => {
     });
   });
 });
-document.addEventListener("turbo:load", () => {
+function setupIntersectionObserver() {
   const formControls = document.querySelectorAll(".form-control");
-
   function handleIntersection(entries) {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
@@ -170,10 +169,19 @@ document.addEventListener("turbo:load", () => {
       }
     });
   }
-
   const observer = new IntersectionObserver(handleIntersection);
-
   formControls.forEach((formControl) => {
     observer.observe(formControl);
   });
+}
+
+document.addEventListener("turbo:load", () => {
+  setupIntersectionObserver();
+});
+
+// Call `setupIntersectionObserver()` again whenever a new modal is opened
+document.addEventListener("click", (event) => {
+  if (event.target.dataset.toggle === "modal") {
+    setupIntersectionObserver();
+  }
 });

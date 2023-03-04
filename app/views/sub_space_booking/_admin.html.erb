@@ -43,8 +43,8 @@
                             <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
                             <td>
                               <div class="btn-group" role="group">
-                                <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
-                                <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
+                                <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
+                                <%= button_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
                               </div>
                             </td>
                           </tr>
@@ -92,8 +92,8 @@
                             <td><%= booking.public ? 'Public' : 'Private' %></td>
                             <td>
                               <div class="btn-group" role="group">
-                                <%= link_to booking.public ? 'Make Private' : 'Make Public', sub_space_booking_publish_path(booking), method: :put, class: "btn text-nowrap#{booking.public ? ' btn-secondary' : ' btn-primary'}" %>
-                                <%= link_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
+                                <%= button_to booking.public ? 'Make Private' : 'Make Public', sub_space_booking_publish_path(booking), method: :put, class: "btn text-nowrap#{booking.public ? ' btn-secondary' : ' btn-primary'}" %>
+                                <%= button_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
                               </div>
                             </td>
                           </tr>
@@ -139,7 +139,7 @@
                             <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_s(:time) %></td>
                             <td>
                               <div class="btn-group" role="group">
-                                <%= link_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
+                                <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
                               </div>
                             </td>
                           </tr>
@@ -190,8 +190,8 @@
                         <td><%= user_booking_approval.created_at.to_formatted_s(:short) %></td>
                         <td>
                           <div class="btn-group" role="group">
-                            <%= link_to 'Approve', approve_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-success' %>
-                            <%= link_to 'Reject', deny_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-danger' %>
+                            <%= button_to 'Approve', approve_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-success' %>
+                            <%= button_to 'Reject', deny_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-danger' %>
                           </div>
                         </td>
                       </tr>
@@ -230,7 +230,7 @@
                         <td><%= user_booking_approval.staff.name %></td>
                         <td>
                           <div class="btn-group" role="group">
-                            <%= link_to 'Revoke', deny_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-danger' %>
+                            <%= button_to 'Revoke', deny_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-danger' %>
                           </div>
                         </td>
                       </tr>
