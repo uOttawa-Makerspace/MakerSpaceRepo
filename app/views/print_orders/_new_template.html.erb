@@ -2,7 +2,7 @@
 
   <p style="font-size: 18px">ID #<%= prints.id %> | File : <%= prints.file.filename if prints.file.attached? %> |
     <%= link_to ' <b>Action Required</b>'.html_safe, '', "data-bs-toggle": 'modal', "data-bs-target": "#modal-approve-#{prints.id}" if prints.approved && prints.user_approval.nil? %>
-    <%= link_to 'Cancel Order', print_order_path(prints), class: 'btn btn-danger btn-sm', method: :delete, data: { confirm: 'Are you sure?' } if prints.approved.nil? %>
+    <%= button_to 'Cancel Order', print_order_path(prints), class: 'btn btn-danger btn-sm', method: :delete, data: { confirm: 'Are you sure?' } if prints.approved.nil? %>
   </p>
 
   <%= link_to 'Show Invoice', print_order_path(prints), class: 'btn btn-sm btn-primary', target: '_blank', rel: 'noopener' if prints.approved == true %>

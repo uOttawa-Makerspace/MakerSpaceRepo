@@ -313,6 +313,7 @@ class ProjectProposalsController < ApplicationController
   # DELETE /project_proposals/1
   # DELETE /project_proposals/1.json
   def destroy
+    return unless current_user.admin?
     @project_proposal.destroy
     respond_to do |format|
       format.html do

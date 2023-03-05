@@ -1,11 +1,12 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
+bundle lock --add-platform aarch64-linux
 npx lint-staged
 printf "Changed Files:"
 changed_files=$(git diff --name-only HEAD | grep -E '\.(erb)$') && echo "$changed_files"
 if [ -n "$changed_files" ]; then
   printf "Running erblint..."
   bundle exec erblint $changed_files --autocorrect
+  git fetch
   git add $changed_files
-  git commit --amend --no-edit --no-verify
 fi

@@ -24,6 +24,13 @@ class UsersController < SessionsController
                 ]
 
   def create
+    unless verify_recaptcha
+      @new_user = User.new
+      render "new",
+             alert: "You failed the Captcha",
+             status: :unprocessable_entity
+      return
+    end
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
 
@@ -420,9 +427,33 @@ class UsersController < SessionsController
   end
 
   def likes
+    sort_arr = sort_order
     repo_ids = Like.where(user_id: @user.id).pluck(:repository_id)
-    @repositories =
-      Repository.order([sort_order].to_h).where(id: repo_ids).page params[:page]
+    if params[:category].present?
+      @repositories = []
+      @repositories =
+        Repository.includes(:categories).where(
+          categories: {
+            name: SLUG_TO_CATEGORY_MODEL[params[:category]],
+            repository_id: repo_ids
+          }
+        )
+      if !@repositories.empty?
+        @repositories =
+          @repositories.order([sort_arr].to_h).paginate(
+            per_page: 12,
+            page: params[:page]
+          )
+      else
+        @repositories = []
+      end
+    else
+      @repositories =
+        Repository
+          .where(id: repo_ids)
+          .order([sort_arr].to_h)
+          .paginate(per_page: 12, page: params[:page])
+    end
     @photos = photo_hash
   end
 
@@ -527,6 +558,18 @@ class UsersController < SessionsController
       %i[created_at desc]
     end
   end
+  SLUG_TO_CATEGORY_MODEL = {
+    "internet-of-things" => "Internet of Things",
+    "course-related-projects" => "Course-related Projects",
+    "gng2101/gng2501" => "GNG2101/GNG2501",
+    "gng1103/gng1503" => "GNG1103/GNG1503",
+    "health-sciences" => "Health Sciences",
+    "wearable" => "Wearable",
+    "mobile-development" => "Mobile Development",
+    "virtual-reality" => "Virtual Reality",
+    "other-projects" => "Other Projects",
+    "uottawa-team-projects" => "uOttawa Team Projects"
+  }
 
   def photo_hash
     repo = params[:show].eql?("makes") ? @makes : @repositories

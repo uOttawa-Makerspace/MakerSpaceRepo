@@ -2,8 +2,8 @@
   <div class="alert alert-warning text-center">
     <p class="mb-2">There are currently pending shifts for this space. Do you want to confirm them?</p>
     <div class="d-flex justify-content-center gap-2">
-      <%= link_to 'Confirm Shifts', confirm_shifts_admin_shifts_path, class: 'btn btn-primary', method: :post, data: { confirm: 'Are you sure you want to confirm shifts and send the invitations emails?' } %>
-      <%= link_to 'Clear Pending Shifts', clear_pending_shifts_admin_shifts_path, class: 'btn btn-danger', method: :post, data: { confirm: 'Are you sure you want to clear pending shifts?' } %>
+      <%= button_to "Confirm Shifts", confirm_shifts_admin_shifts_path, class: "btn btn-primary", method: :post, data: {confirm: "Are you sure you want to confirm shifts and send the invitations emails?"} %>
+      <%= button_to "Clear Pending Shifts", clear_pending_shifts_admin_shifts_path, class: "btn btn-danger", method: :post, data: {confirm: "Are you sure you want to clear pending shifts?"} %>
     </div>
   </div>
 <% end %>

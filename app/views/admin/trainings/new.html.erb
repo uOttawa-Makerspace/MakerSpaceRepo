@@ -4,12 +4,14 @@
     <%= form_for @new_training, url: { controller: 'admin/trainings', action: 'create' } do |f| %>
       <div class="container">
         <div class="row text-center">
-          <div class="col-md-12 form-group">
-            Name: <%= f.text_field :name, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
+          <div class="col-md-12 form-floating">
+            <%= f.text_field :name, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
+            <%= f.label 'Name', class: 'form-label' %>
           </div>
 
-          <div class="col-md-12 form-group">
-            Description: <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control', required: true %>
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control', required: true %>
+            <%= f.label 'Description', class: 'form-label' %>
           </div>
 
           <div class="form-check-inline">

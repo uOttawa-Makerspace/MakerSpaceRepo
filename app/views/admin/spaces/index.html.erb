@@ -5,7 +5,7 @@
   <h2>Select a Space To Edit </h2>
   <div class="list-group">
     <% Space.all.each do |space| %>
-      <%= link_to ('Edit ' + space.name), edit_admin_space_path(id: space.id), method: :get, class: 'list-group-item list-group-item-action' %>
+      <%= button_to "Edit #{space.name}", edit_admin_space_path(id: space.id), method: :get, class: 'list-group-item list-group-item-action' %>
     <% end %>
   </div>
   <br>

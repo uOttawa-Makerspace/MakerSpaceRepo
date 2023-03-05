@@ -25,7 +25,7 @@ class Admin::CourseNamesController < AdminAreaController
   end
 
   def update
-    @changed_course.update(course_params)
+    @changed_course.update(name: params[:course_name][:name])
     if @changed_course.save
       flash[:notice] = "Course renamed successfully"
     else
@@ -42,7 +42,7 @@ class Admin::CourseNamesController < AdminAreaController
   private
 
   def course_params
-    params.require(:course_name).permit(:name)
+    params.permit(:course_name, :name)
   end
 
   def changed_course

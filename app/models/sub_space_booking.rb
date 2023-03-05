@@ -1,5 +1,5 @@
 class SubSpaceBooking < ApplicationRecord
-  belongs_to :user
+  belongs_to :user, optional: true
   belongs_to :sub_space, foreign_key: :sub_space_id
   has_one :sub_space_booking_status,
           dependent: :destroy,

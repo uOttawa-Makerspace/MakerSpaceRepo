@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class VolunteerTask < ApplicationRecord
-  belongs_to :user
-  belongs_to :space
+  belongs_to :user, optional: true
+  belongs_to :space, optional: true
   has_many :volunteer_hours, dependent: :destroy
   has_many :volunteer_task_joins, dependent: :destroy
   has_many :require_trainings

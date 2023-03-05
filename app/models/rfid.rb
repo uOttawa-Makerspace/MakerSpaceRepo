@@ -1,5 +1,5 @@
 class Rfid < ApplicationRecord
-  belongs_to :user
+  belongs_to :user, optional: true
   scope :recent_unset, -> { where(user: nil).order("updated_at desc") }
   validates :card_number,
             presence: {

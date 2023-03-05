@@ -118,11 +118,11 @@
     <div id="share_option">
       <%= f.label :share_type, 'Your project is...', class: 'form-label' %>
 
-      <%= f.radio_button(:share_type, 'public', class: 'show_extra form-check-input', style: 'margin-right: 4px;  height:16px;width:16px', onclick: 'hidePass();') %><%= f.label('share_type_public', fa_icon('globe') + ' Public', id: 'type', style: 'display:inline') %>
+      <%= f.radio_button(:share_type, 'public', class: 'show_extra form-check-input', style: 'margin-right: 4px;  height:16px;width:16px', onclick: 'hidePass();') %><%= label_tag('share_type_public', style: 'display:inline') do %><%= fa_icon('globe') %> Public<% end %>
       <div id="description"> Anyone can see this repository</div>
-
-      <%= f.radio_button(:share_type, 'private', class: 'show_extra form-check-input', style: 'margin-right: 4px; height:16px;width:16px', onclick: 'showPass();') %><%= f.label('share_type_private', fa_icon('lock') + ' Private / Privé', id: 'type', style: 'display:inline') %>
+      <%= f.radio_button(:share_type, 'private', class: 'show_extra form-check-input', style: 'margin-right: 4px; height:16px;width:16px', onclick: 'showPass();') %><%= label_tag('share_type_private', style: 'display:inline') do %><%= fa_icon('lock') %> Private / Privé<% end %>
       <div id="description"> Only those with the url and password can view this repository</div>
+        
 
       <div id="pass" class="mb-3">
         <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', style: 'display: none;', 'aria-label': 'Password / Mot de Passe', class: 'form-control' %>
@@ -142,29 +142,3 @@
   <% end %>
 
 </section>
-<script type="text/javascript" charset="utf-8">
-    document.addEventListener("turbolinks:load", function() {
-      if (document.getElementById("owner_select")) {
-        if (!document.getElementById("owner_select").tomselect){
-        new TomSelect("#owner_select",{
-                  searchField: ['name'],
-        valueField: 'id',
-        labelField: 'name',
-        options: [],
-        maxOptions: 5,
-        searchPlaceholder: 'Choose User...',
-        searchOnKeyUp: true,
-        load: function (type,callback) {
-            if (type.length < 2) { return; } else {
-                let url = "/repositories/populate_users?search=" + type;
-                fetch(url).then(response => response.json()).then(data => {
-                    callback(data.users.map(user => {return {id: user.id, name: user.name}}));
-                });
-            }
-        },
-        shouldLoad: function (type) {
-            return type.length > 2;
-        }
-        })}}
-    });
-</script>

@@ -38,7 +38,7 @@
             </td>
             <td><%= sg.multiple ? 'Yes' : 'No' %></td>
             <td><%= link_to 'Edit', edit_admin_job_service_group_path(sg.id), class: 'btn btn-primary' %></td>
-            <td><%= link_to 'Delete', admin_job_service_group_path(sg.id), method: :delete, class: 'btn btn-danger' %></td>
+            <td><%= button_to 'Delete', admin_job_service_group_path(sg.id), method: :delete, class: 'btn btn-danger' %></td>
           </tr>
         <% end %>
       </table>
@@ -74,7 +74,7 @@
             <td><%= number_to_currency(s.internal_price) %></td>
             <td><%= number_to_currency(s.external_price) %></td>
             <td><%= link_to 'Edit', edit_admin_job_service_path(s.id), class: 'btn btn-primary' %></td>
-            <td><%= link_to 'Delete', admin_job_service_path(s.id), method: :delete, class: 'btn btn-danger' %></td>
+            <td><%= button_to 'Delete', admin_job_service_path(s.id), method: :delete, class: 'btn btn-danger' %></td>
           </tr>
         <% end %>
       </table>
@@ -112,7 +112,7 @@
             <td><%= o.need_files ? 'Yes' : 'No' %></td>
             </td>
             <td><%= link_to 'Edit', edit_admin_job_option_path(o.id), class: 'btn btn-primary' %></td>
-            <td><%= link_to 'Delete', admin_job_option_path(o.id), method: :delete, class: 'btn btn-danger' %></td>
+            <td><%= button_to 'Delete', admin_job_option_path(o.id), method: :delete, class: 'btn btn-danger' %></td>
           </tr>
         <% end %>
       </table>
@@ -168,7 +168,7 @@
             <td><%= number_to_currency(t.price) %></td>
             <td><%= t.job_type.name %></td>
             <td><%= link_to 'Edit', edit_admin_job_type_extra_path(t.id), class: 'btn btn-primary' %></td>
-            <td><%= link_to 'Delete', admin_job_type_extra_path(t.id), method: :delete, class: 'btn btn-danger' %></td>
+            <td><%= button_to 'Delete', admin_job_type_extra_path(t.id), method: :delete, class: 'btn btn-danger' %></td>
           </tr>
         <% end %>
       </table>

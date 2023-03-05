@@ -1,6 +1,6 @@
 class JobOrderOption < ApplicationRecord
-  belongs_to :job_order
-  belongs_to :job_option
+  belongs_to :job_order, optional: true
+  belongs_to :job_option, optional: true
 
   has_one_attached :option_file
   validates :option_file,

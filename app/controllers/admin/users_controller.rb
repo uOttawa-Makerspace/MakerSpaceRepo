@@ -156,11 +156,6 @@ class Admin::UsersController < AdminAreaController
     redirect_to root_path, notice: "Repository Deleted!"
   end
 
-  def delete_project_proposal
-    ProjectProposal.find(params[:id]).destroy
-    redirect_to project_proposals_path, notice: "Project Proposal Deleted!"
-  end
-
   def delete_user
     if @user.admin? && @user.pword == params[:password]
       delete_user = User.find(params[:id])

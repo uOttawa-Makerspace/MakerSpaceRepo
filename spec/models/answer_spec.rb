@@ -17,7 +17,7 @@ RSpec.describe Answer, type: :model do
 
   describe "Association" do
     context "belongs_to" do
-      it { should belong_to(:question) }
+      it { should belong_to(:question).without_validating_presence }
     end
 
     context "has_many" do

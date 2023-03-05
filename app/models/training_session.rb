@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 class TrainingSession < ApplicationRecord
-  belongs_to :training
-  belongs_to :user
-  belongs_to :space
+  belongs_to :training, optional: true
+  belongs_to :user, optional: true
+  belongs_to :space, optional: true
   has_many :certifications, dependent: :destroy
   has_many :exams, dependent: :destroy
   has_and_belongs_to_many :users, uniq: true
-  belongs_to :course_name
+  belongs_to :course_name, optional: true
 
   validates :training, presence: { message: "A training subject is required" }
   validates :user, presence: { message: "A trainer is required" }

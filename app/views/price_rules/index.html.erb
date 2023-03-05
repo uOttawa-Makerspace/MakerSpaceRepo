@@ -26,7 +26,7 @@
           <td><%= link_to 'Edit', edit_price_rule_path(price_rule), class: 'btn btn-primary' %></td>
         <% end %>
         <td scope="row"><%= price_rule.expired_at.present? ? price_rule.expired_at.strftime('%b %d, %Y') : 'Not defined' %></td>
-        <td><%= link_to 'Destroy', price_rule, method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %></td>
+        <td><%= button_to 'Destroy', price_rule, method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %></td>
       </tr>
     <% end %>
   </tbody>

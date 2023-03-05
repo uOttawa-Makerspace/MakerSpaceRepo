@@ -64,10 +64,10 @@
         <div class="modal-body">
           <div class="mb-3 text-center">
             <label for="start-datetime">Start Date</label>
-            <input id="start-datetime" autocomplete="false" class="form-control">
+            <input id="start-datetime" autocomplete="false" class="form-control inanimate">
             <br>
             <label for="end-datetime">End Date</label>
-            <input id="end-datetime" autocomplete="false" class="form-control">
+            <input id="end-datetime" autocomplete="false" class="form-control inanimate">
             <br>
             <%= label_tag :user_id, 'User to select' %>
             <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true } %>
@@ -124,7 +124,7 @@
     </div>
   </div>
 
-  <%= javascript_pack_tag 'admin_shifts' %>
+  <%= vite_javascript_tag 'admin_shifts' %>
 </div>
 
 <style>

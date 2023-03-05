@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Program < ApplicationRecord
-  belongs_to :user
+  belongs_to :user, optional: true
   validates :user,
             presence: {
               message: "A user is required."

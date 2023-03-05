@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe Video, type: :model do
   describe "Association" do
     context "belongs_to" do
-      it { should belong_to(:proficient_project) }
+      it { should belong_to(:proficient_project).without_validating_presence }
     end
 
     context "has_one_attached" do

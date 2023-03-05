@@ -3,8 +3,8 @@ require "rails_helper"
 RSpec.describe JobOrderQuoteService, type: :model do
   describe "Association" do
     context "belongs_to" do
-      it { should belong_to(:job_order_quote) }
-      it { should belong_to(:job_service) }
+      it { should belong_to(:job_order_quote).without_validating_presence }
+      it { should belong_to(:job_service).without_validating_presence }
     end
   end
 

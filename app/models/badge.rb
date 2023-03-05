@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class Badge < ApplicationRecord
-  belongs_to :user
-  belongs_to :badge_template
+  belongs_to :user, optional: true
+  belongs_to :badge_template, optional: true
   belongs_to :certification, optional: true
 
   def self.filter_by_attribute(value)
