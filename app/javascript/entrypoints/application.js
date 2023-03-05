@@ -160,28 +160,12 @@ document.addEventListener("turbo:load", () => {
     });
   });
 });
-function setupIntersectionObserver() {
-  const formControls = document.querySelectorAll(".form-control");
-  function handleIntersection(entries) {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("visible");
-      }
-    });
-  }
-  const observer = new IntersectionObserver(handleIntersection);
-  formControls.forEach((formControl) => {
-    observer.observe(formControl);
+setTimeout(() => {
+  document.querySelectorAll(".form-control").forEach((element) => {
+    element.classList.add("not-visible");
+    setTimeout(() => {
+      element.classList.remove("not-visible");
+      element.classList.add("visible");
+    }, 350);
   });
-}
-
-document.addEventListener("turbo:load", () => {
-  setupIntersectionObserver();
-});
-
-// Call `setupIntersectionObserver()` again whenever a new modal is opened
-document.addEventListener("click", (event) => {
-  if (event.target.dataset.toggle === "modal") {
-    setupIntersectionObserver();
-  }
-});
+}, 0);
