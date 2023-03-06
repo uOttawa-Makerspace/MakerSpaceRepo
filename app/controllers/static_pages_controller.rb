@@ -51,6 +51,11 @@ class StaticPagesController < SessionsController
   end
 
   def reset_password
+    unless verify_recaptcha
+      flash[:alert] = "There was a problem with the captcha, please try again."
+      redirect_to root_path
+      return
+    end
     if params[:email].present?
       if User.find_by_email(params[:email]).present?
         @user = User.find_by(email: params[:email])
