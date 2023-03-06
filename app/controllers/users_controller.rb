@@ -26,9 +26,9 @@ class UsersController < SessionsController
   def create
     unless verify_recaptcha
       @new_user = User.new
-      render "new",
-             alert: "You failed the Captcha",
-             status: :unprocessable_entity
+      redirect_to new_user_path,
+                  alert: "You failed the Captcha",
+                  status: :unprocessable_entity
       return
     end
     @new_user = User.new(user_params)
