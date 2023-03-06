@@ -117,9 +117,9 @@
                              rescue StandardError
                                'unknown'
                              end %>
-                        <%= link_to "Tapped at #{space} #{time_ago_in_words(rfid.updated_at)} ago",
-                                    staff_dashboard_link_rfid_path(user_id: @repo_user.id, card_number: rfid.card_number),
-                                    action: :link_rfid, method: :put, class: 'dropdown-item' %>
+                        <%= button_to "Tapped at #{space} #{time_ago_in_words(rfid.updated_at)} ago",
+                                      staff_dashboard_link_rfid_path(user_id: @repo_user.id, card_number: rfid.card_number),
+                                      action: :link_rfid, method: :put, class: 'dropdown-item' %>
                         <% end %>
                       </div>
                     </div>
