@@ -27,23 +27,14 @@ class SearchController < SessionsController
   def search
     sort_arr = sort_order
     if params[:category].blank?
+      puts "params[:category] is blank"
       @repositories =
         Repository
           .paginate(per_page: 12, page: params[:page])
           .public_repos
           .order([sort_arr].to_h)
-          .where(
-            "lower(title) LIKE ?
-                                                OR lower(description) LIKE ?
-                                                OR lower(user_username) LIKE ?
-                                                OR lower(category) LIKE ?",
-            "%#{params[:q].downcase}%",
-            "%#{params[:q].downcase}%",
-            "%#{params[:q].downcase}%",
-            "%#{params[:q].downcase}%"
-          )
-          .distinct
     else
+      puts "params[:category] is not blank"
       @repositories =
         Repository
           .paginate(per_page: 12, page: params[:page])
@@ -53,17 +44,19 @@ class SearchController < SessionsController
             { categories: { name: SLUG_TO_CATEGORY_MODEL[params[:category]] } }
           )
           .order([sort_order].to_h)
-          .where(
-            "lower(title) LIKE ?
-      OR lower(description) LIKE ?
-      OR lower(user_username) LIKE ?
-      OR lower(category) LIKE ?",
-            "%#{params[:q].downcase}%",
-            "%#{params[:q].downcase}%",
-            "%#{params[:q].downcase}%",
-            "%#{params[:q].downcase}%"
-          )
-          .distinct
+    end
+    if params[:q].present?
+      @repositories =
+        @repositories.where(
+          "lower(title) LIKE ?
+    OR lower(description) LIKE ?
+    OR lower(user_username) LIKE ?
+    OR lower(category) LIKE ?",
+          "%#{params[:q].downcase}%",
+          "%#{params[:q].downcase}%",
+          "%#{params[:q].downcase}%",
+          "%#{params[:q].downcase}%"
+        ).distinct
     end
     @photos = photo_hash
   end

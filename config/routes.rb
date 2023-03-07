@@ -545,7 +545,6 @@ Rails.application.routes.draw do
           constraints: {
             id: %r{[^/]+}
           }
-      get :populate_users
       patch :link_to_pp
       patch :add_owner
       patch :remove_owner
@@ -555,6 +554,7 @@ Rails.application.routes.draw do
       post "pass_authenticate"
     end
   end
+  get "/repositories/populate_users", to: "repositories#populate_users"
 
   namespace :makes, path: "makes/:user_username/:id" do
     post "create"
