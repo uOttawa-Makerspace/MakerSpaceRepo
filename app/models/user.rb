@@ -183,8 +183,8 @@ class User < ApplicationRecord
       user.update(locked_until: 5.minute.from_now)
       user_hash = Rails.application.message_verifier("unlock").generate(user.id)
       MsrMailer.unlock_account(user, user_hash).deliver_now
-      return nil
     end
+    return nil
   end
 
   def self.username_or_email(username_email)

@@ -164,7 +164,7 @@ class StaffAvailabilitiesController < ApplicationController
   private
 
   def check_admin_or_staff_in_space
-    unless @user.admin? || @user.staff_in_space?
+    unless @user && (@user.admin? || @user.staff_in_space?)
       redirect_to root_path
       flash[
         :alert

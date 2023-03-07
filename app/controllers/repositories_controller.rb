@@ -251,7 +251,7 @@ class RepositoriesController < SessionsController
   def add_owner
     repository = Repository.find params[:repo_owner][:repository_id]
     owner_id = params[:repo_owner][:owner_id]
-    repository.users << User.find(owner_id)
+    repository.users << User.find(owner_id) if User.exists?(owner_id)
     if repository.save
       flash[:notice] = "This owner was added to your repository"
     else

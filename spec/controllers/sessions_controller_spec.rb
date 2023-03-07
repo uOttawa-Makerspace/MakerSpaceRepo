@@ -34,7 +34,7 @@ RSpec.describe SessionsController, type: :controller do
                username_email: @user.username,
                password: "abc123"
              }
-        expect(response).to have_http_status(200)
+        expect(response).to have_http_status(422) # 422 so Turbo doesn't expect a redirect
         expect(flash[:alert]).to eq("Incorrect password.")
       end
     end
