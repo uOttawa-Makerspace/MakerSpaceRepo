@@ -34,7 +34,7 @@ a {
   }
 }
 
-.form-control.not-visible:not(#q, .inanimate, .ts-control) {
+.form-control:not(#q, .inanimate, .ts-control) {
   opacity: 0;
   transform: translateX(-20px);
 }
