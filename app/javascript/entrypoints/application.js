@@ -169,3 +169,11 @@ setTimeout(() => {
     }, 350);
   });
 }, 0);
+document.addEventListener("turbo:load", () => {
+  document.querySelectorAll("form").forEach(function (el) {
+    el.dataset.turbo = false;
+  });
+  document.querySelectorAll("a").forEach(function (el) {
+    el.dataset.turbo = false;
+  });
+});
