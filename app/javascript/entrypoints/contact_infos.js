@@ -1,3 +1,4 @@
+import TomSelect from "tom-select";
 document.addEventListener("turbo:load", function () {
   if (document.getElementById("contact_info_space_id")) {
     if (!document.getElementById("contact_info_space_id").tomselect) {
