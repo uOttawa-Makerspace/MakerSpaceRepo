@@ -36,11 +36,11 @@ a {
 
 .form-control:not(#q, .inanimate, .ts-control) {
   opacity: 0;
-  transform: translateX(-20px);
+  margin-left: 40px;
 }
 
-.form-control.visible:not(#q, .inanimate, .ts-control) {
+.form-control.animated:not(#q, .inanimate, .ts-control) {
   opacity: 1;
-  transform: translateX(0);
-  transition: all 0.5s ease-in-out;
+  margin-left: 0;
+  transition: all 0.25s ease-in-out;
 }

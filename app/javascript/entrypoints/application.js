@@ -163,7 +163,7 @@ document.addEventListener("turbo:load", () => {
 setTimeout(() => {
   document.querySelectorAll(".form-control").forEach((element) => {
     setTimeout(() => {
-      element.classList.add("visible");
+      element.classList.add("animated");
     }, 350);
   });
 }, 0);
