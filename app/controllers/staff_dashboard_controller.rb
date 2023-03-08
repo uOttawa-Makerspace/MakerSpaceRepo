@@ -213,7 +213,9 @@ class StaffDashboardController < StaffAreaController
       flash[:notice] = "Space changed successfully" :
       flash[:alert] = "Something went wrong"
     respond_to do |format|
-      format.html { redirect_to staff_dashboard_index_path }
+      format.html do
+        redirect_back(fallback_location: staff_dashboard_index_path)
+      end
       format.json { render json: { status: status ? "ok" : "error" } }
     end
   end
