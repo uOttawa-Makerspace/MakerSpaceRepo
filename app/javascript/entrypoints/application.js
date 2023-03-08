@@ -162,10 +162,8 @@ document.addEventListener("turbo:load", () => {
 });
 setTimeout(() => {
   document.querySelectorAll(".form-control").forEach((element) => {
-    element.classList.add("not-visible");
     setTimeout(() => {
-      element.classList.remove("not-visible");
-      element.classList.add("visible");
+      element.classList.add("animated");
     }, 350);
   });
 }, 0);
