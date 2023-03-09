@@ -2,7 +2,8 @@ if (document.getElementById("clone-file-input")) {
   document.getElementById("clone-file-input").addEventListener("click", () => {
     const clone = document.getElementById("new-file-input").cloneNode(true);
     clone.removeAttribute("id");
-    clone.removeChild(clone.children[1]);
+    // clone.removeChild(clone.children[1]);
+    clone.children[1].value = null;
     clone.children[0].value = null;
 
     const newChild = document.createElement("button");
