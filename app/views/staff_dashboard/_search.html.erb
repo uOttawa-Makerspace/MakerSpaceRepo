@@ -62,7 +62,6 @@
 
     window.searchForm = function () {
         let form = document.getElementById('search_user_fastsearch');
-        console.log("|" + form.elements['username'].value + "|")
         if (form.elements['username'].value == "" || form.elements['username'].value == null || form.elements['username'].value == undefined) {
             var query = document.createElement("input");
             query.type = "hidden";
