@@ -27,14 +27,12 @@ class SearchController < SessionsController
   def search
     sort_arr = sort_order
     if params[:category].blank?
-      puts "params[:category] is blank"
       @repositories =
         Repository
           .paginate(per_page: 12, page: params[:page])
           .public_repos
           .order([sort_arr].to_h)
     else
-      puts "params[:category] is not blank"
       @repositories =
         Repository
           .paginate(per_page: 12, page: params[:page])

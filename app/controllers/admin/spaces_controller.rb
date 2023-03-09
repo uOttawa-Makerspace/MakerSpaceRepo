@@ -124,7 +124,6 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def add_space_hours
-    puts params[:training_course]
     unless params[:space_id].present? && params[:day].present? &&
              params[:start_time].present? && params[:end_time].present? &&
              params[:language].present? && params[:training_course].present? &&

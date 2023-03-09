@@ -179,7 +179,6 @@ fetch("/admin/shifts/get_external_staff_needed", {
           editable: false,
         },
         ...res.map((cal) => {
-          console.log(cal);
           return {
             id: "staffNeeded",
             color: cal.color,
@@ -238,10 +237,6 @@ fetch("/admin/shifts/get_external_staff_needed", {
         });
         hideShowEvents("check");
         return content;
-      },
-      eventsSet: (arg) => {
-        console.log(arg);
-        console.log(events);
       },
     });
     calendar.render();
@@ -514,9 +509,6 @@ const staffNeededEvent = (arg) => {
 // Hide/Show Events
 const hideShowEvents = (eventName) => {
   eventName == "check" ? (events += 1) : events;
-  console.log(calendar);
-  console.log(events);
-  console.log(Object.keys(calendar.currentData.eventSources).length);
   if (events >= Object.keys(calendar.currentData.eventSources).length) {
     document.getElementById("spinner").classList.add("d-none");
   }

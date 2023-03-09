@@ -142,14 +142,7 @@ document.addEventListener("turbo:load", function () {
           } catch (e) {
             console.log(e);
             closeModal();
-            Turbo.clearCache();
-            Turbo.visit(
-              window.location.href.split("?")[0] +
-                "?room=" +
-                new URLSearchParams(window.location.search).get("room") +
-                "&start=" +
-                start_picker.selectedDates[0].toISOString()
-            );
+            window.location.reload();
           }
         })
         .catch((error) => {
