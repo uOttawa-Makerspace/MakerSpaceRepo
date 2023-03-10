@@ -66,12 +66,12 @@
   <td>
     <% if prints.approved %>
       Approved
-      <%= render 'comments_for_staff', prints: prints %>
+      <%= render 'comments_for_staff', prints: %>
     <% elsif prints.approved == false %>
       Declined
     <% else %>
       <% if @user.admin? %>
-        <%= render 'staff_approval', prints: prints %>
+        <%= render 'staff_approval', prints: %>
       <% end %>
     <% end %>
   </td>
@@ -159,7 +159,9 @@
 
                       <div class="ps-5 ps-5 text-center">
                         <div class="text-start">
-                          <input id="x-<%= prints.id %>" value="<%= PrintOrderMessage.find_by(name: 'I_Printed_It').retrieve_message(prints.id) %>" type="hidden" name="email_message">
+                          <h3>THIS FORM IS NO LONGER FUNCTIONAL</h3>
+                          <%#<input id="x-<%= prints.id " value="<%= PrintOrderMessage.find_by(name: 'I_Printed_It').retrieve_message(prints.id) " type="hidden" name="email_message"> %>
+                          <input id="x-<%= prints.id %>" value="" type="hidden" name="email_message">
                           <trix-editor input="x-<%= prints.id %>"></trix-editor>
                         </div>
                         <br>
@@ -209,7 +211,7 @@
       <br>
       <% if prints.printed? %>
         Price : <%= number_to_currency(prints.quote) %>
-        <%= form_for prints, url: print_order_path(prints, table_id: "print-#{prints.id}", index: index), remote: true, format: :js do |f| %>
+        <%= form_for prints, url: print_order_path(prints, table_id: "print-#{prints.id}", index:), remote: true, format: :js do |f| %>
           <%= f.hidden_field :payed, value: 'true' %>
           <%= f.submit 'Paid?', class: 'btn btn-primary', data: { confirm: 'Are you sure the client paid ?' } %>
         <% end %>
@@ -223,7 +225,7 @@
       No
       <br>
       <% if prints.payed? %>
-        <%= form_for prints, url: print_order_path(prints, table_id: "print-#{prints.id}", index: index), remote: true, format: :js do |f| %>
+        <%= form_for prints, url: print_order_path(prints, table_id: "print-#{prints.id}", index:), remote: true, format: :js do |f| %>
           <%= f.hidden_field :picked_up, value: 'true' %>
           <%= f.submit 'Picked Up', class: 'btn btn-primary', data: { confirm: 'Are you sure the client picked-up the item?' } %>
         <% end %>
