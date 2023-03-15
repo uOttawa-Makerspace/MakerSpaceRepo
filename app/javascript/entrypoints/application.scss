@@ -33,14 +33,3 @@ a {
     transition: none;
   }
 }
-
-.form-control:not(#q, .inanimate, .ts-control) {
-  opacity: 0;
-  margin-left: 40px;
-}
-
-.form-control.animated:not(#q, .inanimate, .ts-control) {
-  opacity: 1;
-  margin-left: 0;
-  transition: all 0.25s ease-in-out;
-}
