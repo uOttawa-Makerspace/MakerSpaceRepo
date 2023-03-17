@@ -240,6 +240,10 @@ Rails.application.routes.draw do
       patch "/edit/:sub_space_id",
             as: "set_max_booking_duration",
             action: "set_max_booking_duration"
+      patch "/edit/:sub_space_id/max_automatic_approval_hour",
+            as: "set_max_automatic_approval_hour",
+            action: "set_max_automatic_approval_hour"
+
       delete "/edit/:id", as: "delete_sub_space", action: "delete_sub_space"
       put "/edit/:id",
           as: "change_sub_space_approval",
