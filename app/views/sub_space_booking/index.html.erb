@@ -9,7 +9,7 @@
     <div id="toast_text" class="toast-body">
     </div>
     </div>
-    <div class="col-md-8 mx-auto">
+    <div class="col-md-10 mx-auto">
       <ul class="nav nav-tabs nav-fill" id="booking-tab-list" role="tablist">
           <button class="nav-link tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab" aria-controls="booking-calendar-tab" aria-selected="true">Book</button>
           <button class="nav-link tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab" aria-controls="booking-tab" aria-selected="false">My Bookings</button>
@@ -20,8 +20,8 @@
           <div class="navbar navbar-expand-xl navbar-light bg-light w-100">
             <div class="container-fluid justify-content-start ">
               <a class="navbar-brand" href="<%= sub_space_booking_index_path %>">Maker<strong>Room</strong></a>
-              <% Space.all.each do |space| %>
-                <% subspaces = SubSpace.where(space_id: space.id) %>
+              <% Space.all.order(:name).each do |space| %>
+                <% subspaces = SubSpace.where(space_id: space.id).order(:name) %>
                   <% if subspaces.length > 0 %>
                     <% if subspaces.length == 1 %>
                       <div class="nav-item ms-4"><%= link_to(subspaces.last.name, sub_space_booking_index_path(room: subspaces.last.id), class: 'nav-link') %></div>

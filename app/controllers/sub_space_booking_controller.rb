@@ -297,7 +297,22 @@ class SubSpaceBookingController < ApplicationController
             if SubSpace.find(
                  params[:sub_space_booking][:sub_space_id]
                ).approval_required
-              BookingStatus::PENDING.id
+              if SubSpace
+                   .find(params[:sub_space_booking][:sub_space_id])
+                   .max_automatic_approval_hour
+                   .nil?
+                BookingStatus::PENDING.id
+              elsif duration <=
+                    SubSpace.find(
+                      params[:sub_space_booking][:sub_space_id]
+                    ).max_automatic_approval_hour
+                BookingStatus::APPROVED.id
+              elsif duration >
+                    SubSpace.find(
+                      params[:sub_space_booking][:sub_space_id]
+                    ).max_automatic_approval_hour
+                BookingStatus::PENDING.id
+              end
             else
               BookingStatus::APPROVED.id
             end
@@ -311,7 +326,9 @@ class SubSpaceBookingController < ApplicationController
     flash[
       :notice
     ] = "Booking for #{booking.sub_space.name} created successfully."
-    if booking.sub_space.approval_required
+    if booking.sub_space.approval_required &&
+         booking.sub_space_booking_status.booking_status_id ==
+           BookingStatus::PENDING.id
       BookingMailer.send_booking_needs_approval(booking.id).deliver_now
     end
   end
