@@ -30,28 +30,15 @@
             </td>
             <%# Caching and avoiding unnecessary db calls %>
             <td class="status-cell">
-if lab_sessions
-                if signed_in
-                  'Signed In'
-                else
-                  'Signed Out'
-                end
-              else
-                'Signed Out'
-              end %>
+              <%= lab_sessions && signed_in ? 'Signed In' : 'Signed Out' %>
             </td>
 
-            <td class="action-cell" >
-
-if labSessions
-                if signedIn
-                  button_to fa_icon('times'), { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button', remote: true
-                else
-                  button_to fa_icon('check'), { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', remote: true
-                end
-              else
-                button_to fa_icon('check'), { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', remote: true
-              end %>
+            <td class="action-cell">
+              <% if lab_sessions && signed_in %>
+                <%= button_to fa_icon('times'), { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button', remote: true %>
+              <% else %>
+                   <%= button_to fa_icon('check'), { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', remote: true %>
+              <% end %>
             </td>
 
           </tr>
