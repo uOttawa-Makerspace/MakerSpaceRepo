@@ -185,13 +185,37 @@ class SubSpaceBookingController < ApplicationController
           params[:sub_space_booking][:recurring_frequency] == "weekly" ?
             recurrence = 7.days :
             recurrence = 1.month
+          epoch_start = params[:sub_space_booking][:start_time].to_datetime
           start_time = params[:sub_space_booking][:start_time].to_datetime
           end_time = params[:sub_space_booking][:end_time].to_datetime
           end_date = params[:sub_space_booking][:recurring_end].to_date
           book(params)
+          corrected = false
           while start_time < end_date
             params[:sub_space_booking][:start_time] = start_time + recurrence
             params[:sub_space_booking][:end_time] = end_time + recurrence
+            if params[:sub_space_booking][:start_time].in_time_zone.dst? !=
+                 epoch_start.in_time_zone.dst? && !corrected
+              params[:sub_space_booking][:start_time] += (
+                if params[:sub_space_booking][:start_time].in_time_zone.dst?
+                  -1.hour
+                else
+                  1.hour
+                end
+              )
+              params[:sub_space_booking][:end_time] += (
+                if params[:sub_space_booking][:end_time].in_time_zone.dst?
+                  -1.hour
+                else
+                  1.hour
+                end
+              )
+              corrected = true
+            elsif corrected &&
+                  params[:sub_space_booking][:start_time].in_time_zone.dst? ==
+                    epoch_start.in_time_zone.dst?
+              corrected = false
+            end
             start_time = params[:sub_space_booking][:start_time].to_datetime
             end_time = params[:sub_space_booking][:end_time].to_datetime
             book(params)
