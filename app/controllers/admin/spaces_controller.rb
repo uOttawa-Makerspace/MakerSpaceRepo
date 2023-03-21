@@ -57,7 +57,8 @@ class Admin::SpacesController < AdminAreaController
         flash[:alert] = "Something went wrong."
       end
     end
-    @sub_spaces = SubSpace.where(space: Space.find(params[:space_id]))
+    @sub_spaces =
+      SubSpace.where(space: Space.find(params[:space_id])).order(:name)
     redirect_back(
       fallback_location: edit_admin_space_path(id: params[:space_id])
     )
@@ -78,7 +79,8 @@ class Admin::SpacesController < AdminAreaController
         :notice
       ] = "Aproval for #{subspace.name} is now #{subspace.approval_required ? "manual" : "automatic"}"
       redirect_back(
-        fallback_location: edit_admin_space_path(id: params[:space_id])
+        fallback_location:
+          edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
       )
     end
   end
@@ -91,7 +93,8 @@ class Admin::SpacesController < AdminAreaController
         :notice
       ] = "Bookings in #{subspace.name} are #{subspace.default_public ? "public" : "private"} by default"
       redirect_back(
-        fallback_location: edit_admin_space_path(id: params[:space_id])
+        fallback_location:
+          edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
       )
     end
   end
@@ -161,6 +164,10 @@ class Admin::SpacesController < AdminAreaController
           params[:max_hours].to_i == -1 ? nil : params[:max_hours].to_i
       )
       flash[:notice] = "Max booking duration updated!"
+      redirect_to edit_admin_space_path(
+                    id: params[:space_id],
+                    anchor: "sub_space_area"
+                  )
       return
     end
     if params[:max_weekly_hours].present? && params[:sub_space_id].present?
@@ -175,9 +182,35 @@ class Admin::SpacesController < AdminAreaController
           )
       )
       flash[:notice] = "Max weekly booking duration updated!"
+      redirect_to edit_admin_space_path(
+                    id: params[:space_id],
+                    anchor: "sub_space_area"
+                  )
       return
     end
+    flash[:alert] = "Something went wrong."
+    redirect_to edit_admin_space_path(id: params[:space_id])
+  end
 
+  def set_max_automatic_approval_hour
+    if params[:auto_approve_hours].present? && params[:sub_space_id].present?
+      SubSpace.find(params[:sub_space_id]).update!(
+        max_automatic_approval_hour:
+          (
+            if params[:auto_approve_hours].to_i == -1
+              nil
+            else
+              params[:auto_approve_hours].to_i
+            end
+          )
+      )
+      flash[:notice] = "Max automatic approval duration updated!"
+      redirect_to edit_admin_space_path(
+                    id: params[:space_id],
+                    anchor: "sub_space_area"
+                  )
+      return
+    end
     flash[:alert] = "Something went wrong."
     redirect_to edit_admin_space_path(id: params[:space_id])
   end

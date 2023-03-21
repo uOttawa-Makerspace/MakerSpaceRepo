@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_02_16_013131) do
+ActiveRecord::Schema[7.0].define(version: 2023_03_17_154706) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -960,6 +960,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_02_16_013131) do
     t.integer "maximum_booking_duration"
     t.integer "maximum_booking_hours_per_week"
     t.boolean "default_public", default: false
+    t.integer "max_automatic_approval_hour"
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
   end
 
