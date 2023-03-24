@@ -399,6 +399,10 @@ class SubSpaceBookingController < ApplicationController
       )
     booking.booking_status_id = BookingStatus::APPROVED.id
     booking.save
+    SubSpaceBooking.find(params[:sub_space_booking_id]).update(
+      approved_at: DateTime.now,
+      approved_by_id: current_user.id
+    )
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice:
