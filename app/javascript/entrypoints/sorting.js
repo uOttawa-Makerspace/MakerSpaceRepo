@@ -84,14 +84,14 @@ window.sortTable = function (table_class, col) {
 var select_direction = 1;
 window.selectAll = function (table_id) {
   if (select_direction == 1) {
-    boxes = document.getElementById(table_id).getElementsByTagName("input");
-    for (i = 0; i < boxes.length; i++) {
+    let boxes = document.getElementById(table_id).getElementsByTagName("input");
+    for (let i = 0; i < boxes.length; i++) {
       boxes[i].checked = true;
     }
     select_direction = 0;
   } else {
-    boxes = document.getElementById(table_id).getElementsByTagName("input");
-    for (i = 0; i < boxes.length; i++) {
+    let boxes = document.getElementById(table_id).getElementsByTagName("input");
+    for (let i = 0; i < boxes.length; i++) {
       boxes[i].checked = false;
     }
     select_direction = 1;
