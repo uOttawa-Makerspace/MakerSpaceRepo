@@ -7,7 +7,25 @@ class SubSpaceBookingController < ApplicationController
   before_action :user_admin, only: [:publish]
   before_action :user_booking_belongs, only: %i[delete edit update]
   def index
-    @subspace = SubSpace.find(params[:room]) if params[:room].present?
+    if params[:room].present?
+      @subspace = SubSpace.find(params[:room])
+      @rules = []
+      if @subspace.maximum_booking_duration.present?
+        @rules << "has a maximum booking duration of #{@subspace.maximum_booking_duration} hours"
+      end
+      if @subspace.maximum_booking_hours_per_week.present?
+        @rules << "has a maximum booking hours per person per week of #{@subspace.maximum_booking_hours_per_week} hours"
+      end
+      if @subspace.default_public
+        @rules << "bookings (Name and Description of event) are public by default"
+      end
+      if @subspace.max_automatic_approval_hour.present? &&
+           @subspace.approval_required
+        @rules << "Bookings require manual approval, bookings of #{@subspace.max_automatic_approval_hour} hours or less will be automatically approved"
+      elsif @subspace.approval_required
+        @rules << "bookings will require manual approval"
+      end
+    end
     @bookings =
       SubSpaceBooking.where(user_id: current_user.id).order(:start_time)
     if current_user.admin?

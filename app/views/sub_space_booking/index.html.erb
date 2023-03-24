@@ -43,6 +43,14 @@
             </div>
           <% if params[:room].present? %>
             <h3 class="text-center my-3"> <%= @subspace.name %> Availability Calendar</h3>
+            <div>
+            <% unless @rules.empty? %>
+              <p class="text-center alert alert-info">
+                <%= @subspace.name %> 
+                <%= @rules.to_sentence %>
+              </p>
+            <% end %>
+            </div>
             <div id="booked-calendar"></div>
             <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
             <div class="modal-dialog" role="document">
