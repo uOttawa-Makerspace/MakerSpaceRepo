@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_03_17_154706) do
+ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -945,6 +945,10 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_17_154706) do
     t.bigint "sub_space_booking_status_id"
     t.boolean "public", default: false
     t.boolean "blocking", default: false
+    t.bigint "approved_by_id"
+    t.datetime "approved_at"
+    t.index ["approved_by_id"],
+            name: "index_sub_space_bookings_on_approved_by_id"
     t.index ["sub_space_booking_status_id"],
             name: "index_sub_space_bookings_on_sub_space_booking_status_id"
     t.index ["sub_space_id"], name: "index_sub_space_bookings_on_sub_space_id"
@@ -1199,6 +1203,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_17_154706) do
   add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
   add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "users"
+  add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"
   add_foreign_key "training_levels", "spaces"
   add_foreign_key "training_sessions", "trainings"
