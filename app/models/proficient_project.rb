@@ -3,8 +3,8 @@
 class ProficientProject < ApplicationRecord
   include Filterable
   has_and_belongs_to_many :users
-  belongs_to :training
-  belongs_to :badge_template
+  belongs_to :training, optional: true
+  belongs_to :badge_template, optional: true
   has_many :photos, dependent: :destroy
   has_many :repo_files, dependent: :destroy
   has_many :videos, dependent: :destroy
@@ -20,7 +20,7 @@ class ProficientProject < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :badge_requirements, dependent: :destroy
   has_many :project_kits, dependent: :destroy
-  belongs_to :drop_off_location
+  belongs_to :drop_off_location, optional: true
 
   validates :title,
             presence: {

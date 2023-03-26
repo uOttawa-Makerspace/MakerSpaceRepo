@@ -1,6 +1,6 @@
 class LearningModule < ApplicationRecord
   include Filterable
-  belongs_to :training
+  belongs_to :training, optional: true
   has_many :photos, dependent: :destroy
   has_many :repo_files, dependent: :destroy
   has_many :videos, dependent: :destroy

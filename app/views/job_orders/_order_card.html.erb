@@ -14,7 +14,7 @@
               <button class="btn btn-primary" style="pointer-events: none;" type="button" disabled><%= t('job_orders.public_page.edit') %></button>
             </span>
           <% end %>
-          <%= link_to "<i class='fa fa-download'></i> #{t('job_orders.public_page.invoice')}".html_safe, job_order_invoice_path(job_order_id: jo.id), method: :get, target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if jo.job_order_quote.present? %>
+          <%= button_to "<i class='fa fa-download'></i> Invoice".html_safe, job_order_invoice_path(job_order_id: jo.id), method: :get, target: '_blank', class: 'btn btn-secondary' if jo.job_order_quote.present? %>
         </div>
       </div>
     </div>

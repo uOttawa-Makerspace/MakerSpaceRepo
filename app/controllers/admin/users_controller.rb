@@ -156,11 +156,6 @@ class Admin::UsersController < AdminAreaController
     redirect_to root_path, notice: "Repository Deleted!"
   end
 
-  def delete_project_proposal
-    ProjectProposal.find(params[:id]).destroy
-    redirect_to project_proposals_path, notice: "Project Proposal Deleted!"
-  end
-
   def delete_user
     if @user.admin? && @user.pword == params[:password]
       delete_user = User.find(params[:id])
@@ -228,7 +223,7 @@ class Admin::UsersController < AdminAreaController
     @roles = %w[admin staff regular_user]
     # response is js
     respond_to do |format|
-      format.html
+      format.html { redirect_back(fallback_location: root_path) }
       format.js { render layout: false }
       format.all { redirect_back(fallback_location: root_path) }
     end

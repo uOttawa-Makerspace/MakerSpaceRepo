@@ -3,7 +3,7 @@
 class User < ApplicationRecord
   include BCrypt
   include ActiveModel::Serialization
-  belongs_to :space
+  belongs_to :space, optional: true
   has_one :rfid, dependent: :destroy
   has_many :upvotes, dependent: :destroy
   has_many :comments, dependent: :destroy
@@ -78,7 +78,7 @@ class User < ApplicationRecord
               maximum: 20
             }
 
-  validates :email, presence: true, uniqueness: true, email: true
+  validates :email, presence: true, on: :create, uniqueness: true, email: true
 
   validates :how_heard_about_us, length: { maximum: 250 }
 
@@ -88,7 +88,13 @@ class User < ApplicationRecord
             },
             on: :create
 
-  validates :password, presence: true, password: true, confirmation: true
+  validates :password,
+            confirmation: true,
+            presence: true,
+            password: {
+              name: :username,
+              email: :email
+            }
 
   validates :gender,
             presence: true,
@@ -177,8 +183,8 @@ class User < ApplicationRecord
       user.update(locked_until: 5.minute.from_now)
       user_hash = Rails.application.message_verifier("unlock").generate(user.id)
       MsrMailer.unlock_account(user, user_hash).deliver_now
-      return nil
     end
+    return nil
   end
 
   def self.username_or_email(username_email)

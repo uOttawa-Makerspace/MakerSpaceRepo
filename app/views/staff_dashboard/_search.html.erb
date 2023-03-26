@@ -62,7 +62,6 @@
 
     window.searchForm = function () {
         let form = document.getElementById('search_user_fastsearch');
-        console.log("|" + form.elements['username'].value + "|")
         if (form.elements['username'].value == "" || form.elements['username'].value == null || form.elements['username'].value == undefined) {
             var query = document.createElement("input");
             query.type = "hidden";
@@ -73,4 +72,4 @@
         form.submit();
     }
 </script>
-<%= javascript_pack_tag 'staff_dashboard_search', 'data-turbolinks-track': 'reload' %>
+<%= vite_javascript_tag 'staff_dashboard_search', 'data-turbo-track': 'reload' %>

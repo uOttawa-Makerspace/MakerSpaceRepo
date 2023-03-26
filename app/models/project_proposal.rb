@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class ProjectProposal < ApplicationRecord
-  belongs_to :user
-  belongs_to :admin, class_name: "User", foreign_key: "admin_id"
+  belongs_to :user, optional: true
+  belongs_to :admin, class_name: "User", foreign_key: "admin_id", optional: true
   has_many :categories, dependent: :destroy
   has_many :project_joins, dependent: :destroy
   has_many :repositories
@@ -13,7 +13,8 @@ class ProjectProposal < ApplicationRecord
            foreign_key: "linked_project_proposal_id"
   belongs_to :linked_project_proposal,
              class_name: "ProjectProposal",
-             foreign_key: "linked_project_proposal_id"
+             foreign_key: "linked_project_proposal_id",
+             optional: true
 
   scope :approved, -> { where(approved: 1) }
 

@@ -3,10 +3,10 @@ require "rails_helper"
 RSpec.describe JobOrder, type: :model do
   describe "Association" do
     context "belongs_to" do
-      it { should belong_to(:user) }
-      it { should belong_to(:job_type) }
-      it { should belong_to(:job_service_group) }
-      it { should belong_to(:job_order_quote) }
+      it { should belong_to(:user).without_validating_presence }
+      it { should belong_to(:job_type).without_validating_presence }
+      it { should belong_to(:job_service_group).without_validating_presence }
+      it { should belong_to(:job_order_quote).without_validating_presence }
     end
 
     context "belongs_to" do

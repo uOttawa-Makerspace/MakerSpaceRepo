@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe JobServiceGroup, type: :model do
   describe "Association" do
     context "belongs_to" do
-      it { should belong_to(:job_type) }
+      it { should belong_to(:job_type).without_validating_presence }
     end
 
     context "has_many" do

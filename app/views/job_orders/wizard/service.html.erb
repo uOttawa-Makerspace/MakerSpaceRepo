@@ -118,9 +118,9 @@
                       <% end %>
                       <% if sg.text_field_option? %>
                         <div class="form-check">
-                          <%= f.radio_button :job_service_ids, 'custom', class: 'form-check-input custom-service-radio', checked: @job_order.job_services.present? ? !@job_order.job_services.pluck(:id).include?(sg.job_service_ids) && @job_order.job_services.where(user_created: true).present? : false, required: true %>
+                          <%= f.radio_button :job_service_ids, 'custom', class: 'form-check-input custom-service-radio', checked: @job_order.job_services.present? ? @job_order.job_services.pluck(:id).exclude?(sg.job_service_ids) && @job_order.job_services.where(user_created: true).present? : false, required: true %>
                           <%= f.label :job_service_ids, t('job_orders.wizard.step_2.enter_custom_settings'), class: 'form-check-label', value: 'custom' %>
-                          <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : '', class: 'form-control', id: 'custom-settings-field', '@change': 'handleCustomQualityChange()' %>
+                          <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : '', class: 'form-control inanimate', id: 'custom-settings-field', '@change': 'handleCustomQualityChange()' %>
                         </div>
                       <% end %>
                     <% end %>
@@ -159,4 +159,4 @@
     }
 </script>
 
-<%= javascript_pack_tag 'job_orders_wizard' %>
+<%= vite_javascript_tag 'job_orders_wizard' %>

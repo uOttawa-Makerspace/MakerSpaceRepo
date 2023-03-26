@@ -1,26 +1,26 @@
-<% provide(:title,"Coupon Codes") %>
+<% provide(:title, 'Coupon Codes') %>
 <h1 class=" text-center">Coupon Codes</h1>
 <h3 class="text-center">New Coupon Code</h3>
-<%= form_for @coupon_code, html:{class:'row mb-5'} do |f| %>
+<%= form_for @coupon_code, html: { class: 'row mb-5' } do |f| %>
   <div class="col-3 d-inline">
     <div class="form-group form-floating">
-      <%= f.text_field :code, class: "form-control" %>
+      <%= f.text_field :code, class: 'form-control' %>
       <%= f.label :code %>
     </div>
   </div>
   <div class="col-3 d-inline">
     <div class="form-group form-floating">
-      <%= f.number_field :cc_cost, class: "form-control" %>
+      <%= f.number_field :cc_cost, class: 'form-control' %>
       <%= f.label :cc_cost %>
     </div>
   </div>
   <div class="col-3 d-inline">
     <div class="form-group form-floating">
-      <%= f.number_field :dollar_cost, class: "form-control" %>
-      <%= f.label :dollar_cost %>
+      <%= f.number_field :dollar_cost, class: 'form-control' %>
+      <%= f.label :dollar_cost, 'Dollars off' %>
     </div>
   </div>
-  <div class="col-3 d-inline"><%= f.submit "Create Coupon Code", class: "btn btn-primary" %>
+  <div class="col-3 d-inline"><%= f.submit 'Create Coupon Code', class: 'btn btn-primary' %>
   </div>
 <% end %>
 
@@ -44,8 +44,8 @@
           <td><%= coupon.dollar_cost %></td>
           <td class="text-center mx-auto">
             <div class="input-group text-center d-flex justify-content-center">
-              <%= link_to 'Edit', edit_coupon_code_path(coupon), class: "btn btn-primary" %>
-              <%= link_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %>
+              <%= link_to 'Edit', edit_coupon_code_path(coupon), class: 'btn btn-primary' %>
+              <%= button_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
             </div>
           </td>
         </tr>
@@ -74,7 +74,7 @@
         <td><%= link_to coupon.user.name, user_path(coupon.user.username) %></td>
         <td>
           <div class="input-group">
-            <%= link_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure? This will NOT refund the CC Points.' }, class: "btn btn-danger" %>
+            <%= button_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure? This will NOT refund the CC Points.' }, class: 'btn btn-danger' %>
           </div>
         </td>
       </tr>

@@ -17,13 +17,10 @@
         <div class="repository-container">
             <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.present? && repository.photos.first.present? && repository.photos.first.image.attached?}')" %> >
                 <% if repository.user_username.eql?(@user.username) %>
-                    <%= link_to 'Delete', repository_path(repository.user_username, repository.id), method:
-                        :delete, data: {
-                          confirm: 'Are you sure? Once you delete the repository there is no coming back!'
-                        },
-                                                                                                    class: 'btn btn-danger btn-sm float-end m-1', style: 'display: none' %>
+                    <%= button_to 'Delete', repository_path(repository.user_username, repository.id), method:
+                        :delete, data: { confirm: 'Are you sure? Once you delete the repository there is no coming back!' }, class: 'btn btn-danger btn-sm float-end m-1' %>
                     <%= link_to 'Edit', edit_repository_path(repository.user_username, repository.id),
-                                class: 'btn btn-secondary btn-sm float-end m-1', style: 'display: none' %>
+                                class: 'btn btn-secondary btn-sm float-end m-1' %>
                 <% end %>
                 <%= link_to '', repository_path(repository.user_username, repository.slug),
                             class: 'link' %>

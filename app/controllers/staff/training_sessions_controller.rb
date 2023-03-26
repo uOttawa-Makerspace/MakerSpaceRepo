@@ -137,7 +137,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
       if BadgeTemplate.where(
            training_id: @current_training_session.training_id
-         ).present? && @current_training_session.level == "Beginner"
+         ).present? && @current_training_session.level == "Beginner" &&
+           params[:skip_badge] != "true"
         badge_template =
           BadgeTemplate.find_by(
             training_id: @current_training_session.training_id
@@ -158,7 +159,11 @@ class Staff::TrainingSessionsController < StaffDashboardController
           )
         else
           error = true
-          flash[:alert] = "#{graduate.username}'s badge has not saved properly!"
+          flash[
+            :alert
+          ] = "#{graduate.username}'s badge has not saved properly!" if params[
+            :skip_badge
+          ] != "true"
         end
       end
       unless certification.save

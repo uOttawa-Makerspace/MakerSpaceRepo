@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+require "active_support/core_ext/integer/time"
 
 # The test environment is used exclusively to run your application's
 # test suite. You never need to work with it otherwise. Remember that
@@ -9,13 +9,13 @@ Rails.application.configure do
   $n_exams_question = 3
   # Settings specified here will take precedence over those in config/application.rb.
 
+  # Turn false under Spring and add config.action_view.cache_template_loading = true.
   config.cache_classes = true
-  # config.action_view.cache_template_loading = true
 
-  # Do not eager load code on boot. This avoids loading your whole application
-  # just for the purpose of running a single test. If you are using a tool that
-  # preloads Rails for running tests, you may have to set it to true.
-  config.eager_load = false
+  # Eager loading loads your whole application. When running a single test locally,
+  # this probably isn't necessary. It's a good idea to do in a continuous integration
+  # system, or in some way before deploying your code.
+  config.eager_load = ENV["CI"].present?
 
   # Configure public file server for tests with Cache-Control for performance.
   config.public_file_server.enabled = true
@@ -34,7 +34,7 @@ Rails.application.configure do
   # Disable request forgery protection in test environment.
   config.action_controller.allow_forgery_protection = false
 
-  # Store uploaded files on the local file system in a temporary directory
+  # Store uploaded files on the local file system in a temporary directory.
   config.active_storage.service = :test
 
   config.action_mailer.perform_caching = false
@@ -52,4 +52,15 @@ Rails.application.configure do
   # config.action_view.raise_on_missing_translations = true
 
   TestProf.configure { |configure| configure.output = "tmp/test_prof" }
+  # Raise exceptions for disallowed deprecations.
+  config.active_support.disallowed_deprecation = :raise
+
+  # Tell Active Support which deprecation messages to disallow.
+  config.active_support.disallowed_deprecation_warnings = []
+
+  # Raises error for missing translations.
+  # config.i18n.raise_on_missing_translations = true
+
+  # Annotate rendered view with file names.
+  # config.action_view.annotate_rendered_view_with_filenames = true
 end

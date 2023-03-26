@@ -2,7 +2,7 @@
 require "date"
 
 class PrintOrder < ApplicationRecord
-  belongs_to :user
+  belongs_to :user, optional: true
   after_save :set_filename
 
   has_one_attached :file

@@ -43,17 +43,4 @@
   <% end %>
 </div>
 
-<%= javascript_pack_tag 'staff_availability_calendar', 'data-turbolinks-track': 'reload' %>
-
-<script>
-if (document.getElementById("staff_id")) {
-    if (!document.getElementById("staff_id").tomselect) {
-        new TomSelect("#staff_id",
-        {
-          maxItems: 1,
-          placeholder: "Select Staff",
-          maxOptions: null
-        });
-    }
-}
-</script>
+<%= vite_javascript_tag 'staff_availability_calendar', 'data-turbo-track': 'reload' %>

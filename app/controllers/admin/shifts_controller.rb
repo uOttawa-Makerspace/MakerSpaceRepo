@@ -82,15 +82,8 @@ class Admin::ShiftsController < AdminAreaController
         )
       @shift.users << User.where(id: params[:user_id])
     else
-      respond_to do |format|
-        format.html { render :new }
-        format.json do
-          render json: {
-                   error: "Missing params"
-                 },
-                 status: :unprocessable_entity
-        end
-      end
+      render json: { error: "Missing params" }, status: :unprocessable_entity
+      return
     end
 
     respond_to do |format|

@@ -7,7 +7,7 @@ class ConvertJobServiceTextFieldIntoEnum < ActiveRecord::Migration[6.1]
                   default: 0,
                   using:
                     "case when text_field then 1::integer else 0::integer end"
-    JobServiceGroup.where(name: %w[PLA ABS]).update(text_field: :option)
+    # JobServiceGroup.where(name: %w[PLA ABS]).update(text_field: :option)
   end
 
   def down

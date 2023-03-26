@@ -14,8 +14,8 @@ RSpec.describe Order, type: :model do
     end
 
     context "belongs_to" do
-      it { should belong_to(:user) }
-      it { should belong_to(:order_status) }
+      it { should belong_to(:user).without_validating_presence }
+      it { should belong_to(:order_status).without_validating_presence }
     end
   end
 

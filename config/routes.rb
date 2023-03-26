@@ -102,6 +102,7 @@ Rails.application.routes.draw do
       get :projects_assigned
       get :projects_completed
       get :user_projects
+      delete :destroy, path: "destroy/:id", as: "destroy"
     end
   end
 
@@ -141,6 +142,7 @@ Rails.application.routes.draw do
   namespace :search, path: "/", as: nil do
     get "explore"
     get "search"
+    get "likes"
     get "category/:slug", as: "category", action: "category"
     get "category/:slug/featured", as: "featured", action: "featured"
     get "equipment/:slug", as: "equipment", action: "equipment"
@@ -224,7 +226,6 @@ Rails.application.routes.draw do
         #post 'bulk_add_certifications'
         patch "set_role"
         delete "delete_repository"
-        delete "delete_project_proposal"
         delete "delete_user"
         patch "restore_user"
         put "toggle_lock_user"
@@ -239,6 +240,10 @@ Rails.application.routes.draw do
       patch "/edit/:sub_space_id",
             as: "set_max_booking_duration",
             action: "set_max_booking_duration"
+      patch "/edit/:sub_space_id/max_automatic_approval_hour",
+            as: "set_max_automatic_approval_hour",
+            action: "set_max_automatic_approval_hour"
+
       delete "/edit/:id", as: "delete_sub_space", action: "delete_sub_space"
       put "/edit/:id",
           as: "change_sub_space_approval",
@@ -531,7 +536,11 @@ Rails.application.routes.draw do
   resources :repositories,
             path: "/:user_username",
             param: :id,
-            except: :index do
+            except: :index,
+            constraints:
+              lambda { |request|
+                User.find_by(username: request.params[:user_username]).present?
+              } do
     post "add_like", on: :member
     collection do
       get ":id/download_files",
@@ -540,7 +549,6 @@ Rails.application.routes.draw do
           constraints: {
             id: %r{[^/]+}
           }
-      get :populate_users
       patch :link_to_pp
       patch :add_owner
       patch :remove_owner
@@ -550,6 +558,7 @@ Rails.application.routes.draw do
       post "pass_authenticate"
     end
   end
+  get "/repositories/populate_users", to: "repositories#populate_users"
 
   namespace :makes, path: "makes/:user_username/:id" do
     post "create"

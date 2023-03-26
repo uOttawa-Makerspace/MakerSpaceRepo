@@ -47,6 +47,9 @@
       <% end %>
     </div>
     <div class="col-md-10">
+    <div id='spinner' class="spinner-border" style="width: 50vh; height: 50vh; position:absolute; z-index:1000; left:50%; top:50%; border-width:1rem; " role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
       <div id="calendar"></div>
     </div>
   </div>
@@ -64,10 +67,10 @@
         <div class="modal-body">
           <div class="mb-3 text-center">
             <label for="start-datetime">Start Date</label>
-            <input id="start-datetime" autocomplete="false" class="form-control">
+            <input id="start-datetime" autocomplete="false" class="form-control inanimate">
             <br>
             <label for="end-datetime">End Date</label>
-            <input id="end-datetime" autocomplete="false" class="form-control">
+            <input id="end-datetime" autocomplete="false" class="form-control inanimate">
             <br>
             <%= label_tag :user_id, 'User to select' %>
             <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true } %>
@@ -112,9 +115,19 @@
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
     </div>
+
+    <div id="toast-color-shift-failed" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+          <div class="toast-body">
+            There was a entry missing for the shift. Please try again after filling all the fields.
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <%= javascript_pack_tag 'admin_shifts' %>
+  <%= vite_javascript_tag 'admin_shifts' %>
 </div>
 
 <style>

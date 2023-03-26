@@ -1,7 +1,7 @@
 <% provide(:title, 'Edit Learning Module') %>
 <section class="card">
   <div class="float-end">
-    <%= link_to 'Delete', learning_area_path(@learning_module.id), method: :delete, class: 'btn btn-danger float-start ms-5 mt-5', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Learning Module.' } if current_user.admin? %>
+    <%= button_to 'Delete', learning_area_path(@learning_module.id), method: :delete, class: 'btn btn-danger float-start ms-5 mt-5', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Learning Module.' } if current_user.admin? %>
     <%= link_to 'Show', learning_area_path(@learning_module.id), class: 'btn btn-primary float-end me-5 mt-5' %>
   </div>
   <div class="col-lg-7 mx-auto">
@@ -103,4 +103,4 @@
   </div>
 </section>
 
-<%= javascript_pack_tag 'learning_modules' %>
+<%= vite_javascript_tag 'learning_modules' %>

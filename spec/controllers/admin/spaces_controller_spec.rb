@@ -2,6 +2,7 @@ require "rails_helper"
 
 RSpec.describe Admin::SpacesController, type: :controller do
   before(:each) do
+    @space = create(:space)
     @admin = create(:user, :admin)
     session[:expires_at] = DateTime.tomorrow.end_of_day
     session[:user_id] = @admin.id

@@ -472,7 +472,7 @@ class JobOrdersController < ApplicationController
   end
 
   def invoice
-    render pdf: "invoice", template: "job_orders/invoice.html.erb"
+    render pdf: "invoice", template: "job_orders/invoice", formats: [:html]
   end
 
   def pay

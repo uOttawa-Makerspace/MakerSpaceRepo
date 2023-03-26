@@ -33,7 +33,12 @@
               <%= t.certifications.joins(:training_session).where('training_sessions.space_id = ?', s.id).count %> <br />
             <% end %>
           </td>
-        <td><%= link_to 'Edit', edit_admin_training_path(t.id), class: 'btn btn-primary' %></td>
+        <td>
+        <%= link_to 'Edit', edit_admin_training_path(t.id), class: 'btn btn-primary' %>
+        <%= button_to 'Delete', { controller: 'admin/trainings', action: :destroy, id: t.id }, method: :delete,
+                                                                                               data: { confirm: 'Are you sure that you want to delete this training. This will delete all the training sessions as well.?' },
+                                                                                               class: 'btn btn-danger', form_class: 'text-center my-2' %>
+        </td>
       </tr>
     <% end %>
 

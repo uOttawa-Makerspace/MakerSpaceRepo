@@ -21,7 +21,7 @@
         </label>
       </div>
       <br/>
-      <%= link_to t('settings.profile.delete_avatar'), remove_avatar_users_path, class: 'btn btn-danger btn-sm' + (!@user.has_avatar? ? ' disabled' : ''), data: { confirm: t('settings.profile.delete_avatar_confirm') } %>
+      <%= link_to t('settings.profile.delete_avatar'), remove_avatar_users_path, class: "btn btn-danger btn-sm#{!@user.has_avatar? ? ' disabled' : ''}", data: { confirm: t('settings.profile.delete_avatar_confirm') } %>
     </div>
 
     <div class="mb-3">

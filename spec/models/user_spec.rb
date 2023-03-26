@@ -9,7 +9,7 @@ RSpec.describe User, type: :model do
 
   describe "Association" do
     context "belongs_to" do
-      it { should belong_to(:space) }
+      it { should belong_to(:space).without_validating_presence }
     end
 
     context "has_one" do

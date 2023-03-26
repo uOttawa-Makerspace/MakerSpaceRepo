@@ -1,7 +1,17 @@
 <section>
     <h2 class="text-center fw-bold py-3">Admin Course Manager</h2>
 
-    <p class="text-center"><%= link_to 'New Course', new_admin_course_name_path, class: 'btn btn-secondary' %></p>
+    <%= form_with url: { controller: 'admin/course_names', action: 'create' } do |f| %>
+      <div class="container">
+        <div class="row text-center">
+          <div class="col-auto form-group input-group">
+            <span class="input-group-text">Course Name</span>
+            <%= f.text_field :name, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
+            <%= f.submit 'Create Course', class: 'btn btn-primary btn-xl' %>
+            </div>
+        </div>
+      </div>
+    <% end %>
     <br />
    <table class="table table-striped mb-3">
    <thead class="table-primary">
@@ -13,7 +23,13 @@
       <% @courses.each do |t| %>
         <tr>
           <td><%= t.name %></td>
-          <td><%= link_to 'Edit', edit_admin_course_name_path(t.id), class: 'btn btn-primary' %></td>
+          <td>
+          <div>
+            <%= link_to 'Edit', edit_admin_course_name_path(t.id), class: 'btn btn-primary' %>
+            <%= button_to 'Delete', admin_course_name_path(t.id), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger', form_class: 'my-2' %>
+          </div>
+          </td>
+
         </tr>
       <% end %>
 

@@ -2,7 +2,7 @@
   <% @question.images.each do |img| %>
     <div class="img-wrap col-md-6 col-12 mx-auto" style="border: 1px dotted gray; border-radius: 30px; padding: 1em;">
       <div class="projects-image" style="background-image: url(<%= url_for(img) %>);">
-        <span class="btn-close"><%= link_to fa_icon('times'), delete_individually_questions_path(id: img.id), method: :delete, class: 'x-button', remote: true %></span>
+        <span class="btn-close"><%= button_to fa_icon('times'), delete_individually_questions_path(id: img.id), method: :delete, class: 'btn btn-default x-button', remote: true %></span>
       </div>
     </div>
   <% end %>

@@ -70,7 +70,7 @@
             <div>
               <div class="d-flex flex-column">
                 <% if current_user.admin? %>
-                <%= link_to fa_icon(@repo_user.locked? ? 'unlock' : 'lock'), toggle_lock_user_admin_users_path(id: @repo_user), method: :put, class: 'btn rounded-pill mb-2' + (@repo_user.locked? ? ' btn-success' : ' btn-danger') %>
+                <%= button_to fa_icon(@repo_user.locked? ? 'unlock' : 'lock'), toggle_lock_user_admin_users_path(id: @repo_user), method: :put, class: "btn rounded-pill w-100 mb-2#{@repo_user.locked? ? ' btn-success' : ' btn-danger'}" %>
                 <% end %>
                 <%= link_to fa_icon('cog', text: 'Edit Profile'), settings_profile_path, class: 'btn btn-secondary rounded-pill mb-2' if @repo_user.eql?(@user) %>
               </div>
@@ -99,9 +99,7 @@
                       </button>
                       <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
                         <h5 class="dropdown-header">RFID Card Set</h5>
-                        <%= link_to 'Un-Register RFID', staff_dashboard_unlink_rfid_path(card_number:
-                          @repo_user.rfid.card_number), action: :link_rfid, method: :put,
-                                                        class: 'dropdown-item text-danger' %>
+                        <%= button_to 'Un-Register RFID', staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number), action: :link_rfid, method: :put, class: 'dropdown-item text-danger' %>
                       </div>
                     </div>
                   <% else %>
@@ -115,13 +113,13 @@
                         <h5 class="dropdown-header text-center">Un-Registered Cards</h5>
                         <% Rfid.recent_unset.first(5).each do |rfid| %>
                           <% space = begin
-                                       PiReader.find_by(pi_mac_address: rfid.mac_address).space.name
-                                     rescue StandardError
-                                       'unknown'
-                                     end %>
-                        <%= link_to ("Tapped at #{space} " + time_ago_in_words(rfid.updated_at) + ' ago'),
-                                    staff_dashboard_link_rfid_path(user_id: @repo_user.id, card_number: rfid.card_number),
-                                    action: :link_rfid, method: :put, class: 'dropdown-item' %>
+                               PiReader.find_by(pi_mac_address: rfid.mac_address).space.name
+                             rescue StandardError
+                               'unknown'
+                             end %>
+                        <%= button_to "Tapped at #{space} #{time_ago_in_words(rfid.updated_at)} ago",
+                                      staff_dashboard_link_rfid_path(user_id: @repo_user.id, card_number: rfid.card_number),
+                                      action: :link_rfid, method: :put, class: 'dropdown-item' %>
                         <% end %>
                       </div>
                     </div>
@@ -178,10 +176,12 @@
             </div>
           <% end %>
         <% else %>
-          <div class="tab-pane fade" id="user-restore" role="tabpanel"
-            aria-labelledby="profile-tab">
-            <%= render partial: 'users/tabs/restore', locals: { repo_user: @repo_user } %>
-          </div>
+          <div class="tab-pane fade" id="user-restore" role="tabpanel" aria-labelledby="profile-tab">
+            <div class="row mb-1 text-center">
+              <span style="font-weight:bold;color:#E91D1D"> Restoring a user will remove the deleted flag from their profile.</span>
+              <br></br>
+              <%= button_to 'Restore User', restore_user_admin_users_path(id: @repo_user.id), method: :patch, class: 'btn btn-success w-25 mx-auto' %>
+            </div>
         <% end %>
       </div>
     </div>
@@ -249,4 +249,5 @@
       </div>
     </div>
   </div>
+</div>
 </div>

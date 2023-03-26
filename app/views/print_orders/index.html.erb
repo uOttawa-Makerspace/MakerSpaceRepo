@@ -64,7 +64,7 @@
 
                 <% @print_order.where(order).each_with_index do |prints| %>
                   <tr class="text-center" id="print-<%= prints.id %>">
-                    <%= render 'table_view', prints: prints, index: index %>
+                    <%= render 'table_view', prints:, index: %>
                   </tr>
                 <% end %>
               </table>
@@ -76,4 +76,4 @@
   </div>
 </div>
 
-<%= javascript_pack_tag 'printorder_modals' %>
+<%= vite_javascript_tag 'printorder_modals' %>

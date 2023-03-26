@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class LabSession < ApplicationRecord
-  belongs_to :user
-  belongs_to :space
+  belongs_to :user, optional: true
+  belongs_to :space, optional: true
 
   scope :between_dates_picked,
         ->(start_date, end_date) {

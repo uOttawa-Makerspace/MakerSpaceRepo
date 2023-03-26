@@ -27,18 +27,21 @@ class ProjectProposalsController < ApplicationController
     else
       @pending_project_proposals =
         ProjectProposal
+          .joins(:user)
           .filter_by_attribute(params[:search])
           .order(created_at: :desc)
           .where(approved: nil)
           .paginate(per_page: 15, page: params[:page_pending])
       @approved_project_proposals =
         ProjectProposal
+          .joins(:user)
           .filter_by_attribute(params[:search])
           .order(created_at: :desc)
           .where(approved: 1)
           .paginate(per_page: 15, page: params[:page_approved])
       @not_approved_project_proposals =
         ProjectProposal
+          .joins(:user)
           .filter_by_attribute(params[:search])
           .order(created_at: :desc)
           .where(approved: 0)
@@ -313,6 +316,7 @@ class ProjectProposalsController < ApplicationController
   # DELETE /project_proposals/1
   # DELETE /project_proposals/1.json
   def destroy
+    return unless current_user.admin?
     @project_proposal.destroy
     respond_to do |format|
       format.html do
@@ -432,6 +436,9 @@ class ProjectProposalsController < ApplicationController
   # Use callbacks to share common setup or constraints between actions.
   def set_project_proposal
     @project_proposal = ProjectProposal.find(params[:id])
+    unless @project_proposal
+      redirect_to root_path, alert: "Project proposal not found"
+    end
   end
 
   # Never trust parameters from the scary internet, only allow the white list through.

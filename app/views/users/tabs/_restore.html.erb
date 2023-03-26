@@ -2,6 +2,6 @@
     <span style="font-weight:bold;color:#E91D1D"> Restoring a user will remove the deleted
       flag from their profile.</span>
     <br></br>
-    <%= link_to 'Restore User', restore_user_admin_users_path(id: @repo_user.id), method:
+    <%= button_to 'Restore User', restore_user_admin_users_path(id: @repo_user.id), method:
       :patch, class: 'btn btn-success w-25 mx-auto' %>
 </div>

@@ -134,7 +134,7 @@ class StaffDashboardController < StaffAreaController
       lab_sessions.update_all(sign_out_time: Time.zone.now)
     end
     respond_to do |format|
-      format.html
+      format.html { redirect_to staff_dashboard_index_path }
       format.js
       format.json { render json: { status: "ok" } }
     end
@@ -212,7 +212,12 @@ class StaffDashboardController < StaffAreaController
     status ?
       flash[:notice] = "Space changed successfully" :
       flash[:alert] = "Something went wrong"
-    redirect_back(fallback_location: root_path)
+    respond_to do |format|
+      format.html do
+        redirect_back(fallback_location: staff_dashboard_index_path)
+      end
+      format.json { render json: { status: status ? "ok" : "error" } }
+    end
   end
 
   def link_rfid
