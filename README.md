@@ -9,9 +9,6 @@ A website where makers can publish projects. An initiative by the University of 
 
 ## New Developer Setup
 
-You must have Git and Ruby 2.7.3 installed. See [the Ruby website](https://www.ruby-lang.org/) for more information.
-If you are on Linux or macOS, we recommend that you use [rbenv](https://github.com/rbenv/rbenv) to manage Ruby installations on your computer.
-
 ### Windows
 
 Coming soon.
@@ -25,7 +22,7 @@ Coming soon.
 1. Install PostgreSQL and libpq-dev if they are not already installed:
 
    ```bash
-   sudo apt-get install postgresql libpq-dev
+   sudo apt-get install postgresql libpq-dev git curl
    ```
    
 2. Access a PostgreSQL Shell:
@@ -104,9 +101,12 @@ Coming soon.
    ```
 
 13. Start the Rails server:
+
    ```bash
    foreman start -f Procfile.dev
    ```
+   
+Note: You will want to change the remote origin from https to an ssh source, git@github.com:uOttawa-Makerspace/MakerSpaceRepo.git, in order to push.
 
 Happy coding!
 
