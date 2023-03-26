@@ -53,8 +53,8 @@
     "@prettier/plugin-ruby": "^3.2.0",
     "lint-staged": "^13.0.3",
     "prettier": "^2.7.1",
-    "vite": "^4.0.0",
-    "vite-plugin-ruby": "^3.1.2",
+    "vite": "^4.2.0",
+    "vite-plugin-ruby": "^3.2.0",
     "webpack-dev-server": "^3.11.0"
   }
 }

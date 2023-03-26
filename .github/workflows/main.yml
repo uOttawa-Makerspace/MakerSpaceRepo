@@ -67,7 +67,8 @@ jobs:
           sudo apt install ./wkhtmltox_0.12.6-1.focal_amd64.deb
           bundle exec rails db:prepare
           bundle exec rails db:migrate
-          bundle exec rails spec
+          bundle exec rake parallel:spec
+          bundle exec rails spec --only-failures
       - name: Deploy Staging
         if: github.ref == 'refs/heads/staging'
         env:
