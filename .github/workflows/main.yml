@@ -66,8 +66,6 @@ jobs:
           wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb
           sudo apt install ./wkhtmltox_0.12.6-1.focal_amd64.deb
           bundle exec rake parallel:setup
-          bundle exec rails db:prepare
-          bundle exec rails db:migrate
           bundle exec rake parallel:spec
           bundle exec rails spec --only-failures
       - name: Deploy Staging
