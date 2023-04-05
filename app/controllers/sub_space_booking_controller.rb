@@ -407,7 +407,9 @@ class SubSpaceBookingController < ApplicationController
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice:
                   "Booking for #{SubSpaceBooking.find(params[:sub_space_booking_id]).sub_space.name} approved successfully."
-    BookingMailer.send_booking_approved(booking.id).deliver_now
+    BookingMailer.send_booking_approved(
+      params[:sub_space_booking_id]
+    ).deliver_now
   end
 
   def decline
