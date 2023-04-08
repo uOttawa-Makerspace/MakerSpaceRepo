@@ -32,6 +32,7 @@ class SubSpaceBookingController < ApplicationController
       # Need to get the booking status from the sub space booking status table for the booking
       @pending_bookings =
         SubSpaceBookingStatus
+          .includes(sub_space_booking: [:user, sub_space: [:space]])
           .where(booking_status_id: BookingStatus::PENDING.id)
           .map { |booking_status| booking_status.sub_space_booking }
           .select { |booking| booking.end_time > Time.now }
@@ -39,6 +40,9 @@ class SubSpaceBookingController < ApplicationController
           .paginate(page: params[:pending_page], per_page: 15)
       @approved_bookings =
         SubSpaceBookingStatus
+          .includes(
+            sub_space_booking: [:user, sub_space: [:space], approved_by: []]
+          )
           .where(booking_status_id: BookingStatus::APPROVED.id)
           .map { |booking_status| booking_status.sub_space_booking }
           .select { |booking| booking.end_time > Time.now }
@@ -46,6 +50,7 @@ class SubSpaceBookingController < ApplicationController
           .paginate(page: params[:approved_page], per_page: 15)
       @declined_bookings =
         SubSpaceBookingStatus
+          .includes(sub_space_booking: [:user, sub_space: [:space]])
           .where(booking_status_id: BookingStatus::DECLINED.id)
           .map { |booking_status| booking_status.sub_space_booking }
           .select { |booking| booking.end_time > Time.now }
@@ -53,6 +58,7 @@ class SubSpaceBookingController < ApplicationController
           .paginate(page: params[:denied_page], per_page: 15)
       @old_pending_bookings =
         SubSpaceBookingStatus
+          .includes(sub_space_booking: [:user, sub_space: [:space]])
           .where(booking_status_id: BookingStatus::PENDING.id)
           .map { |booking_status| booking_status.sub_space_booking }
           .select { |booking| booking.end_time < Time.now }
@@ -61,6 +67,9 @@ class SubSpaceBookingController < ApplicationController
           .paginate(page: params[:old_pending_page], per_page: 15)
       @old_approved_bookings =
         SubSpaceBookingStatus
+          .includes(
+            sub_space_booking: [:user, sub_space: [:space], approved_by: []]
+          )
           .where(booking_status_id: BookingStatus::APPROVED.id)
           .map { |booking_status| booking_status.sub_space_booking }
           .select { |booking| booking.end_time < Time.now }
@@ -69,6 +78,7 @@ class SubSpaceBookingController < ApplicationController
           .paginate(page: params[:old_approved_page], per_page: 15)
       @old_declined_bookings =
         SubSpaceBookingStatus
+          .includes(sub_space_booking: [:user, sub_space: [:space]])
           .where(booking_status_id: BookingStatus::DECLINED.id)
           .map { |booking_status| booking_status.sub_space_booking }
           .select { |booking| booking.end_time < Time.now }

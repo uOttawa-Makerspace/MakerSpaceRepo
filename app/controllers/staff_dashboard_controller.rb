@@ -4,7 +4,7 @@ class StaffDashboardController < StaffAreaController
   def index
     respond_to do |format|
       format.html do
-        @users = User.order(id: :desc).limit(10)
+        @users = User.includes(:lab_sessions).order(id: :desc).limit(10)
         @certifications_on_space =
           Proc.new do |user, space_id|
             user

@@ -325,7 +325,6 @@ const populateUsers = (arg) => {
       .then((res) => res.json())
       .then((res) => {
         res.forEach((user) => {
-          console.log("Adding user: ", user);
           userIdInput.tomselect.addOption({
             value: user.id,
             text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,

@@ -37,6 +37,7 @@ class Admin::ShiftsController < AdminAreaController
     @colors = []
 
     StaffSpace
+      .includes(:user)
       .joins(:user)
       .where(space_id: @space_id)
       .order("users.name")
@@ -246,6 +247,7 @@ class Admin::ShiftsController < AdminAreaController
     staff_availabilities = []
     @space_id = params[:space_id] if params[:space_id].present?
     StaffAvailability
+      .includes(:user)
       .where(user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
       .each do |sa|
         event = {}
