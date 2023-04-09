@@ -1,11 +1,12 @@
 class Shift < ApplicationRecord
   has_and_belongs_to_many :users
   belongs_to :space, optional: true
+  has_one :shift_colour, dependent: :destroy
 
   validates :start_datetime, presence: true
   validates :end_datetime, presence: true
 
-  before_save :set_or_update_google_event
+  before_save :set_or_update_google_event, :update_colour
   before_destroy :delete_google_event
 
   def return_event_title
@@ -13,7 +14,27 @@ class Shift < ApplicationRecord
   end
 
   def color(space_id)
-    if users.count == 1
+    unless self.shift_colour.present?
+      self.shift_colour =
+        ShiftColour.create(colour: self.generate_color(space_id))
+    end
+    return self.shift_colour.colour
+  end
+
+  private
+
+  def update_colour
+    if self.shift_colour.nil?
+      self.shift_colour =
+        ShiftColour.create(colour: self.generate_color(self.space_id))
+    else
+      self.shift_colour.update(colour: self.generate_color(self.space_id))
+    end
+  end
+
+  def generate_color(space_id)
+    if users.size == 1
+      puts users.first.staff_spaces.find_by(space_id: space_id).color
       users.first.staff_spaces.find_by(space_id: space_id).color
     else
       color = users.first.staff_spaces.find_by(space_id: space_id).color
@@ -29,8 +50,6 @@ class Shift < ApplicationRecord
       ("#" + color)
     end
   end
-
-  private
 
   def to_hex(c)
     n = c.to_i.to_s(16)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
+ActiveRecord::Schema[7.0].define(version: 2023_04_08_230052) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -838,6 +838,12 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.index ["user_id"], name: "index_shadowing_hours_on_user_id"
   end
 
+  create_table "shift_colours", force: :cascade do |t|
+    t.bigint "shift_id", null: false
+    t.string "colour", null: false
+    t.index ["shift_id"], name: "index_shift_colours_on_shift_id"
+  end
+
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
     t.bigint "space_id"
@@ -1188,6 +1194,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   add_foreign_key "rfids", "users"
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
+  add_foreign_key "shift_colours", "shifts"
   add_foreign_key "shifts", "spaces"
   add_foreign_key "space_staff_hours", "course_names"
   add_foreign_key "space_staff_hours", "spaces"
