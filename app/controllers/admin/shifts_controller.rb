@@ -245,8 +245,14 @@ class Admin::ShiftsController < AdminAreaController
     opacity = params[:transparent].present? ? 0.25 : 1
     staff_availabilities = []
     @space_id = params[:space_id] if params[:space_id].present?
+    # Create a hashmap of StaffSpace colours to the user ids
+    staff_space_colors =
+      StaffSpace.where(space_id: @space_id).pluck(:user_id, :color).to_h
     StaffAvailability
+      .includes(user: :staff_spaces)
+      .joins(user: :staff_spaces)
       .where(user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
+      .select(:id, :day, :start_time, :end_time, :user_id, "users.name")
       .each do |sa|
         event = {}
         event["title"] = "#{sa.user.name} is unavailable"
@@ -255,7 +261,7 @@ class Admin::ShiftsController < AdminAreaController
         event["startTime"] = sa.start_time.strftime("%H:%M")
         event["endTime"] = sa.end_time.strftime("%H:%M")
         event["color"] = hex_color_to_rgba(
-          sa.user.staff_spaces.find_by(space_id: @space_id).color,
+          staff_space_colors[sa.user_id],
           opacity
         )
         event["userId"] = sa.user.id
@@ -268,27 +274,49 @@ class Admin::ShiftsController < AdminAreaController
 
   def get_shifts
     shifts = []
-
     Shift
       .includes(:users)
+      .joins(users: :staff_spaces)
+      .where(start_datetime: params[:start]..params[:end])
       .where(
-        "users.id": StaffSpace.where(space_id: @space_id).pluck(:user_id),
+        users: {
+          id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
+        },
         space_id: @space_id
+      )
+      .distinct
+      .select(
+        :id,
+        :start_datetime,
+        :end_datetime,
+        :color,
+        :pending,
+        :reason,
+        "users.id AS user_id",
+        "users.name AS user_name",
+        "staff_spaces.color AS staff_space_color"
       )
       .each do |shift|
         event = {}
-        event["title"] = shift.return_event_title
+        event[
+          "title"
+        ] = "#{shift.reason} for #{shift.users.pluck(:name).join(", ")}"
         event["id"] = shift.id
         event["start"] = shift.start_datetime
         event["end"] = shift.end_datetime
         event["color"] = hex_color_to_rgba(
-          shift.color(@space_id),
+          (
+            if shift.users.length > 1
+              shift.color(@space_id)
+            else
+              shift.staff_space_color
+            end
+          ),
           shift.pending? ? 0.7 : 1
         )
-        event["className"] = "user-#{shift.users.first.id}"
-        shifts << event
+        event["className"] = "user-#{shift.user_id}"
+        shifts << event if shifts.none? { |s| s["id"] == event["id"] }
       end
-
     render json: shifts
   end
 
