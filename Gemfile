@@ -28,7 +28,7 @@ gem "saml_idp", "~> 0.9.0"
 gem "sass-rails", "~> 6.0.0"
 gem "sdoc", "~> 1.1.0", group: :doc
 gem "shopify_app", "~> 18.1.2"
-gem "sidekiq", "~> 6.4.0"
+gem "sidekiq", "~> 7.0.8"
 gem "simplecov", "~> 0.21.2"
 gem "thin", "~> 1.8.1"
 gem "toastr-rails"
