@@ -295,6 +295,8 @@ Rails.application.routes.draw do
 
     resources :contact_infos
 
+    resources :time_periods, except: [:show]
+
     resources :training_sessions do
       get "/", as: "index", action: "index"
 

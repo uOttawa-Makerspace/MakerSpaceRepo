@@ -29,6 +29,8 @@ let sourceShow = {
     : "none",
 };
 let hiddenIds = {};
+const urlParams = new URLSearchParams(window.location.search);
+const time_period_id = urlParams.get("time_period_id");
 
 // Inputs
 const startDateTimeInput = document.getElementById("start-datetime");
@@ -171,7 +173,9 @@ fetch("/admin/shifts/get_external_staff_needed", {
       eventSources: [
         {
           id: "transparent",
-          url: "/admin/shifts/get_availabilities?transparent=true",
+          url: `/admin/shifts/get_availabilities?transparent=true${
+            time_period_id ? "&time_period_id=" + time_period_id : ""
+          }`,
           editable: false,
         },
         {

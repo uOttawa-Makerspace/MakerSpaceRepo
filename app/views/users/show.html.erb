@@ -145,10 +145,6 @@
           <div class="tab-pane fade" id="programs-manager" role="tabpanel" aria-labelledby="badges-tab">
             <%= render partial: 'users/tabs/programs', locals: { user: @user, repo_user: @repo_user } %>
           </div>
-          <div class="tab-pane fade" id="unavailabilities-manager" role="tabpanel"
-            aria-labelledby="unavailabilities-tab">
-            <%= link_to 'See Staff Unavailabilities', staff_availabilities_path, class: 'btn btn-primary' %>
-          </div>
           <div class="tab-pane fade" id="profile-skills" role="tabpanel" aria-labelledby="profile-tab">
            <%= render partial: 'users/tabs/skills', locals: { skills: @skills } %>
           </div>

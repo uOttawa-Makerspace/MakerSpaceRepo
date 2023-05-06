@@ -5,6 +5,7 @@ class Admin::ShiftsController < AdminAreaController
 
   before_action :set_default_space
   before_action :set_shifts, only: %i[edit update destroy]
+  before_action :set_time_period
 
   def index
     @staff =
@@ -246,7 +247,10 @@ class Admin::ShiftsController < AdminAreaController
     staff_availabilities = []
     @space_id = params[:space_id] if params[:space_id].present?
     StaffAvailability
-      .where(user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
+      .where(
+        user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id),
+        time_period: @time_period
+      )
       .each do |sa|
         event = {}
         event["title"] = "#{sa.user.name} is unavailable"
@@ -420,5 +424,25 @@ class Admin::ShiftsController < AdminAreaController
       :space_id,
       user_id: []
     )
+  end
+
+  def set_time_period
+    @missing_time_period = false
+    if params[:time_period_id] &&
+         TimePeriod.find(params[:time_period_id]).present?
+      @time_period = TimePeriod.find(params[:time_period_id])
+    else
+      date = Date.today
+      if TimePeriod.where(
+           "start_date < ? AND end_date > ?",
+           date,
+           date
+         ).present?
+        @time_period =
+          TimePeriod.where("start_date < ? AND end_date > ?", date, date).first
+      else
+        @missing_time_period = true
+      end
+    end
   end
 end
