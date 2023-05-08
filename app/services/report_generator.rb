@@ -680,7 +680,7 @@ class ReportGenerator
             end
 
             sheet.add_row [
-                            certification.username,
+                            certification.user.name,
                             certification.user.email,
                             certification.training_session.training.name,
                             certification.training_session.created_at.strftime(
@@ -1243,7 +1243,7 @@ class ReportGenerator
           training_level: row["training_level"],
           course_name: row["course_name"],
           instructor_name: row["instructor_name"],
-          date: DateTime.strptime(row["date"], "%Y-%m-%d %H:%M:%S"),
+          date: DateTime.strptime(row["date"].to_s, "%Y-%m-%d %H:%M:%S"),
           facility: row["space_name"],
           attendee_count: row["attendee_count"].to_i
         }

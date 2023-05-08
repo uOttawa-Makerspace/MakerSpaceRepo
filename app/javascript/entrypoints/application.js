@@ -160,13 +160,6 @@ document.addEventListener("turbo:load", () => {
     });
   });
 });
-setTimeout(() => {
-  document.querySelectorAll(".form-control").forEach((element) => {
-    setTimeout(() => {
-      element.classList.add("animated");
-    }, 350);
-  });
-}, 0);
 document.addEventListener("turbo:load", () => {
   document.querySelectorAll("form").forEach(function (el) {
     el.dataset.turbo = false;

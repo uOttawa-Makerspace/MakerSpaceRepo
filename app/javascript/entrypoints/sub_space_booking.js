@@ -253,7 +253,6 @@ document.addEventListener("turbo:load", function () {
 });
 document.addEventListener("turbo:render", ready);
 function ready() {
-  document.getElementById("book-recurring").checked = false;
   const anchor = window.location.hash.substring(1);
   const pending_table = new URLSearchParams(window.location.search).get(
     "pending_page"

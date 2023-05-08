@@ -134,7 +134,7 @@ class StaffDashboardController < StaffAreaController
       lab_sessions.update_all(sign_out_time: Time.zone.now)
     end
     respond_to do |format|
-      format.html
+      format.html { redirect_to staff_dashboard_index_path }
       format.js
       format.json { render json: { status: "ok" } }
     end
