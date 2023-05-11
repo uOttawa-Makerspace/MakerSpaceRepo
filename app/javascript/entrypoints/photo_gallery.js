@@ -3,6 +3,7 @@ import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
 
 document.addEventListener("DOMContentLoaded", function () {
   var images = [];
+  var image_tags = [];
 
   var parseImages = function (el) {
     if (el) {
@@ -21,6 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
             h: node.getAttribute("data-height"),
           };
           items.push(item);
+          image_tags.push(node);
 
           node.addEventListener("click", () => openPhotoSwipe(index));
         }
@@ -44,6 +46,20 @@ document.addEventListener("DOMContentLoaded", function () {
   var openPhotoSwipe = function (startIndex) {
     var options = {
       index: startIndex,
+      getThumbBoundsFn: function (index) {
+        var currentImage = image_tags[index];
+        var pageYScroll = window.scrollY || document.documentElement.scrollTop;
+        var boundingRect = currentImage.getBoundingClientRect();
+
+        var rect = {
+          x: boundingRect.left,
+          y: boundingRect.top + pageYScroll,
+          w: boundingRect.width,
+        };
+
+        return rect;
+      },
+      bgOpacity: 0.7,
     };
 
     var gallery = new PhotoSwipe(
@@ -52,6 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
       images,
       options
     );
+
     gallery.init();
   };
 
