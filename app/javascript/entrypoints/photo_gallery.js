@@ -5,33 +5,39 @@ document.addEventListener("DOMContentLoaded", function () {
   var images = [];
 
   var parseImages = function (el) {
-    var childNodes = el.children;
-    var items = [];
+    if (el) {
+      var childNodes = el.children;
+      var items = [];
 
-    Array.from(childNodes).forEach(function (node, index) {
-      if (node.tagName === "IMG") {
-        let item = {
-          src: node.src,
-          w: node.getAttribute("data-width"),
-          h: node.getAttribute("data-height"),
-        };
-        items.push(item);
-
-        node.addEventListener("click", () => openPhotoSwipe(index));
+      if (childNodes === undefined) {
+        return;
       }
-    });
 
-    images = items;
+      Array.from(childNodes).forEach(function (node, index) {
+        if (node.tagName === "IMG") {
+          let item = {
+            src: node.src,
+            w: node.getAttribute("data-width"),
+            h: node.getAttribute("data-height"),
+          };
+          items.push(item);
 
-    var mainImageDiv = document.getElementById("show-photo");
-    if (
-      mainImageDiv &&
-      mainImageDiv.children[0] &&
-      mainImageDiv.children[0].tagName === "IMG"
-    ) {
-      mainImageDiv.children[0].addEventListener("click", () =>
-        openPhotoSwipe(0)
-      );
+          node.addEventListener("click", () => openPhotoSwipe(index));
+        }
+      });
+
+      images = items;
+
+      var mainImageDiv = document.getElementById("show-photo");
+      if (
+        mainImageDiv &&
+        mainImageDiv.children[0] &&
+        mainImageDiv.children[0].tagName === "IMG"
+      ) {
+        mainImageDiv.children[0].addEventListener("click", () =>
+          openPhotoSwipe(0)
+        );
+      }
     }
   };
 
