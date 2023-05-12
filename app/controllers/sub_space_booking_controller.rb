@@ -7,7 +7,25 @@ class SubSpaceBookingController < ApplicationController
   before_action :user_admin, only: [:publish]
   before_action :user_booking_belongs, only: %i[delete edit update]
   def index
-    @subspace = SubSpace.find(params[:room]) if params[:room].present?
+    if params[:room].present?
+      @subspace = SubSpace.find(params[:room])
+      @rules = []
+      if @subspace.maximum_booking_duration.present?
+        @rules << "has a maximum booking duration of #{@subspace.maximum_booking_duration} hours"
+      end
+      if @subspace.maximum_booking_hours_per_week.present?
+        @rules << "has a maximum booking hours per person per week of #{@subspace.maximum_booking_hours_per_week} hours"
+      end
+      if @subspace.default_public
+        @rules << "bookings (Name and Description of event) are public by default"
+      end
+      if @subspace.max_automatic_approval_hour.present? &&
+           @subspace.approval_required
+        @rules << "Bookings require manual approval, bookings of #{@subspace.max_automatic_approval_hour} hours or less will be automatically approved"
+      elsif @subspace.approval_required
+        @rules << "bookings will require manual approval"
+      end
+    end
     @bookings =
       SubSpaceBooking.where(user_id: current_user.id).order(:start_time)
     if current_user.admin?
@@ -185,13 +203,37 @@ class SubSpaceBookingController < ApplicationController
           params[:sub_space_booking][:recurring_frequency] == "weekly" ?
             recurrence = 7.days :
             recurrence = 1.month
+          epoch_start = params[:sub_space_booking][:start_time].to_datetime
           start_time = params[:sub_space_booking][:start_time].to_datetime
           end_time = params[:sub_space_booking][:end_time].to_datetime
           end_date = params[:sub_space_booking][:recurring_end].to_date
           book(params)
+          corrected = false
           while start_time < end_date
             params[:sub_space_booking][:start_time] = start_time + recurrence
             params[:sub_space_booking][:end_time] = end_time + recurrence
+            if params[:sub_space_booking][:start_time].in_time_zone.dst? !=
+                 epoch_start.in_time_zone.dst? && !corrected
+              params[:sub_space_booking][:start_time] += (
+                if params[:sub_space_booking][:start_time].in_time_zone.dst?
+                  -1.hour
+                else
+                  1.hour
+                end
+              )
+              params[:sub_space_booking][:end_time] += (
+                if params[:sub_space_booking][:end_time].in_time_zone.dst?
+                  -1.hour
+                else
+                  1.hour
+                end
+              )
+              corrected = true
+            elsif corrected &&
+                  params[:sub_space_booking][:start_time].in_time_zone.dst? ==
+                    epoch_start.in_time_zone.dst?
+              corrected = false
+            end
             start_time = params[:sub_space_booking][:start_time].to_datetime
             end_time = params[:sub_space_booking][:end_time].to_datetime
             book(params)
@@ -297,7 +339,22 @@ class SubSpaceBookingController < ApplicationController
             if SubSpace.find(
                  params[:sub_space_booking][:sub_space_id]
                ).approval_required
-              BookingStatus::PENDING.id
+              if SubSpace
+                   .find(params[:sub_space_booking][:sub_space_id])
+                   .max_automatic_approval_hour
+                   .nil?
+                BookingStatus::PENDING.id
+              elsif duration <=
+                    SubSpace.find(
+                      params[:sub_space_booking][:sub_space_id]
+                    ).max_automatic_approval_hour
+                BookingStatus::APPROVED.id
+              elsif duration >
+                    SubSpace.find(
+                      params[:sub_space_booking][:sub_space_id]
+                    ).max_automatic_approval_hour
+                BookingStatus::PENDING.id
+              end
             else
               BookingStatus::APPROVED.id
             end
@@ -311,7 +368,9 @@ class SubSpaceBookingController < ApplicationController
     flash[
       :notice
     ] = "Booking for #{booking.sub_space.name} created successfully."
-    if booking.sub_space.approval_required
+    if booking.sub_space.approval_required &&
+         booking.sub_space_booking_status.booking_status_id ==
+           BookingStatus::PENDING.id
       BookingMailer.send_booking_needs_approval(booking.id).deliver_now
     end
   end
@@ -340,11 +399,17 @@ class SubSpaceBookingController < ApplicationController
       )
     booking.booking_status_id = BookingStatus::APPROVED.id
     booking.save
+    SubSpaceBooking.find(params[:sub_space_booking_id]).update(
+      approved_at: DateTime.now,
+      approved_by_id: current_user.id
+    )
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice:
                   "Booking for #{SubSpaceBooking.find(params[:sub_space_booking_id]).sub_space.name} approved successfully."
-    BookingMailer.send_booking_approved(booking.id).deliver_now
+    BookingMailer.send_booking_approved(
+      params[:sub_space_booking_id]
+    ).deliver_now
   end
 
   def decline

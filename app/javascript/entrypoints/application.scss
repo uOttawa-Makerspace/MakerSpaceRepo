@@ -28,3 +28,8 @@ a {
 .dropdown-item:active {
   background-color: #497979 !important;
 }
+@media (prefers-reduced-motion: reduce) {
+  .form-control:not(#q, .inanimate) {
+    transition: none;
+  }
+}

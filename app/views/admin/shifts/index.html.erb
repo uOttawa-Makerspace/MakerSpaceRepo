@@ -1,11 +1,19 @@
 <div>
   <br>
-  <div class="d-flex justify-content-center">
+  <div class="d-flex justify-content-center gap-2">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
       <div class="input-group mb-3">
         <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
         <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: 'form-select' %>
         <%= hidden_field_tag :shifts, true %>
+        <button class="btn btn-outline-secondary" type="submit">Go</button>
+      </div>
+    <% end %>
+
+    <%= form_tag admin_shifts_path, method: :get do %>
+      <div class="input-group mb-3">
+        <%= label_tag :time_period_id, 'Time Period', class: 'input-group-text' %>
+        <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: (params[:time_period_id].presence || TimePeriod.current.id)), class: 'form-select' %>
         <button class="btn btn-outline-secondary" type="submit">Go</button>
       </div>
     <% end %>
@@ -57,7 +65,7 @@
               <div class="col-md-6 mb-3">
                 <label for="start-datetime">Start Time</label>
                 <div class="input-group">
-                  <%= text_field_tag 'start_time', '', id: 'start-time', autocomplete: 'off', class: 'form-control', required: true %>
+                  <%= text_field_tag 'start_time', '', id: 'start-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
                   <button class="btn btn-outline-danger" id="start-time-clear" type="button">
                     <i class="fa fa-times"></i>
                   </button>
@@ -67,7 +75,7 @@
               <div class="col-md-6 mb-3">
                 <label for="end-datetime">End Date</label>
                 <div class="input-group">
-                  <%= text_field_tag 'end_time', '', id: 'end-time', autocomplete: 'off', class: 'form-control', required: true %>
+                  <%= text_field_tag 'end_time', '', id: 'end-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
                   <button class="btn btn-outline-danger" id="end-time-clear" type="button">
                     <i class="fa fa-times"></i>
                   </button>
@@ -78,6 +86,12 @@
               <%= label_tag :user_id, 'User' %>
               <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', required: true, class: 'form-control form-select' } %>
             </div>
+
+            <div class="mb-3 text-center">
+              <%= label_tag :time_period_id, 'Time Period', class: 'form-label' %>
+              <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id)), { id: 'time-period-id', autocomplete: 'off', class: 'form-control form-select', required: true } %>
+            </div>
+
           </div>
         </div>
         <div class="modal-footer">

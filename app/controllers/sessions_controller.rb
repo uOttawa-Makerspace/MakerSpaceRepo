@@ -100,7 +100,7 @@ class SessionsController < ApplicationController
         end
         format.html do
           flash[:alert] = error_message
-          render :login
+          render :login, status: :unprocessable_entity
         end
         format.json do
           render json: { error: error_message }, status: :unprocessable_entity

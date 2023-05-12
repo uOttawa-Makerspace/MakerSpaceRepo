@@ -13,6 +13,7 @@ class DiscountCodesController < DevelopmentProgramsController
         .order(created_at: :desc)
     # @expired_codes = user_discount_codes.used_code.includes(:price_rule)
     @expired_codes = []
+    @coupon_codes = CouponCode.where(user_id: current_user)
     @all_discount_codes =
       # DiscountCode.includes(:price_rule).order(
       #   created_at: :desc
@@ -23,7 +24,7 @@ class DiscountCodesController < DevelopmentProgramsController
   def new
     @price_rules =
       # PriceRule.where("expired_at > ? OR expired_at IS NULL", DateTime.now)
-      CouponCode.unclaimed
+      CouponCode.unclaimed.distinct.pluck(:dollar_cost, :cc_cost)
   end
 
   def create
@@ -74,8 +75,13 @@ class DiscountCodesController < DevelopmentProgramsController
     #   flash[:alert] = "This coupon is expired"
     #   redirect_to new_discount_code_path
     # end
-    @price_rule = CouponCode.find_by(id: params[:price_rule_id])
-
+    # @price_rule = CouponCode.find_by(id: params[:price_rule_id])
+    @price_rule =
+      CouponCode.unclaimed.find_by(dollar_cost: params[:dollar_cost])
+    unless @price_rule
+      flash[:alert] = "Can not find coupon for $#{params[:dollar_cost]} off"
+      redirect_to new_discount_code_path
+    end
     unless @price_rule.user.nil?
       flash[:alert] = "This coupon is already claimed"
       redirect_to new_discount_code_path

@@ -252,48 +252,65 @@
       <%= f.submit 'Create new sub space', class: 'btn btn-primary' %>
     </div>
   <% end %>
-  <h3>Sub Spaces</h3>
+  <h3 id="sub_space_area">Sub Spaces</h3>
+  <i> Hover over the question mark to see the description of the setting</i>
+  <div class="table-responsive">
   <table class="table table-striped">
     <thead class="table-primary text-center">
     <tr>
       <th>Sub Space</th>
-      <th>Automatic Booking Approval</th>
-      <th>Maximum Hours per Booking</th>
-      <th>Maximum Hours per Week</th>
-      <th>Default booking privacy</th>
+      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If enabled, bookings will be automatically approved if they are within the maximum booking duration and weekly maximum.">
+        Automatic Booking Approval?
+      </th>
+      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, bookings will be automatically approved even if the subspace is on manual approval and the user is within the maximum booking duration and weekly maximum .">
+        Automatically Approve Booking Duration?
+      </th>
+      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, a user will not be able to book a slot longer than this duration.">
+        Maximum Hours per Booking?
+      </th>
+      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, a user will not be able to book more than this amount of hours per week.">
+        Maximum Hours per Week?
+      </th>
+      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If private by default, booking details like name, and description will not be shown on the calendar">
+        Default booking privacy?
+      </th>
       <th>Delete Sub Space</th>
     </tr>
     </thead>
-    <% SubSpace.where(space: @space).each do |sub_space| %>
+    <% SubSpace.where(space: @space).order(:name).each do |sub_space| %>
       <tr>
         <td><%= sub_space.name %></td>
-          <td><%= link_to "#{sub_space.approval_required ? 'Enable' : 'Disable'} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id: @space.id, id: sub_space.id), method: :put, action: :change_sub_space_approval, class: 'btn btn-primary btn-sm' %></td>
+          <td><%= button_to "#{sub_space.approval_required ? 'Enable' : 'Disable'} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id: @space.id, id: sub_space.id), method: :put, action: :change_sub_space_approval, class: 'btn btn-primary btn-sm' %></td>
+          <td>
+            <%= form_tag admin_space_set_max_automatic_approval_hour_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_auto_approve_booking_duration, method: :patch, class: 'input-group' do %>
+              <%= select_tag(:auto_approve_hours, options_for_select((-1..24).to_a, sub_space.max_automatic_approval_hour || -1), class: 'form-select') %>
+              <%= submit_tag 'Set', class: 'btn btn-primary btn-sm' %>
+            <% end %>
+            <i>to disable the limit, use -1</i>
           <td>
             <%= form_tag admin_space_set_max_booking_duration_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
-              <button step=-1 target='max_hours_weekly' id='max_hours_decrement' class='btn btn-sm btn-outline-danger' onclick='customNumberInput(event,this)'><%= fa_icon('minus') %></button>
-              <%= text_field_tag :max_hours, sub_space.maximum_booking_duration.nil? ? -1 : sub_space.maximum_booking_duration, class: 'form-control' %>
-              <button step=1 target='max_hours_weekly' id='max_hours_increment' class='btn btn-sm btn-outline-success' onclick='customNumberInput(event,this)'><%= fa_icon('plus') %></button>
-              <%= submit_tag 'Set Hours', class: 'btn btn-primary btn-sm' %>
+              <%= select_tag(:max_hours, options_for_select((-1..24).to_a, sub_space.maximum_booking_duration || -1), class: 'form-select') %>
+              <%= submit_tag 'Set', class: 'btn btn-primary btn-sm' %>
             <% end %>
             <i>to disable the limit, use -1</i>
           </td>
           <td>
             <%= form_tag admin_space_set_max_booking_duration_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
-              <button step=-1 target='max_hours_weekly' id='max_hours_decrement' class='btn btn-sm btn-outline-danger' onclick='customNumberInput(event,this)'><%= fa_icon('minus') %></button>
-              <%= text_field_tag :max_hours_weekly, sub_space.maximum_booking_hours_per_week.nil? ? -1 : sub_space.maximum_booking_hours_per_week, class: 'form-control' %>
-              <button step=1 target='max_hours_weekly' id='max_hours_increment' class='btn btn-sm btn-outline-success' onclick='customNumberInput(event,this)'><%= fa_icon('plus') %></button>
-              <%= submit_tag 'Set Hours', class: 'btn btn-primary btn-sm' %>
+              <%= select_tag(:max_weekly_hours, options_for_select((-1..168).to_a, sub_space.maximum_booking_hours_per_week || -1), class: 'form-select') %>
+              <%= submit_tag 'Set', class: 'btn btn-primary btn-sm' %>
             <% end %>
             <i>to disable the limit, use -1</i>
           </td>
           <td>
+
             <%= button_to "Make #{sub_space.default_public ? 'Private' : 'Public'} by default", admin_space_change_sub_space_default_public_path(space_id: @space.id, id: sub_space.id), method: :post, action: :change_sub_space_default_public, class: "btn #{sub_space.default_public ? ' btn-secondary' : ' btn-primary'}" %>
           </td>
-        <td><%= link_to 'Destroy', admin_space_delete_sub_space_path(space_id: @space.id, id: sub_space.id), method: :delete, action: :delete_sub_space,
-                                                                                                             data: { confirm: 'Are you sure you want to delete this sub space ?' }, class: 'btn btn-danger' %></td>
+        <td><%= button_to 'Destroy', admin_space_delete_sub_space_path(space_id: @space.id, id: sub_space.id), method: :delete, action: :delete_sub_space,
+                                                                                                               data: { confirm: 'Are you sure you want to delete this sub space ?' }, class: 'btn btn-danger' %></td>
       </tr>
     <% end %>
   </table>
+  </div>
     <br>
 
 

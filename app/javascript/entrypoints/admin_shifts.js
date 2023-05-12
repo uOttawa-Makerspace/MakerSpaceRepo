@@ -9,6 +9,10 @@ import iCalendarPlugin from "@fullcalendar/icalendar";
 import { Modal, Toast } from "bootstrap";
 import TomSelect from "tom-select";
 
+// Time slot constants
+const SLOT_MIN_TIME = new Date(new Date().setHours(7, 0, 0, 0));
+const SLOT_MAX_TIME = new Date(new Date().setHours(23, 0, 0, 0));
+
 // Modal
 const shiftModal = new Modal(document.getElementById("shiftModal"));
 
@@ -25,6 +29,8 @@ let sourceShow = {
     : "none",
 };
 let hiddenIds = {};
+const urlParams = new URLSearchParams(window.location.search);
+const time_period_id = urlParams.get("time_period_id");
 
 // Inputs
 const startDateTimeInput = document.getElementById("start-datetime");
@@ -56,6 +62,7 @@ const startPicker = startDateTimeInput.flatpickr({
   altInput: true,
   altFormat: "F j, Y at H:i",
   onChange: (selectedDates, dateStr, instance) => {
+    let selectedItems = [...userIdInput.tomselect.items];
     populateUsers({
       start: new Date(
         Date.parse(selectedDates[0]) -
@@ -65,6 +72,10 @@ const startPicker = startDateTimeInput.flatpickr({
         Date.parse(endPicker.selectedDates[0]) -
           new Date().getTimezoneOffset() * 60 * 1000
       ),
+    }).then(() => {
+      for (let id of selectedItems) {
+        userIdInput.tomselect.addItem(id);
+      }
     });
   },
 });
@@ -75,6 +86,7 @@ const endPicker = endDateTimeInput.flatpickr({
   altInput: true,
   altFormat: "F j, Y at H:i",
   onChange: (selectedDates, dateStr, instance) => {
+    let selectedItems = [...userIdInput.tomselect.items];
     populateUsers({
       end: new Date(
         Date.parse(selectedDates[0]) -
@@ -84,17 +96,22 @@ const endPicker = endDateTimeInput.flatpickr({
         Date.parse(startPicker.selectedDates[0]) -
           new Date().getTimezoneOffset() * 60 * 1000
       ),
+    }).then(() => {
+      for (let id of selectedItems) {
+        userIdInput.tomselect.addItem(id);
+      }
     });
   },
 });
 
 const newShiftUserSelect = new TomSelect("#user-id", {
-  maxItems: 3,
+  maxItems: null,
   placeholder: "Select users",
   search: true,
   plugins: ["remove_button"],
 });
 
+let events = 0;
 // Calendar Config
 const calendarEl = document.getElementById("calendar");
 
@@ -144,8 +161,8 @@ fetch("/admin/shifts/get_external_staff_needed", {
       navLinks: true,
       selectable: true,
       selectMirror: true,
-      slotMinTime: "07:00:00",
-      slotMaxTime: "22:00:00",
+      slotMinTime: SLOT_MIN_TIME.toTimeString().split(" ")[0],
+      slotMaxTime: SLOT_MAX_TIME.toTimeString().split(" ")[0],
       eventTimeFormat: {
         hour: "2-digit",
         minute: "2-digit",
@@ -156,7 +173,9 @@ fetch("/admin/shifts/get_external_staff_needed", {
       eventSources: [
         {
           id: "transparent",
-          url: "/admin/shifts/get_availabilities?transparent=true",
+          url: `/admin/shifts/get_availabilities?transparent=true${
+            time_period_id ? "&time_period_id=" + time_period_id : ""
+          }`,
           editable: false,
         },
         {
@@ -206,6 +225,22 @@ fetch("/admin/shifts/get_external_staff_needed", {
         }
       },
       eventDrop: (arg) => {
+        let shiftStartHour = new Date(
+          Date.parse(arg.event.start.toString()) +
+            new Date().getTimezoneOffset() * 60 * 1000
+        ).getHours();
+        let shiftEndHour = new Date(
+          Date.parse(arg.event.end.toString()) +
+            new Date().getTimezoneOffset() * 60 * 1000
+        ).getHours();
+        if (
+          shiftStartHour < SLOT_MIN_TIME.getHours() ||
+          shiftEndHour > SLOT_MAX_TIME.getHours() ||
+          (shiftEndHour >= 0 && shiftEndHour < shiftStartHour)
+        ) {
+          arg.revert();
+          return;
+        }
         modifyEvent(arg);
       },
       eventResize: (arg) => {
@@ -239,6 +274,7 @@ fetch("/admin/shifts/get_external_staff_needed", {
       },
     });
     calendar.render();
+    document.getElementById("hide-show-unavailabilities").click();
   });
 
 // Refresh pending Shifts
@@ -293,6 +329,7 @@ const populateUsers = (arg) => {
       .then((res) => res.json())
       .then((res) => {
         res.forEach((user) => {
+          console.log("Adding user: ", user);
           userIdInput.tomselect.addOption({
             value: user.id,
             text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,
@@ -332,23 +369,30 @@ const createCalendarEvent = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      calendar.addEvent(
-        {
-          title: data.name,
-          start: data.start,
-          end: data.end,
-          allDay: false,
-          id: data["id"],
-          color: data.color,
-          className: data.className,
-        },
-        "shifts"
-      );
-      shiftModal.hide();
-      calendar.unselect();
-      refreshPendingShifts();
-      if (modalDelete.classList.contains("d-block")) {
-        removeEvent(document.getElementById("shift-id").value, true);
+      if (data.error) {
+        const toast = new Toast(
+          document.getElementById("toast-color-shift-failed")
+        );
+        toast.show();
+      } else {
+        calendar.addEvent(
+          {
+            title: data.name,
+            start: data.start,
+            end: data.end,
+            allDay: false,
+            id: data["id"],
+            color: data.color,
+            className: data.className,
+          },
+          "shifts"
+        );
+        shiftModal.hide();
+        calendar.unselect();
+        refreshPendingShifts();
+        if (modalDelete.classList.contains("d-block")) {
+          removeEvent(document.getElementById("shift-id").value, true);
+        }
       }
     })
     .catch((error) => {
@@ -406,8 +450,14 @@ const modifyEvent = (arg) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      start_datetime: arg.event.start,
-      end_datetime: arg.event.end,
+      start_datetime: new Date(
+        Date.parse(arg.event.start.toString()) +
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
+      end_datetime: new Date(
+        Date.parse(arg.event.end.toString()) +
+          new Date().getTimezoneOffset() * 60 * 1000
+      ),
       format: "json",
     }),
   })
@@ -499,6 +549,10 @@ const staffNeededEvent = (arg) => {
 
 // Hide/Show Events
 const hideShowEvents = (eventName) => {
+  eventName == "check" ? (events += 1) : events;
+  if (events >= Object.keys(calendar.currentData.eventSources).length) {
+    document.getElementById("spinner").classList.add("d-none");
+  }
   let allEvents = calendar.getEvents();
   if (eventName !== "check") {
     sourceShow[eventName] = sourceShow[eventName] === "none" ? "block" : "none";

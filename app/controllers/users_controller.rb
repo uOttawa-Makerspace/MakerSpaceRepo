@@ -24,6 +24,13 @@ class UsersController < SessionsController
                 ]
 
   def create
+    unless verify_recaptcha
+      @new_user = User.new
+      redirect_to new_user_path,
+                  alert: "You failed the Captcha",
+                  status: :unprocessable_entity
+      return
+    end
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
 
@@ -341,8 +348,12 @@ class UsersController < SessionsController
       redirect_to root_path, alert: "User not found."
     else
       @programs = @repo_user.programs.pluck(:program_type)
-      @github_username =
-        Octokit::Client.new(access_token: @repo_user.access_token).login
+      begin
+        @github_username =
+          Octokit::Client.new(access_token: @repo_user.access_token).login
+      rescue Octokit::Unauthorized
+        @github_username = nil
+      end
       @repositories =
         if params[:username] == @user.username || @user.admin? || @user.staff?
           @repo_user

@@ -86,7 +86,7 @@
 </td>
 <td>
   <% if jo.job_order_quote.present? %>
-    <%= button_to "<i class='fa fa-download'></i> Invoice".html_safe, job_order_invoice_path(job_order_id: jo.id), method: :get, target: '_blank', class: 'btn btn-secondary btn-sm' %>
+    <%= button_to "<i class='fa fa-download'></i> Invoice".html_safe, job_order_invoice_path(job_order_id: jo.id), method: :get, form: { target: '_blank' }, class: 'btn btn-secondary btn-sm' %>
   <% else %>
     Not Available
   <% end %>

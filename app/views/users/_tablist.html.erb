@@ -23,9 +23,7 @@
         aria-haspopup="true" aria-expanded="false">Staff</a>
       <ul class="dropdown-menu">
         <li class="nav-item">
-          <a class="nav-link text-secondary" id="unavailabilities-tab" data-bs-toggle="tab"
-            href="#unavailabilities-manager" role="tab" aria-controls="profile" aria-selected="false">Staff
-            Unavailabilities</a>
+          <%= link_to 'Staff Unavailabilities', staff_availabilities_path, class: 'nav-link text-secondary' %>
         </li>
         <li class="nav-item">
           <a class="nav-link text-secondary" id="certifications-tab" data-bs-toggle="tab"

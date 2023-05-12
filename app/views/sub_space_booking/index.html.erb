@@ -9,7 +9,7 @@
     <div id="toast_text" class="toast-body">
     </div>
     </div>
-    <div class="col-md-8 mx-auto">
+    <div class="col-md-10 mx-auto">
       <ul class="nav nav-tabs nav-fill" id="booking-tab-list" role="tablist">
           <button class="nav-link tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab" aria-controls="booking-calendar-tab" aria-selected="true">Book</button>
           <button class="nav-link tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab" aria-controls="booking-tab" aria-selected="false">My Bookings</button>
@@ -20,8 +20,8 @@
           <div class="navbar navbar-expand-xl navbar-light bg-light w-100">
             <div class="container-fluid justify-content-start ">
               <a class="navbar-brand" href="<%= sub_space_booking_index_path %>">Maker<strong>Room</strong></a>
-              <% Space.all.each do |space| %>
-                <% subspaces = SubSpace.where(space_id: space.id) %>
+              <% Space.all.order(:name).each do |space| %>
+                <% subspaces = SubSpace.where(space_id: space.id).order(:name) %>
                   <% if subspaces.length > 0 %>
                     <% if subspaces.length == 1 %>
                       <div class="nav-item ms-4"><%= link_to(subspaces.last.name, sub_space_booking_index_path(room: subspaces.last.id), class: 'nav-link') %></div>
@@ -43,6 +43,14 @@
             </div>
           <% if params[:room].present? %>
             <h3 class="text-center my-3"> <%= @subspace.name %> Availability Calendar</h3>
+            <div>
+            <% unless @rules.empty? %>
+              <p class="text-center alert alert-info">
+                <%= @subspace.name %> 
+                <%= @rules.to_sentence %>
+              </p>
+            <% end %>
+            </div>
             <div id="booked-calendar"></div>
             <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
             <div class="modal-dialog" role="document">
@@ -61,17 +69,17 @@
                     <input type="text" class="form-control" id="book-description" placeholder="Meeting with John Doe">
                     <br>
                     <label for="book-start">Start Date</label>
-                    <input id="book-start" autocomplete="false" class="form-control">
+                    <input id="book-start" autocomplete="false" class="form-control inanimate">
                     <br>
                     <label for="book-end">End Date</label>
-                    <input id="book-end" autocomplete="false" class="form-control">
+                    <input id="book-end" autocomplete="false" class="form-control inanimate">
                     <br>
-                    <input type="checkbox" id="book-recurring" checked=false class="form-check-input">
+                    <input type="checkbox" id="book-recurring" class="form-check-input">
                     <label for="book-recurring">Is this a recurring booking?</label>
                     <br>
                     <div class="flatpickr">
                     <label for="book-recurring-end" id="book-recurring-end-label">Recurring End Date</label>
-                    <input id="book-recurring-end" autocomplete="false" class="form-control">
+                    <input id="book-recurring-end" autocomplete="false" class="form-control inanimate">
                     </div>
                     <label for="book-recurring-type" id="book-recurring-type-label">Recurring Frequency</label>
                     <select id="book-recurring-type" class="form-select form-control">
@@ -122,7 +130,7 @@
                     <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? 'Approved' : 'Not Approved' %></td>
                     <td class="input-group">
                     <%= button_to 'Edit', sub_space_booking_edit_path(booking.id), method: :get, class: 'btn btn-secondary', form_style: 'border: none;background: none;', form_class: '' if booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
-                    <%= link_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
+                    <%= button_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
                     </td>
                   </tr>
                 <% end %>

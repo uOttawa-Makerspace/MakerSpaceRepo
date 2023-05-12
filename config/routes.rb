@@ -240,6 +240,10 @@ Rails.application.routes.draw do
       patch "/edit/:sub_space_id",
             as: "set_max_booking_duration",
             action: "set_max_booking_duration"
+      patch "/edit/:sub_space_id/max_automatic_approval_hour",
+            as: "set_max_automatic_approval_hour",
+            action: "set_max_automatic_approval_hour"
+
       delete "/edit/:id", as: "delete_sub_space", action: "delete_sub_space"
       put "/edit/:id",
           as: "change_sub_space_approval",
@@ -290,6 +294,8 @@ Rails.application.routes.draw do
     resources :course_names
 
     resources :contact_infos
+
+    resources :time_periods, except: [:show]
 
     resources :training_sessions do
       get "/", as: "index", action: "index"
@@ -532,7 +538,11 @@ Rails.application.routes.draw do
   resources :repositories,
             path: "/:user_username",
             param: :id,
-            except: :index do
+            except: :index,
+            constraints:
+              lambda { |request|
+                User.find_by(username: request.params[:user_username]).present?
+              } do
     post "add_like", on: :member
     collection do
       get ":id/download_files",
@@ -541,8 +551,6 @@ Rails.application.routes.draw do
           constraints: {
             id: %r{[^/]+}
           }
-      get ":id/download", as: "download", action: "download"
-      get :populate_users
       patch :link_to_pp
       patch :add_owner
       patch :remove_owner
@@ -552,6 +560,7 @@ Rails.application.routes.draw do
       post "pass_authenticate"
     end
   end
+  get "/repositories/populate_users", to: "repositories#populate_users"
 
   namespace :makes, path: "makes/:user_username/:id" do
     post "create"

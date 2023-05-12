@@ -223,7 +223,7 @@ class Admin::UsersController < AdminAreaController
     @roles = %w[admin staff regular_user]
     # response is js
     respond_to do |format|
-      format.html
+      format.html { redirect_back(fallback_location: root_path) }
       format.js { render layout: false }
       format.all { redirect_back(fallback_location: root_path) }
     end

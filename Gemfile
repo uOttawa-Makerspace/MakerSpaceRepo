@@ -105,4 +105,5 @@ group :test do
   gem "rails-controller-testing"
   gem "selenium-webdriver", "~> 3.142.7"
   gem "shoulda-matchers", "~> 4.0"
+  gem "rspec-retry"
 end

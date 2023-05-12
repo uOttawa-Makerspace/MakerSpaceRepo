@@ -127,10 +127,13 @@
               <% end %>
             </div>
           </div>
-
-          <div class="mb-3 text-center"><%= form.submit t('users.new.sign_up'), class: 'btn btn-primary btn-lg' %></div>
+          <%= recaptcha_tags %>
+          <div class="my-3 text-center"><%= form.submit t('users.new.sign_up'), class: 'btn btn-primary btn-lg' %></div>
         </div>
       </div>
     <% end %>
+    <div class='text-center mx-auto'>
+
+    </div>
   </div>
 </section>

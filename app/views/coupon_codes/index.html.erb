@@ -17,7 +17,7 @@
   <div class="col-3 d-inline">
     <div class="form-group form-floating">
       <%= f.number_field :dollar_cost, class: 'form-control' %>
-      <%= f.label :dollar_cost %>
+      <%= f.label :dollar_cost, 'Dollars off' %>
     </div>
   </div>
   <div class="col-3 d-inline"><%= f.submit 'Create Coupon Code', class: 'btn btn-primary' %>
@@ -45,7 +45,7 @@
           <td class="text-center mx-auto">
             <div class="input-group text-center d-flex justify-content-center">
               <%= link_to 'Edit', edit_coupon_code_path(coupon), class: 'btn btn-primary' %>
-              <%= link_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
+              <%= button_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
             </div>
           </td>
         </tr>
@@ -74,7 +74,7 @@
         <td><%= link_to coupon.user.name, user_path(coupon.user.username) %></td>
         <td>
           <div class="input-group">
-            <%= link_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure? This will NOT refund the CC Points.' }, class: 'btn btn-danger' %>
+            <%= button_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure? This will NOT refund the CC Points.' }, class: 'btn btn-danger' %>
           </div>
         </td>
       </tr>

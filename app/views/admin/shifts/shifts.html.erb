@@ -1,10 +1,18 @@
 <div class="mt-4">
-  <div class="d-flex justify-content-center">
+  <div class="d-flex justify-content-center gap-2">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
       <div class="input-group mb-3">
         <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
         <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: 'form-select' %>
         <%= hidden_field_tag :shifts, true %>
+        <button class="btn btn-outline-secondary" type="submit">Go</button>
+      </div>
+    <% end %>
+
+    <%= form_tag shifts_admin_shifts_path, method: :get do %>
+      <div class="input-group mb-3">
+        <%= label_tag :time_period_id, 'Time Period', class: 'input-group-text' %>
+        <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: (params[:time_period_id].presence || TimePeriod.current.id)), class: 'form-select' %>
         <button class="btn btn-outline-secondary" type="submit">Go</button>
       </div>
     <% end %>
@@ -47,6 +55,9 @@
       <% end %>
     </div>
     <div class="col-md-10">
+    <div id='spinner' class="spinner-border" style="width: 50vh; height: 50vh; position:absolute; z-index:1000; left:50%; top:50%; border-width:1rem; " role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
       <div id="calendar"></div>
     </div>
   </div>
@@ -64,10 +75,10 @@
         <div class="modal-body">
           <div class="mb-3 text-center">
             <label for="start-datetime">Start Date</label>
-            <input id="start-datetime" autocomplete="false" class="form-control">
+            <input id="start-datetime" autocomplete="false" class="form-control inanimate">
             <br>
             <label for="end-datetime">End Date</label>
-            <input id="end-datetime" autocomplete="false" class="form-control">
+            <input id="end-datetime" autocomplete="false" class="form-control inanimate">
             <br>
             <%= label_tag :user_id, 'User to select' %>
             <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true } %>
@@ -112,7 +123,16 @@
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
     </div>
-  </div>
+
+    <div id="toast-color-shift-failed" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+          <div class="toast-body">
+            There was a entry missing for the shift. Please try again after filling all the fields.
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    </div>
 
   <%= vite_javascript_tag 'admin_shifts' %>
 </div>

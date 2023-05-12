@@ -51,28 +51,40 @@ class RepositoriesController < SessionsController
 
     Zip::ZipFile.open(file_location, Zip::File::CREATE) do |zip|
       @files.each do |file|
-        File.open(
-          "#{Rails.root}/public/tmp/#{file.file.filename}",
-          "wb"
-        ) { |downloaded_file| downloaded_file.write(file.file.download) }
-
-        zip.add(
-          file.file.filename,
-          "#{Rails.root}/public/tmp/#{file.file.filename}"
-        )
+        downloaded_file_path = "#{Rails.root}/public/tmp/#{file.file.filename}"
+        if file.file.attached? &&
+             file.file.blob.service.exist?(file.file.blob.key)
+          File.open(downloaded_file_path, "wb") do |downloaded_file|
+            downloaded_file.write(file.file.download)
+          end
+          if zip.find_entry(file.file.filename)
+            filename =
+              file.file.filename.to_s.split(".")[0] + "_1." +
+                file.file.filename.to_s.split(".")[1]
+          else
+            filename = file.file.filename
+          end
+          zip.add(filename, downloaded_file_path)
+        end
       end
     end
 
     @files.each do |file|
-      File.delete("#{Rails.root}/public/tmp/#{file.file.filename}")
+      downloaded_file_path = "#{Rails.root}/public/tmp/#{file.file.filename}"
+      File.delete(downloaded_file_path) if File.exist?(downloaded_file_path)
     end
 
-    File.open(file_location, "r") do |f|
-      send_data f.read,
-                type: "application/zip",
-                filename: "makerepo_file_#{@repository.id.to_s}.zip"
+    if File.exist?(file_location)
+      File.open(file_location, "r") do |f|
+        send_data f.read,
+                  type: "application/zip",
+                  filename: "makerepo_file_#{@repository.id.to_s}.zip"
+      end
+      File.delete(file_location)
+    else
+      flash[:error] = "Unable to download file: File not found."
+      redirect_to root_path
     end
-    File.delete(file_location)
   end
 
   def new
@@ -239,7 +251,7 @@ class RepositoriesController < SessionsController
   def add_owner
     repository = Repository.find params[:repo_owner][:repository_id]
     owner_id = params[:repo_owner][:owner_id]
-    repository.users << User.find(owner_id)
+    repository.users << User.find(owner_id) if User.exists?(owner_id)
     if repository.save
       flash[:notice] = "This owner was added to your repository"
     else
