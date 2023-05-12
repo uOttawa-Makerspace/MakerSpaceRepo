@@ -104,7 +104,12 @@ const endPicker = endDateTimeInput.flatpickr({
   },
 });
 
-const newShiftUserSelect = new TomSelect("#user-id", {
+document.addEventListener("turbo:load", () => {
+  console.log(calendar);
+  console.log(calendarEl);
+});
+
+new TomSelect("#user-id", {
   maxItems: null,
   placeholder: "Select users",
   search: true,
@@ -113,169 +118,177 @@ const newShiftUserSelect = new TomSelect("#user-id", {
 
 let events = 0;
 // Calendar Config
-const calendarEl = document.getElementById("calendar");
+let calendarEl = document.getElementById("calendar");
 
 let calendar;
 
-fetch("/admin/shifts/get_external_staff_needed", {
-  method: "GET",
-  headers: {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  },
-})
-  .then((res) => res.json())
-  .then((res) => {
-    calendar = new Calendar(calendarEl, {
-      plugins: [
-        interactionPlugin,
-        timeGridPlugin,
-        listPlugin,
-        googleCalendarPlugin,
-        iCalendarPlugin,
-      ],
-      customButtons: {
-        addNewEvent: {
-          text: "+",
-          click: () => {
-            openModal();
+document.addEventListener("turbo:load", () => {
+  calendarEl.remove();
+  calendarEl = document.createElement("div");
+  calendarEl.id = "calendar";
+  document.getElementById("calendar-container").appendChild(calendarEl);
+  events = 0;
+
+  fetch("/admin/shifts/get_external_staff_needed", {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  })
+    .then((res) => res.json())
+    .then((res) => {
+      calendar = new Calendar(calendarEl, {
+        plugins: [
+          interactionPlugin,
+          timeGridPlugin,
+          listPlugin,
+          googleCalendarPlugin,
+          iCalendarPlugin,
+        ],
+        customButtons: {
+          addNewEvent: {
+            text: "+",
+            click: () => {
+              openModal();
+            },
+          },
+          copyToNextWeek: {
+            text: "Copy to next week",
+            click: () => {
+              copyToNextWeek();
+            },
           },
         },
-        copyToNextWeek: {
-          text: "Copy to next week",
-          click: () => {
-            copyToNextWeek();
-          },
+        headerToolbar: {
+          left: "prev,today,next",
+          center: "copyToNextWeek",
+          right: "addNewEvent,timeGridWeek,timeGridDay",
         },
-      },
-      headerToolbar: {
-        left: "prev,today,next",
-        center: "copyToNextWeek",
-        right: "addNewEvent,timeGridWeek,timeGridDay",
-      },
-      contentHeight: "auto",
-      slotEventOverlap: false,
-      allDaySlot: false,
-      timeZone: "America/New_York",
-      initialView: "timeGridWeek",
-      navLinks: true,
-      selectable: true,
-      selectMirror: true,
-      slotMinTime: SLOT_MIN_TIME.toTimeString().split(" ")[0],
-      slotMaxTime: SLOT_MAX_TIME.toTimeString().split(" ")[0],
-      eventTimeFormat: {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      },
-      editable: true,
-      dayMaxEvents: true,
-      eventSources: [
-        {
-          id: "transparent",
-          url: `/admin/shifts/get_availabilities?transparent=true${
-            time_period_id ? "&time_period_id=" + time_period_id : ""
-          }`,
-          editable: false,
+        contentHeight: "auto",
+        slotEventOverlap: false,
+        allDaySlot: false,
+        timeZone: "America/New_York",
+        initialView: "timeGridWeek",
+        navLinks: true,
+        selectable: true,
+        selectMirror: true,
+        slotMinTime: SLOT_MIN_TIME.toTimeString().split(" ")[0],
+        slotMaxTime: SLOT_MAX_TIME.toTimeString().split(" ")[0],
+        eventTimeFormat: {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
         },
-        {
-          id: "shifts",
-          url: "/admin/shifts/get_shifts",
-        },
-        {
-          id: "google",
-          googleCalendarApiKey: "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
-          googleCalendarId:
-            "c_d7liojb08eadntvnbfa5na9j98@group.calendar.google.com",
-          color: "rgba(255,31,31,0.4)",
-          editable: false,
-        },
-        {
-          id: "staffNeeded",
-          url: "/admin/shifts/get_staff_needed",
-          color: "rgba(40,40,40,0.4)",
-          editable: false,
-        },
-        ...res.map((cal) => {
-          return {
-            id: "staffNeeded",
-            color: cal.color,
+        editable: true,
+        dayMaxEvents: true,
+        eventSources: [
+          {
+            id: "transparent",
+            url: `/admin/shifts/get_availabilities?transparent=true${
+              time_period_id ? "&time_period_id=" + time_period_id : ""
+            }`,
             editable: false,
-            ...(cal.calendar_url.includes(".ics")
-              ? {
-                  format: "ics",
-                  url: `/admin/shifts/ics?staff_needed_calendar_id=${cal.id}`,
-                }
-              : {
-                  googleCalendarApiKey:
-                    "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
-                  googleCalendarId: cal.calendar_url,
-                }),
-          };
-        }),
-      ],
-      select: (arg) => {
-        openModal(arg);
-      },
-      eventClick: (arg) => {
-        if (arg.event.source.id === "shifts") {
-          editShift(arg);
-        } else if (arg.event.source.id === "staffNeeded") {
-          staffNeededEvent(arg);
-        }
-      },
-      eventDrop: (arg) => {
-        let shiftStartHour = new Date(
-          Date.parse(arg.event.start.toString()) +
-            new Date().getTimezoneOffset() * 60 * 1000
-        ).getHours();
-        let shiftEndHour = new Date(
-          Date.parse(arg.event.end.toString()) +
-            new Date().getTimezoneOffset() * 60 * 1000
-        ).getHours();
-        if (
-          shiftStartHour < SLOT_MIN_TIME.getHours() ||
-          shiftEndHour > SLOT_MAX_TIME.getHours() ||
-          (shiftEndHour >= 0 && shiftEndHour < shiftStartHour)
-        ) {
-          arg.revert();
-          return;
-        }
-        modifyEvent(arg);
-      },
-      eventResize: (arg) => {
-        modifyEvent(arg);
-      },
-      eventOrder: (a, b) => {
-        if (
-          (a.title.includes("is unavailable") &&
-            b.title.includes("is unavailable")) ||
-          (!a.title.includes("is unavailable") &&
-            !b.title.includes("is unavailable"))
-        ) {
-          return 0;
-        } else if (a.title.includes("is unavailable")) {
-          return -1;
-        } else {
-          return 1;
-        }
-      },
-      eventSourceSuccess: (content, xhr) => {
-        content.forEach((event) => {
-          if (hiddenIds[event.userId] === "none") {
-            event.display = "none";
-          } else if (hiddenIds[event.userId] === "block") {
-            event.display = "block";
-          } else {
+          },
+          {
+            id: "shifts",
+            url: "/admin/shifts/get_shifts",
+          },
+          {
+            id: "google",
+            googleCalendarApiKey: "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
+            googleCalendarId:
+              "c_d7liojb08eadntvnbfa5na9j98@group.calendar.google.com",
+            color: "rgba(255,31,31,0.4)",
+            editable: false,
+          },
+          {
+            id: "staffNeeded",
+            url: "/admin/shifts/get_staff_needed",
+            color: "rgba(40,40,40,0.4)",
+            editable: false,
+          },
+          ...res.map((cal) => {
+            return {
+              id: "staffNeeded",
+              color: cal.color,
+              editable: false,
+              ...(cal.calendar_url.includes(".ics")
+                ? {
+                    format: "ics",
+                    url: `/admin/shifts/ics?staff_needed_calendar_id=${cal.id}`,
+                  }
+                : {
+                    googleCalendarApiKey:
+                      "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
+                    googleCalendarId: cal.calendar_url,
+                  }),
+            };
+          }),
+        ],
+        select: (arg) => {
+          openModal(arg);
+        },
+        eventClick: (arg) => {
+          if (arg.event.source.id === "shifts") {
+            editShift(arg);
+          } else if (arg.event.source.id === "staffNeeded") {
+            staffNeededEvent(arg);
           }
-        });
-        hideShowEvents("check");
-        return content;
-      },
+        },
+        eventDrop: (arg) => {
+          let shiftStartHour = new Date(
+            Date.parse(arg.event.start.toString()) +
+              new Date().getTimezoneOffset() * 60 * 1000
+          ).getHours();
+          let shiftEndHour = new Date(
+            Date.parse(arg.event.end.toString()) +
+              new Date().getTimezoneOffset() * 60 * 1000
+          ).getHours();
+          if (
+            shiftStartHour < SLOT_MIN_TIME.getHours() ||
+            shiftEndHour > SLOT_MAX_TIME.getHours() ||
+            (shiftEndHour >= 0 && shiftEndHour < shiftStartHour)
+          ) {
+            arg.revert();
+            return;
+          }
+          modifyEvent(arg);
+        },
+        eventResize: (arg) => {
+          modifyEvent(arg);
+        },
+        eventOrder: (a, b) => {
+          if (
+            (a.title.includes("is unavailable") &&
+              b.title.includes("is unavailable")) ||
+            (!a.title.includes("is unavailable") &&
+              !b.title.includes("is unavailable"))
+          ) {
+            return 0;
+          } else if (a.title.includes("is unavailable")) {
+            return -1;
+          } else {
+            return 1;
+          }
+        },
+        eventSourceSuccess: (content, xhr) => {
+          content.forEach((event) => {
+            if (hiddenIds[event.userId] === "none") {
+              event.display = "none";
+            } else if (hiddenIds[event.userId] === "block") {
+              event.display = "block";
+            } else {
+            }
+          });
+          hideShowEvents("check");
+          return content;
+        },
+      });
+      calendar.render();
+      document.getElementById("hide-show-unavailabilities").click();
     });
-    calendar.render();
-    document.getElementById("hide-show-unavailabilities").click();
-  });
+});
 
 // Refresh pending Shifts
 const refreshPendingShifts = () => {
@@ -329,7 +342,6 @@ const populateUsers = (arg) => {
       .then((res) => res.json())
       .then((res) => {
         res.forEach((user) => {
-          console.log("Adding user: ", user);
           userIdInput.tomselect.addOption({
             value: user.id,
             text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,
@@ -549,10 +561,12 @@ const staffNeededEvent = (arg) => {
 
 // Hide/Show Events
 const hideShowEvents = (eventName) => {
-  eventName == "check" ? (events += 1) : events;
+  eventName === "check" ? (events += 1) : events;
+
   if (events >= Object.keys(calendar.currentData.eventSources).length) {
     document.getElementById("spinner").classList.add("d-none");
   }
+
   let allEvents = calendar.getEvents();
   if (eventName !== "check") {
     sourceShow[eventName] = sourceShow[eventName] === "none" ? "block" : "none";
