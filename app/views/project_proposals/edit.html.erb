@@ -30,10 +30,10 @@
       <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
       <div class='checkbox-list form-check'>
         <%= f.radio_button :client_type, 'Organization / Organisation', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_type_organization', 'Organization / Organisation', id: 'type', style: 'display:inline', class: 'form-label' %>
+        <%= f.label 'client_type_organization', 'Organization / Organisation', id: 'type', style: 'display:inline', class: 'form-check-label' %>
         <br>
         <%= f.radio_button :client_type, 'Individual / Individuel', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_type_individual', 'Individual / Individuel', id: 'type', style: 'display:inline', class: 'form-label' %>
+        <%= f.label 'client_type_individual', 'Individual / Individuel', id: 'type', style: 'display:inline', class: 'form-check-label' %>
       </div>
     </div>
     <br>
@@ -48,20 +48,20 @@
       <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
       <div class='checkbox-list form-check'>
         <%= f.radio_button :client_interest, 'Low / Faible', checked: true, class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_interest_low', 'Low / Faible', id: 'type', style: 'display:inline', class: 'form-label' %>
+        <%= f.label 'client_interest_low', 'Low / Faible', id: 'type', style: 'display:inline', class: 'form-check-label' %>
         <br>
         <%= f.radio_button :client_interest, 'Medium / Moyen', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_interest_medium', 'Medium / Moyen', id: 'type', style: 'display:inline', class: 'form-label' %>
+        <%= f.label 'client_interest_medium', 'Medium / Moyen', id: 'type', style: 'display:inline', class: 'form-check-label' %>
         <br>
         <%= f.radio_button :client_interest, 'High / Élevé', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_interest_high', 'High / Élevé', id: 'type', style: 'display:inline', class: 'form-label' %>
+        <%= f.label 'client_interest_high', 'High / Élevé', id: 'type', style: 'display:inline', class: 'form-check-label' %>
       </div>
     </div>
     <br/>
     <div class="mb-3 required">
       <%= f.label :client_background, 'Client Background/Contexte du client', class: 'form-label' %>
       <div>What is the client background?<br>Quel est le contexte du client?</div>
-      <div style="width: 420px;">
+      <div>
         <%= f.hidden_field :client_background, id: :project_proposal_client_background, class: 'form-control' %>
         <trix-editor input="project_proposal_client_background"></trix-editor>
         <div class="invalid-feedback">
@@ -80,7 +80,7 @@
     <div class="mb-3 required">
       <%= f.label :description, 'Project background / Contexte du projet', class: 'form-label' %>
       <div>Donnez une description a la proposition<br>Give a description to the proposal</div>
-      <div style="width: 420px;">
+      <div>
         <%= f.hidden_field :description, id: :project_proposal_description, class: 'form-control', required: true %>
         <trix-editor input="project_proposal_description" style="min-height: 100px;"></trix-editor>
         <div class="invalid-feedback">
@@ -159,7 +159,7 @@
       <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split('|')[0] : f.object.past_experiences %>
       <%= hidden_field_tag 'ignore_past_experiences', f.object.past_experiences.nil? ? '' : f.object.past_experiences %>
       <div id="linkRef">
-        <button type="button" id="link-list" class="btn btn-primary link-list btn-sm mb-3">Ajouter un lien / Add a link</button>
+        <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link</button>
         <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer le dernier lien / Remove last link</button>
         <br><br>
         <ul class="main_ul"></ul>
@@ -184,13 +184,13 @@
       <div></div>
       <div class='checkbox-list form-check'>
         <%= f.radio_button :project_type, 'General', checked: true, class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'project_type_general', 'General', id: 'type', style: 'display:inline', class: 'form-label' %>
+        <%= f.label 'project_type_general', 'General', id: 'type', style: 'display:inline', class: 'form-check-label' %>
         <br>
         <%= f.radio_button :project_type, 'Spécifique au client / Client Specific', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'project_type_client_specific', 'Spécifique au client / Client Specific', id: 'type', style: 'display:inline', class: 'form-label' %>
+        <%= f.label 'project_type_client_specific', 'Spécifique au client / Client Specific', id: 'type', style: 'display:inline', class: 'form-check-label' %>
         <br>
         <%= f.radio_button :project_type, 'S/O | N/A', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'project_type_na__so', 'S/O | N/A', id: 'type', style: 'display:inline', class: 'form-label' %>
+        <%= f.label 'project_type_na__so', 'S/O | N/A', id: 'type', style: 'display:inline', class: 'form-check-label' %>
       </div>
     </div>
     <br/>
@@ -200,7 +200,9 @@
     <br>
     <br>
     <br>
-    <%= f.submit 'Update Project Proposal/Modifier la proposition de projet', class: 'btn btn-primary', id: 'waiting-save-button', data: { disable_with: false } %>
+    <div class="text-center">
+      <%= f.submit 'Update Project Proposal/Modifier la proposition de projet', class: 'btn btn-primary', id: 'waiting-save-button', data: { disable_with: false } %>
+    </div>
     <span id="status-save"></span>
     <% if flash[:alert] %>
       <div id="alert"><%= flash[:alert] %></div>

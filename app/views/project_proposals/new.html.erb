@@ -61,7 +61,7 @@
     <div class="mb-3 required">
       <%= f.label :client_background, 'Client Background / Contexte du client', class: 'form-label' %>
       <div>What is the client background?<br>Quel est le contexte du client?</div>
-      <div style="width: 420px;">
+      <div>
         <%= f.hidden_field :client_background, id: :project_proposal_client_background, class: 'form-control' %>
         <trix-editor input="project_proposal_client_background"></trix-editor>
       </div>
@@ -70,7 +70,7 @@
     <div class="mb-3">
       <%= f.label :supervisor_background, 'Supervisor Background/Contexte du Superviseur', class: 'form-label' %>
       <div>What is the supervisor background?<br>Quel est le contexte du superviseur?</div>
-      <div style="width: 420px;">
+      <div>
         <%= f.hidden_field :supervisor_background, id: :project_proposal_supervisor_background, class: 'form-control' %>
         <trix-editor input="project_proposal_supervisor_background"></trix-editor>
       </div>
@@ -88,7 +88,7 @@
     <div class="mb-3 required">
       <%= f.label :description, 'Project background / Contexte du projet', class: 'form-label' %>
       <div></div>
-      <div style="width: 420px;">
+      <div>
         <%= f.hidden_field :description, id: :project_proposal_description, class: 'form-control' %>
         <trix-editor input="project_proposal_description" style="min-height: 100px;"></trix-editor>
       </div>
@@ -117,9 +117,8 @@
       </div>
     </div>
     <div class="mb-3">
-      <div class="repo-image">
+      <div class="repo-image mx-auto">
         <div id="dragndrop"  ondrop="dragndrop(event);" ondragover="dragover(event);">
-          <br>
           <%= fa_icon 'cloud-upload' %>
           <p>Drag &amp; Drop</p>
         </div>
@@ -143,7 +142,7 @@
       <%= f.text_area :past_experiences, class: 'form-control', value: "There has been no previous attempt to solving this problem. / Il n'y a pas de tentatives précédentes pour résoudre ce problème." %>
 
       <div id="linkRef d-inline-block">
-        <button type="button" id="link-list" class="btn btn-primary link-list btn-sm mb-3">Ajouter un lien / Add a link</button>
+        <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link</button>
         <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer le dernier lien / Remove last link</button>
         <br><br>
         <ul class="main_ul"></ul>
@@ -187,8 +186,9 @@
     <%= recaptcha_tags %>
 
     <br>
-
-    <%= f.submit 'Create Project Proposal/Créer une proposition de projet', class: 'btn btn-primary', id: 'waiting-save-button', data: { disable_with: false } %>
+    <div class="text-center">
+      <%= f.submit 'Create Project Proposal/Créer une proposition de projet', class: 'btn btn-primary', id: 'waiting-save-button', data: { disable_with: false } %>
+    </div>
     <span id="status-save"></span>
 
   <% end %>
