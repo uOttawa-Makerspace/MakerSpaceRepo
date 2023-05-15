@@ -2,13 +2,15 @@ import PhotoSwipe from "photoswipe";
 import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
 
 document.addEventListener("DOMContentLoaded", function () {
-  var images = [];
-  var image_tags = [];
+  const pswpElement = document.querySelectorAll(".pswp")[0];
+  const imageGallery = document.getElementById("photo-slide");
+  let images = [];
+  let image_tags = [];
 
-  var parseImages = function (el) {
+  const parseImages = function (el) {
     if (el) {
-      var childNodes = el.children;
-      var items = [];
+      const childNodes = el.children;
+      let items = [];
 
       if (childNodes === undefined) {
         return;
@@ -16,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       Array.from(childNodes).forEach(function (node, index) {
         if (node.tagName === "IMG") {
-          let item = {
+          const item = {
             src: node.src,
             w: node.getAttribute("data-width"),
             h: node.getAttribute("data-height"),
@@ -30,7 +32,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
       images = items;
 
-      var mainImageDiv = document.getElementById("show-photo");
+      const mainImageDiv = document.getElementById("show-photo");
+
       if (
         mainImageDiv &&
         mainImageDiv.children[0] &&
@@ -43,15 +46,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   };
 
-  var openPhotoSwipe = function (startIndex) {
-    var options = {
+  const openPhotoSwipe = function (startIndex) {
+    const options = {
       index: startIndex,
       getThumbBoundsFn: function (index) {
-        var currentImage = image_tags[index];
-        var pageYScroll = window.scrollY || document.documentElement.scrollTop;
-        var boundingRect = currentImage.getBoundingClientRect();
+        const currentImage = image_tags[index];
+        const pageYScroll =
+          window.scrollY || document.documentElement.scrollTop;
+        const boundingRect = currentImage.getBoundingClientRect();
 
-        var rect = {
+        const rect = {
           x: boundingRect.left,
           y: boundingRect.top + pageYScroll,
           w: boundingRect.width,
@@ -62,7 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
       bgOpacity: 0.7,
     };
 
-    var gallery = new PhotoSwipe(
+    let gallery = new PhotoSwipe(
       pswpElement,
       PhotoSwipeUI_Default,
       images,
@@ -72,6 +76,5 @@ document.addEventListener("DOMContentLoaded", function () {
     gallery.init();
   };
 
-  parseImages(document.getElementById("photo-slide"));
-  var pswpElement = document.querySelectorAll(".pswp")[0];
+  parseImages(imageGallery);
 });
