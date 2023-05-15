@@ -1,7 +1,7 @@
 @import "lib";
 
 section#new-repo {
-  @include outer-container(60rem);
+  @include outer-container(60%);
   background-color: #fff;
   padding: 2rem 5rem;
   min-height: calc(100vh - 65px);
@@ -11,14 +11,14 @@ section#new-repo {
     font-size: 2rem;
     padding-bottom: 0.5rem;
     text-align: center;
-    max-width: 500px;
+    max-width: 80%;
     margin: 0 auto;
     margin-bottom: 1rem;
     border-bottom: 2px solid #366;
   }
 
   form {
-    max-width: 420px;
+    max-width: calc(80% - 50px);
     width: 100%;
     margin: 0 auto;
   }
@@ -27,7 +27,7 @@ section#new-repo {
     display: block;
     font: 400 1em "Raleway", sans-serif;
     margin: 10px 0 5px;
-    color: #5f9ea0;
+    color: #075f5f;
   }
 
   label + div {
@@ -42,7 +42,6 @@ section#new-repo {
     font: 300 0.9em "Raleway", sans-serif;
     color: #555;
     width: 100%;
-    max-width: 400px;
     padding: 0.5rem;
     position: relative;
     margin-bottom: 15px;
@@ -63,7 +62,7 @@ section#new-repo {
 }
 
 .ui-state-focus:not(.ui-selectmenu-button) {
-  background-color: #5f9ea0;
+  background-color: #075f5f;
   color: #fff;
 }
 
@@ -85,7 +84,7 @@ li.ui-menu-item {
   cursor: pointer;
 
   &:hover {
-    background-color: #5f9ea0;
+    background-color: #075f5f;
     color: #fff;
   }
 }
@@ -101,7 +100,7 @@ li.ui-menu-item {
     padding: 0.5rem;
 
     &:hover {
-      background-color: #5f9ea0;
+      background-color: #075f5f;
       color: #fff;
     }
   }
@@ -159,7 +158,7 @@ select:not(.form-control) {
   li {
     padding: 0.5rem;
     &:hover {
-      background-color: #5f9ea0;
+      background-color: #075f5f;
       color: #fff;
     }
     &[rel="hide"] {
@@ -295,7 +294,6 @@ div#share_option {
 
   input {
     color: #666;
-    height: 20px;
     padding: 2px;
     padding-left: 5px;
   }
@@ -370,7 +368,7 @@ div.redactor-editor {
   color: #777;
   letter-spacing: 0.15em;
   border-radius: 2px;
-  background-color: #5f9ea0;
+  background-color: #075f5f;
   color: #fff;
   margin-bottom: 20px;
 }

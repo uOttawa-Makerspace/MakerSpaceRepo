@@ -1,13 +1,13 @@
 import TomSelect from "tom-select";
 window.showPass = function () {
-  document.getElementById("password_repo_field").style.display = "block";
+  document.getElementById("pass").style.display = "block";
 };
 
 window.hidePass = function () {
   if (document.getElementById("change_pass"))
     document.getElementById("change_pass").style.display = "none";
-  if (document.getElementById("password_repo_field"))
-    document.getElementById("password_repo_field").style.display = "none";
+  if (document.getElementById("pass"))
+    document.getElementById("pass").style.display = "none";
 };
 window.togglePass = function () {
   var x = document.getElementById("password_repo_field");

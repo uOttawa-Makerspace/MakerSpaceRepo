@@ -7,13 +7,13 @@
     <div class="mb-3 required">
     <%= f.label :title, 'Title/Titre', class: 'form-label' %>
     <div>Great project titles are short and memorable.<br>Des titres de projets génial sont court et mémorable.</div>
-    <%= f.text_field :title, class: 'repo form-control' %>
+    <%= f.text_field :title, class: 'form-control' %>
     </div>
     <br>
     <div class="mb-3">
     <%= f.label :description, class: 'form-label' %>
-    <div style="width: 420px;">
-      <%= f.trix_editor :description, class: 'repo form-control', style: 'height: auto!important;' %>
+    <div>
+      <%= f.trix_editor :description, class: 'form-control', style: 'height: auto!important;' %>
     </div>
     </div>
 
@@ -41,9 +41,8 @@
           </button>
         </div>
       </div>
-      <div class="repo-image">
+      <div class="repo-image mx-auto">
         <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
-          <br>
           <%= fa_icon 'cloud-upload' %>
           <p>Drag &amp; Drop</p>
         </div>
@@ -56,7 +55,7 @@
     <div>Your project will be better understood with a 1 min Youtube video.<br>Votre projet sera mieux compris avec une
       vidéo Youtube de 1 minute
     </div>
-    <%= f.text_field :youtube_link, class: 'repo form-control' %>
+    <%= f.text_field :youtube_link, class: 'form-control' %>
     </div>
     <br>
     <div class="mb-3 required">
@@ -124,8 +123,9 @@
       <div id="description"> Only those with the url and password can view this repository</div>
         
 
-      <div id="pass" class="mb-3">
-        <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', style: 'display: none;', 'aria-label': 'Password / Mot de Passe', class: 'form-control' %>
+      <div id="pass" class="mb-3" style="display: none;">
+        <%= f.label :password, 'Set repository password', class: 'form-label' %>
+        <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': 'Password / Mot de Passe', class: 'form-control' %>
       </div>
       <div class="invalid-feedback">
         Please Select a Share Type
@@ -134,7 +134,9 @@
 
     <br>
     <br>
-    <%= f.submit 'Create Project/Créer ton Projet', class: 'btn btn-primary', id: 'waiting-save-button' %>
+    <div class="text-center">
+      <%= f.submit 'Create Project/Créer ton Projet', class: 'btn btn-primary', id: 'waiting-save-button' %>
+    </div>
     <span id="status-save"></span>
     <br>
     <div id="form-error-span"></div>
