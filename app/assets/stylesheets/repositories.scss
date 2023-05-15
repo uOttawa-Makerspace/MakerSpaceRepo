@@ -212,7 +212,11 @@ label.custom-image-upload {
 
 div#image-container {
   @include outer-container(calc(420px + 1rem));
-  margin: 0.5rem 0;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 
   div.image-item {
     display: inline-block;
