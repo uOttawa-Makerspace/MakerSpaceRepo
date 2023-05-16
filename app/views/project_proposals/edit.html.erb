@@ -161,12 +161,11 @@
             <%= f.label :past_experiences, 'Past experiences / Tentatives précédentes', class: 'form-label' %>
             <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split('|')[0] : f.object.past_experiences %>
             <%= hidden_field_tag 'ignore_past_experiences', f.object.past_experiences.nil? ? '' : f.object.past_experiences %>
-            <div id="linkRef">
+            <div id="linkRef" class="d-flex flex-row align-items-start justify-content-around">
               <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link</button>
               <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer le dernier lien / Remove last link</button>
-              <br><br>
-              <ul class="main_ul"></ul>
             </div>
+            <ul class="main_ul mt-3"></ul>
           </div>
 
           <br>

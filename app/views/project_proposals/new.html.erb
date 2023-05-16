@@ -146,12 +146,11 @@
             <%= f.label :past_experiences, 'Past experiences / Tentatives précédentes', class: 'form-label' %>
             <%= f.text_area :past_experiences, class: 'form-control', value: "There has been no previous attempt to solving this problem. / Il n'y a pas de tentatives précédentes pour résoudre ce problème." %>
 
-            <div id="linkRef d-inline-block">
+            <div id="linkRef" class="d-flex flex-row align-items-start justify-content-around">
               <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link</button>
               <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer le dernier lien / Remove last link</button>
-              <br><br>
-              <ul class="main_ul"></ul>
             </div>
+            <ul class="main_ul mt-3"></ul>
           </div>
 
           <br>

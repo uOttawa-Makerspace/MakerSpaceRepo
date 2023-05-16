@@ -7,7 +7,7 @@ section#new-repo {
   min-height: calc(100vh - 65px);
 
   div.title {
-    color: inherit;
+    color: #000;
     font-size: 2rem;
     padding-bottom: 0.5rem;
     text-align: center;
@@ -28,7 +28,7 @@ section#new-repo {
   }
 
   label + div {
-    font: 400 0.75rem "Raleway", helvetica, sans-serif;
+    font: 400 0.85rem "Raleway", helvetica, sans-serif;
     margin-bottom: 0.5rem;
   }
 
