@@ -1,25 +1,22 @@
 @import "lib";
 
 section#new-repo {
-  @include outer-container(60%);
+  @include outer-container(60rem);
   background-color: #fff;
   padding: 2rem 5rem;
   min-height: calc(100vh - 65px);
-  min-width: 700px;
 
   div.title {
-    color: #366;
+    color: inherit;
     font-size: 2rem;
     padding-bottom: 0.5rem;
     text-align: center;
     max-width: 80%;
     margin: 0 auto;
     margin-bottom: 1rem;
-    border-bottom: 2px solid #366;
   }
 
   form {
-    max-width: calc(80% - 50px);
     width: 100%;
     margin: 0 auto;
   }
@@ -28,12 +25,10 @@ section#new-repo {
     display: block;
     font: 400 1em "Raleway", sans-serif;
     margin: 10px 0 5px;
-    color: #075f5f;
   }
 
   label + div {
     font: 400 0.75rem "Raleway", helvetica, sans-serif;
-    color: #595959;
     margin-bottom: 0.5rem;
   }
 
