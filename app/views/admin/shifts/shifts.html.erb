@@ -79,23 +79,42 @@
         </div>
         <div class="modal-body">
           <div class="mb-3 text-center">
-            <label for="start-datetime">Start Date</label>
-            <input id="start-datetime" autocomplete="false" class="form-control inanimate">
-            <br>
-            <label for="end-datetime">End Date</label>
-            <input id="end-datetime" autocomplete="false" class="form-control inanimate">
-            <br>
-            <%= label_tag :user_id, 'User to select' %>
-            <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true } %>
-            <br>
-            <label for="reason">Reason</label>
-            <select id="reason" class="form-select">
-              <option value="Shift">Shift</option>
-              <option value="Training">Training</option>
-              <option value="Meeting">Meeting</option>
-              <option value="Project">Project</option>
-              <option value="Other">Other</option>
-            </select>
+            <div class="mb-3">
+              <label for="start-datetime">Start Date</label>
+              <input id="start-datetime" autocomplete="false" class="form-control inanimate">
+            </div>
+            <div class="mb-3">
+              <label for="end-datetime">End Date</label>
+              <input id="end-datetime" autocomplete="false" class="form-control inanimate">
+            </div>
+            <div class="mb-3">
+              <%= label_tag :user_id, 'User to select' %>
+              <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true } %>
+            </div>
+            <div class="mb-3">
+              <label for="reason">Reason</label>
+              <select id="reason" class="form-select form-control">
+                <option value="Shift">Shift</option>
+                <option value="Training">Training</option>
+                <option value="Meeting">Meeting</option>
+                <option value="Project">Project</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div id="training-container" class="d-none">
+              <div class="mb-2">
+                <%= label_tag :training_id, 'Training' %>
+                <%= select_tag :training_id, options_from_collection_for_select(Space.find(@space_id).trainings.order(name: :asc), 'id', 'name'), id: 'training_id', prompt: 'Select training', class: 'form-control form-select', required: true %>
+              </div>
+              <div class="mb-2">
+                <%= label_tag :level, 'Level' %>
+                <%= select_tag :level, options_for_select(Question::LEVELS), prompt: 'Select level', class: 'form-control form-select', id: 'level', required: true %>
+              </div>
+              <div class="mb-2">
+                <%= label_tag :course, 'Course' %>
+                <%= select_tag :course, options_for_select(CourseName.pluck(:name)), prompt: 'Select course', class: 'form-control form-select', id: 'course', required: true %>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer input-group">

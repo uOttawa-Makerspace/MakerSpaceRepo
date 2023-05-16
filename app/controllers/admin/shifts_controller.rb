@@ -422,6 +422,9 @@ class Admin::ShiftsController < AdminAreaController
       :end_datetime,
       :reason,
       :space_id,
+      :training_id,
+      :level,
+      :course,
       user_id: []
     )
   end

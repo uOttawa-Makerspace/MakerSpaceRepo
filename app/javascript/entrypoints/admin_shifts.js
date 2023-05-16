@@ -37,6 +37,9 @@ const startDateTimeInput = document.getElementById("start-datetime");
 const endDateTimeInput = document.getElementById("end-datetime");
 const userIdInput = document.getElementById("user-id");
 const reasonInput = document.getElementById("reason");
+const trainingIdInput = document.getElementById("training_id");
+const levelInput = document.getElementById("level");
+const courseInput = document.getElementById("course");
 const modalSave = document.getElementById("modal-save");
 
 const modalDelete = document.getElementById("modal-delete");
@@ -102,11 +105,6 @@ const endPicker = endDateTimeInput.flatpickr({
       }
     });
   },
-});
-
-document.addEventListener("turbo:load", () => {
-  console.log(calendar);
-  console.log(calendarEl);
 });
 
 new TomSelect("#user-id", {
@@ -377,6 +375,11 @@ const createCalendarEvent = () => {
       format: "json",
       user_id: selected_users,
       reason: reasonInput.value,
+      ...(reasonInput.value === "Training" && {
+        training_id: trainingIdInput.value,
+        level: levelInput.value,
+        course: courseInput.value,
+      }),
     }),
   })
     .then((response) => response.json())
@@ -470,6 +473,11 @@ const modifyEvent = (arg) => {
         Date.parse(arg.event.end.toString()) +
           new Date().getTimezoneOffset() * 60 * 1000
       ),
+      ...(reasonInput.value === "Training" && {
+        training_id: trainingIdInput.value,
+        level: levelInput.value,
+        course: courseInput.value,
+      }),
       format: "json",
     }),
   })
@@ -531,6 +539,17 @@ const editShift = (arg) => {
       startPicker.setDate(Date.parse(data.start_datetime));
       endPicker.setDate(Date.parse(data.end_datetime));
       reasonInput.value = data.reason;
+
+      if (data.reason === "Training") {
+        trainingIdInput.value = data.training_id;
+        levelInput.value = data.level;
+        courseInput.value = data.course;
+
+        const trainingContainer = document.getElementById("training-container");
+        trainingContainer.classList.remove("d-none");
+        trainingContainer.classList.add("d-block");
+      }
+
       populateUsers({
         start: new Date(
           Date.parse(data.start_datetime) +
@@ -619,6 +638,17 @@ document
   .addEventListener("click", () => {
     hideShowEvents("staffNeeded");
   });
+
+document.getElementById("reason").addEventListener("change", (el) => {
+  const trainingContainer = document.getElementById("training-container");
+  if (el.target.value === "Training") {
+    trainingContainer.classList.remove("d-none");
+    trainingContainer.classList.add("d-block");
+  } else {
+    trainingContainer.classList.remove("d-block");
+    trainingContainer.classList.add("d-none");
+  }
+});
 
 // Toggle Staff Visibility
 window.toggleVisibility = (id) => {

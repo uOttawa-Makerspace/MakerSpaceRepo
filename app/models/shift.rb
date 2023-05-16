@@ -1,6 +1,7 @@
 class Shift < ApplicationRecord
   has_and_belongs_to_many :users
   belongs_to :space, optional: true
+  belongs_to :training, optional: true
 
   validates :start_datetime, presence: true
   validates :end_datetime, presence: true
@@ -9,7 +10,13 @@ class Shift < ApplicationRecord
   before_destroy :delete_google_event
 
   def return_event_title
-    "#{self.reason} for #{self.users.map(&:name).join(", ")}"
+    training_add_on =
+      if self.reason == "Training"
+        "#{self.training.present? ? " - " + self.training.name : ""} #{self.level.present? ? " - " + self.level : ""}#{self.course.present? ? " - " + self.course : ""}"
+      else
+        ""
+      end
+    "#{self.reason} for #{self.users.map(&:name).join(", ")} #{training_add_on}"
   end
 
   def color(space_id)

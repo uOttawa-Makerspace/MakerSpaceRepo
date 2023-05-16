@@ -26,7 +26,7 @@ RSpec.describe Shift, type: :model do
       it "should return the title of the shift" do
         user = create(:user, name: "John Doe")
         shift = create(:shift, users: [user], reason: "Test Reason")
-        expect(shift.return_event_title).to eq("Test Reason for John Doe")
+        expect(shift.return_event_title).to eq("Test Reason for John Doe ")
       end
     end
 
