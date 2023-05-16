@@ -21,7 +21,7 @@
 
     </div>
     <br>
-    
+
     <%= label_tag :file, 'Project files', class: 'form-label' %>
     <div class="mb-3">
       <div class="input-group mb-3">
@@ -44,8 +44,8 @@
       <%= hidden_field_tag 'deletefiles' %>
     </div>
     <br>
-    <%= label_tag :photo, 'Gallery', class: 'form-label' %>
     <div class="mb-3">
+      <%= label_tag :photo, 'Gallery', class: 'form-label' %>
       <div>A maximum of five photos can be uploaded per repository.</div>
       <div>
         <div class="input-group mb-3">
@@ -72,6 +72,7 @@
     <% end %>
     <%= hidden_field_tag 'deleteimages' %>
     </div>
+    <br>
     <div class="mb-3">
     <%= f.label :youtube_link, 'Youtube Link', class: 'form-label' %>
     <div>Your project will be better understood with a 1 min Youtube video.<br>Votre projet sera mieux compris avec une vidéo Youtube de 1 minute</div>
@@ -80,16 +81,16 @@
     <br>
     <%= f.label :categories, class: 'form-label' %>
     <div>Choose at most 5 categories that fit your project.</div>
-    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name, @categories.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
+    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name, @categories.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select mb-3', multiple: true } %>
 
     <br>
     <%= f.label :equipment, class: 'form-label' %>
     <div>Choose at most 5 pieces of equipment that are related to your project.</div>
-    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name, @equipments.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
+    <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name, @equipments.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select mb-3', multiple: true } %>
     <br>
     <%= f.label :license, class: 'form-label' %>
     <div>Choose how you want your project to be used by others.</div>
-    <%= f.select :license, @repository.class.license_options, { include_blank: false }, { class: 'form-control form-select' } %>
+    <%= f.select :license, @repository.class.license_options, { include_blank: false }, { class: 'form-control form-select mb-3' } %>
     <br>
 
     <div id="share_option" class="form-check">
