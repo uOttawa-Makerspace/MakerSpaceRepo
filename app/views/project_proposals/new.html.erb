@@ -107,6 +107,7 @@
     </div>
 
     <div id="file-container"></div>
+    <br>
     <div class="mb-3 required">
       <%= label_tag :photo, 'Gallery/Galerie', class: 'form-label required' %>
       <div class="input-group mb-3">
@@ -186,7 +187,7 @@
     <%= recaptcha_tags %>
 
     <br>
-    <div class="text-center">
+    <div class="text-center mt-3">
       <%= f.submit 'Create Project Proposal/Créer une proposition de projet', class: 'btn btn-primary', id: 'waiting-save-button', data: { disable_with: false } %>
     </div>
     <span id="status-save"></span>

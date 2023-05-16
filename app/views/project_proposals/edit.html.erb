@@ -113,7 +113,6 @@
       <% end %>
       <%= hidden_field_tag 'deletefiles' %>
     </div>
-    <br />
 
     <br />
     <%= label_tag :photo, 'Gallery', class: 'form-label' %>
@@ -134,7 +133,7 @@
         </div>
       </div>
     </div>
-    <div id="image-container" class="mx-auto">
+    <div id="image-container" class="mb-3 mx-auto">
       <% @photos.each do |img| %>
         <div class="image-item">
           <span id="<%= img.image.filename %>" class="image-remove"></span>
