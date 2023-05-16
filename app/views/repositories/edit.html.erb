@@ -20,6 +20,8 @@
     </div>
 
     </div>
+    <br>
+    
     <%= label_tag :file, 'Project files', class: 'form-label' %>
     <div class="mb-3">
       <div class="input-group mb-3">
@@ -61,7 +63,7 @@
       </div>
     </div>
 
-    <div id="image-container">
+    <div id="image-container" class="mb-3">
     <% @photos.each do |img| %>
       <div class="image-item">
         <span id="<%= img.image.filename %>" class="image-remove"></span>
@@ -88,6 +90,7 @@
     <%= f.label :license, class: 'form-label' %>
     <div>Choose how you want your project to be used by others.</div>
     <%= f.select :license, @repository.class.license_options, { include_blank: false }, { class: 'form-control form-select' } %>
+    <br>
 
     <div id="share_option" class="form-check">
       <%= f.label :share_type, 'Your project is...', class: 'form-label' %>
