@@ -21,9 +21,9 @@ document.addEventListener("turbo:load", () => {
   if (document.getElementById("owner_select")) {
     if (!document.getElementById("owner_select").tomselect) {
       new TomSelect("#owner_select", {
-        searchField: ["name"],
+        searchField: ["username"],
         valueField: "id",
-        labelField: "name",
+        labelField: "username",
         maxOptions: 5,
         searchPlaceholder: "Add Owner...",
         searchOnKeyUp: true,
@@ -37,7 +37,7 @@ document.addEventListener("turbo:load", () => {
               .then((data) => {
                 callback(
                   data.users.map((user) => {
-                    return { id: user.id, name: user.name };
+                    return { id: user.id, username: user.username };
                   })
                 );
               });
@@ -53,9 +53,9 @@ document.addEventListener("turbo:load", () => {
   if (document.getElementById("search_users_add")) {
     if (!document.getElementById("search_users_add").tomselect) {
       new TomSelect("#search_users_add", {
-        searchField: ["name"],
+        searchField: ["username"],
         valueField: "id",
-        labelField: "name",
+        labelField: "username",
         maxOptions: 5,
         searchPlaceholder: "Add Owner...",
         searchOnKeyUp: true,
@@ -69,7 +69,7 @@ document.addEventListener("turbo:load", () => {
               .then((data) => {
                 callback(
                   data.users.map((user) => {
-                    return { id: user.id, name: user.name };
+                    return { id: user.id, username: user.username };
                   })
                 );
               });
@@ -84,9 +84,9 @@ document.addEventListener("turbo:load", () => {
   if (document.getElementById("search_users_remove")) {
     if (!document.getElementById("search_users_remove").tomselect) {
       new TomSelect("#search_users_remove", {
-        searchField: ["name"],
+        searchField: ["username"],
         valueField: "id",
-        labelField: "name",
+        labelField: "username",
         maxOptions: null,
         searchOnKeyUp: true,
       });
