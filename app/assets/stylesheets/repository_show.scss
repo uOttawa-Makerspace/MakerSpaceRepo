@@ -76,9 +76,8 @@ a.edit-repo-link {
 }
 
 a#view-repo-link {
-  position: relative;
-  left: 900px;
-  top: -55px;
+  max-width: fit-content;
+  transform: translateX(-100%);
 }
 
 div#repo-title {
