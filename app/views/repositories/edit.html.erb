@@ -5,29 +5,24 @@
   <section class="card mt-4">
     <div class="col-lg-7 mx-auto">
       <section id="new-repo" class="mx-auto p-0">
-        <br>
-        <div class="title border-0"><b>Edit Project</b></div>
+        <div class="title border-0 mt-4"><b>Edit Project</b></div>
         <%= link_to fa_icon('search', text: 'View project'), repository_path(@repository.user_username, @repository.id), class: 'edit-repo-link d-block position-relative start-100 top-0', id: 'view-repo-link' %>
         <%= form_for @repository, url: { controller: 'repositories', action: 'update' }, html: { multipart: true } do |f| %>
 
-          <br>
-          <div class="mb-3">
-          <%= f.label :title, 'Title', class: 'form-label' %>
-          <div>Great project titles are short and memorable.</div>
-          <%= f.text_field :title, class: 'form-control' %>
+          <div class="mb-5 mt-3">
+            <%= f.label :title, 'Title', class: 'form-label' %>
+              <div>Great project titles are short and memorable.</div>
+            <%= f.text_field :title, class: 'form-control' %>
           </div>
-          <div class="mb-3">
-          <br>
-          <%= f.label :description, class: 'form-label' %>
-          <div>
-            <%= f.trix_editor :description, class: 'form-control', style: 'height: auto!important;' %>
+          <div class="mb-5">
+            <%= f.label :description, class: 'form-label' %>
+            <div>
+              <%= f.trix_editor :description, class: 'form-control', style: 'height: auto!important;' %>
+            </div>
           </div>
-
-          </div>
-          <br>
 
           <%= label_tag :file, 'Project files', class: 'form-label' %>
-          <div class="mb-3">
+          <div class="mb-5">
             <div class="input-group mb-3">
               <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
               <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input">
@@ -47,7 +42,6 @@
             <% end %>
             <%= hidden_field_tag 'deletefiles' %>
           </div>
-          <br>
           <div class="mb-3">
             <%= label_tag :photo, 'Gallery', class: 'form-label' %>
             <div>A maximum of five photos can be uploaded per repository.</div>
@@ -67,7 +61,7 @@
             </div>
           </div>
 
-          <div id="image-container" class="mb-3">
+          <div id="image-container" class="mb-5">
           <% @photos.each do |img| %>
             <div class="image-item">
               <span id="<%= img.image.filename %>" class="image-remove"></span>
@@ -76,28 +70,23 @@
           <% end %>
           <%= hidden_field_tag 'deleteimages' %>
           </div>
-          <br>
-          <div class="mb-3">
+          <div class="mb-5">
           <%= f.label :youtube_link, 'Youtube Link', class: 'form-label' %>
           <div>Your project will be better understood with a 1 min Youtube video.<br>Votre projet sera mieux compris avec une vidéo Youtube de 1 minute</div>
           <%= f.text_field :youtube_link, class: 'form-control' %>
           </div>
-          <br>
           <%= f.label :categories, class: 'form-label' %>
           <div>Choose at most 5 categories that fit your project.</div>
-          <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name, @categories.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select mb-3', multiple: true } %>
+          <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name, @categories.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select mb-5', multiple: true } %>
 
-          <br>
           <%= f.label :equipment, class: 'form-label' %>
           <div>Choose at most 5 pieces of equipment that are related to your project.</div>
-          <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name, @equipments.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select mb-3', multiple: true } %>
-          <br>
+          <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name, @equipments.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select mb-5', multiple: true } %>
           <%= f.label :license, class: 'form-label' %>
           <div>Choose how you want your project to be used by others.</div>
-          <%= f.select :license, @repository.class.license_options, { include_blank: false }, { class: 'form-control form-select mb-3' } %>
-          <br>
+          <%= f.select :license, @repository.class.license_options, { include_blank: false }, { class: 'form-control form-select mb-5' } %>
 
-          <div id="share_option" class="form-check">
+          <div id="share_option" class="form-check mb-5">
             <%= f.label :share_type, 'Your project is...', class: 'form-label' %>
             <%= fa_icon('globe') %>
             <%= f.radio_button(:share_type, 'public', class: 'show_extra form-check-input', style: 'margin-right: 4px;  height:16px;width:16px', onclick: 'hidePass();', required: true) %><%= f.label('share_type_public', 'Public', id: 'type', style: 'display:inline') %>
@@ -113,16 +102,11 @@
 
           </div>
 
-
-          <br>
-          <br>
-          <br>
           <%= tag('repository[id]', content: @repository.id, type: 'hidden') %>
           <div class="text-center">
             <%= f.submit 'Update Project', class: 'btn btn-primary', id: 'waiting-save-button' %>
           <div>
           <span id="status-save"></span>
-          <br>
           <div id="form-error-span"></div>
           <% if flash[:alert] %>
             <div id="alert"><%= flash[:alert] %></div>
