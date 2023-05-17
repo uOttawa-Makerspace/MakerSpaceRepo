@@ -145,7 +145,7 @@ div.declined {
   padding: 10px;
 }
 
-.mb-3.required .form-label:after {
+#new-repo .required .form-label:after {
   content: "*";
   color: red;
   font-size: 25px;
