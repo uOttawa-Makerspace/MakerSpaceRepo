@@ -122,7 +122,9 @@ class RepositoriesController < SessionsController
 
       if params[:owner].present?
         params[:owner].each do |owner|
-          @repository.users << User.find_by(username: owner)
+          if User.exists?(id: owner)
+            @repository.users << User.find_by(id: owner)
+          end
         end
         @repository.save
       end
