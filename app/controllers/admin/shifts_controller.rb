@@ -104,6 +104,13 @@ class Admin::ShiftsController < AdminAreaController
                      ),
                    start: @shift.start_datetime,
                    end: @shift.end_datetime,
+                   extendedProps: {
+                     reason: @shift.reason,
+                     training:
+                       @shift.training.present? ? @shift.training.name : "",
+                     course: @shift.course,
+                     language: @shift.language
+                   },
                    className:
                      @shift.users.first.name.strip.downcase.gsub(" ", "-")
                  }
@@ -282,6 +289,12 @@ class Admin::ShiftsController < AdminAreaController
       .each do |shift|
         event = {}
         event["title"] = shift.return_event_title
+        event["extendedProps"] = {
+          reason: shift.reason,
+          training: shift.training.present? ? shift.training.name : "",
+          course: shift.course,
+          language: shift.language
+        }
         event["id"] = shift.id
         event["start"] = shift.start_datetime
         event["end"] = shift.end_datetime
@@ -300,6 +313,12 @@ class Admin::ShiftsController < AdminAreaController
     shift = Shift.find(params[:id])
     render json: {
              **shift.as_json,
+             extendedProps: {
+               reason: shift.reason,
+               training: shift.training.present? ? shift.training.name : "",
+               course: shift.course,
+               language: shift.language
+             },
              users: shift.users.map { |u| { id: u.id, name: u.name } }
            }
   end

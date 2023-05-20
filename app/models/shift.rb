@@ -10,13 +10,7 @@ class Shift < ApplicationRecord
   before_destroy :delete_google_event
 
   def return_event_title
-    training_add_on =
-      if self.reason == "Training"
-        "#{self.training.present? ? " - " + self.training.name : ""} #{self.language.present? ? " - " + self.language : ""}#{self.course.present? ? " - " + self.course : ""}"
-      else
-        ""
-      end
-    "#{self.reason} for #{self.users.map(&:name).join(", ")} #{training_add_on}"
+    "#{self.reason} for #{self.users.map(&:name).join(", ")}"
   end
 
   def color(space_id)
