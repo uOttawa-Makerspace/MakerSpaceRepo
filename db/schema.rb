@@ -857,7 +857,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_12_212738) do
     t.string "google_event_id"
     t.boolean "pending", default: true
     t.bigint "training_id"
-    t.string "level"
+    t.string "language"
     t.string "course"
     t.index ["space_id"], name: "index_shifts_on_space_id"
     t.index ["training_id"], name: "index_shifts_on_training_id"

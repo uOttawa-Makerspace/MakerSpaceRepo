@@ -38,7 +38,7 @@ const endDateTimeInput = document.getElementById("end-datetime");
 const userIdInput = document.getElementById("user-id");
 const reasonInput = document.getElementById("reason");
 const trainingIdInput = document.getElementById("training_id");
-const levelInput = document.getElementById("level");
+const languageInput = document.getElementById("language");
 const courseInput = document.getElementById("course");
 const modalSave = document.getElementById("modal-save");
 
@@ -377,7 +377,7 @@ const createCalendarEvent = () => {
       reason: reasonInput.value,
       ...(reasonInput.value === "Training" && {
         training_id: trainingIdInput.value,
-        level: levelInput.value,
+        language: languageInput.value,
         course: courseInput.value,
       }),
     }),
@@ -475,7 +475,7 @@ const modifyEvent = (arg) => {
       ),
       ...(reasonInput.value === "Training" && {
         training_id: trainingIdInput.value,
-        level: levelInput.value,
+        language: languageInput.value,
         course: courseInput.value,
       }),
       format: "json",
@@ -542,7 +542,7 @@ const editShift = (arg) => {
 
       if (data.reason === "Training") {
         trainingIdInput.value = data.training_id;
-        levelInput.value = data.level;
+        languageInput.value = data.language;
         courseInput.value = data.course;
 
         const trainingContainer = document.getElementById("training-container");

@@ -107,8 +107,8 @@
                 <%= select_tag :training_id, options_from_collection_for_select(Space.find(@space_id).trainings.order(name: :asc), 'id', 'name'), id: 'training_id', prompt: 'Select training', class: 'form-control form-select', required: true %>
               </div>
               <div class="mb-2">
-                <%= label_tag :level, 'Level' %>
-                <%= select_tag :level, options_for_select(Question::LEVELS), prompt: 'Select level', class: 'form-control form-select', id: 'level', required: true %>
+                <%= label_tag :language, 'Language' %>
+                <%= select_tag :language, options_for_select(%w[English Français]), prompt: 'Select Language', class: 'form-control form-select', id: 'language', required: true %>
               </div>
               <div class="mb-2">
                 <%= label_tag :course, 'Course' %>

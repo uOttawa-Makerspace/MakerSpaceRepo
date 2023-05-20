@@ -423,7 +423,7 @@ class Admin::ShiftsController < AdminAreaController
       :reason,
       :space_id,
       :training_id,
-      :level,
+      :language,
       :course,
       user_id: []
     )

@@ -12,7 +12,7 @@ class Shift < ApplicationRecord
   def return_event_title
     training_add_on =
       if self.reason == "Training"
-        "#{self.training.present? ? " - " + self.training.name : ""} #{self.level.present? ? " - " + self.level : ""}#{self.course.present? ? " - " + self.course : ""}"
+        "#{self.training.present? ? " - " + self.training.name : ""} #{self.language.present? ? " - " + self.language : ""}#{self.course.present? ? " - " + self.course : ""}"
       else
         ""
       end
