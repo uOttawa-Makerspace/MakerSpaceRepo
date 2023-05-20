@@ -1,211 +1,219 @@
 <% provide(:title, 'Edit Project Proposal') %>
 
-<section id="new-repo">
-  <div class="title">Edit Project Proposal</div>
-  <%= link_to fa_icon('search', text: 'View project proposal'), project_proposal_path(@project_proposal.slug), class: 'edit-repo-link', id: 'view-repo-link' %>
-  <%= form_for @project_proposal, url: { controller: 'project_proposals', action: 'update' }, html: { multipart: true, class: 'edit_project_proposal needs-validation', novalidate: true } do |f| %>
-    <br>
-    <div class="mb-3 required">
-      <%= f.label :username, 'Name/Nom', class: 'form-label' %>
-      <div>What is your name? <br> Quel est votre nom?</div>
-      <%= f.text_field :username, class: 'form-control', autofocus: true, required: true %>
+<div class="container">
+  <section class="card mt-4">
+    <div class="col-lg-7 mx-auto">
+      <section id="new-repo" class="mx-auto p-0">
 
-    </div>
-    <br>
-    <div class="mb-3 required">
-      <%= f.label :email, 'Email/Adresse Courriel', class: 'form-label' %>
-      <div>What is your email? <br> Quel est votre adresse courriel?</div>
-      <%= f.text_field :email, class: 'form-control', autofocus: true, required: true %>
-    </div>
-    <br>
-    <div class="mb-3 required">
-      <%= f.label :title, 'Title', class: 'form-label' %>
-      <div>Great project titles are short and memorable.</div>
-      <%= f.text_field :title, class: 'form-control', required: true %>
+        <div class="title border-0 mt-4"><b>Edit Project Proposal</b></div>
+        <%= link_to fa_icon('search', text: 'View project proposal'), project_proposal_path(@project_proposal.slug), class: 'edit-repo-link d-block position-relative start-100 top-0', id: 'view-repo-link' %>
+        <%= form_for @project_proposal, url: { controller: 'project_proposals', action: 'update' }, html: { multipart: true, class: 'edit_project_proposal needs-validation', novalidate: true } do |f| %>
 
-    </div>
-    <br>
-    <div class="mb-3 required">
-      <%= f.label :client_type, 'Client Type/Type de Client', class: 'form-label' %>
-      <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
-      <div class='checkbox-list form-check'>
-        <%= f.radio_button :client_type, 'Organization / Organisation', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_type_organization', 'Organization / Organisation', id: 'type', style: 'display:inline', class: 'form-label' %>
-        <br>
-        <%= f.radio_button :client_type, 'Individual / Individuel', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_type_individual', 'Individual / Individuel', id: 'type', style: 'display:inline', class: 'form-label' %>
-      </div>
-    </div>
-    <br>
-    <div class="mb-3 required">
-      <%= f.label :client, 'Client/Client', class: 'form-label' %>
-      <div>Who is the client? <br> Qui est le client?</div>
-      <%= f.text_field :client, class: 'form-control', required: true %>
-    </div>
-    <br>
-    <div class="mb-3 required">
-      <%= f.label :client_interest, "Client Level of Interest/Niveau d'intérêt du Client", class: 'form-label' %>
-      <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
-      <div class='checkbox-list form-check'>
-        <%= f.radio_button :client_interest, 'Low / Faible', checked: true, class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_interest_low', 'Low / Faible', id: 'type', style: 'display:inline', class: 'form-label' %>
-        <br>
-        <%= f.radio_button :client_interest, 'Medium / Moyen', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_interest_medium', 'Medium / Moyen', id: 'type', style: 'display:inline', class: 'form-label' %>
-        <br>
-        <%= f.radio_button :client_interest, 'High / Élevé', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'client_interest_high', 'High / Élevé', id: 'type', style: 'display:inline', class: 'form-label' %>
-      </div>
-    </div>
-    <br/>
-    <div class="mb-3 required">
-      <%= f.label :client_background, 'Client Background/Contexte du client', class: 'form-label' %>
-      <div>What is the client background?<br>Quel est le contexte du client?</div>
-      <div style="width: 420px;">
-        <%= f.hidden_field :client_background, id: :project_proposal_client_background, class: 'form-control' %>
-        <trix-editor input="project_proposal_client_background"></trix-editor>
-        <div class="invalid-feedback">
-          Veuillez entrer le contexte du client / Please enter client's background
-        </div>
-      </div>
-    </div>
-    <br/>
-    <div class="mb-3">
-      <%= f.label :supervisor_background, 'Supervisor Background/Contexte du Superviseur', class: 'form-label' %>
-      <div>What is the supervisor background?<br>Quel est le contexte du Superviseur?</div>
-      <%= f.hidden_field :supervisor_background, id: :project_proposal_supervisor_background, class: 'form-control' %>
-      <trix-editor input="project_proposal_supervisor_background"></trix-editor>
-    </div>
-    <br>
-    <div class="mb-3 required">
-      <%= f.label :description, 'Project background / Contexte du projet', class: 'form-label' %>
-      <div>Donnez une description a la proposition<br>Give a description to the proposal</div>
-      <div style="width: 420px;">
-        <%= f.hidden_field :description, id: :project_proposal_description, class: 'form-control', required: true %>
-        <trix-editor input="project_proposal_description" style="min-height: 100px;"></trix-editor>
-        <div class="invalid-feedback">
-          Veuillez entrer la description du projet / Please enter project's description
-        </div>
-      </div>
-    </div>
+          <div class="mb-5 mt-3 required">
+            <%= f.label :username, 'Name/Nom', class: 'form-label' %>
+            <div>What is your name? <br> Quel est votre nom?</div>
+            <%= f.text_field :username, class: 'form-control', autofocus: true, required: true %>
 
-    <br>
+          </div>
 
-    <%= label_tag :file, 'Project files', class: 'form-label' %>
-    <div class="mb-3">
-      <div class="input-group mb-3">
-        <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
-        <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input">
-          <i class="fa fa-plus"></i>
-        </button>
-      </div>
-    </div>
-    <div id="file-container">
+          <div class="mb-5 required">
+            <%= f.label :email, 'Email/Adresse Courriel', class: 'form-label' %>
+            <div>What is your email? <br> Quel est votre adresse courriel?</div>
+            <%= f.text_field :email, class: 'form-control', autofocus: true, required: true %>
+          </div>
 
-      <% @files.each do |f| %>
-        <table>
-          <tr class="file-item">
-            <td><%= fa_icon 'file-text-o' %> <%= f.file.filename %></td>
-            <td><span><%= f.file.byte_size / 1000 %> KB</span></td>
-            <td><span id="<%= f.file.id %>" class="file-remove">remove</span></td>
-          </tr>
-        </table>
-      <% end %>
-      <%= hidden_field_tag 'deletefiles' %>
-    </div>
-    <br />
+          <div class="mb-5 required">
+            <%= f.label :title, 'Title', class: 'form-label' %>
+            <div>Great project titles are short and memorable.</div>
+            <%= f.text_field :title, class: 'form-control', required: true %>
 
-    <br />
-    <%= label_tag :photo, 'Gallery', class: 'form-label' %>
-    <div class="mb-3">
-      <div>
-        <div class="input-group mb-3">
-          <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
-          <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
-            <i class="fa fa-plus"></i>
-          </button>
-        </div>
-      </div>
-      <div class="mx-auto repo-image">
-        <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
-          <br>
-          <%= fa_icon 'cloud-upload' %>
-          <p>Drag &amp; Drop</p>
-        </div>
-      </div>
-    </div>
-    <div id="image-container" class="mx-auto">
-      <% @photos.each do |img| %>
-        <div class="image-item">
-          <span id="<%= img.image.filename %>" class="image-remove"></span>
-          <%= image_tag img.image, alt: 'Project Proposal Picture' %>
-        </div>
-      <% end %>
-      <%= hidden_field_tag 'deleteimages' %>
-    </div>
+          </div>
 
-    <br>
-    <div class="mb-3">
-      <%= f.label :equipments, 'Possible technologies involved', class: 'form-label' %>
-      <%= f.text_area :equipments, class: 'form-control' %>
-    </div>
-    <br>
-    <%= f.label :youtube_link, 'Youtube Link', class: 'form-label' %>
-    <div>Project similar in Youtube<br>Projet similaire sur Youtube</div>
-    <%= f.text_field :youtube_link, class: 'repo' %>
-    <br>
-    <div class="mb-3">
-      <%= f.label :past_experiences, 'Past experiences / Tentatives précédentes', class: 'form-label' %>
-      <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split('|')[0] : f.object.past_experiences %>
-      <%= hidden_field_tag 'ignore_past_experiences', f.object.past_experiences.nil? ? '' : f.object.past_experiences %>
-      <div id="linkRef">
-        <button type="button" id="link-list" class="btn btn-primary link-list btn-sm mb-3">Ajouter un lien / Add a link</button>
-        <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer le dernier lien / Remove last link</button>
-        <br><br>
-        <ul class="main_ul"></ul>
-      </div>
-    </div>
+          <div class="mb-5 required">
+            <%= f.label :client_type, 'Client Type/Type de Client', class: 'form-label' %>
+            <div>Who are you answering on behalf of? <br> Vous répondez de la part de qui?</div>
+            <div class='checkbox-list form-check d-grid gap-2'>
+              <div>
+                <%= f.radio_button :client_type, 'Organization / Organisation', class: 'show_extra form-check-input d-inline' %>
+                <%= f.label 'client_type_organization', 'Organization / Organisation', id: 'type', class: 'form-check-label d-inline' %>
+              </div>
+              <div>
+                <%= f.radio_button :client_type, 'Individual / Individuel', class: 'show_extra form-check-input d-inline' %>
+                <%= f.label 'client_type_individual', 'Individual / Individuel', id: 'type', class: 'form-check-label d-inline' %>
+              </div>
+            </div>
+          </div>
 
-    <br>
-    <div class="mb-3 required">
-      <%= f.label :project_cost, 'Expected cost of the project / Coût prévu du projet', class: 'form-label' %>
-      <div>Expected cost of the project / Coût attendu du projet</div>
-      <div class="input-group mb-3">
-        <span class="input-group-text" id="basic-addon1">$</span>
-        <%= f.number_field :project_cost, class: 'form-control', required: true, value: f.object.project_cost.presence || 0 %>
-        <div class="invalid-feedback">
-          Please enter the expected project cost / Veuillez entrer le coût prévu du projet
-        </div>
-      </div>
-    </div>
-    <br>
-    <div class="mb-3 required">
-      <%= f.label :project_type, 'Type de projet / Project Type', class: 'form-label' %>
-      <div></div>
-      <div class='checkbox-list form-check'>
-        <%= f.radio_button :project_type, 'General', checked: true, class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'project_type_general', 'General', id: 'type', style: 'display:inline', class: 'form-label' %>
-        <br>
-        <%= f.radio_button :project_type, 'Spécifique au client / Client Specific', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'project_type_client_specific', 'Spécifique au client / Client Specific', id: 'type', style: 'display:inline', class: 'form-label' %>
-        <br>
-        <%= f.radio_button :project_type, 'S/O | N/A', class: 'show_extra form-check-input', style: 'display:inline' %>
-        <%= f.label 'project_type_na__so', 'S/O | N/A', id: 'type', style: 'display:inline', class: 'form-label' %>
-      </div>
-    </div>
-    <br/>
-    <%= f.label :categories, class: 'form-label' %>
-    <div>Choose at most 5 categories that fit your project.</div>
-    <%= f.select :categories, options_from_collection_for_select(@category_options, :name, :name, @categories.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
-    <br>
-    <br>
-    <br>
-    <%= f.submit 'Update Project Proposal/Modifier la proposition de projet', class: 'btn btn-primary', id: 'waiting-save-button', data: { disable_with: false } %>
-    <span id="status-save"></span>
-    <% if flash[:alert] %>
-      <div id="alert"><%= flash[:alert] %></div>
-    <% end %>
-  <% end %>
-</section>
+          <div class="mb-5 required">
+            <%= f.label :client, 'Client/Client', class: 'form-label' %>
+            <div>Who is the client? <br> Qui est le client?</div>
+            <%= f.text_field :client, class: 'form-control', required: true %>
+          </div>
 
+          <div class="mb-5 required">
+            <%= f.label :client_interest, "Client Level of Interest/Niveau d'intérêt du Client", class: 'form-label' %>
+            <div>How interested is the client? <br> Comment êtes-vous intéressé client?</div>
+            <div class='checkbox-list form-check d-grid gap-2'>
+              <div>
+                <%= f.radio_button :client_interest, 'Low / Faible', checked: true, class: 'show_extra form-check-input d-inline' %>
+                <%= f.label 'client_interest_low', 'Low / Faible', id: 'type', class: 'form-check-label d-inline' %>
+              </div>
+              <div>
+                <%= f.radio_button :client_interest, 'Medium / Moyen', class: 'show_extra form-check-input d-inline' %>
+                <%= f.label 'client_interest_medium', 'Medium / Moyen', id: 'type', class: 'form-check-label d-inline' %>
+              </div>
+              <div>
+                <%= f.radio_button :client_interest, 'High / Élevé', class: 'show_extra form-check-input d-inline' %>
+                <%= f.label 'client_interest_high', 'High / Élevé', id: 'type', class: 'form-check-label d-inline' %>
+              </div>
+            </div>
+          </div>
 
+          <div class="mb-5 required">
+            <%= f.label :client_background, 'Client Background/Contexte du client', class: 'form-label' %>
+            <div>What is the client background?<br>Quel est le contexte du client?</div>
+            <div>
+              <%= f.hidden_field :client_background, id: :project_proposal_client_background, class: 'form-control' %>
+              <trix-editor input="project_proposal_client_background"></trix-editor>
+              <div class="invalid-feedback">
+                Veuillez entrer le contexte du client / Please enter client's background
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-5">
+            <%= f.label :supervisor_background, 'Supervisor Background/Contexte du Superviseur', class: 'form-label' %>
+            <div>What is the supervisor background?<br>Quel est le contexte du Superviseur?</div>
+            <%= f.hidden_field :supervisor_background, id: :project_proposal_supervisor_background, class: 'form-control' %>
+            <trix-editor input="project_proposal_supervisor_background"></trix-editor>
+          </div>
+
+          <div class="mb-5 required">
+            <%= f.label :description, 'Project background / Contexte du projet', class: 'form-label' %>
+            <div>Donnez une description a la proposition<br>Give a description to the proposal</div>
+            <div>
+              <%= f.hidden_field :description, id: :project_proposal_description, class: 'form-control', required: true %>
+              <trix-editor input="project_proposal_description" style="min-height: 100px;"></trix-editor>
+              <div class="invalid-feedback">
+                Veuillez entrer la description du projet / Please enter project's description
+              </div>
+            </div>
+          </div>
+
+          <%= label_tag :file, 'Project files', class: 'form-label' %>
+          <div class="mb-5">
+            <div class="input-group mb-3">
+              <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
+              <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input">
+                <i class="fa fa-plus"></i>
+              </button>
+            </div>
+          </div>
+          <div id="file-container">
+
+            <% @files.each do |f| %>
+              <table>
+                <tr class="file-item">
+                  <td><%= fa_icon 'file-text-o' %> <%= f.file.filename %></td>
+                  <td><span><%= f.file.byte_size / 1000 %> KB</span></td>
+                  <td><span id="<%= f.file.id %>" class="file-remove">remove</span></td>
+                </tr>
+              </table>
+            <% end %>
+            <%= hidden_field_tag 'deletefiles' %>
+          </div>
+
+          <%= label_tag :photo, 'Gallery', class: 'form-label' %>
+          <div class="mb-3">
+            <div>
+              <div class="input-group mb-3">
+                <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
+                <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+                  <i class="fa fa-plus"></i>
+                </button>
+              </div>
+            </div>
+            <div class="mx-auto repo-image">
+              <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
+                <%= fa_icon 'cloud-upload' %>
+                <p>Drag &amp; Drop</p>
+              </div>
+            </div>
+          </div>
+          <div id="image-container" class="mb-5 mx-auto">
+            <% @photos.each do |img| %>
+              <div class="image-item">
+                <span id="<%= img.image.filename %>" class="image-remove"></span>
+                <%= image_tag img.image, alt: 'Project Proposal Picture' %>
+              </div>
+            <% end %>
+            <%= hidden_field_tag 'deleteimages' %>
+          </div>
+
+          <div class="mb-5">
+            <%= f.label :equipments, 'Possible technologies involved', class: 'form-label' %>
+            <%= f.text_area :equipments, class: 'form-control' %>
+          </div>
+
+          <%= f.label :youtube_link, 'Youtube Link', class: 'form-label' %>
+          <div>Project similar in Youtube<br>Projet similaire sur Youtube</div>
+          <%= f.text_field :youtube_link, class: 'repo mb-5' %>
+
+          <div class="mb-5">
+            <%= f.label :past_experiences, 'Past experiences / Tentatives précédentes', class: 'form-label' %>
+            <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split('|')[0] : f.object.past_experiences %>
+            <%= hidden_field_tag 'ignore_past_experiences', f.object.past_experiences.nil? ? '' : f.object.past_experiences %>
+            <div id="linkRef" class="d-flex flex-row align-items-start justify-content-around">
+              <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link</button>
+              <button type="button" id="remove-link-list" class="btn btn-danger text-white btn-sm">Retirer le dernier lien / Remove last link</button>
+            </div>
+            <ul class="main_ul mt-3"></ul>
+          </div>
+
+          <div class="mb-5 required">
+            <%= f.label :project_cost, 'Expected cost of the project / Coût prévu du projet', class: 'form-label' %>
+            <div>Expected cost of the project / Coût attendu du projet</div>
+            <div class="input-group mb-3">
+              <span class="input-group-text" id="basic-addon1">$</span>
+              <%= f.number_field :project_cost, class: 'form-control', required: true, value: f.object.project_cost.presence || 0 %>
+              <div class="invalid-feedback">
+                Please enter the expected project cost / Veuillez entrer le coût prévu du projet
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-5 required">
+            <%= f.label :project_type, 'Type de projet / Project Type', class: 'form-label' %>
+            <div></div>
+            <div class='checkbox-list form-check d-grid gap-2'>
+              <div>
+                <%= f.radio_button :project_type, 'General', checked: true, class: 'show_extra form-check-input d-inline' %>
+                <%= f.label 'project_type_general', 'General', id: 'type', class: 'form-check-label d-inline' %>
+              </div>
+              <div>
+                <%= f.radio_button :project_type, 'Spécifique au client / Client Specific', class: 'show_extra form-check-input d-inline' %>
+                <%= f.label 'project_type_client_specific', 'Spécifique au client / Client Specific', id: 'type', class: 'form-check-label d-inline' %>
+              </div>
+              <div>
+                <%= f.radio_button :project_type, 'S/O | N/A', class: 'show_extra form-check-input d-inline' %>
+                <%= f.label 'project_type_na__so', 'S/O | N/A', id: 'type', class: 'form-check-label d-inline' %>
+              </div>
+            </div>
+          </div>
+
+          <%= f.label :categories, class: 'form-label' %>
+          <div>Choose at most 5 categories that fit your project.</div>
+          <%= f.select :categories, options_from_collection_for_select(@category_options, :name, :name, @categories.map(&:name)), { include_blank: 'Select a category...', include_hidden: false }, { class: 'profile-text form-control form-select mb-5', multiple: true } %>
+
+          <div class="text-center">
+            <%= f.submit 'Update Project Proposal/Modifier la proposition de projet', class: 'btn btn-primary', id: 'waiting-save-button', data: { disable_with: false } %>
+          </div>
+          <span id="status-save"></span>
+          <% if flash[:alert] %>
+            <div id="alert"><%= flash[:alert] %></div>
+          <% end %>
+        <% end %>
+      </section>
+    </div>
+  </section>
+</div>
