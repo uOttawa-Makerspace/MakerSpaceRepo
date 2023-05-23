@@ -37,6 +37,9 @@ const startDateTimeInput = document.getElementById("start-datetime");
 const endDateTimeInput = document.getElementById("end-datetime");
 const userIdInput = document.getElementById("user-id");
 const reasonInput = document.getElementById("reason");
+const trainingIdInput = document.getElementById("training_id");
+const languageInput = document.getElementById("language");
+const courseInput = document.getElementById("course");
 const modalSave = document.getElementById("modal-save");
 
 const modalDelete = document.getElementById("modal-delete");
@@ -102,11 +105,6 @@ const endPicker = endDateTimeInput.flatpickr({
       }
     });
   },
-});
-
-document.addEventListener("turbo:load", () => {
-  console.log(calendar);
-  console.log(calendarEl);
 });
 
 new TomSelect("#user-id", {
@@ -182,6 +180,26 @@ document.addEventListener("turbo:load", () => {
         },
         editable: true,
         dayMaxEvents: true,
+        eventContent: (arg) => {
+          const props = arg.event.extendedProps;
+          let trainingStr = "";
+
+          if (props.reason === "Training") {
+            trainingStr = `<br> ${props.training ? props.training : ""} <br> ${
+              props.language ? props.language : ""
+            } <br> ${props.course ? props.course : ""}`;
+          }
+
+          return {
+            html:
+              '<div class="fc-event-main-frame"><div class="fc-event-time">' +
+              arg.timeText +
+              '</div><div class="fc-event-title-container"><div class="fc-event-title fc-sticky">' +
+              arg.event.title +
+              trainingStr +
+              "</div></div></div>",
+          };
+        },
         eventSources: [
           {
             id: "transparent",
@@ -377,6 +395,11 @@ const createCalendarEvent = () => {
       format: "json",
       user_id: selected_users,
       reason: reasonInput.value,
+      ...(reasonInput.value === "Training" && {
+        training_id: trainingIdInput.value,
+        language: languageInput.value,
+        course: courseInput.value,
+      }),
     }),
   })
     .then((response) => response.json())
@@ -396,6 +419,7 @@ const createCalendarEvent = () => {
             id: data["id"],
             color: data.color,
             className: data.className,
+            extendedProps: data.extendedProps,
           },
           "shifts"
         );
@@ -462,14 +486,13 @@ const modifyEvent = (arg) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      start_datetime: new Date(
-        Date.parse(arg.event.start.toString()) +
-          new Date().getTimezoneOffset() * 60 * 1000
-      ),
-      end_datetime: new Date(
-        Date.parse(arg.event.end.toString()) +
-          new Date().getTimezoneOffset() * 60 * 1000
-      ),
+      start_datetime: arg.event.start.toISOString().slice(0, -5),
+      end_datetime: arg.event.end.toISOString().slice(0, -5),
+      ...(reasonInput.value === "Training" && {
+        training_id: trainingIdInput.value,
+        language: languageInput.value,
+        course: courseInput.value,
+      }),
       format: "json",
     }),
   })
@@ -528,9 +551,20 @@ const editShift = (arg) => {
   })
     .then((response) => response.json())
     .then((data) => {
-      startPicker.setDate(Date.parse(data.start_datetime));
-      endPicker.setDate(Date.parse(data.end_datetime));
+      startPicker.setDate(Date.parse(data.start_datetime.slice(0, -6)));
+      endPicker.setDate(Date.parse(data.end_datetime.slice(0, -6)));
       reasonInput.value = data.reason;
+
+      if (data.reason === "Training") {
+        trainingIdInput.value = data.training_id;
+        languageInput.value = data.language;
+        courseInput.value = data.course;
+
+        const trainingContainer = document.getElementById("training-container");
+        trainingContainer.classList.remove("d-none");
+        trainingContainer.classList.add("d-block");
+      }
+
       populateUsers({
         start: new Date(
           Date.parse(data.start_datetime) +
@@ -619,6 +653,17 @@ document
   .addEventListener("click", () => {
     hideShowEvents("staffNeeded");
   });
+
+document.getElementById("reason").addEventListener("change", (el) => {
+  const trainingContainer = document.getElementById("training-container");
+  if (el.target.value === "Training") {
+    trainingContainer.classList.remove("d-none");
+    trainingContainer.classList.add("d-block");
+  } else {
+    trainingContainer.classList.remove("d-block");
+    trainingContainer.classList.add("d-none");
+  }
+});
 
 // Toggle Staff Visibility
 window.toggleVisibility = (id) => {
