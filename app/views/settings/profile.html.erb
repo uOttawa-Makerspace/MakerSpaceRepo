@@ -69,7 +69,7 @@
 
       <div class="mb-3">
         <%= f.label :year_of_study, t('users.new.form.year_of_study'), class: 'form-label' %>
-        <%= f.select :year_of_study, (1..10).to_a.map { |n| [n, n] }, { prompt: t('users.new.form.choose') }, class: 'form-control form-select', required: true %>
+        <%= f.select :year_of_study, (1..10).to_a.map { |n| [n, n] }, { prompt: t('users.new.form.choose.default') }, class: 'form-control form-select', required: true %>
         <%= tag.div(@user.errors[:year_of_study].first, class: 'invalid-feedback') %>
       </div>
     </fieldset>
