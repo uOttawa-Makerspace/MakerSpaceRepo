@@ -64,7 +64,7 @@
       <div class="mb-3">
         <%= f.label :program, t('settings.profile.program'), class: 'form-label profile-label' %>
         <%= tag.span(@user.errors[:program].first, class: 'form-error') %>
-        <%= f.select :program, @programs, { prompt: t('settings.profile.choose') }, { class: 'form-control form-select', id: 'options' } %>
+        <%= f.select :program, @programs, { prompt: t('settings.profile.choose') }, { class: 'form-control form-select' } %>
       </div>
 
       <div class="mb-3">
