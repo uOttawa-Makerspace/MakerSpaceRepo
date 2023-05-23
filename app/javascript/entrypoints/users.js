@@ -1,14 +1,14 @@
 document.addEventListener("turbo:load", function () {
-  var elements = document.querySelectorAll("[data-show], [data-hide]");
-  for (var i = 0; i < elements.length; i++) {
+  const elements = document.querySelectorAll("[data-show], [data-hide]");
+  for (let i = 0; i < elements.length; i++) {
     elements[i].addEventListener("change", function () {
-      var selector =
+      const selector =
         this.getAttribute("data-show") || this.getAttribute("data-hide");
-      var show = this.getAttribute("data-show") != null;
-      var hide = this.getAttribute("data-hide") != null;
-      var checked = this.checked;
+      const show = this.getAttribute("data-show") != null;
+      const hide = this.getAttribute("data-hide") != null;
+      const checked = this.checked;
 
-      if ((show && checked) || (hide && !checked)) {
+      if (checked && (show || hide)) {
         document.querySelector(selector).style.display = show
           ? "block"
           : "none";
