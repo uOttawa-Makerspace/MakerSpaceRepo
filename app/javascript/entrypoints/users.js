@@ -1,3 +1,5 @@
+import TomSelect from "tom-select";
+
 document.addEventListener("turbo:load", function () {
   const elements = document.querySelectorAll("[data-show], [data-hide]");
   for (let i = 0; i < elements.length; i++) {
@@ -18,5 +20,14 @@ document.addEventListener("turbo:load", function () {
     if (elements[i].checked) {
       elements[i].dispatchEvent(new Event("change"));
     }
+  }
+
+  const programSelect = document.getElementById("user_program");
+  if (programSelect && !programSelect.tomselect) {
+    new TomSelect(programSelect, {
+      maxItems: 1,
+      maxOptions: null,
+      searchOnKeyUp: true,
+    });
   }
 });
