@@ -254,7 +254,7 @@ class RepositoriesController < SessionsController
     owner = User.find_by(id: owner_id)
 
     if repository.users.include? owner
-      flash[:alert] = "This owner is already in your repository"
+      flash[:alert] = "#{owner.username} is already in your repository"
       redirect_to repository_path(repository.user_username, repository.slug)
       return
     end
@@ -262,7 +262,7 @@ class RepositoriesController < SessionsController
     repository.users << owner if !owner.nil?
 
     if repository.save
-      flash[:notice] = "This owner was added to your repository"
+      flash[:notice] = "#{owner.username} was added to your repository"
     else
       flash[:alert] = "Something went wrong."
     end
@@ -278,8 +278,10 @@ class RepositoriesController < SessionsController
       flash[
         :alert
       ] = "You cannot remove the last person in this repository. Please go to profile if you want to delete this repository."
+    elsif owner.id == repository.user_id
+      flash[:alert] = "You cannot remove the original owner of this repository."
     elsif repository.users.delete(owner)
-      flash[:notice] = "This owner was removed from your repository"
+      flash[:notice] = "#{owner.username} was removed from your repository"
     else
       flash[:alert] = "Something went wrong."
     end
