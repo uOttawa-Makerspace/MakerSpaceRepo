@@ -251,7 +251,16 @@ class RepositoriesController < SessionsController
   def add_owner
     repository = Repository.find params[:repo_owner][:repository_id]
     owner_id = params[:repo_owner][:owner_id]
-    repository.users << User.find(owner_id) if User.exists?(owner_id)
+    owner = User.find_by(id: owner_id)
+
+    if repository.users.include? owner
+      flash[:alert] = "This owner is already in your repository"
+      redirect_to repository_path(repository.user_username, repository.slug)
+      return
+    end
+
+    repository.users << owner if !owner.nil
+
     if repository.save
       flash[:notice] = "This owner was added to your repository"
     else
@@ -264,7 +273,12 @@ class RepositoriesController < SessionsController
     repository = Repository.find params[:repo_owner][:repository_id]
     owner_id = params[:repo_owner][:owner_id]
     owner = User.find(owner_id)
-    if repository.users.delete(owner)
+
+    if repository.users.length == 1
+      flash[
+        :alert
+      ] = "You cannot remove the last person in this repository. Please go to profile if you want to delete this repository."
+    elsif repository.users.delete(owner)
       flash[:notice] = "This owner was removed from your repository"
     else
       flash[:alert] = "Something went wrong."
