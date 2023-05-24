@@ -259,7 +259,7 @@ class RepositoriesController < SessionsController
       return
     end
 
-    repository.users << owner if !owner.nil
+    repository.users << owner if !owner.nil?
 
     if repository.save
       flash[:notice] = "This owner was added to your repository"
