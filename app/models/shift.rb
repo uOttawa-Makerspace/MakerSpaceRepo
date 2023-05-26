@@ -1,6 +1,7 @@
 class Shift < ApplicationRecord
   has_and_belongs_to_many :users
   belongs_to :space, optional: true
+  belongs_to :training, optional: true
 
   validates :start_datetime, presence: true
   validates :end_datetime, presence: true

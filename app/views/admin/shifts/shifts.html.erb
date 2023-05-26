@@ -1,22 +1,4 @@
 <div class="mt-4">
-  <div class="d-flex justify-content-center gap-2">
-    <%= form_tag staff_dashboard_change_space_path, method: :put do %>
-      <div class="input-group mb-3">
-        <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
-        <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: 'form-select' %>
-        <%= hidden_field_tag :shifts, true %>
-        <button class="btn btn-outline-secondary" type="submit">Go</button>
-      </div>
-    <% end %>
-
-    <%= form_tag shifts_admin_shifts_path, method: :get do %>
-      <div class="input-group mb-3">
-        <%= label_tag :time_period_id, 'Time Period', class: 'input-group-text' %>
-        <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: (params[:time_period_id].presence || TimePeriod.current.id)), class: 'form-select' %>
-        <button class="btn btn-outline-secondary" type="submit">Go</button>
-      </div>
-    <% end %>
-  </div>
 
   <div id="pending-shift-partial">
     <%= render partial: 'pending_shifts', locals: { pending_shifts: @pending_shifts } %>
@@ -55,10 +37,33 @@
       <% end %>
     </div>
     <div class="col-md-10">
-    <div id='spinner' class="spinner-border" style="width: 50vh; height: 50vh; position:absolute; z-index:1000; left:50%; top:50%; border-width:1rem; " role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-      <div id="calendar"></div>
+
+      <div class="d-flex justify-content-center gap-2">
+        <%= form_tag staff_dashboard_change_space_path, method: :put do %>
+          <div class="input-group mb-3">
+            <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
+            <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: 'form-select' %>
+            <%= hidden_field_tag :shifts, true %>
+            <button class="btn btn-outline-secondary" type="submit">Go</button>
+          </div>
+        <% end %>
+
+        <%= form_tag shifts_admin_shifts_path, method: :get do %>
+          <div class="input-group mb-3">
+            <%= label_tag :time_period_id, 'Time Period', class: 'input-group-text' %>
+            <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: (params[:time_period_id].presence || TimePeriod.current.id)), class: 'form-select' %>
+            <button class="btn btn-outline-secondary" type="submit">Go</button>
+          </div>
+        <% end %>
+      </div>
+
+      <div id="calendar-container">
+        <div id="calendar"></div>
+      </div>
+
+      <div id='spinner' class="spinner-border" style="width: 50vh; height: 50vh; position:absolute; z-index:1000; left:50%; top:50%; border-width:1rem; " role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
     </div>
   </div>
 
@@ -74,23 +79,42 @@
         </div>
         <div class="modal-body">
           <div class="mb-3 text-center">
-            <label for="start-datetime">Start Date</label>
-            <input id="start-datetime" autocomplete="false" class="form-control inanimate">
-            <br>
-            <label for="end-datetime">End Date</label>
-            <input id="end-datetime" autocomplete="false" class="form-control inanimate">
-            <br>
-            <%= label_tag :user_id, 'User to select' %>
-            <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true } %>
-            <br>
-            <label for="reason">Reason</label>
-            <select id="reason" class="form-select">
-              <option value="Shift">Shift</option>
-              <option value="Training">Training</option>
-              <option value="Meeting">Meeting</option>
-              <option value="Project">Project</option>
-              <option value="Other">Other</option>
-            </select>
+            <div class="mb-3">
+              <label for="start-datetime">Start Date</label>
+              <input id="start-datetime" autocomplete="false" class="form-control inanimate">
+            </div>
+            <div class="mb-3">
+              <label for="end-datetime">End Date</label>
+              <input id="end-datetime" autocomplete="false" class="form-control inanimate">
+            </div>
+            <div class="mb-3">
+              <%= label_tag :user_id, 'User to select' %>
+              <%= select_tag :user_id, options_for_select(@staff), { id: 'user-id', autocomplete: 'off', multiple: true, required: true } %>
+            </div>
+            <div class="mb-3">
+              <label for="reason">Reason</label>
+              <select id="reason" class="form-select form-control">
+                <option value="Shift">Shift</option>
+                <option value="Training">Training</option>
+                <option value="Meeting">Meeting</option>
+                <option value="Project">Project</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div id="training-container" class="d-none">
+              <div class="mb-2">
+                <%= label_tag :training_id, 'Training' %>
+                <%= select_tag :training_id, options_from_collection_for_select(Space.find(@space_id).trainings.order(name: :asc), 'id', 'name'), id: 'training_id', prompt: 'Select training', class: 'form-control form-select', required: true %>
+              </div>
+              <div class="mb-2">
+                <%= label_tag :language, 'Language' %>
+                <%= select_tag :language, options_for_select(%w[English Français]), prompt: 'Select Language', class: 'form-control form-select', id: 'language', required: true %>
+              </div>
+              <div class="mb-2">
+                <%= label_tag :course, 'Course' %>
+                <%= select_tag :course, options_for_select(CourseName.pluck(:name)), prompt: 'Select course', class: 'form-control form-select', id: 'course', required: true %>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer input-group">

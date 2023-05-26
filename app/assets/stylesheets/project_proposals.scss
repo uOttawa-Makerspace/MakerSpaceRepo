@@ -5,7 +5,7 @@
 
 .checkbox-list {
   label#type {
-    color: #555;
+    color: black;
     font: 300 0.9em "Raleway", sans-serif;
   }
 }
@@ -145,7 +145,7 @@ div.declined {
   padding: 10px;
 }
 
-.mb-3.required .form-label:after {
+#new-repo .required .form-label:after {
   content: "*";
   color: red;
   font-size: 25px;
