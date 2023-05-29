@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
+ActiveRecord::Schema[7.0].define(version: 2023_05_29_161156) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -665,6 +665,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.integer "badge_template_id"
     t.boolean "has_project_kit"
     t.bigint "drop_off_location_id"
+    t.boolean "is_virtual", default: false
     t.index ["badge_template_id"],
             name: "index_proficient_projects_on_badge_template_id"
     t.index ["drop_off_location_id"],
@@ -847,7 +848,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.datetime "updated_at", null: false
     t.string "google_event_id"
     t.boolean "pending", default: true
+    t.bigint "training_id"
+    t.string "language"
+    t.string "course"
     t.index ["space_id"], name: "index_shifts_on_space_id"
+    t.index ["training_id"], name: "index_shifts_on_training_id"
   end
 
   create_table "shifts_users", id: false, force: :cascade do |t|
@@ -900,6 +905,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.time "end_time"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "time_period_id"
+    t.index ["time_period_id"],
+            name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
   end
 
@@ -966,6 +974,14 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.boolean "default_public", default: false
     t.integer "max_automatic_approval_hour"
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
+  end
+
+  create_table "time_periods", force: :cascade do |t|
+    t.string "name"
+    t.date "start_date"
+    t.date "end_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "training_levels", force: :cascade do |t|
@@ -1189,9 +1205,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
+  add_foreign_key "shifts", "trainings"
   add_foreign_key "space_staff_hours", "course_names"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "space_staff_hours", "training_levels"
+  add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
