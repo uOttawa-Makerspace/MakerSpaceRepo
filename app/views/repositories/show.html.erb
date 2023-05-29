@@ -165,7 +165,7 @@
             <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_owner' }, method: :patch do |f| %>
                 <div class="mb-3 input-group">
                   <%= f.hidden_field :repository_id, value: @repository.id %>
-                  <%= f.select(:owner_id, @owners.pluck(:name, :id), { prompt: 'Choose...' }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
+                  <%= f.select(:owner_id, @owners.pluck(:username, :id), { prompt: 'Choose...' }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
                   <br> </br>
                   <%= f.submit 'Remove', class: 'btn btn-danger' %>
                 </div>

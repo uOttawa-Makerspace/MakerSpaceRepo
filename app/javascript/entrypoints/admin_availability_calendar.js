@@ -15,10 +15,13 @@ const unavailabilityModal = new Modal(
 // Show state
 let showUnavailabilities = "block";
 let hiddenIds = {};
+const urlParams = new URLSearchParams(window.location.search);
+const time_period_id = urlParams.get("time_period_id");
 
 // Inputs
 const dayInput = document.getElementById("day");
 const userIdInput = document.getElementById("user-id");
+const timePeriodIdInput = document.getElementById("time-period-id");
 const startTimeInput = document.getElementById("start-time");
 const endTimeInput = document.getElementById("end-time");
 
@@ -101,7 +104,9 @@ const calendar = new Calendar(calendarEl, {
   eventSources: [
     {
       id: "unavailabilities",
-      url: `/admin/shifts/get_availabilities`,
+      url: `/admin/shifts/get_availabilities${
+        time_period_id ? "?time_period_id=" + time_period_id : ""
+      }`,
     },
   ],
   eventSourceSuccess: (content, xhr) => {
@@ -222,6 +227,7 @@ const createCalendarEvent = () => {
     body: JSON.stringify({
       staff_availability: {
         day: dayInput.value,
+        time_period_id: timePeriodIdInput.value,
         start_time: startTimeInput.value,
         end_time: endTimeInput.value,
       },

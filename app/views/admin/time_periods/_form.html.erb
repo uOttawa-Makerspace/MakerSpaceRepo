@@ -1,0 +1,35 @@
+<section>
+  <%= form_for([:admin, @time_period]) do |f| %>
+    <% if @time_period.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(@time_period.errors.count, 'error') %> prohibited this service from being saved:</h2>
+
+        <ul>
+          <% @time_period.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="text-center">
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :name, 'Name of the Time Period' %>
+        <%= f.text_field :name, class: 'form-control', required: true %>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :start_date, 'Start Date', class: 'form-label' %>
+        <%= f.date_field :start_date, autocomplete: 'off', class: 'form-control mb-3', required: true %>
+      </div>
+
+      <div class="col-lg-6 text-center mx-auto mb-3">
+        <%= f.label :end_date, 'End Date', class: 'form-label' %>
+        <%= f.date_field :end_date, autocomplete: 'off', class: 'form-control mb-3', required: true %>
+      </div>
+
+      <%= f.submit class: 'btn btn-primary' %>
+    </div>
+  <% end %>
+
+</section>
