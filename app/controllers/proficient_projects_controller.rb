@@ -342,7 +342,8 @@ class ProficientProjectsController < DevelopmentProgramsController
       :cc,
       :badge_template_id,
       :has_project_kit,
-      :drop_off_location_id
+      :drop_off_location_id,
+      :is_virtual
     )
   end
 
