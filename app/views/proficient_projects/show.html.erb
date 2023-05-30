@@ -55,18 +55,28 @@
               <%= image_tag p.image, alt: 'Proficient Project Image', data: { width: p.width, height: p.height } %>
             <% end %>
           </div>
-          <br />
-          <br />
         </div>
       </div>
     </div>
 
     <% if @order_item&.status == "In progress" %>
-      <div class="text-center">
-        <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will then be reviewed by an admin in about 5 business days.</p>
-        <%= link_to 'Submit Project', complete_project_proficient_projects_path(id: @proficient_project.id), class: 'btn btn-primary' %>
-        <br><br>
-      </div>
+      <%= form_tag complete_project_proficient_projects_path, method: :get do %>
+        <%= hidden_field_tag(:id, @proficient_project.id) %>
+        <% if @proficient_project.is_virtual? %>
+          <div class='mb-3'>
+            <%= label_tag 'Add comments:', nil, class: 'form-label' %>
+            <%= trix_editor_tag 'comments', nil, class: 'form-control mb-3' %>
+            <%= label_tag 'Attach files:', nil, class: 'form-label' %>
+            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control' %>
+          </div>
+        <% end %>
+
+        <div class="text-center">
+          <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will then be reviewed by an admin in about 5 business days.</p>
+          <%= submit_tag 'Submit Project', class: 'btn btn-primary' %>
+          <br><br>
+        </div>
+      <% end %>
     <% end %>
 
   </div>
