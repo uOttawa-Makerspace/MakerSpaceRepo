@@ -19,10 +19,12 @@
           <td><%= oi.updated_at.to_formatted_s(:long_ordinal) %></td>
           <td><%= oi.comments.html_safe %></td>
           <% if oi.files.attached? %>
-            <td class="d-flex flex-column">
-              <% oi.files.each do |file| %>
-                <%= link_to file.filename, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
-              <% end %>
+            <td>
+              <div class="d-flex flex-column gap-1">
+                <% oi.files.each do |file| %>
+                  <%= link_to file.filename, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
+                <% end %>
+              </div>
             </td>
           <% else %>
             <td></td>
