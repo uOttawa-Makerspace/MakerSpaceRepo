@@ -10,6 +10,10 @@ class OrderItem < ApplicationRecord
                 application/pdf
                 image/svg+xml
                 text/html
+                text/css
+                text/javascript
+                text/ino
+                text/x-java-source
                 model/stl
                 application/vnd.ms-pki.stl
                 application/octet-stream
