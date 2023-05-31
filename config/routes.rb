@@ -401,7 +401,7 @@ Rails.application.routes.draw do
       get :join_development_program
       get :requests
       get :open_modal
-      get :complete_project
+      put :complete_project
       get :approve_project
       get :revoke_project
       get :generate_acquired_badge

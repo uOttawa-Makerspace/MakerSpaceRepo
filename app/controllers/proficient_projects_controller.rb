@@ -184,12 +184,16 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def complete_project
+    puts "RAN COMPLETE PROJECT"
+    puts params
     order_items =
       current_user.order_items.where(
         proficient_project_id: @proficient_project.id
       )
-    if order_items.present?
-      order_items.first.update(status: "Waiting for approval")
+    if order_items.present? &&
+         order_items.first.update!(
+           order_item_params.merge(status: "Waiting for approval")
+         )
       MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
       MsrMailer.send_user_pp_evaluation(
         @proficient_project,
@@ -345,6 +349,10 @@ class ProficientProjectsController < DevelopmentProgramsController
       :drop_off_location_id,
       :is_virtual
     )
+  end
+
+  def order_item_params
+    params.require(:order_item).permit(:comments, files: [])
   end
 
   def create_photos
