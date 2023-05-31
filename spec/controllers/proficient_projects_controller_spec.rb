@@ -286,7 +286,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         create(:order, :with_item, user_id: user.id)
         proficient_project = ProficientProject.last
         proficient_project.update(badge_template_id: "")
-        get :complete_project,
+        put :complete_project,
             format: "js",
             params: {
               id: proficient_project.id
@@ -313,7 +313,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         create(:user, email: "avend029@uottawa.ca")
         @proficient_project = ProficientProject.last
         @proficient_project.update(badge_template_id: "")
-        get :complete_project,
+        put :complete_project,
             format: "js",
             params: {
               id: @proficient_project.id
@@ -351,7 +351,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         create(:order, :with_item, user_id: @user.id)
         @proficient_project = ProficientProject.last
         @proficient_project.update(badge_template_id: "")
-        get :complete_project,
+        put :complete_project,
             format: "js",
             params: {
               id: @proficient_project.id

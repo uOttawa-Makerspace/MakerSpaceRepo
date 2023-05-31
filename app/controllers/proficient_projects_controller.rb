@@ -188,10 +188,15 @@ class ProficientProjectsController < DevelopmentProgramsController
       current_user.order_items.where(
         proficient_project_id: @proficient_project.id
       )
-    if order_items.present? &&
-         order_items.first.update!(
-           order_item_params.merge(status: "Waiting for approval")
-         )
+    update_params =
+      (
+        if (@proficient_project.is_virtual?)
+          (order_item_params.merge(status: "Waiting for approval"))
+        else
+          ({ status: "Waiting for approval" })
+        end
+      )
+    if order_items.present? && order_items.first.update!(update_params)
       MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
       MsrMailer.send_user_pp_evaluation(
         @proficient_project,
