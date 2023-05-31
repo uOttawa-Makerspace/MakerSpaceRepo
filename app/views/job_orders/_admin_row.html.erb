@@ -74,6 +74,7 @@
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::BEING_PROCESSED %>
     <button class="btn btn-primary btn-sm btn-block" data-action="click->launch-modal#launchCompletedEmailModal" data-id="<%= jo.id %>">Completed</button>
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::COMPLETED %>
+    Price : <%= number_to_currency(jo.job_order_quote.total_price) %>
     <%= button_to 'Paid?', job_order_paid_path(jo, paid: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want set the Job Order as paid?' } %>
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::PAID %>
     <%= button_to 'Picked-Up?', job_order_picked_up_path(jo, picked_up: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want set the Job Order as Picked-Up?' } %>
