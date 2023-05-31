@@ -184,8 +184,6 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def complete_project
-    puts "RAN COMPLETE PROJECT"
-    puts params
     order_items =
       current_user.order_items.where(
         proficient_project_id: @proficient_project.id
