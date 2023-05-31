@@ -36,6 +36,10 @@
         <%= @proficient_project.level %>
       </div>
 
+      <div class="text-center">
+        Virtual Project - <%= @proficient_project.is_virtual? ? 'Yes' : 'No' %>
+      </div>
+
       <% if @proficient_project.drop_off_location.present? %>
         <div class="text-center">
           Drop-off location: <b><%= @proficient_project.drop_off_location.name %></b>

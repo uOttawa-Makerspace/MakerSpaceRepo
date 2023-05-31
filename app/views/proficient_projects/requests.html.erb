@@ -18,13 +18,15 @@
           <td><%= link_to oi.proficient_project.title, oi.proficient_project %></td>
           <td><%= oi.updated_at.to_formatted_s(:long_ordinal) %></td>
           <td><%= oi.comments.html_safe %></td>
-          <td>
-            <% if oi.files.attached? %>
+          <% if oi.files.attached? %>
+            <td class="d-flex flex-column">
               <% oi.files.each do |file| %>
-                <%= link_to 'Download', rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
+                <%= link_to file.filename, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
               <% end %>
-            <% end %>
-          </td>
+            </td>
+          <% else %>
+            <td></td>
+          <% end %>
           <td class="action-cell"><%= button_to fa_icon('check'), approve_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'btn btn-default check-button' %></td>
           <td class="action-cell"><%= button_to fa_icon('times'), revoke_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'btn btn-default x-button' %></td>
         </tr>
