@@ -2,6 +2,7 @@
 
 class OrderItemsController < DevelopmentProgramsController
   def create
+    create_successful = false
     @order = current_order
     @order.user = current_user
     proficient_project =
@@ -11,8 +12,16 @@ class OrderItemsController < DevelopmentProgramsController
         @order_item = @order.order_items.new(order_item_params)
         existing_order =
           @order.order_items.where(proficient_project: proficient_project)
-        @order.save unless existing_order.count >= 1
+        if existing_order.count < 1
+          @order.save
+          flash[:notice] = "Successfully added item to cart"
+          create_successful = true
+        else
+          flash[:alert] = "You have already ordered this item"
+        end
       end
+    else
+      flash[:alert] = "You do not have the required badges to do this project"
     end
     # TODO: update when implementing coupons
     # if existing_order.count >= 1
@@ -21,6 +30,12 @@ class OrderItemsController < DevelopmentProgramsController
     #  @order.save
     # end
     session[:order_id] = @order.id
+
+    if create_successful
+      redirect_to carts_path
+    else
+      redirect_to proficient_projects_path
+    end
   end
 
   def update
