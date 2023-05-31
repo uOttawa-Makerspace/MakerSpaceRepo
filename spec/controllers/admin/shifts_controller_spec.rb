@@ -4,7 +4,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
   before(:all) { @admin = create(:user, :admin) }
 
   before(:each) do
-    session[:expires_at] = DateTime.tomorrow.end_of_day
+    session[:expires_at] = DateTime.tomorrow.end_of_dayt
     session[:user_id] = @admin.id
   end
 
@@ -162,8 +162,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 /(#{s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
               end:
                 /(#{s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
-              color:
-                /(rgba\((#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}|#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}), (1|0.7))/,
+              color: s1.color(space.id, 1),
               className:
                 /((user-#{s1.users.first.id}|user-#{s1.users.second.id}|user-#{s3.users.first.id}))/
             },
@@ -175,8 +174,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 /(#{s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
               end:
                 /(#{s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
-              color:
-                /(rgba\((#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}|#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}), (1|0.7))/,
+              color: s3.color(space.id, 0.7),
               className:
                 /((user-#{s1.users.first.id}|user-#{s1.users.second.id}|user-#{s3.users.first.id}))/
             }

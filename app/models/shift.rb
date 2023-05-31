@@ -15,7 +15,10 @@ class Shift < ApplicationRecord
 
   def color(space_id, opacity)
     if users.count == 1
-      users.first.staff_spaces.find_by(space_id: space_id).color
+      hex_color_to_rgba(
+        users.first.staff_spaces.find_by(space_id: space_id).color,
+        opacity
+      )
     else
       n_staffs = 100 / users.length
 
