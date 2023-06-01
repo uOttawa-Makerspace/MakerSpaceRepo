@@ -21,7 +21,7 @@
             <td class="action-cell">
               <div class="d-flex flex-column gap-1">
                 <% oi.files.each do |file| %>
-                  <%= link_to file.filename, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
+                  <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
                 <% end %>
               </div>
             </td>

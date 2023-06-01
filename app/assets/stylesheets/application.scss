@@ -90,7 +90,21 @@ p {
 a {
   text-decoration: none;
   color: inherit;
-  &:not(.btn, .nav-item, .nav-link, .dropdown-item, .navbar-brand, .overlay, .username, .admin_username, .user_name, .edit-repo-link, .certify-button, .like, .make) {
+  &:not(
+      .btn,
+      .nav-item,
+      .nav-link,
+      .dropdown-item,
+      .navbar-brand,
+      .overlay,
+      .username,
+      .admin_username,
+      .user_name,
+      .edit-repo-link,
+      .certify-button,
+      .like,
+      .make
+    ) {
     color: $primary !important;
   }
   &::visited {
@@ -192,9 +206,9 @@ div.form-error {
 }
 
 // Hiding File button for Trix editor
-//trix-toolbar .trix-button-group--file-tools {
-//  display: none;
-//}
+trix-toolbar .trix-button-group--file-tools {
+  display: none;
+}
 
 //Fixing Div bug for Trix editor
 .trix-content {

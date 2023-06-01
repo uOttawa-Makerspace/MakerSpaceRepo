@@ -188,17 +188,11 @@ class ProficientProjectsController < DevelopmentProgramsController
       current_user.order_items.where(
         proficient_project_id: @proficient_project.id
       )
-    update_params =
-      (
-        if (@proficient_project.is_virtual?)
-          (order_item_params.merge(status: "Waiting for approval"))
-        else
-          ({ status: "Waiting for approval" })
-        end
-      )
     if !order_items.present?
       flash[:alert] = "This project hasn't been found"
-    elsif !order_items.first.update(update_params)
+    elsif !order_items.first.update(
+          order_item_params.merge(status: "Waiting for approval")
+        )
       msg = "The project didn't update<br>"
       if order_items.first.errors.any?
         order_items.first.errors.full_messages.each do |message|

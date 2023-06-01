@@ -1,5 +1,41 @@
-<div id="order-item-modal-rendered">
-    <div>
-        <h5>User: <%= @order_item.order.user.name %></h5>
+<div id="order-item-modal-rendered" class="d-grid gap-3">
+    <div class="card">
+        <div class="card-header bg-primary text-light">Order Item Information</div>
+        <div class="card-body">
+            <h5>User: <%= link_to @order_item.order.user.name, user_path(@order_item.order.user.username) %></h5>
+            <h5>Proficient Project: <%= link_to @order_item.proficient_project.title, @order_item.proficient_project %></h5>
+            <h5>Virtual Project: <%= @order_item.proficient_project.is_virtual? ? 'Yes' : 'No' %></h5>
+            <h5>Date Submitted: <%= @order_item.updated_at.strftime('%Y/%m/%d') %></h5>
+        </div>
     </div>
+    <div class="card">
+        <div class="card-header bg-primary text-light">User Comments</div>
+        <div class="card-body">
+            <%= @order_item.comments == '' ? 'None' : @order_item.comments.html_safe %>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header bg-primary text-light">Attached Files - <%= @order_item.files.length %></div>
+        <div class="card-body">
+            <% if @order_item.files.attached? %>
+                <% @order_item.files.each do |file| %>
+                    <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
+                <% end %>
+
+                <% images = @order_item.files.select { |file| file.content_type.starts_with?('image/') } %>
+
+                <% if images.length > 0 %>
+                    <div id="photo-slide">
+                        <% images.each do |i| %>
+                            <%= image_tag i, alt: 'User Attached Image' %>
+                        <% end %>
+                    </div>
+                <% end %>
+            <% else %>
+                No Files Attached
+            <% end %>
+        </div>
+    </div>
+
+    <%= render 'layouts/photoswipe' %>
 </div>

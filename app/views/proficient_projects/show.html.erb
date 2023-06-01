@@ -66,14 +66,12 @@
     <% if @order_item&.status == "In progress" %>
       <%= form_for :order_item, url: complete_project_proficient_projects_path, method: :put, multipart: true do |f| %>
         <%= hidden_field_tag(:id, @proficient_project.id) %>
-        <% if @proficient_project.is_virtual? %>
-          <div class='mb-3'>
-            <%= f.label :comments, 'Add comments:', class: 'form-label' %>
-            <%= f.trix_editor :comments, class: 'form-control mb-3' %>
-            <%= f.label :files, 'Attach files:', class: 'form-label' %>
-            <%= f.file_field :files, multiple: true, class: 'form-control' %>
-          </div>
-        <% end %>
+        <div class='mb-3'>
+          <%= f.label :comments, 'Add comments:', class: 'form-label' %>
+          <%= f.trix_editor :comments, class: 'form-control mb-3' %>
+          <%= f.label :files, 'Attach files:', class: 'form-label' %>
+          <%= f.file_field :files, multiple: true, class: 'form-control' %>
+        </div>
 
         <div class="text-center">
           <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will then be reviewed by an admin in about 5 business days.</p>
