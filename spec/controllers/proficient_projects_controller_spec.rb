@@ -289,7 +289,11 @@ RSpec.describe ProficientProjectsController, type: :controller do
         put :complete_project,
             format: "js",
             params: {
-              id: proficient_project.id
+              id: proficient_project.id,
+              order_item: {
+                comments: "",
+                files: []
+              }
             }
         expect(response).to redirect_to proficient_project
         expect(proficient_project.order_items.last.status).to eq(
@@ -316,7 +320,11 @@ RSpec.describe ProficientProjectsController, type: :controller do
         put :complete_project,
             format: "js",
             params: {
-              id: @proficient_project.id
+              id: @proficient_project.id,
+              order_item: {
+                comments: "",
+                files: []
+              }
             }
       end
 
@@ -354,7 +362,11 @@ RSpec.describe ProficientProjectsController, type: :controller do
         put :complete_project,
             format: "js",
             params: {
-              id: @proficient_project.id
+              id: @proficient_project.id,
+              order_item: {
+                comments: "",
+                files: []
+              }
             }
       end
 
