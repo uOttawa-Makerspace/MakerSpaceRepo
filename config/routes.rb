@@ -46,6 +46,7 @@ Rails.application.routes.draw do
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
     get :revoke, path: "revoke"
+    get :order_item_modal
   end
 
   resources :orders, only: %i[index create destroy]

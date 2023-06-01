@@ -7,6 +7,7 @@ export default class extends Controller {
     "timelineModal",
     "completedEmailModal",
     "declineModal",
+    "orderItemModal",
   ];
 
   launchCommentsModal(event) {
@@ -57,5 +58,15 @@ export default class extends Controller {
       );
     declineModalController.setCoHostContent(event.currentTarget.dataset);
     declineModalController.open();
+  }
+
+  launchOrderItemModal(event) {
+    let orderItemModalController =
+      this.application.getControllerForElementAndIdentifier(
+        this.orderItemModalTarget,
+        "order-item-modal"
+      );
+    orderItemModalController.setCoHostContent(event.currentTarget.dataset);
+    orderItemModalController.open();
   }
 }

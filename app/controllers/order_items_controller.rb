@@ -71,6 +71,11 @@ class OrderItemsController < DevelopmentProgramsController
         .paginate(page: params[:page], per_page: 20)
   end
 
+  def order_item_modal
+    @order_item = OrderItem.find(params[:order_item_id])
+    render layout: false
+  end
+
   private
 
   def order_item_params

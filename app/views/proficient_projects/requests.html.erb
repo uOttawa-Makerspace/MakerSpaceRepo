@@ -1,4 +1,4 @@
-<section>
+<section data-controller="launch-modal">
   <h2 class="text-center py-3"><b>Proficient Projects Requests</b></h2>
 
   <% if @order_item_waiting_for_approval.present? %>
@@ -9,17 +9,16 @@
       <th>Submission Date</th>
       <th>Comments</th>
       <th>Attached Files</th>
-      <th>Approve</th>
-      <th>Revoke</th>
+      <th>Actions</th>
     </thead>
       <% @order_item_waiting_for_approval.each do |oi| %>
         <tr>
           <td><%= link_to oi.order.user.name, user_path(oi.order.user.username) %></td>
           <td><%= link_to oi.proficient_project.title, oi.proficient_project %></td>
-          <td><%= oi.updated_at.to_formatted_s(:long_ordinal) %></td>
+          <td><%= oi.updated_at.strftime('%Y/%m/%d') %></td>
           <td><%= oi.comments.html_safe %></td>
           <% if oi.files.attached? %>
-            <td>
+            <td class="action-cell">
               <div class="d-flex flex-column gap-1">
                 <% oi.files.each do |file| %>
                   <%= link_to file.filename, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
@@ -29,8 +28,13 @@
           <% else %>
             <td></td>
           <% end %>
-          <td class="action-cell"><%= button_to fa_icon('check'), approve_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'btn btn-default check-button' %></td>
-          <td class="action-cell"><%= button_to fa_icon('times'), revoke_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'btn btn-default x-button' %></td>
+          <td class="action-cell">
+            <div class="d-flex flex-column gap-1">
+              <button class="btn btn-success btn-sm btn-block" data-action="click->launch-modal#launchOrderItemModal" data-id="<%= oi.id %>">Show</button>
+              <%= link_to 'Approve', approve_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'btn btn-primary btn-sm btn-block' %>
+              <%= link_to 'Revoke', revoke_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'btn btn-danger btn-sm btn-block' %>
+            </div>
+          </td>
         </tr>
       <% end %>
     </table>
@@ -40,6 +44,26 @@
     <p class="text-center">No Requests so far.</p>
 
   <% end %>
+
+  <!-- Order Items Modal -->
+  <div class="modal" tabindex="-1" data-controller="order-item-modal" data-launch-modal-target="orderItemModal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Order Item #<span data-order-item-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->order-item-modal#close" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id="order-item-body">
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="click->order-item-modal#close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <br />
 </section>
