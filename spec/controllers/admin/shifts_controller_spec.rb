@@ -4,7 +4,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
   before(:all) { @admin = create(:user, :admin) }
 
   before(:each) do
-    session[:expires_at] = DateTime.tomorrow.end_of_dayt
+    session[:expires_at] = DateTime.tomorrow.end_of_day
     session[:user_id] = @admin.id
   end
 
