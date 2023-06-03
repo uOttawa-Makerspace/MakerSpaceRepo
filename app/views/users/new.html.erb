@@ -40,7 +40,7 @@
 
           <div class="mb-3">
             <%= form.label :gender, t('users.new.form.gender'), class: 'required' %>
-            <%= form.select :gender, [[t('users.new.form.male'), 'Male'], [t('users.new.form.female'), 'Female'], [t('users.new.form.other'), 'Other'], [t('users.new.form.no_specify'), 'Prefer not to specify']], { prompt: t('users.new.form.choose') }, { class: 'form-control form-select' } %>
+            <%= form.select :gender, [[t('users.new.form.male'), 'Male'], [t('users.new.form.female'), 'Female'], [t('users.new.form.other'), 'Other'], [t('users.new.form.no_specify'), 'Prefer not to specify']], { prompt: t('users.new.form.choose.gender') }, { class: 'form-control form-select' } %>
           </div>
 
           <div class="mb-3">
@@ -78,18 +78,18 @@
                     [t('users.new.form.engineering'), 'Engineering'], [t('users.new.form.health_sciences'), 'Health Sciences'],
                     [t('users.new.form.medicine'), 'Medicine'], [t('users.new.form.science'), 'Science'],
                     [t('users.new.form.social_sciences'), 'Social Sciences'], [t('users.new.form.telfer'), 'Telfer School of Management']
-                  ], { prompt: t('users.new.form.choose') }, { class: 'form-control form-select' } %>
+                  ], { prompt: t('users.new.form.choose.faculty') }, { class: 'form-control form-select' } %>
             </div>
 
             <div class="mb-3">
               <% programs = ProgramList.fetch_all %>
               <%= form.label :program, t('users.new.form.program'), class: 'required' %>
-              <%= form.select :program, programs, { prompt: t('users.new.form.choose') }, { class: 'form-control form-select', 'data-live-search': 'true' } %>
+              <%= form.select :program, programs, { prompt: t('users.new.form.choose.program') }, { class: 'form-control form-select', 'data-live-search': 'true' } %>
             </div>
 
             <div class="mb-3">
               <%= form.label :year_of_study, t('users.new.form.year_of_study'), class: 'required' %>
-              <%= form.select :year_of_study, (1..10).to_a.map { |n| [n, n] }, { prompt: t('users.new.form.choose') }, class: 'form-control form-select' %>
+              <%= form.select :year_of_study, (1..10).to_a.map { |n| [n, n] }, { prompt: t('users.new.form.choose.year_of_study') }, class: 'form-control form-select' %>
             </div>
           </fieldset>
 
@@ -100,7 +100,7 @@
                   [t('users.new.form.personal_projects'), 'Personal Projects'],
                   [t('users.new.form.business'), 'Business'],
                   [t('users.new.form.other'), 'Other']
-                ], { prompt: t('users.new.form.choose') }, { class: 'form-control form-select' } %>
+                ], { prompt: t('users.new.form.choose.makerrepo_for_what') }, { class: 'form-control form-select' } %>
           </div>
 
           <div class="mb-3">

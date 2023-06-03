@@ -458,52 +458,121 @@ RSpec.describe RepositoriesController, type: :controller do
 
   describe "#add_owner" do
     context "Add Owner" do
-      it "add owner" do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
+      before(:each) do
+        @owner = create(:user, :regular_user)
+        @member = create(:user, :regular_user)
+        session[:user_id] = @owner.id
         session[:expires_at] = Time.zone.now + 10_000
-        repo = create(:repository)
+
+        @repo =
+          create(
+            :repository,
+            user_id: @owner.id,
+            user_username: @owner.username
+          )
+        Repository.find(@repo.id).users = [@owner]
+      end
+
+      it "should not add member twice" do
         post :add_owner,
              params: {
-               user_username: user.username,
+               user_username: @owner.username,
                repo_owner: {
-                 repository_id: repo.id,
-                 owner_id: user.id
+                 repository_id: @repo.id,
+                 owner_id: @member.id
                }
              }
-        expect(flash[:notice]).to eq("This owner was added to your repository")
-        expect(Repository.last.users.first.id).to eq(user.id)
+        post :add_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @member.id
+               }
+             }
+        expect(flash[:alert]).to eq("This user is already in your repository")
+        expect(@repo.users.last.id).to eq(@member.id)
       end
     end
   end
 
   describe "#remove_owner" do
     context "Remove Owner" do
-      it "remove owner" do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
+      before(:each) do
+        @owner = create(:user, :regular_user)
+        @member = create(:user, :regular_user)
+        session[:user_id] = @owner.id
         session[:expires_at] = Time.zone.now + 10_000
-        repo = create(:repository)
-        post :add_owner,
-             params: {
-               user_username: user.username,
-               repo_owner: {
-                 repository_id: repo.id,
-                 owner_id: user.id
-               }
-             }
+
+        @repo =
+          create(
+            :repository,
+            user_id: @owner.id,
+            user_username: @owner.username
+          )
+        Repository.find(@repo.id).users = [@owner]
+      end
+
+      it "should not remove last owner from repo" do
         post :remove_owner,
              params: {
-               user_username: user.username,
+               user_username: @owner.username,
                repo_owner: {
-                 repository_id: repo.id,
-                 owner_id: user.id
+                 repository_id: @repo.id,
+                 owner_id: @owner.id
+               }
+             }
+        expect(flash[:alert]).to eq(
+          "You cannot remove the last person in this repository. Please go to profile if you want to delete this repository."
+        )
+        expect(@repo.users.last.id).to eq(@owner.id)
+      end
+
+      it "should remove regular members" do
+        post :add_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @member.id
+               }
+             }
+        expect(@repo.users.last.id).to eq(@member.id)
+        post :remove_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @member.id
                }
              }
         expect(flash[:notice]).to eq(
           "This owner was removed from your repository"
         )
-        expect(Repository.last.users).not_to eq(user.id)
+        expect(@repo.users.last.id).to eq(@owner.id)
+      end
+
+      it "should not remove original owner" do
+        post :add_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @member.id
+               }
+             }
+        post :remove_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @owner.id
+               }
+             }
+        expect(flash[:alert]).to eq(
+          "You cannot remove the original owner of this repository."
+        )
+        expect(@repo.users.first.id).to eq(@owner.id)
       end
     end
   end
