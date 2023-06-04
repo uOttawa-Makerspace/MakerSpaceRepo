@@ -9,4 +9,11 @@ class SubSpaceBooking < ApplicationRecord
   validates :description, presence: true
   validates :start_time, presence: true
   validates :end_time, presence: true
+  validate :end_time_after_start_time
+
+  def end_time_after_start_time
+    if start_time >= end_time
+      errors.add(:expiration_date, "Start Time needs to be before end time")
+    end
+  end
 end
