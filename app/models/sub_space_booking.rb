@@ -12,7 +12,7 @@ class SubSpaceBooking < ApplicationRecord
   validate :end_time_after_start_time
 
   def end_time_after_start_time
-    if start_time >= end_time
+    if start_time.present? && end_time.present? && start_time >= end_time
       errors.add(:expiration_date, "Start Time needs to be before end time")
     end
   end
