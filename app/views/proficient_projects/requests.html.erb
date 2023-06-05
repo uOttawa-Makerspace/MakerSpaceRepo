@@ -31,8 +31,8 @@
           <td class="action-cell">
             <div class="d-flex flex-column gap-1">
               <button class="btn btn-success btn-sm btn-block" data-action="click->launch-modal#launchOrderItemModal" data-id="<%= oi.id %>">Show</button>
-              <%= link_to 'Approve', approve_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'btn btn-primary btn-sm btn-block' %>
-              <%= link_to 'Revoke', revoke_project_proficient_projects_path(oi_id: oi.id), method: :get, class: 'btn btn-danger btn-sm btn-block' %>
+              <button class="btn btn-primary btn-sm btn-block" data-action="click->launch-modal#launchApproveOrderItemModal" data-id="<%= oi.id %>">Approve</button>
+              <button class="btn btn-danger btn-sm btn-block" data-action="click->launch-modal#launchRevokeOrderItemModal" data-id="<%= oi.id %>">Revoke</button>
             </div>
           </td>
         </tr>
@@ -60,6 +60,46 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-action="click->order-item-modal#close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approve Order Items Modal -->
+  <div class="modal" tabindex="-1" data-controller="approve-order-item-modal" data-launch-modal-target="approveOrderItemModal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Approve Order Item #<span data-approve-order-item-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->approve-order-item-modal#close" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id="approve-order-item-body">
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="click->approve-order-item-modal#close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Revoke Order Items Modal -->
+  <div class="modal" tabindex="-1" data-controller="revoke-order-item-modal" data-launch-modal-target="revokeOrderItemModal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Revoke Order Item #<span data-revoke-order-item-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->revoke-order-item-modal#close" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id="revoke-order-item-body">
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="click->revoke-order-item-modal#close">Close</button>
         </div>
       </div>
     </div>

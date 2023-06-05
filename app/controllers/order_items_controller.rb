@@ -76,6 +76,16 @@ class OrderItemsController < DevelopmentProgramsController
     render layout: false
   end
 
+  def approve_order_item_modal
+    @order_item = OrderItem.find(params[:order_item_id])
+    render layout: false
+  end
+
+  def revoke_order_item_modal
+    @order_item = OrderItem.find(params[:order_item_id])
+    render layout: false
+  end
+
   private
 
   def order_item_params

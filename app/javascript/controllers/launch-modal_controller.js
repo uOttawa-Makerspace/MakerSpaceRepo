@@ -8,6 +8,8 @@ export default class extends Controller {
     "completedEmailModal",
     "declineModal",
     "orderItemModal",
+    "approveOrderItemModal",
+    "revokeOrderItemModal",
   ];
 
   launchCommentsModal(event) {
@@ -68,5 +70,29 @@ export default class extends Controller {
       );
     orderItemModalController.setCoHostContent(event.currentTarget.dataset);
     orderItemModalController.open();
+  }
+
+  launchApproveOrderItemModal(event) {
+    let approveOrderItemModalController =
+      this.application.getControllerForElementAndIdentifier(
+        this.approveOrderItemModalTarget,
+        "approve-order-item-modal"
+      );
+    approveOrderItemModalController.setCoHostContent(
+      event.currentTarget.dataset
+    );
+    approveOrderItemModalController.open();
+  }
+
+  launchRevokeOrderItemModal(event) {
+    let revokeOrderItemModalController =
+      this.application.getControllerForElementAndIdentifier(
+        this.revokeOrderItemModalTarget,
+        "revoke-order-item-modal"
+      );
+    revokeOrderItemModalController.setCoHostContent(
+      event.currentTarget.dataset
+    );
+    revokeOrderItemModalController.open();
   }
 }

@@ -253,7 +253,7 @@ class ProficientProjectsController < DevelopmentProgramsController
               badge_template_id: badge_template.id,
               certification: cert
             )
-            order_item.update(status: "Awarded")
+            order_item.update(order_item_params.merge({ status: "Awarded" }))
             MsrMailer.send_results_pp(
               order_item.proficient_project,
               order_item.order.user,
@@ -267,7 +267,7 @@ class ProficientProjectsController < DevelopmentProgramsController
               JSON.parse(response.body)["data"]["message"]
           end
         else
-          order_item.update(status: "Awarded")
+          order_item.update(order_item_params.merge({ status: "Awarded" }))
           MsrMailer.send_results_pp(
             order_item.proficient_project,
             order_item.order.user,
@@ -290,7 +290,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   def revoke_project
     order_item = OrderItem.find_by(id: params[:oi_id])
     if order_item
-      order_item.update(status: "Revoked")
+      order_item.update(order_item_params.merge(status: "Revoked"))
       MsrMailer.send_results_pp(
         order_item.proficient_project,
         order_item.order.user,
@@ -357,7 +357,11 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def order_item_params
-    params.require(:order_item).permit(:user_comments, files: [])
+    params.require(:order_item).permit(
+      :user_comments,
+      :admin_comments,
+      files: []
+    )
   end
 
   def create_photos

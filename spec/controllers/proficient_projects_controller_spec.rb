@@ -329,7 +329,13 @@ RSpec.describe ProficientProjectsController, type: :controller do
       end
 
       it "should set the oi as Awarded" do
-        get :approve_project, params: { oi_id: OrderItem.last.id }
+        get :approve_project,
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
         sleep 3
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq("Awarded")
@@ -371,7 +377,14 @@ RSpec.describe ProficientProjectsController, type: :controller do
       end
 
       it "should set the oi as Revoked" do
-        get :revoke_project, format: "js", params: { oi_id: OrderItem.last.id }
+        get :revoke_project,
+            format: "js",
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq("Revoked")
         expect(ActionMailer::Base.deliveries.count).to eq(3)
