@@ -357,7 +357,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def order_item_params
-    params.require(:order_item).permit(:comments, files: [])
+    params.require(:order_item).permit(:user_comments, files: [])
   end
 
   def create_photos

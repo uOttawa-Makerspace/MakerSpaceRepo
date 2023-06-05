@@ -291,7 +291,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
             params: {
               id: proficient_project.id,
               order_item: {
-                comments: "",
+                user_comments: "",
                 files: []
               }
             }
@@ -322,7 +322,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
             params: {
               id: @proficient_project.id,
               order_item: {
-                comments: "",
+                user_comments: "",
                 files: []
               }
             }
@@ -364,7 +364,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
             params: {
               id: @proficient_project.id,
               order_item: {
-                comments: "",
+                user_comments: "",
                 files: []
               }
             }

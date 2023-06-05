@@ -7,7 +7,7 @@
       <th>User</th>
       <th>Title</th>
       <th>Submission Date</th>
-      <th>Comments</th>
+      <th>User Comments</th>
       <th>Attached Files</th>
       <th>Actions</th>
     </thead>
@@ -16,7 +16,7 @@
           <td><%= link_to oi.order.user.name, user_path(oi.order.user.username) %></td>
           <td><%= link_to oi.proficient_project.title, oi.proficient_project %></td>
           <td><%= oi.updated_at.strftime('%Y/%m/%d') %></td>
-          <td><%= oi.comments.html_safe %></td>
+          <td><%= oi.user_comments.html_safe %></td>
           <% if oi.files.attached? %>
             <td class="action-cell">
               <div class="d-flex flex-column gap-1">

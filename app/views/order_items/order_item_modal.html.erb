@@ -11,7 +11,7 @@
     <div class="card">
         <div class="card-header bg-primary text-light">User Comments</div>
         <div class="card-body">
-            <%= @order_item.comments == '' ? 'None' : @order_item.comments.html_safe %>
+            <%= @order_item.user_comments == '' ? 'None' : @order_item.user_comments.html_safe %>
         </div>
     </div>
     <div class="card">
