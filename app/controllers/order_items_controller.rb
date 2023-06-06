@@ -2,7 +2,6 @@
 
 class OrderItemsController < DevelopmentProgramsController
   def create
-    create_successful = false
     @order = current_order
     @order.user = current_user
     proficient_project =
@@ -15,7 +14,6 @@ class OrderItemsController < DevelopmentProgramsController
         if existing_order.count < 1
           @order.save
           flash[:notice] = "Successfully added item to cart"
-          create_successful = true
         else
           flash[:alert] = "You have already ordered this item"
         end
@@ -31,11 +29,7 @@ class OrderItemsController < DevelopmentProgramsController
     # end
     session[:order_id] = @order.id
 
-    if create_successful
-      redirect_to carts_path
-    else
-      redirect_to proficient_projects_path
-    end
+    redirect_to carts_path
   end
 
   def update
