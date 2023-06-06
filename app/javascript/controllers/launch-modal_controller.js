@@ -10,6 +10,7 @@ export default class extends Controller {
     "orderItemModal",
     "approveOrderItemModal",
     "revokeOrderItemModal",
+    "proficientProjectModal",
   ];
 
   launchCommentsModal(event) {
@@ -94,5 +95,17 @@ export default class extends Controller {
       event.currentTarget.dataset
     );
     revokeOrderItemModalController.open();
+  }
+
+  launchProficientProjectModal(event) {
+    let proficientProjectModalController =
+      this.application.getControllerForElementAndIdentifier(
+        this.proficientProjectModalTarget,
+        "proficient-project-modal"
+      );
+    proficientProjectModalController.setCoHostContent(
+      event.currentTarget.dataset
+    );
+    proficientProjectModalController.open();
   }
 }

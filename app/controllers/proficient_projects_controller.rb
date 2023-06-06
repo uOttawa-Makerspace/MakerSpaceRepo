@@ -183,6 +183,11 @@ class ProficientProjectsController < DevelopmentProgramsController
     respond_to { |format| format.js }
   end
 
+  def proficient_project_modal
+    @proficient_project = ProficientProject.find(params[:proficient_project_id])
+    render layout: false
+  end
+
   def complete_project
     order_items =
       current_user.order_items.where(

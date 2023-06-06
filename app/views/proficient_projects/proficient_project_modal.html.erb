@@ -1,0 +1,47 @@
+<div id="proficient-project-modal-rendered" class="d-grid gap-3">
+    <div class="card">
+        <div class="card-header bg-primary text-light">Proficient Project Information</div>
+        <div class="card-body">
+            <h5>Title: <%= @proficient_project.title %></h5>
+            <h5>Level: <%= @proficient_project.level %></h5>
+            <h5>Virtual Project: <%= @proficient_project.is_virtual? ? 'Yes' : 'No' %></h5>
+            <h5>Has Project Kit: <%= @proficient_project.has_project_kit? ? 'Yes' : 'No' %></h5>
+            <h5>Price: <%= @proficient_project.cc == 0 ? 'Free' : "#{@proficient_project.cc}CC" %></h5>
+            <h5></h5>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-light">Proficient Project Description</div>
+        <div class="card-body">
+            <%= @proficient_project.description.html_safe %>
+        </div>
+    </div>
+
+    <% badge_requirements = @proficient_project.badge_requirements %>
+    <div class="card">
+        <div class="card-header bg-primary text-light">Badge Requirements</div>
+        <div class="card-body">
+            <% if badge_requirements.present? %>
+                <% badge_requirements.each do |badge_requirement| %>
+                    <%= image_tag(badge_requirement.badge_template.image_url, style: 'width: 80px;', alt: 'Badge Image') %>
+                <% end %>
+            <% else %>
+                None
+            <% end %>
+        </div>
+    </div>
+
+    <% badge_template = @proficient_project.badge_template %>
+    <div class="card">
+        <div class="card-header bg-primary text-light">Badge Awarded Upon Completion</div>
+        <div class="card-body">
+            <% if badge_template.present? %>
+                <%= badge_template.badge_name %>
+                <%= image_tag(badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block') %>
+            <% else %>
+                None
+            <% end %>
+        </div>
+    </div>
+</div>

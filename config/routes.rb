@@ -400,10 +400,10 @@ Rails.application.routes.draw do
   end
 
   resources :proficient_projects do
+    get :proficient_project_modal
     collection do
       get :join_development_program
       get :requests
-      get :open_modal
       put :complete_project
       get :approve_project
       get :revoke_project
