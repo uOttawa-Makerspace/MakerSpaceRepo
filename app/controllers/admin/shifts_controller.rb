@@ -97,11 +97,7 @@ class Admin::ShiftsController < AdminAreaController
           render json: {
                    id: @shift.id,
                    name: @shift.return_event_title,
-                   color:
-                     hex_color_to_rgba(
-                       @shift.color(@space_id),
-                       @shift.pending? ? 0.7 : 1
-                     ),
+                   color: @shift.color(@space_id, @shift.pending? ? 0.7 : 1),
                    start: @shift.start_datetime,
                    end: @shift.end_datetime,
                    extendedProps: {
@@ -293,15 +289,13 @@ class Admin::ShiftsController < AdminAreaController
           reason: shift.reason,
           training: shift.training.present? ? shift.training.name : "",
           course: shift.course,
-          language: shift.language
+          language: shift.language,
+          color: shift.color(@space_id, (shift.pending? ? 0.7 : 1))
         }
         event["id"] = shift.id
         event["start"] = shift.start_datetime
         event["end"] = shift.end_datetime
-        event["color"] = hex_color_to_rgba(
-          shift.color(@space_id),
-          shift.pending? ? 0.7 : 1
-        )
+        event["color"] = shift.color(@space_id, (shift.pending? ? 0.7 : 1))
         event["className"] = "user-#{shift.users.first.id}"
         shifts << event
       end
@@ -356,6 +350,30 @@ class Admin::ShiftsController < AdminAreaController
              )
   end
 
+  def get_users_hours_between_dates
+    unless params[:start_date].present? && params[:end_date].present?
+      render json: { error: "Missing start_date or end_date" }, status: 422 and
+        return
+    end
+
+    hours = {}
+    StaffSpace.where(space_id: @space_id).each { |ss| hours[ss.user_id] = 0 }
+
+    Shift
+      .all
+      .where(
+        space_id: @space_id,
+        start_datetime:
+          DateTime.parse(params[:start_date])..DateTime.parse(params[:end_date])
+      )
+      .each do |shift|
+        duration = (shift.end_datetime - shift.start_datetime) / 3600
+        shift.users.each { |u| hours[u.id] = hours[u.id] + duration }
+      end
+
+    render json: hours.as_json
+  end
+
   def ics
     if params[:staff_needed_calendar_id].present? &&
          StaffNeededCalendar.where(
@@ -366,7 +384,6 @@ class Admin::ShiftsController < AdminAreaController
       send_data(ics_file, filename: "snc_#{snc.id}.ics", type: "text/calendar")
     end
   end
-
   def shift_suggestions
     weekday = params[:day]
     start_time = params[:start]
@@ -422,17 +439,17 @@ class Admin::ShiftsController < AdminAreaController
 
   private
 
+  def hex_color_to_rgba(hex, opacity)
+    rgb = hex.match(/^#(..)(..)(..)$/).captures.map(&:hex)
+    "rgba(#{rgb.join(", ")}, #{opacity})"
+  end
+
   def set_default_space
     @space_id = @user.space_id || Space.first.id
   end
 
   def set_shifts
     @shift = Shift.find(params[:id])
-  end
-
-  def hex_color_to_rgba(hex, opacity)
-    rgb = hex.match(/^#(..)(..)(..)$/).captures.map(&:hex)
-    "rgba(#{rgb.join(", ")}, #{opacity})"
   end
 
   def shift_params

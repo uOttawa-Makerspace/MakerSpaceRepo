@@ -302,6 +302,13 @@ document.addEventListener("turbo:load", () => {
           hideShowEvents("check");
           return content;
         },
+        datesSet: () => updateHours(),
+        eventDidMount: (info) => {
+          if (info.event.extendedProps.color) {
+            info.el.style.background = info.event.extendedProps.color;
+            info.el.style.borderColor = "transparent";
+          }
+        },
       });
       calendar.render();
       document.getElementById("hide-show-unavailabilities").click();
@@ -319,6 +326,8 @@ const refreshPendingShifts = () => {
       document
         .getElementById("pending-shift-partial")
         .replaceChildren(fragment);
+
+      updateHours();
     });
 };
 
@@ -580,6 +589,33 @@ const editShift = (arg) => {
         });
       });
       shiftModal.show();
+    });
+};
+
+const updateHours = () => {
+  const startDate = calendar.view.activeStart;
+  const endDate = calendar.view.activeEnd;
+
+  fetch(
+    `/admin/shifts/get_users_hours_between_dates?start_date=${startDate}&end_date=${endDate}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    }
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      Object.keys(data).map((u) => {
+        document.getElementById(
+          `user-hour-counter-${u}`
+        ).innerText = `${data[u]} hour(s)`;
+      });
+    })
+    .catch((error) => {
+      console.log("An error occurred: " + error.message);
     });
 };
 
