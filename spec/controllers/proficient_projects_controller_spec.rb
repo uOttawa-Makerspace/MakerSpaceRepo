@@ -271,7 +271,10 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:proficient_project)
-        get :open_modal, format: "js", params: { id: ProficientProject.last.id }
+        get :proficient_project_modal,
+            params: {
+              proficient_project_id: ProficientProject.last.id
+            }
         expect(response).to have_http_status(:success)
       end
     end
