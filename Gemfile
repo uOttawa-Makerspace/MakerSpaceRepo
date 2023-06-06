@@ -75,6 +75,7 @@ group :development, :test do
   gem "faker", "~> 3.1.0"
   gem "railroady"
   gem "factory_bot_rails"
+  gem "parallel_tests"
   gem "spring", "~> 4.1.0"
   gem "listen", "~> 3.7.1"
   gem "spring-watcher-listen", "~> 2.1.0"
@@ -105,5 +106,6 @@ group :test do
   gem "rails-controller-testing"
   gem "selenium-webdriver", "~> 3.142.7"
   gem "shoulda-matchers", "~> 4.0"
+  gem "test-prof", "~> 1.0"
   gem "rspec-retry"
 end

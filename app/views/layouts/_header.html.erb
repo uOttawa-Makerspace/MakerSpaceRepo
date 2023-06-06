@@ -98,7 +98,7 @@
 
         <% locales_change.each do |locale| %>
         <li class="nav-item">
-          <%= link_to t('name', locale: locale), url_for(request.query_parameters.merge(locale: locale)), class: 'nav-link' %>
+          <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link' %>
         </li>
         <% end %>
       </ul>

@@ -36,7 +36,7 @@
     </div>
 
     <div class="col-md-12">
-      <%= render partial: 'answers', locals: { f: f } %>
+      <%= render partial: 'answers', locals: { f: } %>
     </div>
     <div class="col-12">
       <%= button_to 'Add Answer', add_answer_questions_path(id: @question.id), method: :post, class: 'btn btn-info text-white float-start' %>

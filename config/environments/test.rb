@@ -48,6 +48,10 @@ Rails.application.configure do
   # Print deprecation notices to the stderr.
   config.active_support.deprecation = :stderr
 
+  # Raises error for missing translations
+  # config.action_view.raise_on_missing_translations = true
+
+  TestProf.configure { |configure| configure.output = "tmp/test_prof" }
   # Raise exceptions for disallowed deprecations.
   config.active_support.disallowed_deprecation = :raise
 
