@@ -14,7 +14,6 @@ import { Turbo } from "@hotwired/turbo-rails";
 
 document.addEventListener("turbo:load", function () {
   const qa = document.getElementById("quick-access-bar");
-  const qaToggle = document.getElementById("quick-access-bar-toggle");
   var nav = document.getElementById("header-navbar");
   var navToggler = document.getElementById("navbar-toggle-button");
   var navbarSupportedContent = document.getElementById(
@@ -45,8 +44,6 @@ document.addEventListener("turbo:load", function () {
         qa.classList.add("navbar-dark");
         qa.classList.remove("navbar-light");
         qa.classList.remove("bg-light");
-        qaToggle.classList.remove("text-dark");
-        qaToggle.classList.add("text-white");
       }
 
       if (cc_image_white && cc_image_black) {
@@ -64,8 +61,6 @@ document.addEventListener("turbo:load", function () {
         qa.classList.add("navbar-light");
         qa.classList.remove("navbar-dark");
         qa.classList.remove("bg-transparent");
-        qaToggle.classList.remove("text-white");
-        qaToggle.classList.add("text-dark");
       }
 
       if (cc_image_white && cc_image_black) {
@@ -176,29 +171,6 @@ document.addEventListener("turbo:load", function () {
         }).then((response) => {
           Turbo.visit(window.location.href);
         });
-      });
-  }
-  if (document.getElementById("quick-access-bar-toggle")) {
-    let storedState = localStorage.getItem("quick-access-bar-stowed");
-    if (storedState == "true") {
-      document
-        .getElementById("quick-access-container")
-        .classList.toggle("stowed");
-      document.getElementById("quick-access-bar").classList.toggle("stowed");
-    }
-    document
-      .getElementById("quick-access-bar-toggle")
-      .addEventListener("click", () => {
-        document
-          .getElementById("quick-access-container")
-          .classList.toggle("stowed");
-        document.getElementById("quick-access-bar").classList.toggle("stowed");
-        localStorage.setItem(
-          "quick-access-bar-stowed",
-          document
-            .getElementById("quick-access-container")
-            .classList.contains("stowed")
-        );
       });
   }
 });

@@ -1,7 +1,4 @@
 <div class="navbar navbar-expand-sm navbar-light bg-light" id="quick-access-bar">
-    <span>
-      <%= fa_icon 'bars', class: 'nav-link ms-4', id: 'quick-access-bar-toggle' %>
-    </span>
     <div class="container-fluid flex-row align-self-end text-white" id="quick-access-container">
         <ul class="navbar-nav mr-auto d-flex flex-row">
             <% QuickAccessLink.where(user: current_user).each do |link| %>
