@@ -13,39 +13,36 @@ class Shift < ApplicationRecord
     "#{self.reason} for #{self.users.map(&:name).join(", ")}"
   end
 
-  def color(space_id)
+  def color(space_id, opacity)
     if users.count == 1
-      users.first.staff_spaces.find_by(space_id: space_id).color
+      hex_color_to_rgba(
+        users.first.staff_spaces.find_by(space_id: space_id).color,
+        opacity
+      )
     else
-      color = users.first.staff_spaces.find_by(space_id: space_id).color
-      users.each do |user, i|
-        unless i == 0
-          color =
-            blend_colors(
-              color,
-              user.staff_spaces.find_by(space_id: space_id).color
-            )
-        end
+      n_staffs = 100 / users.length
+
+      color_str = ""
+      users.each_with_index do |u, i|
+        color_str +=
+          "#{hex_color_to_rgba(u.staff_spaces.find_by(space_id: space_id).color, opacity)} #{n_staffs * i}% #{n_staffs * (i + 1)}%#{i < users.length - 1 ? ", " : ""}"
       end
-      ("#" + color)
+
+      "linear-gradient(to right, #{color_str})"
     end
   end
 
   private
 
+  def hex_color_to_rgba(hex, opacity)
+    rgb = hex.match(/^#(..)(..)(..)$/).captures.map(&:hex)
+    "rgba(#{rgb.join(", ")}, #{opacity})"
+  end
+
   def to_hex(c)
     n = c.to_i.to_s(16)
     n = "0" + n unless n.length > 1 # 2 characters
     n
-  end
-
-  def blend_colors(color1, color2)
-    colors =
-      3.times.map do |i| # R, G, B
-        (color2[i * 2, 2].to_i(16) * 0.5) + (color1[i * 2, 2].to_i(16) * 0.5)
-      end
-
-    colors.map { |a| to_hex(a) }.join
   end
 
   def set_or_update_google_event
