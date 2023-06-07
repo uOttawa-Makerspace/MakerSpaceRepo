@@ -1,7 +1,8 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-  static targets = ["id", "title"];
+  static targets = ["id", "title", "commentsModal"];
+
   id = null;
   url = null;
   name = null;
@@ -60,5 +61,15 @@ export default class extends Controller {
     document
       .getElementById(`${this.name}-body`)
       .removeChild(document.getElementById(`${this.name}-modal-rendered`));
+  }
+
+  launchCommentsModal(event) {
+    let commentsModalController =
+      this.application.getControllerForElementAndIdentifier(
+        this.commentsModalTarget,
+        "comments-modal"
+      );
+    commentsModalController.setCoHostContent(event.currentTarget.dataset);
+    commentsModalController.open();
   }
 }

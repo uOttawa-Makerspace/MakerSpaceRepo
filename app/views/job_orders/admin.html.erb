@@ -52,7 +52,7 @@
                 <tbody>
                 <% @job_orders.last_status(status[:status]).each do |jo| %>
                   <tr id="job-order-row-<%= jo.id %>">
-                    <%= render 'admin_row', jo: jo %>
+                    <%= render 'admin_row', jo: %>
                   </tr>
                 <% end %>
                 </tbody>
@@ -85,12 +85,12 @@
   </div>
 
   <!-- Decline Modal -->
-  <div class="modal" tabindex="-1" data-controller="decline-modal" data-launch-modal-target="declineModal">
+  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="decline-modal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Decline Comments for #<span data-decline-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->decline-modal#close" aria-label="Close">
+          <h5 class="modal-title">Decline Comments for #<span data-launch-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
@@ -98,19 +98,19 @@
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->decline-modal#close">Close</button>
+          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Quote Modal -->
-  <div class="modal" tabindex="-1" data-controller="quote-modal" data-launch-modal-target="quoteModal">
+  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="quote-modal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Quote for Job Order #<span data-quote-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->quote-modal#close" aria-label="Close">
+          <h5 class="modal-title">Quote for Job Order #<span data-launch-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
@@ -118,19 +118,19 @@
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->quote-modal#close">Close</button>
+          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Timeline Modal -->
-  <div class="modal" tabindex="-1" data-controller="timeline-modal" data-launch-modal-target="timelineModal">
+  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="timeline-modal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Status Timeline for Job Order #<span data-timeline-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->timeline-modal#close" aria-label="Close">
+          <h5 class="modal-title">Status Timeline for Job Order #<span data-launch-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
@@ -138,18 +138,18 @@
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->timeline-modal#close">Close</button>
+          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal" tabindex="-1" data-controller="completed-email-modal" data-launch-modal-target="completedEmailModal">
+  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="completed-email-modal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Processed Email for Job Order #<span data-completed-email-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->completed-email-modal#close" aria-label="Close">
+          <h5 class="modal-title">Processed Email for Job Order #<span data-launch-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
@@ -157,7 +157,7 @@
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->completed-email-modal#close">Close</button>
+          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
         </div>
       </div>
     </div>
