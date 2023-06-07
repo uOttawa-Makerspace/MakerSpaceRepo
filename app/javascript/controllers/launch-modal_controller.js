@@ -1,111 +1,64 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-  static targets = [
-    "commentsModal",
-    "quoteModal",
-    "timelineModal",
-    "completedEmailModal",
-    "declineModal",
-    "orderItemModal",
-    "approveOrderItemModal",
-    "revokeOrderItemModal",
-    "proficientProjectModal",
-  ];
+  static targets = ["id", "title"];
+  id = null;
+  url = null;
+  name = null;
+  modal = null;
+  title = null;
 
-  launchCommentsModal(event) {
-    let commentsModalController =
-      this.application.getControllerForElementAndIdentifier(
-        this.commentsModalTarget,
-        "comments-modal"
-      );
-    commentsModalController.setCoHostContent(event.currentTarget.dataset);
-    commentsModalController.open();
+  openModal(event) {
+    this.setCoHostContent(event.currentTarget.dataset);
+    this.open();
   }
 
-  launchQuoteModal(event) {
-    let quoteModalController =
-      this.application.getControllerForElementAndIdentifier(
-        this.quoteModalTarget,
-        "quote-modal"
-      );
-    quoteModalController.setCoHostContent(event.currentTarget.dataset);
-    quoteModalController.open();
+  setCoHostContent(data) {
+    this.id = data.id;
+    this.title = data.title;
+
+    this.url = data.url;
+    this.name = data.name;
+    this.modal = document.getElementById(`${this.name}-modal`);
+
+    if (this.hasIdTarget) {
+      this.idTargets.forEach((idTarget) => {
+        idTarget.innerText = data.id;
+      });
+    }
+    if (this.hasTitleTarget) {
+      this.titleTargets.forEach((titleTarget) => {
+        titleTarget.innerText = data.title;
+      });
+    }
   }
 
-  launchTimelineModal(event) {
-    let timelineModalController =
-      this.application.getControllerForElementAndIdentifier(
-        this.timelineModalTarget,
-        "timeline-modal"
-      );
-    timelineModalController.setCoHostContent(event.currentTarget.dataset);
-    timelineModalController.open();
+  async open() {
+    await fetch(this.url)
+      .then((r) => r.text())
+      .then((html) => {
+        const fragment = document.createRange().createContextualFragment(html);
+        document.getElementById(`${this.name}-body`).appendChild(fragment);
+      });
+    document.body.classList.add("modal-open");
+    this.modal.setAttribute("style", "display: block;");
+    this.modal.classList.add("show");
+
+    const modalBackdrop = document.createElement("div");
+    modalBackdrop.classList.add("modal-backdrop");
+    modalBackdrop.classList.add("fade");
+    modalBackdrop.classList.add("show");
+    modalBackdrop.id = "modal-backdrop";
+    document.body.append(modalBackdrop);
   }
 
-  launchCompletedEmailModal(event) {
-    let completedEmailModalController =
-      this.application.getControllerForElementAndIdentifier(
-        this.completedEmailModalTarget,
-        "completed-email-modal"
-      );
-    completedEmailModalController.setCoHostContent(event.currentTarget.dataset);
-    completedEmailModalController.open();
-  }
-
-  launchDeclineModal(event) {
-    let declineModalController =
-      this.application.getControllerForElementAndIdentifier(
-        this.declineModalTarget,
-        "decline-modal"
-      );
-    declineModalController.setCoHostContent(event.currentTarget.dataset);
-    declineModalController.open();
-  }
-
-  launchOrderItemModal(event) {
-    let orderItemModalController =
-      this.application.getControllerForElementAndIdentifier(
-        this.orderItemModalTarget,
-        "order-item-modal"
-      );
-    orderItemModalController.setCoHostContent(event.currentTarget.dataset);
-    orderItemModalController.open();
-  }
-
-  launchApproveOrderItemModal(event) {
-    let approveOrderItemModalController =
-      this.application.getControllerForElementAndIdentifier(
-        this.approveOrderItemModalTarget,
-        "approve-order-item-modal"
-      );
-    approveOrderItemModalController.setCoHostContent(
-      event.currentTarget.dataset
-    );
-    approveOrderItemModalController.open();
-  }
-
-  launchRevokeOrderItemModal(event) {
-    let revokeOrderItemModalController =
-      this.application.getControllerForElementAndIdentifier(
-        this.revokeOrderItemModalTarget,
-        "revoke-order-item-modal"
-      );
-    revokeOrderItemModalController.setCoHostContent(
-      event.currentTarget.dataset
-    );
-    revokeOrderItemModalController.open();
-  }
-
-  launchProficientProjectModal(event) {
-    let proficientProjectModalController =
-      this.application.getControllerForElementAndIdentifier(
-        this.proficientProjectModalTarget,
-        "proficient-project-modal"
-      );
-    proficientProjectModalController.setCoHostContent(
-      event.currentTarget.dataset
-    );
-    proficientProjectModalController.open();
+  close() {
+    document.body.classList.remove("modal-open");
+    this.modal.removeAttribute("style");
+    this.modal.classList.remove("show");
+    document.getElementsByClassName("modal-backdrop")[0].remove();
+    document
+      .getElementById(`${this.name}-body`)
+      .removeChild(document.getElementById(`${this.name}-modal-rendered`));
   }
 }

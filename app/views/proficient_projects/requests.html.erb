@@ -19,7 +19,7 @@
           <td><%= oi.user_comments.truncate(120).html_safe %></td>
           <% if oi.files.attached? %>
             <td class="action-cell">
-              <div class="d-flex flex-column gap-1">
+              <div class="d-flex flex-column gap-2">
                 <% oi.files.first(5).each do |file| %>
                   <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
                 <% end %>
@@ -32,10 +32,28 @@
             <td></td>
           <% end %>
           <td class="action-cell">
-            <div class="d-flex flex-column gap-1">
-              <button class="btn btn-success btn-sm btn-block" data-action="click->launch-modal#launchOrderItemModal" data-id="<%= oi.id %>">Show</button>
-              <button class="btn btn-primary btn-sm btn-block" data-action="click->launch-modal#launchApproveOrderItemModal" data-id="<%= oi.id %>">Approve</button>
-              <button class="btn btn-danger btn-sm btn-block" data-action="click->launch-modal#launchRevokeOrderItemModal" data-id="<%= oi.id %>">Revoke</button>
+            <div class="d-flex flex-column gap-2">
+              <button 
+                class="btn btn-success btn-sm btn-block" 
+                data-action="click->launch-modal#openModal" 
+                data-id="<%= oi.id %>"
+                data-name="order-item"
+                data-url="/order_items/<%= oi.id %>/order_item_modal">Show
+              </button>
+              <button 
+                class="btn btn-primary btn-sm btn-block" 
+                data-action="click->launch-modal#openModal" 
+                data-id="<%= oi.id %>"
+                data-name="approve-order-item"
+                data-url="/order_items/<%= oi.id %>/approve_order_item_modal">Approve
+              </button>
+              <button 
+                class="btn btn-danger btn-sm btn-block" 
+                data-action="click->launch-modal#openModal"
+                data-id="<%= oi.id %>"
+                data-name="revoke-order-item"
+                data-url="/order_items/<%= oi.id %>/revoke_order_item_modal">Revoke
+              </button>
             </div>
           </td>
         </tr>
@@ -49,12 +67,12 @@
   <% end %>
 
   <!-- Order Items Modal -->
-  <div class="modal" tabindex="-1" data-controller="order-item-modal" data-launch-modal-target="orderItemModal">
+  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="order-item-modal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Order Item #<span data-order-item-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->order-item-modal#close" aria-label="Close">
+          <h5 class="modal-title">Order Item #<span data-launch-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
@@ -62,19 +80,19 @@
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->order-item-modal#close">Close</button>
+          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Approve Order Items Modal -->
-  <div class="modal" tabindex="-1" data-controller="approve-order-item-modal" data-launch-modal-target="approveOrderItemModal">
+  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="approve-order-item-modal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Approve Order Item #<span data-approve-order-item-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->approve-order-item-modal#close" aria-label="Close">
+          <h5 class="modal-title">Approve Order Item #<span data-launch-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
@@ -82,19 +100,19 @@
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->approve-order-item-modal#close">Close</button>
+          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Revoke Order Items Modal -->
-  <div class="modal" tabindex="-1" data-controller="revoke-order-item-modal" data-launch-modal-target="revokeOrderItemModal">
+  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="revoke-order-item-modal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Revoke Order Item #<span data-revoke-order-item-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->revoke-order-item-modal#close" aria-label="Close">
+          <h5 class="modal-title">Revoke Order Item #<span data-launch-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
@@ -102,7 +120,7 @@
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->revoke-order-item-modal#close">Close</button>
+          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
         </div>
       </div>
     </div>

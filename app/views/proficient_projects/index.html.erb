@@ -62,9 +62,11 @@
                                   <div 
                                     class="projects-image" 
                                     style="background-image: url(<%= url_for(pp.photos.first.image) %>);"
-                                    data-action="click->launch-modal#launchProficientProjectModal" 
+                                    data-action="click->launch-modal#openModal" 
                                     data-id="<%= pp.id %>" 
-                                    data-title="<%= pp.title %>">
+                                    data-title="<%= pp.title %>"
+                                    data-name="proficient-project"
+                                    data-url="/proficient_projects/<%= pp.id %>/proficient_project_modal/">
                                   </div>
                               <% end %>
                             <% end %>
@@ -92,12 +94,12 @@
   </div>
 
   <!-- Proficient Project Modal -->
-  <div class="modal" tabindex="-1" data-controller="proficient-project-modal" data-launch-modal-target="proficientProjectModal">
+  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="proficient-project-modal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Preview: <span data-proficient-project-modal-target="title"></span></h5>
-          <button type="button" class="btn-close" data-action="click->proficient-project-modal#close" aria-label="Close">
+          <h5 class="modal-title">Preview: <span data-launch-modal-target="title"></span></h5>
+          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
@@ -105,7 +107,7 @@
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->proficient-project-modal#close">Close</button>
+          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
         </div>
       </div>
     </div>
