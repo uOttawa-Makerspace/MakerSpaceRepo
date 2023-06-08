@@ -195,17 +195,9 @@ class ProficientProjectsController < DevelopmentProgramsController
       )
     if !order_items.present?
       flash[:alert] = "This project hasn't been found"
-    elsif !order_items.first.update(
+    elsif order_items.first.update(
           order_item_params.merge(status: "Waiting for approval")
         )
-      msg = "The project didn't update<br>"
-      if order_items.first.errors.any?
-        order_items.first.errors.full_messages.each do |message|
-          msg += message + "<br>"
-        end
-      end
-      flash[:alert] = msg.html_safe
-    else
       MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
       MsrMailer.send_user_pp_evaluation(
         @proficient_project,
@@ -214,6 +206,10 @@ class ProficientProjectsController < DevelopmentProgramsController
       flash[
         :notice
       ] = "Congratulations on submitting this proficient project! The proficient project will now be reviewed by an admin in around 5 business days."
+    else
+      flash[
+        :alert
+      ] = "Something went wrong with updating the proficient project. Please check the allowed file types."
     end
     redirect_to @proficient_project
   end

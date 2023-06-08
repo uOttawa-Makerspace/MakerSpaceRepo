@@ -69,7 +69,8 @@
         <div class='mb-3'>
           <%= f.label :user_comments, 'Add comments:', class: 'form-label' %>
           <%= f.trix_editor :user_comments, class: 'form-control mb-3' %>
-          <%= f.label :files, 'Attach files:', class: 'form-label' %>
+          <%= f.label :files, 'Attach files:', class: 'form-label mb-0' %>
+          <div class="text-muted mb-2">Allowed file types: PDF, Images, Programming Files, 3D Modeling</div>
           <%= f.file_field :files, multiple: true, class: 'form-control' %>
         </div>
 
