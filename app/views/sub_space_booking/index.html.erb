@@ -51,7 +51,20 @@
               </p>
             <% end %>
             </div>
-            <div id="booked-calendar"></div>
+            <div class="row">
+              <div class="col-md-2 border border-2 rounded-2 p-3" style="height: fit-content">
+                <h2 class="fw-bolder fs-5">Event Legend</h2>
+                <% SubSpaceBooking.color_legend.each do |color| %>
+                  <div class="d-flex mb-2">
+                    <div style="width: 1.2em; height: 1.2em; margin-right: 0.5em; border-radius: 0.25em; background-color: <%= color[:color] %>"></div>
+                    <span><%= color[:name] %></span>
+                  </div>
+                <% end %>
+              </div>
+              <div class="col-md-10">
+                <div id="booked-calendar"></div>
+              </div>
+            </div>
             <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
             <div class="modal-dialog" role="document">
               <div class="modal-content">
