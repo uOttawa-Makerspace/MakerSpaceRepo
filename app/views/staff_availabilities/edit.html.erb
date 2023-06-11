@@ -14,6 +14,11 @@
                 <%= f.label :day, 'Day of the week', class: 'form-label' %>
                 <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])], selected: f.object.day), {}, class: 'form-control form-select' %>
               </div>
+
+              <div class="mb-3 text-center">
+                <%= f.label :time_period_id, 'Time Period', class: 'form-label' %>
+                <%= f.select :time_period_id, options_for_select(@time_periods.pluck(:name, :id), selected: f.object.time_period_id), {}, class: 'form-control form-select' %>
+              </div>
             </div>
 
             <div class="mb-3 col-md-6 text-center">

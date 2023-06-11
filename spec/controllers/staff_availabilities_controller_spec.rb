@@ -4,6 +4,7 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
   before(:all) do
     @staff = create(:user, :staff)
     @default_space = create(:space)
+    @time_period = create(:time_period)
     StaffSpace.create(space_id: @default_space.id, user_id: @staff.id)
   end
 
@@ -33,11 +34,21 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
   describe "GET /get_availabilities" do
     context "get availabilities" do
       it "should get all the availabilities from the staffs" do
-        sa1 = create(:staff_availability, user_id: @staff.id)
-        sa2 = create(:staff_availability, user_id: @staff.id)
+        sa1 =
+          create(
+            :staff_availability,
+            user_id: @staff.id,
+            time_period: @time_period
+          )
+        sa2 =
+          create(
+            :staff_availability,
+            user_id: @staff.id,
+            time_period: @time_period
+          )
         create(:staff_availability)
 
-        get :get_availabilities
+        get :get_availabilities, params: { time_period_id: @time_period.id }
         expect(response).to have_http_status(:success)
         expect(response.body).to eq(
           [
@@ -73,7 +84,12 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
   describe "GET /edit" do
     context "logged as admin" do
       it "should return 200 response" do
-        sa1 = create(:staff_availability, user_id: @staff.id)
+        sa1 =
+          create(
+            :staff_availability,
+            user_id: @staff.id,
+            time_period: @time_period
+          )
         get :edit, params: { id: sa1.id }
         expect(response).to have_http_status(:success)
       end
@@ -84,7 +100,11 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
     context "logged as admin" do
       it "should create a staff availability" do
         sa_params =
-          FactoryBot.attributes_for(:staff_availability, user_id: @staff.id)
+          FactoryBot.attributes_for(
+            :staff_availability,
+            user: @staff,
+            time_period: @time_period
+          )
         expect {
           post :create, params: { staff_availability: sa_params }
         }.to change(StaffAvailability, :count).by(1)
@@ -96,7 +116,12 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
   describe "PATCH /update" do
     context "logged as staff" do
       it "should update the staff_availability" do
-        sa1 = create(:staff_availability, user_id: @staff.id)
+        sa1 =
+          create(
+            :staff_availability,
+            user_id: @staff.id,
+            time_period: @time_period
+          )
         time = Time.now.utc
         patch :update,
               params: {
@@ -116,7 +141,12 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
   describe "DELETE /destroy" do
     context "logged as admin" do
       it "should destroy the staff availablity" do
-        sa1 = create(:staff_availability, user_id: @staff.id)
+        sa1 =
+          create(
+            :staff_availability,
+            user_id: @staff.id,
+            time_period: @time_period
+          )
         expect { delete :destroy, params: { id: sa1.id } }.to change(
           StaffAvailability,
           :count

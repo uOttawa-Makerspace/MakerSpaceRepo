@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
+ActiveRecord::Schema[7.0].define(version: 2023_05_12_212738) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -19,7 +19,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.string "name", null: false
     t.text "body"
     t.string "record_type", null: false
-    t.bigint "record_id", null: false
+    t.integer "record_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index %w[record_type record_id name],
@@ -52,7 +52,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   end
 
   create_table "active_storage_variant_records", force: :cascade do |t|
-    t.bigint "blob_id", null: false
+    t.integer "blob_id", null: false
     t.string "variation_digest", null: false
     t.index %w[blob_id variation_digest],
             name: "index_active_storage_variant_records_uniqueness",
@@ -127,6 +127,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.bigint "certification_id"
     t.index ["badge_template_id"], name: "index_badges_on_badge_template_id"
     t.index ["certification_id"], name: "index_badges_on_certification_id"
+    t.index ["user_id"], name: "index_badges_on_user_id"
   end
 
   create_table "booking_statuses", force: :cascade do |t|
@@ -280,23 +281,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.integer "score"
     t.integer "training_session_id"
     t.datetime "expired_at", precision: nil
-  end
-
-  create_table "friendly_id_slugs", id: :serial, force: :cascade do |t|
-    t.string "slug", null: false
-    t.integer "sluggable_id", null: false
-    t.string "sluggable_type", limit: 50
-    t.string "scope"
-    t.datetime "created_at", precision: nil
-    t.index %w[slug sluggable_type scope],
-            name:
-              "index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope",
-            unique: true
-    t.index %w[slug sluggable_type],
-            name: "index_friendly_id_slugs_on_slug_and_sluggable_type"
-    t.index ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
-    t.index ["sluggable_type"],
-            name: "index_friendly_id_slugs_on_sluggable_type"
   end
 
   create_table "job_options", force: :cascade do |t|
@@ -486,8 +470,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
 
   create_table "learning_module_tracks", force: :cascade do |t|
     t.string "status", default: "In progress"
-    t.bigint "learning_module_id"
-    t.bigint "user_id"
+    t.integer "learning_module_id"
+    t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["learning_module_id"],
@@ -518,7 +502,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.string "students"
     t.string "public"
     t.string "summer"
-    t.bigint "contact_info_id"
+    t.integer "contact_info_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"
@@ -533,6 +517,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.string "status", default: "In progress"
+    t.index ["order_id"], name: "index_order_items_on_order_id"
+    t.index ["proficient_project_id"],
+            name: "index_order_items_on_proficient_project_id"
   end
 
   create_table "order_statuses", id: :serial, force: :cascade do |t|
@@ -548,16 +535,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["order_status_id"], name: "index_orders_on_order_status_id"
   end
 
   create_table "photos", id: :serial, force: :cascade do |t|
     t.integer "repository_id"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.string "image_file_name"
-    t.string "image_content_type"
-    t.integer "image_file_size"
-    t.datetime "image_updated_at", precision: nil
     t.integer "height"
     t.integer "width"
     t.integer "proficient_project_id"
@@ -576,7 +560,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   end
 
   create_table "popular_hours", force: :cascade do |t|
-    t.bigint "space_id"
+    t.integer "space_id"
     t.float "mean", default: 0.0
     t.integer "hour"
     t.integer "day"
@@ -605,10 +589,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.text "comments"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.string "file_file_name"
-    t.string "file_content_type"
-    t.integer "file_file_size"
-    t.datetime "file_updated_at", precision: nil
     t.float "quote"
     t.integer "staff_id"
     t.boolean "user_approval"
@@ -616,10 +596,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.boolean "expedited"
     t.integer "order_type", default: 0
     t.datetime "timestamp_approved", precision: nil
-    t.string "final_file_file_name"
-    t.string "final_file_content_type"
-    t.integer "final_file_file_size"
-    t.datetime "final_file_updated_at", precision: nil
     t.float "grams"
     t.float "service_charge"
     t.float "price_per_hour"
@@ -692,8 +668,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   end
 
   create_table "project_kits", force: :cascade do |t|
-    t.bigint "user_id"
-    t.bigint "proficient_project_id"
+    t.integer "user_id"
+    t.integer "proficient_project_id"
     t.string "name"
     t.boolean "delivered", default: false
     t.datetime "created_at", null: false
@@ -745,10 +721,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.text "description"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.string "image_file_name"
-    t.string "image_content_type"
-    t.integer "image_file_size"
-    t.datetime "image_updated_at", precision: nil
     t.integer "training_id"
     t.string "level", default: "Beginner"
   end
@@ -771,10 +743,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.integer "repository_id"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.string "file_file_name"
-    t.string "file_content_type"
-    t.integer "file_file_size"
-    t.datetime "file_updated_at", precision: nil
     t.integer "proficient_project_id"
     t.integer "learning_module_id"
     t.integer "project_proposal_id"
@@ -827,7 +795,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   end
 
   create_table "shadowing_hours", force: :cascade do |t|
-    t.bigint "user_id"
+    t.integer "user_id"
     t.string "event_id"
     t.datetime "start_time", precision: nil
     t.datetime "end_time", precision: nil
@@ -840,14 +808,18 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
 
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
-    t.bigint "space_id"
+    t.integer "space_id"
     t.datetime "start_datetime", precision: nil
     t.datetime "end_datetime", precision: nil
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "google_event_id"
     t.boolean "pending", default: true
+    t.bigint "training_id"
+    t.string "language"
+    t.string "course"
     t.index ["space_id"], name: "index_shifts_on_space_id"
+    t.index ["training_id"], name: "index_shifts_on_training_id"
   end
 
   create_table "shifts_users", id: false, force: :cascade do |t|
@@ -867,7 +839,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.time "start_time"
     t.time "end_time"
     t.integer "day"
-    t.bigint "space_id"
+    t.integer "space_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "language"
@@ -894,12 +866,15 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   end
 
   create_table "staff_availabilities", force: :cascade do |t|
-    t.bigint "user_id"
+    t.integer "user_id"
     t.string "day"
     t.time "start_time"
     t.time "end_time"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "time_period_id"
+    t.index ["time_period_id"],
+            name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
   end
 
@@ -913,8 +888,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   end
 
   create_table "staff_spaces", force: :cascade do |t|
-    t.bigint "user_id"
-    t.bigint "space_id"
+    t.integer "user_id"
+    t.integer "space_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "color"
@@ -966,6 +941,14 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.boolean "default_public", default: false
     t.integer "max_automatic_approval_hour"
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
+  end
+
+  create_table "time_periods", force: :cascade do |t|
+    t.string "name"
+    t.date "start_date"
+    t.date "end_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "training_levels", force: :cascade do |t|
@@ -1038,10 +1021,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.datetime "updated_at", precision: nil, null: false
     t.text "description"
     t.string "email"
-    t.string "avatar_file_name"
-    t.string "avatar_content_type"
-    t.integer "avatar_file_size"
-    t.datetime "avatar_updated_at", precision: nil
     t.string "access_token"
     t.string "name"
     t.string "gender"
@@ -1049,7 +1028,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
     t.string "use"
     t.integer "reputation", default: 0
     t.string "role", default: "regular_user"
-    t.boolean "terms_and_conditions"
+    t.boolean "terms_and_conditions", default: true
     t.string "program"
     t.string "how_heard_about_us"
     t.string "identity"
@@ -1189,9 +1168,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_24_151020) do
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
+  add_foreign_key "shifts", "trainings"
   add_foreign_key "space_staff_hours", "course_names"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "space_staff_hours", "training_levels"
+  add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"

@@ -29,12 +29,17 @@ let sourceShow = {
     : "none",
 };
 let hiddenIds = {};
+const urlParams = new URLSearchParams(window.location.search);
+const time_period_id = urlParams.get("time_period_id");
 
 // Inputs
 const startDateTimeInput = document.getElementById("start-datetime");
 const endDateTimeInput = document.getElementById("end-datetime");
 const userIdInput = document.getElementById("user-id");
 const reasonInput = document.getElementById("reason");
+const trainingIdInput = document.getElementById("training_id");
+const languageInput = document.getElementById("language");
+const courseInput = document.getElementById("course");
 const modalSave = document.getElementById("modal-save");
 
 const modalDelete = document.getElementById("modal-delete");
@@ -102,7 +107,7 @@ const endPicker = endDateTimeInput.flatpickr({
   },
 });
 
-const newShiftUserSelect = new TomSelect("#user-id", {
+new TomSelect("#user-id", {
   maxItems: null,
   placeholder: "Select users",
   search: true,
@@ -111,167 +116,204 @@ const newShiftUserSelect = new TomSelect("#user-id", {
 
 let events = 0;
 // Calendar Config
-const calendarEl = document.getElementById("calendar");
+let calendarEl = document.getElementById("calendar");
 
 let calendar;
 
-fetch("/admin/shifts/get_external_staff_needed", {
-  method: "GET",
-  headers: {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  },
-})
-  .then((res) => res.json())
-  .then((res) => {
-    calendar = new Calendar(calendarEl, {
-      plugins: [
-        interactionPlugin,
-        timeGridPlugin,
-        listPlugin,
-        googleCalendarPlugin,
-        iCalendarPlugin,
-      ],
-      customButtons: {
-        addNewEvent: {
-          text: "+",
-          click: () => {
-            openModal();
+document.addEventListener("turbo:load", () => {
+  calendarEl.remove();
+  calendarEl = document.createElement("div");
+  calendarEl.id = "calendar";
+  document.getElementById("calendar-container").appendChild(calendarEl);
+  events = 0;
+
+  fetch("/admin/shifts/get_external_staff_needed", {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  })
+    .then((res) => res.json())
+    .then((res) => {
+      calendar = new Calendar(calendarEl, {
+        plugins: [
+          interactionPlugin,
+          timeGridPlugin,
+          listPlugin,
+          googleCalendarPlugin,
+          iCalendarPlugin,
+        ],
+        customButtons: {
+          addNewEvent: {
+            text: "+",
+            click: () => {
+              openModal();
+            },
+          },
+          copyToNextWeek: {
+            text: "Copy to next week",
+            click: () => {
+              copyToNextWeek();
+            },
           },
         },
-        copyToNextWeek: {
-          text: "Copy to next week",
-          click: () => {
-            copyToNextWeek();
-          },
+        headerToolbar: {
+          left: "prev,today,next",
+          center: "copyToNextWeek",
+          right: "addNewEvent,timeGridWeek,timeGridDay",
         },
-      },
-      headerToolbar: {
-        left: "prev,today,next",
-        center: "copyToNextWeek",
-        right: "addNewEvent,timeGridWeek,timeGridDay",
-      },
-      contentHeight: "auto",
-      slotEventOverlap: false,
-      allDaySlot: false,
-      timeZone: "America/New_York",
-      initialView: "timeGridWeek",
-      navLinks: true,
-      selectable: true,
-      selectMirror: true,
-      slotMinTime: SLOT_MIN_TIME.toTimeString().split(" ")[0],
-      slotMaxTime: SLOT_MAX_TIME.toTimeString().split(" ")[0],
-      eventTimeFormat: {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      },
-      editable: true,
-      dayMaxEvents: true,
-      eventSources: [
-        {
-          id: "transparent",
-          url: "/admin/shifts/get_availabilities?transparent=true",
-          editable: false,
+        contentHeight: "auto",
+        slotEventOverlap: false,
+        allDaySlot: false,
+        timeZone: "America/New_York",
+        initialView: "timeGridWeek",
+        navLinks: true,
+        selectable: true,
+        selectMirror: true,
+        slotMinTime: SLOT_MIN_TIME.toTimeString().split(" ")[0],
+        slotMaxTime: SLOT_MAX_TIME.toTimeString().split(" ")[0],
+        eventTimeFormat: {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
         },
-        {
-          id: "shifts",
-          url: "/admin/shifts/get_shifts",
-        },
-        {
-          id: "google",
-          googleCalendarApiKey: "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
-          googleCalendarId:
-            "c_d7liojb08eadntvnbfa5na9j98@group.calendar.google.com",
-          color: "rgba(255,31,31,0.4)",
-          editable: false,
-        },
-        {
-          id: "staffNeeded",
-          url: "/admin/shifts/get_staff_needed",
-          color: "rgba(40,40,40,0.4)",
-          editable: false,
-        },
-        ...res.map((cal) => {
-          return {
-            id: "staffNeeded",
-            color: cal.color,
-            editable: false,
-            ...(cal.calendar_url.includes(".ics")
-              ? {
-                  format: "ics",
-                  url: `/admin/shifts/ics?staff_needed_calendar_id=${cal.id}`,
-                }
-              : {
-                  googleCalendarApiKey:
-                    "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
-                  googleCalendarId: cal.calendar_url,
-                }),
-          };
-        }),
-      ],
-      select: (arg) => {
-        openModal(arg);
-      },
-      eventClick: (arg) => {
-        if (arg.event.source.id === "shifts") {
-          editShift(arg);
-        } else if (arg.event.source.id === "staffNeeded") {
-          staffNeededEvent(arg);
-        }
-      },
-      eventDrop: (arg) => {
-        let shiftStartHour = new Date(
-          Date.parse(arg.event.start.toString()) +
-            new Date().getTimezoneOffset() * 60 * 1000
-        ).getHours();
-        let shiftEndHour = new Date(
-          Date.parse(arg.event.end.toString()) +
-            new Date().getTimezoneOffset() * 60 * 1000
-        ).getHours();
-        if (
-          shiftStartHour < SLOT_MIN_TIME.getHours() ||
-          shiftEndHour > SLOT_MAX_TIME.getHours() ||
-          (shiftEndHour >= 0 && shiftEndHour < shiftStartHour)
-        ) {
-          arg.revert();
-          return;
-        }
-        modifyEvent(arg);
-      },
-      eventResize: (arg) => {
-        modifyEvent(arg);
-      },
-      eventOrder: (a, b) => {
-        if (
-          (a.title.includes("is unavailable") &&
-            b.title.includes("is unavailable")) ||
-          (!a.title.includes("is unavailable") &&
-            !b.title.includes("is unavailable"))
-        ) {
-          return 0;
-        } else if (a.title.includes("is unavailable")) {
-          return -1;
-        } else {
-          return 1;
-        }
-      },
-      eventSourceSuccess: (content, xhr) => {
-        content.forEach((event) => {
-          if (hiddenIds[event.userId] === "none") {
-            event.display = "none";
-          } else if (hiddenIds[event.userId] === "block") {
-            event.display = "block";
-          } else {
+        editable: true,
+        dayMaxEvents: true,
+        eventContent: (arg) => {
+          const props = arg.event.extendedProps;
+          let trainingStr = "";
+
+          if (props.reason === "Training") {
+            trainingStr = `<br> ${props.training ? props.training : ""} <br> ${
+              props.language ? props.language : ""
+            } <br> ${props.course ? props.course : ""}`;
           }
-        });
-        hideShowEvents("check");
-        return content;
-      },
+
+          return {
+            html:
+              '<div class="fc-event-main-frame"><div class="fc-event-time">' +
+              arg.timeText +
+              '</div><div class="fc-event-title-container"><div class="fc-event-title fc-sticky">' +
+              arg.event.title +
+              trainingStr +
+              "</div></div></div>",
+          };
+        },
+        eventSources: [
+          {
+            id: "transparent",
+            url: `/admin/shifts/get_availabilities?transparent=true${
+              time_period_id ? "&time_period_id=" + time_period_id : ""
+            }`,
+            editable: false,
+          },
+          {
+            id: "shifts",
+            url: "/admin/shifts/get_shifts",
+          },
+          {
+            id: "google",
+            googleCalendarApiKey: "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
+            googleCalendarId:
+              "c_d7liojb08eadntvnbfa5na9j98@group.calendar.google.com",
+            color: "rgba(255,31,31,0.4)",
+            editable: false,
+          },
+          {
+            id: "staffNeeded",
+            url: "/admin/shifts/get_staff_needed",
+            color: "rgba(40,40,40,0.4)",
+            editable: false,
+          },
+          ...res.map((cal) => {
+            return {
+              id: "staffNeeded",
+              color: cal.color,
+              editable: false,
+              ...(cal.calendar_url.includes(".ics")
+                ? {
+                    format: "ics",
+                    url: `/admin/shifts/ics?staff_needed_calendar_id=${cal.id}`,
+                  }
+                : {
+                    googleCalendarApiKey:
+                      "AIzaSyCMNxnP0pdKHtZaPBJAtfv68A2h6qUeuW0",
+                    googleCalendarId: cal.calendar_url,
+                  }),
+            };
+          }),
+        ],
+        select: (arg) => {
+          openModal(arg);
+        },
+        eventClick: (arg) => {
+          if (arg.event.source.id === "shifts") {
+            editShift(arg);
+          } else if (arg.event.source.id === "staffNeeded") {
+            staffNeededEvent(arg);
+          }
+        },
+        eventDrop: (arg) => {
+          let shiftStartHour = new Date(
+            Date.parse(arg.event.start.toString()) +
+              new Date().getTimezoneOffset() * 60 * 1000
+          ).getHours();
+          let shiftEndHour = new Date(
+            Date.parse(arg.event.end.toString()) +
+              new Date().getTimezoneOffset() * 60 * 1000
+          ).getHours();
+          if (
+            shiftStartHour < SLOT_MIN_TIME.getHours() ||
+            shiftEndHour > SLOT_MAX_TIME.getHours() ||
+            (shiftEndHour >= 0 && shiftEndHour < shiftStartHour)
+          ) {
+            arg.revert();
+            return;
+          }
+          modifyEvent(arg);
+        },
+        eventResize: (arg) => {
+          modifyEvent(arg);
+        },
+        eventOrder: (a, b) => {
+          if (
+            (a.title.includes("is unavailable") &&
+              b.title.includes("is unavailable")) ||
+            (!a.title.includes("is unavailable") &&
+              !b.title.includes("is unavailable"))
+          ) {
+            return 0;
+          } else if (a.title.includes("is unavailable")) {
+            return -1;
+          } else {
+            return 1;
+          }
+        },
+        eventSourceSuccess: (content, xhr) => {
+          content.forEach((event) => {
+            if (hiddenIds[event.userId] === "none") {
+              event.display = "none";
+            } else if (hiddenIds[event.userId] === "block") {
+              event.display = "block";
+            } else {
+            }
+          });
+          hideShowEvents("check");
+          return content;
+        },
+        datesSet: () => updateHours(),
+        eventDidMount: (info) => {
+          if (info.event.extendedProps.color) {
+            info.el.style.background = info.event.extendedProps.color;
+            info.el.style.borderColor = "transparent";
+          }
+        },
+      });
+      calendar.render();
+      document.getElementById("hide-show-unavailabilities").click();
     });
-    calendar.render();
-    document.getElementById("hide-show-unavailabilities").click();
-  });
+});
 
 // Refresh pending Shifts
 const refreshPendingShifts = () => {
@@ -284,6 +326,8 @@ const refreshPendingShifts = () => {
       document
         .getElementById("pending-shift-partial")
         .replaceChildren(fragment);
+
+      updateHours();
     });
 };
 
@@ -325,7 +369,6 @@ const populateUsers = (arg) => {
       .then((res) => res.json())
       .then((res) => {
         res.forEach((user) => {
-          console.log("Adding user: ", user);
           userIdInput.tomselect.addOption({
             value: user.id,
             text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,
@@ -361,6 +404,11 @@ const createCalendarEvent = () => {
       format: "json",
       user_id: selected_users,
       reason: reasonInput.value,
+      ...(reasonInput.value === "Training" && {
+        training_id: trainingIdInput.value,
+        language: languageInput.value,
+        course: courseInput.value,
+      }),
     }),
   })
     .then((response) => response.json())
@@ -380,6 +428,7 @@ const createCalendarEvent = () => {
             id: data["id"],
             color: data.color,
             className: data.className,
+            extendedProps: data.extendedProps,
           },
           "shifts"
         );
@@ -446,14 +495,13 @@ const modifyEvent = (arg) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      start_datetime: new Date(
-        Date.parse(arg.event.start.toString()) +
-          new Date().getTimezoneOffset() * 60 * 1000
-      ),
-      end_datetime: new Date(
-        Date.parse(arg.event.end.toString()) +
-          new Date().getTimezoneOffset() * 60 * 1000
-      ),
+      start_datetime: arg.event.start.toISOString().slice(0, -5),
+      end_datetime: arg.event.end.toISOString().slice(0, -5),
+      ...(reasonInput.value === "Training" && {
+        training_id: trainingIdInput.value,
+        language: languageInput.value,
+        course: courseInput.value,
+      }),
       format: "json",
     }),
   })
@@ -512,9 +560,20 @@ const editShift = (arg) => {
   })
     .then((response) => response.json())
     .then((data) => {
-      startPicker.setDate(Date.parse(data.start_datetime));
-      endPicker.setDate(Date.parse(data.end_datetime));
+      startPicker.setDate(Date.parse(data.start_datetime.slice(0, -6)));
+      endPicker.setDate(Date.parse(data.end_datetime.slice(0, -6)));
       reasonInput.value = data.reason;
+
+      if (data.reason === "Training") {
+        trainingIdInput.value = data.training_id;
+        languageInput.value = data.language;
+        courseInput.value = data.course;
+
+        const trainingContainer = document.getElementById("training-container");
+        trainingContainer.classList.remove("d-none");
+        trainingContainer.classList.add("d-block");
+      }
+
       populateUsers({
         start: new Date(
           Date.parse(data.start_datetime) +
@@ -533,6 +592,33 @@ const editShift = (arg) => {
     });
 };
 
+const updateHours = () => {
+  const startDate = calendar.view.activeStart;
+  const endDate = calendar.view.activeEnd;
+
+  fetch(
+    `/admin/shifts/get_users_hours_between_dates?start_date=${startDate}&end_date=${endDate}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    }
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      Object.keys(data).map((u) => {
+        document.getElementById(
+          `user-hour-counter-${u}`
+        ).innerText = `${data[u]} hour(s)`;
+      });
+    })
+    .catch((error) => {
+      console.log("An error occurred: " + error.message);
+    });
+};
+
 const staffNeededEvent = (arg) => {
   openModal(arg);
   startPicker.setDate(
@@ -545,10 +631,12 @@ const staffNeededEvent = (arg) => {
 
 // Hide/Show Events
 const hideShowEvents = (eventName) => {
-  eventName == "check" ? (events += 1) : events;
+  eventName === "check" ? (events += 1) : events;
+
   if (events >= Object.keys(calendar.currentData.eventSources).length) {
     document.getElementById("spinner").classList.add("d-none");
   }
+
   let allEvents = calendar.getEvents();
   if (eventName !== "check") {
     sourceShow[eventName] = sourceShow[eventName] === "none" ? "block" : "none";
@@ -601,6 +689,17 @@ document
   .addEventListener("click", () => {
     hideShowEvents("staffNeeded");
   });
+
+document.getElementById("reason").addEventListener("change", (el) => {
+  const trainingContainer = document.getElementById("training-container");
+  if (el.target.value === "Training") {
+    trainingContainer.classList.remove("d-none");
+    trainingContainer.classList.add("d-block");
+  } else {
+    trainingContainer.classList.remove("d-block");
+    trainingContainer.classList.add("d-none");
+  }
+});
 
 // Toggle Staff Visibility
 window.toggleVisibility = (id) => {
