@@ -9,6 +9,7 @@ class SubSpaceBooking < ApplicationRecord
   validates :description, presence: true
   validates :start_time, presence: true
   validates :end_time, presence: true
+  validate :end_time_after_start_time
 
   COLOR_LEGEND = [
     {
@@ -33,6 +34,12 @@ class SubSpaceBooking < ApplicationRecord
     },
     { id: "blocking_booking", name: "Blocking Bookings", color: "#ABABABFF" }
   ]
+
+  def end_time_after_start_time
+    if start_time.present? && end_time.present? && start_time >= end_time
+      errors.add(:expiration_date, "Start Time needs to be before end time")
+    end
+  end
 
   def self.color_legend
     COLOR_LEGEND
