@@ -62,16 +62,4 @@
     </div>
   <% end %>
 
-  <div class="seperator"></div>
-
-  <div class="section-desc">
-    Delete Account<br>
-    <span>Once you delete your account there is no going back. It is deleted permanently.</span>
-  </div>
-  <br>
-
-  <%= button_to 'Delete your account', @user, method: :delete, data:
-    { confirm: 'Are you positive that you want to delete your account?' },
-                                              class: 'delete' %><br><br><br><br>
-
 </div>
