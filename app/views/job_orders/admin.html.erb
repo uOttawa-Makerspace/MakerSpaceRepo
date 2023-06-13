@@ -1,4 +1,4 @@
-<div class="px-2" data-controller="launch-modal">
+<div class="px-2" data-controller="launch-modal launch-custom-modal">
   <h1 class="text-center">List of Job Orders</h1>
   <div class="text-center">
     <%= link_to 'New Job Order', new_job_orders_path, { class: 'btn btn-primary mb-1' } %>
@@ -65,20 +65,20 @@
   </div>
 
   <!-- Comments Modal -->
-  <div class="modal" tabindex="-1" data-controller="comments-modal" data-launch-modal-target="commentsModal">
+  <div class="modal" tabindex="-1" data-controller="job-order-comments-modal" data-launch-custom-modal-target="jobOrderCommentsModal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Comments for Job Order #<span data-comments-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->comments-modal#close" aria-label="Close">
+          <h5 class="modal-title">Comments for Job Order #<span data-job-order-comments-modal-target="id"></span></h5>
+          <button type="button" class="btn-close" data-action="click->job-order-comments-modal#close" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
         <div class="modal-body">
-          <p><span data-comments-modal-target="comments"></span></p>
+          <p><span data-job-order-comments-modal-target="comments"></span></p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->comments-modal#close">Close</button>
+          <button type="button" class="btn btn-secondary" data-action="click->job-order-comments-modal#close">Close</button>
         </div>
       </div>
     </div>
