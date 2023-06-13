@@ -12,7 +12,7 @@
 	  <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400,600,500' rel='stylesheet' type='text/css'>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-176144772-1"></script>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script src="//www.google.com/recaptcha/api.js" async defer></script>
     <script src="//unpkg.com/alpinejs" defer></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -42,6 +42,6 @@
       <%= yield %>
     </main>
 		<%= render 'layouts/footer' %>
-    <%= vite_javascript_tag controller_name if File.exists?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
+    <%= vite_javascript_tag controller_name if File.exist?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
 	</body>
 </html>

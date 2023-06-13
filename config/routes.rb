@@ -514,7 +514,7 @@ Rails.application.routes.draw do
   post "vote/:comment_id", as: "vote", action: "vote", to: "users#vote"
 
   # USER RESOURCES
-  resources :users, path: "/", param: :username, except: :edit do
+  resources :users, path: "/", param: :username, except: %i[edit destroy] do
     collection do
       get :resend_confirmation
       get :confirm_edited_email
