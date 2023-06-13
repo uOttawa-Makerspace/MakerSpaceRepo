@@ -82,6 +82,13 @@
       <% end %>
     <% end %>
 
+    <% if @order_item&.status == "Awarded" || @order_item&.status == "Revoked" %>
+      <div class="p-4 gap-1 card bg-light text-wrap">
+        Admin Comments: 
+        <p class="m-0"><%= @order_item.admin_comments == '' ? 'None' : @order_item.admin_comments.html_safe %></p>
+      </div>
+    <% end %>
+
   </div>
 
   <% if @valid_urls.present? %>
