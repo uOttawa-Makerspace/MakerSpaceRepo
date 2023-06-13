@@ -49,9 +49,10 @@ RSpec.describe Admin::ShiftsController, type: :controller do
   describe "GET /get_availabilities" do
     context "get availabilities" do
       it "should get all the availabilities from the staffs" do
-        sa1 = create(:staff_availability)
-        sa2 = create(:staff_availability)
-        sa3 = create(:staff_availability)
+        time_period = create(:time_period)
+        sa1 = create(:staff_availability, time_period: time_period)
+        sa2 = create(:staff_availability, time_period: time_period)
+        sa3 = create(:staff_availability, time_period: time_period)
         space1 = create(:space)
         space2 = create(:space)
 
@@ -62,7 +63,11 @@ RSpec.describe Admin::ShiftsController, type: :controller do
         StaffSpace.create(space_id: space2.id, user_id: sa2.user_id)
         StaffSpace.create(space_id: space2.id, user_id: sa3.user_id)
 
-        get :get_availabilities, params: { space_id: space1.id }
+        get :get_availabilities,
+            params: {
+              space_id: space1.id,
+              time_period_id: time_period.id
+            }
         expect(response).to have_http_status(:success)
         expect(response.body).to eq(
           [
@@ -94,7 +99,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
         get :get_availabilities,
             params: {
               space_id: space1.id,
-              transparent: true
+              transparent: true,
+              time_period_id: time_period.id
             }
         expect(response).to have_http_status(:success)
         expect(response.body).to eq(
@@ -156,8 +162,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 /(#{s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
               end:
                 /(#{s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
-              color:
-                /(rgba\((#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}|#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}), (1|0.7))/,
+              color: s1.color(space.id, 1),
               className:
                 /((user-#{s1.users.first.id}|user-#{s1.users.second.id}|user-#{s3.users.first.id}))/
             },
@@ -169,8 +174,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 /(#{s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
               end:
                 /(#{s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
-              color:
-                /(rgba\((#{s3.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}|#{s1.color(space.id).match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}), (1|0.7))/,
+              color: s3.color(space.id, 0.7),
               className:
                 /((user-#{s1.users.first.id}|user-#{s1.users.second.id}|user-#{s3.users.first.id}))/
             }

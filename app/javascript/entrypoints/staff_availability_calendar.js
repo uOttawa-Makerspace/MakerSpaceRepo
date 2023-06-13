@@ -8,6 +8,7 @@ import TomSelect from "tom-select";
 let calendarEl = document.getElementById("user_availabilities_calendar");
 const urlParams = new URLSearchParams(window.location.search);
 const staff_id = urlParams.get("staff_id");
+const time_period_id = urlParams.get("time_period_id");
 
 let calendar = new Calendar(calendarEl, {
   plugins: [interactionPlugin, timeGridPlugin, listPlugin],
@@ -41,7 +42,9 @@ let calendar = new Calendar(calendarEl, {
   slotEventOverlap: false,
   eventSources: [
     {
-      url: `/staff_availabilities/get_availabilities?staff_id=${staff_id}`,
+      url: `/staff_availabilities/get_availabilities?staff_id=${staff_id}${
+        time_period_id ? "&time_period_id=" + time_period_id : ""
+      }`,
     },
   ],
   select: function (arg) {
@@ -71,6 +74,7 @@ let createEvent = (arg) => {
       start_date: arg.start,
       end_date: arg.end,
       format: "json",
+      ...(time_period_id && { time_period_id: time_period_id }),
     }),
   })
     .then((response) => response.json())

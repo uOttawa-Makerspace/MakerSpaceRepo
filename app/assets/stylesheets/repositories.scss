@@ -7,18 +7,16 @@ section#new-repo {
   min-height: calc(100vh - 65px);
 
   div.title {
-    color: #366;
+    color: #000;
     font-size: 2rem;
     padding-bottom: 0.5rem;
     text-align: center;
-    max-width: 500px;
+    max-width: 80%;
     margin: 0 auto;
     margin-bottom: 1rem;
-    border-bottom: 2px solid #366;
   }
 
   form {
-    max-width: 420px;
     width: 100%;
     margin: 0 auto;
   }
@@ -27,12 +25,10 @@ section#new-repo {
     display: block;
     font: 400 1em "Raleway", sans-serif;
     margin: 10px 0 5px;
-    color: #5f9ea0;
   }
 
   label + div {
-    font: 400 0.75rem "Raleway", helvetica, sans-serif;
-    color: #aaa;
+    font: 400 0.85rem "Raleway", helvetica, sans-serif;
     margin-bottom: 0.5rem;
   }
 
@@ -42,7 +38,6 @@ section#new-repo {
     font: 300 0.9em "Raleway", sans-serif;
     color: #555;
     width: 100%;
-    max-width: 400px;
     padding: 0.5rem;
     position: relative;
     margin-bottom: 15px;
@@ -63,7 +58,7 @@ section#new-repo {
 }
 
 .ui-state-focus:not(.ui-selectmenu-button) {
-  background-color: #5f9ea0;
+  background-color: #075f5f;
   color: #fff;
 }
 
@@ -85,7 +80,7 @@ li.ui-menu-item {
   cursor: pointer;
 
   &:hover {
-    background-color: #5f9ea0;
+    background-color: #075f5f;
     color: #fff;
   }
 }
@@ -101,7 +96,7 @@ li.ui-menu-item {
     padding: 0.5rem;
 
     &:hover {
-      background-color: #5f9ea0;
+      background-color: #075f5f;
       color: #fff;
     }
   }
@@ -159,7 +154,7 @@ select:not(.form-control) {
   li {
     padding: 0.5rem;
     &:hover {
-      background-color: #5f9ea0;
+      background-color: #075f5f;
       color: #fff;
     }
     &[rel="hide"] {
@@ -213,7 +208,11 @@ label.custom-image-upload {
 
 div#image-container {
   @include outer-container(calc(420px + 1rem));
-  margin: 0.5rem 0;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 
   div.image-item {
     display: inline-block;
@@ -295,7 +294,6 @@ div#share_option {
 
   input {
     color: #666;
-    height: 20px;
     padding: 2px;
     padding-left: 5px;
   }
@@ -370,7 +368,7 @@ div.redactor-editor {
   color: #777;
   letter-spacing: 0.15em;
   border-radius: 2px;
-  background-color: #5f9ea0;
+  background-color: #075f5f;
   color: #fff;
   margin-bottom: 20px;
 }

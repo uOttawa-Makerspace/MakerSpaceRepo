@@ -275,6 +275,7 @@ Rails.application.routes.draw do
         get :get_shifts
         get :get_staff_needed
         get :get_external_staff_needed
+        get :get_users_hours_between_dates
         get :get_shift
         get :pending_shifts
         get :shift_suggestions
@@ -297,6 +298,8 @@ Rails.application.routes.draw do
     resources :course_names
 
     resources :contact_infos
+
+    resources :time_periods, except: [:show]
 
     resources :training_sessions do
       get "/", as: "index", action: "index"

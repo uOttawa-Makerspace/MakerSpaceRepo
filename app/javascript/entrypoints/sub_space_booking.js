@@ -75,6 +75,19 @@ document.addEventListener("turbo:load", function () {
       }
     }
     function bookEvent(e) {
+      if (start_picker.selectedDates[0] >= end_picker.selectedDates[0]) {
+        document
+          .getElementById("end-date-validation")
+          .classList.remove("d-none");
+        document.getElementById("book-end").classList.add("is-invalid");
+        end_picker.altInput.classList.add("is-invalid");
+        return;
+      } else {
+        document.getElementById("end-date-validation").classList.add("d-none");
+        document.getElementById("book-end").classList.remove("is-invalid");
+        end_picker.altInput.classList.remove("is-invalid");
+      }
+
       let data = {
         sub_space_booking: {
           name: document.getElementById("book-name").value,
