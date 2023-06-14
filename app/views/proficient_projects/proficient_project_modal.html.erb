@@ -2,11 +2,11 @@
     <div class="card">
         <div class="card-header bg-primary text-light">Proficient Project Information</div>
         <div class="card-body">
-            <h5>Title: <%= @proficient_project.title %></h5>
-            <h5>Level: <%= @proficient_project.level %></h5>
-            <h5>Virtual Project: <%= @proficient_project.is_virtual? ? 'Yes' : 'No' %></h5>
-            <h5>Has Project Kit: <%= @proficient_project.has_project_kit? ? 'Yes' : 'No' %></h5>
-            <h5>Price: <%= @proficient_project.cc == 0 ? 'Free' : "#{@proficient_project.cc}CC" %></h5>
+            <h6>Title: <%= @proficient_project.title %></h6>
+            <h6>Level: <%= @proficient_project.level %></h6>
+            <h6>Virtual Project: <%= @proficient_project.is_virtual? ? 'Yes' : 'No' %></h6>
+            <h6>Has Project Kit: <%= @proficient_project.has_project_kit? ? 'Yes' : 'No' %></h6>
+            <h6>Price: <%= @proficient_project.cc == 0 ? 'Free' : "#{@proficient_project.cc}CC" %></h6>
         </div>
     </div>
 
