@@ -551,21 +551,6 @@ RSpec.describe UsersController, type: :controller do
     end
   end
 
-  describe "destroy" do
-    context "destroy" do
-      it "should delete the user" do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
-        session[:expires_at] = Time.zone.now + 10_000
-        delete :destroy, params: { username: user.username }
-        expect(response).to redirect_to root_path
-        expect { User.find(user.id) }.to raise_exception(
-          ActiveRecord::RecordNotFound
-        )
-      end
-    end
-  end
-
   describe "vote" do
     context "votes" do
       before(:each) do

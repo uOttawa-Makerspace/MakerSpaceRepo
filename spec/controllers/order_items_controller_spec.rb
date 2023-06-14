@@ -112,7 +112,8 @@ RSpec.describe OrderItemsController, type: :controller do
         expect {
           delete :destroy, params: { id: OrderItem.last.id }, format: "js"
         }.to change(OrderItem, :count).by(-1)
-        expect(response).to have_http_status(:success)
+        expect(flash[:notice]).to eq("Successfully removed item from cart")
+        expect(response).to redirect_to carts_path
       end
     end
   end
