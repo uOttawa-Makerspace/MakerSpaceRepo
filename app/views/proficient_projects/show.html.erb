@@ -7,7 +7,7 @@
   </div>
   <% if @order_item.present? %>
     <div class="text-center mb-3">
-      <h4 class="btn disabled pp-status-button w3-opacity-off">Project Status: <%= @order_item.status %></h4>
+      <h4 class="btn disabled pp-status-button w3-opacity-off"><%= @order_item.status %></h4>
     </div>
   <% end %>
   <div class="text-center">
