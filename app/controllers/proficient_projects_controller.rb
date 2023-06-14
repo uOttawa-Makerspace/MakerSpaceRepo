@@ -49,7 +49,8 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def requests
-    @order_item_waiting_for_approval = OrderItem.all.waiting_for_approval
+    @order_item_waiting_for_approval =
+      OrderItem.all.waiting_for_approval.order(updated_at: :desc).reverse_order
   end
 
   def new
