@@ -69,7 +69,7 @@
     </div>
 
     <% if @order_item&.status == "In progress" %>
-      <%= form_for :order_item, url: complete_project_proficient_projects_path, method: :put, multipart: true do |f| %>
+      <%= form_for :order_item, url: complete_project_proficient_projects_path, method: :put, multipart: true, html: { id: 'submit-project-form' }, data: { confirm: 'Are you sure you want to submit this project? Please make sure you have dropped off your project at the specified location before submitting.' } do |f| %>
         <%= hidden_field_tag(:id, @proficient_project.id) %>
         <div class='mb-3'>
           <%= f.label :user_comments, 'Add comments:', class: 'form-label' %>
