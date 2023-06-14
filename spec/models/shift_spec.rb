@@ -36,7 +36,19 @@ RSpec.describe Shift, type: :model do
         StaffSpace.find(staff_space.id).update(color: "#0099ff")
         shift =
           create(:shift, users: [staff_space.user], space: staff_space.space)
-        expect(shift.color(staff_space.space_id)).to eq("#0099ff")
+        expect(shift.color(staff_space.space_id, 1)).to eq(
+          "rgba(0, 153, 255, 1)"
+        )
+      end
+
+      it "should return color for single user but transparent" do
+        staff_space = create(:staff_space)
+        StaffSpace.find(staff_space.id).update(color: "#0099ff")
+        shift =
+          create(:shift, users: [staff_space.user], space: staff_space.space)
+        expect(shift.color(staff_space.space_id, 0.7)).to eq(
+          "rgba(0, 153, 255, 0.7)"
+        )
       end
 
       it "should return color for multi user" do
@@ -51,7 +63,9 @@ RSpec.describe Shift, type: :model do
             users: [staff_space1.user, staff_space2.user],
             space: space
           )
-        expect(shift.color(space.id)).to eq("#007f7f")
+        expect(shift.color(space.id, 1)).to eq(
+          "linear-gradient(to right, rgba(0, 0, 0, 1) 0% 50%, rgba(255, 255, 255, 1) 50% 100%)"
+        )
       end
     end
   end

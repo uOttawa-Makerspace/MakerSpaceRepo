@@ -1,0 +1,53 @@
+<div class="text-center">
+  <br />
+  <h2 class="fw-bold">Time Periods</h2>
+
+  <%= link_to 'New Time Period', new_admin_time_period_path, class: 'btn btn-primary m-1' %>
+
+  <br><br>
+
+  <% if !@time_periods.blank? %>
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead class="table-primary">
+        <tr>
+          <th>Name</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <% @time_periods.each do |t| %>
+          <tr>
+
+            <td>
+              <%= t.name %>
+            </td>
+
+            <td>
+              <%= t.start_date.strftime('%m/%e/%Y') %>
+            </td>
+
+            <td>
+              <%= t.end_date.strftime('%m/%e/%Y') %>
+            </td>
+            <td class="action-cell">
+              <%= link_to 'Edit', edit_admin_time_period_path(t.id), class: 'btn btn-primary d-block w-100 btn-sm mb-2' %>
+              <%= button_to 'Delete', { controller: :time_periods, action: :destroy, id: t.id }, method: :delete,
+                                                                                                 data: { confirm: 'Are you sure that you want to delete this time period?' },
+                                                                                                 class: 'btn btn-danger btn-sm d-block w-100 me-0' %>
+            </td>
+
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="alert alert-warning">
+      No Time Periods have been created yet.
+    </div>
+    <br>
+  <% end %>
+</div>

@@ -27,7 +27,7 @@ $navbar-light-color: rgba(0, 0, 0, 0.7);
 $navbar-light-hover-color: rgba(0, 0, 0, 1);
 $navbar-dark-color: rgba(255, 255, 255, 0.7);
 $navbar-dark-hover-color: rgba(255, 255, 255, 1);
-$body-top-padding: 6rem; // equivalent to navbar height
+$body-top-padding: 4rem; // equivalent to navbar height
 $input-border-radius: 0.25rem !default;
 $enable-negative-margins: true;
 
@@ -45,7 +45,7 @@ html {
 body {
   min-height: 100%;
   margin: 0;
-  padding: 6rem 0 0 0;
+  padding: 4rem 0 0 0;
   background-color: rgba(238, 238, 238, 0.5);
   font-family: "Raleway", helvetica, sans-serif !important;
   display: flex;
@@ -90,7 +90,21 @@ p {
 a {
   text-decoration: none;
   color: inherit;
-  &:not(.btn, .nav-item, .nav-link, .dropdown-item, .navbar-brand, .overlay, .username, .admin_username, .user_name, .edit-repo-link, .certify-button, .like, .make) {
+  &:not(
+      .btn,
+      .nav-item,
+      .nav-link,
+      .dropdown-item,
+      .navbar-brand,
+      .overlay,
+      .username,
+      .admin_username,
+      .user_name,
+      .edit-repo-link,
+      .certify-button,
+      .like,
+      .make
+    ) {
     color: $primary !important;
   }
   &::visited {
