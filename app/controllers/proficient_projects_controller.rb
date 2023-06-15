@@ -257,7 +257,7 @@ class ProficientProjectsController < DevelopmentProgramsController
             )
             order_item.update(order_item_params.merge({ status: "Awarded" }))
             MsrMailer.send_results_pp(
-              order_item.proficient_project,
+              order_item,
               order_item.order.user,
               "Passed"
             ).deliver_now
@@ -271,7 +271,7 @@ class ProficientProjectsController < DevelopmentProgramsController
         else
           order_item.update(order_item_params.merge({ status: "Awarded" }))
           MsrMailer.send_results_pp(
-            order_item.proficient_project,
+            order_item,
             order_item.order.user,
             "Passed"
           ).deliver_now
@@ -294,7 +294,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     if order_item
       order_item.update(order_item_params.merge(status: "Revoked"))
       MsrMailer.send_results_pp(
-        order_item.proficient_project,
+        order_item,
         order_item.order.user,
         "Failed"
       ).deliver_now
