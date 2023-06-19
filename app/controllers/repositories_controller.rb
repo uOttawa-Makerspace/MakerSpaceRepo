@@ -229,7 +229,7 @@ class RepositoriesController < SessionsController
         format.html do
           redirect_to password_entry_repository_path(
                         @repository.user_username,
-                        @repository.slug
+                        @repository.id
                       )
         end
       end
