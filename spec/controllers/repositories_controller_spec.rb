@@ -406,7 +406,7 @@ RSpec.describe RepositoriesController, type: :controller do
             }
         expect(response).to redirect_to password_entry_repository_path(
                       Repository.last.user_username,
-                      Repository.last.slug
+                      Repository.last.id
                     )
         expect(flash[:alert]).to eq("Incorrect password. Try again!")
       end
