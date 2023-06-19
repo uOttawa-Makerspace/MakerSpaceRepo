@@ -139,42 +139,35 @@ class SubSpaceBookingController < ApplicationController
             SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
           if booking_status.booking_status_id == BookingStatus::APPROVED.id ||
                booking_status.booking_status_id == BookingStatus::PENDING.id
-            color = booking.user == current_user ? "#49794b" : "#497979"
-            if booking_status.booking_status_id == BookingStatus::PENDING.id
-              color = booking.user == current_user ? "#B5A500" : "#FFA500"
-            end
+            title = "#{booking.name} - #{booking.description}"
+            title =
+              if current_user.admin? || booking.user == current_user ||
+                   booking.public
+                title
+              else
+                booking.public ? title : "Space Booked"
+              end
+            title =
+              if booking_status.booking_status_id == BookingStatus::PENDING.id
+                title + " (Pending)"
+              else
+                title
+              end
+            title += " - #{booking.user.name}" if current_user.admin? &&
+              booking.user != current_user
             if booking.blocking
-              color = "#ABABABFF"
               title = "Space Blocked" if (
                 !booking.public &&
                   ((!current_user.admin?) || booking.user != current_user)
               )
             end
-            title = "#{booking.name} - #{booking.description}"
-            title =
-              (
-                current_user.admin? || booking.user == current_user ||
-                  booking.public
-              ) ?
-                title :
-                booking.public ? title : "Space Booked"
-            title =
-              (
-                if booking_status.booking_status_id == BookingStatus::PENDING.id
-                  title + " (Pending)"
-                else
-                  title
-                end
-              )
-            title += " - #{booking.user.name}" if current_user.admin? &&
-              booking.user != current_user
             event = {
               id:
                 "booking_" + booking.id.to_s + "_" + booking.sub_space_id.to_s,
               title: title,
               start: booking.start_time,
               end: booking.end_time,
-              color: color
+              color: booking.color(current_user.id)
             }
             @bookings << event
           end
