@@ -41,7 +41,7 @@ jobs:
       - uses: c-hive/gha-yarn-cache@v1
       - uses: actions/setup-python@v4
         with:
-          python-version: 2.7.18
+          python-version: 3.11
       - run: npm i -g yarn
       - run: yarn install
       - name: create-json
