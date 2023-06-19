@@ -23,7 +23,11 @@
         <div class="card-body">
             <% if badge_requirements.present? %>
                 <% badge_requirements.each do |badge_requirement| %>
-                    <%= image_tag(badge_requirement.badge_template.image_url, style: 'width: 80px;', alt: 'Badge Image') %>
+                    <% if badge_requirement.badge_template.badge_url != nil %>
+                        <%= link_to image_tag(badge_requirement.badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block'), badge_requirement.badge_template.badge_url, target: '_blank', class: 'd-inline-block', rel: 'noopener' %>
+                    <% else %>
+                        <%= image_tag(badge_requirement.badge_template.image_url, style: 'width: 80px; cursor: not-allowed;', alt: 'Badge Image') %>
+                    <% end %>
                 <% end %>
             <% else %>
                 None
@@ -37,7 +41,11 @@
         <div class="card-body">
             <% if badge_template.present? %>
                 <%= badge_template.badge_name %>
-                <%= image_tag(badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block') %>
+                <% if badge_template.badge_url != nil %>
+                    <%= link_to image_tag(badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block'), badge_template.badge_url, target: '_blank', class: 'd-inline-block', rel: 'noopener' %>
+                <% else %>
+                    <%= image_tag(badge_template.image_url, style: 'width: 80px; cursor: not-allowed;', alt: 'Badge image', class: 'd-block') %>
+                <% end %>
             <% else %>
                 None
             <% end %>

@@ -52,7 +52,8 @@ namespace :badges do
         badge_description: badge_template["description"],
         badge_name: badge_template["name"],
         image_url: badge_template["image_url"],
-        list_of_skills: badge_template["skills"].join(", ")
+        list_of_skills: badge_template["skills"].join(", "),
+        badge_url: badge_template["url"]
       )
       puts "#{bt.badge_name}: Updated!"
     end
