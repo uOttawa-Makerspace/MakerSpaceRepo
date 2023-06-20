@@ -1,52 +1,64 @@
 <% provide(:title, 'New Proficient Project') %>
-<section class="card">
-  <div class="col-lg-7 mx-auto">
-    <br/>
-    <h2 class="text-center"><b>New Proficient Project</b></h2>
+<section class="card mt-4">
+  <div class="col-lg-7 mx-auto mt-4">
+    <h2 class="text-center mb-4"><b>New Proficient Project</b></h2>
     <div class="row">
       <div class="col-lg-12">
         <%= form_for @proficient_project, url: { controller: 'proficient_projects', action: 'create' }, html: { multipart: true } do |f| %>
           <div class="mb-3">
-            <div class="mb-3 required"><%= f.label :title, 'Title', class: 'form-label' %></div>
-            <%= f.text_field :title, id: 'repository_title', placeholder: 'Title of the proficient project...', class: 'form-control' %>
-            <br/>
-            <div class="mb-3 required"><%= f.label :description, 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)', class: 'form-label' %></div>
-            <%= f.trix_editor :description, placeholder: 'Description of the proficient project...', class: 'form-control', id: 'redactor', 'aria-label': 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)' %>
-            <br/>
-            <div class="mb-3 required"><%= f.label :training_id, 'Category', class: 'form-label' %></div>
-            <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select', id: 'training_id_field' }) %>
-            <br/>
-            <div class="mb-3 required"><%= f.label :level, 'Level', class: 'form-label' %></div>
-            <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select', id: 'training_level_field' }) %>
-            <br/>
+            <div class="required"><%= f.label :title, 'Title', class: 'form-label' %></div>
+            <%= f.text_field :title, id: 'repository_title', placeholder: 'Title of the proficient project...', class: 'form-control mb-5' %>
+
+            <div class="required"><%= f.label :description, 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)', class: 'form-label' %></div>
+            <%= f.trix_editor :description, placeholder: 'Description of the proficient project...', class: 'form-control mb-5', id: 'redactor', 'aria-label': 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)' %>
+
+            <div class="required"><%= f.label :training_id, 'Category', class: 'form-label' %></div>
+            <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field' }) %>
+
+            <div class="required"><%= f.label :level, 'Level', class: 'form-label' %></div>
+            <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field' }) %>
+
             <%= f.label :cc, 'Cc Points', class: 'form-label' %>
-            <%= f.number_field(:cc, class: 'form-control') %>
-            <br/>
-              <%= f.label :has_project_kit, 'Physical kit:', class: 'form-label' %>
-              <div class="form-check">
-              <br />
-              <%= f.radio_button(:has_project_kit, false, checked: true, style: 'display:inline', class: 'form-check-input') %>
-              <%= f.label 'has_project_kit_false', 'No', class: 'form-label' %>
-              <br />
-              <%= f.radio_button(:has_project_kit, true, style: 'display:inline', class: 'form-check-input') %>
-              <%= f.label 'has_project_kit_true', 'Yes', class: 'form-label' %>
-              <br />
+            <%= f.number_field(:cc, class: 'form-control mb-5') %>
+
+            <%= f.label :has_project_kit, 'Physical kit:', class: 'form-label' %>
+            <div class="form-check mb-5">
+              <div>
+                <%= f.radio_button(:has_project_kit, false, checked: true, class: 'form-check-input d-inline') %>
+                <%= f.label 'has_project_kit_false', 'No', class: 'form-label' %>
               </div>
-            <br>
+              <div>
+                <%= f.radio_button(:has_project_kit, true, class: 'form-check-input d-inline') %>
+                <%= f.label 'has_project_kit_true', 'Yes', class: 'form-label' %>
+              </div>
+            </div>
+
+            <%= f.label :is_virtual, 'Virtual project:', class: 'form-label' %>
+            <div class="form-check mb-5">
+              <div>
+                <%= f.radio_button(:is_virtual, false, checked: true, class: 'form-check-input d-inline') %>
+                <%= f.label 'is_virtual_false', 'No', class: 'form-label' %>
+              </div>
+              <div>
+                <%= f.radio_button(:is_virtual, true, class: 'form-check-input d-inline') %>
+                <%= f.label 'is_virtual_true', 'Yes', class: 'form-label' %>
+              </div>
+            </div>
+
             <%= f.label :drop_off_location_id, 'Drop-Off Location', class: 'form-label' %>
-            <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id)), { include_blank: 'No Location' }, { class: 'form-control form-select' }) %>
-            <br/>
+            <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id)), { include_blank: 'No Location' }, { class: 'form-control form-select mb-5' }) %>
+
             <%= label :badge_requirements_id, 'Prerequisite Badge (Choose as many badges as you want)', class: 'form-label' %>
-            <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name'), { multiple: true, id: 'badge_requirements', class: 'form-control' } %>
-            <br>
+            <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'badge_name'), { multiple: true, id: 'badge_requirements', class: 'form-control mb-5' } %>
+
             <%= f.label :badge_template_id, 'Badge that will be acquired', class: 'form-label' %>
-            <p class="alert alert-secondary" id="badge-acquired-text">No badge will be acquired</p>
-            <br>
+            <p class="alert alert-secondary mb-5" id="badge-acquired-text">No badge will be acquired</p>
+
             <%= label_tag :file, 'Project files', class: 'form-label' %>
             <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
             <div id="file-container"></div>
-            <br/>
-            <div class="mb-3 required">
+
+            <div class="mb-3 mt-5 required">
               <%= label_tag :photo, 'Gallery', class: 'form-label' %>
               <div class="input-group mb-3">
                 <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
@@ -57,21 +69,17 @@
             </div>
             <div class="mx-auto repo-image">
               <div id="dragndrop"  ondrop="dragndrop(event);" ondragover="dragover(event);">
-                <br>
+
                 <%= fa_icon 'cloud-upload' %>
                 <p>Drag &amp; Drop</p>
               </div>
             </div>
             <div id="image-container" class="mx-auto"></div>
 
-            <br/>
-
-            <div class="text-center">
-              <%= f.submit 'Create Proficient Project', class: 'btn btn-primary', id: 'waiting-save-button' %>
-              <br/>
-              <br/>
+            <div class="text-center mt-5 mb-3">
+              <%= f.submit 'Create Proficient Project', class: 'btn btn-primary mb-2', id: 'waiting-save-button' %>
+              <br>
               This could take several minutes. Do not refresh this page.
-              <br/>
               <span id="status-save"> </span>
             </div>
           </div>

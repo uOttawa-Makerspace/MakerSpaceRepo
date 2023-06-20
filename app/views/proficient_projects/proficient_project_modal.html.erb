@@ -1,0 +1,54 @@
+<div id="proficient-project-modal-rendered" class="d-grid gap-3">
+    <div class="card">
+        <div class="card-header bg-primary text-light">Proficient Project Information</div>
+        <div class="card-body">
+            <h6>Title: <%= @proficient_project.title %></h6>
+            <h6>Level: <%= @proficient_project.level %></h6>
+            <h6>Virtual Project: <%= @proficient_project.is_virtual? ? 'Yes' : 'No' %></h6>
+            <h6>Has Project Kit: <%= @proficient_project.has_project_kit? ? 'Yes' : 'No' %></h6>
+            <h6>Price: <%= @proficient_project.cc == 0 ? 'Free' : "#{@proficient_project.cc}CC" %></h6>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-light">Proficient Project Description</div>
+        <div class="card-body">
+            <%= @proficient_project.description.html_safe %>
+        </div>
+    </div>
+
+    <% badge_requirements = @proficient_project.badge_requirements %>
+    <div class="card">
+        <div class="card-header bg-primary text-light">Badge Requirements</div>
+        <div class="card-body">
+            <% if badge_requirements.present? %>
+                <% badge_requirements.each do |badge_requirement| %>
+                    <% if badge_requirement.badge_template.badge_url != nil %>
+                        <%= link_to image_tag(badge_requirement.badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block'), badge_requirement.badge_template.badge_url, target: '_blank', class: 'd-inline-block', rel: 'noopener' %>
+                    <% else %>
+                        <%= image_tag(badge_requirement.badge_template.image_url, style: 'width: 80px; cursor: not-allowed;', alt: 'Badge Image') %>
+                    <% end %>
+                <% end %>
+            <% else %>
+                None
+            <% end %>
+        </div>
+    </div>
+
+    <% badge_template = @proficient_project.badge_template %>
+    <div class="card">
+        <div class="card-header bg-primary text-light">Badge Awarded Upon Completion</div>
+        <div class="card-body">
+            <% if badge_template.present? %>
+                <%= badge_template.badge_name %>
+                <% if badge_template.badge_url != nil %>
+                    <%= link_to image_tag(badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block'), badge_template.badge_url, target: '_blank', class: 'd-inline-block', rel: 'noopener' %>
+                <% else %>
+                    <%= image_tag(badge_template.image_url, style: 'width: 80px; cursor: not-allowed;', alt: 'Badge image', class: 'd-block') %>
+                <% end %>
+            <% else %>
+                None
+            <% end %>
+        </div>
+    </div>
+</div>
