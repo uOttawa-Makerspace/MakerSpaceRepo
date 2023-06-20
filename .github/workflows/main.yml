@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:12
+        image: postgres:14
         env:
           POSTGRES_DB: makerspacerepo_test
           POSTGRES_PASSWORD: postgres
@@ -29,44 +29,55 @@ jobs:
         ports: ["6379:6379"]
         options: --entrypoint redis-server
     steps:
-      - uses: actions/checkout@v3.0.1
+      - uses: actions/checkout@v3
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.1.2
           bundler-cache: true
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
           node-version: "18.12.1"
-      - uses: c-hive/gha-yarn-cache@v1
+          cache: "yarn"
       - uses: actions/setup-python@v4
         with:
-          python-version: 2.7.18
-      - run: npm i -g yarn
-      - run: yarn install
-      - name: create-json
+          python-version: 3.11
+      - name: Run Yarn install
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install
+      - name: Create Credentials File
         id: create-json
         uses: jsdaniell/create-json@1.1.2
         with:
           name: "makerepo-1632742c49cc.json"
           json: ${{ secrets.CREDENTIALS_JSON }}
           dir: "config/"
-      - name: Build and test
+      - name: Prepare Test
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
           REDIS_URL: redis://localhost:6379/0
           RAILS_ENV: test
-          #RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
         run: |
           sudo apt-get -yqq install libpq-dev
-          gem install bundler
-          bundle install --jobs 4 --retry 3
           mkdir certs && touch certs/saml.key && touch certs/saml.crt
           openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
           wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb
           sudo apt install ./wkhtmltox_0.12.6-1.focal_amd64.deb
+      - name: Migrate DB
+        env:
+          DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
+          REDIS_URL: redis://localhost:6379/0
+          RAILS_ENV: test
+        run: |
           bundle exec rails db:prepare
           bundle exec rails db:migrate
+      - name: Run tests
+        env:
+          DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
+          REDIS_URL: redis://localhost:6379/0
+          RAILS_ENV: test
+        run: |
           bundle exec rails spec
       - name: Deploy Staging
         if: github.ref == 'refs/heads/staging'
@@ -94,9 +105,9 @@ jobs:
         if: always()
         with:
           status: ${{ job.status }}
-          notify_when: "success,failure,warnings" # default is 'success,failure,warnings'
+          notify_when: "success,failure,warnings"
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} # required
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       - uses: toko-bifrost/ms-teams-deploy-card@master
         if: always()
         with:
