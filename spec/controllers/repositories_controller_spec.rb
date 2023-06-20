@@ -523,7 +523,7 @@ RSpec.describe RepositoriesController, type: :controller do
                }
              }
         expect(flash[:alert]).to eq(
-          "You cannot remove the last person in this repository. Please go to profile if you want to delete this repository."
+          "You cannot remove the last person in this repository. Please go to your profile page if you want to delete this repository."
         )
         expect(@repo.users.last.id).to eq(@owner.id)
       end
@@ -570,9 +570,72 @@ RSpec.describe RepositoriesController, type: :controller do
                }
              }
         expect(flash[:alert]).to eq(
-          "You cannot remove the original owner of this repository."
+          "You cannot remove the current owner of this repository."
         )
         expect(@repo.users.first.id).to eq(@owner.id)
+      end
+    end
+  end
+
+  describe "#transfer_owner" do
+    context "Transfer Owner" do
+      before(:each) do
+        @owner = create(:user, :regular_user)
+        @member = create(:user, :regular_user)
+        session[:user_id] = @owner.id
+        session[:expires_at] = Time.zone.now + 10_000
+
+        @repo =
+          create(
+            :repository,
+            user_id: @owner.id,
+            user_username: @owner.username
+          )
+        Repository.find(@repo.id).users = [@owner, @member]
+      end
+
+      it "should transfer ownership" do
+        post :transfer_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @member.id
+               }
+             }
+        expect(flash[:notice]).to eq(
+          "Repository ownership was successfully transferred."
+        )
+        expect(Repository.last.user_id).to eq(@member.id)
+      end
+
+      it "should not transfer ownership" do
+        post :transfer_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @owner.id
+               }
+             }
+        expect(flash[:alert]).to eq(
+          "This user is already the owner of the repository."
+        )
+        expect(Repository.last.user_id).to eq(@owner.id)
+      end
+
+      it "should not transfer ownership to a non-member" do
+        @non_member = create(:user, :regular_user)
+        post :transfer_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @non_member.id
+               }
+             }
+        expect(flash[:alert]).to eq("This user is not in your repository.")
+        expect(Repository.last.user_id).to eq(@owner.id)
       end
     end
   end

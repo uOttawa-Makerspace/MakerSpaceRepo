@@ -57,7 +57,11 @@
       <div class="repo-info-item">
         <div class="title">PROJECT BY</div>
         <% @repository.users.find_each do |u| %>
-            <div class="name"><%= link_to u.username, user_path(u.username) %></div>
+            <% if u.id == @repository.user_id %>
+              <div class="name"><i class="fa fa-solid fa-star"></i><%= link_to u.username, user_path(u.username) %></div>
+            <% else %>
+              <div class="name"><%= link_to u.username, user_path(u.username) %></div>
+            <% end %>
         <% end %>
       </div>
       <div class="repo-info-item">
@@ -171,6 +175,20 @@
                 </div>
             <% end %>
           </div>
+
+        <% if @user.id == @repository.user_id %>
+          <div class="repo-info-item">
+            <div class="title">Transfer ownership:</div>
+            <%= form_for :repo_owner, url: { controller: 'repositories', action: 'transfer_owner' }, method: :patch do |f| %>
+                <div class="mb-3 input-group required">
+                  <%= f.hidden_field :repository_id, value: @repository.id %>
+                  <%= f.select(:owner_id, @owners.pluck(:username, :id), { prompt: 'Choose...' }, { class: 'form-control', id: 'search_users_transfer' }) %>
+                  <br> </br>
+                  <%= f.submit 'Transfer', class: 'btn btn-warning' %>
+                </div>
+            <% end %>
+          </div>
+        <% end %>
 
           </div>
       <% end %>

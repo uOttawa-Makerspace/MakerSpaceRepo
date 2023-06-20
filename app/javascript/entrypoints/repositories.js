@@ -92,6 +92,17 @@ document.addEventListener("turbo:load", () => {
       });
     }
   }
+  if (document.getElementById("search_users_transfer")) {
+    if (!document.getElementById("search_users_transfer").tomselect) {
+      new TomSelect("#search_users_transfer", {
+        searchField: ["username"],
+        valueField: "id",
+        labelField: "username",
+        maxOptions: null,
+        searchOnKeyUp: true,
+      });
+    }
+  }
   if (document.getElementById("search_project_proposals")) {
     if (!document.getElementById("search_project_proposals").tomselect) {
       new TomSelect("#search_project_proposals", {

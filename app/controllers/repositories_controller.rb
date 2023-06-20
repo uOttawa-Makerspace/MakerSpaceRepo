@@ -279,13 +279,32 @@ class RepositoriesController < SessionsController
     if repository.users.length == 1
       flash[
         :alert
-      ] = "You cannot remove the last person in this repository. Please go to profile if you want to delete this repository."
+      ] = "You cannot remove the last person in this repository. Please go to your profile page if you want to delete this repository."
     elsif owner.id == repository.user_id
-      flash[:alert] = "You cannot remove the original owner of this repository."
+      flash[:alert] = "You cannot remove the current owner of this repository."
     elsif repository.users.delete(owner)
       flash[:notice] = "This owner was removed from your repository"
     else
       flash[:alert] = "Something went wrong."
+    end
+    redirect_to repository_path(repository.user_username, repository.slug)
+  end
+
+  def transfer_owner
+    repository = Repository.find(params[:repo_owner][:repository_id])
+    owner_id = params[:repo_owner][:owner_id]
+    owner = User.find(owner_id)
+
+    if !repository.users.include? owner
+      flash[:alert] = "This user is not in your repository."
+    elsif owner.id == repository.user_id
+      flash[:alert] = "This user is already the owner of the repository."
+    elsif repository.update(user_id: owner_id, user_username: owner.username)
+      flash[:notice] = "Repository ownership was successfully transferred."
+    else
+      flash[
+        :alert
+      ] = "Something went wrong when transferring ownership. Please try again later."
     end
     redirect_to repository_path(repository.user_username, repository.slug)
   end
