@@ -12,6 +12,7 @@ class RepositoriesController < SessionsController
                   download_files
                   check_auth
                   pass_authenticate
+                  password_entry
                 ]
   before_action :check_auth, only: [:show]
 
@@ -208,6 +209,9 @@ class RepositoriesController < SessionsController
   end
 
   def password_entry
+    if !@repository.private?
+      redirect_to repository_path(@repository.user_username, @repository.id)
+    end
   end
 
   def pass_authenticate
