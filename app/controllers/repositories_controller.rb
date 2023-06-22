@@ -255,13 +255,17 @@ class RepositoriesController < SessionsController
     owner_id = params[:repo_owner][:owner_id]
     owner = User.find_by(id: owner_id)
 
-    if repository.users.include? owner
+    if owner.nil?
+      flash[:alert] = "Couldn't find owner, please try again."
+      redirect_to repository_path(repository.user_username, repository.slug)
+      return
+    elsif repository.users.include? owner
       flash[:alert] = "This user is already in your repository"
       redirect_to repository_path(repository.user_username, repository.slug)
       return
     end
 
-    repository.users << owner if !owner.nil?
+    repository.users << owner
 
     if repository.save
       flash[:notice] = "This owner was added to your repository"
@@ -274,9 +278,11 @@ class RepositoriesController < SessionsController
   def remove_owner
     repository = Repository.find params[:repo_owner][:repository_id]
     owner_id = params[:repo_owner][:owner_id]
-    owner = User.find(owner_id)
+    owner = User.find_by(id: owner_id)
 
-    if repository.users.length == 1
+    if owner.nil?
+      flash[:alert] = "Couldn't find owner, please try again."
+    elsif repository.users.length == 1
       flash[
         :alert
       ] = "You cannot remove the last person in this repository. Please go to your profile page if you want to delete this repository."
@@ -293,9 +299,12 @@ class RepositoriesController < SessionsController
   def transfer_owner
     repository = Repository.find(params[:repo_owner][:repository_id])
     owner_id = params[:repo_owner][:owner_id]
-    owner = User.find(owner_id)
+    owner = User.find_by(id: owner_id)
 
-    if current_user.username != repository.user_username && !current_user.admin?
+    if owner.nil?
+      flash[:alert] = "Couldn't find owner, please try again."
+    elsif current_user.username != repository.user_username &&
+          !current_user.admin?
       flash[
         :alert
       ] = "You don't have the right permissions to perform this action"
