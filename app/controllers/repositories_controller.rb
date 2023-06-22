@@ -295,7 +295,11 @@ class RepositoriesController < SessionsController
     owner_id = params[:repo_owner][:owner_id]
     owner = User.find(owner_id)
 
-    if !repository.users.include? owner
+    if current_user.username != repository.user_username && !current_user.admin?
+      flash[
+        :alert
+      ] = "You don't have the right permissions to perform this action"
+    elsif !repository.users.include? owner
       flash[:alert] = "This user is not in your repository."
     elsif owner.id == repository.user_id
       flash[:alert] = "This user is already the owner of the repository."

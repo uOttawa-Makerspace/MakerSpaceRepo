@@ -176,7 +176,7 @@
             <% end %>
           </div>
 
-        <% if @user.id == @repository.user_id %>
+        <% if @user.id == @repository.user_id || @user.admin? %>
           <div class="repo-info-item">
             <div class="title">Transfer ownership:</div>
             <%= form_for :repo_owner, url: { controller: 'repositories', action: 'transfer_owner' }, method: :patch do |f| %>
