@@ -15,9 +15,12 @@ class CommentsController < SessionsController
                     id: repository.id,
                     user_username: repository.user_username,
                     anchor: "repo-comments"
-                  )
+                  ),
+                  notice: "The comment was successfully posted."
     else
-      redirect_to root_path
+      redirect_to root_path,
+                  alert:
+                    "An error occured while trying to post the comment, please try again later."
     end
   end
 
@@ -35,6 +38,51 @@ class CommentsController < SessionsController
                   id: comment.repository.id,
                   user_username: comment.repository.user_username
                 )
+  end
+
+  def vote
+    downvote = params["downvote"].eql?("t") ? true : false
+    comment = Comment.find params[:comment_id]
+    comment_user = comment.user
+    repository = Repository.find(params[:id])
+
+    if params[:voted].eql?("true")
+      upvote = @user.upvotes.where(comment_id: comment.id).take
+      if (!upvote.downvote && downvote) || (upvote.downvote && !downvote)
+        upvote.update!(downvote: downvote)
+        count = downvote ? comment.upvote - 2 : comment.upvote + 2
+        if downvote
+          comment_user.decrement!(:reputation, 4)
+        else
+          comment_user.increment!(:reputation, 4)
+        end
+        redirect_to repository_path(repository.user_username, params[:id]),
+                    notice:
+                      "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
+      else
+        upvote.destroy!
+        count = downvote ? comment.upvote + 1 : comment.upvote - 1
+        if downvote
+          comment_user.increment!(:reputation, 2)
+        else
+          comment_user.decrement!(:reputation, 2)
+        end
+        redirect_to repository_path(repository.user_username, params[:id]),
+                    notice:
+                      "Successfully removed #{downvote ? "downvote" : "upvote"}"
+      end
+    else
+      @user.upvotes.create!(comment_id: comment.id, downvote: downvote)
+      count = downvote ? comment.upvote - 1 : comment.upvote + 1
+      if downvote
+        comment_user.decrement!(:reputation, 2)
+      else
+        comment_user.increment!(:reputation, 2)
+      end
+      redirect_to repository_path(repository.user_username, params[:id]),
+                  notice:
+                    "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
+    end
   end
 
   private
