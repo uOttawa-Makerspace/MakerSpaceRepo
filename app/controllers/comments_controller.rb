@@ -87,6 +87,10 @@ class CommentsController < SessionsController
                   notice:
                     "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
     end
+  rescue StandardError
+    redirect_to repository_path(repository.user_username, params[:id]),
+                alert:
+                  "There was an error while trying to upvote/downvote the comment, please try again later."
   end
 
   private
