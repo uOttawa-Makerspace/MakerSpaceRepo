@@ -60,7 +60,11 @@ class CommentsController < SessionsController
         else
           comment_user.increment!(:reputation, 4)
         end
-        redirect_to repository_path(repository.user_username, params[:id]),
+        redirect_to repository_path(
+                      repository.user_username,
+                      params[:id],
+                      anchor: "repo-comments"
+                    ),
                     notice:
                       "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
       else
@@ -71,7 +75,11 @@ class CommentsController < SessionsController
         else
           comment_user.decrement!(:reputation, 2)
         end
-        redirect_to repository_path(repository.user_username, params[:id]),
+        redirect_to repository_path(
+                      repository.user_username,
+                      params[:id],
+                      anchor: "repo-comments"
+                    ),
                     notice:
                       "Successfully removed #{downvote ? "downvote" : "upvote"}"
       end
@@ -83,12 +91,20 @@ class CommentsController < SessionsController
       else
         comment_user.increment!(:reputation, 2)
       end
-      redirect_to repository_path(repository.user_username, params[:id]),
+      redirect_to repository_path(
+                    repository.user_username,
+                    params[:id],
+                    anchor: "repo-comments"
+                  ),
                   notice:
                     "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
     end
   rescue StandardError
-    redirect_to repository_path(repository.user_username, params[:id]),
+    redirect_to repository_path(
+                  repository.user_username,
+                  params[:id],
+                  anchor: "repo-comments"
+                ),
                 alert:
                   "There was an error while trying to upvote/downvote the comment, please try again later."
   end
