@@ -18,9 +18,13 @@ class CommentsController < SessionsController
                   ),
                   notice: "The comment was successfully posted."
     else
-      redirect_to root_path,
+      redirect_to repository_path(
+                    id: repository.id,
+                    user_username: repository.user_username,
+                    anchor: "repo-comments"
+                  ),
                   alert:
-                    "An error occured while trying to post the comment, please try again later."
+                    "An error occured while trying to post the comment, please make sure the comment is under 1000 characters."
     end
   end
 

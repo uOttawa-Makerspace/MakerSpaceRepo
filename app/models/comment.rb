@@ -7,7 +7,7 @@ class Comment < ApplicationRecord
 
   paginates_per 5
 
-  validates :content, presence: true
+  validates :content, presence: true, length: { maximum: 1000 }
   validates :user_id, presence: true
   validates :repository_id, presence: true
 end
