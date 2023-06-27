@@ -42,7 +42,7 @@
             <% if badge_template.present? %>
                 <%= badge_template.badge_name %>
                 <% if badge_template.badge_url != nil %>
-                    <%= link_to image_tag(badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block'), badge_template.badge_url, target: '_blank', class: 'd-inline-block', rel: 'noopener' %>
+                    <%= link_to image_tag(badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block'), badge_template.badge_url, target: '_blank', class: 'd-block', rel: 'noopener' %>
                 <% else %>
                     <%= image_tag(badge_template.image_url, style: 'width: 80px; cursor: not-allowed;', alt: 'Badge image', class: 'd-block') %>
                 <% end %>
