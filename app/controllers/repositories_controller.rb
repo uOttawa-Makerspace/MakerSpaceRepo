@@ -37,6 +37,7 @@ class RepositoriesController < SessionsController
       ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
     @owners = @repository.users
     @all_users = User.where.not(id: @owners.pluck(:id)).pluck(:name, :id)
+    @liked = @repository.likes.find_by(user_id: @user.id).nil? ? false : true
   end
 
   def download_files
@@ -198,13 +199,19 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def add_like # MAKE A LIKE CONTROLLER TO PUT THIS IN
-    @repository.likes.create!(user_id: @user.id)
-    @repository.users.each { |u| u.increment!(:reputation, 5) }
-    flash[:notice] = "You have liked this project!"
+  def add_like
+    current_like = @repository.likes.find_by(user_id: @user.id)
+
+    if current_like.nil?
+      @repository.likes.create!(user_id: @user.id)
+      @repository.users.each { |u| u.increment!(:reputation, 5) }
+      flash[:notice] = "You have liked this project!"
+    else
+      current_like.destroy
+      @repository.users.each { |u| u.decrement!(:reputation, 5) }
+      flash[:notice] = "You have unliked this project"
+    end
     redirect_to repository_path(@repository.user_username, @repository.slug)
-  rescue StandardError
-    render json: { failed: true }
   end
 
   def password_entry
