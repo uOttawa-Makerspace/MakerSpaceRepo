@@ -322,7 +322,7 @@ Rails.application.routes.draw do
         post "remove_equipment"
         post "submit_pi"
         post "remove_pi"
-        get "pin_unpin_repository"
+        patch "pin_unpin_repository"
       end
     end
 
