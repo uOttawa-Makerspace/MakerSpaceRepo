@@ -349,7 +349,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(User.last.reputation).to eq(5)
       end
 
-      it "should fail to add a second like from the same user" do
+      it "should unlike the repository from the same user" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
@@ -368,8 +368,7 @@ RSpec.describe RepositoriesController, type: :controller do
                  user_username: User.last.username,
                  id: Repository.last.id
                }
-        }.to change(Repository.last.likes, :count).by(0)
-        expect(response.body).to include("failed")
+        }.to change(Repository.last.likes, :count).by(-1)
       end
     end
   end
