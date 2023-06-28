@@ -244,25 +244,21 @@ RSpec.describe Admin::SettingsController, type: :controller do
     end
   end
 
-  describe "POST /pin_unpin_repository" do
+  describe "PATCH /pin_unpin_repository" do
     context "pin unpin repository" do
       it "should pin a repository" do
         repo = create(:repository)
-        post :pin_unpin_repository, params: { repository_id: repo.id }
+        patch :pin_unpin_repository, params: { repository_id: repo.id }
         expect(response).to have_http_status(302)
-        expect(flash[:notice]).to eq(
-          "Featured: #{Repository.find(repo.id).featured}"
-        )
+        expect(flash[:notice]).to eq("Successfully Featured repository")
       end
 
       it "should unpin a repository" do
         repo = create(:repository)
         Repository.find(repo.id).update(featured: true)
-        post :pin_unpin_repository, params: { repository_id: repo.id }
+        patch :pin_unpin_repository, params: { repository_id: repo.id }
         expect(response).to have_http_status(302)
-        expect(flash[:notice]).to eq(
-          "Featured: #{Repository.find(repo.id).featured}"
-        )
+        expect(flash[:notice]).to eq("Successfully Unfeatured repository")
       end
     end
   end
