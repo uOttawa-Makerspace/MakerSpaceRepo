@@ -50,63 +50,40 @@ class CommentsController < SessionsController
     comment_user = comment.user
     repository = Repository.find(params[:id])
 
-    if params[:voted].eql?("true")
-      upvote = @user.upvotes.where(comment_id: comment.id).take
-      if (!upvote.downvote && downvote) || (upvote.downvote && !downvote)
+    if upvote = @user.upvotes.find_by(comment_id: comment.id)
+      if downvote != upvote.downvote
         upvote.update!(downvote: downvote)
-        count = downvote ? comment.upvote - 2 : comment.upvote + 2
         if downvote
           comment_user.decrement!(:reputation, 4)
         else
           comment_user.increment!(:reputation, 4)
         end
-        redirect_to repository_path(
-                      repository.user_username,
-                      params[:id],
-                      anchor: "repo-comments"
-                    ),
-                    notice:
-                      "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
+        message = "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
       else
         upvote.destroy!
-        count = downvote ? comment.upvote + 1 : comment.upvote - 1
         if downvote
           comment_user.increment!(:reputation, 2)
         else
           comment_user.decrement!(:reputation, 2)
         end
-        redirect_to repository_path(
-                      repository.user_username,
-                      params[:id],
-                      anchor: "repo-comments"
-                    ),
-                    notice:
-                      "Successfully removed #{downvote ? "downvote" : "upvote"}"
+        message = "Successfully removed #{downvote ? "downvote" : "upvote"}"
       end
     else
       @user.upvotes.create!(comment_id: comment.id, downvote: downvote)
-      count = downvote ? comment.upvote - 1 : comment.upvote + 1
       if downvote
         comment_user.decrement!(:reputation, 2)
       else
         comment_user.increment!(:reputation, 2)
       end
-      redirect_to repository_path(
-                    repository.user_username,
-                    params[:id],
-                    anchor: "repo-comments"
-                  ),
-                  notice:
-                    "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
+      message = "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
     end
-  rescue StandardError
+
     redirect_to repository_path(
                   repository.user_username,
                   params[:id],
                   anchor: "repo-comments"
                 ),
-                alert:
-                  "There was an error while trying to upvote/downvote the comment, please try again later."
+                notice: message
   end
 
   private

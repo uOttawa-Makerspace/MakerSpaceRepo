@@ -200,14 +200,13 @@
       <% @comments.each do |comment| %>
       <div class="comment">
         <div class="comment-upvote">
-          <% vote = @vote.flatten.include?(comment.id) %>
           <% color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999' %>
-          <%= button_to fa_icon('angle-up'), comments_vote_path(comment_id: comment.id, voted: vote, downvote: 'f'),
+          <%= button_to fa_icon('angle-up'), comments_vote_path(comment_id: comment.id, downvote: 'f'),
                         class: 'vote upvote border-0 bg-transparent', remote: true, method: :post, style: "color: #{color}"
           %>
           <div class="upvote upvote-<%= comment.id %>"><%= comment.upvote %></div>
             <% color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999' %>
-            <%= button_to fa_icon('angle-down'), comments_vote_path(comment_id: comment.id, voted: vote, downvote: 't'),
+            <%= button_to fa_icon('angle-down'), comments_vote_path(comment_id: comment.id, downvote: 't'),
                           class: 'vote upvote border-0 bg-transparent', remote: true, method: :post, style: "color: #{color}"
             %>
         </div>
