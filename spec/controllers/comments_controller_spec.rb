@@ -85,7 +85,6 @@ RSpec.describe CommentsController, type: :controller do
              params: {
                comment_id: comment.id,
                downvote: "f",
-               voted: false,
                id: Repository.last.id
              }
         expect(Comment.find(comment.id).user.reputation).to eq(2)
@@ -98,7 +97,6 @@ RSpec.describe CommentsController, type: :controller do
              params: {
                comment_id: comment.id,
                downvote: "t",
-               voted: false,
                id: Repository.last.id
              }
         expect(Comment.find(comment.id).user.reputation).to eq(-2)
@@ -119,7 +117,6 @@ RSpec.describe CommentsController, type: :controller do
              params: {
                comment_id: comment.id,
                downvote: "t",
-               voted: true,
                id: Repository.last.id
              }
         expect(Comment.find(comment.id).upvote).to eq(-1)
@@ -135,27 +132,9 @@ RSpec.describe CommentsController, type: :controller do
              params: {
                comment_id: comment.id,
                downvote: "t",
-               voted: true,
                id: Repository.last.id
              }
         expect(Comment.find(comment.id).upvote).to eq(0)
-      end
-
-      it "should up downvote an voted comment the comment" do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
-        session[:expires_at] = Time.zone.now + 10_000
-        comment = create(:comment)
-        post :vote,
-             params: {
-               comment_id: comment.id,
-               downvote: "t",
-               voted: true,
-               id: Repository.last.id
-             }
-        expect(flash[:alert]).to eq(
-          "There was an error while trying to upvote/downvote the comment, please try again later."
-        )
       end
     end
   end
