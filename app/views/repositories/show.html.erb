@@ -152,8 +152,8 @@
         </div>
 
         <div class="repo-info-item">
-          <div class="title">Add an owner:</div>
-          <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_owner' }, method: :patch do |f| %>
+          <div class="title">Add a member:</div>
+          <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_member' }, method: :patch do |f| %>
               <div class="mb-3 input-group">
                 <%= f.hidden_field :repository_id, value: @repository.id %>
                 <%= f.select(:owner_id, '', { prompt: 'Choose...' }, { class: 'search_users_add form-control', id: 'search_users_add' }) %>
@@ -165,11 +165,11 @@
         </div>
 
           <div class="repo-info-item">
-            <div class="title">Remove an owner:</div>
-            <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_owner' }, method: :patch do |f| %>
+            <div class="title">Remove a member:</div>
+            <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_member' }, method: :patch do |f| %>
                 <div class="mb-3 input-group">
                   <%= f.hidden_field :repository_id, value: @repository.id %>
-                  <%= f.select(:owner_id, @owners.pluck(:username, :id), { prompt: 'Choose...' }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
+                  <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: 'Choose...' }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
                   <br> </br>
                   <%= f.submit 'Remove', class: 'btn btn-danger' %>
                 </div>
@@ -182,7 +182,7 @@
             <%= form_for :repo_owner, url: { controller: 'repositories', action: 'transfer_owner' }, method: :patch do |f| %>
                 <div class="mb-3 input-group required">
                   <%= f.hidden_field :repository_id, value: @repository.id %>
-                  <%= f.select(:owner_id, @owners.pluck(:username, :id), { prompt: 'Choose...' }, { class: 'form-control', id: 'search_users_transfer' }) %>
+                  <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: 'Choose...' }, { class: 'form-control', id: 'search_users_transfer' }) %>
                   <br> </br>
                   <%= f.submit 'Transfer', class: 'btn btn-warning' %>
                 </div>
