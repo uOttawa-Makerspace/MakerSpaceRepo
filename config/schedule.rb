@@ -68,8 +68,8 @@ every :day, at: "11:59pm" do
 end
 
 every :day, at: "3am" do
-  rake "badge:get_data"
-  rake "badge:get_and_update_badge_templates"
+  rake "badges:get_data"
+  rake "badges:get_and_update_badge_templates"
 end
 
 every :day, at: "2am" do

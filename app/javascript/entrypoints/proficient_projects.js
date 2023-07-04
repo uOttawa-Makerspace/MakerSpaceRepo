@@ -91,4 +91,14 @@ document.addEventListener("turbo:load", () => {
       parent.parentElement.appendChild(clone);
     });
   }
+
+  const submitProjectForm = document.getElementById("submit-project-form");
+  if (submitProjectForm) {
+    submitProjectForm.addEventListener("submit", (event) => {
+      const confirmMessage = event.target.getAttribute("data-confirm");
+      if (confirmMessage && !confirm(confirmMessage)) {
+        event.preventDefault();
+      }
+    });
+  }
 });

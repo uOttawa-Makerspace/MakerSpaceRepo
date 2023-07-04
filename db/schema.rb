@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_05_12_212738) do
+ActiveRecord::Schema[7.0].define(version: 2023_06_15_201712) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -113,6 +113,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_12_212738) do
     t.string "list_of_skills"
     t.bigint "training_id"
     t.string "training_level"
+    t.string "badge_url"
     t.index ["training_id"], name: "index_badge_templates_on_training_id"
   end
 
@@ -517,6 +518,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_12_212738) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.string "status", default: "In progress"
+    t.text "user_comments", default: ""
+    t.text "admin_comments", default: ""
     t.index ["order_id"], name: "index_order_items_on_order_id"
     t.index ["proficient_project_id"],
             name: "index_order_items_on_proficient_project_id"
@@ -641,6 +644,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_12_212738) do
     t.integer "badge_template_id"
     t.boolean "has_project_kit"
     t.bigint "drop_off_location_id"
+    t.boolean "is_virtual", default: false
     t.index ["badge_template_id"],
             name: "index_proficient_projects_on_badge_template_id"
     t.index ["drop_off_location_id"],
