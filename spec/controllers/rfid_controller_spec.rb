@@ -12,10 +12,11 @@ RSpec.describe RfidController, type: :controller do
   describe "POST /card_number" do
     context "creates rfid" do
       it "should create an rfid and render json ok" do
+        pi_reader = create(:pi_reader)
         attributes = FactoryBot.attributes_for(:rfid)
         rfid_params = {
           rfid: attributes[:card_number],
-          mac_address: attributes[:mac_address]
+          mac_address: pi_reader.pi_mac_address
         }
         expect {
           post :card_number, params: rfid_params, format: :json
@@ -37,6 +38,33 @@ RSpec.describe RfidController, type: :controller do
         }.to change(Rfid, :count).by(0)
         actual = JSON.parse(response.body, symbolize_names: true)
         expected = { success: "RFID sign in" }
+        expect(actual).to eq(expected)
+      end
+
+      it "should not create rfid and should sign in RFID with Space ID" do
+        pi_reader = create(:pi_reader)
+        attributes = create(:rfid, mac_address: pi_reader.pi_mac_address)
+        rfid_params = {
+          rfid: attributes.card_number,
+          space_id: pi_reader.space_id
+        }
+        expect {
+          post :card_number, params: rfid_params, format: :json
+        }.to change(Rfid, :count).by(0)
+        actual = JSON.parse(response.body, symbolize_names: true)
+        expected = { success: "RFID sign in" }
+        expect(actual).to eq(expected)
+      end
+
+      it "should not create rfid and should MOT sign in RFID without Mac Address or Space ID" do
+        pi_reader = create(:pi_reader)
+        attributes = create(:rfid, mac_address: pi_reader.pi_mac_address)
+        rfid_params = { rfid: attributes.card_number }
+        expect {
+          post :card_number, params: rfid_params, format: :json
+        }.to change(Rfid, :count).by(0)
+        actual = JSON.parse(response.body, symbolize_names: true)
+        expected = { new_rfid: "Error, missing space_id or mac_address param" }
         expect(actual).to eq(expected)
       end
 
