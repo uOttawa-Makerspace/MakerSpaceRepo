@@ -50,6 +50,7 @@
 <% else %>
     <% repos.each do |joined_project| %>
         <% project_proposal = joined_project.project_proposal %>
+        <% has_user = !project_proposal.user_id.nil? %>
         <div class="repository-container">
             <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(project_proposal.photos.first.image) if project_proposal.photos.present? && project_proposal.photos.first.present? && project_proposal.photos.first.image.attached?}')" %> >
                 <%= link_to '', project_proposal_path(project_proposal.slug), class: 'link' %>
@@ -59,7 +60,12 @@
                     <div class="title">
                         <%= link_to project_proposal.title, project_proposal_path(project_proposal.slug) %>
                     </div>
-                    <div>by <%= link_to project_proposal.user.username, user_path(project_proposal.user.username) %>
+                    <div>
+                        <% if has_user %>
+                            by <%= link_to project_proposal.user.username, user_path(project_proposal.user.username) %>
+                        <% else %>
+                            by [Deleted User]
+                        <% end %>
                     </div>
                     <div>
                         <%= time_ago_in_words(project_proposal.created_at) << ' ago' %>
