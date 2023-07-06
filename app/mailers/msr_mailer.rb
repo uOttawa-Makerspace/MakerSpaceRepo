@@ -178,9 +178,10 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: "Your Proficient Project Request")
   end
 
-  def send_results_pp(pp, user, result)
+  def send_results_pp(oi, user, result)
     @result = result
-    @pp = pp
+    @pp = oi.proficient_project
+    @oi = oi
     @user = user
     mail(to: @user.email, subject: "Your Proficient Project Results")
   end

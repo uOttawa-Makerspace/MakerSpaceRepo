@@ -45,7 +45,7 @@ RSpec.describe OrderItemsController, type: :controller do
                  format: "js"
                }
         }.to change(OrderItem, :count).by(1)
-        expect(response).to have_http_status(:success)
+        expect(response).to redirect_to carts_path
         expect(session[:order_id]).to eq(Order.last.id)
       end
 
@@ -79,7 +79,7 @@ RSpec.describe OrderItemsController, type: :controller do
                  format: "js"
                }
         }.to change(OrderItem, :count).by(1)
-        expect(response).to have_http_status(:success)
+        expect(response).to redirect_to carts_path
         expect(session[:order_id]).to eq(Order.last.id)
       end
     end

@@ -118,8 +118,18 @@
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                       We have received the results for the proficient project (<%= @pp.title %>).
-                      You have <b><%= @result %></b>.
+                      <%= if @result == 'Failed'
+                            'We regret to inform you that your proficient project has <b>failed</b>'.html_safe
+                          else
+                            "We're excited to inform you that your proficient project has <b>passed</b>".html_safe
+                          end %>.
                       You can see your progress <%= link_to 'here', skills_development_programs_url %>.
+                      <br>
+                      <br>
+                    </p>
+                    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+                      <b>Admin Comments:</b> 
+                      <%= @oi.admin_comments == '' ? 'None' : @oi.admin_comments.html_safe %>
                     </p>
                     <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
                       <tbody>
