@@ -52,7 +52,7 @@
 
       <div class="repo-info">
         <div class="start">
-          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
+          <div class="likes text-info"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.id) %></div>
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
           <div><%= time_ago_in_words(repository.created_at) << ' ago' %></div>
