@@ -46,7 +46,7 @@
   <% @repositories.each_with_index do |repository, i| %>
     <div class="repository-container">
 
-      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(@photos[repository.id].image)}')" %> >
+      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.present? && repository.photos.first.present? && repository.photos.first.image.attached?}')" %> >
         <%= link_to '', repository_path(repository.user_username, repository.id), class: 'link' %>
       </div>
 
