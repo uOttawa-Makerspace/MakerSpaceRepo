@@ -65,7 +65,7 @@
             <td><%= order_item.proficient_project.title %></td>
             <td><%= order_item.status %></td>
             <% if order_item.status == "Revoked" %>
-              <td><%= link_to 'Award', certify_badges_path(order_item_id: order_item.id, render: 'js'), data: { confirm: 'Are you sure? This will give the badge to the user' }, remote: true, class: 'btn btn-primary' %></td>
+              <td><%= link_to 'Award', certify_badges_path(order_item_id: order_item.id), data: { confirm: 'Are you sure? This will give the badge to the user' }, remote: true, class: 'btn btn-primary' %></td>
             <% else %>
               <td><%= link_to 'Revoke', revoke_badge_badges_path(order_item_id: order_item.id), data: { confirm: 'Are you sure? This will revoke the badge that the user received.' }, class: 'btn btn-danger' %></td>
             <% end %>
