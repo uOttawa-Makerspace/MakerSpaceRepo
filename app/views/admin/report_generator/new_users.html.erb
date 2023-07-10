@@ -1,0 +1,33 @@
+<% provide(:title, 'Reports') %>
+
+<section>
+    <h1 class="text-center py-4 fw-bold">
+        New Users <%= link_to fa_icon('download'),
+                              admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'new_users'),
+                              class: 'border-0 bg-transparent text-primary' %>
+    </h1>
+
+    <div class="mb-5">
+        <%= line_chart @users.group_by_month(:created_at).count, xtitle: 'Month', ytitle: 'Number of New Users', label: 'New Users' %>
+    </div>
+
+    <div class="d-flex flex-row flex-wrap mb-5">
+        <div class="w-50">
+            <h4 class="text-center">Users by Gender</h4>
+            <%= pie_chart @users.group(:gender).count %>
+        </div>
+        <div class="w-50">
+            <h4 class="text-center">Users by Status</h4>
+            <%= pie_chart @users.group(:identity).count %>
+        </div>
+        <div class="w-100">
+            <h4 class="text-center">Users by Faculty</h4>
+            <%= pie_chart @users.group(:faculty).count.slice('Arts', 'Civil Law', 'Common Law', 'Education', 'Engineering', 'Health Sciences', 'Medicine', 'Science', 'Social Sciences', 'Telfer School of Management') %>
+        </div>
+    </div>
+
+    <div class="mb-5">
+        <h4 class="text-center">Users by Year of Study</h4>
+        <%= column_chart @users.order(year_of_study: :asc).group(:year_of_study).count, label: 'New Users' %>
+    </div>
+</section>

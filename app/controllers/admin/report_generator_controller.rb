@@ -4,6 +4,18 @@ class Admin::ReportGeneratorController < AdminAreaController
   layout "admin_area"
   require "date"
 
+  before_action :set_date_specified,
+                only: %i[
+                  visitors
+                  trainings
+                  certifications
+                  new_users
+                  training_attendees
+                  new_projects
+                  visits_by_hour
+                  kit_purchased
+                ]
+
   def index
     @report_types = [
       ["Certifications", :certifications],
@@ -38,6 +50,17 @@ class Admin::ReportGeneratorController < AdminAreaController
           params[:end_date].to_date
         )
     end
+  end
+
+  def new_users
+    @users =
+      (
+        if @date_specified
+          User.where(created_at: params[:start_date]..params[:end_date])
+        else
+          User.all
+        end
+      )
   end
 
   def generate
@@ -83,10 +106,79 @@ class Admin::ReportGeneratorController < AdminAreaController
         render plain: "Failed to parse end date"
         return
       end
+    when "all_time"
+      start_date = nil
+      end_date = nil
     else
       render plain: "Invalid range type", status: :bad_request
       return
     end
+
+    case type
+    when "visitors"
+      redirect_to admin_report_generator_visitors_path(
+                    start_date: start_date,
+                    end_date: end_date
+                  )
+    when "trainings"
+      redirect_to admin_report_generator_trainings_path(
+                    start_date: start_date,
+                    end_date: end_date
+                  )
+    when "certifications"
+      redirect_to admin_report_generator_certifications_path(
+                    start_date: start_date,
+                    end_date: end_date
+                  )
+    when "new_users"
+      redirect_to admin_report_generator_new_users_path(
+                    start_date: start_date,
+                    end_date: end_date
+                  )
+    when "training_attendees"
+      redirect_to admin_report_generator_training_attendees_path(
+                    start_date: start_date,
+                    end_date: end_date
+                  )
+    when "new_projects"
+      redirect_to admin_report_generator_new_projects_path(
+                    start_date: start_date,
+                    end_date: end_date
+                  )
+    when "visits_by_hour"
+      redirect_to admin_report_generator_visits_by_hour_path(
+                    start_date: start_date,
+                    end_date: end_date
+                  )
+    when "kit_purchased"
+      redirect_to admin_report_generator_kit_purchased_path(
+                    start_date: start_date,
+                    end_date: end_date
+                  )
+    else
+      render plain: "Unknown report type", status: :bad_request
+      return
+    end
+  end
+
+  def generate_spreadsheet
+    start_date =
+      (
+        if params[:start_date].nil?
+          DateTime.new(2015, 06, 01).beginning_of_day
+        else
+          Date.parse(params[:start_date]).to_datetime
+        end
+      )
+    end_date =
+      (
+        if params[:end_date].nil?
+          DateTime.now()
+        else
+          Date.parse(params[:end_date]).to_datetime
+        end
+      )
+    type = params[:type]
 
     case type
     when "visitors"
@@ -125,5 +217,11 @@ class Admin::ReportGeneratorController < AdminAreaController
               type: "application/xlsx",
               filename:
                 type + "_" + start_date_str + "_" + end_date_str + ".xlsx"
+  end
+
+  private
+
+  def set_date_specified
+    @date_specified = params[:start_date].present? && params[:end_date].present?
   end
 end

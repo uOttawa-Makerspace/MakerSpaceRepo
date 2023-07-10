@@ -215,9 +215,21 @@ Rails.application.routes.draw do
 
     namespace :report_generator do
       get "/", as: "index", action: "index"
-      post "/generate", as: "generate", action: "generate", format: :xlsx
+      post "/generate", as: "generate", action: "generate"
+      get "/generate_spreadsheet",
+          as: "generate_spreadsheet",
+          action: "generate_spreadsheet",
+          format: :xlsx
       get :popular_hours
       get :popular_hours_per_period
+      get :visitors
+      get :trainings
+      get :certifications
+      get :new_users
+      get :training_attendees
+      get :new_projects
+      get :visits_by_hour
+      get :kit_purchased
     end
 
     resources :users, only: %i[index edit update show] do

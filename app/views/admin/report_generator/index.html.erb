@@ -42,6 +42,15 @@
       </div>
     </div>
 
+    <div class="row align-items-center">
+      <div class="mb-3 col-md-4">
+        <div class="form-check">
+          <%= radio_button_tag(:range_type, :all_time, false, class: 'form-check-input', data: { 'radio-enable': '.range-type-date-range-fields' }) %>
+          <%= label_tag(:range_type_all_time, 'All Time', class: 'form-check-label') %>
+        </div>
+      </div>
+    </div>
+
     <hr />
 
     <%= label_tag(:type, 'Report Type', class: 'form-label') %>
