@@ -63,6 +63,38 @@ class Admin::ReportGeneratorController < AdminAreaController
       )
   end
 
+  def new_projects
+    @repos =
+      (
+        if @date_specified
+          Repository.where(created_at: params[:start_date]..params[:end_date])
+        else
+          Repository.all
+        end
+      )
+    @category_count = Hash.new
+    @equipment_count = Hash.new
+
+    @repos.each do |repo|
+      repo.categories.each do |category|
+        if !@category_count.has_key?(category.name)
+          @category_count[category.name] = 1
+        else
+          @category_count[category.name] = @category_count[category.name] + 1
+        end
+      end
+
+      repo.equipments.each do |equipment|
+        if !@equipment_count.has_key?(equipment.name)
+          @equipment_count[equipment.name] = 1
+        else
+          @equipment_count[equipment.name] = @equipment_count[equipment.name] +
+            1
+        end
+      end
+    end
+  end
+
   def generate
     range_type = params[:range_type]
     term = params[:term]
