@@ -63,6 +63,77 @@ class Admin::ReportGeneratorController < AdminAreaController
       )
   end
 
+  def certifications
+    @certs =
+      (
+        if @date_specified
+          Certification.where(
+            created_at: params[:start_date]..params[:end_date]
+          )
+        else
+          Certification.all
+        end
+      )
+    @space_count = Hash.new
+    @space_count["unknown"] = 0
+
+    @course_count = Hash.new
+    @course_count["unknown"] = 0
+
+    @skill_count = Hash.new
+
+    @badge_count = Hash.new
+
+    @training_count = Hash.new
+
+    @certs.each do |cert|
+      if cert.space.present?
+        if !@space_count.has_key?(cert.space.name)
+          @space_count[cert.space.name] = 1
+        else
+          @space_count[cert.space.name] += 1
+        end
+      else
+        @space_count["unknown"] += 1
+      end
+
+      if cert.training_session.present? &&
+           cert.training_session.course_name.present?
+        course_name = cert.training_session.course_name.name
+        if !@course_count.has_key?(course_name)
+          @course_count[course_name] = 1
+        else
+          @course_count[course_name] += 1
+        end
+      else
+        @course_count["unknown"] += 1
+      end
+
+      skill_name = cert.training.skill.name
+      if !@skill_count.has_key?(skill_name)
+        @skill_count[skill_name] = 1
+      else
+        @skill_count[skill_name] += 1
+      end
+
+      training_name = cert.training.name
+      if !@training_count.has_key?(training_name)
+        @training_count[training_name] = 1
+      else
+        @training_count[training_name] += 1
+      end
+
+      cert.badges.each do |badge|
+        badge_name = badge.badge_template.badge_name
+        if !@badge_count.has_key?(badge_name)
+          @badge_count[badge_name] = 1
+        else
+          @badge_count[badge_name] += 1
+        end
+      end
+    end
+  end
+
   def new_projects
     @repos =
       (
@@ -80,7 +151,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         if !@category_count.has_key?(category.name)
           @category_count[category.name] = 1
         else
-          @category_count[category.name] = @category_count[category.name] + 1
+          @category_count[category.name] += 1
         end
       end
 
@@ -88,8 +159,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         if !@equipment_count.has_key?(equipment.name)
           @equipment_count[equipment.name] = 1
         else
-          @equipment_count[equipment.name] = @equipment_count[equipment.name] +
-            1
+          @equipment_count[equipment.name] += 1
         end
       end
     end
