@@ -12,10 +12,7 @@
     <% else %>
         <div class="mb-5 text-center">Displaying <%= @certs.count %> <%= 'certification'.pluralize(@certs.count) %></div>
         
-        <div class="mb-5">
-            <h4 class="text-center">New Certifications by Month</h4>
-            <%= line_chart @certs.group_by_month(:created_at).count, xtitle: 'Month', ytitle: 'Number of New Certifications', label: 'New Certifications' %>
-        </div>
+        <%= render partial: 'line_chart', locals: { data: @certs, model: 'Certifications' } %>
 
         <div class="mb-5">
             <h4 class="text-center">Certifications by Badges</h4>
