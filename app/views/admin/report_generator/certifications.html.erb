@@ -2,37 +2,43 @@
 
 <section>
     <h1 class="text-center py-4 fw-bold">
-        New Certifications <%= link_to fa_icon('download'),
-                                       admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'certifications'),
-                                       class: 'border-0 bg-transparent text-primary' %>
+            New Certifications <%= link_to fa_icon('download'),
+                                           admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'certifications'),
+                                           class: 'border-0 bg-transparent text-primary' %>
     </h1>
 
-    <div class="mb-5">
-        <h4 class="text-center">New Certifications by Month</h4>
-        <%= line_chart @certs.group_by_month(:created_at).count, xtitle: 'Month', ytitle: 'Number of New Certifications', label: 'New Certifications' %>
-    </div>
+    <% if @certs.empty? %>
+        <div class="text-center">No certifications to display</div>
+    <% else %>
+        <div class="mb-5 text-center">Displaying <%= @certs.count %> <%= 'certification'.pluralize(@certs.count) %></div>
+        
+        <div class="mb-5">
+            <h4 class="text-center">New Certifications by Month</h4>
+            <%= line_chart @certs.group_by_month(:created_at).count, xtitle: 'Month', ytitle: 'Number of New Certifications', label: 'New Certifications' %>
+        </div>
 
-    <div class="mb-5">
-        <h4 class="text-center">Certifications by Badges</h4>
-        <%= column_chart @badge_count %>
-    </div>
-    <div class="mb-5">
-        <h4 class="text-center">Certifications by Trainings</h4>
-        <%= column_chart @training_count %>
-    </div>
+        <div class="mb-5">
+            <h4 class="text-center">Certifications by Badges</h4>
+            <%= column_chart @badge_count %>
+        </div>
+        <div class="mb-5">
+            <h4 class="text-center">Certifications by Trainings</h4>
+            <%= column_chart @training_count %>
+        </div>
 
-    <div class="d-flex flex-row flex-wrap mb-5">
-        <div class="w-50">
-            <h4 class="text-center">Certifications by Courses</h4>
-            <%= pie_chart @course_count %>
+        <div class="d-flex flex-row flex-wrap mb-5">
+            <div class="w-50">
+                <h4 class="text-center">Certifications by Courses</h4>
+                <%= pie_chart @course_count %>
+            </div>
+            <div class="w-50">
+                <h4 class="text-center">Certifications by Skills</h4>
+                <%= pie_chart @skill_count %>
+            </div>
+            <div class="w-100">
+                <h4 class="text-center">Certifications by Spaces</h4>
+                <%= pie_chart @space_count %>
+            </div>
         </div>
-        <div class="w-50">
-            <h4 class="text-center">Certifications by Skills</h4>
-            <%= pie_chart @skill_count %>
-        </div>
-        <div class="w-100">
-            <h4 class="text-center">Certifications by Spaces</h4>
-            <%= pie_chart @space_count %>
-        </div>
-    </div>
+    <% end %>
 </section>
