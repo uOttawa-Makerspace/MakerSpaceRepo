@@ -1,5 +1,38 @@
 <% provide(:title, 'Reports') %>
 
 <section>
-    
+  <h1 class="text-center py-4 fw-bold">
+    New Trainings <%= link_to fa_icon('download'),
+                              admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'trainings'),
+                              class: 'border-0 bg-transparent text-primary' %>
+  </h1>
+
+  <% if @training_sessions.empty? %>
+    <div class="text-center">No training sessions to display</div>
+  <% else %>
+    <div class="mb-5 text-center">Displaying <%= @training_sessions.count %> <%= 'training session'.pluralize(@training_sessions.count) %></div>
+
+    <%= render partial: 'line_chart', locals: { data: @training_sessions, model: 'Training Sessions' } %>
+
+    <div class="mb-5">
+        <h4 class="text-center">Training Sessions</h4>
+        <%= column_chart @trainings_count %>
+    </div>
+
+    <div class="mb-5">
+      <h4 class="text-center">Trainings Attendance</h4>
+      <%= column_chart @attendance_count %>
+    </div>
+
+    <div class="d-flex flex-row flex-wrap mb-5">
+      <div class="w-50">
+        <h4 class="text-center">Training Sessions by Spaces</h4>
+        <%= pie_chart @space_count %>
+      </div>
+      <div class="w-50">
+        <h4 class="text-center">Training Sessions by Courses</h4>
+        <%= pie_chart @training_sessions.group(:course).count %>
+      </div>
+    </div>
+  <% end %>
 </section>

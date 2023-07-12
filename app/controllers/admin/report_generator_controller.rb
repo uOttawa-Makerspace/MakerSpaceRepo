@@ -134,6 +134,49 @@ class Admin::ReportGeneratorController < AdminAreaController
     end
   end
 
+  def trainings
+    @training_sessions =
+      (
+        if @date_specified
+          TrainingSession.where(
+            created_at: params[:start_date]..params[:end_date]
+          )
+        else
+          TrainingSession.all
+        end
+      )
+    @training_sessions = @training_sessions.unscope(:order)
+
+    @space_count = Hash.new
+    @space_count["unknown"] = 0
+
+    @trainings_count = Hash.new
+
+    @attendance_count = Hash.new
+
+    @training_sessions.each do |training_session|
+      if training_session.space.present?
+        space_name = training_session.space.name
+        if !@space_count.has_key?(space_name)
+          @space_count[space_name] = 1
+        else
+          @space_count[space_name] += 1
+        end
+      else
+        @space_count["unknown"] += 1
+      end
+
+      training_name = training_session.training.name
+      if !@trainings_count.has_key?(training_name)
+        @trainings_count[training_name] = 1
+        @attendance_count[training_name] = training_session.users.count
+      else
+        @trainings_count[training_name] += 1
+        @attendance_count[training_name] += training_session.users.count
+      end
+    end
+  end
+
   def new_projects
     @repos =
       (
