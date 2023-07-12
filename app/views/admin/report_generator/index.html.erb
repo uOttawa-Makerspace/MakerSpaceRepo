@@ -66,5 +66,11 @@
     <%= button_tag('Generate', { class: 'btn btn-primary' }) %>
     <p>Generating reports could take a while, please wait for the reports to generate.</p>
   <% end %>
-  <br>
+
+  <% if params[:report_type].present? %>
+    <hr />
+    <div id="report">
+      <%= render params[:report_type] %>
+    </div>
+  <% end %>
 </section>

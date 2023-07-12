@@ -222,14 +222,6 @@ Rails.application.routes.draw do
           format: :xlsx
       get :popular_hours
       get :popular_hours_per_period
-      get :visitors
-      get :trainings
-      get :certifications
-      get :new_users
-      get :training_attendees
-      get :new_projects
-      get :visits_by_hour
-      get :kit_purchased
     end
 
     resources :users, only: %i[index edit update show] do
