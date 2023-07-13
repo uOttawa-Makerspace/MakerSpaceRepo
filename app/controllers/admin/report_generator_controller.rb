@@ -21,6 +21,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
       case params[:report_type]
       when "visitors"
+        visitors
       when "trainings"
         trainings
       when "certifications"
@@ -353,5 +354,86 @@ class Admin::ReportGeneratorController < AdminAreaController
         end
       end
     end
+  end
+
+  def visitors
+    @lab_sessions =
+      (
+        if @date_specified
+          LabSession.where(created_at: params[:start_date]..params[:end_date])
+        else
+          LabSession.all
+        end
+      )
+
+    @space_total_count = Hash.new
+    @space_unique_count = Hash.new
+
+    Space.all.each do |space|
+      lab_session_count = space.lab_sessions
+      if @date_specified
+        lab_session_count =
+          lab_session_count.where(
+            created_at: params[:start_date]..params[:end_date]
+          )
+      end
+
+      @space_total_count[space.name] = lab_session_count.count
+      @space_unique_count[space.name] = lab_session_count.distinct.count(
+        :user_id
+      )
+    end
+
+    @identity_total_count = Hash.new
+    @identity_unique_count = Hash.new
+
+    @faculty_total_count = Hash.new
+    @faculty_unique_count = Hash.new
+
+    @lab_sessions.each do |lab_session|
+      if lab_session.user.present?
+        faculty = lab_session.user.faculty
+        identity = lab_session.user.identity
+      else
+        faculty = "unknown"
+        identity = "unknown"
+      end
+
+      if !@identity_total_count.has_key?(identity)
+        @identity_total_count[identity] = 1
+      else
+        @identity_total_count[identity] += 1
+      end
+
+      if !@faculty_total_count.has_key?(faculty)
+        @faculty_total_count[faculty] = 1
+      else
+        @faculty_total_count[faculty] += 1
+      end
+    end
+
+    @lab_sessions
+      .pluck(:user_id)
+      .uniq
+      .each do |user_id|
+        user = User.find_by(id: user_id)
+
+        unless user.nil?
+          faculty = user.faculty
+          identity = user.identity
+
+          if !@identity_unique_count.has_key?(identity)
+            @identity_unique_count[identity] = 1
+          else
+            @identity_unique_count[identity] += 1
+          end
+
+          if !@faculty_unique_count.has_key?(faculty)
+            @faculty_unique_count[faculty] = 1
+          else
+            @faculty_unique_count[faculty] += 1
+          end
+        end
+      end
   end
 end
