@@ -10,7 +10,13 @@
     <% if @repos.empty? %>
         <div class="text-center">No repositories to display</div>
     <% else %>
-        <div class="mb-5 text-center">Displaying <%= @repos.count %> <%= 'repository'.pluralize(@repos.count) %></div>
+        <div class="mb-5 text-center">
+          <% if @date_specified %>
+            Displaying <%= @repos.count %> <%= 'repository'.pluralize(@repos.count) %> from <b><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></b>
+          <% else %>
+            Displaying <b>all</b> <%= @repos.count %> <%= 'repository'.pluralize(@repos.count) %>
+          <% end %>
+        </div>
 
         <%= render partial: 'line_chart', locals: { data: @repos, model: 'Repositories' } %>
 

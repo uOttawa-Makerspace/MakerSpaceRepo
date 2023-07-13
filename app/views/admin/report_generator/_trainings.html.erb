@@ -10,7 +10,13 @@
   <% if @training_sessions.empty? %>
     <div class="text-center">No training sessions to display</div>
   <% else %>
-    <div class="mb-5 text-center">Displaying <%= @training_sessions.count %> <%= 'training session'.pluralize(@training_sessions.count) %></div>
+    <div class="mb-5 text-center">
+      <% if @date_specified %>
+        Displaying <%= @training_sessions.count %> <%= 'training session'.pluralize(@training_sessions.count) %> from <b><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></b>
+      <% else %>
+        Displaying <b>all</b> <%= @training_sessions.count %> <%= 'training session'.pluralize(@training_sessions.count) %>
+      <% end %>
+    </div>
 
     <%= render partial: 'line_chart', locals: { data: @training_sessions, model: 'Training Sessions' } %>
 

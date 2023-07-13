@@ -10,7 +10,13 @@
     <% if @users.empty? %>
         <div class="text-center">No users to display</div>
     <% else %>
-        <div class="mb-5 text-center">Displaying <%= @users.count %> <%= 'user'.pluralize(@users.count) %></div>
+        <div class="mb-5 text-center">
+          <% if @date_specified %>
+            Displaying <%= @users.count %> <%= 'user'.pluralize(@users.count) %> from <b><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></b>
+          <% else %>
+            Displaying <b>all</b> <%= @users.count %> <%= 'user'.pluralize(@users.count) %>
+          <% end %>
+        </div>
 
         <%= render partial: 'line_chart', locals: { data: @users, model: 'Users' } %>
 
