@@ -1,5 +1,9 @@
-<% provide(:title, 'Reports') %>
-
 <section>
-    
+  <h1 class="text-center py-4 fw-bold">
+    Training Attendees <%= link_to fa_icon('download'),
+                                   admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'training_attendees'),
+                                   class: 'border-0 bg-transparent text-primary' %>
+  </h1>
+
+
 </section>
