@@ -34,6 +34,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       when "visits_by_hour"
         visits_by_hour
       when "kit_purchased"
+        kit_purchased
       else
         render plain: "Unknown report type", status: :bad_request
         return
@@ -464,6 +465,28 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       @lab_hash[space.name.gsub(" ", "-")] = sessions
+    end
+  end
+
+  def kit_purchased
+    @project_kits =
+      (
+        if @date_specified
+          ProjectKit.where(created_at: params[:start_date]..params[:end_date])
+        else
+          ProjectKit.all
+        end
+      )
+
+    @pp_hash = Hash.new
+
+    @project_kits.each do |pk|
+      pp_name = pk.proficient_project.title
+      if !@pp_hash.has_key?(pp_name)
+        @pp_hash[pp_name] = 1
+      else
+        @pp_hash[pp_name] += 1
+      end
     end
   end
 end
