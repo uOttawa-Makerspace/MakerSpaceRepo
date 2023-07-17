@@ -32,6 +32,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       when "new_projects"
         new_projects
       when "visits_by_hour"
+        visits_by_hour
       when "kit_purchased"
       else
         render plain: "Unknown report type", status: :bad_request
@@ -435,5 +436,34 @@ class Admin::ReportGeneratorController < AdminAreaController
           end
         end
       end
+  end
+
+  def visits_by_hour
+    @lab_hash = Hash.new
+
+    lab_sessions =
+      (
+        if @date_specified
+          LabSession.where(created_at: params[:start_date]..params[:end_date])
+        else
+          LabSession.all
+        end
+      )
+    @spaces = Space.all.order(name: :asc)
+
+    @lab_hash["all"] = lab_sessions
+
+    Space.all.each do |space|
+      if @date_specified
+        sessions =
+          space.lab_sessions.where(
+            created_at: params[:start_date]..params[:end_date]
+          )
+      else
+        sessions = space.lab_sessions
+      end
+
+      @lab_hash[space.name.gsub(" ", "-")] = sessions
+    end
   end
 end

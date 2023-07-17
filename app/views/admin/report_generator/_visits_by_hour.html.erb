@@ -1,5 +1,46 @@
 <% provide(:title, 'Reports') %>
 
 <section>
-    
+  <h1 class="text-center py-4 fw-bold">
+    Visits by Hour <%= link_to fa_icon('download'),
+                               admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'visits_by_hour'),
+                               class: 'border-0 bg-transparent text-primary' %>
+  </h1>
+
+  <% if @lab_hash["all"].empty? %>
+    <div class="text-center">No lab sessions to display</div>
+  <% else %>
+    <div class="mb-5 text-center">
+      <% if @date_specified %>
+        Displaying <%= @lab_hash['all'].count %> <%= 'Lab Sessions'.pluralize(@lab_hash['all'].count) %> from <b><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></b>
+      <% else %>
+        Displaying <b>all</b> <%= @lab_hash['all'].count %> <%= 'Lab Sessions'.pluralize(@lab_hash['all'].count) %>
+      <% end %>
+    </div>
+
+    <div class="mb-5 card">
+      <ul class="nav nav-tabs mb-3 mt-2 mx-2">
+        <li class="nav-item">
+          <a data-bs-toggle="tab" href="#all" class="nav-link active">All</a>
+        </li>
+        <% @spaces.each do |space| %>
+          <li class="nav-item">
+            <a data-bs-toggle="tab" href="#<%= space.name.gsub(' ', '-') %>" class="nav-link"><%= space.name %></a>
+          </li>
+        <% end %>
+      </ul>
+
+      <div class="tab-content mb-2">
+        <h4 class="text-center">Total Visits by Hour of Day</h4>
+        <div class="tab-pane container active" id="all">
+          <%= line_chart @lab_hash['all'].group_by_hour_of_day(:created_at).count, xtitle: 'Hour of Day', ytitle: 'Visits in All Spaces', label: 'New Lab Sessions', xmin: '7', xmax: '23' %>
+        </div>
+        <% @spaces.each do |space| %>
+          <div class="tab-pane container" id="<%= space.name.gsub(' ', '-') %>">
+            <%= line_chart @lab_hash[space.name.gsub(' ', '-')].group_by_hour_of_day(:created_at).count, xtitle: 'Hour of Day', ytitle: "Visits in #{space.name}", label: 'New Lab Sessions', xmin: '7', xmax: '23' %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
 </section>
