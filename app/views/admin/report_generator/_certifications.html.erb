@@ -1,8 +1,8 @@
 <section>
     <h1 class="text-center py-4 fw-bold">
-             Certifications <%= link_to fa_icon('download'),
-                                        admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'certifications'),
-                                        class: 'border-0 bg-transparent text-primary' %>
+         Certifications <%= link_to fa_icon('download'),
+                                    admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'certifications'),
+                                    class: 'border-0 bg-transparent text-primary' %>
     </h1>
 
     <% if @certs.empty? %>
@@ -20,11 +20,11 @@
 
         <div class="mb-5">
             <h4 class="text-center">Certifications by Badges</h4>
-            <%= column_chart @badge_count %>
+            <%= bar_chart @badge_count, height: "#{@badge_count.length * 40}px" %>
         </div>
         <div class="mb-5">
             <h4 class="text-center">Certifications by Trainings</h4>
-            <%= column_chart @training_count %>
+            <%= bar_chart @training_count, height: "#{@training_count.length * 40}px" %>
         </div>
 
         <div class="d-flex flex-row flex-wrap mb-5">

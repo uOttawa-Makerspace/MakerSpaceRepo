@@ -20,12 +20,12 @@
 
     <div class="mb-5">
       <h4 class="text-center">Unique Visitors per Space</h4>
-      <%= column_chart @space_unique_count, label: 'Unique Visitors' %>
+      <%= bar_chart @space_unique_count, label: 'Unique Visitors', height: "#{@space_unique_count.length * 40}px" %>
     </div>
 
     <div class="mb-5">
       <h4 class="text-center">Total Visits per Space</h4>
-      <%= column_chart @space_total_count, label: 'Total Visits' %>
+      <%= bar_chart @space_total_count, label: 'Total Visits', height: "#{@space_total_count.length * 40}px" %>
     </div>
 
     <div class="d-flex flex-row flex-wrap mb-5">

@@ -20,7 +20,8 @@
 
         <div class="mb-5">
             <h4 class="text-center">Users by Year of Study</h4>
-            <%= column_chart @users.order(year_of_study: :asc).group(:year_of_study).count, label: 'New Users' %>
+            <% year_of_study_data = @users.order(year_of_study: :asc).group(:year_of_study).count %>
+            <%= bar_chart year_of_study_data, label: 'New Users', height: "#{year_of_study_data.size * 40}px" %>
         </div>
 
         <div class="d-flex flex-row flex-wrap mb-5">

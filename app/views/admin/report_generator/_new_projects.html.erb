@@ -20,12 +20,12 @@
 
         <div class="mb-5">
             <h4 class="text-center">Repositories by Categories</h4>
-            <%= column_chart @category_count %>
+            <%= bar_chart @category_count, height: "#{@category_count.length * 40}px" %>
         </div>
 
         <div class="mb-5">
             <h4 class="text-center">Repositories by Equipments</h4>
-            <%= column_chart @equipment_count %>
+            <%= bar_chart @equipment_count, height: "#{@equipment_count.length * 40}px" %>
         </div>
 
         <div class="d-flex flex-row flex-wrap mb-5">

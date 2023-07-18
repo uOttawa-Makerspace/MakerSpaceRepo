@@ -20,12 +20,12 @@
 
     <div class="mb-5">
         <h4 class="text-center">Training Sessions</h4>
-        <%= column_chart @trainings_count %>
+        <%= bar_chart @trainings_count, height: "#{@trainings_count.length * 40}px" %>
     </div>
 
     <div class="mb-5">
       <h4 class="text-center">Trainings Attendance</h4>
-      <%= column_chart @attendance_count %>
+      <%= bar_chart @attendance_count, height: "#{@attendance_count.length * 40}px" %>
     </div>
 
     <div class="d-flex flex-row flex-wrap mb-5">
