@@ -29,6 +29,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       when "new_users"
         new_users
       when "training_attendees"
+        training_attendees
       when "new_projects"
         new_projects
       when "visits_by_hour"
@@ -486,6 +487,70 @@ class Admin::ReportGeneratorController < AdminAreaController
         @pp_hash[pp_name] = 1
       else
         @pp_hash[pp_name] += 1
+      end
+    end
+  end
+
+  def training_attendees
+    @training_sessions =
+      (
+        if @date_specified
+          TrainingSession.where(
+            created_at: params[:start_date]..params[:end_date]
+          )
+        else
+          TrainingSession.all
+        end
+      )
+    @spaces = Space.order(name: :asc)
+
+    total_certs = Hash.new
+    total_sessions = Hash.new
+    @monthly_average = Hash.new
+
+    (1..12).each do |m|
+      month_name = Date::MONTHNAMES[m]
+      total_certs[month_name] = 0
+      total_sessions[month_name] = 0
+    end
+
+    if @date_specified
+      (params[:start_date].to_datetime..params[:end_date].to_datetime)
+        .select { |date| date.day == 1 }
+        .map do |date|
+          month_name = date.end_of_month.strftime("%B")
+          certs =
+            Certification.where(
+              created_at: date.beginning_of_month..date.end_of_month
+            )
+          total_certs[month_name] += certs.count
+          total_sessions[month_name] += certs
+            .pluck(:training_session_id)
+            .uniq
+            .count
+        end
+    else
+      (DateTime.new(2015, 06, 01).beginning_of_day..DateTime.now)
+        .select { |date| date.day == 1 }
+        .map do |date|
+          month_name = date.end_of_month.strftime("%B")
+          certs =
+            Certification.where(
+              created_at: date.beginning_of_month..date.end_of_month
+            )
+          total_certs[month_name] += certs.count
+          total_sessions[month_name] += certs
+            .pluck(:training_session_id)
+            .uniq
+            .count
+        end
+    end
+
+    (1..12).each do |m|
+      month_name = Date::MONTHNAMES[m]
+      if total_certs[month_name] != 0
+        @monthly_average[month_name] = total_certs[month_name].to_f /
+          total_sessions[month_name]
       end
     end
   end
