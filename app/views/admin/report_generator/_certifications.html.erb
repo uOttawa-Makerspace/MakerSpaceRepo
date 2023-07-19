@@ -10,10 +10,11 @@
     <% else %>
         <div class="mb-5 text-center">
           <% if @date_specified %>
-            Displaying <%= @certs.count %> <%= 'certification'.pluralize(@certs.count) %> from <b><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></b>
+            <p class="m-0 mb-1 fw-bold"><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></p>
           <% else %>
-            Displaying <b>all</b> <%= @certs.count %> <%= 'certification'.pluralize(@certs.count) %>
+            <p class="m-0 mb-1 fw-bold">2015-06-01 to present</p>
           <% end %>
+          <p class="m-0 mb-2">Displaying <%= @certs.count %> <%= 'certification'.pluralize(@certs.count) %></p>
         </div>
         
         <%= render partial: 'line_chart', locals: { data: @certs, model: 'Certifications' } %>
