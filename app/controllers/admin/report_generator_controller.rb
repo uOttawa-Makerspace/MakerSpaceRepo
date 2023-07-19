@@ -136,7 +136,8 @@ class Admin::ReportGeneratorController < AdminAreaController
                   end_date: end_date,
                   report_type: type,
                   anchor: "report"
-                )
+                ),
+                notice: "Successfully generated #{type.gsub("_", " ")} report"
   end
 
   def generate_spreadsheet

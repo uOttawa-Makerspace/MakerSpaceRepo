@@ -92,9 +92,8 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                year: DateTime.now.year,
                type: "certifications"
              }
-        expect(response.header["Content-Type"]).to eq("application/xlsx")
-        expect(response.header["Content-Disposition"]).to include(
-          "certifications_#{DateTime.new(DateTime.now.year, 1, 1).strftime("%Y-%m-%d")}_#{DateTime.new(DateTime.now.year, 4, 30).strftime("%Y-%m-%d")}.xlsx"
+        expect(flash[:notice]).to eq(
+          "Successfully generated certifications report"
         )
       end
 
@@ -106,6 +105,18 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                to_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
                type: "certifications"
              }
+        expect(flash[:notice]).to eq(
+          "Successfully generated certifications report"
+        )
+      end
+
+      it "should generate the report spreadsheet" do
+        get :generate_spreadsheet,
+            params: {
+              start_date: 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"),
+              end_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
+              type: "certifications"
+            }
         expect(response.header["Content-Type"]).to eq("application/xlsx")
         expect(response.header["Content-Disposition"]).to include(
           "certifications_#{1.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{1.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
@@ -155,9 +166,8 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                year: DateTime.now.year,
                type: "new_projects"
              }
-        expect(response.header["Content-Type"]).to eq("application/xlsx")
-        expect(response.header["Content-Disposition"]).to include(
-          "new_projects_#{DateTime.new(DateTime.now.year, 5, 1).strftime("%Y-%m-%d")}_#{DateTime.new(DateTime.now.year, 8, 31).strftime("%Y-%m-%d")}.xlsx"
+        expect(flash[:notice]).to eq(
+          "Successfully generated new projects report"
         )
       end
 
@@ -169,9 +179,21 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                to_date: 2.week.ago.end_of_week.strftime("%Y-%m-%d"),
                type: "new_projects"
              }
+        expect(flash[:notice]).to eq(
+          "Successfully generated new projects report"
+        )
+      end
+
+      it "should generate the report spreadsheet" do
+        get :generate_spreadsheet,
+            params: {
+              start_date: 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"),
+              end_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
+              type: "new_projects"
+            }
         expect(response.header["Content-Type"]).to eq("application/xlsx")
         expect(response.header["Content-Disposition"]).to include(
-          "new_projects_#{4.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{2.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
+          "new_projects_#{1.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{1.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
         )
       end
     end
@@ -185,10 +207,7 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                year: DateTime.now.year,
                type: "new_users"
              }
-        expect(response.header["Content-Type"]).to eq("application/xlsx")
-        expect(response.header["Content-Disposition"]).to include(
-          "new_users_#{DateTime.new(DateTime.now.year, 9, 1).strftime("%Y-%m-%d")}_#{DateTime.new(DateTime.now.year, 12, 31).strftime("%Y-%m-%d")}.xlsx"
-        )
+        expect(flash[:notice]).to eq("Successfully generated new users report")
       end
 
       it "should get report for date range" do
@@ -199,9 +218,19 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                to_date: 3.week.ago.end_of_week.strftime("%Y-%m-%d"),
                type: "new_users"
              }
+        expect(flash[:notice]).to eq("Successfully generated new users report")
+      end
+
+      it "should generate the report spreadsheet" do
+        get :generate_spreadsheet,
+            params: {
+              start_date: 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"),
+              end_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
+              type: "new_users"
+            }
         expect(response.header["Content-Type"]).to eq("application/xlsx")
         expect(response.header["Content-Disposition"]).to include(
-          "new_users_#{8.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{3.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
+          "new_users_#{1.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{1.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
         )
       end
     end
@@ -215,10 +244,7 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                year: DateTime.now.year,
                type: "trainings"
              }
-        expect(response.header["Content-Type"]).to eq("application/xlsx")
-        expect(response.header["Content-Disposition"]).to include(
-          "trainings_#{DateTime.new(DateTime.now.year, 1, 1).strftime("%Y-%m-%d")}_#{DateTime.new(DateTime.now.year, 4, 30).strftime("%Y-%m-%d")}.xlsx"
-        )
+        expect(flash[:notice]).to eq("Successfully generated trainings report")
       end
 
       it "should get report for date range" do
@@ -229,6 +255,16 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                to_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
                type: "trainings"
              }
+        expect(flash[:notice]).to eq("Successfully generated trainings report")
+      end
+
+      it "should generate the report spreadsheet" do
+        get :generate_spreadsheet,
+            params: {
+              start_date: 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"),
+              end_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
+              type: "trainings"
+            }
         expect(response.header["Content-Type"]).to eq("application/xlsx")
         expect(response.header["Content-Disposition"]).to include(
           "trainings_#{1.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{1.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
@@ -245,9 +281,8 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                year: DateTime.now.year,
                type: "training_attendees"
              }
-        expect(response.header["Content-Type"]).to eq("application/xlsx")
-        expect(response.header["Content-Disposition"]).to include(
-          "training_attendees_#{DateTime.new(DateTime.now.year, 5, 1).strftime("%Y-%m-%d")}_#{DateTime.new(DateTime.now.year, 8, 31).strftime("%Y-%m-%d")}.xlsx"
+        expect(flash[:notice]).to eq(
+          "Successfully generated training attendees report"
         )
       end
 
@@ -259,9 +294,21 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                to_date: 2.week.ago.end_of_week.strftime("%Y-%m-%d"),
                type: "training_attendees"
              }
+        expect(flash[:notice]).to eq(
+          "Successfully generated training attendees report"
+        )
+      end
+
+      it "should generate the report spreadsheet" do
+        get :generate_spreadsheet,
+            params: {
+              start_date: 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"),
+              end_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
+              type: "training_attendees"
+            }
         expect(response.header["Content-Type"]).to eq("application/xlsx")
         expect(response.header["Content-Disposition"]).to include(
-          "training_attendees_#{4.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{2.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
+          "training_attendees_#{1.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{1.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
         )
       end
     end
@@ -275,10 +322,7 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                year: DateTime.now.year,
                type: "visitors"
              }
-        expect(response.header["Content-Type"]).to eq("application/xlsx")
-        expect(response.header["Content-Disposition"]).to include(
-          "visitors_#{DateTime.new(DateTime.now.year, 9, 1).strftime("%Y-%m-%d")}_#{DateTime.new(DateTime.now.year, 12, 31).strftime("%Y-%m-%d")}.xlsx"
-        )
+        expect(flash[:notice]).to eq("Successfully generated visitors report")
       end
 
       it "should get report for date range" do
@@ -289,9 +333,19 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                to_date: 3.week.ago.end_of_week.strftime("%Y-%m-%d"),
                type: "visitors"
              }
+        expect(flash[:notice]).to eq("Successfully generated visitors report")
+      end
+
+      it "should generate the report spreadsheet" do
+        get :generate_spreadsheet,
+            params: {
+              start_date: 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"),
+              end_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
+              type: "visitors"
+            }
         expect(response.header["Content-Type"]).to eq("application/xlsx")
         expect(response.header["Content-Disposition"]).to include(
-          "visitors_#{7.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{3.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
+          "visitors_#{1.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{1.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"
         )
       end
     end
@@ -305,9 +359,8 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                year: DateTime.now.year,
                type: "visits_by_hour"
              }
-        expect(response.header["Content-Type"]).to eq("application/xlsx")
-        expect(response.header["Content-Disposition"]).to include(
-          "visits_by_hour_#{DateTime.new(DateTime.now.year, 1, 1).strftime("%Y-%m-%d")}_#{DateTime.new(DateTime.now.year, 4, 30).strftime("%Y-%m-%d")}.xlsx"
+        expect(flash[:notice]).to eq(
+          "Successfully generated visits by hour report"
         )
       end
 
@@ -319,6 +372,18 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller do
                to_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
                type: "visits_by_hour"
              }
+        expect(flash[:notice]).to eq(
+          "Successfully generated visits by hour report"
+        )
+      end
+
+      it "should generate the report spreadsheet" do
+        get :generate_spreadsheet,
+            params: {
+              start_date: 1.week.ago.beginning_of_week.strftime("%Y-%m-%d"),
+              end_date: 1.week.ago.end_of_week.strftime("%Y-%m-%d"),
+              type: "visits_by_hour"
+            }
         expect(response.header["Content-Type"]).to eq("application/xlsx")
         expect(response.header["Content-Disposition"]).to include(
           "visits_by_hour_#{1.week.ago.beginning_of_week.strftime("%Y-%m-%d")}_#{1.week.ago.end_of_week.strftime("%Y-%m-%d")}.xlsx"

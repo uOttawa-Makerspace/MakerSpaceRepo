@@ -86,6 +86,7 @@ section#report {
 
     & ~ .navbar,
     & ~ .footer,
+    & ~ #flash,
     & ~ section #reports hr {
       display: none !important;
       height: 0 !important;
