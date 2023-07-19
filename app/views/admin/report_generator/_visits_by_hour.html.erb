@@ -2,7 +2,7 @@
   <h1 class="text-center py-4 fw-bold">
     Visits by Hour <%= link_to fa_icon('download'),
                                admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'visits_by_hour'),
-                               class: 'border-0 bg-transparent text-primary' %>
+                               class: 'border-0 bg-transparent text-primary d-print-none' %>
   </h1>
 
   <% if @lab_hash["all"].empty? %>

@@ -79,3 +79,20 @@ section#report {
 .nav-tabs .nav-item.show .nav-link {
   background-color: #e7e7e7;
 }
+
+@media print {
+  .report_generator {
+    display: none !important;
+
+    & ~ .navbar,
+    & ~ .footer,
+    & ~ section #reports hr {
+      display: none !important;
+      height: 0 !important;
+    }
+  }
+
+  body {
+    padding: 0 !important;
+  }
+}

@@ -1,9 +1,9 @@
 <% provide(:title, 'Reports') %>
-<section>
+<section id="reports">
   <br>
-  <h1 class="text-center fw-bold">Reports</h1>
+  <h1 class="text-center fw-bold d-print-none">Reports</h1>
 
-  <%= form_tag admin_report_generator_generate_path, method: :post do %>
+  <%= form_tag admin_report_generator_generate_path, method: :post, class: 'd-print-none' do %>
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
@@ -50,8 +50,6 @@
         </div>
       </div>
     </div>
-
-    <hr />
 
     <%= label_tag(:type, 'Report Type', class: 'form-label') %>
     <% @report_types.each_index do |report| %>
