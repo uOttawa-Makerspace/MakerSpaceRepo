@@ -45,6 +45,36 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
 
+  def add_course
+    @new_course = CourseName.new(course_params)
+    if @new_course.save
+      flash[:notice] = "Course added successfully!"
+    else
+      flash[:alert] = "Input is invalid"
+    end
+    redirect_to admin_settings_path
+  end
+
+  def remove_course
+    @course = CourseName.find(params[:id])
+    if @course.destroy
+      flash[:notice] = "Course removed successfully"
+    else
+      flash[:alert] = "There was an issue trying to remove the course"
+    end
+    redirect_to admin_settings_path
+  end
+
+  def rename_course
+    @course = CourseName.find(params[:id])
+    if @course.update(course_params.except(:id))
+      flash[:notice] = "Course updated successfully"
+    else
+      flash[:alert] = "There was an issue trying to rename the course"
+    end
+    redirect_to admin_settings_path
+  end
+
   # def rename_category
   #   if !params[:category_option][:name].present?
   #     flash[:alert] = "Invalid category name."
@@ -191,5 +221,9 @@ class Admin::SettingsController < AdminAreaController
 
   def printer_params
     params.require(:printer).permit(:model, :number)
+  end
+
+  def course_params
+    params.permit(:name, :id)
   end
 end
