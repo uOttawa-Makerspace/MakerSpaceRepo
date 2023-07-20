@@ -19,6 +19,7 @@
             Staff Management
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
+            <%= link_to 'Roles', manage_roles_admin_users_path, class: 'dropdown-item' %>
             <%= link_to 'Add New Staff', admin_add_new_staff_index_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
             <%= link_to 'Unavailabilities', admin_shifts_path, class: 'dropdown-item' %>
@@ -27,7 +28,6 @@
             <%= link_to 'Time Periods', admin_time_periods_path, class: 'dropdown-item' %>
           </div>
         </li>
-        <li class="nav-item"><%= link_to 'Roles', manage_roles_admin_users_path, class: 'nav-link' %></li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Badges
