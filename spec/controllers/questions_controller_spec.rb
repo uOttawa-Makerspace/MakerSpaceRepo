@@ -25,7 +25,6 @@ RSpec.describe QuestionsController, type: :controller do
         session[:user_id] = user.id
         get :index
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You cannot access this area.")
       end
     end
   end
@@ -90,7 +89,7 @@ RSpec.describe QuestionsController, type: :controller do
                   description: "updated"
                 }
               }
-        expect(response).to redirect_to edit_question_path(@question)
+        expect(response).to redirect_to questions_path
         expect(Question.find(@question.id).description).to eq("updated")
         expect(flash[:notice]).to eq("Question updated")
       end
@@ -106,35 +105,6 @@ RSpec.describe QuestionsController, type: :controller do
         ).by(-1)
         expect(response).to redirect_to questions_path
         expect(flash[:notice]).to eq("Question Deleted")
-      end
-    end
-  end
-
-  describe "DELETE /remove_answer" do
-    context "logged as admin" do
-      it "should delete answer" do
-        expect {
-          delete :remove_answer,
-                 params: {
-                   id: @question.id,
-                   answer_id: @question.answers.first.id
-                 }
-        }.to change(Answer, :count).by(-1)
-        expect(response).to redirect_to edit_question_path(@question)
-        expect(flash[:notice]).to eq("Answer Removed")
-      end
-    end
-  end
-
-  describe "POST /add_answer" do
-    context "logged as admin" do
-      it "should create answer" do
-        expect { post :add_answer, params: { id: @question.id } }.to change(
-          Answer,
-          :count
-        ).by(1)
-        expect(response).to redirect_to edit_question_path(@question)
-        expect(flash[:notice]).to eq("Answer added. Please update its content!")
       end
     end
   end

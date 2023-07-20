@@ -1,7 +1,18 @@
-<%= form_for @question, url: { controller: 'questions', action: 'update' }, html: { class: 'needs-validation', novalidate: 'novalidate' } do |f| %>
+<%= form_for @question, url: { controller: 'questions', action: 'update' }, method: :patch, html: { class: 'needs-validation', novalidate: 'novalidate' } do |f| %>
   <div class="row">
     <div class="col-md-12">
+      <div class="col-md-12">
+        <%= render partial: 'answers', locals: { f: } %>
+      </div>
+      <div class="col-12">
+        <%= link_to 'Add Answer', edit_question_path(id: @question.id, n_answers: @answers.count + 1), method: :post, class: 'btn btn-info text-white float-start' %>
+      </div>
+      <br />
+      <br />
+
+
       <div class="mb-3 text-center">
+        <%= f.label :description %>
         <%= f.text_area :description, placeholder: 'Write your question here...', class: 'form-control', required: true %>
         <div class="invalid-feedback">
           Please provide the question description.
@@ -34,15 +45,6 @@
       </div>
 
     </div>
-
-    <div class="col-md-12">
-      <%= render partial: 'answers', locals: { f: f } %>
-    </div>
-    <div class="col-12">
-      <%= button_to 'Add Answer', add_answer_questions_path(id: @question.id), method: :post, class: 'btn btn-info text-white float-start' %>
-    </div>
-    <br />
-    <br />
 
     <div class="col-lg-12 text-center">
       <%= f.submit 'Update Question', class: 'btn btn-secondary btn-xl text-uppercase' %>

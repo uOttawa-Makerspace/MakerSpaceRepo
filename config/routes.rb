@@ -444,11 +444,7 @@ Rails.application.routes.draw do
   end
 
   resources :questions do
-    collection do
-      delete :delete_individually
-      delete :remove_answer
-      post :add_answer
-    end
+    collection { delete :delete_individually }
   end
 
   resources :staff_availabilities, except: :show do
