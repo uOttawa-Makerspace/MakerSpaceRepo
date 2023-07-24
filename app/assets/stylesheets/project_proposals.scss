@@ -145,7 +145,8 @@ div.declined {
   padding: 10px;
 }
 
-#new-repo .required .form-label:after {
+#new-repo .required .form-label:after,
+#new_proficient_project .required .form-label:after {
   content: "*";
   color: red;
   font-size: 25px;

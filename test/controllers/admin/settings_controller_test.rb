@@ -12,11 +12,11 @@ class Admin::SettingsControllerTest < ActionController::TestCase
 
   test "admin can pin/unpin a repository" do
     assert_not Repository.first.featured?
-    get :pin_unpin_repository, params: { repository_id: 1 }
+    patch :pin_unpin_repository, params: { repository_id: 1 }
     assert Repository.first.featured?
 
     assert Repository.second.featured?
-    get :pin_unpin_repository, params: { repository_id: 2 }
+    patch :pin_unpin_repository, params: { repository_id: 2 }
     assert_not Repository.second.featured?
   end
 end
