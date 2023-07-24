@@ -49,7 +49,8 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def requests
-    @order_item_waiting_for_approval = OrderItem.all.waiting_for_approval
+    @order_item_waiting_for_approval =
+      OrderItem.all.waiting_for_approval.order(updated_at: :asc)
   end
 
   def new
@@ -183,13 +184,21 @@ class ProficientProjectsController < DevelopmentProgramsController
     respond_to { |format| format.js }
   end
 
+  def proficient_project_modal
+    @proficient_project = ProficientProject.find(params[:proficient_project_id])
+    render layout: false
+  end
+
   def complete_project
     order_items =
       current_user.order_items.where(
         proficient_project_id: @proficient_project.id
       )
-    if order_items.present?
-      order_items.first.update(status: "Waiting for approval")
+    if !order_items.present?
+      flash[:alert] = "This project hasn't been found"
+    elsif order_items.first.update(
+          order_item_params.merge(status: "Waiting for approval")
+        )
       MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
       MsrMailer.send_user_pp_evaluation(
         @proficient_project,
@@ -199,7 +208,9 @@ class ProficientProjectsController < DevelopmentProgramsController
         :notice
       ] = "Congratulations on submitting this proficient project! The proficient project will now be reviewed by an admin in around 5 business days."
     else
-      flash[:alert] = "This project hasn't been found."
+      flash[
+        :alert
+      ] = "Something went wrong with updating the proficient project. Please check the allowed file types."
     end
     redirect_to @proficient_project
   end
@@ -244,9 +255,9 @@ class ProficientProjectsController < DevelopmentProgramsController
               badge_template_id: badge_template.id,
               certification: cert
             )
-            order_item.update(status: "Awarded")
+            order_item.update(order_item_params.merge({ status: "Awarded" }))
             MsrMailer.send_results_pp(
-              order_item.proficient_project,
+              order_item,
               order_item.order.user,
               "Passed"
             ).deliver_now
@@ -258,9 +269,9 @@ class ProficientProjectsController < DevelopmentProgramsController
               JSON.parse(response.body)["data"]["message"]
           end
         else
-          order_item.update(status: "Awarded")
+          order_item.update(order_item_params.merge({ status: "Awarded" }))
           MsrMailer.send_results_pp(
-            order_item.proficient_project,
+            order_item,
             order_item.order.user,
             "Passed"
           ).deliver_now
@@ -281,9 +292,9 @@ class ProficientProjectsController < DevelopmentProgramsController
   def revoke_project
     order_item = OrderItem.find_by(id: params[:oi_id])
     if order_item
-      order_item.update(status: "Revoked")
+      order_item.update(order_item_params.merge(status: "Revoked"))
       MsrMailer.send_results_pp(
-        order_item.proficient_project,
+        order_item,
         order_item.order.user,
         "Failed"
       ).deliver_now
@@ -342,7 +353,16 @@ class ProficientProjectsController < DevelopmentProgramsController
       :cc,
       :badge_template_id,
       :has_project_kit,
-      :drop_off_location_id
+      :drop_off_location_id,
+      :is_virtual
+    )
+  end
+
+  def order_item_params
+    params.require(:order_item).permit(
+      :user_comments,
+      :admin_comments,
+      files: []
     )
   end
 

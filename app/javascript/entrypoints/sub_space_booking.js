@@ -92,8 +92,8 @@ document.addEventListener("turbo:load", function () {
         sub_space_booking: {
           name: document.getElementById("book-name").value,
           description: document.getElementById("book-description").value,
-          start_time: start_picker.selectedDates[0],
-          end_time: end_picker.selectedDates[0],
+          start_time: start_picker.input.value,
+          end_time: end_picker.input.value,
           sub_space_id: new URLSearchParams(window.location.search).get("room"),
           recurring: document.getElementById("book-recurring").checked,
           recurring_end: recurring_picker.selectedDates[0],

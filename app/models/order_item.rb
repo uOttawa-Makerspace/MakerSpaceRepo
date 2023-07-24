@@ -3,6 +3,35 @@
 class OrderItem < ApplicationRecord
   belongs_to :proficient_project, optional: true
   belongs_to :order, optional: true
+  has_many_attached :files
+  validates :files,
+            file_content_type: {
+              allow: %w[
+                application/pdf
+                image/svg+xml
+                text/html
+                text/css
+                text/javascript
+                text/ino
+                text/x-java-source
+                model/stl
+                application/vnd.ms-pki.stl
+                application/octet-stream
+                text/plain
+                model/x.stl-binary
+                model/x.stl-binary
+                text/x.gcode
+                image/vnd.dxf
+                image/x-dxf
+                image/png
+                image/jpg
+                image/jpeg
+                image/gif
+                image/webp
+                model/x.stl-ascii
+              ],
+              if: -> { files.attached? }
+            }
   validates :quantity,
             presence: true,
             numericality: {

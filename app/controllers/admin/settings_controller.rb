@@ -191,10 +191,11 @@ class Admin::SettingsController < AdminAreaController
   def pin_unpin_repository
     params.require(:repository_id)
     repo = Repository.find_by(id: params[:repository_id])
-    repo.featured = (repo.featured? ? false : true)
 
-    if repo.save
-      flash[:notice] = "Featured: #{repo.featured}"
+    if repo.update(featured: !repo.featured)
+      flash[
+        :notice
+      ] = "Successfully #{repo.featured ? "Featured" : "Unfeatured"} repository"
     else
       flash[:alert] = "something went wrong"
     end

@@ -29,7 +29,7 @@
 </td>
 <td>
   <% if jo.comments.present? %>
-    <a class="link-primary" data-action="click->launch-modal#launchCommentsModal" data-id="<%= jo.id %>" data-comments="<%= simple_format(jo.comments) %>"><%= simple_format(jo.comments.truncate(40)) %></a>
+    <a class="link-primary" data-action="click->launch-custom-modal#launchJobOrderCommentsModal" data-id="<%= jo.id %>" data-comments="<%= simple_format(jo.comments) %>"><%= simple_format(jo.comments.truncate(40)) %></a>
   <% end %>
 </td>
 <td>
@@ -56,15 +56,33 @@
 </td>
 <td><%= jo.job_order_statuses.last.job_status.name %></td>
 <td>
-  <button class="btn btn-secondary btn-sm" data-action="click->launch-modal#launchTimelineModal" data-id="<%= jo.id %>">Timeline</button>
+  <button 
+    class="btn btn-secondary btn-sm" 
+    data-action="click->launch-modal#openModal" 
+    data-id="<%= jo.id %>"
+    data-name="timeline"
+    data-url="/job_orders/<%= jo.id %>/timeline_modal">Timeline
+  </button>
   <% if jo.staff_comments %>
-    <a class="btn btn-primary btn-sm mt-1" data-action="click->launch-modal#launchCommentsModal" data-id="<%= jo.id %>" data-comments="<%= jo.staff_comments %>">Staff Msg</a>
+    <a class="btn btn-primary btn-sm mt-1" data-action="click->launch-custom-modal#launchJobOrderCommentsModal" data-id="<%= jo.id %>" data-comments="<%= jo.staff_comments %>">Staff Msg</a>
   <% end %>
 </td>
 <td>
   <% if jo.job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL %>
-    <button class="btn btn-primary btn-sm btn-block" data-action="click->launch-modal#launchQuoteModal" data-id="<%= jo.id %>">Approve</button>
-    <button class="btn btn-danger btn-sm btn-block" data-action="click->launch-modal#launchDeclineModal" data-id="<%= jo.id %>">Deny</button>
+    <button 
+      class="btn btn-primary btn-sm btn-block" 
+      data-action="click->launch-modal#openModal" 
+      data-id="<%= jo.id %>"
+      data-name="quote"
+      data-url="/job_orders/<%= jo.id %>/quote_modal">Approve
+    </button>
+    <button 
+      class="btn btn-danger btn-sm btn-block" 
+      data-action="click->launch-modal#openModal" 
+      data-id="<%= jo.id %>"
+      data-name="decline"
+      data-url="/job_orders/<%= jo.id %>/decline_modal">Deny
+    </button>
   <% elsif [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(jo.job_order_statuses.last.job_status) %>
     <%= button_to 'Approve', job_order_user_approval_path(jo, approved: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want to approve the Job Order on behalf of the user?' } %>
     <%= button_to 'Reject', job_order_user_approval_path(jo, approved: false), method: :patch, remote: true, format: :js, class: 'btn btn-danger btn-sm btn-block', data: { confirm: 'Are you sure you want to decline the Job Order on behalf of the user?' } %>
@@ -72,7 +90,12 @@
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::WAITING_PROCESSED %>
     <%= button_to 'Start Processing', job_order_start_processing_path(jo, start_processing: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want to start the processing off the part?' } %>
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::BEING_PROCESSED %>
-    <button class="btn btn-primary btn-sm btn-block" data-action="click->launch-modal#launchCompletedEmailModal" data-id="<%= jo.id %>">Completed</button>
+    <button 
+      class="btn btn-primary btn-sm btn-block" 
+      data-action="click->launch-modal#openModal" 
+      data-id="<%= jo.id %>"
+      data-name="completed-email"
+      data-url="/job_orders/<%= jo.id %>/completed_email_modal">Completed</button>
   <% elsif jo.job_order_statuses.last.job_status == JobStatus::COMPLETED %>
     Price : <%= number_to_currency(jo.job_order_quote.total_price) %>
     <%= button_to 'Paid?', job_order_paid_path(jo, paid: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want set the Job Order as paid?' } %>
@@ -83,7 +106,13 @@
   <% end %>
 </td>
 <td>
-  <button class="btn btn-secondary btn-sm" data-action="click->launch-modal#launchQuoteModal" data-id="<%= jo.id %>">Quote</button>
+  <button 
+    class="btn btn-secondary btn-sm" 
+    data-action="click->launch-modal#openModal" 
+    data-id="<%= jo.id %>"
+    data-name="quote"
+    data-url="/job_orders/<%= jo.id %>/quote_modal">Quote
+  </button>
 </td>
 <td>
   <% if jo.job_order_quote.present? %>
