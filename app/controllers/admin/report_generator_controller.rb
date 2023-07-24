@@ -13,7 +13,8 @@ class Admin::ReportGeneratorController < AdminAreaController
       ["Training Attendees", :training_attendees],
       ["Visitors", :visitors],
       ["Visits by Hour", :visits_by_hour],
-      ["Kit purchased", :kit_purchased]
+      ["Kit purchased", :kit_purchased],
+      ["Popular Hours", :popular_hours]
     ]
 
     if params[:report_type].present?
@@ -36,33 +37,12 @@ class Admin::ReportGeneratorController < AdminAreaController
         visits_by_hour
       when "kit_purchased"
         kit_purchased
+      when "popular_hours"
+        popular_hours
       else
         render plain: "Unknown report type", status: :bad_request
         return
       end
-    end
-  end
-
-  def popular_hours
-    @space = @user.lab_sessions&.last&.space || Space.first
-    @spaces = Space.all.order(name: :asc)
-    @weekdays = Date::DAYNAMES
-  end
-
-  def popular_hours_per_period
-    if params[:start_date].blank? || params[:end_date].blank?
-      redirect_to admin_report_generator_popular_hours_path,
-                  alert:
-                    "You need to select dates to get Popular Hours for a specific period."
-    else
-      @space = @user.lab_sessions&.last&.space || Space.first
-      @spaces = Space.all.order(name: :asc)
-      @weekdays = Date::DAYNAMES
-      @info =
-        PopularHour.popular_hours_per_period(
-          params[:start_date].to_date,
-          params[:end_date].to_date
-        )
     end
   end
 
@@ -126,6 +106,7 @@ class Admin::ReportGeneratorController < AdminAreaController
              new_projects
              visits_by_hour
              kit_purchased
+             popular_hours
            ].include?(type)
       render plain: "Unknown report type", status: :bad_request
       return
@@ -553,6 +534,21 @@ class Admin::ReportGeneratorController < AdminAreaController
         @monthly_average[month_name] = total_certs[month_name].to_f /
           total_sessions[month_name]
       end
+    end
+  end
+
+  def popular_hours
+    @space = @user.lab_sessions&.last&.space || Space.first
+    @spaces = Space.all.order(name: :asc)
+    @weekdays = Date::DAYNAMES
+
+    if @date_specified
+      @info =
+        PopularHour.popular_hours_per_period(
+          params[:start_date].to_date,
+          params[:end_date].to_date
+        )
+      params[:report_type] = "popular_hours_per_period"
     end
   end
 end

@@ -220,8 +220,6 @@ Rails.application.routes.draw do
           as: "generate_spreadsheet",
           action: "generate_spreadsheet",
           format: :xlsx
-      get :popular_hours
-      get :popular_hours_per_period
     end
 
     resources :users, only: %i[index edit update show] do

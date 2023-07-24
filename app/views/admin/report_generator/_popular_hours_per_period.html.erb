@@ -1,31 +1,7 @@
-<% provide(:title, 'Reports') %>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.0"></script>
 
 <section>
   <h1 class="text-center py-2 fw-bold">Popular Hours</h1>
-  <div>
-    <%= form_tag admin_report_generator_popular_hours_per_period_path, method: :get do %>
-      <div style=" display: flex; justify-content: center;">
-        <div class="row align-items-center">
-          <div class="mb-3 col-md-4" style="width: 300px">
-            <%= label_tag(:start_date, 'From', class: 'form-label') %>
-            <%= date_field_tag(:start_date, params[:start_date], class: %w[form-control range-type-date-range-fields]) %>
-          </div>
-
-          <div class="mb-3 col-md-4" style="width: 300px">
-            <%= label_tag(:end_date, 'To', class: 'form-label') %>
-            <%= date_field_tag(:end_date, params[:end_date], class: %w[form-control range-type-date-range-fields]) %>
-          </div>
-
-          <div class="mb-3 col-md-4">
-            <label for="end_date">Start</label>
-            <br>
-            <%= button_tag('Generate', { class: 'btn btn-primary' }) %>
-          </div>
-        </div>
-      </div>
-    <% end %>
-  </div>
 
   <ul class="nav nav-tabs">
     <% @spaces.each do |space| %>
