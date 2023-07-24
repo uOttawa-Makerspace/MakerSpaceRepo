@@ -90,7 +90,8 @@ class QuestionsController < AdminAreaController
     question_id = @image.record.id
     @image.purge
     @question = Question.find(question_id)
-    respond_to { |format| format.js }
+    redirect_to edit_question_path(params[:question_id]),
+                notice: "Question image deleted"
   end
 
   private

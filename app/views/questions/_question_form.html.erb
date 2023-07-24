@@ -1,3 +1,7 @@
+<div class="text-left row mb-4" id="edit-image">
+  <%= render 'question_images' %>
+</div>
+
 <%= form_for @question, url: { controller: 'questions', action: 'update' }, method: :patch, html: { class: 'needs-validation', novalidate: 'novalidate' } do |f| %>
   <div class="row">
     <div class="col-md-12">
@@ -39,10 +43,6 @@
       <br />
 
       <div id="image-target" class="mx-auto text-center"></div>
-
-      <div class="text-center row" id="edit-image">
-        <%= render 'question_images' %>
-      </div>
 
     </div>
 
