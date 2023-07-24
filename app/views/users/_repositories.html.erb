@@ -1,8 +1,8 @@
-<% if params[:show].eql?('repositories') && @repositories.empty? %>
+<% if params[:show] == 'repositories' && @repositories.empty? %>
     <%= tag.div("#{@repo_user.username} doesn't have any repositories yet.", class: 'empty-repo') %>
-<% elsif params[:show].eql?('makes') && @makes.empty? %>
+<% elsif params[:show] == 'makes' && @makes.empty? %>
     <%= tag.div("#{@repo_user.username} doesn't have any makes yet.", class: 'empty-repo') %>
-<% elsif params[:show].eql?('projects_assigned') && @joined_projects.empty? %>
+<% elsif params[:show] == 'projects_assigned' && @joined_projects.empty? %>
     <%= tag.div("#{@repo_user.username} doesn't have any joined projects yet.", class: 'empty-repo') %>
 <% else %>
     <div class="apple_pagination">
@@ -11,10 +11,10 @@
     </div>
     <br>
 <% end %>
-<% if params[:show].eql?('makes') %>
+<% if params[:show] == 'makes' %>
     <% repos = @makes %>
 <% else %>
-    <% repos = params[:show].eql?('projects_assigned') ? @joined_projects : @repositories %>
+    <% repos = (params[:show] == 'projects_assigned' ? @joined_projects : @repositories) %>
 <% end %>
 <% if repos !=@joined_projects %>
     <% repos.each do |repository| %>
@@ -50,7 +50,6 @@
 <% else %>
     <% repos.each do |joined_project| %>
         <% project_proposal = joined_project.project_proposal %>
-        <% has_user = !project_proposal.user_id.nil? %>
         <div class="repository-container">
             <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(project_proposal.photos.first.image) if project_proposal.photos.present? && project_proposal.photos.first.present? && project_proposal.photos.first.image.attached?}')" %> >
                 <%= link_to '', project_proposal_path(project_proposal.slug), class: 'link' %>
@@ -61,7 +60,7 @@
                         <%= link_to project_proposal.title, project_proposal_path(project_proposal.slug) %>
                     </div>
                     <div>
-                        <% if has_user %>
+                        <% if project_proposal.has_user %>
                             by <%= link_to project_proposal.user.username, user_path(project_proposal.user.username) %>
                         <% else %>
                             by [Deleted User]
