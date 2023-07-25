@@ -16,6 +16,7 @@ class PrintersController < StaffAreaController
         .order("lab_sessions.sign_out_time DESC")
         .uniq
         .pluck(:name, :id)
+    @list_users.unshift(["Clear", 0])
     @printer_types = [
       { name: "Ultimaker 2+", id: "ultimaker2p" },
       { name: "Ultimaker 3", id: "ultimaker3" },
@@ -34,10 +35,19 @@ class PrintersController < StaffAreaController
 
   def link_printer_to_user
     printer_id = params[:printer][:printer_id]
+    last_session = Printer.get_last_number_session(printer_id)
     user_id = params[:printer][:user_id]
     if printer_id.blank? || user_id.blank?
       flash[:alert] = "Please add both printer and user."
-    elsif PrinterSession.create(printer_id: printer_id, user_id: user_id)
+    elsif user_id == "0" && last_session.update(in_use: false)
+      flash[:notice] = "Cleared the user."
+    elsif last_session.in_use?
+      flash[:alert] = "This printer is already being used by another user."
+    elsif PrinterSession.create(
+          printer_id: printer_id,
+          user_id: user_id,
+          in_use: true
+        )
       flash[:notice] = "Printer Session Created"
     else
       flash[:alert] = "Something went wrong"

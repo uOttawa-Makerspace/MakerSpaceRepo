@@ -34,6 +34,13 @@
                     <% end %>
                 <% end %>
             </td>
+            <% if @space.makerspace? %>
+              <td class="printers-cell">
+                <% @printers_in_use.where(user_id: user.id).each do |printer_session| %>
+                  <%= printer_session.printer.number %>
+                <% end %>
+              </td>
+            <% end %>
             <td class="email-cell">
                 <%= user.lab_sessions.where('space_id' => @space.id).where('created_at BETWEEN ? AND ? ', 2.months.ago, DateTime.now).count %>
             </td>
