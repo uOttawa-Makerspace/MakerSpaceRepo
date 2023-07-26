@@ -25,16 +25,31 @@ class RfidController < SessionsController
   end
 
   def card_number
-    unless PiReader.find_by(pi_mac_address: params[:mac_address])
-      new_reader = PiReader.new(pi_mac_address: params[:mac_address])
-      new_reader.save
+    if params[:space_id].present? && Space.find(params[:space_id]).present?
+      space_id = params[:space_id]
+    else
+      unless PiReader.find_by(pi_mac_address: params[:mac_address])
+        new_reader = PiReader.new(pi_mac_address: params[:mac_address])
+        new_reader.save
+      end
+
+      space_id = PiReader.find_by(pi_mac_address: params[:mac_address]).space_id
     end
 
     rfid = Rfid.find_by(card_number: params[:rfid])
 
+    unless space_id
+      return(
+        render json: {
+                 new_rfid: "Error, missing space_id or mac_address param"
+               },
+               status: :unprocessable_entity
+      )
+    end
+
     if rfid
       if rfid.user_id
-        check_session(rfid)
+        check_session(rfid, space_id)
       else
         rfid.mac_address = params[:mac_address]
         rfid.touch
@@ -64,8 +79,8 @@ class RfidController < SessionsController
     end
   end
 
-  def update_kiosk(reader)
-    @space = Space.find(reader.space_id)
+  def update_kiosk(space_id)
+    @space = Space.find(space_id)
     @certifications_on_space =
       Proc.new do |user, space_id|
         user
@@ -75,23 +90,21 @@ class RfidController < SessionsController
       end
     @all_user_certs = Proc.new { |user| user.certifications }
   end
-  def check_session(rfid)
+  def check_session(rfid, space_id)
     active_sessions =
       rfid.user.lab_sessions.where("sign_out_time > ?", Time.zone.now)
-    new_location =
-      PiReader.find_by(pi_mac_address: params[:mac_address]).space_id
     if active_sessions.present?
       active_sessions.update_all(sign_out_time: Time.zone.now)
       last_active_location = active_sessions.last.space_id
-      if last_active_location != new_location
-        new_session(rfid, new_location)
+      if last_active_location != space_id
+        new_session(rfid, space_id)
       else
         render json: { success: "RFID sign out" }, status: :ok
       end
     else
-      new_session(rfid, new_location)
+      new_session(rfid, space_id)
     end
-    update_kiosk(PiReader.find_by(pi_mac_address: params[:mac_address]))
+    update_kiosk(space_id)
   end
 
   def new_session(rfid, new_location)

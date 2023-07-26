@@ -46,13 +46,13 @@
   <% @repositories.each_with_index do |repository, i| %>
     <div class="repository-container">
 
-      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(@photos[repository.id].image)}')" %> >
+      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.present? && repository.photos.first.present? && repository.photos.first.image.attached?}')" %> >
         <%= link_to '', repository_path(repository.user_username, repository.id), class: 'link' %>
       </div>
 
       <div class="repo-info">
         <div class="start">
-          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
+          <div class="likes text-info"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.id) %></div>
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
           <div><%= time_ago_in_words(repository.created_at) << ' ago' %></div>

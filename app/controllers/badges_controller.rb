@@ -175,7 +175,7 @@ class BadgesController < DevelopmentProgramsController
     if params[:coming_from] == "grant"
       redirect_to new_badge_badges_path
     else
-      respond_to { |format| format.js }
+      redirect_to admin_badges_path
     end
   end
 
