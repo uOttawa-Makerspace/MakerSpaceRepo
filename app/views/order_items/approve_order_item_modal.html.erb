@@ -1,0 +1,8 @@
+<div id="approve-order-item-modal-rendered" class="d-grid gap-3">
+    <%= form_for(@order_item, url: approve_project_proficient_projects_path, html: { multipart: true }, method: :get) do |f| %>
+        <%= hidden_field_tag(:oi_id, @order_item.id) %> 
+        <%= f.label :admin_comments, 'Comments/Reason for approving: ', class: 'form-label' %>
+        <%= f.trix_editor :admin_comments, class: 'form-control mb-3' %>
+        <%= f.submit 'Approve Project', class: 'btn btn-primary' %>
+    <% end %>
+</div>

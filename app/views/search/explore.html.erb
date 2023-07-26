@@ -59,7 +59,7 @@
 
       <div class="repo-info">
         <div class="start">
-          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
+          <div class="likes<%= repository.likes.find_by(user_id: @user.id).nil? ? '' : ' text-info' %>"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           <div class="title">
             <%= link_to repository.title, repository_path(user_username: repository.user_username, id: repository.slug) %>
           </div>

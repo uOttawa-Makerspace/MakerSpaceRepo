@@ -27,6 +27,7 @@ document.addEventListener("turbo:load", () => {
         maxOptions: 5,
         searchPlaceholder: "Add Owner...",
         searchOnKeyUp: true,
+        openOnFocus: false,
         load: function (type, callback) {
           if (type.length < 2) {
             return;
@@ -100,6 +101,7 @@ document.addEventListener("turbo:load", () => {
         labelField: "name",
         maxOptions: null,
         searchOnKeyUp: true,
+        openOnFocus: false,
       });
     }
   }
@@ -108,6 +110,7 @@ document.addEventListener("turbo:load", () => {
       new TomSelect("#repository_categories", {
         plugins: ["remove_button"],
         maxItems: 5,
+        openOnFocus: false,
       });
     }
   }
@@ -116,6 +119,7 @@ document.addEventListener("turbo:load", () => {
       new TomSelect("#repository_equipments", {
         plugins: ["remove_button"],
         maxItems: 5,
+        openOnFocus: false,
       });
     }
   }
