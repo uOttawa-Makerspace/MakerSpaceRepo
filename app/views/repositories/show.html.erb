@@ -19,10 +19,11 @@
 
     <br></br>
     <% if @user.admin? %>
-        Currently Featured: <%= @repository.featured.to_s.upcase %><br></br>
-        <%= button_to 'Feature / Unfeature', pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
-                                                                                                                      class: 'btn btn-primary' %>
-        <br></br>
+        Currently Featured: <%= @repository.featured.to_s.upcase %>
+        <% featured_text = @repository.featured? ? 'Unfeature' : 'Feature' %>
+        <%= button_to featured_text, pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :patch,
+                                                                                                              class: 'btn btn-primary my-3' %>
+
         <%= button_to 'Delete', delete_repository_admin_users_path(id: @repository.id), method: :delete,
                                                                                         class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
     <% end %>
@@ -99,9 +100,10 @@
       <% end %>
 
       <div class="repo-info-item">
-        <span class="like" style="color: white;">
-          <%= link_to(fa_icon('heart', text: 'Like'),
-                      add_like_repository_path, class: 'like', remote: true, method: :post) %>
+        <span class="like<%= @liked ? ' bg-success' : '' %>" style="color: white;">
+          <% like_text = @liked ? 'Unlike' : 'Like' %>
+          <%= button_to(fa_icon('heart', text: like_text),
+                        add_like_repository_path, class: 'like border-0 bg-transparent', remote: true, method: :post, style: 'color: inherit !important; padding: inherit !important;') %>
         </span>
         <span class="make" style="color: white;">
           <%= link_to fa_icon('code-fork', text: 'Make'), makes_new_path(@repository.user_username, @repository.id), class: 'make' %>

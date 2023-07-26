@@ -45,7 +45,7 @@ RSpec.describe OrderItemsController, type: :controller do
                  format: "js"
                }
         }.to change(OrderItem, :count).by(1)
-        expect(response).to have_http_status(:success)
+        expect(response).to redirect_to carts_path
         expect(session[:order_id]).to eq(Order.last.id)
       end
 
@@ -79,7 +79,7 @@ RSpec.describe OrderItemsController, type: :controller do
                  format: "js"
                }
         }.to change(OrderItem, :count).by(1)
-        expect(response).to have_http_status(:success)
+        expect(response).to redirect_to carts_path
         expect(session[:order_id]).to eq(Order.last.id)
       end
     end
@@ -123,8 +123,8 @@ RSpec.describe OrderItemsController, type: :controller do
       it "should revoke the order item" do
         create(:order_item)
         session[:order_id] = Order.last.id
-        get :revoke, params: { order_item_id: OrderItem.last.id }, format: "js"
-        expect(response).to have_http_status(:success)
+        get :revoke, params: { order_item_id: OrderItem.last.id }
+        expect(flash[:notice]).to eq("The badge has been revoked.")
         expect(OrderItem.last.status).to eq("Revoked")
       end
     end
