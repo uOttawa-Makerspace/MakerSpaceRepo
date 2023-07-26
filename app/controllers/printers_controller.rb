@@ -16,7 +16,7 @@ class PrintersController < StaffAreaController
         .order("lab_sessions.sign_out_time DESC")
         .uniq
         .pluck(:name, :id)
-    @list_users.unshift(["Clear", 0])
+    @list_users.unshift(%w[Clear clear])
     @printer_types = [
       { name: "Ultimaker 2+", id: "ultimaker2p" },
       { name: "Ultimaker 3", id: "ultimaker3" },
@@ -39,7 +39,7 @@ class PrintersController < StaffAreaController
     user_id = params[:printer][:user_id]
     if printer_id.blank? || user_id.blank?
       flash[:alert] = "Please add both printer and user."
-    elsif user_id == "0" && last_session.update(in_use: false)
+    elsif user_id == "clear" && last_session.update(in_use: false)
       flash[:notice] = "Cleared the user."
     elsif !last_session.nil? && last_session.in_use?
       flash[:alert] = "This printer is already being used by another user."
