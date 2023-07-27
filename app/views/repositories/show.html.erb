@@ -200,7 +200,7 @@
   <section id="repo-comments">
     <div class="title">Comments</div>
     <%= form_for('Comments', url: comments_create_path, id: 'comment', remote: true) do %>
-      <div style="max-width: 50rem" class="mb-3">
+      <div class="mb-3">
         <%= hidden_field_tag :content %>
         <trix-editor input="content"></trix-editor>
       </div>
@@ -220,16 +220,15 @@
       <% @comments.each do |comment| %>
       <div class="comment">
         <div class="comment-upvote">
-vote = @vote.flatten.include?(comment.id)
-            color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999'
-            link_to fa_icon('angle-up'), vote_path(comment_id: comment.id,
-                                                   voted: vote, downvote: 'f'), class: 'vote upvote', remote: true, method: :post, style: "color: #{color}"
+          <% color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999' %>
+          <%= button_to fa_icon('angle-up'), comments_vote_path(comment_id: comment.id, downvote: 'f'),
+                        class: 'vote upvote border-0 bg-transparent', remote: true, method: :post, style: "color: #{color}"
           %>
           <div class="upvote upvote-<%= comment.id %>"><%= comment.upvote %></div>
-color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999'
-            link_to fa_icon('angle-down'), vote_path(comment_id: comment.id,
-                                                     voted: vote, downvote: 't'), class: 'vote downvote', remote: true, method: :post, style: "color: #{color}"
-          %>
+            <% color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999' %>
+            <%= button_to fa_icon('angle-down'), comments_vote_path(comment_id: comment.id, downvote: 't'),
+                          class: 'vote upvote border-0 bg-transparent', remote: true, method: :post, style: "color: #{color}"
+            %>
         </div>
         <div class="comment-header">
           <%= link_to user_path(comment.username) do %>
@@ -237,7 +236,7 @@ color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999'
            <% end %>
           <%= content_tag :div, time_ago_in_words(comment.created_at) << ' ago', class: 'time' %><br>
           <% if ((@user.admin?) || (@user.id.equal? comment.user_id)) %>
-            <%= button_to fa_icon('times'), { controller: :comments, action: :destroy, id: comment.id }, method: :delete, data: { confirm: 'Are you sure?' }, class: 'x-comment-button' %>
+            <%= button_to fa_icon('times'), { controller: :comments, action: :destroy, id: comment.id }, method: :delete, data: { confirm: 'Are you sure you want to delete this comment?' }, class: 'text-danger float-end' %>
           <% end %>
         </div>
         <div class="comment-content">
