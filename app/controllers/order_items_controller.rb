@@ -48,7 +48,13 @@ class OrderItemsController < DevelopmentProgramsController
   end
 
   def revoke
-    OrderItem.find(params[:order_item_id]).update(status: "Revoked")
+    if OrderItem.find(params[:order_item_id]).update(status: "Revoked")
+      flash[:notice] = "The badge has been revoked."
+    else
+      flash[
+        :alert
+      ] = "There was an error trying to revoke the badge, please try again later."
+    end
     order_items =
       OrderItem
         .completed_order
@@ -64,6 +70,7 @@ class OrderItemsController < DevelopmentProgramsController
       order_items
         .where.not(status: "In progress")
         .paginate(page: params[:page], per_page: 20)
+    redirect_to admin_badges_path
   end
 
   def order_item_modal

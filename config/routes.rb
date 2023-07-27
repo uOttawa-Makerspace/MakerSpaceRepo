@@ -514,7 +514,6 @@ Rails.application.routes.draw do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post "vote/:comment_id", as: "vote", action: "vote", to: "users#vote"
 
   # USER RESOURCES
   resources :users, path: "/", param: :username, except: %i[edit destroy] do
@@ -556,8 +555,9 @@ Rails.application.routes.draw do
             id: %r{[^/]+}
           }
       patch :link_to_pp
-      patch :add_owner
-      patch :remove_owner
+      patch :add_member
+      patch :remove_member
+      patch :transfer_owner
     end
     member do
       get "/password_entry", as: "password_entry", action: "password_entry"
@@ -574,6 +574,7 @@ Rails.application.routes.draw do
   namespace :comments do
     post :create, path: "/:id"
     delete :destroy, path: "/:id/destroy"
+    post :vote, path: "/:id/vote"
   end
 
   namespace :quick_access_links do
