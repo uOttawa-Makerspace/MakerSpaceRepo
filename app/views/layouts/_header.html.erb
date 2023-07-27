@@ -70,7 +70,6 @@
           </a>
           <div class="dropdown-menu dropdown-menu-right">
             <a class="dropdown-item" href="<%= user_path(@user.username) %>"><%= t('navbar.user.profile') %></a>
-            <a class="dropdown-item" href="<%= likes_user_path(@user.username) %>"><%= t('navbar.user.liked') %></a>
             <a class="dropdown-item" href="<%= settings_profile_path %>"><%= t('navbar.user.settings') %></a>
             <%= link_to(t('navbar.user.admin_area'), admin_report_generator_popular_hours_path, class: 'dropdown-item') if @user.admin? %>
             <%= link_to(t('navbar.user.staff_area'), staff_dashboard_index_path, class: 'dropdown-item') if @user.staff? %>
@@ -98,7 +97,7 @@
 
         <% locales_change.each do |locale| %>
         <li class="nav-item">
-          <%= link_to t('name', locale: locale), url_for(request.query_parameters.merge(locale: locale)), class: 'nav-link' %>
+          <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link' %>
         </li>
         <% end %>
       </ul>
