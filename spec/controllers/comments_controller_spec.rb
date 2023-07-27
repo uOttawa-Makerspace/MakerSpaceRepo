@@ -28,7 +28,11 @@ RSpec.describe CommentsController, type: :controller do
           Comment,
           :count
         ).by(0)
-        expect(response).to redirect_to root_path
+        expect(response).to redirect_to repository_path(
+                      id: repo.id,
+                      user_username: repo.user_username,
+                      anchor: "repo-comments"
+                    )
       end
     end
   end
@@ -62,6 +66,75 @@ RSpec.describe CommentsController, type: :controller do
         session[:user_id] = admin.id
         delete :destroy, params: { id: @comment.id }
         expect(flash[:notice]).to eq("Comment deleted succesfully")
+      end
+    end
+  end
+
+  describe "vote" do
+    context "votes" do
+      before(:each) do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10_000
+        repository = create(:repository)
+      end
+
+      it "should upvote the comment" do
+        comment = create(:comment)
+        post :vote,
+             params: {
+               comment_id: comment.id,
+               downvote: "f",
+               id: Repository.last.id
+             }
+        expect(Comment.find(comment.id).user.reputation).to eq(2)
+        expect(Comment.find(comment.id).upvote).to eq(1)
+      end
+
+      it "should downvote the comment" do
+        comment = create(:comment)
+        post :vote,
+             params: {
+               comment_id: comment.id,
+               downvote: "t",
+               id: Repository.last.id
+             }
+        expect(Comment.find(comment.id).user.reputation).to eq(-2)
+        expect(Comment.find(comment.id).upvote).to eq(-1)
+      end
+    end
+
+    context "voted" do
+      before(:each) { repository = create(:repository) }
+
+      it "should downvote an upvoted comment" do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10_000
+        comment = create(:comment)
+        Upvote.create(user_id: user.id, comment_id: comment.id, downvote: false)
+        post :vote,
+             params: {
+               comment_id: comment.id,
+               downvote: "t",
+               id: Repository.last.id
+             }
+        expect(Comment.find(comment.id).upvote).to eq(-1)
+      end
+
+      it "should remove an existing downvote" do
+        user = create(:user, :regular_user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10_000
+        comment = create(:comment)
+        Upvote.create(user_id: user.id, comment_id: comment.id, downvote: true)
+        post :vote,
+             params: {
+               comment_id: comment.id,
+               downvote: "t",
+               id: Repository.last.id
+             }
+        expect(Comment.find(comment.id).upvote).to eq(0)
       end
     end
   end

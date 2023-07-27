@@ -514,7 +514,6 @@ Rails.application.routes.draw do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post "vote/:comment_id", as: "vote", action: "vote", to: "users#vote"
 
   # USER RESOURCES
   resources :users, path: "/", param: :username, except: %i[edit destroy] do
@@ -574,6 +573,7 @@ Rails.application.routes.draw do
   namespace :comments do
     post :create, path: "/:id"
     delete :destroy, path: "/:id/destroy"
+    post :vote, path: "/:id/vote"
   end
 
   namespace :quick_access_links do
