@@ -555,8 +555,9 @@ Rails.application.routes.draw do
             id: %r{[^/]+}
           }
       patch :link_to_pp
-      patch :add_owner
-      patch :remove_owner
+      patch :add_member
+      patch :remove_member
+      patch :transfer_owner
     end
     member do
       get "/password_entry", as: "password_entry", action: "password_entry"
