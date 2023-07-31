@@ -72,7 +72,7 @@
               </div>
 
               <div class="col-md-6 mb-3">
-                <label for="end-datetime">End Date</label>
+                <label for="end-datetime">End Time</label>
                 <div class="input-group">
                   <%= text_field_tag 'end_time', '', id: 'end-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
                   <button class="btn btn-outline-danger" id="end-time-clear" type="button">
@@ -80,6 +80,11 @@
                   </button>
                 </div>
               </div>
+
+            <div class="col-md-12 mb-3">
+              <%= label_tag :recurring, 'Recurring' %>
+              <%= check_box_tag :recurring, true, true, id: 'recurring', class: 'form-check-input', required: true %>
+            </div>
 
             <div style="padding-left: 0.75rem; padding-right: 0.75rem" class="mb-3">
               <%= label_tag :user_id, 'User' %>

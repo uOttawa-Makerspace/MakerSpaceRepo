@@ -114,6 +114,7 @@ class StaffAvailabilitiesController < ApplicationController
                    daysOfWeek: [@staff_availability.day],
                    startTime: @staff_availability.start_time.strftime("%H:%M"),
                    endTime: @staff_availability.end_time.strftime("%H:%M"),
+                   recurring: @staff_availability.recurring,
                    color:
                      hex_color_to_rgba(
                        @staff_availability
@@ -221,7 +222,8 @@ class StaffAvailabilitiesController < ApplicationController
       :start_time,
       :end_time,
       :user_id,
-      :time_period_id
+      :time_period_id,
+      :recurring
     )
   end
 

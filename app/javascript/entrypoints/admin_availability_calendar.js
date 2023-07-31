@@ -24,19 +24,56 @@ const userIdInput = document.getElementById("user-id");
 const timePeriodIdInput = document.getElementById("time-period-id");
 const startTimeInput = document.getElementById("start-time");
 const endTimeInput = document.getElementById("end-time");
+const recurringInput = document.getElementById("recurring");
 
-const startPicker = startTimeInput.flatpickr({
+let startPicker = startTimeInput.flatpickr({
   enableTime: true,
   noCalendar: true,
   dateFormat: "H:i",
   time_24hr: true,
 });
 
-const endPicker = endTimeInput.flatpickr({
+let endPicker = endTimeInput.flatpickr({
   enableTime: true,
   noCalendar: true,
   dateFormat: "H:i",
   time_24hr: true,
+});
+
+recurringInput.addEventListener("change", function () {
+  if (this.checked) {
+    startPicker.destroy();
+    endPicker.destroy();
+
+    startPicker = startTimeInput.flatpickr({
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "H:i",
+      time_24hr: true,
+    });
+    endPicker = endTimeInput.flatpickr({
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "H:i",
+      time_24hr: true,
+    });
+  } else {
+    startPicker.destroy();
+    endPicker.destroy();
+
+    startPicker = startTimeInput.flatpickr({
+      enableTime: true,
+      noCalendar: false,
+      dateFormat: "Y-m-d H:i",
+      time_24hr: true,
+    });
+    endPicker = endTimeInput.flatpickr({
+      enableTime: true,
+      noCalendar: false,
+      dateFormat: "Y-m-d H:i",
+      time_24hr: true,
+    });
+  }
 });
 
 document.getElementById("start-time-clear").addEventListener("click", () => {
@@ -68,7 +105,18 @@ const calendar = new Calendar(calendarEl, {
   views: {
     timeGridWeek: {
       dayHeaderFormat: {
+        weekday: "short",
+        month: "2-digit",
+        day: "2-digit",
+        omitCommas: true,
+      },
+    },
+    timeGridDay: {
+      dayHeaderFormat: {
         weekday: "long",
+        month: "2-digit",
+        day: "2-digit",
+        omitCommas: true,
       },
     },
   },
@@ -230,6 +278,7 @@ const createCalendarEvent = () => {
         time_period_id: timePeriodIdInput.value,
         start_time: startTimeInput.value,
         end_time: endTimeInput.value,
+        recurring: recurringInput.checked,
       },
       staff_id: userIdInput.value,
       format: "json",
