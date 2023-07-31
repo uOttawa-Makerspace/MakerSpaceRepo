@@ -39,8 +39,18 @@
       </div>
 
       <div class="form-check">
+        <%= f.radio_button :identity, 'international_undergrad', class: 'form-check-input', 'data-show': '#students-only' %>
+        <%= f.label :identity, t('users.new.form.international_undergrad'), class: 'form-check-label', value: 'international_undergrad' %>
+      </div>
+
+      <div class="form-check">
         <%= f.radio_button :identity, 'grad', class: 'form-check-input', 'data-show': '#students-only' %>
         <%= f.label :identity, t('users.new.form.grad'), class: 'form-check-label', value: 'grad' %>
+      </div>
+
+      <div class="form-check">
+        <%= f.radio_button :identity, 'international_grad', class: 'form-check-input', 'data-show': '#students-only' %>
+        <%= f.label :identity, t('users.new.form.international_grad'), class: 'form-check-label', value: 'international_grad' %>
       </div>
 
       <div class="form-check">
