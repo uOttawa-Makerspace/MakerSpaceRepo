@@ -378,7 +378,7 @@ class UsersController < SessionsController
       @acclaim_data = @repo_user.badges
       @makes =
         @repo_user.repositories.where.not(make_id: nil).page params[:page]
-      @joined_projects = @user.project_joins
+      @joined_projects = @repo_user.project_joins
       @photos = photo_hash
       @certifications = @repo_user.certifications.highest_level
       @remaining_trainings = @repo_user.remaining_trainings
