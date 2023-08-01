@@ -79,14 +79,34 @@ class StaffAvailabilitiesController < ApplicationController
     # From staff availability form
     if params[:start_date].present? && params[:end_date].present? &&
          time_period_id.present?
-      start_date = DateTime.parse(params[:start_date])
-      end_date = DateTime.parse(params[:end_date])
-      unless params[:recurring]
+      params_start_time = Time.parse(params[:staff_availability][:start_time])
+      params_end_time = Time.parse(params[:staff_availability][:end_time])
+      params_start_date = Date.parse(params[:start_date])
+      params_end_date = Date.parse(params[:end_date])
+      unless params[:recurring] == "true"
         @staff_availability =
           StaffAvailability.new(
             user_id: @selected_user.id,
-            start_datetime: start_date,
-            end_datetime: end_date,
+            start_datetime:
+              DateTime.new(
+                params_start_date.year,
+                params_start_date.month,
+                params_start_date.day,
+                params_start_time.hour,
+                params_start_time.min,
+                params_start_time.sec,
+                params_start_time.zone
+              ),
+            end_datetime:
+              DateTime.new(
+                params_end_date.year,
+                params_end_date.month,
+                params_end_date.day,
+                params_end_time.hour,
+                params_end_time.min,
+                params_end_time.sec,
+                params_end_time.zone
+              ),
             time_period_id: time_period_id,
             recurring: false
           )
@@ -95,8 +115,8 @@ class StaffAvailabilitiesController < ApplicationController
           StaffAvailability.new(
             user_id: @selected_user.id,
             day: start_date.wday,
-            start_time: start_date.strftime("%H:%M"),
-            end_time: end_date.strftime("%H:%M"),
+            start_time: params_start_time.strftime("%H:%M"),
+            end_time: params_end_time.strftime("%H:%M"),
             time_period_id: time_period_id,
             recurring: true
           )
