@@ -23,66 +23,63 @@ const dayInput = document.getElementById("day");
 const userIdInput = document.getElementById("user-id");
 const timePeriodIdInput = document.getElementById("time-period-id");
 const startTimeInput = document.getElementById("start-time");
+const startDateInput = document.getElementById("start-date");
 const endTimeInput = document.getElementById("end-time");
+const endDateInput = document.getElementById("end-date");
 const recurringInput = document.getElementById("recurring");
 
-let startPicker = startTimeInput.flatpickr({
+const startTimePicker = startTimeInput.flatpickr({
   enableTime: true,
   noCalendar: true,
   dateFormat: "H:i",
   time_24hr: true,
 });
 
-let endPicker = endTimeInput.flatpickr({
+const endTimePicker = endTimeInput.flatpickr({
   enableTime: true,
   noCalendar: true,
   dateFormat: "H:i",
   time_24hr: true,
+});
+
+const startDatePicker = startDateInput.flatpickr({
+  enableTime: false,
+  noCalendar: false,
+  dateFormat: "Y-m-d",
+});
+
+const endDatePicker = endDateInput.flatpickr({
+  enableTime: false,
+  noCalendar: false,
+  dateFormat: "Y-m-d",
 });
 
 recurringInput.addEventListener("change", function () {
-  startPicker.destroy();
-  endPicker.destroy();
-
   if (this.checked) {
     dayInput.parentElement.style.display = "block";
-
-    startPicker = startTimeInput.flatpickr({
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: "H:i",
-      time_24hr: true,
-    });
-    endPicker = endTimeInput.flatpickr({
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: "H:i",
-      time_24hr: true,
-    });
+    startDateInput.parentElement.parentElement.style.display = "none";
+    endDateInput.parentElement.parentElement.style.display = "none";
   } else {
     dayInput.parentElement.style.display = "none";
-
-    startPicker = startTimeInput.flatpickr({
-      enableTime: true,
-      noCalendar: false,
-      dateFormat: "Y-m-d H:i",
-      time_24hr: true,
-    });
-    endPicker = endTimeInput.flatpickr({
-      enableTime: true,
-      noCalendar: false,
-      dateFormat: "Y-m-d H:i",
-      time_24hr: true,
-    });
+    startDateInput.parentElement.parentElement.style.display = "block";
+    endDateInput.parentElement.parentElement.style.display = "block";
   }
 });
 
 document.getElementById("start-time-clear").addEventListener("click", () => {
-  startPicker.clear();
+  startTimePicker.clear();
 });
 
 document.getElementById("end-time-clear").addEventListener("click", () => {
-  endPicker.clear();
+  endTimePicker.clear();
+});
+
+document.getElementById("start-date-clear").addEventListener("click", () => {
+  startDatePicker.clear();
+});
+
+document.getElementById("end-date-clear").addEventListener("click", () => {
+  endDatePicker.clear();
 });
 
 // Calendar Config
@@ -278,7 +275,9 @@ const createCalendarEvent = () => {
         day: dayInput.value,
         time_period_id: timePeriodIdInput.value,
         start_time: startTimeInput.value,
+        start_date: startDateInput.value,
         end_time: endTimeInput.value,
+        end_date: endDateInput.value,
         recurring: recurringInput.checked,
       },
       staff_id: userIdInput.value,
@@ -377,8 +376,10 @@ document
 // Open modal with right values inside
 const openModal = (arg) => {
   if (arg !== undefined && arg !== null) {
-    startPicker.setDate(Date.parse(arg.startStr));
-    endPicker.setDate(Date.parse(arg.endStr));
+    startTimePicker.setDate(Date.parse(arg.startStr));
+    startDatePicker.setDate(Date.parse(arg.startStr));
+    endTimePicker.setDate(Date.parse(arg.endStr));
+    endDatePicker.setDate(Date.parse(arg.endStr));
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
   }
 

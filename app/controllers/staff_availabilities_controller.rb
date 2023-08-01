@@ -76,6 +76,7 @@ class StaffAvailabilitiesController < ApplicationController
         )
     end
 
+    # From staff availability form
     if params[:start_date].present? && params[:end_date].present? &&
          time_period_id.present?
       start_date = DateTime.parse(params[:start_date])
@@ -100,17 +101,42 @@ class StaffAvailabilitiesController < ApplicationController
             recurring: true
           )
       end
+      # From admin area unavailability form
     elsif params[:staff_availability].present? && time_period_id.present?
       unless params[:staff_availability][:recurring]
+        params_start_time = Time.parse(params[:staff_availability][:start_time])
+        params_end_time = Time.parse(params[:staff_availability][:end_time])
+        params_start_date = Date.parse(params[:staff_availability][:start_date])
+        params_end_date = Date.parse(params[:staff_availability][:end_date])
         @staff_availability =
           StaffAvailability.new(
             staff_availability_params.except(
               :start_time,
+              :start_date,
               :end_time,
+              :end_date,
               :day
             ).merge(
-              start_datetime: params[:staff_availability][:start_time],
-              end_datetime: params[:staff_availability][:end_time],
+              start_datetime:
+                DateTime.new(
+                  params_start_date.year,
+                  params_start_date.month,
+                  params_start_date.day,
+                  params_start_time.hour,
+                  params_start_time.min,
+                  params_start_time.sec,
+                  params_start_time.zone
+                ),
+              end_datetime:
+                DateTime.new(
+                  params_end_date.year,
+                  params_end_date.month,
+                  params_end_date.day,
+                  params_end_time.hour,
+                  params_end_time.min,
+                  params_end_time.sec,
+                  params_end_time.zone
+                ),
               user_id: @selected_user.id,
               time_period_id: time_period_id
             )
@@ -118,7 +144,7 @@ class StaffAvailabilitiesController < ApplicationController
       else
         @staff_availability =
           StaffAvailability.new(
-            staff_availability_params.merge(
+            staff_availability_params.except(:start_date, :end_date).merge(
               user_id: @selected_user.id,
               time_period_id: time_period_id
             )
@@ -273,7 +299,9 @@ class StaffAvailabilitiesController < ApplicationController
     params.require(:staff_availability).permit(
       :day,
       :start_time,
+      :start_date,
       :end_time,
+      :end_date,
       :user_id,
       :time_period_id,
       :recurring

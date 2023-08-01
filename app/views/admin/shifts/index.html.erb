@@ -61,11 +61,31 @@
               <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), class: 'form-control form-select', id: 'day' %>
             </div>
 
+              <div class="col-md-6 mb-3" style="display: none;">
+                <label for="start-date">Start Date</label>
+                <div class="input-group">
+                  <%= text_field_tag 'start_date', '', id: 'start-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
+                  <button class="btn btn-outline-danger" id="start-date-clear" type="button">
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+              </div>
+
               <div class="col-md-6 mb-3">
                 <label for="start-datetime">Start Time</label>
                 <div class="input-group">
                   <%= text_field_tag 'start_time', '', id: 'start-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
                   <button class="btn btn-outline-danger" id="start-time-clear" type="button">
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3" style="display: none;">
+                <label for="end-date">End Date</label>
+                <div class="input-group">
+                  <%= text_field_tag 'end_date', '', id: 'end-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
+                  <button class="btn btn-outline-danger" id="end-date-clear" type="button">
                     <i class="fa fa-times"></i>
                   </button>
                 </div>
