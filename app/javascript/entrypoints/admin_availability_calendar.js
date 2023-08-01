@@ -41,9 +41,11 @@ let endPicker = endTimeInput.flatpickr({
 });
 
 recurringInput.addEventListener("change", function () {
+  startPicker.destroy();
+  endPicker.destroy();
+
   if (this.checked) {
-    startPicker.destroy();
-    endPicker.destroy();
+    dayInput.parentElement.style.display = "block";
 
     startPicker = startTimeInput.flatpickr({
       enableTime: true,
@@ -58,8 +60,7 @@ recurringInput.addEventListener("change", function () {
       time_24hr: true,
     });
   } else {
-    startPicker.destroy();
-    endPicker.destroy();
+    dayInput.parentElement.style.display = "none";
 
     startPicker = startTimeInput.flatpickr({
       enableTime: true,
@@ -286,19 +287,34 @@ const createCalendarEvent = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      calendar.addEvent(
-        {
-          title: data.title,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          daysOfWeek: data.daysOfWeek,
-          allDay: false,
-          id: data.id,
-          color: data.color,
-          userId: userIdInput.value,
-        },
-        "unavailabilities"
-      );
+      if (data.recurring) {
+        calendar.addEvent(
+          {
+            title: data.title,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            daysOfWeek: data.daysOfWeek,
+            allDay: false,
+            id: data.id,
+            color: data.color,
+            userId: userIdInput.value,
+          },
+          "unavailabilities"
+        );
+      } else {
+        calendar.addEvent(
+          {
+            title: data.title,
+            start: data.startTime,
+            end: data.endTime,
+            allDay: false,
+            id: data.id,
+            color: data.color,
+            userId: userIdInput.value,
+          },
+          "unavailabilities"
+        );
+      }
       calendar.unselect();
       unavailabilityModal.hide();
     })

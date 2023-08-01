@@ -258,9 +258,14 @@ class Admin::ShiftsController < AdminAreaController
         event = {}
         event["title"] = "#{sa.user.name} is unavailable"
         event["id"] = sa.id
-        event["daysOfWeek"] = [sa.day]
-        event["startTime"] = sa.start_time.strftime("%H:%M")
-        event["endTime"] = sa.end_time.strftime("%H:%M")
+        if sa.recurring?
+          event["daysOfWeek"] = [sa.day]
+          event["startTime"] = sa.start_time.strftime("%H:%M")
+          event["endTime"] = sa.end_time.strftime("%H:%M")
+        else
+          event["start"] = sa.start_datetime
+          event["end"] = sa.end_datetime
+        end
         event["color"] = hex_color_to_rgba(
           sa.user.staff_spaces.find_by(space_id: @space_id).color,
           opacity

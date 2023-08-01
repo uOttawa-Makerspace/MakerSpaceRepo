@@ -911,6 +911,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_27_203718) do
     t.datetime "updated_at", null: false
     t.bigint "time_period_id"
     t.boolean "recurring", default: true
+    t.datetime "start_datetime"
+    t.datetime "end_datetime"
     t.index ["time_period_id"],
             name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"

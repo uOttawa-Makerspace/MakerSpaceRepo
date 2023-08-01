@@ -82,13 +82,29 @@ class StaffAvailabilitiesController < ApplicationController
           time_period_id: time_period_id
         )
     elsif params[:staff_availability].present? && time_period_id.present?
-      @staff_availability =
-        StaffAvailability.new(
-          staff_availability_params.merge(
-            user_id: @selected_user.id,
-            time_period_id: time_period_id
+      unless params[:staff_availability][:recurring]
+        @staff_availability =
+          StaffAvailability.new(
+            staff_availability_params.except(
+              :start_time,
+              :end_time,
+              :day
+            ).merge(
+              start_datetime: params[:staff_availability][:start_time],
+              end_datetime: params[:staff_availability][:end_time],
+              user_id: @selected_user.id,
+              time_period_id: time_period_id
+            )
           )
-        )
+      else
+        @staff_availability =
+          StaffAvailability.new(
+            staff_availability_params.merge(
+              user_id: @selected_user.id,
+              time_period_id: time_period_id
+            )
+          )
+      end
     else
       respond_to do |format|
         format.html { render :new }
@@ -112,8 +128,22 @@ class StaffAvailabilitiesController < ApplicationController
           render json: {
                    title: "#{@staff_availability.user.name} is unavailable",
                    daysOfWeek: [@staff_availability.day],
-                   startTime: @staff_availability.start_time.strftime("%H:%M"),
-                   endTime: @staff_availability.end_time.strftime("%H:%M"),
+                   startTime:
+                     (
+                       if @staff_availability.recurring?
+                         @staff_availability.start_time.strftime("%H:%M")
+                       else
+                         @staff_availability.start_datetime
+                       end
+                     ),
+                   endTime:
+                     (
+                       if @staff_availability.recurring?
+                         @staff_availability.end_time.strftime("%H:%M")
+                       else
+                         @staff_availability.end_datetime
+                       end
+                     ),
                    recurring: @staff_availability.recurring,
                    color:
                      hex_color_to_rgba(
@@ -130,7 +160,10 @@ class StaffAvailabilitiesController < ApplicationController
       else
         format.html { render :new }
         format.json do
-          render json: @staff_availability.errors, status: :unprocessable_entity
+          render json: {
+                   errors: @staff_availability.errors
+                 },
+                 status: :unprocessable_entity
         end
       end
     end
