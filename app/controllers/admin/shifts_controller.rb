@@ -256,7 +256,9 @@ class Admin::ShiftsController < AdminAreaController
       )
       .each do |sa|
         event = {}
-        event["title"] = "#{sa.user.name} is unavailable"
+        event[
+          "title"
+        ] = "#{sa.user.name} is unavailable (#{sa.recurring? ? "Recurring" : "One-Time"})"
         event["id"] = sa.id
         if sa.recurring?
           event["daysOfWeek"] = [sa.day]

@@ -20,10 +20,22 @@ let calendar = new Calendar(calendarEl, {
   views: {
     timeGridWeek: {
       dayHeaderFormat: {
+        weekday: "short",
+        month: "2-digit",
+        day: "2-digit",
+        omitCommas: true,
+      },
+    },
+    timeGridDay: {
+      dayHeaderFormat: {
         weekday: "long",
+        month: "2-digit",
+        day: "2-digit",
+        omitCommas: true,
       },
     },
   },
+  contentHeight: "auto",
   allDaySlot: false,
   timeZone: "America/New_York",
   initialView: "timeGridWeek",

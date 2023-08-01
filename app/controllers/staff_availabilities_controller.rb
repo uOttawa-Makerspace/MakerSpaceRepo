@@ -25,11 +25,18 @@ class StaffAvailabilitiesController < ApplicationController
       .where(time_period: @time_period)
       .each do |a|
         event = {}
-        event["title"] = "Unavailable"
+        event[
+          "title"
+        ] = "#{a.user.name} is unavailable (#{a.recurring? ? "Recurring" : "One-Time"})"
         event["id"] = a.id
-        event["daysOfWeek"] = [a.day]
-        event["startTime"] = a.start_time.strftime("%H:%M")
-        event["endTime"] = a.end_time.strftime("%H:%M")
+        if a.recurring?
+          event["daysOfWeek"] = [a.day]
+          event["startTime"] = a.start_time.strftime("%H:%M")
+          event["endTime"] = a.end_time.strftime("%H:%M")
+        else
+          event["start"] = a.start_datetime
+          event["end"] = a.end_datetime
+        end
         staff_availabilities << event
       end
 
@@ -73,14 +80,26 @@ class StaffAvailabilitiesController < ApplicationController
          time_period_id.present?
       start_date = DateTime.parse(params[:start_date])
       end_date = DateTime.parse(params[:end_date])
-      @staff_availability =
-        StaffAvailability.new(
-          user_id: @selected_user.id,
-          day: start_date.wday,
-          start_time: start_date.strftime("%H:%M"),
-          end_time: end_date.strftime("%H:%M"),
-          time_period_id: time_period_id
-        )
+      unless params[:recurring]
+        @staff_availability =
+          StaffAvailability.new(
+            user_id: @selected_user.id,
+            start_datetime: start_date,
+            end_datetime: end_date,
+            time_period_id: time_period_id,
+            recurring: false
+          )
+      else
+        @staff_availability =
+          StaffAvailability.new(
+            user_id: @selected_user.id,
+            day: start_date.wday,
+            start_time: start_date.strftime("%H:%M"),
+            end_time: end_date.strftime("%H:%M"),
+            time_period_id: time_period_id,
+            recurring: true
+          )
+      end
     elsif params[:staff_availability].present? && time_period_id.present?
       unless params[:staff_availability][:recurring]
         @staff_availability =
@@ -126,7 +145,8 @@ class StaffAvailabilitiesController < ApplicationController
         end
         format.json do
           render json: {
-                   title: "#{@staff_availability.user.name} is unavailable",
+                   title:
+                     "#{@staff_availability.user.name} is unavailable (#{@staff_availability.recurring? ? "Recurring" : "One-Time"})",
                    daysOfWeek: [@staff_availability.day],
                    startTime:
                      (
