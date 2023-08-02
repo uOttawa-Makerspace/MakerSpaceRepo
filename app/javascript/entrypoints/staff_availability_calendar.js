@@ -113,8 +113,10 @@ let modifyEvent = (arg) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      start_date: arg.event.start,
-      end_date: arg.event.end,
+      staff_availability: {
+        start_date: arg.event.start,
+        end_date: arg.event.end,
+      },
       format: "json",
     }),
   })
