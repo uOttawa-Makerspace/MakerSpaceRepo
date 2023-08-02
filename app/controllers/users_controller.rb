@@ -378,7 +378,7 @@ class UsersController < SessionsController
       @acclaim_data = @repo_user.badges
       @makes =
         @repo_user.repositories.where.not(make_id: nil).page params[:page]
-      @joined_projects = @user.project_joins
+      @joined_projects = @repo_user.project_joins
       @photos = photo_hash
       @certifications = @repo_user.certifications.highest_level
       @remaining_trainings = @repo_user.remaining_trainings
@@ -464,60 +464,6 @@ class UsersController < SessionsController
     @user.destroy
     #disconnect_user
     redirect_to root_path
-  end
-
-  def vote # MAKE A UPVOTE CONTROLLER TO PUT THIS IN
-    downvote = params["downvote"].eql?("t") ? true : false
-    comment = Comment.find params[:comment_id]
-    comment_user = comment.user
-    if params[:voted].eql?("true")
-      upvote = @user.upvotes.where(comment_id: comment.id).take
-      if (!upvote.downvote && downvote) || (upvote.downvote && !downvote)
-        upvote.update! downvote: downvote
-        count = downvote ? comment.upvote - 2 : comment.upvote + 2
-        if downvote
-          comment_user.decrement!(:reputation, 4)
-        else
-          comment_user.increment!(:reputation, 4)
-        end
-        render json: {
-                 upvote_count: count,
-                 comment_id: comment.id,
-                 voted: "true",
-                 color: "#19c1a5"
-               }
-      else
-        upvote.destroy!
-        count = downvote ? comment.upvote + 1 : comment.upvote - 1
-        if downvote
-          comment_user.increment!(:reputation, 2)
-        else
-          comment_user.decrement!(:reputation, 2)
-        end
-        render json: {
-                 upvote_count: count,
-                 comment_id: comment.id,
-                 voted: "false",
-                 color: "#999"
-               }
-      end
-    else
-      @user.upvotes.create!(comment_id: comment.id, downvote: downvote)
-      count = downvote ? comment.upvote - 1 : comment.upvote + 1
-      if downvote
-        comment_user.decrement!(:reputation, 2)
-      else
-        comment_user.increment!(:reputation, 2)
-      end
-      render json: {
-               upvote_count: count,
-               comment_id: comment.id,
-               voted: "true",
-               color: "#19c1a5"
-             }
-    end
-  rescue StandardError
-    head 500
   end
 
   private

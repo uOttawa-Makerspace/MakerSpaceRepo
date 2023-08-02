@@ -536,6 +536,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_25_202024) do
     t.string "status", default: "In progress"
     t.text "user_comments", default: ""
     t.text "admin_comments", default: ""
+    t.index ["order_id"], name: "index_order_items_on_order_id"
+    t.index ["proficient_project_id"],
+            name: "index_order_items_on_proficient_project_id"
   end
 
   create_table "order_statuses", id: :serial, force: :cascade do |t|

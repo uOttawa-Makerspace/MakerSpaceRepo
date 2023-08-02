@@ -83,6 +83,10 @@ class ProjectProposal < ApplicationRecord
     end
   end
 
+  def has_user
+    !self.user_id.nil?
+  end
+
   def approval_status
     case self.approved
     when 0

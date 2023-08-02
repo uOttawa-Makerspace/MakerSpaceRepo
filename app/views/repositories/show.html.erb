@@ -19,10 +19,11 @@
 
     <br></br>
     <% if @user.admin? %>
-        Currently Featured: <%= @repository.featured.to_s.upcase %><br></br>
-        <%= button_to 'Feature / Unfeature', pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :get,
-                                                                                                                      class: 'btn btn-primary' %>
-        <br></br>
+        Currently Featured: <%= @repository.featured.to_s.upcase %>
+        <% featured_text = @repository.featured? ? 'Unfeature' : 'Feature' %>
+        <%= button_to featured_text, pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :patch,
+                                                                                                              class: 'btn btn-primary my-3' %>
+
         <%= button_to 'Delete', delete_repository_admin_users_path(id: @repository.id), method: :delete,
                                                                                         class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
     <% end %>
@@ -57,7 +58,11 @@
       <div class="repo-info-item">
         <div class="title">PROJECT BY</div>
         <% @repository.users.find_each do |u| %>
-            <div class="name"><%= link_to u.username, user_path(u.username) %></div>
+            <% if u.id == @repository.user_id %>
+              <div class="name"><i class="fa fa-solid fa-star"></i><%= link_to u.username, user_path(u.username) %></div>
+            <% else %>
+              <div class="name"><%= link_to u.username, user_path(u.username) %></div>
+            <% end %>
         <% end %>
       </div>
       <div class="repo-info-item">
@@ -95,9 +100,10 @@
       <% end %>
 
       <div class="repo-info-item">
-        <span class="like" style="color: white;">
-          <%= link_to(fa_icon('heart', text: 'Like'),
-                      add_like_repository_path, class: 'like', remote: true, method: :post) %>
+        <span class="like<%= @liked ? ' bg-success' : '' %>" style="color: white;">
+          <% like_text = @liked ? 'Unlike' : 'Like' %>
+          <%= button_to(fa_icon('heart', text: like_text),
+                        add_like_repository_path, class: 'like border-0 bg-transparent', remote: true, method: :post, style: 'color: inherit !important; padding: inherit !important;') %>
         </span>
         <span class="make" style="color: white;">
           <%= link_to fa_icon('code-fork', text: 'Make'), makes_new_path(@repository.user_username, @repository.id), class: 'make' %>
@@ -148,8 +154,8 @@
         </div>
 
         <div class="repo-info-item">
-          <div class="title">Add an owner:</div>
-          <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_owner' }, method: :patch do |f| %>
+          <div class="title">Add a member:</div>
+          <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_member' }, method: :patch do |f| %>
               <div class="mb-3 input-group">
                 <%= f.hidden_field :repository_id, value: @repository.id %>
                 <%= f.select(:owner_id, '', { prompt: 'Choose...' }, { class: 'search_users_add form-control', id: 'search_users_add' }) %>
@@ -161,16 +167,30 @@
         </div>
 
           <div class="repo-info-item">
-            <div class="title">Remove an owner:</div>
-            <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_owner' }, method: :patch do |f| %>
+            <div class="title">Remove a member:</div>
+            <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_member' }, method: :patch do |f| %>
                 <div class="mb-3 input-group">
                   <%= f.hidden_field :repository_id, value: @repository.id %>
-                  <%= f.select(:owner_id, @owners.pluck(:username, :id), { prompt: 'Choose...' }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
+                  <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: 'Choose...' }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
                   <br> </br>
                   <%= f.submit 'Remove', class: 'btn btn-danger' %>
                 </div>
             <% end %>
           </div>
+
+        <% if @user.id == @repository.user_id || @user.admin? %>
+          <div class="repo-info-item">
+            <div class="title">Transfer ownership:</div>
+            <%= form_for :repo_owner, url: { controller: 'repositories', action: 'transfer_owner' }, method: :patch do |f| %>
+                <div class="mb-3 input-group required">
+                  <%= f.hidden_field :repository_id, value: @repository.id %>
+                  <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: 'Choose...' }, { class: 'form-control', id: 'search_users_transfer' }) %>
+                  <br> </br>
+                  <%= f.submit 'Transfer', class: 'btn btn-warning' %>
+                </div>
+            <% end %>
+          </div>
+        <% end %>
 
           </div>
       <% end %>
@@ -180,7 +200,7 @@
   <section id="repo-comments">
     <div class="title">Comments</div>
     <%= form_for('Comments', url: comments_create_path, id: 'comment', remote: true) do %>
-      <div style="max-width: 50rem" class="mb-3">
+      <div class="mb-3">
         <%= hidden_field_tag :content %>
         <trix-editor input="content"></trix-editor>
       </div>
@@ -200,16 +220,15 @@
       <% @comments.each do |comment| %>
       <div class="comment">
         <div class="comment-upvote">
-vote = @vote.flatten.include?(comment.id)
-            color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999'
-            link_to fa_icon('angle-up'), vote_path(comment_id: comment.id,
-                                                   voted: vote, downvote: 'f'), class: 'vote upvote', remote: true, method: :post, style: "color: #{color}"
+          <% color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999' %>
+          <%= button_to fa_icon('angle-up'), comments_vote_path(comment_id: comment.id, downvote: 'f'),
+                        class: 'vote upvote border-0 bg-transparent', remote: true, method: :post, style: "color: #{color}"
           %>
           <div class="upvote upvote-<%= comment.id %>"><%= comment.upvote %></div>
-color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999'
-            link_to fa_icon('angle-down'), vote_path(comment_id: comment.id,
-                                                     voted: vote, downvote: 't'), class: 'vote downvote', remote: true, method: :post, style: "color: #{color}"
-          %>
+            <% color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999' %>
+            <%= button_to fa_icon('angle-down'), comments_vote_path(comment_id: comment.id, downvote: 't'),
+                          class: 'vote upvote border-0 bg-transparent', remote: true, method: :post, style: "color: #{color}"
+            %>
         </div>
         <div class="comment-header">
           <%= link_to user_path(comment.username) do %>
@@ -217,7 +236,7 @@ color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999'
            <% end %>
           <%= content_tag :div, time_ago_in_words(comment.created_at) << ' ago', class: 'time' %><br>
           <% if ((@user.admin?) || (@user.id.equal? comment.user_id)) %>
-            <%= button_to fa_icon('times'), { controller: :comments, action: :destroy, id: comment.id }, method: :delete, data: { confirm: 'Are you sure?' }, class: 'x-comment-button' %>
+            <%= button_to fa_icon('times'), { controller: :comments, action: :destroy, id: comment.id }, method: :delete, data: { confirm: 'Are you sure you want to delete this comment?' }, class: 'text-danger float-end' %>
           <% end %>
         </div>
         <div class="comment-content">
