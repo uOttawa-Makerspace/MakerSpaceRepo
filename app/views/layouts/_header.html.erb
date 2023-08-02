@@ -73,7 +73,6 @@
             <%= link_to(t('navbar.user.exams'), exams_path, class: 'dropdown-item') if @user.exams.present? %>
             <a class="dropdown-item" href="<%= job_orders_path %>"><%= t('navbar.user.joborder') %></a>
             <%= link_to(t('navbar.user.joborder_admin'), admin_job_orders_path, class: 'dropdown-item') if @user.staff? || @user.admin? %>
-            <%= link_to('Booking Admin', sub_space_booking_index_path(anchor: 'booking-admin-tab'), class: 'dropdown-item') if @user.staff? || @user.admin? %>
             <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
           </div>
 
