@@ -309,16 +309,59 @@ class StaffAvailabilitiesController < ApplicationController
           end
         end
       end
-      # from admin area form
+      # from calendar
     elsif params[:staff_availability].present?
       respond_to do |format|
-        if @staff_availability.update(staff_availability_params)
+        params_start_date = Date.parse(params[:staff_availability][:start_date])
+        params_end_date = Date.parse(params[:staff_availability][:end_date])
+        params_start_time = Time.parse(params[:staff_availability][:start_date])
+        params_end_time = Time.parse(params[:staff_availability][:end_date])
+
+        if @staff_availability.recurring?
+          update_params = {
+            start_time: params_start_time.strftime("%H:%M"),
+            end_time: params_end_time.strftime("%H:%M"),
+            day: Time.parse(params[:staff_availability][:start_date]).wday,
+            start_datetime: nil,
+            end_datetime: nil
+          }
+        else
+          params_start_time = Time.parse(params_start_time.strftime("%H:%M"))
+          params_end_time = Time.parse(params_end_time.strftime("%H:%M"))
+          update_params = {
+            start_datetime:
+              DateTime.new(
+                params_start_date.year,
+                params_start_date.month,
+                params_start_date.day,
+                params_start_time.hour,
+                params_start_time.min,
+                params_start_time.sec,
+                params_start_time.zone
+              ),
+            end_datetime:
+              DateTime.new(
+                params_end_date.year,
+                params_end_date.month,
+                params_end_date.day,
+                params_end_time.hour,
+                params_end_time.min,
+                params_end_time.sec,
+                params_end_time.zone
+              ),
+            start_time: nil,
+            end_time: nil,
+            day: nil
+          }
+        end
+
+        if @staff_availability.update(update_params)
           format.html do
             redirect_to staff_availabilities_path,
                         notice:
                           "The staff unavailability was successfully updated."
           end
-          format.json { render :index, status: :ok }
+          format.json { render json: { status: "ok" }, status: :ok }
         else
           format.html { render :edit }
           format.json do

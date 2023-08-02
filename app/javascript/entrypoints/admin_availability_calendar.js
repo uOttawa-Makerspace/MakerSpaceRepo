@@ -136,15 +136,19 @@ const calendar = new Calendar(calendarEl, {
   },
   dayMaxEvents: true,
   select: (arg) => {
+    console.log("RAN SELECT: ", arg);
     openModal(arg);
   },
   eventClick: (arg) => {
+    console.log("RAN CLICK: ", arg);
     removeEvent(arg);
   },
   eventDrop: (arg) => {
+    console.log("RAN DROP: ", arg);
     modifyEvent(arg);
   },
   eventResize: (arg) => {
+    console.log("RAN RESIZE: ", arg);
     modifyEvent(arg);
   },
   eventSources: [
@@ -353,8 +357,10 @@ const modifyEvent = (arg) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      start_date: arg.event.start,
-      end_date: arg.event.end,
+      staff_availability: {
+        start_date: arg.event.start,
+        end_date: arg.event.end,
+      },
       format: "json",
     }),
   })
