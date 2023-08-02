@@ -2,6 +2,7 @@ import TomSelect from "tom-select";
 import "flatpickr";
 
 const recurring_checkbox = document.getElementById("recurring");
+//recurring_checkbox.value = recurring_checkbox.checked ? 1 : 0;
 const day_input = document.getElementById("day");
 const start_date_input = document.getElementById("start_date");
 const end_date_input = document.getElementById("end_date");
@@ -42,7 +43,6 @@ recurring_checkbox.addEventListener("change", function () {
     start_date_input.parentElement.parentElement.style.display = "block";
     end_date_input.parentElement.parentElement.style.display = "block";
   }
-  this.value = this.checked;
 });
 
 document.getElementById("start_time_clear").addEventListener("click", () => {

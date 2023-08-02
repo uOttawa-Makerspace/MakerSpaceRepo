@@ -2,7 +2,7 @@
   <h2 class="text-center pt-2 mb-5 fw-bold">Edit a availability</h2>
   <div class="container my-5">
     <div class="row">
-      <div class="col-lg-12">
+      <div class="col-lg-8 mx-auto">
         <%= form_for @staff_availability, url: { controller: 'staff_availabilities', action: 'update' } do |f| %>
           <div class="row">
             <div class="col-md-12">
@@ -10,9 +10,9 @@
                 <%= f.label :user_id, 'User to select', class: 'form-label' %>
                 <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id).sort_by { |n| n[0].titleize }, selected: f.object.user_id), {}, id: 'userId', autocomplete: 'off', required: true, class: 'form-control form-select' %>
               </div>
-              <div class="mb-3 text-center">
+              <div class="mb-3 text-center" style="display: <%= @date_display == 'block' ? 'none' : 'block' %>;">
                 <%= f.label :day, 'Day of the week', class: 'form-label' %>
-                <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])], selected: f.object.day), {}, class: 'form-control form-select' %>
+                <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])], selected: f.object.day), {}, id: 'day', class: 'form-control form-select' %>
               </div>
 
               <div class="mb-3 text-center">
@@ -21,23 +21,47 @@
               </div>
             </div>
 
+            <div class="mb-3 col-md-6 text-center" style="display: <%= @date_display %>;">
+              <%= label_tag :start_date, 'Start Date', class: 'form-label' %>
+              <div class="input-group">
+                <%= text_field_tag 'start_date', '', id: 'start_date', autocomplete: 'off', class: 'form-control inanimate', required: false, value: f.object&.start_datetime %>
+                <button class="btn btn-outline-danger" id="start_date_clear" type="button">
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+            </div>
             <div class="mb-3 col-md-6 text-center">
               <%= f.label :start_time, 'Start Time (24h format)', class: 'form-label' %>
               <div class="input-group">
-                <%= f.text_field 'start_time', id: 'start_time', autocomplete: 'off', class: 'form-control inanimate', required: true, value: f.object.start_time.strftime('%H:%M') %>
+                <%= f.text_field 'start_time', id: 'start_time', autocomplete: 'off', class: 'form-control inanimate', required: true, value: f.object&.start_time&.strftime('%H:%M') %>
                 <button class="btn btn-outline-danger" id="start_time_clear" type="button">
                   <i class="fa fa-times"></i>
                 </button>
               </div>
             </div>
-            <div class="col-md-6">
+
+            <div class="mb-3 col-md-6 text-center" style="display: <%= @date_display %>;">
+              <%= label_tag :end_date, 'End Date', class: 'form-label' %>
+              <div class="input-group">
+                <%= text_field_tag 'end_date', '', id: 'end_date', autocomplete: 'off', class: 'form-control inanimate', required: false, value: f.object&.end_datetime %>
+                <button class="btn btn-outline-danger" id="end_date_clear" type="button">
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6 text-center">
               <%= f.label :end_time, 'End Time (24h format)', class: 'form-label' %>
               <div class="input-group">
-                <%= f.text_field 'end_time', id: 'end_time', autocomplete: 'off', class: 'form-control inanimate', required: true, value: f.object.end_time.strftime('%H:%M') %>
+                <%= f.text_field 'end_time', id: 'end_time', autocomplete: 'off', class: 'form-control inanimate', required: true, value: f.object&.end_time&.strftime('%H:%M') %>
                 <button class="btn btn-outline-danger" id="end_time_clear" type="button">
                   <i class="fa fa-times"></i>
                 </button>
               </div>
+            </div>
+
+            <div class="mb-3 col-md-12 text-center">
+              <%= label_tag :recurring, 'Recurring', class: 'form-label' %>
+              <%= check_box_tag :recurring, '', @staff_availability.recurring?, id: 'recurring', class: 'form-check-input' %>
             </div>
 
             <div class="col-lg-12 text-center">
