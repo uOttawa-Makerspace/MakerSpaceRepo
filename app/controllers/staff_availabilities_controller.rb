@@ -37,6 +37,7 @@ class StaffAvailabilitiesController < ApplicationController
           event["start"] = a.start_datetime
           event["end"] = a.end_datetime
         end
+        event["recurring"] = a.recurring?
         staff_availabilities << event
       end
 

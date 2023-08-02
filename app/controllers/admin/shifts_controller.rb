@@ -272,6 +272,7 @@ class Admin::ShiftsController < AdminAreaController
           sa.user.staff_spaces.find_by(space_id: @space_id).color,
           opacity
         )
+        event["recurring"] = sa.recurring?
         event["userId"] = sa.user.id
         event["className"] = sa.user.name.strip.downcase.gsub(" ", "-")
         staff_availabilities << event

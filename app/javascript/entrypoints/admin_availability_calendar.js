@@ -12,6 +12,10 @@ const unavailabilityModal = new Modal(
   document.getElementById("unavailabilityModal")
 );
 
+const modalTitle = document.getElementById("modal-title");
+const modalDelete = document.getElementById("modal-delete");
+const unavailabilityId = document.getElementById("unavailability-id");
+
 // Show state
 let showUnavailabilities = "block";
 let hiddenIds = {};
@@ -91,7 +95,7 @@ const calendar = new Calendar(calendarEl, {
     addNewEvent: {
       text: "+",
       click: () => {
-        unavailabilityModal.show();
+        openModal(null);
       },
     },
   },
@@ -139,7 +143,7 @@ const calendar = new Calendar(calendarEl, {
     openModal(arg);
   },
   eventClick: (arg) => {
-    removeEvent(arg);
+    editModal(arg);
   },
   eventDrop: (arg) => {
     modifyEvent(arg);
@@ -322,9 +326,14 @@ const createCalendarEvent = () => {
     });
 };
 
-const removeEvent = (arg) => {
-  if (confirm("Are you sure you want to delete this unavailability?")) {
-    fetch("/staff_availabilities/" + arg.event.id, {
+const removeEvent = (id) => {
+  const event = calendar.getEventById(id);
+
+  if (
+    confirm("Are you sure you want to delete this unavailability?") &&
+    event !== null
+  ) {
+    fetch("/staff_availabilities/" + id, {
       method: "DELETE",
       headers: {
         Accept: "application/json",
@@ -334,10 +343,11 @@ const removeEvent = (arg) => {
     })
       .then((response) => {
         if (response.ok) {
-          arg.event.remove();
+          event.remove();
         } else {
           console.log("An error occurred");
         }
+        unavailabilityModal.hide();
       })
       .catch((error) => {
         console.log("An error occurred: " + error.message);
@@ -377,6 +387,15 @@ document
 
 // Open modal with right values inside
 const openModal = (arg) => {
+  modalTitle.innerText = "New Unavailability";
+  modalDelete.style.display = "none";
+  unavailabilityId.value = "";
+
+  recurringInput.checked = true;
+  dayInput.parentElement.style.display = "block";
+  startDateInput.parentElement.parentElement.style.display = "none";
+  endDateInput.parentElement.parentElement.style.display = "none";
+
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.startStr));
     startDatePicker.setDate(Date.parse(arg.startStr));
@@ -387,3 +406,35 @@ const openModal = (arg) => {
 
   unavailabilityModal.show();
 };
+
+const editModal = (arg) => {
+  modalTitle.innerText = "Edit Unavailability";
+  modalDelete.style.display = "block";
+
+  if (arg !== undefined && arg !== null) {
+    startTimePicker.setDate(Date.parse(arg.event.startStr));
+    startDatePicker.setDate(Date.parse(arg.event.startStr));
+    endTimePicker.setDate(Date.parse(arg.event.endStr));
+    endDatePicker.setDate(Date.parse(arg.event.endStr));
+    dayInput.value = new Date(Date.parse(arg.event.startStr)).getDay();
+
+    unavailabilityId.value = arg.event.id;
+    recurringInput.checked = arg.event.extendedProps.recurring;
+
+    if (arg.event.extendedProps.recurring) {
+      dayInput.parentElement.style.display = "block";
+      startDateInput.parentElement.parentElement.style.display = "none";
+      endDateInput.parentElement.parentElement.style.display = "none";
+    } else {
+      dayInput.parentElement.style.display = "none";
+      startDateInput.parentElement.parentElement.style.display = "block";
+      endDateInput.parentElement.parentElement.style.display = "block";
+    }
+  }
+
+  unavailabilityModal.show();
+};
+
+modalDelete.addEventListener("click", () => {
+  removeEvent(parseInt(unavailabilityId.value));
+});
