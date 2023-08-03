@@ -229,7 +229,8 @@ class StaffAvailabilitiesController < ApplicationController
                          .color,
                        1
                      ),
-                   id: @staff_availability.id
+                   id: @staff_availability.id,
+                   userId: @staff_availability.user.id
                  }
         end
       else
