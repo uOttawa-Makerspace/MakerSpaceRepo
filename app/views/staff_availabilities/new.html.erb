@@ -7,10 +7,6 @@
           <div class="row">
             <div class="col-md-12">
               <div class="mb-3 text-center">
-                <%= f.label :user_id, 'User to select', class: 'form-label' %>
-                <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id).sort_by { |n| n[0].titleize }), {}, id: 'userId', autocomplete: 'off', required: true, class: 'form-control form-select' %>
-              </div>
-              <div class="mb-3 text-center">
                 <%= f.label :day, 'Day of the week', class: 'form-label' %>
                 <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), {}, id: 'day', class: 'form-control form-select' %>
               </div>

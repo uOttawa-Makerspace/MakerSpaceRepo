@@ -1,15 +1,11 @@
 <div class="padding-10">
-  <h2 class="text-center pt-2 mb-5 fw-bold">Edit a availability</h2>
+  <h2 class="text-center pt-2 mb-5 fw-bold">Edit an availability</h2>
   <div class="container my-5">
     <div class="row">
       <div class="col-lg-8 mx-auto">
         <%= form_for @staff_availability, url: { controller: 'staff_availabilities', action: 'update' } do |f| %>
           <div class="row">
             <div class="col-md-12">
-              <div class="mb-3 text-center">
-                <%= f.label :user_id, 'User to select', class: 'form-label' %>
-                <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id).sort_by { |n| n[0].titleize }, selected: f.object.user_id), {}, id: 'userId', autocomplete: 'off', required: true, class: 'form-control form-select' %>
-              </div>
               <div class="mb-3 text-center" style="display: <%= @date_display == 'block' ? 'none' : 'block' %>;">
                 <%= f.label :day, 'Day of the week', class: 'form-label' %>
                 <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])], selected: f.object.day), {}, id: 'day', class: 'form-control form-select' %>
