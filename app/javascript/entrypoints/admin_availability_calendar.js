@@ -301,6 +301,7 @@ const createCalendarEvent = () => {
             id: data.id,
             color: data.color,
             userId: userIdInput.value,
+            recurring: true,
           },
           "unavailabilities"
         );
@@ -314,10 +315,16 @@ const createCalendarEvent = () => {
             id: data.id,
             color: data.color,
             userId: userIdInput.value,
+            recurring: false,
           },
           "unavailabilities"
         );
       }
+
+      if (modalDelete.style.display === "block") {
+        removeEvent(parseInt(unavailabilityId.value), true);
+      }
+
       calendar.unselect();
       unavailabilityModal.hide();
     })
@@ -326,11 +333,12 @@ const createCalendarEvent = () => {
     });
 };
 
-const removeEvent = (id) => {
+const removeEvent = (id, bypass) => {
   const event = calendar.getEventById(id);
 
   if (
-    confirm("Are you sure you want to delete this unavailability?") &&
+    (bypass ||
+      confirm("Are you sure you want to delete this unavailability?")) &&
     event !== null
   ) {
     fetch("/staff_availabilities/" + id, {
@@ -436,5 +444,5 @@ const editModal = (arg) => {
 };
 
 modalDelete.addEventListener("click", () => {
-  removeEvent(parseInt(unavailabilityId.value));
+  removeEvent(parseInt(unavailabilityId.value), false);
 });
