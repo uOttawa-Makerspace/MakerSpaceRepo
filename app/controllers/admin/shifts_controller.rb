@@ -264,6 +264,8 @@ class Admin::ShiftsController < AdminAreaController
           event["daysOfWeek"] = [sa.day]
           event["startTime"] = sa.start_time.strftime("%H:%M")
           event["endTime"] = sa.end_time.strftime("%H:%M")
+          event["startRecur"] = sa.time_period.start_date.beginning_of_day
+          event["endRecur"] = sa.time_period.end_date.end_of_day
         else
           event["start"] = sa.start_datetime
           event["end"] = sa.end_datetime

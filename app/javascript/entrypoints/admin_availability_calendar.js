@@ -302,6 +302,8 @@ const createCalendarEvent = () => {
             color: data.color,
             userId: userIdInput.value,
             recurring: true,
+            startRecur: data.timePeriodStart,
+            endRecur: data.timePeriodEnd,
           },
           "unavailabilities"
         );
@@ -327,6 +329,7 @@ const createCalendarEvent = () => {
 
       calendar.unselect();
       unavailabilityModal.hide();
+      calendar.refetchEvents();
     })
     .catch((error) => {
       console.log("An error occurred: " + error.message);
@@ -356,6 +359,10 @@ const removeEvent = (id, bypass) => {
           console.log("An error occurred");
         }
         unavailabilityModal.hide();
+
+        if (!bypass) {
+          calendar.refetchEvents();
+        }
       })
       .catch((error) => {
         console.log("An error occurred: " + error.message);

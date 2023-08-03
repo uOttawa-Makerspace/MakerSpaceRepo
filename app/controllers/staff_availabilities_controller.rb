@@ -33,6 +33,8 @@ class StaffAvailabilitiesController < ApplicationController
           event["daysOfWeek"] = [a.day]
           event["startTime"] = a.start_time.strftime("%H:%M")
           event["endTime"] = a.end_time.strftime("%H:%M")
+          event["startRecur"] = a.time_period.start_date.beginning_of_day
+          event["endRecur"] = a.time_period.end_date.end_of_day
         else
           event["start"] = a.start_datetime
           event["end"] = a.end_datetime
@@ -185,6 +187,8 @@ class StaffAvailabilitiesController < ApplicationController
       end
     end
 
+    time_period = TimePeriod.find(time_period_id)
+
     respond_to do |format|
       if @staff_availability.save!
         format.html do
@@ -214,6 +218,8 @@ class StaffAvailabilitiesController < ApplicationController
                        end
                      ),
                    recurring: @staff_availability.recurring,
+                   timePeriodStart: time_period.start_date,
+                   timePeriodEnd: time_period.end_date,
                    color:
                      hex_color_to_rgba(
                        @staff_availability
