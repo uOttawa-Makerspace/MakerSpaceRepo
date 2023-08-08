@@ -10,8 +10,4 @@ class StaffAvailability < ApplicationRecord
   def week_day
     Date::DAYNAMES[day.to_i]
   end
-
-  def recurring?
-    recurring
-  end
 end
