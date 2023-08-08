@@ -93,25 +93,10 @@ class StaffAvailabilitiesController < ApplicationController
           StaffAvailability.new(
             user_id: @selected_user.id,
             start_datetime:
-              DateTime.new(
-                params_start_date.year,
-                params_start_date.month,
-                params_start_date.day,
-                params_start_time.hour,
-                params_start_time.min,
-                params_start_time.sec,
-                params_start_time.zone
-              ),
+              params_start_date +
+                params_start_time.seconds_since_midnight.seconds,
             end_datetime:
-              DateTime.new(
-                params_end_date.year,
-                params_end_date.month,
-                params_end_date.day,
-                params_end_time.hour,
-                params_end_time.min,
-                params_end_time.sec,
-                params_end_time.zone
-              ),
+              params_end_date + params_end_time.seconds_since_midnight.seconds,
             time_period_id: time_period_id,
             recurring: false
           )
@@ -143,25 +128,11 @@ class StaffAvailabilitiesController < ApplicationController
               :day
             ).merge(
               start_datetime:
-                DateTime.new(
-                  params_start_date.year,
-                  params_start_date.month,
-                  params_start_date.day,
-                  params_start_time.hour,
-                  params_start_time.min,
-                  params_start_time.sec,
-                  params_start_time.zone
-                ),
+                params_start_date +
+                  params_start_time.seconds_since_midnight.seconds,
               end_datetime:
-                DateTime.new(
-                  params_end_date.year,
-                  params_end_date.month,
-                  params_end_date.day,
-                  params_end_time.hour,
-                  params_end_time.min,
-                  params_end_time.sec,
-                  params_end_time.zone
-                ),
+                params_end_date +
+                  params_end_time.seconds_since_midnight.seconds,
               user_id: @selected_user.id,
               time_period_id: time_period_id
             )
@@ -275,25 +246,11 @@ class StaffAvailabilitiesController < ApplicationController
                 :recurring
               ).merge(
                 start_datetime:
-                  DateTime.new(
-                    params_start_date.year,
-                    params_start_date.month,
-                    params_start_date.day,
-                    params_start_time.hour,
-                    params_start_time.min,
-                    params_start_time.sec,
-                    params_start_time.zone
-                  ),
+                  params_start_date +
+                    params_start_time.seconds_since_midnight.seconds,
                 end_datetime:
-                  DateTime.new(
-                    params_end_date.year,
-                    params_end_date.month,
-                    params_end_date.day,
-                    params_end_time.hour,
-                    params_end_time.min,
-                    params_end_time.sec,
-                    params_end_time.zone
-                  ),
+                  params_end_date +
+                    params_end_time.seconds_since_midnight.seconds,
                 start_time: nil,
                 end_time: nil,
                 day: nil,
@@ -338,25 +295,10 @@ class StaffAvailabilitiesController < ApplicationController
           params_end_time = Time.parse(params_end_time.strftime("%H:%M"))
           update_params = {
             start_datetime:
-              DateTime.new(
-                params_start_date.year,
-                params_start_date.month,
-                params_start_date.day,
-                params_start_time.hour,
-                params_start_time.min,
-                params_start_time.sec,
-                params_start_time.zone
-              ),
+              params_start_date +
+                params_start_time.seconds_since_midnight.seconds,
             end_datetime:
-              DateTime.new(
-                params_end_date.year,
-                params_end_date.month,
-                params_end_date.day,
-                params_end_time.hour,
-                params_end_time.min,
-                params_end_time.sec,
-                params_end_time.zone
-              ),
+              params_end_date + params_end_time.seconds_since_midnight.seconds,
             start_time: nil,
             end_time: nil,
             day: nil
