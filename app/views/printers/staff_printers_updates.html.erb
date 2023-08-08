@@ -1,4 +1,4 @@
-<section class="padding">
+<section class="padding-10 mt-4">
 
   <div>
 
@@ -17,6 +17,7 @@
               <th>Printer Number</th>
               <th>User</th>
               <th>Time</th>
+              <th>In Use</th>
             </thead>
             <tbody>
               <% Printer.get_printer_ids(type).sort_by { |printer| Printer.get_last_number_session(printer).created_at }.reverse.each do |printer_id| %>
@@ -25,6 +26,7 @@
                   <td><%= Printer.find(printer_id).number %></td>
                   <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
                   <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
+                  <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
                 </tr>
               <% end %>
 

@@ -17,13 +17,20 @@
     <% @demotions.each do |demotion| %>
       <tr>
         <td class="username"><%= link_to demotion.user.name.titleize, user_path(demotion.user.username) %></td>
-        <td>
-          <%= link_to demotion.training.name, staff_training_session_path(demotion.training_session) %>
-          <br/>
-          <%= certification_status(demotion.training_session.level).html_safe %>
-        </td>
-        <td><%= demotion.trainer %></td>
-        <td><%= link_to demotion.created_at.strftime('%B %d, %Y'), staff_training_session_path(id: demotion.training_session.id), style: 'text-decoration:underline;' %></td>
+        <% if demotion.training_session.present? %>
+          <td>
+            <%= link_to '', staff_training_session_path(demotion.training_session.id), class: 'mb-2' %>
+            <%= certification_status(demotion.training_session.level).html_safe %>
+          </td>
+          <td><%= demotion.trainer %></td>
+          <td>
+              <%= link_to demotion.created_at.strftime('%B %d, %Y'), staff_training_session_path(id: demotion.training_session.id), style: 'text-decoration:underline;' %>
+          </td>
+        <% else %>
+          <% 3.times do %>
+            <td></td>
+          <% end %>
+        <% end %>
         <td><%= demotion.updated_at.strftime('%B %d, %Y') %></td>
         <td><%= demotion.demotion_reason %></td>
         <td><%= demotion.demotion_staff.present? ? (link_to demotion.demotion_staff.name, user_path(demotion.demotion_staff.username)) : 'Staff not available' %></td>
