@@ -21,7 +21,7 @@ fr:
     create_project: "Documenter un projet"
     user:
       profile: "Profil"
-      liked: "Vos préférences"
+      liked: "Vos favoris"
       settings: "Paramètres"
       admin_area: "Zone des administrateurs"
       staff_area: "Zone des employés"
