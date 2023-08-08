@@ -46,6 +46,9 @@ Rails.application.routes.draw do
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
     get :revoke, path: "revoke"
+    get :order_item_modal
+    get :approve_order_item_modal
+    get :revoke_order_item_modal
   end
 
   resources :orders, only: %i[index create destroy]
@@ -294,8 +297,6 @@ Rails.application.routes.draw do
 
     resources :drop_off_locations
 
-    resources :course_names
-
     resources :contact_infos
 
     resources :time_periods, except: [:show]
@@ -321,7 +322,10 @@ Rails.application.routes.draw do
         post "remove_equipment"
         post "submit_pi"
         post "remove_pi"
-        get "pin_unpin_repository"
+        post "add_course"
+        delete "remove_course"
+        patch "rename_course"
+        patch "pin_unpin_repository"
       end
     end
 
@@ -402,11 +406,11 @@ Rails.application.routes.draw do
   end
 
   resources :proficient_projects do
+    get :proficient_project_modal
     collection do
       get :join_development_program
       get :requests
-      get :open_modal
-      get :complete_project
+      put :complete_project
       get :approve_project
       get :revoke_project
       get :generate_acquired_badge
@@ -445,11 +449,7 @@ Rails.application.routes.draw do
   end
 
   resources :questions do
-    collection do
-      delete :delete_individually
-      delete :remove_answer
-      post :add_answer
-    end
+    collection { delete :delete_individually }
   end
 
   resources :staff_availabilities, except: :show do
@@ -513,7 +513,6 @@ Rails.application.routes.draw do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post "vote/:comment_id", as: "vote", action: "vote", to: "users#vote"
 
   # USER RESOURCES
   resources :users, path: "/", param: :username, except: %i[edit destroy] do
@@ -555,8 +554,9 @@ Rails.application.routes.draw do
             id: %r{[^/]+}
           }
       patch :link_to_pp
-      patch :add_owner
-      patch :remove_owner
+      patch :add_member
+      patch :remove_member
+      patch :transfer_owner
     end
     member do
       get "/password_entry", as: "password_entry", action: "password_entry"
@@ -573,6 +573,7 @@ Rails.application.routes.draw do
   namespace :comments do
     post :create, path: "/:id"
     delete :destroy, path: "/:id/destroy"
+    post :vote, path: "/:id/vote"
   end
 
   namespace :quick_access_links do

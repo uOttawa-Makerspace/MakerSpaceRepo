@@ -27,6 +27,7 @@ document.addEventListener("turbo:load", () => {
         maxOptions: 5,
         searchPlaceholder: "Add Owner...",
         searchOnKeyUp: true,
+        openOnFocus: false,
         load: function (type, callback) {
           if (type.length < 2) {
             return;
@@ -92,6 +93,17 @@ document.addEventListener("turbo:load", () => {
       });
     }
   }
+  if (document.getElementById("search_users_transfer")) {
+    if (!document.getElementById("search_users_transfer").tomselect) {
+      new TomSelect("#search_users_transfer", {
+        searchField: ["username"],
+        valueField: "id",
+        labelField: "username",
+        maxOptions: null,
+        searchOnKeyUp: true,
+      });
+    }
+  }
   if (document.getElementById("search_project_proposals")) {
     if (!document.getElementById("search_project_proposals").tomselect) {
       new TomSelect("#search_project_proposals", {
@@ -100,6 +112,7 @@ document.addEventListener("turbo:load", () => {
         labelField: "name",
         maxOptions: null,
         searchOnKeyUp: true,
+        openOnFocus: false,
       });
     }
   }
@@ -108,6 +121,7 @@ document.addEventListener("turbo:load", () => {
       new TomSelect("#repository_categories", {
         plugins: ["remove_button"],
         maxItems: 5,
+        openOnFocus: false,
       });
     }
   }
@@ -116,6 +130,7 @@ document.addEventListener("turbo:load", () => {
       new TomSelect("#repository_equipments", {
         plugins: ["remove_button"],
         maxItems: 5,
+        openOnFocus: false,
       });
     }
   }

@@ -21,7 +21,7 @@ fr:
     create_project: "Documenter un projet"
     user:
       profile: "Profil"
-      liked: "J'aime"
+      liked: "Vos favoris"
       settings: "Paramètres"
       admin_area: "Zone des administrateurs"
       staff_area: "Zone des employés"
@@ -91,7 +91,9 @@ fr:
         no_specify: "Je préfère ne pas spécifier"
         i_am: "Je suis..."
         undergrad: "un étudiant de premier cycle"
+        international_undergrad: "un étudiant international de premier cycle"
         grad: "un étudiant diplômé"
+        international_grad: "un étudiant international diplômé"
         faculty_member: "un membre de la faculté"
         community_member: "un membre de la communauté"
         faculty: "Faculté"

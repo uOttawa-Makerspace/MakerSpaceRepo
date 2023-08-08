@@ -226,11 +226,11 @@ div.repo-info-item {
     color: white !important;
     border-radius: 1rem;
     margin-top: 0.5rem;
+    padding: 0.5rem 1.25rem;
     margin-right: 0.75rem;
 
     a {
       display: block;
-      padding: 0.5rem 1.25rem;
       color: inherit;
     }
 
@@ -352,6 +352,8 @@ section#repo-comments {
       padding: 1rem 0;
       background-color: #fff;
       margin-bottom: 1rem;
+      max-height: 20rem;
+      overflow-y: scroll;
 
       div.comment-upvote {
         @include span-columns(0.5, 0);
@@ -368,6 +370,7 @@ section#repo-comments {
         color: #777;
         font-weight: 300;
         padding-top: 0.5rem;
+        overflow-wrap: break-word;
       }
 
       div.comment-header {

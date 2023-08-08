@@ -36,6 +36,7 @@
             <li><%= link_to t('home.categories.vr'), explore_path(category: 'virtual-reality'), class: 'dropdown-item' %></li>
             <li><%= link_to t('home.categories.team_projects'), explore_path(category: 'uottawa-team-projects'), class: 'dropdown-item' %></li>
             <li><%= link_to t('home.categories.other_projects'), explore_path(category: 'other-projects'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('navbar.user.liked'), likes_user_path(@user.username), class: 'dropdown-item' %></li>
           </ul>
           </div>
       </section>
@@ -59,7 +60,7 @@
 
       <div class="repo-info">
         <div class="start">
-          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
+          <div class="likes<%= repository.likes.find_by(user_id: @user.id).nil? ? '' : ' text-info' %>"><%= fa_icon 'heart' %><br><%= repository.like %></div>
           <div class="title">
             <%= link_to repository.title, repository_path(user_username: repository.user_username, id: repository.slug) %>
           </div>

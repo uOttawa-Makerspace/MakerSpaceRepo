@@ -40,6 +40,10 @@
   background-repeat: no-repeat;
   background-position: center;
   height: 270px;
+
+  &:hover {
+    cursor: pointer;
+  }
 }
 
 .watermark {

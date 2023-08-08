@@ -271,7 +271,10 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:proficient_project)
-        get :open_modal, format: "js", params: { id: ProficientProject.last.id }
+        get :proficient_project_modal,
+            params: {
+              proficient_project_id: ProficientProject.last.id
+            }
         expect(response).to have_http_status(:success)
       end
     end
@@ -286,10 +289,14 @@ RSpec.describe ProficientProjectsController, type: :controller do
         create(:order, :with_item, user_id: user.id)
         proficient_project = ProficientProject.last
         proficient_project.update(badge_template_id: "")
-        get :complete_project,
+        put :complete_project,
             format: "js",
             params: {
-              id: proficient_project.id
+              id: proficient_project.id,
+              order_item: {
+                user_comments: "",
+                files: []
+              }
             }
         expect(response).to redirect_to proficient_project
         expect(proficient_project.order_items.last.status).to eq(
@@ -313,15 +320,25 @@ RSpec.describe ProficientProjectsController, type: :controller do
         create(:user, email: "avend029@uottawa.ca")
         @proficient_project = ProficientProject.last
         @proficient_project.update(badge_template_id: "")
-        get :complete_project,
+        put :complete_project,
             format: "js",
             params: {
-              id: @proficient_project.id
+              id: @proficient_project.id,
+              order_item: {
+                user_comments: "",
+                files: []
+              }
             }
       end
 
       it "should set the oi as Awarded" do
-        get :approve_project, params: { oi_id: OrderItem.last.id }
+        get :approve_project,
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
         sleep 3
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq("Awarded")
@@ -351,15 +368,26 @@ RSpec.describe ProficientProjectsController, type: :controller do
         create(:order, :with_item, user_id: @user.id)
         @proficient_project = ProficientProject.last
         @proficient_project.update(badge_template_id: "")
-        get :complete_project,
+        put :complete_project,
             format: "js",
             params: {
-              id: @proficient_project.id
+              id: @proficient_project.id,
+              order_item: {
+                user_comments: "",
+                files: []
+              }
             }
       end
 
       it "should set the oi as Revoked" do
-        get :revoke_project, format: "js", params: { oi_id: OrderItem.last.id }
+        get :revoke_project,
+            format: "js",
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq("Revoked")
         expect(ActionMailer::Base.deliveries.count).to eq(3)

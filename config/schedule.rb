@@ -63,13 +63,17 @@ every :day, at: "2am" do
   rake "active_volunteers:check_volunteers_status"
 end
 
+every :day, at: "2:30am" do
+  rake "printers:clear_printers"
+end
+
 every :day, at: "11:59pm" do
   rake "exams:check_expired_exams"
 end
 
 every :day, at: "3am" do
-  rake "badge:get_data"
-  rake "badge:get_and_update_badge_templates"
+  rake "badges:get_data"
+  rake "badges:get_and_update_badge_templates"
 end
 
 every :day, at: "2am" do

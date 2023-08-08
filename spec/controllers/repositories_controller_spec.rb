@@ -349,7 +349,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(User.last.reputation).to eq(5)
       end
 
-      it "should fail to add a second like from the same user" do
+      it "should unlike the repository from the same user" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
@@ -368,8 +368,7 @@ RSpec.describe RepositoriesController, type: :controller do
                  user_username: User.last.username,
                  id: Repository.last.id
                }
-        }.to change(Repository.last.likes, :count).by(0)
-        expect(response.body).to include("failed")
+        }.to change(Repository.last.likes, :count).by(-1)
       end
     end
   end
@@ -406,7 +405,7 @@ RSpec.describe RepositoriesController, type: :controller do
             }
         expect(response).to redirect_to password_entry_repository_path(
                       Repository.last.user_username,
-                      Repository.last.slug
+                      Repository.last.id
                     )
         expect(flash[:alert]).to eq("Incorrect password. Try again!")
       end
@@ -456,8 +455,8 @@ RSpec.describe RepositoriesController, type: :controller do
     end
   end
 
-  describe "#add_owner" do
-    context "Add Owner" do
+  describe "#add_member" do
+    context "Add Member" do
       before(:each) do
         @owner = create(:user, :regular_user)
         @member = create(:user, :regular_user)
@@ -474,7 +473,7 @@ RSpec.describe RepositoriesController, type: :controller do
       end
 
       it "should not add member twice" do
-        post :add_owner,
+        post :add_member,
              params: {
                user_username: @owner.username,
                repo_owner: {
@@ -482,7 +481,7 @@ RSpec.describe RepositoriesController, type: :controller do
                  owner_id: @member.id
                }
              }
-        post :add_owner,
+        post :add_member,
              params: {
                user_username: @owner.username,
                repo_owner: {
@@ -490,14 +489,16 @@ RSpec.describe RepositoriesController, type: :controller do
                  owner_id: @member.id
                }
              }
-        expect(flash[:alert]).to eq("This user is already in your repository")
+        expect(flash[:alert]).to eq(
+          "This user is already a member of your repository."
+        )
         expect(@repo.users.last.id).to eq(@member.id)
       end
     end
   end
 
-  describe "#remove_owner" do
-    context "Remove Owner" do
+  describe "#remove_member" do
+    context "Remove Member" do
       before(:each) do
         @owner = create(:user, :regular_user)
         @member = create(:user, :regular_user)
@@ -513,8 +514,8 @@ RSpec.describe RepositoriesController, type: :controller do
         Repository.find(@repo.id).users = [@owner]
       end
 
-      it "should not remove last owner from repo" do
-        post :remove_owner,
+      it "should not remove last member from repo" do
+        post :remove_member,
              params: {
                user_username: @owner.username,
                repo_owner: {
@@ -523,13 +524,13 @@ RSpec.describe RepositoriesController, type: :controller do
                }
              }
         expect(flash[:alert]).to eq(
-          "You cannot remove the last person in this repository. Please go to profile if you want to delete this repository."
+          "You cannot remove the last person in this repository. Please go to your profile page if you want to delete this repository."
         )
         expect(@repo.users.last.id).to eq(@owner.id)
       end
 
-      it "should remove regular members" do
-        post :add_owner,
+      it "should remove members" do
+        post :add_member,
              params: {
                user_username: @owner.username,
                repo_owner: {
@@ -538,7 +539,7 @@ RSpec.describe RepositoriesController, type: :controller do
                }
              }
         expect(@repo.users.last.id).to eq(@member.id)
-        post :remove_owner,
+        post :remove_member,
              params: {
                user_username: @owner.username,
                repo_owner: {
@@ -547,13 +548,13 @@ RSpec.describe RepositoriesController, type: :controller do
                }
              }
         expect(flash[:notice]).to eq(
-          "This owner was removed from your repository"
+          "This user was removed from your repository."
         )
         expect(@repo.users.last.id).to eq(@owner.id)
       end
 
-      it "should not remove original owner" do
-        post :add_owner,
+      it "should not remove owner" do
+        post :add_member,
              params: {
                user_username: @owner.username,
                repo_owner: {
@@ -561,7 +562,7 @@ RSpec.describe RepositoriesController, type: :controller do
                  owner_id: @member.id
                }
              }
-        post :remove_owner,
+        post :remove_member,
              params: {
                user_username: @owner.username,
                repo_owner: {
@@ -570,9 +571,74 @@ RSpec.describe RepositoriesController, type: :controller do
                }
              }
         expect(flash[:alert]).to eq(
-          "You cannot remove the original owner of this repository."
+          "You cannot remove the current owner of this repository."
         )
         expect(@repo.users.first.id).to eq(@owner.id)
+      end
+    end
+  end
+
+  describe "#transfer_owner" do
+    context "Transfer Owner" do
+      before(:each) do
+        @owner = create(:user, :regular_user)
+        @member = create(:user, :regular_user)
+        session[:user_id] = @owner.id
+        session[:expires_at] = Time.zone.now + 10_000
+
+        @repo =
+          create(
+            :repository,
+            user_id: @owner.id,
+            user_username: @owner.username
+          )
+        Repository.find(@repo.id).users = [@owner, @member]
+      end
+
+      it "should transfer ownership" do
+        post :transfer_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @member.id
+               }
+             }
+        expect(flash[:notice]).to eq(
+          "Repository ownership was successfully transferred."
+        )
+        expect(Repository.last.user_id).to eq(@member.id)
+      end
+
+      it "should not transfer ownership" do
+        post :transfer_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @owner.id
+               }
+             }
+        expect(flash[:alert]).to eq(
+          "This user is already the owner of the repository."
+        )
+        expect(Repository.last.user_id).to eq(@owner.id)
+      end
+
+      it "should not transfer ownership to a non-member" do
+        @non_member = create(:user, :regular_user)
+        post :transfer_owner,
+             params: {
+               user_username: @owner.username,
+               repo_owner: {
+                 repository_id: @repo.id,
+                 owner_id: @non_member.id
+               }
+             }
+        expect(flash[:alert]).to eq(
+          "This user is not a member of your repository."
+        )
+        expect(Repository.last.user_id).to eq(@owner.id)
       end
     end
   end

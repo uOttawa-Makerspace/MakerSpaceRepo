@@ -42,7 +42,6 @@
         <div class="dropdown-menu">
           <a class="dropdown-item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537"><%= t('navbar.makerspace_events') %></a>
           <a class="dropdown-item" href="https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765"><%= t('navbar.brunsfield_events') %></a>
-          <a class="dropdown-item" href="http://volunteer.makerepo.com/"><%= t('navbar.volunteering') %></a>
           <a class="dropdown-item" href="https://wiki.makerepo.com/wiki/Main_Page"><%= t('navbar.resources') %></a>
           <a class="dropdown-item" href="https://makerstore.ca/"><%= t('navbar.makerstore') %></a>
           <%= link_to('MakerRoom', sub_space_booking_index_path, class: 'dropdown-item') %>
@@ -57,9 +56,6 @@
       <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
         <% else %>
         <li class="nav-item">
-          <%= link_to(t('navbar.buy_cc_money'), cc_moneys_path, class: 'nav-link') %>
-        </li>
-        <li class="nav-item">
           <a class="nav-link" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
         </li>
 
@@ -70,8 +66,7 @@
           </a>
           <div class="dropdown-menu dropdown-menu-right">
             <a class="dropdown-item" href="<%= user_path(@user.username) %>"><%= t('navbar.user.profile') %></a>
-            <a class="dropdown-item" href="<%= likes_user_path(@user.username) %>"><%= t('navbar.user.liked') %></a>
-            <a class="dropdown-item" href="<%= settings_profile_path %>"><%= t('navbar.user.settings') %></a>
+            <a class="dropdown-item" href="<%= user_path(@user.username) %>"><%= t('navbar.user.profile') %></a>  
             <%= link_to(t('navbar.user.admin_area'), admin_settings_path, class: 'dropdown-item') if @user.admin? %>
             <%= link_to(t('navbar.user.staff_area'), staff_dashboard_index_path, class: 'dropdown-item') if @user.staff? %>
             <%= link_to(t('navbar.user.volunteer_area'), volunteers_path, class: 'dropdown-item') if @user.volunteer? || @user.staff? || @user.admin? %>
@@ -79,8 +74,6 @@
             <%= link_to(t('navbar.user.exams'), exams_path, class: 'dropdown-item') if @user.exams.present? %>
             <a class="dropdown-item" href="<%= job_orders_path %>"><%= t('navbar.user.joborder') %></a>
             <%= link_to(t('navbar.user.joborder_admin'), admin_job_orders_path, class: 'dropdown-item') if @user.staff? || @user.admin? %>
-            <%= link_to('Booking Admin', sub_space_booking_index_path(anchor: 'booking-admin-tab'), class: 'dropdown-item') if @user.staff? || @user.admin? %>
-            <a class="dropdown-item" href="<%= help_path %>"><%= t('navbar.user.help') %></a>
             <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
           </div>
 
