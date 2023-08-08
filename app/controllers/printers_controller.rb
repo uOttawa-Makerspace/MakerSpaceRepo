@@ -41,13 +41,14 @@ class PrintersController < StaffAreaController
       flash[:alert] = "Please add both printer and user."
     elsif user_id == "clear" && last_session.update(in_use: false)
       flash[:notice] = "Cleared the user."
-    elsif !last_session.nil? && last_session.in_use?
-      flash[:alert] = "This printer is already being used by another user."
     elsif PrinterSession.create(
           printer_id: printer_id,
           user_id: user_id,
           in_use: true
         )
+      if !last_session.nil? && last_session.in_use?
+        last_session.update(in_use: false)
+      end
       flash[:notice] = "Printer Session Created"
     else
       flash[:alert] = "Something went wrong"
