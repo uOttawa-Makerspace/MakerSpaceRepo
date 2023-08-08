@@ -46,7 +46,9 @@ class PrintersController < StaffAreaController
           user_id: user_id,
           in_use: true
         )
-      last_session.update(in_use: false) if last_session.in_use?
+      if !last_session.nil? && last_session.in_use?
+        last_session.update(in_use: false)
+      end
       flash[:notice] = "Printer Session Created"
     else
       flash[:alert] = "Something went wrong"
