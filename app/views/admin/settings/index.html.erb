@@ -93,6 +93,24 @@
       <% end %>
       <br><br>
     </div>
+    <div class="col-md-6">
+      <h5>Course Options</h5><hr>
+      <%= form_with url: { controller: 'admin/settings', action: 'add_course' }, class: 'mb-4' do |f| %>
+        <%= f.label :create_course, class: 'form-label profile-label' %>
+        <%= f.text_field :name, class: 'profile-text', placeholder: 'Write a unique name...' %>
+        <%= f.submit 'Create', class: 'btn btn-primary' %>
+      <% end %>
+      <%= form_with url: { controller: 'admin/settings', action: 'remove_course' }, class: 'mb-4', method: :delete do |f| %>
+        <%= f.label :remove_course, class: 'form-label profile-label' %>
+        <%= select_tag :id, options_from_collection_for_select(CourseName.all.order(:name), :id, :name), class: 'profile-select form-select', include_blank: 'Select a course...' %>
+        <%= f.submit 'Remove', class: 'btn btn-primary' %>
+      <% end %>
+      <%= form_with url: { controller: 'admin/settings', action: 'rename_course' }, class: 'mb-4', method: :patch do |f| %>
+        <%= f.label :rename_course, class: 'form-label profile-label' %>
+        <%= select_tag :id, options_from_collection_for_select(CourseName.all.order(:name), :id, :name), class: 'profile-select form-select', include_blank: 'Select a course...' %>
+        <%= f.text_field :name, class: 'profile-text', placeholder: 'Write a unique name...' %>
+        <%= f.submit 'Rename', class: 'btn btn-primary' %>
+      <% end %>
+    </div>
   </div>
-
 </section>

@@ -295,8 +295,6 @@ Rails.application.routes.draw do
 
     resources :drop_off_locations
 
-    resources :course_names
-
     resources :contact_infos
 
     resources :time_periods, except: [:show]
@@ -322,6 +320,9 @@ Rails.application.routes.draw do
         post "remove_equipment"
         post "submit_pi"
         post "remove_pi"
+        post "add_course"
+        delete "remove_course"
+        patch "rename_course"
         patch "pin_unpin_repository"
       end
     end
@@ -446,11 +447,7 @@ Rails.application.routes.draw do
   end
 
   resources :questions do
-    collection do
-      delete :delete_individually
-      delete :remove_answer
-      post :add_answer
-    end
+    collection { delete :delete_individually }
   end
 
   resources :staff_availabilities, except: :show do
