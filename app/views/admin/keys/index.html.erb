@@ -1,0 +1,39 @@
+<% provide(:title, 'Keys') %>
+<section>
+  <h2 class="m-0 fw-bold py-4 text-center">Key Management</h2>
+
+  <div class="text-center mb-4">
+    <%= link_to 'Add a new Key', new_admin_key_path, class: 'btn btn-success' %>
+  </div>
+
+  <table class="table table-striped text-center">
+    <thead class="table-primary">
+      <tr>
+        <th>Key Number</th>
+        <th>User</th>
+        <th>Space</th>
+        <th>Supervisor</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% @keys.each do |key| %>
+        <tr>
+          <td><%= key.number %></td>
+          <td><%= link_to key.user.name, user_path(key.user.username), target: '_blank', rel: 'noopener' %></td>
+          <td><%= key.space.name %></td>
+          <td><%= link_to key.supervisor.name, user_path(key.supervisor.username), target: '_blank', rel: 'noopener' %></td>
+          <td><%= key.user.email %></td>
+          <td><%= key.status %></td>
+          <td>
+            <%= link_to 'Edit', edit_admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-primary' %>
+            <%= button_to 'Delete', admin_key_path(key.id), method: :delete, class: 'w-100 py-1 btn btn-danger', data: { confirm: 'Are you sure you want to delete this key?' } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

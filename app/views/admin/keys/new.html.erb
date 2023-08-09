@@ -1,0 +1,42 @@
+<% if @key.errors.any? %>
+  <div id="error_explanation">
+    <h2><%= pluralize(@key.errors.count, 'error') %> prohibited this key from being saved:</h2>
+
+    <ul>
+      <% @key.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Add a new Key</h2>
+
+  <%= form_for @key, url: { controller: 'admin/keys', action: 'create' } do |f| %>
+    <div class="row">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="mb-3">
+          <%= f.label :number, 'Key Number', class: 'form-label' %>
+          <%= f.text_field :number, class: 'form-control', required: true %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :user_id, class: 'form-label' %>
+          <%= f.select :user_id, [], { prompt: 'Choose User...' }, { class: 'form-control', id: 'user-select' } %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :space_id, class: 'form-label' %>
+          <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :supervisor_id, class: 'form-label' %>
+          <%= f.select :supervisor_id, User.staff.pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+        </div>
+
+        <div class="mb-3 text-center">
+          <%= f.submit 'Create Key', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</section>

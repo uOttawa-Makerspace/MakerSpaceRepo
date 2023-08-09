@@ -333,6 +333,8 @@ Rails.application.routes.draw do
         get :search_demotions
       end
     end
+
+    resources :keys, except: %i[show]
   end
 
   namespace :staff do
