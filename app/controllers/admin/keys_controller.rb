@@ -7,6 +7,7 @@ class Admin::KeysController < AdminAreaController
 
   def create
     @key = Key.new(key_params)
+    update_files
 
     if @key.save
       flash[:notice] = "Successfully created key."
@@ -22,6 +23,8 @@ class Admin::KeysController < AdminAreaController
   end
 
   def update
+    update_files
+
     if @key.update(key_params)
       flash[:notice] = "The key was successfully updated."
       redirect_to admin_keys_path
@@ -32,7 +35,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def destroy
-    if @key.delete
+    if @key.destroy
       flash[:notice] = "Successfully deleted key."
     else
       flash[:alert] = "Something went wrong while trying to delete the key."
@@ -50,6 +53,18 @@ class Admin::KeysController < AdminAreaController
       :supervisor_id,
       :status
     )
+  end
+
+  def update_files
+    if params[:delete_files].present?
+      file_ids = params[:delete_files].split(",")
+
+      @key.files.each { |f| f.purge if file_ids.include?(f.id.to_s) }
+    end
+
+    if params[:key][:files].present?
+      params[:key][:files].each { |f| @key.files.attach(f) }
+    end
   end
 
   def set_key

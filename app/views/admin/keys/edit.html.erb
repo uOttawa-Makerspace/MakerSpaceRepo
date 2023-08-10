@@ -33,6 +33,21 @@
           <%= f.label :supervisor_id, class: 'form-label' %>
           <%= f.select :supervisor_id, User.staff.pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
         </div>
+        <div class="mb-3">
+          <%= f.label :files, 'Attach certifications (PDFs only):', class: 'form-label' %>
+          <%= f.file_field :files, multiple: true, class: 'form-control mb-3' %>
+
+          <table id="file-container">
+            <% @key.files.each do |file| %>
+              <tr class="file-item">
+                <td><%= fa_icon 'file-text-o' %> <%= file.filename %></td>
+                <td><span><%= file.byte_size / 1000 %> KB</span></td>
+                <td><span id="<%= file.id %>" class="file-remove">remove</span></td>
+              </tr>
+            <% end %>
+          </table>
+          <%= hidden_field_tag(:delete_files, '', id: 'delete_files') %>
+        </div>
 
         <div class="mb-3 text-center">
           <%= f.submit 'Update Key', class: 'btn btn-primary' %>

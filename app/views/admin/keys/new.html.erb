@@ -32,6 +32,10 @@
           <%= f.label :supervisor_id, class: 'form-label' %>
           <%= f.select :supervisor_id, User.staff.pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
         </div>
+        <div class="mb-3">
+          <%= f.label :files, 'Attach certifications (PDFs only):', class: 'form-label' %>
+          <%= f.file_field :files, multiple: true, class: 'form-control' %>
+        </div>
 
         <div class="mb-3 text-center">
           <%= f.submit 'Create Key', class: 'btn btn-primary' %>
