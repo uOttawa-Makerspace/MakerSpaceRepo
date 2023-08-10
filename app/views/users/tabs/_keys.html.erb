@@ -1,0 +1,28 @@
+<div>
+  <div class="mb-3">
+    <h5>List of Keys owned by <%= @repo_user.name %>:</h5>
+
+    <% if @keys_owned.empty? %>
+      None
+    <% else %>
+      <ul>
+        <% @keys_owned.each do |key| %>
+          <li><%= key.number %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+  <div>
+    <h5>List of Keys being supervised by <%= @repo_user.name %>:</h5>
+
+    <% if @keys_supervising.empty? %>
+      None
+    <% else %>
+      <ul>
+        <% @keys_supervising.each do |key| %>
+          <li><%= key.number %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+</div>

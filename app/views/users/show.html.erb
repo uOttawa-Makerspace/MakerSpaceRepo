@@ -152,6 +152,9 @@
             <div class="tab-pane fade" id="certifications-manager" role="tabpanel" aria-labelledby="profile-tab">
               <%= render partial: 'users/tabs/certifications', locals: { user: @user, repo_user: @repo_user } %>
             </div>
+            <div class="tab-pane fade" id="keys-manager" role="tabpanel" aria-labelledby="profile-tab">
+              <%= render partial: 'users/tabs/keys' %>
+            </div>
           <% end %>
           <% if @user.admin? %>
             <div class="tab-pane fade" id="role-manager" role="tabpanel" aria-labelledby="profile-tab">
