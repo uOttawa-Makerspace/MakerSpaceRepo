@@ -1,0 +1,27 @@
+<section class="w-75 mx-auto">
+  <h2 class="m-0 fw-bold py-4 text-center">Key Information: <%= @key.number %></h2>
+
+  <div class="mb-3">
+    <h6>Key Number: <%= @key.number %></h6>
+    <h6>User: <%= link_to @key.user.name, user_path(@key.user.username), target: '_blank', rel: 'noopener' %></h6>
+    <h6>Supervisor: <%= link_to @key.supervisor.name, user_path(@key.supervisor.username), target: '_blank', rel: 'noopener' %></h6>
+    <h6>Space: <%= @key.space.name %></h6>
+    <h6>Status: <%= @key.status.nil? ? 'Unspecified' : @key.status %></h6>
+  </div>
+
+  <div>
+    <h4 class="text-center">Certifications</h4>
+
+    <div>
+      <% if @key.files.attached? %>
+        <% @key.files.each do |file| %>
+          <div class="ratio ratio-16x9">
+            <iframe src="<%= url_for(file) %>" allowfullscreen></iframe>
+          </div>
+        <% end %>
+      <% else %>
+        None
+      <% end %>
+    </div>
+  </div>
+</section>

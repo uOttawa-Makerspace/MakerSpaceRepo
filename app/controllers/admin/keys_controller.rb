@@ -1,5 +1,5 @@
 class Admin::KeysController < AdminAreaController
-  before_action :set_key, only: %i[edit destroy update]
+  before_action :set_key, only: %i[show edit destroy update]
 
   def index
     @keys = Key.all.order(created_at: :desc)

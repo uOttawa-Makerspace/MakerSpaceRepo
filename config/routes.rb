@@ -334,7 +334,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :keys, except: %i[show]
+    resources :keys
   end
 
   namespace :staff do

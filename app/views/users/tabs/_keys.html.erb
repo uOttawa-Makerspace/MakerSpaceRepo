@@ -7,7 +7,7 @@
     <% else %>
       <ul>
         <% @keys_owned.each do |key| %>
-          <li><%= key.number %></li>
+          <li><%= link_to key.number, admin_key_path(key.id), target: '_blank', rel: 'noopener' %></li>
         <% end %>
       </ul>
     <% end %>
@@ -20,7 +20,7 @@
     <% else %>
       <ul>
         <% @keys_supervising.each do |key| %>
-          <li><%= key.number %></li>
+          <li><%= link_to key.number, admin_key_path(key.id), target: '_blank', rel: 'noopener' %></li>
         <% end %>
       </ul>
     <% end %>
