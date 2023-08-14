@@ -481,6 +481,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.string "room"
     t.integer "status", default: 0
     t.date "deposit_return_date"
+    t.string "student_number"
+    t.string "phone_number"
+    t.string "emergency_contact"
+    t.string "emergency_contact_relation"
+    t.string "emergency_contact_phone_number"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_keys_on_space_id"

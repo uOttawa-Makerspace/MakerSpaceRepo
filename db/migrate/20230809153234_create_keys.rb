@@ -10,6 +10,12 @@ class CreateKeys < ActiveRecord::Migration[7.0]
       t.integer :status, default: 0
       t.date :deposit_return_date
 
+      t.string :student_number
+      t.string :phone_number
+      t.string :emergency_contact
+      t.string :emergency_contact_relation
+      t.string :emergency_contact_phone_number
+
       t.timestamps
     end
   end

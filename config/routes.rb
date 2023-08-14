@@ -334,7 +334,13 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :keys
+    resources :keys do
+      collection { get :requests }
+    end
+  end
+
+  resources :keys, only: %i[create] do
+    collection { get :key_form }
   end
 
   namespace :staff do

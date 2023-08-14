@@ -4,7 +4,9 @@ class Key < ApplicationRecord
   belongs_to :space, optional: true
   has_many_attached :files, dependent: :destroy
 
-  enum :status, %i[unknown inventory held lost], prefix: true
+  enum :status,
+       %i[unknown inventory held lost waiting_for_approval],
+       prefix: true
 
   validates :user,
             presence: {
@@ -23,11 +25,23 @@ class Key < ApplicationRecord
             },
             uniqueness: {
               message: "A key already has that number"
-            }
+            },
+            unless: :status_waiting_for_approval?
+
+  validates :phone_number,
+            :emergency_contact_phone_number,
+            format: {
+              with: /\A\d{10}\z/,
+              message: "should be a 10-digit number"
+            },
+            if: :status_waiting_for_approval?
 
   validates :files,
             file_content_type: {
               allow: %w[application/pdf],
               if: -> { files.attached? }
             }
+
+  scope :waiting_for_approval, -> { where(status: :waiting_for_approval) }
+  scope :approved, -> { where.not(status: :waiting_for_approval) }
 end

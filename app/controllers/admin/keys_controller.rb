@@ -2,7 +2,7 @@ class Admin::KeysController < AdminAreaController
   before_action :set_key, only: %i[show edit destroy update]
 
   def index
-    @keys = Key.all.order(created_at: :desc)
+    @keys = Key.approved.order(created_at: :desc)
   end
 
   def create
@@ -41,6 +41,10 @@ class Admin::KeysController < AdminAreaController
       flash[:alert] = "Something went wrong while trying to delete the key."
     end
     redirect_to admin_keys_path
+  end
+
+  def requests
+    @keys = Key.waiting_for_approval
   end
 
   private

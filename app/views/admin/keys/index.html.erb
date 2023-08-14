@@ -2,8 +2,9 @@
 <section>
   <h2 class="m-0 fw-bold py-4 text-center">Key Management</h2>
 
-  <div class="text-center mb-4">
+  <div class="d-flex flex-row gap-2 justify-content-center mb-4">
     <%= link_to 'Add a new Key', new_admin_key_path, class: 'btn btn-success' %>
+    <%= link_to 'Key Requests', requests_admin_keys_path, class: 'btn btn-primary' %>
   </div>
 
   <div class="accordion" id="keysAccordion">

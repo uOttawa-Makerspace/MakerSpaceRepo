@@ -1,17 +1,19 @@
 import TomSelect from "tom-select";
 
 const depositDateInput = document.getElementById("deposit-return-date");
-const depositDatePicker = depositDateInput.flatpickr({
-  enableTime: false,
-  noCalendar: false,
-  dateFormat: "Y-m-d",
-});
-
-document
-  .getElementById("deposit-return-date-clear")
-  .addEventListener("click", () => {
-    depositDatePicker.clear();
+if (depositDateInput) {
+  const depositDatePicker = depositDateInput.flatpickr({
+    enableTime: false,
+    noCalendar: false,
+    dateFormat: "Y-m-d",
   });
+
+  document
+    .getElementById("deposit-return-date-clear")
+    .addEventListener("click", () => {
+      depositDatePicker.clear();
+    });
+}
 
 const defaultUser = document.getElementById("default-user");
 

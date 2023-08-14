@@ -1,0 +1,9 @@
+<section>
+  <h2 class="m-0 fw-bold py-4 text-center">Key Requests</h2>
+
+  <div class="d-flex flex-row gap-2 justify-content-center mb-4">
+    <%= link_to 'Key Management', admin_keys_path, class: 'btn btn-primary' %>
+  </div>
+
+  <%= render partial: 'admin/keys/keys_requests_table', locals: { keys: @keys } %>
+</section>
