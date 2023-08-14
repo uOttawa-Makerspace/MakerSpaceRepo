@@ -36,9 +36,18 @@
           <%= f.label :user_id, class: 'form-label' %>
           <%= f.select :user_id, [], { prompt: 'Choose User...' }, { class: 'form-control', id: 'user-select' } %>
         </div>
-        <div class="mb-5">
+        <div class="mb-3">
           <%= f.label :supervisor_id, class: 'form-label' %>
           <%= f.select :supervisor_id, User.staff.pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+        </div>
+        <div class="mb-5">
+          <%= f.label :deposit_return_date, class: 'form-label' %>
+          <div class="input-group">
+            <%= f.text_field :deposit_return_date, id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate' %>
+            <button class="btn btn-outline-danger" id="deposit-return-date-clear" type="button">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
         </div>
 
         <div class="mb-5">

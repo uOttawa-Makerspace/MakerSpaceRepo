@@ -10,6 +10,7 @@
     <% if show_status %>
       <th>Status</th>
     <% end %>
+    <th>Deposit</th>
     <th>Certifications</th>
     <th>Actions</th>
   </tr>
@@ -27,6 +28,9 @@
       <% if show_status %>
         <td><%= key.status.humanize.capitalize %></td>
       <% end %>
+      <td>
+        <%= key.deposit_return_date.nil? ? 'Not Returned' : "Returned on #{key.deposit_return_date} " %>
+      </td>
       <td>
         <% if key.files.attached? %>
           <div class="d-flex flex-column gap-2">
