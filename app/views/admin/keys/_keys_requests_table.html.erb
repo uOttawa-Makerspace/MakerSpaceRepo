@@ -1,46 +1,48 @@
-<table class="table table-responsive text-center">
-  <thead class="table-primary">
-  <tr>
-    <th>User</th>
-    <th>Space</th>
-    <th>Supervisor</th>
-    <th>Email</th>
-    <th>Student Number</th>
-    <th>Phone Number</th>
-    <th>Emergency Contact</th>
-    <th>Certifications</th>
-    <th>Actions</th>
-  </tr>
-  </thead>
-
-  <tbody>
-  <% keys.each do |key| %>
+<div class="table-responsive">
+  <table class="table text-center m-0">
+    <thead class="table-primary">
     <tr>
-      <td><%= link_to key.user.name, user_path(key.user.username), target: '_blank', rel: 'noopener' unless key.user.nil? %></td>
-      <td><%= key.space.name %></td>
-      <td><%= link_to key.supervisor.name, user_path(key.supervisor.username), target: '_blank', rel: 'noopener' unless key.supervisor.nil? %></td>
-      <td><%= key.user&.email %></td>
-      <td><%= key.student_number %></td>
-      <td><%= key.phone_number %></td>
-      <td>
-        <%= key.emergency_contact %>
-        <%= key.emergency_contact_relation %>
-        <%= key.emergency_contact_phone_number %>
-      </td>
-      <td>
-        <% if key.files.attached? %>
-          <div class="d-flex flex-column gap-2">
-            <% key.files.each do |file| %>
-              <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
-            <% end %>
-          </div>
-        <% end %>
-      </td>
-      <td>
-        <%= link_to 'Show', admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
-        <%= button_to 'Delete', admin_key_path(key.id), method: :delete, class: 'w-100 py-1 btn btn-danger', data: { confirm: 'Are you sure you want to delete this key?' } %>
-      </td>
+      <th>User</th>
+      <th>Space</th>
+      <th>Supervisor</th>
+      <th>Email</th>
+      <th>Student Number</th>
+      <th>Phone Number</th>
+      <th>Emergency Contact</th>
+      <th>Certifications</th>
+      <th>Actions</th>
     </tr>
-  <% end %>
-  </tbody>
-</table>
+    </thead>
+
+    <tbody>
+    <% keys.each do |key| %>
+      <tr>
+        <td><%= link_to key.user.name, user_path(key.user.username), target: '_blank', rel: 'noopener' unless key.user.nil? %></td>
+        <td><%= key.space.name %></td>
+        <td><%= link_to key.supervisor.name, user_path(key.supervisor.username), target: '_blank', rel: 'noopener' unless key.supervisor.nil? %></td>
+        <td><%= key.user&.email %></td>
+        <td><%= key.student_number %></td>
+        <td><%= key.phone_number %></td>
+        <td>
+          <%= key.emergency_contact %>
+          <%= key.emergency_contact_relation %>
+          <%= key.emergency_contact_phone_number %>
+        </td>
+        <td>
+          <% if key.files.attached? %>
+            <div class="d-flex flex-column gap-2">
+              <% key.files.each do |file| %>
+                <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
+              <% end %>
+            </div>
+          <% end %>
+        </td>
+        <td>
+          <%= link_to 'Show', admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
+          <%= button_to 'Delete', admin_key_path(key.id), method: :delete, class: 'w-100 py-1 btn btn-danger', data: { confirm: 'Are you sure you want to delete this key?' } %>
+        </td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+</div>
