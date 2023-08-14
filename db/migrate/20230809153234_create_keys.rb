@@ -6,7 +6,9 @@ class CreateKeys < ActiveRecord::Migration[7.0]
       t.references :space
 
       t.string :number
-      t.string :status
+      t.string :room
+      t.integer :status, default: 0
+      t.date :deposit_return_date
 
       t.timestamps
     end

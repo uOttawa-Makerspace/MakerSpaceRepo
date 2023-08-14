@@ -51,7 +51,9 @@ class Admin::KeysController < AdminAreaController
       :user_id,
       :space_id,
       :supervisor_id,
-      :status
+      :status,
+      :room,
+      :deposit_return_date
     )
   end
 
@@ -68,6 +70,8 @@ class Admin::KeysController < AdminAreaController
   end
 
   def set_key
-    @key = Key.find(params[:id])
+    @key = Key.find_by(id: params[:id])
+
+    redirect_to admin_keys_path, alert: "The key id was not found." if @key.nil?
   end
 end

@@ -478,7 +478,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.bigint "supervisor_id"
     t.bigint "space_id"
     t.string "number"
-    t.string "status"
+    t.string "room"
+    t.integer "status", default: 0
+    t.date "deposit_return_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_keys_on_space_id"

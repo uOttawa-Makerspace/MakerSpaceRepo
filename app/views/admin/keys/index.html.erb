@@ -10,8 +10,9 @@
     <thead class="table-primary">
       <tr>
         <th>Key Number</th>
-        <th>User</th>
         <th>Space</th>
+        <th>Room</th>
+        <th>User</th>
         <th>Supervisor</th>
         <th>Email</th>
         <th>Status</th>
@@ -24,11 +25,12 @@
       <% @keys.each do |key| %>
         <tr>
           <td><%= link_to key.number, admin_key_path(key.id), target: '_blank', rel: 'noopener' %></td>
-          <td><%= link_to key.user.name, user_path(key.user.username), target: '_blank', rel: 'noopener' %></td>
           <td><%= key.space.name %></td>
+          <td><%= key.room %></td>
+          <td><%= link_to key.user.name, user_path(key.user.username), target: '_blank', rel: 'noopener' %></td>
           <td><%= link_to key.supervisor.name, user_path(key.supervisor.username), target: '_blank', rel: 'noopener' %></td>
           <td><%= key.user.email %></td>
-          <td><%= key.status %></td>
+          <td><%= key.status.humanize.capitalize %></td>
           <td>
             <% if key.files.attached? %>
               <div class="d-flex flex-column gap-2">
