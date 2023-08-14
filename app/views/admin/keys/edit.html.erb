@@ -29,17 +29,17 @@
           <%= f.text_field :room, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
+          <%= f.label :status, 'Status', class: 'form-label' %>
+          <%= f.select :status, options_for_select(Key.statuses.map { |k, _v| [k.humanize.capitalize, k] }, selected: @key.status), {}, { class: 'form-control form-select' } %>
+        </div>
+        <div class="mb-3">
           <%= hidden_field_tag('default_user', "#{@key.user.id},#{@key.user.name}", id: 'default-user') %>
           <%= f.label :user_id, class: 'form-label' %>
           <%= f.select :user_id, [], { prompt: 'Choose User...' }, { class: 'form-control', id: 'user-select' } %>
         </div>
-        <div class="mb-3">
+        <div class="mb-5">
           <%= f.label :supervisor_id, class: 'form-label' %>
           <%= f.select :supervisor_id, User.staff.pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
-        </div>
-        <div class="mb-5">
-          <%= f.label :status, 'Status', class: 'form-label' %>
-          <%= f.select :status, options_for_select(Key.statuses.map { |k, _v| [k.humanize.capitalize, k] }, selected: @key.status), {}, { class: 'form-control form-select' } %>
         </div>
 
 

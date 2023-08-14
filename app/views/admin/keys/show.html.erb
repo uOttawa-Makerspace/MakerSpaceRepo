@@ -3,9 +3,10 @@
 
   <div class="mb-3">
     <h6>Key Number: <%= @key.number %></h6>
+    <h6>Space: <%= @key.space.name %></h6>
+    <h6>Room: <%= @key.room.nil? ? 'Unknown' : @key.room %></h6>
     <h6>User: <%= link_to @key.user.name, user_path(@key.user.username), target: '_blank', rel: 'noopener' %></h6>
     <h6>Supervisor: <%= link_to @key.supervisor.name, user_path(@key.supervisor.username), target: '_blank', rel: 'noopener' %></h6>
-    <h6>Space: <%= @key.space.name %></h6>
     <h6>Status: <%= @key.status.humanize.capitalize %></h6>
     <h6>Deposit Paid: <%= @key.deposit_return_date.nil? ? 'No' : "Yes (#{@key.deposit_return_date})" %></h6>
   </div>

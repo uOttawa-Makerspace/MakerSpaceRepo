@@ -4,10 +4,18 @@ class Key < ApplicationRecord
   belongs_to :space, optional: true
   has_many_attached :files, dependent: :destroy
 
-  enum :status, %i[unknown inventory held lost]
+  enum :status, %i[unknown inventory held lost], prefix: true
 
-  validates :user, presence: { message: "A user is required" }
-  validates :supervisor, presence: { message: "A supervisor is required" }
+  validates :user,
+            presence: {
+              message: "A user is required if the key is held"
+            },
+            if: :status_held?
+  validates :supervisor,
+            presence: {
+              message: "A supervisor is required if the key is held"
+            },
+            if: :status_held?
   validates :space, presence: { message: "A space is required" }
   validates :number,
             presence: {
@@ -22,7 +30,4 @@ class Key < ApplicationRecord
               allow: %w[application/pdf],
               if: -> { files.attached? }
             }
-
-  scope :deposit_paid, -> { where.not(deposit_return_date: nil) }
-  scope :deposit_not_paid, -> { where(deposit_return_date: nil) }
 end
