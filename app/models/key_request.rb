@@ -1,45 +1,27 @@
-class Key < ApplicationRecord
+class KeyRequest < ApplicationRecord
   belongs_to :user, class_name: "User", optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
   has_many_attached :files, dependent: :destroy
 
-  enum :status, %i[unknown inventory held lost], prefix: true
+  enum :status, %i[waiting_for_approval approved rejected], prefix: false
 
-  validates :user,
-            presence: {
-              message: "A user is required if the key is held"
-            },
-            if: :status_held?
-  validates :supervisor,
-            presence: {
-              message: "A supervisor is required if the key is held"
-            },
-            if: :status_held?
+  validates :user, presence: { message: "A user is required" }
+  validates :supervisor, presence: { message: "A supervisor is required" }
   validates :space, presence: { message: "A space is required" }
-
-  validates :number,
-            presence: {
-              message: "A key number is required"
-            },
-            uniqueness: {
-              message: "A key already has that number"
-            }
 
   validates :phone_number,
             :emergency_contact_phone_number,
             format: {
               with: /\A\d{10}\z/,
               message: "should be a 10-digit number"
-            },
-            unless: :status_inventory?
+            }
 
   validates :student_number,
             :emergency_contact,
             presence: {
               message: "student number and emergency contact is required"
-            },
-            unless: :status_inventory?
+            }
 
   validates :files,
             file_content_type: {

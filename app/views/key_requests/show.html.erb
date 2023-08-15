@@ -1,0 +1,33 @@
+<section class="w-75 mx-auto">
+  <div class="mb-3 mt-4">
+    <h4 class="mb-3 fw-bold">Key Information</h4>
+    <h6>Space: <%= @key_request.space.name %></h6>
+    <h6>User: <%= link_to @key_request.user.name, user_path(@key_request.user.username), target: '_blank', rel: 'noopener' %></h6>
+    <h6>Supervisor: <%= link_to @key_request.supervisor.name, user_path(@key_request.supervisor.username), target: '_blank', rel: 'noopener' %></h6>
+    <h6>Status: <%= @key_request.status.humanize.capitalize %></h6>
+  </div>
+
+  <div class="mb-3">
+    <h4 class="mb-3 fw-bold">User Information</h4>
+    <h6>Email: <%= @key_request.user&.email %></h6>
+    <h6>Student/Employee Number: <%= @key_request.student_number %></h6>
+    <h6>Phone Number: <%= @key_request.phone_number %></h6>
+    <h6>Emergency Contact: <%= @key_request.emergency_contact %></h6>
+    <h6>Relation to Emergency Contact: <%= @key_request.emergency_contact_relation %></h6>
+    <h6>Emergency Contact Phone Number: <%= @key_request.emergency_contact_phone_number %></h6>
+  </div>
+
+  <% if @key_request.files.attached? %>
+    <div>
+      <h4 class="text-center">Certifications</h4>
+
+      <div>
+        <% @key_request.files.each do |file| %>
+          <div class="ratio ratio-16x9 mb-2">
+            <iframe src="<%= url_for(file) %>" allowfullscreen></iframe>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</section>

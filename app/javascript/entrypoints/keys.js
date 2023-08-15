@@ -93,10 +93,23 @@ let deleteFiles = document.getElementById("delete_files");
 
 const userInformation = document.getElementById("user-information");
 const statusSelect = document.getElementById("status-select");
-statusSelect.addEventListener("change", (e) => {
-  if (e.target.value === "inventory") {
-    userInformation.style.display = "none";
-  } else {
-    userInformation.style.display = "block";
-  }
-});
+if (statusSelect) {
+  statusSelect.addEventListener("change", (e) => {
+    if (e.target.value === "inventory") {
+      userInformation.style.display = "none";
+    } else {
+      userInformation.style.display = "block";
+    }
+  });
+}
+
+const keySelect = document.getElementById("key-select");
+if (keySelect && !keySelect.tomselect) {
+  new TomSelect("#key-select", {
+    searchField: ["number"],
+    valueField: "id",
+    labelField: "number",
+    maxOptions: null,
+    searchOnKeyUp: true,
+  });
+}

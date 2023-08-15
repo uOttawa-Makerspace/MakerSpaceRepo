@@ -6,7 +6,7 @@
       <th>Space</th>
       <th>Supervisor</th>
       <th>Email</th>
-      <th>Student Number</th>
+      <th>Student/Employee #</th>
       <th>Phone Number</th>
       <th>Emergency Contact</th>
       <th>Certifications</th>
@@ -38,8 +38,9 @@
           <% end %>
         </td>
         <td>
-          <%= link_to 'Show', admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
-          <%= button_to 'Delete', admin_key_path(key.id), method: :delete, class: 'w-100 py-1 btn btn-danger', data: { confirm: 'Are you sure you want to delete this key?' } %>
+          <%= link_to 'Show', key_request_path(key.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
+          <%= link_to 'Approve', approve_admin_keys_path(id: key.id), class: 'w-100 py-1 mb-1 btn btn-success' %>
+          <%= button_to 'Deny', deny_key_admin_keys_path(id: key.id), method: :patch, class: 'w-100 py-1 btn btn-danger', data: { confirm: 'Are you sure you want to deny this key?' } %>
         </td>
       </tr>
     <% end %>

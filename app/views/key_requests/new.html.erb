@@ -1,9 +1,9 @@
-<% if @key.errors.any? %>
+<% if @key_request.errors.any? %>
   <div id="error_explanation">
-    <h2><%= pluralize(@key.errors.count, 'error') %> prohibited this key from being saved:</h2>
+    <h2><%= pluralize(@key_request.errors.count, 'error') %> prohibited this form from being saved:</h2>
 
     <ul>
-      <% @key.errors.full_messages.each do |message| %>
+      <% @key_request.errors.full_messages.each do |message| %>
         <li><%= message %></li>
       <% end %>
     </ul>
@@ -12,9 +12,9 @@
 
 <section>
   <h2 class="mb-3 fw-bold py-3 text-center">Access Key Form</h2>
-  <%= render partial: 'keys/form_notice' %>
+  <%= render partial: 'key_requests/form_notice' %>
 
-  <%= form_for @key, url: { controller: 'keys', action: 'create' } do |f| %>
+  <%= form_for @key_request, url: { controller: 'key_requests', action: 'create' } do |f| %>
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
         <div class="mb-3">
@@ -30,8 +30,8 @@
           <%= f.text_field :emergency_contact, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
-          <%= f.label :emergency_contact_relation, 'Relation to emergency contact', class: 'form-label' %>
-          <%= f.text_field :emergency_contact_relation, class: 'form-control', required: true %>
+          <%= f.label :emergency_contact_relation, 'Relation to emergency contact (optional)', class: 'form-label' %>
+          <%= f.text_field :emergency_contact_relation, class: 'form-control' %>
         </div>
         <div class="mb-3">
           <%= f.label :emergency_contact_phone_number, class: 'form-label' %>
@@ -52,7 +52,7 @@
         </div>
 
         <div class="text-center">
-          <%= f.submit 'Create Key', class: 'btn btn-primary' %>
+          <%= f.submit 'Submit Form', class: 'btn btn-primary' %>
         </div>
       </div>
     </div>

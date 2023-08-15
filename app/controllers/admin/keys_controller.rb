@@ -1,8 +1,9 @@
 class Admin::KeysController < AdminAreaController
   before_action :set_key, only: %i[show edit destroy update]
+  before_action :set_key_request, only: %i[approve approve_key deny_key]
 
   def index
-    @keys = Key.approved.order(created_at: :desc)
+    @keys = Key.order(created_at: :desc)
   end
 
   def create
@@ -44,7 +45,14 @@ class Admin::KeysController < AdminAreaController
   end
 
   def requests
-    @keys = Key.waiting_for_approval
+    @key_requests =
+      KeyRequest.where(status: :waiting_for_approval).order(created_at: :asc)
+  end
+
+  def approve_key
+  end
+
+  def deny_key
   end
 
   private
@@ -82,5 +90,13 @@ class Admin::KeysController < AdminAreaController
     @key = Key.find_by(id: params[:id])
 
     redirect_to admin_keys_path, alert: "The key id was not found." if @key.nil?
+  end
+
+  def set_key_request
+    @key_request = KeyRequest.find_by(id: params[:id])
+
+    if @key_request.nil?
+      redirect_to admin_keys_path, alert: "The key request id was not found."
+    end
   end
 end

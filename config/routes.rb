@@ -335,13 +335,16 @@ Rails.application.routes.draw do
     end
 
     resources :keys do
-      collection { get :requests }
+      collection do
+        get :requests
+        get :approve
+        patch :approve_key
+        patch :deny_key
+      end
     end
   end
 
-  resources :keys, only: %i[create] do
-    collection { get :key_form }
-  end
+  resources :key_requests, only: %i[new create show]
 
   namespace :staff do
     resources :training_sessions do
