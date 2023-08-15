@@ -33,9 +33,10 @@
           <%= key.deposit_return_date.nil? ? 'Not Returned' : "Returned on #{key.deposit_return_date} " %>
         </td>
         <td>
-          <% if key.files.attached? %>
+          <% files = key.key_request.nil? ? key.files : key.key_request.files %>
+          <% if files.attached? %>
             <div class="d-flex flex-column gap-2">
-              <% key.files.each do |file| %>
+              <% files.each do |file| %>
                 <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
               <% end %>
             </div>

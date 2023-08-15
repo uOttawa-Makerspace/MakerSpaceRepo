@@ -4,6 +4,7 @@ class CreateKeys < ActiveRecord::Migration[7.0]
       t.references :user
       t.references :supervisor
       t.references :space
+      t.references :key_request
 
       t.string :number
       t.string :room

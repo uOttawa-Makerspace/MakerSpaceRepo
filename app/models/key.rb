@@ -2,6 +2,8 @@ class Key < ApplicationRecord
   belongs_to :user, class_name: "User", optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
+  belongs_to :key_request, optional: true
+
   has_many_attached :files, dependent: :destroy
 
   enum :status, %i[unknown inventory held lost], prefix: true

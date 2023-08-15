@@ -21,12 +21,24 @@
       </div>
     </div>
     <div class="accordion-item">
-      <h2 class="accordion-header" id="keysAll">
+      <h2 class="accordion-header" id="keysInventory">
         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+          Keys in Inventory
+        </button>
+      </h2>
+      <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="keysInventory" data-bs-parent="#keysAccordion">
+        <div class="accordion-body">
+          <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(status: :inventory), show_status: false } %>
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="keysAll">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
           All Keys
         </button>
       </h2>
-      <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="keysAll" data-bs-parent="#keysAccordion">
+      <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="keysAll" data-bs-parent="#keysAccordion">
         <div class="accordion-body">
           <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys, show_status: true } %>
         </div>

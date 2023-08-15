@@ -13,7 +13,6 @@ class KeyRequestsController < StaffAreaController
           user_id: @user.id
         )
       )
-    update_files
 
     if @key_request.save
       flash[
@@ -44,19 +43,8 @@ class KeyRequestsController < StaffAreaController
       :emergency_contact_relation,
       :emergency_contact_phone_number,
       :space_id,
-      :supervisor_id
+      :supervisor_id,
+      files: []
     )
-  end
-
-  def update_files
-    if params[:delete_files].present?
-      file_ids = params[:delete_files].split(",")
-
-      @key_request.files.each { |f| f.purge if file_ids.include?(f.id.to_s) }
-    end
-
-    if params[:key_request][:files].present?
-      params[:key_request][:files].each { |f| @key_request.files.attach(f) }
-    end
   end
 end

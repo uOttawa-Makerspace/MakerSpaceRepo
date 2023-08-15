@@ -22,12 +22,12 @@
     <h6>Emergency Contact Phone Number: <%= @key.emergency_contact_phone_number %></h6>
   </div>
 
-  <% if @key.files.attached? %>
+  <% if @files.attached? %>
     <div>
       <h4 class="text-center">Certifications</h4>
 
       <div>
-        <% @key.files.each do |file| %>
+        <% @files.each do |file| %>
           <div class="ratio ratio-16x9 mb-2">
             <iframe src="<%= url_for(file) %>" allowfullscreen></iframe>
           </div>

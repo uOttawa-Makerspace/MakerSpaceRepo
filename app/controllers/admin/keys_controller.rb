@@ -6,6 +6,10 @@ class Admin::KeysController < AdminAreaController
     @keys = Key.order(created_at: :desc)
   end
 
+  def show
+    @files = (@key.key_request.nil?) ? @key.files : @key.key_request.files
+  end
+
   def create
     @key = Key.new(key_params)
     update_files
@@ -50,9 +54,34 @@ class Admin::KeysController < AdminAreaController
   end
 
   def approve_key
+    key = Key.find(params[:key_id])
+
+    if key.update(
+         @key_request.get_approval_params.merge(
+           status: :held,
+           deposit_return_date: params[:deposit_return_date]
+         )
+       ) && @key_request.update(status: :approved)
+      flash[:notice] = "Successfully approved key request."
+    else
+      flash[
+        :alert
+      ] = "Something went wrong when trying to approve the key request."
+    end
+
+    redirect_to requests_admin_keys_path
   end
 
   def deny_key
+    if @key_request.update(status: :rejected)
+      flash[:notice] = "Successfully denied key request."
+    else
+      flash[
+        :alert
+      ] = "Something went wrong when trying to deny the key request."
+    end
+
+    redirect_to requests_admin_keys_path
   end
 
   private
