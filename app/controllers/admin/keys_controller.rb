@@ -57,7 +57,12 @@ class Admin::KeysController < AdminAreaController
       :supervisor_id,
       :status,
       :room,
-      :deposit_return_date
+      :deposit_return_date,
+      :student_number,
+      :phone_number,
+      :emergency_contact,
+      :emergency_contact_relation,
+      :emergency_contact_phone_number
     )
   end
 

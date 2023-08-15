@@ -16,43 +16,70 @@
   <%= form_for @key, url: { controller: 'admin/keys', action: 'create' } do |f| %>
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
-        <div class="mb-3">
-          <%= f.label :number, 'Key Number', class: 'form-label' %>
-          <%= f.text_field :number, class: 'form-control', required: true %>
-        </div>
-        <div class="mb-3">
-          <%= f.label :space_id, class: 'form-label' %>
-          <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
-        </div>
-        <div class="mb-3">
-          <%= f.label :room, 'Room', class: 'form-label' %>
-          <%= f.text_field :room, class: 'form-control', required: true %>
-        </div>
-        <div class="mb-3">
-          <%= f.label :status, 'Status', class: 'form-label' %>
-          <%= f.select :status, options_for_select(Key.statuses.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select' } %>
-        </div>
-        <div class="mb-3">
-          <%= f.label :user_id, class: 'form-label' %>
-          <%= f.select :user_id, [], { prompt: 'Choose User...' }, { class: 'form-control', id: 'user-select' } %>
-        </div>
-        <div class="mb-3">
-          <%= f.label :supervisor_id, class: 'form-label' %>
-          <%= f.select :supervisor_id, User.staff.pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
-        </div>
-        <div class="mb-5">
-          <%= f.label :deposit_return_date, class: 'form-label' %>
-          <div class="input-group">
-            <%= f.text_field :deposit_return_date, id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate' %>
-            <button class="btn btn-outline-danger" id="deposit-return-date-clear" type="button">
-              <i class="fa fa-times"></i>
-            </button>
+        <div id="key-information">
+          <h4 class="text-center mb-3">Key Information</h4>
+          <div class="mb-3">
+            <%= f.label :number, 'Key Number', class: 'form-label' %>
+            <%= f.text_field :number, class: 'form-control', required: true %>
+          </div>
+          <div class="mb-3">
+            <%= f.label :space_id, class: 'form-label' %>
+            <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
+          </div>
+          <div class="mb-3">
+            <%= f.label :room, 'Room', class: 'form-label' %>
+            <%= f.text_field :room, class: 'form-control', required: true %>
+          </div>
+          <div class="mb-3">
+            <%= f.label :status, 'Status', class: 'form-label' %>
+            <%= f.select :status, options_for_select(Key.statuses.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select', id: 'status-select' } %>
+          </div>
+          <div class="mb-3">
+            <%= f.label :user_id, 'User <b>(required if key is held)</b>'.html_safe, class: 'form-label' %>
+            <%= f.select :user_id, [], { prompt: 'Choose User...' }, { class: 'form-control', id: 'user-select' } %>
+          </div>
+          <div class="mb-3">
+            <%= f.label :supervisor_id, 'Supervisor <b>(required if key is held)</b>'.html_safe, class: 'form-label' %>
+            <%= f.select :supervisor_id, User.staff.pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+          </div>
+          <div class="mb-5">
+            <%= f.label :deposit_return_date, class: 'form-label' %>
+            <div class="input-group">
+              <%= f.text_field :deposit_return_date, id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate' %>
+              <button class="btn btn-outline-danger" id="deposit-return-date-clear" type="button">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-5">
+            <%= f.label :files, 'Attach certifications (PDFs only):', class: 'form-label' %>
+            <%= f.file_field :files, multiple: true, class: 'form-control' %>
           </div>
         </div>
 
-        <div class="mb-5">
-          <%= f.label :files, 'Attach certifications (PDFs only):', class: 'form-label' %>
-          <%= f.file_field :files, multiple: true, class: 'form-control' %>
+        <div id="user-information">
+          <h4 class="text-center mb-3">User Information</h4>
+          <div class="mb-3">
+            <%= f.label :student_number, 'Student/Employee Number', class: 'form-label' %>
+            <%= f.text_field :student_number, class: 'form-control' %>
+          </div>
+          <div class="mb-3">
+            <%= f.label :phone_number, class: 'form-label' %>
+            <%= f.text_field :phone_number, class: 'form-control' %>
+          </div>
+          <div class="mb-3">
+            <%= f.label :emergency_contact, class: 'form-label' %>
+            <%= f.text_field :emergency_contact, class: 'form-control' %>
+          </div>
+          <div class="mb-3">
+            <%= f.label :emergency_contact_relation, 'Relation to emergency contact', class: 'form-label' %>
+            <%= f.text_field :emergency_contact_relation, class: 'form-control' %>
+          </div>
+          <div class="mb-5">
+            <%= f.label :emergency_contact_phone_number, class: 'form-label' %>
+            <%= f.text_field :emergency_contact_phone_number, class: 'form-control' %>
+          </div>
         </div>
 
         <div class="text-center">

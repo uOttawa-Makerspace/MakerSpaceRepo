@@ -90,3 +90,13 @@ let deleteFiles = document.getElementById("delete_files");
     el.parentElement.parentElement.remove();
   });
 });
+
+const userInformation = document.getElementById("user-information");
+const statusSelect = document.getElementById("status-select");
+statusSelect.addEventListener("change", (e) => {
+  if (e.target.value === "inventory") {
+    userInformation.style.display = "none";
+  } else {
+    userInformation.style.display = "block";
+  }
+});

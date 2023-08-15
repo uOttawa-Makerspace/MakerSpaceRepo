@@ -19,6 +19,7 @@ class Key < ApplicationRecord
             },
             if: :status_held?
   validates :space, presence: { message: "A space is required" }
+
   validates :number,
             presence: {
               message: "A key number is required"
@@ -34,7 +35,14 @@ class Key < ApplicationRecord
               with: /\A\d{10}\z/,
               message: "should be a 10-digit number"
             },
-            if: :status_waiting_for_approval?
+            unless: :status_inventory?
+
+  validates :student_number,
+            :emergency_contact,
+            presence: {
+              message: "student number and emergency contact is required"
+            },
+            unless: :status_inventory?
 
   validates :files,
             file_content_type: {
