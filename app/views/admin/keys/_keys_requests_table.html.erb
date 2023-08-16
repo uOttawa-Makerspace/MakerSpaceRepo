@@ -15,32 +15,32 @@
     </thead>
 
     <tbody>
-    <% keys.each do |key| %>
+    <% key_requests.each do |key_request| %>
       <tr>
-        <td><%= link_to key.user.name, user_path(key.user.username), target: '_blank', rel: 'noopener' unless key.user.nil? %></td>
-        <td><%= key.space.name %></td>
-        <td><%= link_to key.supervisor.name, user_path(key.supervisor.username), target: '_blank', rel: 'noopener' unless key.supervisor.nil? %></td>
-        <td><%= key.user&.email %></td>
-        <td><%= key.student_number %></td>
-        <td><%= key.phone_number %></td>
+        <td><%= link_to key_request.user.name, user_path(key_request.user.username), target: '_blank', rel: 'noopener' %></td>
+        <td><%= key_request.space.name %></td>
+        <td><%= link_to key_request.supervisor.name, user_path(key_request.supervisor.username), target: '_blank', rel: 'noopener' %></td>
+        <td><%= key_request.user&.email %></td>
+        <td><%= key_request.student_number %></td>
+        <td><%= key_request.phone_number %></td>
         <td>
-          <%= key.emergency_contact %>
-          <%= key.emergency_contact_relation %>
-          <%= key.emergency_contact_phone_number %>
+          <%= key_request.emergency_contact %>
+          <%= key_request.emergency_contact_relation %>
+          <%= key_request.emergency_contact_phone_number %>
         </td>
         <td>
-          <% if key.files.attached? %>
+          <% if key_request.files.attached? %>
             <div class="d-flex flex-column gap-2">
-              <% key.files.each do |file| %>
+              <% key_request.files.each do |file| %>
                 <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
               <% end %>
             </div>
           <% end %>
         </td>
         <td>
-          <%= link_to 'Show', key_request_path(key.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
-          <%= link_to 'Approve', approve_admin_keys_path(id: key.id), class: 'w-100 py-1 mb-1 btn btn-success' %>
-          <%= button_to 'Deny', deny_key_admin_keys_path(id: key.id), method: :patch, class: 'w-100 py-1 btn btn-danger', data: { confirm: 'Are you sure you want to deny this key?' } %>
+          <%= link_to 'Show', key_request_path(key_request.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
+          <%= link_to 'Approve', approve_admin_keys_path(id: key_request.id), class: 'w-100 py-1 mb-1 btn btn-success' if key_request.status_waiting_for_approval? %>
+          <%= button_to 'Deny', deny_key_admin_keys_path(id: key_request.id), method: :patch, class: 'w-100 py-1 btn btn-danger', data: { confirm: 'Are you sure you want to deny this key?' } if key_request.status_waiting_for_approval? %>
         </td>
       </tr>
     <% end %>

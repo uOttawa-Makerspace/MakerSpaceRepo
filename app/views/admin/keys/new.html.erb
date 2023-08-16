@@ -16,7 +16,7 @@
   <%= form_for @key, url: { controller: 'admin/keys', action: 'create' } do |f| %>
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
-        <div id="key-information">
+        <div id="inventory-only">
           <h4 class="text-center mb-3">Key Information</h4>
           <div class="mb-3">
             <%= f.label :number, 'Key Number', class: 'form-label' %>
@@ -34,12 +34,15 @@
             <%= f.label :status, 'Status', class: 'form-label' %>
             <%= f.select :status, options_for_select(Key.statuses.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select', id: 'status-select' } %>
           </div>
+        </div>
+
+        <div id="additional-info">
           <div class="mb-3">
-            <%= f.label :user_id, 'User <b>(required if key is held)</b>'.html_safe, class: 'form-label' %>
+            <%= f.label :user_id, class: 'form-label' %>
             <%= f.select :user_id, [], { prompt: 'Choose User...' }, { class: 'form-control', id: 'user-select' } %>
           </div>
           <div class="mb-3">
-            <%= f.label :supervisor_id, 'Supervisor <b>(required if key is held)</b>'.html_safe, class: 'form-label' %>
+            <%= f.label :supervisor_id, class: 'form-label' %>
             <%= f.select :supervisor_id, User.staff.pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
           </div>
           <div class="mb-5">
@@ -56,9 +59,7 @@
             <%= f.label :files, 'Attach certifications (PDFs only):', class: 'form-label' %>
             <%= f.file_field :files, multiple: true, class: 'form-control' %>
           </div>
-        </div>
 
-        <div id="user-information">
           <h4 class="text-center mb-3">User Information</h4>
           <div class="mb-3">
             <%= f.label :student_number, 'Student/Employee Number', class: 'form-label' %>

@@ -32,7 +32,7 @@ class Key < ApplicationRecord
             :emergency_contact_phone_number,
             format: {
               with: /\A\d{10}\z/,
-              message: "should be a 10-digit number"
+              message: "should be in xxxxxxxxxx format"
             },
             unless: :status_inventory?
 

@@ -1,5 +1,5 @@
 class Admin::KeysController < AdminAreaController
-  before_action :set_key, only: %i[show edit destroy update]
+  before_action :set_key, only: %i[show edit destroy update revoke_key]
   before_action :set_key_request, only: %i[approve approve_key deny_key]
 
   def index
@@ -11,7 +11,9 @@ class Admin::KeysController < AdminAreaController
   end
 
   def create
-    @key = Key.new(key_params)
+    create_params =
+      (params[:key][:status] == "inventory") ? key_inventory_params : key_params
+    @key = Key.new(create_params)
     update_files
 
     if @key.save
@@ -29,8 +31,10 @@ class Admin::KeysController < AdminAreaController
 
   def update
     update_files
+    update_params =
+      (params[:key][:status] == "inventory") ? key_inventory_params : key_params
 
-    if @key.update(key_params)
+    if @key.update(update_params)
       flash[:notice] = "The key was successfully updated."
       redirect_to admin_keys_path
     else
@@ -49,8 +53,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def requests
-    @key_requests =
-      KeyRequest.where(status: :waiting_for_approval).order(created_at: :asc)
+    @key_requests = KeyRequest.order(created_at: :asc)
   end
 
   def approve_key
@@ -84,6 +87,29 @@ class Admin::KeysController < AdminAreaController
     redirect_to requests_admin_keys_path
   end
 
+  def revoke_key
+    @key.files.each { |f| f.purge }
+
+    if @key.update(
+         user_id: nil,
+         supervisor_id: nil,
+         key_request_id: nil,
+         status: :inventory,
+         student_number: "",
+         phone_number: "",
+         emergency_contact: "",
+         emergency_contact_relation: "",
+         emergency_contact_phone_number: "",
+         deposit_return_date: nil
+       )
+      flash[:notice] = "Successfully revoked key."
+    else
+      flash[:alert] = "Something went wrong when trying to revoke the key."
+    end
+
+    redirect_to admin_keys_path
+  end
+
   private
 
   def key_params
@@ -101,6 +127,10 @@ class Admin::KeysController < AdminAreaController
       :emergency_contact_relation,
       :emergency_contact_phone_number
     )
+  end
+
+  def key_inventory_params
+    params.require(:key).permit(:number, :space_id, :status, :room)
   end
 
   def update_files

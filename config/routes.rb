@@ -340,6 +340,7 @@ Rails.application.routes.draw do
         get :approve
         patch :approve_key
         patch :deny_key
+        patch :revoke_key
       end
     end
   end

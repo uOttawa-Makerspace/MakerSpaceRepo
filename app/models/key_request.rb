@@ -4,7 +4,7 @@ class KeyRequest < ApplicationRecord
   belongs_to :space, optional: true
   has_many_attached :files, dependent: :destroy
 
-  enum :status, %i[waiting_for_approval approved rejected], prefix: false
+  enum :status, %i[waiting_for_approval approved rejected], prefix: true
 
   validates :user, presence: { message: "A user is required" }
   validates :supervisor, presence: { message: "A supervisor is required" }
@@ -14,7 +14,7 @@ class KeyRequest < ApplicationRecord
             :emergency_contact_phone_number,
             format: {
               with: /\A\d{10}\z/,
-              message: "should be a 10-digit number"
+              message: "should be in xxxxxxxxxx format"
             }
 
   validates :student_number,

@@ -91,14 +91,14 @@ let deleteFiles = document.getElementById("delete_files");
   });
 });
 
-const userInformation = document.getElementById("user-information");
+const additionalInfo = document.getElementById("additional-info");
 const statusSelect = document.getElementById("status-select");
 if (statusSelect) {
   statusSelect.addEventListener("change", (e) => {
     if (e.target.value === "inventory") {
-      userInformation.style.display = "none";
+      additionalInfo.style.display = "none";
     } else {
-      userInformation.style.display = "block";
+      additionalInfo.style.display = "block";
     }
   });
 }
