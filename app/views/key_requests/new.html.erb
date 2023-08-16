@@ -43,7 +43,7 @@
         </div>
         <div class="mb-3">
           <%= f.label :supervisor_id, class: 'form-label' %>
-          <%= f.select :supervisor_id, User.staff.pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+          <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
         </div>
 
         <div class="mb-5">
