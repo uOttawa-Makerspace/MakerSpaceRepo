@@ -1,38 +1,14 @@
 <section class="w-75 mx-auto">
-  <h2 class="m-0 fw-bold py-4 text-center"><%= @key.number %></h2>
+  <h2 class="m-0 fw-bold py-4 text-center">Key #<%= @key.number %> - <%= @key.status.humanize.capitalize %></h2>
 
   <div class="mb-3">
     <h4 class="mb-3 fw-bold">Key Information</h4>
+    <h6>Key Type: <%= @key.key_type.humanize.capitalize %></h6>
     <h6>Key Number: <%= @key.number %></h6>
+    <h6>Keycode: <%= @key.keycode %></h6>
     <h6>Space: <%= @key.space.name %></h6>
-    <h6>Room: <%= @key.room %></h6>
     <h6>User: <%= link_to @key.user.name, user_path(@key.user.username), target: '_blank', rel: 'noopener' unless @key.user.nil? %></h6>
     <h6>Supervisor: <%= link_to @key.supervisor.name, user_path(@key.supervisor.username), target: '_blank', rel: 'noopener' unless @key.supervisor.nil? %></h6>
     <h6>Status: <%= @key.status.humanize.capitalize %></h6>
-    <h6>Deposit: <%= @key.deposit_return_date.nil? ? 'Not Returned' : "Returned on #{@key.deposit_return_date} " %></h6>
   </div>
-
-  <div class="mb-3">
-    <h4 class="mb-3 fw-bold">User Information</h4>
-    <h6>Email: <%= @key.user&.email %></h6>
-    <h6>Student/Employee Number: <%= @key.student_number %></h6>
-    <h6>Phone Number: <%= @key.phone_number %></h6>
-    <h6>Emergency Contact: <%= @key.emergency_contact %></h6>
-    <h6>Relation to Emergency Contact: <%= @key.emergency_contact_relation %></h6>
-    <h6>Emergency Contact Phone Number: <%= @key.emergency_contact_phone_number %></h6>
-  </div>
-
-  <% if @files.attached? %>
-    <div>
-      <h4 class="text-center">Certifications</h4>
-
-      <div>
-        <% @files.each do |file| %>
-          <div class="ratio ratio-16x9 mb-2">
-            <iframe src="<%= url_for(file) %>" allowfullscreen></iframe>
-          </div>
-        <% end %>
-      </div>
-    </div>
-  <% end %>
 </section>

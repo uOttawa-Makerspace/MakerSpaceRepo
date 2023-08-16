@@ -6,7 +6,7 @@ class Key < ApplicationRecord
   has_many :key_transactions, dependent: :destroy
 
   enum :status, %i[unknown inventory held lost], prefix: true
-  enum :key_type, %i[regular submaster keycard], prefix: true
+  enum :key_type, %i[regular sub_master keycard], prefix: true
 
   validates :user,
             presence: {
@@ -18,7 +18,11 @@ class Key < ApplicationRecord
               message: "A supervisor is required if the key is held"
             },
             if: :status_held?
-  validates :space, presence: { message: "A space is required" }
+  validates :space,
+            presence: {
+              message: "A space is required"
+            },
+            if: :key_type_regular?
 
   validates :number,
             presence: {
@@ -28,24 +32,5 @@ class Key < ApplicationRecord
               message: "A key already has that number"
             }
 
-  validates :phone_number,
-            :emergency_contact_phone_number,
-            format: {
-              with: /\A\d{10}\z/,
-              message: "should be in xxxxxxxxxx format"
-            },
-            unless: :status_inventory?
-
-  validates :student_number,
-            :emergency_contact,
-            presence: {
-              message: "student number and emergency contact is required"
-            },
-            unless: :status_inventory?
-
-  validates :files,
-            file_content_type: {
-              allow: %w[application/pdf],
-              if: -> { files.attached? }
-            }
+  validates :keycode, presence: { message: "A keycode is required" }
 end

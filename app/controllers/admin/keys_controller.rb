@@ -13,7 +13,6 @@ class Admin::KeysController < AdminAreaController
     create_params =
       (params[:key][:status] == "inventory") ? key_inventory_params : key_params
     @key = Key.new(create_params)
-    update_files
 
     if @key.save
       flash[:notice] = "Successfully created key."
@@ -29,7 +28,6 @@ class Admin::KeysController < AdminAreaController
   end
 
   def update
-    update_files
     update_params =
       (params[:key][:status] == "inventory") ? key_inventory_params : key_params
 
@@ -55,62 +53,6 @@ class Admin::KeysController < AdminAreaController
     @key_requests = KeyRequest.order(created_at: :asc)
   end
 
-  def approve_key
-    key = Key.find(params[:key_id])
-
-    if key.update(
-         @key_request.get_approval_params.merge(
-           status: :held,
-           deposit_return_date: params[:deposit_return_date]
-         )
-       ) && @key_request.update(status: :approved)
-      flash[:notice] = "Successfully approved key request."
-    else
-      flash[
-        :alert
-      ] = "Something went wrong when trying to approve the key request."
-    end
-
-    redirect_to requests_admin_keys_path
-  end
-
-  def deny_key
-    if @key_request.update(status: :rejected)
-      flash[:notice] = "Successfully denied key request."
-    else
-      flash[
-        :alert
-      ] = "Something went wrong when trying to deny the key request."
-    end
-
-    redirect_to requests_admin_keys_path
-  end
-
-  def revoke_key
-    if @key.status_held?
-      if @key.update(
-           user_id: nil,
-           supervisor_id: nil,
-           key_request_id: nil,
-           status: :inventory,
-           student_number: "",
-           phone_number: "",
-           emergency_contact: "",
-           emergency_contact_relation: "",
-           emergency_contact_phone_number: "",
-           deposit_return_date: nil
-         )
-        flash[:notice] = "Successfully revoked key."
-      else
-        flash[:alert] = "Something went wrong when trying to revoke the key."
-      end
-    else
-      flash[:alert] = "Something went wrong when trying to revoke the key."
-    end
-
-    redirect_to admin_keys_path
-  end
-
   private
 
   def key_params
@@ -120,18 +62,13 @@ class Admin::KeysController < AdminAreaController
       :space_id,
       :supervisor_id,
       :status,
-      :room,
-      :deposit_return_date,
-      :student_number,
-      :phone_number,
-      :emergency_contact,
-      :emergency_contact_relation,
-      :emergency_contact_phone_number
+      :type,
+      :keycode
     )
   end
 
   def key_inventory_params
-    params.require(:key).permit(:number, :space_id, :status, :room)
+    params.require(:key).permit(:number, :space_id, :status, :type, :keycode)
   end
 
   def set_key

@@ -3,15 +3,15 @@
     <thead class="table-primary">
     <tr>
       <th>Key Number</th>
+      <th>Key Type</th>
+      <th>Keycode</th>
       <th>Space</th>
-      <th>Room</th>
       <th>User</th>
       <th>Supervisor</th>
       <th>Email</th>
       <% if show_status %>
         <th>Status</th>
       <% end %>
-      <th>Deposit</th>
       <th>Certifications</th>
       <th>Actions</th>
     </tr>
@@ -20,18 +20,16 @@
     <tbody>
     <% keys.each do |key| %>
       <tr>
-        <td><%= link_to key.number, admin_key_path(key.id), target: '_blank', rel: 'noopener' %></td>
+        <td><%= key.number %></td>
+        <td><%= key.key_type %></td>
+        <td><%= key.keycode %></td>
         <td><%= key.space.name %></td>
-        <td><%= key.room %></td>
         <td><%= link_to key.user.name, user_path(key.user.username), target: '_blank', rel: 'noopener' unless key.user.nil? %></td>
         <td><%= link_to key.supervisor.name, user_path(key.supervisor.username), target: '_blank', rel: 'noopener' unless key.supervisor.nil? %></td>
         <td><%= key.user&.email %></td>
         <% if show_status %>
           <td><%= key.status.humanize.capitalize %></td>
         <% end %>
-        <td>
-          <%= key.deposit_return_date.nil? ? 'Not Returned' : "Returned on #{key.deposit_return_date} " %>
-        </td>
         <td>
           TODO: fix files
         </td>

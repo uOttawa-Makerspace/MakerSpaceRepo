@@ -510,6 +510,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.bigint "space_id"
     t.bigint "key_request_id"
     t.string "number"
+    t.string "keycode"
     t.integer "status", default: 0
     t.integer "key_type", default: 0
     t.datetime "created_at", null: false

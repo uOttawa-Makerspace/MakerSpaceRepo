@@ -113,3 +113,14 @@ if (keySelect && !keySelect.tomselect) {
     searchOnKeyUp: true,
   });
 }
+
+const keyTypeSelect = document.getElementById("key-type-select");
+if (keyTypeSelect) {
+  keyTypeSelect.addEventListener("change", (e) => {
+    if (e.target.value === "regular") {
+      spaceSelect.parentElement.style.display = "block";
+    } else {
+      spaceSelect.parentElement.style.display = "none";
+    }
+  });
+}
