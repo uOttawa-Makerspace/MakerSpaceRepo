@@ -6,7 +6,7 @@ class Key < ApplicationRecord
   has_many :key_transactions, dependent: :destroy
 
   enum :status, %i[unknown inventory held lost], prefix: true
-  enum :type, %i[regular sub_master keycard], prefix: true
+  enum :key_type, %i[regular submaster keycard], prefix: true
 
   validates :user,
             presence: {

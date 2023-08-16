@@ -482,9 +482,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.string "emergency_contact"
     t.string "emergency_contact_relation"
     t.string "emergency_contact_phone_number"
-    t.boolean "read_lab_rules"
-    t.boolean "read_policies"
-    t.boolean "read_agreement"
+    t.boolean "read_lab_rules", default: false, null: false
+    t.boolean "read_policies", default: false, null: false
+    t.boolean "read_agreement", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_key_requests_on_space_id"
@@ -508,17 +508,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.bigint "user_id"
     t.bigint "supervisor_id"
     t.bigint "space_id"
+    t.bigint "key_request_id"
     t.string "number"
     t.integer "status", default: 0
-    t.integer "type", default: 0
-    t.date "deposit_return_date"
-    t.string "student_number"
-    t.string "phone_number"
-    t.string "emergency_contact"
-    t.string "emergency_contact_relation"
-    t.string "emergency_contact_phone_number"
+    t.integer "key_type", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["key_request_id"], name: "index_keys_on_key_request_id"
     t.index ["space_id"], name: "index_keys_on_space_id"
     t.index ["supervisor_id"], name: "index_keys_on_supervisor_id"
     t.index ["user_id"], name: "index_keys_on_user_id"

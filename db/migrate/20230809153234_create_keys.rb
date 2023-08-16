@@ -8,7 +8,7 @@ class CreateKeys < ActiveRecord::Migration[7.0]
 
       t.string :number
       t.integer :status, default: 0
-      t.integer :type, default: 0
+      t.integer :key_type, default: 0
 
       t.timestamps
     end
