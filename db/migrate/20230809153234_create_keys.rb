@@ -4,17 +4,11 @@ class CreateKeys < ActiveRecord::Migration[7.0]
       t.references :user
       t.references :supervisor
       t.references :space
+      t.references :key_request
 
       t.string :number
       t.integer :status, default: 0
       t.integer :type, default: 0
-      t.date :deposit_return_date
-
-      t.string :student_number
-      t.string :phone_number
-      t.string :emergency_contact
-      t.string :emergency_contact_relation
-      t.string :emergency_contact_phone_number
 
       t.timestamps
     end
@@ -30,9 +24,9 @@ class CreateKeys < ActiveRecord::Migration[7.0]
       t.string :emergency_contact_relation
       t.string :emergency_contact_phone_number
 
-      t.boolean :read_lab_rules
-      t.boolean :read_policies
-      t.boolean :read_agreement
+      t.boolean :read_lab_rules, default: false, null: false
+      t.boolean :read_policies, default: false, null: false
+      t.boolean :read_agreement, default: false, null: false
 
       t.timestamps
     end
