@@ -508,7 +508,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.bigint "user_id"
     t.bigint "supervisor_id"
     t.bigint "space_id"
-    t.bigint "key_transactions_id"
     t.string "number"
     t.integer "status", default: 0
     t.integer "type", default: 0
@@ -520,7 +519,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.string "emergency_contact_phone_number"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["key_transactions_id"], name: "index_keys_on_key_transactions_id"
     t.index ["space_id"], name: "index_keys_on_space_id"
     t.index ["supervisor_id"], name: "index_keys_on_supervisor_id"
     t.index ["user_id"], name: "index_keys_on_user_id"
