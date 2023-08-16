@@ -59,12 +59,13 @@ class Admin::KeysController < AdminAreaController
   def approve_key
     key = Key.find(params[:key_id])
 
-    if key.update(
-         @key_request.get_approval_params.merge(
-           status: :held,
-           deposit_return_date: params[:deposit_return_date]
-         )
-       ) && @key_request.update(status: :approved)
+    if @key_request.status_waiting_for_approval? &&
+         key.update(
+           @key_request.get_approval_params.merge(
+             status: :held,
+             deposit_return_date: params[:deposit_return_date]
+           )
+         ) && @key_request.update(status: :approved)
       flash[:notice] = "Successfully approved key request."
     else
       flash[
@@ -76,7 +77,8 @@ class Admin::KeysController < AdminAreaController
   end
 
   def deny_key
-    if @key_request.update(status: :rejected)
+    if @key_request.status_waiting_for_approval? &&
+         @key_request.update(status: :rejected)
       flash[:notice] = "Successfully denied key request."
     else
       flash[
@@ -88,21 +90,25 @@ class Admin::KeysController < AdminAreaController
   end
 
   def revoke_key
-    @key.files.each { |f| f.purge }
+    if @key.status_held?
+      @key.files.each { |f| f.purge }
 
-    if @key.update(
-         user_id: nil,
-         supervisor_id: nil,
-         key_request_id: nil,
-         status: :inventory,
-         student_number: "",
-         phone_number: "",
-         emergency_contact: "",
-         emergency_contact_relation: "",
-         emergency_contact_phone_number: "",
-         deposit_return_date: nil
-       )
-      flash[:notice] = "Successfully revoked key."
+      if @key.update(
+           user_id: nil,
+           supervisor_id: nil,
+           key_request_id: nil,
+           status: :inventory,
+           student_number: "",
+           phone_number: "",
+           emergency_contact: "",
+           emergency_contact_relation: "",
+           emergency_contact_phone_number: "",
+           deposit_return_date: nil
+         )
+        flash[:notice] = "Successfully revoked key."
+      else
+        flash[:alert] = "Something went wrong when trying to revoke the key."
+      end
     else
       flash[:alert] = "Something went wrong when trying to revoke the key."
     end
