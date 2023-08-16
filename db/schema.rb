@@ -477,12 +477,14 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.bigint "user_id"
     t.bigint "supervisor_id"
     t.bigint "space_id"
-    t.integer "status", default: 0
     t.string "student_number"
     t.string "phone_number"
     t.string "emergency_contact"
     t.string "emergency_contact_relation"
     t.string "emergency_contact_phone_number"
+    t.boolean "read_lab_rules"
+    t.boolean "read_policies"
+    t.boolean "read_agreement"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_key_requests_on_space_id"
@@ -490,14 +492,26 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.index ["user_id"], name: "index_key_requests_on_user_id"
   end
 
+  create_table "key_transaction", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "key_id"
+    t.date "return_date"
+    t.date "deposit_return_date"
+    t.decimal "deposit_amount", precision: 5, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key_id"], name: "index_key_transaction_on_key_id"
+    t.index ["user_id"], name: "index_key_transaction_on_user_id"
+  end
+
   create_table "keys", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "supervisor_id"
     t.bigint "space_id"
-    t.bigint "key_request_id"
+    t.bigint "key_transactions_id"
     t.string "number"
-    t.string "room"
     t.integer "status", default: 0
+    t.integer "type", default: 0
     t.date "deposit_return_date"
     t.string "student_number"
     t.string "phone_number"
@@ -506,7 +520,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.string "emergency_contact_phone_number"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["key_request_id"], name: "index_keys_on_key_request_id"
+    t.index ["key_transactions_id"], name: "index_keys_on_key_transactions_id"
     t.index ["space_id"], name: "index_keys_on_space_id"
     t.index ["supervisor_id"], name: "index_keys_on_supervisor_id"
     t.index ["user_id"], name: "index_keys_on_user_id"

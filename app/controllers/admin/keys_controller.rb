@@ -7,7 +7,6 @@ class Admin::KeysController < AdminAreaController
   end
 
   def show
-    @files = (@key.key_request.nil?) ? @key.files : @key.key_request.files
   end
 
   def create
@@ -59,13 +58,12 @@ class Admin::KeysController < AdminAreaController
   def approve_key
     key = Key.find(params[:key_id])
 
-    if @key_request.status_waiting_for_approval? &&
-         key.update(
-           @key_request.get_approval_params.merge(
-             status: :held,
-             deposit_return_date: params[:deposit_return_date]
-           )
-         ) && @key_request.update(status: :approved)
+    if key.update(
+         @key_request.get_approval_params.merge(
+           status: :held,
+           deposit_return_date: params[:deposit_return_date]
+         )
+       ) && @key_request.update(status: :approved)
       flash[:notice] = "Successfully approved key request."
     else
       flash[
@@ -77,8 +75,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def deny_key
-    if @key_request.status_waiting_for_approval? &&
-         @key_request.update(status: :rejected)
+    if @key_request.update(status: :rejected)
       flash[:notice] = "Successfully denied key request."
     else
       flash[
@@ -91,8 +88,6 @@ class Admin::KeysController < AdminAreaController
 
   def revoke_key
     if @key.status_held?
-      @key.files.each { |f| f.purge }
-
       if @key.update(
            user_id: nil,
            supervisor_id: nil,
@@ -137,18 +132,6 @@ class Admin::KeysController < AdminAreaController
 
   def key_inventory_params
     params.require(:key).permit(:number, :space_id, :status, :room)
-  end
-
-  def update_files
-    if params[:delete_files].present?
-      file_ids = params[:delete_files].split(",")
-
-      @key.files.each { |f| f.purge if file_ids.include?(f.id.to_s) }
-    end
-
-    if params[:key][:files].present?
-      params[:key][:files].each { |f| @key.files.attach(f) }
-    end
   end
 
   def set_key

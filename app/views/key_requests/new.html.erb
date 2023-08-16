@@ -46,11 +46,6 @@
           <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
         </div>
 
-        <div class="mb-5">
-          <%= f.label :files, 'Attach certifications (PDFs only):', class: 'form-label' %>
-          <%= f.file_field :files, multiple: true, class: 'form-control' %>
-        </div>
-
         <div class="text-center">
           <%= f.submit 'Submit Form', class: 'btn btn-primary' %>
         </div>

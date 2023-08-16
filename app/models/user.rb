@@ -50,6 +50,11 @@ class User < ApplicationRecord
   has_many :job_orders, dependent: :destroy
   has_many :job_order_statuses
   has_many :coupon_codes, dependent: :destroy # GoDaddy temp replacement for discount codes
+  has_one :key_request,
+          class_name: "KeyRequest",
+          foreign_key: "user_id",
+          dependent: :destroy
+  has_many :key_transactions
 
   MAX_AUTH_ATTEMPTS = 5
 
