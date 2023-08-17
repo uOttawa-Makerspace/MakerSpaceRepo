@@ -35,11 +35,13 @@
             Staff Keys
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link text-secondary" id="staff-certs-tab" data-bs-toggle="tab" href="#staff-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
-            Staff Certifications
-          </a>
-        </li>
+        <% if @user.eql?(@repo_user) || @user.admin? %>
+          <li class="nav-item">
+            <a class="nav-link text-secondary" id="staff-certs-tab" data-bs-toggle="tab" href="#staff-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
+              Staff Certifications
+            </a>
+          </li>
+        <% end %>
       </ul>
     </div>
   <% end %>

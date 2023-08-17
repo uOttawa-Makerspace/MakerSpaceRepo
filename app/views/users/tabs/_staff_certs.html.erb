@@ -13,8 +13,9 @@
 
               <% (1..StaffCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
                 <div class="mb-3">
-                  <%= f.label "pdf_file_#{i}", "#{StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize} - #{@staff_cert.send("pdf_file_#{i}").attached? ? 'Attached' : 'Not Attached'}", class: 'form-label' %>
-                  <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50' %>
+                  <%= f.label "pdf_file_#{i}", "#{StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize} - #{@staff_cert.send("pdf_file_#{i}").attached? ? 'Attached' : 'Not Attached'}", class: 'form-label mb-1' %>
+                  <br><a href="<%= StaffCertification.file_number_to_url(i) %>"><%= StaffCertification.file_number_to_url(i) %></a>
+                  <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2' %>
                 </div>
               <% end %>
             </div>
@@ -24,8 +25,9 @@
 
               <% ((StaffCertification::NUMBER_OF_STAFF_FILES + 1)..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
                 <div class="mb-3">
-                  <%= f.label "pdf_file_#{i}", "#{StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize} - #{@staff_cert.send("pdf_file_#{i}").attached? ? 'Attached' : 'Not Attached'}", class: 'form-label' %>
-                  <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50' %>
+                  <%= f.label "pdf_file_#{i}", "#{StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize} - #{@staff_cert.send("pdf_file_#{i}").attached? ? 'Attached' : 'Not Attached'}", class: 'form-label mb-1' %>
+                  <br><a href="<%= StaffCertification.file_number_to_url(i) %>"><%= StaffCertification.file_number_to_url(i) %></a>
+                  <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2' %>
                 </div>
               <% end %>
             </div>

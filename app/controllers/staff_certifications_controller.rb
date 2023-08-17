@@ -3,6 +3,13 @@ class StaffCertificationsController < StaffAreaController
 
   before_action :set_staff_certification, only: %i[update show]
 
+  def show
+    unless @user.admin?
+      redirect_to users_path(@user.username),
+                  alert: "You cannot access this page"
+    end
+  end
+
   def create
     unless @user.staff_certification.nil?
       redirect_to user_path(@user.username),

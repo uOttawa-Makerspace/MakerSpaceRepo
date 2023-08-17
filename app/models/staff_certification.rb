@@ -68,6 +68,31 @@ class StaffCertification < ApplicationRecord
     end
   end
 
+  def self.file_number_to_url(file_number)
+    case file_number
+    when 1
+      return(
+        "https://www.uottawa.ca/about-us/administration-services/office-risk-management/training/whmis/lab/module-1"
+      )
+    when 2
+      return "https://web47.uottawa.ca/en/lrs/node/1481"
+    when 3
+      return "https://web47.uottawa.ca/en/lrs/node/1847"
+    when 4
+      return "https://web47.uottawa.ca/en/lrs/node/1602"
+    when 5
+      return "https://web47.uottawa.ca/en/lrs/node/1071"
+    when 6
+      return "https://web47.uottawa.ca/en/lrs/node/2398"
+    when 7
+      return "https://web47.uottawa.ca/en/lrs/node/38516"
+    when 8
+      return "https://web47.uottawa.ca/en/lrs/node/38274"
+    when 9
+      return "https://web47.uottawa.ca/en/lrs/node/2082"
+    end
+  end
+
   private
 
   def validate_files

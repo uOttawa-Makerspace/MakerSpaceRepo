@@ -1,39 +1,35 @@
 <div class="mt-4 w-75 mx-auto">
-  <h4 class="mb-3 text-center">Staff Certifications - <%= @staff_certification.user.name %></h4>
+  <h3 class="mb-4 text-center">Staff Certifications - <%= @staff_certification.user.name %></h3>
 
-  <div class="mb-3">
-    <h5 class="mb-2">Staff Files:</h5>
+  <div class="mb-4">
+    <h4 class="mb-3 text-center">Staff Files:</h4>
 
     <% (1..StaffCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
       <% if @staff_certification.send("pdf_file_#{i}").attached? %>
-        <p>
-          <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>:
-          <%= link_to "<i class='fa fa-download'></i>#{StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize}".html_safe,
-                      rails_blob_path(@staff_certification.send("pdf_file_#{i}"), disposition: 'attachment'), class: 'btn btn-primary'
-          %>
-        </p>
+        <h5><%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>:</h5>
+          <div class="mb-5 ratio ratio-16x9">
+            <iframe src="<%= url_for(@staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+          </div>
       <% else %>
-        <p>
+        <h5>
           <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>: not attached
-        </p>
+        </h5>
       <% end %>
     <% end %>
   </div>
   <div>
-    <h5 class="mb-2">Supervisor Files:</h5>
+    <h4 class="mb-3 text-center">Supervisor Files:</h4>
 
     <% ((StaffCertification::NUMBER_OF_STAFF_FILES + 1)..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
       <% if @staff_certification.send("pdf_file_#{i}").attached? %>
-        <p>
-          <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>:
-          <%= link_to "<i class='fa fa-download'></i>#{StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize}".html_safe,
-                      rails_blob_path(@staff_certification.send("pdf_file_#{i}"), disposition: 'attachment'), class: 'btn btn-primary'
-          %>
-        </p>
+        <h5><%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>:</h5>
+        <div class="mb-5 ratio ratio-16x9">
+          <iframe src="<%= url_for(@staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+        </div>
       <% else %>
-        <p>
+        <h5>
           <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>: not attached
-        </p>
+        </h5>
       <% end %>
     <% end %>
   </div>
