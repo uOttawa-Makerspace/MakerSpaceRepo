@@ -21,7 +21,7 @@
             </div>
 
             <div class="mb-4">
-              <h5>Supervisor Certifications: (<%= @staff_cert.get_supervisor_certs_attached %>/<%= StaffCertification::TOTAL_NUMBER_OF_FILES - StaffCertification::NUMBER_OF_STAFF_FILES %>)</h5>
+              <h5>Supervisor Certifications: (<%= @staff_cert.get_supervisor_certs_attached %>/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %>)</h5>
 
               <% ((StaffCertification::NUMBER_OF_STAFF_FILES + 1)..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
                 <div class="mb-3">
@@ -41,7 +41,7 @@
         </div>
 
         <div>
-          <h5>Supervisor Certifications: (<%= @staff_cert.get_supervisor_certs_attached %>/<%= StaffCertification::TOTAL_NUMBER_OF_FILES - StaffCertification::NUMBER_OF_STAFF_FILES %>)</h5>
+          <h5>Supervisor Certifications: (<%= @staff_cert.get_supervisor_certs_attached %>/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %>)</h5>
         </div>
       <% end %>
 

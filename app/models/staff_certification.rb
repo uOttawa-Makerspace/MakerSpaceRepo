@@ -12,6 +12,7 @@ class StaffCertification < ApplicationRecord
 
   TOTAL_NUMBER_OF_FILES = 9
   NUMBER_OF_STAFF_FILES = 8
+  NUMBER_OF_SUPERVISOR_FILES = TOTAL_NUMBER_OF_FILES - NUMBER_OF_STAFF_FILES
 
   validates :user, presence: true
 

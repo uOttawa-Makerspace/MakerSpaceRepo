@@ -15,27 +15,28 @@
     </thead>
 
     <tbody>
-    <% key_requests.each do |key_request| %>
-      <tr>
-        <td><%= link_to key_request.user.name, user_path(key_request.user.username), target: '_blank', rel: 'noopener' %></td>
-        <td><%= key_request.space.name %></td>
-        <td><%= link_to key_request.supervisor.name, user_path(key_request.supervisor.username), target: '_blank', rel: 'noopener' %></td>
-        <td><%= key_request.user&.email %></td>
-        <td><%= key_request.student_number %></td>
-        <td><%= key_request.phone_number %></td>
-        <td>
-          <%= key_request.emergency_contact %>
-          <%= key_request.emergency_contact_relation %>
-          <%= key_request.emergency_contact_phone_number %>
-        </td>
-        <td>
-          TODOF fix files
-        </td>
-        <td>
-          <%= link_to 'Show', key_request_path(key_request.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
-        </td>
-      </tr>
-    <% end %>
+      <% key_requests.each do |key_request| %>
+        <tr>
+          <td><%= link_to key_request.user.name, user_path(key_request.user.username), target: '_blank', rel: 'noopener' %></td>
+          <td><%= key_request.space.name %></td>
+          <td><%= link_to key_request.supervisor.name, user_path(key_request.supervisor.username), target: '_blank', rel: 'noopener' %></td>
+          <td><%= key_request.user&.email %></td>
+          <td><%= key_request.student_number %></td>
+          <td><%= key_request.phone_number %></td>
+          <td>
+            <%= key_request.emergency_contact %>
+            <%= key_request.emergency_contact_relation %>
+            <%= key_request.emergency_contact_phone_number %>
+          </td>
+          <td>
+            <%= key_request.staff_certification.get_staff_certs_attached %>/<%= StaffCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
+            <%= key_request.staff_certification.get_supervisor_certs_attached %>/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+          </td>
+          <td>
+            <%= link_to 'Show', key_request_path(key_request.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
+          </td>
+        </tr>
+      <% end %>
     </tbody>
   </table>
 </div>

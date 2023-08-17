@@ -6,13 +6,18 @@ class KeyRequestsController < StaffAreaController
   end
 
   def create
+    unless @user.key_request.nil?
+      redirect_to staff_dashboard_index_path,
+                  notice:
+                    "You already have a key request. You can edit your current key request."
+    end
+
     @key_request = KeyRequest.new(key_request_params.merge(user_id: @user.id))
 
     if @key_request.save
-      flash[
-        :notice
-      ] = "Successfully submitted form. Please wait a few business days for your request to be processed by an admin."
-      redirect_to staff_dashboard_index_path
+      redirect_to staff_dashboard_index_path,
+                  notice:
+                    "Successfully submitted form. Please wait a few business days for your request to be processed by an admin."
     else
       flash[:alert] = "Something went wrong while trying to submit the form."
       render :new
