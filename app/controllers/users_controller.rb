@@ -408,6 +408,7 @@ class UsersController < SessionsController
 
       @keys_owned = Key.where(user_id: @repo_user.id)
       @keys_supervising = Key.where(supervisor_id: @repo_user.id)
+      @staff_cert = @repo_user.staff_certification
 
       respond_to do |format|
         format.html

@@ -6,13 +6,7 @@ class KeyRequestsController < StaffAreaController
   end
 
   def create
-    @key_request =
-      KeyRequest.new(
-        key_request_params.merge(
-          status: :waiting_for_approval,
-          user_id: @user.id
-        )
-      )
+    @key_request = KeyRequest.new(key_request_params.merge(user_id: @user.id))
 
     if @key_request.save
       flash[
@@ -44,7 +38,9 @@ class KeyRequestsController < StaffAreaController
       :emergency_contact_phone_number,
       :space_id,
       :supervisor_id,
-      files: []
+      :read_lab_rules,
+      :read_policies,
+      :read_agreement
     )
   end
 end

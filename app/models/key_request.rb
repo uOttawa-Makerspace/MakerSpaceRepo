@@ -19,23 +19,4 @@ class KeyRequest < ApplicationRecord
             presence: {
               message: "student number and emergency contact is required"
             }
-
-  validates :files,
-            file_content_type: {
-              allow: %w[application/pdf],
-              if: -> { files.attached? }
-            }
-
-  def get_approval_params
-    {
-      key_request_id: id,
-      user_id: user_id,
-      supervisor_id: supervisor_id,
-      student_number: student_number,
-      phone_number: phone_number,
-      emergency_contact: emergency_contact,
-      emergency_contact_relation: emergency_contact_relation,
-      emergency_contact_phone_number: emergency_contact_phone_number
-    }
-  end
 end

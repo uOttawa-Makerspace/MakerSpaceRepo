@@ -492,7 +492,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.index ["user_id"], name: "index_key_requests_on_user_id"
   end
 
-  create_table "key_transaction", force: :cascade do |t|
+  create_table "key_transactions", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "key_id"
     t.date "return_date"
@@ -500,8 +500,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.decimal "deposit_amount", precision: 5, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["key_id"], name: "index_key_transaction_on_key_id"
-    t.index ["user_id"], name: "index_key_transaction_on_user_id"
+    t.index ["key_id"], name: "index_key_transactions_on_key_id"
+    t.index ["user_id"], name: "index_key_transactions_on_user_id"
   end
 
   create_table "keys", force: :cascade do |t|
@@ -964,6 +964,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.index ["time_period_id"],
             name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
+  end
+
+  create_table "staff_certifications", force: :cascade do |t|
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_staff_certifications_on_user_id"
   end
 
   create_table "staff_needed_calendars", force: :cascade do |t|

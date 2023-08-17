@@ -155,6 +155,9 @@
             <div class="tab-pane fade" id="keys-manager" role="tabpanel" aria-labelledby="profile-tab">
               <%= render partial: 'users/tabs/keys' %>
             </div>
+            <div class="tab-pane fade" id="staff-certs-manager" role="tabpanel" aria-labelledby="profile-tab">
+              <%= render partial: 'users/tabs/staff_certs' %>
+            </div>
           <% end %>
           <% if @user.admin? %>
             <div class="tab-pane fade" id="role-manager" role="tabpanel" aria-labelledby="profile-tab">

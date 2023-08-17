@@ -1,0 +1,40 @@
+<div class="mt-4 w-75 mx-auto">
+  <h4 class="mb-3 text-center">Staff Certifications - <%= @staff_certification.user.name %></h4>
+
+  <div class="mb-3">
+    <h5 class="mb-2">Staff Files:</h5>
+
+    <% (1..StaffCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
+      <% if @staff_certification.send("pdf_file_#{i}").attached? %>
+        <p>
+          <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>:
+          <%= link_to "<i class='fa fa-download'></i>#{StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize}".html_safe,
+                      rails_blob_path(@staff_certification.send("pdf_file_#{i}"), disposition: 'attachment'), class: 'btn btn-primary'
+          %>
+        </p>
+      <% else %>
+        <p>
+          <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>: not attached
+        </p>
+      <% end %>
+    <% end %>
+  </div>
+  <div>
+    <h5 class="mb-2">Supervisor Files:</h5>
+
+    <% ((StaffCertification::NUMBER_OF_STAFF_FILES + 1)..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
+      <% if @staff_certification.send("pdf_file_#{i}").attached? %>
+        <p>
+          <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>:
+          <%= link_to "<i class='fa fa-download'></i>#{StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize}".html_safe,
+                      rails_blob_path(@staff_certification.send("pdf_file_#{i}"), disposition: 'attachment'), class: 'btn btn-primary'
+          %>
+        </p>
+      <% else %>
+        <p>
+          <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>: not attached
+        </p>
+      <% end %>
+    <% end %>
+  </div>
+</div>

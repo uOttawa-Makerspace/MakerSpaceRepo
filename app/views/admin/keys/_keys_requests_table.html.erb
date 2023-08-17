@@ -29,13 +29,7 @@
           <%= key_request.emergency_contact_phone_number %>
         </td>
         <td>
-          <% if key_request.files.attached? %>
-            <div class="d-flex flex-column gap-2">
-              <% key_request.files.each do |file| %>
-                <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
-              <% end %>
-            </div>
-          <% end %>
+          TODOF fix files
         </td>
         <td>
           <%= link_to 'Show', key_request_path(key_request.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>

@@ -344,6 +344,8 @@ Rails.application.routes.draw do
 
   resources :key_requests, only: %i[new create show]
 
+  resources :staff_certifications, only: %i[show create update]
+
   namespace :staff do
     resources :training_sessions do
       get "/", as: "index", action: "index", on: :collection
