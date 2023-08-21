@@ -347,7 +347,11 @@ Rails.application.routes.draw do
     patch :steps
   end
 
-  resources :staff_certifications, only: %i[show create update]
+  resources :staff_certifications, only: %i[show create update] do
+    member do
+      delete "destroy_pdf/:file_number", action: :destroy_pdf, as: :destroy_pdf
+    end
+  end
 
   namespace :staff do
     resources :training_sessions do

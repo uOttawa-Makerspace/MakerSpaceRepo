@@ -1,7 +1,7 @@
 class StaffCertificationsController < StaffAreaController
   layout "staff_area"
 
-  before_action :set_staff_certification, only: %i[update show]
+  before_action :set_staff_certification, only: %i[update show destroy_pdf]
 
   def show
     unless @user.admin?
@@ -42,6 +42,20 @@ class StaffCertificationsController < StaffAreaController
 
     redirect_to user_path(@user.username),
                 notice: "Successfully updated staff certifications"
+  end
+
+  def destroy_pdf
+    file_number = params[:file_number].to_i
+    file_attr = "pdf_file_#{file_number}"
+
+    if @staff_certification.send(file_attr).attached?
+      @staff_certification.send(file_attr).purge
+      redirect_to staff_certification_path(@staff_certification.id),
+                  notice: "Successfully deleted certification"
+    else
+      redirect_to staff_certification_path(@staff_certification.id),
+                  alert: "Couldn't find attached file"
+    end
   end
 
   private
