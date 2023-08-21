@@ -1,0 +1,30 @@
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Access Key Form - Informed consent for laboratory workers</h2>
+
+  <%= form_for(@key_request, url: { controller: 'key_requests', action: 'steps' }, html: { multipart: true }) do |f| %>
+    <%= hidden_field_tag :step, 5 %>
+    <div class="row">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="mb-5">
+          <ol>
+            <li>I accept the risks, dangers and hazards inherent in undertaking my research activities. Such risks may include but are not limited to the following: • (In the laboratory) Any manner of bodily injury, loss or property damage resulting from the exposure to or direct contact with chemical products, biological samples, specimens, radioactive materials in their original state or as modified or changed by laboratory processes and from hazardous reactions, fires, spills or other hazards resulting from laboratory experiments. • (Using equipment) Any manner of bodily injury, loss or property damage resulting from the use, misuse, non-use and failure of any equipment.  </li>
+            <li>I have received the appropriate laboratory safety training to conduct my research activities and have read the Laboratory Safety Manual. It is my responsibility to familiarize myself with the contents of the Manual.  </li>
+            <li>Access to the laboratory is for the sole purpose of conducting my research activities and I agree not to work alone in the laboratory when potentially hazardous material, equipment or activities are involved.  </li>
+            <li>(In the case of a student) I will not undertake any experimental procedure or process that was not discussed or reviewed with the professor and without first having received training, instruction and/or supervision from the professor or someone designated by the professor as competent to train, instruct in or supervise such a procedure or process.  </li>
+            <li>That I will take the necessary measures to ensure that no other person uses my key and/or security card to access the University’s premises and that I will not give or lend the key(s) and/or security card(s) to other persons. I agree to return the key(s) and/or access card to the University upon completion of my research activities. I further agree that the University may, at any time, demand the return of the key(s) and/or security card(s) if I fail to comply with any University policy, procedure, regulation or any of the above. I have read and I understand the contents of this document. </li>
+          </ol>
+        </div>
+
+        <div class="mb-5">
+          <%= f.radio_button :read_policies, true, class: 'form-check-input', required: true %>
+          <%= f.label :read_policies, 'I have read and understood the policies above', class: 'form-label' %>
+        </div>
+
+        <div class="text-center">
+          <%= link_to 'Previous Step', key_request_steps_path(key_request_id: @key_request.id, step: 3), class: 'btn btn-primary' %>
+          <%= f.submit 'Next Step', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</section>

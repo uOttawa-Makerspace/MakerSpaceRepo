@@ -26,6 +26,7 @@ class CreateKeys < ActiveRecord::Migration[7.0]
       t.string :emergency_contact_phone_number
 
       t.integer :user_status
+      t.integer :status
 
       t.boolean :read_lab_rules, default: false, null: false
       t.boolean :read_policies, default: false, null: false

@@ -21,7 +21,7 @@
   <% end %>
 
   <section>
-    <h2 class="mb-3 fw-bold py-3 text-center">Access Key Form</h2>
+    <h2 class="mb-3 fw-bold py-3 text-center">Access Key Form - Personal Information</h2>
 
     <%= form_for @key_request, url: { controller: 'key_requests', action: 'create' } do |f| %>
       <div class="row">
@@ -47,16 +47,20 @@
             <%= f.text_field :emergency_contact_phone_number, class: 'form-control', required: true %>
           </div>
           <div class="mb-3">
-            <%= f.label :space_id, class: 'form-label' %>
+            <%= f.label :space_id, 'Department', class: 'form-label' %>
             <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
           </div>
           <div class="mb-3">
             <%= f.label :supervisor_id, class: 'form-label' %>
             <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
           </div>
+          <div class="mb-5">
+            <%= f.label :user_status, 'Status', class: 'form-label' %>
+            <%= f.select :user_status, options_for_select(KeyRequest.user_statuses.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select' } %>
+          </div>
 
           <div class="text-center">
-            <%= f.submit 'Submit Form', class: 'btn btn-primary' %>
+            <%= f.submit 'Next Step', class: 'btn btn-primary' %>
           </div>
         </div>
       </div>

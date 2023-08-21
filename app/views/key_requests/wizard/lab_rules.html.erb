@@ -1,0 +1,42 @@
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Access Key Form - General laboratory rules</h2>
+
+  <%= form_for(@key_request, url: { controller: 'key_requests', action: 'steps' }, html: { multipart: true }) do |f| %>
+    <%= hidden_field_tag :step, 3 %>
+    <div class="row">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="mb-5">
+          <ol>
+            <li>Eating, drinking, or storing food is prohibited in the laboratory.</li>
+            <li>Appropriate clothes must be worn: shorts, open toed and open heeled shoes are prohibited. Safety eyewear and laboratory coats must be worn at all times when in the lab or when transporting materials between laboratories.</li>
+            <li>Long hair must be restrained or tied back.</li>
+            <li>Users must agree to follow the Office of Risk Management directive on after-hours access.</li>
+            <li>Do not dispose of anything in the sink. Consult the Sewer-Use Guidelines, the ORM - Environmental Management web page and your supervisor for more information  </li>
+            <li>All accidents, incidents or occupational disease must be reported using the online “Accident, incident, occupational disease or near miss report” form.</li>
+            <li>All spills, incidents or exposures must immediately be reported to the Principal Investigator.</li>
+            <li>No procedure or equipment should be used without proper safety instruction from trained laboratory personnel.</li>
+            <li>All electrical equipment must meet the Ontario Electrical Safety Authority Standards. </li>
+            <li>Untrained people are not allowed in the laboratory. All visitors must wear safety glasses.</li>
+            <li>The laboratory doors must be shut at all times and locked when no one is in the laboratory.</li>
+            <li>Users must be familiar with the Safety data sheets (SDS) for all the hazardous materials they will work with before using them.</li>
+            <li>If emergency treatment is required, take the appropriate SDS with you. </li>
+            <li>Emergency response procedures for fires and chemical hazard and biohazard spills can be found in the Laboratory Safety Manual. Read them in advance!</li>
+            <li>Work surfaces must be cleaned and decontaminated daily. No hazardous chemicals are to be left outside storage cabinets overnight.</li>
+            <li>Hands must be washed with soap before leaving the laboratory.</li>
+            <li>Visit the Faculty’s Health and safety web page, the Office of Risk Management (ORM) web page, the ORM - Environmental Management web page, and the ORM’s Health and Safety Policies and Guidelines web page. </li>
+          </ol>
+        </div>
+
+        <div class="mb-5">
+          <%= f.radio_button :read_lab_rules, true, class: 'form-check-input', required: true %>
+          <%= f.label :read_lab_rules, 'I have read and understood the rules above', class: 'form-label' %>
+        </div>
+
+        <div class="text-center">
+          <%= link_to 'Previous Step', key_request_steps_path(key_request_id: @key_request.id, step: 1), class: 'btn btn-primary' %>
+          <%= f.submit 'Next Step', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</section>

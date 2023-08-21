@@ -1,0 +1,15 @@
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Access Key Form - Safety questionnaire</h2>
+
+  <%= form_for(@key_request, url: { controller: 'key_requests', action: 'steps' }, html: { multipart: true }) do |f| %>
+    <%= hidden_field_tag :step, 4 %>
+    <div class="row">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="text-center">
+          <%= link_to 'Previous Step', key_request_steps_path(key_request_id: @key_request.id, step: 2), class: 'btn btn-primary' %>
+          <%= f.submit 'Next Step', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</section>

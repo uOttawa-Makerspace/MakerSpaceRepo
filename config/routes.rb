@@ -342,7 +342,10 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :key_requests, only: %i[new create show]
+  resources :key_requests, only: %i[index new create show] do
+    get :steps
+    patch :steps
+  end
 
   resources :staff_certifications, only: %i[show create update]
 
