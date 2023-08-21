@@ -1,17 +1,13 @@
 class KeyRequestsController < StaffAreaController
   layout "staff_area"
 
+  before_action :check_key_request, only: %i[new create]
+
   def new
     @key_request = KeyRequest.new
   end
 
   def create
-    unless @user.key_request.nil?
-      redirect_to staff_dashboard_index_path,
-                  notice:
-                    "You already have a key request. You can edit your current key request."
-    end
-
     @key_request = KeyRequest.new(key_request_params.merge(user_id: @user.id))
 
     if @key_request.save
@@ -47,5 +43,13 @@ class KeyRequestsController < StaffAreaController
       :read_policies,
       :read_agreement
     )
+  end
+
+  def check_key_request
+    unless @user.key_request.nil?
+      redirect_to staff_dashboard_index_path,
+                  notice:
+                    "You already have a key request. You can edit your current key request."
+    end
   end
 end

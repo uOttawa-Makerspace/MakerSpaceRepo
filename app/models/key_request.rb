@@ -4,9 +4,12 @@ class KeyRequest < ApplicationRecord
   belongs_to :space, optional: true
   has_one :staff_certification, through: :user
 
+  enum :user_status, %i[student professor staff], prefix: true
+
   validates :user, presence: { message: "A user is required" }
   validates :supervisor, presence: { message: "A supervisor is required" }
   validates :space, presence: { message: "A space is required" }
+  validates :user_status, presence: { message: "A user status is required" }
 
   validates :phone_number,
             :emergency_contact_phone_number,
