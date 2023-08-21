@@ -7,7 +7,7 @@
     <% (1..StaffCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
       <% if @staff_certification.send("pdf_file_#{i}").attached? %>
         <div class="mb-5">
-          <h5><%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>:</h5>
+          <h5><%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
           <div class="ratio ratio-16x9">
             <iframe src="<%= url_for(@staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
           </div>
@@ -16,7 +16,7 @@
       <% else %>
         <div class="mb-5">
           <h5>
-            <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>: not attached
+            <%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
           </h5>
         </div>
       <% end %>
@@ -28,7 +28,7 @@
     <% ((StaffCertification::NUMBER_OF_STAFF_FILES + 1)..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
       <% if @staff_certification.send("pdf_file_#{i}").attached? %>
         <div class="mb-5">
-          <h5><%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>:</h5>
+          <h5><%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
           <div class="mb-5 ratio ratio-16x9">
             <iframe src="<%= url_for(@staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
           </div>
@@ -37,7 +37,7 @@
       <% else %>
         <div class="mb-5">
           <h5>
-            <%= StaffCertification.file_number_to_name(i).gsub('-', ' ').humanize %>: not attached
+            <%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
           </h5>
         </div>
       <% end %>

@@ -28,6 +28,21 @@ class CreateKeys < ActiveRecord::Migration[7.0]
       t.integer :user_status
       t.integer :status
 
+      t.string :question_1
+      t.string :question_2
+      t.string :question_3
+      t.string :question_4
+      t.string :question_5
+      t.string :question_6
+      t.string :question_7
+      t.string :question_8
+      t.string :question_9
+      t.string :question_10
+      t.string :question_11
+      t.string :question_12
+      t.string :question_13
+      t.string :question_14
+
       t.boolean :read_lab_rules, default: false, null: false
       t.boolean :read_policies, default: false, null: false
       t.boolean :read_agreement, default: false, null: false

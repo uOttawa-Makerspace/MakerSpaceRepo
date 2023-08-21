@@ -94,12 +94,24 @@ class KeyRequestsController < StaffAreaController
       when 5
         render "key_requests/wizard/agreement"
       when 6
-        @key_request.update(status: :completed)
-        redirect_to staff_dashboard_index_path,
-                    notice:
-                      "You have successfully submitted the key request form, please wait a few days for an admin to review your form."
+        if @key_request.update(status: :waiting_for_approval)
+          redirect_to key_request_path(@key_request.id),
+                      notice:
+                        "You have successfully submitted the key request form, please wait a few days for an admin to review your form."
+        else
+          redirect_to key_request_steps_path(
+                        key_request_id: @key_request.id,
+                        step: 1
+                      ),
+                      alert:
+                        "There was an error when submitting your key request form. Please make sure you fill in all the required fields."
+        end
       else
-        redirect_to staff_dashboard_index_path, alert: "Invalid step number"
+        redirect_to key_request_steps_path(
+                      key_request_id: @key_request.id,
+                      step: 1
+                    ),
+                    alert: "Invalid step number"
       end
     end
   end
@@ -119,7 +131,21 @@ class KeyRequestsController < StaffAreaController
       :read_lab_rules,
       :read_policies,
       :read_agreement,
-      :status
+      :status,
+      :question_1,
+      :question_2,
+      :question_3,
+      :question_4,
+      :question_5,
+      :question_6,
+      :question_7,
+      :question_8,
+      :question_9,
+      :question_10,
+      :question_11,
+      :question_12,
+      :question_13,
+      :question_14
     )
   end
 

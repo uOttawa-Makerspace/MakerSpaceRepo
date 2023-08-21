@@ -14,12 +14,36 @@ class StaffCertification < ApplicationRecord
   NUMBER_OF_STAFF_FILES = 8
   NUMBER_OF_SUPERVISOR_FILES = TOTAL_NUMBER_OF_FILES - NUMBER_OF_STAFF_FILES
 
+  FILE_NAMES = %w[
+    WHMIS
+    worker-health-and-safety-awareness
+    violence-prevention
+    respect-in-the-workplace
+    accessibility-standards-for-customer-service
+    the-code-and-the-AODA
+    dry-lab-risk-management
+    health-and-safety-roles-and-responsibilities
+    supervisor-health-and-safety-awareness
+  ]
+
+  FILE_URLS = %w[
+    https://www.uottawa.ca/about-us/administration-services/office-risk-management/training/whmis/lab/module-1
+    https://web47.uottawa.ca/en/lrs/node/1481
+    https://web47.uottawa.ca/en/lrs/node/1847
+    https://web47.uottawa.ca/en/lrs/node/1602
+    https://web47.uottawa.ca/en/lrs/node/1071
+    https://web47.uottawa.ca/en/lrs/node/2398
+    https://web47.uottawa.ca/en/lrs/node/38516
+    https://web47.uottawa.ca/en/lrs/node/38274
+    https://web47.uottawa.ca/en/lrs/node/2082
+  ]
+
   validates :user, presence: true
 
   validate :validate_files
 
   def generate_filename(file_number)
-    "#{user.name.parameterize}-#{StaffCertification.file_number_to_name(file_number)}.pdf"
+    "#{user.name.parameterize}-#{StaffCertification::FILE_NAMES[i - 1]}.pdf"
   end
 
   def attach_pdf_file(file_number, uploaded_file)
@@ -44,54 +68,6 @@ class StaffCertification < ApplicationRecord
       count += 1 if self.send(file_param).attached?
     end
     count
-  end
-
-  def self.file_number_to_name(file_number)
-    case file_number
-    when 1
-      return "WHMIS"
-    when 2
-      return "worker-health-and-safety-awareness"
-    when 3
-      return "violence-prevention"
-    when 4
-      return "respect-in-the-workplace"
-    when 5
-      return "accessibility-standards-for-customer-service"
-    when 6
-      return "the-code-and-the-AODA"
-    when 7
-      return "dry-lab-risk-management"
-    when 8
-      return "health-and-safety-roles-and-responsibilities"
-    when 9
-      return "supervisor-health-and-safety-awareness"
-    end
-  end
-
-  def self.file_number_to_url(file_number)
-    case file_number
-    when 1
-      return(
-        "https://www.uottawa.ca/about-us/administration-services/office-risk-management/training/whmis/lab/module-1"
-      )
-    when 2
-      return "https://web47.uottawa.ca/en/lrs/node/1481"
-    when 3
-      return "https://web47.uottawa.ca/en/lrs/node/1847"
-    when 4
-      return "https://web47.uottawa.ca/en/lrs/node/1602"
-    when 5
-      return "https://web47.uottawa.ca/en/lrs/node/1071"
-    when 6
-      return "https://web47.uottawa.ca/en/lrs/node/2398"
-    when 7
-      return "https://web47.uottawa.ca/en/lrs/node/38516"
-    when 8
-      return "https://web47.uottawa.ca/en/lrs/node/38274"
-    when 9
-      return "https://web47.uottawa.ca/en/lrs/node/2082"
-    end
   end
 
   private
