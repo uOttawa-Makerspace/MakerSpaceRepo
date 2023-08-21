@@ -1,6 +1,10 @@
 <section class="w-75 mx-auto">
   <h2 class="m-0 fw-bold py-4 text-center">Key Request #<%= @key_request.id %></h2>
 
+  <div class="text-center">
+    <%= link_to 'Edit Key Request', key_request_steps_path(key_request_id: @key_request.id, step: 1), class: 'btn btn-primary' if @user.eql?(@key_request.user) %>
+  </div>
+
   <div class="mb-4 mt-4">
     <h4 class="mb-3 fw-bold">Key Request Information</h4>
     <h6>Space: <%= @key_request.space.name %></h6>
