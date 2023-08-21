@@ -335,9 +335,11 @@ Rails.application.routes.draw do
     end
 
     resources :keys do
+      get :assign
       collection do
         get :requests
-        get :approve
+        patch :approve_key_request
+        patch :deny_key_request
       end
     end
   end

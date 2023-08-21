@@ -48,6 +48,13 @@ class KeyRequestsController < StaffAreaController
   end
 
   def steps
+    unless @user.eql?(@key_request.user)
+      redirect_to staff_dashboard_index_path,
+                  alert:
+                    "You don't have the permission to edit this key request."
+      return
+    end
+
     @step = params[:step].present? ? params[:step].to_i : 1
     errors = []
 

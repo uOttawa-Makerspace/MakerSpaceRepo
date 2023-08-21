@@ -43,7 +43,7 @@ class StaffCertification < ApplicationRecord
   validate :validate_files
 
   def generate_filename(file_number)
-    "#{user.name.parameterize}-#{StaffCertification::FILE_NAMES[i - 1]}.pdf"
+    "#{user.name.parameterize}-#{StaffCertification::FILE_NAMES[file_number - 1]}.pdf"
   end
 
   def attach_pdf_file(file_number, uploaded_file)

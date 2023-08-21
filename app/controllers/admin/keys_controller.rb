@@ -1,6 +1,6 @@
 class Admin::KeysController < AdminAreaController
   before_action :set_key, only: %i[show edit destroy update revoke_key]
-  before_action :set_key_request, only: %i[approve approve_key deny_key]
+  before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
     @keys = Key.order(created_at: :desc)
@@ -51,6 +51,28 @@ class Admin::KeysController < AdminAreaController
 
   def requests
     @key_requests = KeyRequest.order(created_at: :asc)
+  end
+
+  def approve_key_request
+    if @key_request.status_waiting_for_approval? &&
+         @key_request.update(status: :approved)
+      redirect_to requests_admin_keys_path,
+                  notice: "Successfully approved key request."
+    else
+      redirect_to requests_admin_keys_path,
+                  alert: "Something went wrong while approving key request."
+    end
+  end
+
+  def deny_key_request
+    if @key_request.status_waiting_for_approval? &&
+         @key_request.update(status: :in_progress)
+      redirect_to requests_admin_keys_path,
+                  notice: "Successfully denied key request."
+    else
+      redirect_to requests_admin_keys_path,
+                  alert: "Something went wrong while approving key request."
+    end
   end
 
   private

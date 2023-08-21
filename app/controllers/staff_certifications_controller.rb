@@ -4,7 +4,7 @@ class StaffCertificationsController < StaffAreaController
   before_action :set_staff_certification, only: %i[update show destroy_pdf]
 
   def show
-    unless @user.admin?
+    if !@user.eql?(@staff_certification.user) && !@user.admin?
       redirect_to users_path(@user.username),
                   alert: "You cannot access this page"
     end

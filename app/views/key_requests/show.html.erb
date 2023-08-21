@@ -10,18 +10,21 @@
     <h6>Space: <%= @key_request.space.name %></h6>
     <h6>User: <%= link_to @key_request.user.name, user_path(@key_request.user.username), target: '_blank', rel: 'noopener' %></h6>
     <h6>Supervisor: <%= link_to @key_request.supervisor.name, user_path(@key_request.supervisor.username), target: '_blank', rel: 'noopener' %></h6>
-    <h6>User Status: <%= @key_request.user_status.humanize.capitalize %></h6>
     <h6>Form Status: <%= @key_request.status.humanize.capitalize %></h6>
   </div>
 
   <div class="mb-4">
     <h4 class="mb-3 fw-bold">User Information</h4>
+    <h6>User Status: <%= @key_request.user_status.humanize.capitalize %></h6>
     <h6>Email: <%= @key_request.user&.email %></h6>
     <h6>Student/Employee Number: <%= @key_request.student_number %></h6>
     <h6>Phone Number: <%= @key_request.phone_number %></h6>
     <h6>Emergency Contact: <%= @key_request.emergency_contact %></h6>
     <h6>Relation to Emergency Contact: <%= @key_request.emergency_contact_relation %></h6>
     <h6>Emergency Contact Phone Number: <%= @key_request.emergency_contact_phone_number %></h6>
+    <h6>Read and understood lab rules: <%= @key_request.read_lab_rules? ? "yes" : "no" %></h6>
+    <h6>Read and understood policies: <%= @key_request.read_policies? ? "yes" : "no" %></h6>
+    <h6>Read and accepted agreement: <%= @key_request.read_agreement? ? "yes" : "no" %></h6>
   </div>
 
   <div class="mb-5">
