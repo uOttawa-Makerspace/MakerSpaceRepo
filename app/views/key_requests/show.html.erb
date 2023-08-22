@@ -37,37 +37,8 @@
     <% end %>
   </div>
 
-  <div class="mb-4">
-    <h4 class="mb-3 text-center">Staff Files:</h4>
-
-    <% (1..StaffCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
-      <% if @staff_certification.send("pdf_file_#{i}").attached? %>
-        <h5><%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
-        <div class="mb-5 ratio ratio-16x9">
-          <iframe src="<%= url_for(@staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
-        </div>
-      <% else %>
-        <h5>
-          <%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
-        </h5>
-      <% end %>
-    <% end %>
-  </div>
-  <div>
-    <h4 class="mb-3 text-center">Supervisor Files:</h4>
-
-    <% ((StaffCertification::NUMBER_OF_STAFF_FILES + 1)..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
-      <% if @staff_certification.send("pdf_file_#{i}").attached? %>
-        <h5><%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
-        <div class="mb-5 ratio ratio-16x9">
-          <iframe src="<%= url_for(@staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
-        </div>
-      <% else %>
-        <h5>
-          <%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
-        </h5>
-      <% end %>
-    <% end %>
+  <div class="text-center mb-4">
+    <%= link_to 'View Certifications', staff_certification_path(@key_request.staff_certification.id), class: 'btn btn-primary' %>
   </div>
 
   <% if @user.admin? %>
