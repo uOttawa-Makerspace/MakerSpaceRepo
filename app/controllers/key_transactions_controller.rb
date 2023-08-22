@@ -1,2 +1,0 @@
-class KeyTransactionsController < ApplicationController
-end

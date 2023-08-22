@@ -345,6 +345,8 @@ Rails.application.routes.draw do
         patch :deny_key_request
       end
     end
+
+    resources :key_transactions, only: %i[index edit update]
   end
 
   resources :key_requests, only: %i[index new create show] do

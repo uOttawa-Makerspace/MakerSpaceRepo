@@ -1,0 +1,37 @@
+<div class="table-responsive">
+  <table class="table text-center m-0">
+    <thead class="table-primary">
+    <tr>
+      <th>Key</th>
+      <th>User</th>
+      <th>Supervisor</th>
+      <th>Deposit Amount</th>
+      <th>Return Date</th>
+      <th>Deposit Return Date</th>
+      <th>Key given on</th>
+      <% if show_actions %>
+        <th>Actions</th>
+      <% end %>
+    </tr>
+    </thead>
+
+    <tbody>
+    <% key_transactions.each do |kt| %>
+      <tr>
+        <td><%= link_to kt.key.keycode, admin_key_path(kt.key.id) %></td>
+        <td><%= link_to kt.user.name, user_path(kt.user.username) %></td>
+        <td><%= link_to kt.key.supervisor.name, user_path(kt.key.supervisor.username) %></td>
+        <td>$<%= kt.deposit_amount %></td>
+        <td><%= kt.return_date.nil? ? 'Not Returned' : kt.return_date %></td>
+        <td><%= kt.deposit_return_date.nil? ? 'Not Returned' : kt.deposit_return_date %></td>
+        <td><%= kt.created_at.strftime('%Y-%m-%d') %></td>
+        <% if show_actions %>
+          <td>
+            <%= link_to 'Return Deposit', edit_admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' %>
+          </td>
+        <% end %>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+</div>

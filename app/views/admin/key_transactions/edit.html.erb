@@ -1,0 +1,23 @@
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Return Deposit</h2>
+
+  <%= form_for @key_transaction, url: { controller: 'admin/key_transactions', action: 'update' } do |f| %>
+    <div class="row">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="mb-5">
+          <%= f.label :deposit_return_date, class: 'form-label' %>
+          <div class="input-group">
+            <%= f.text_field :deposit_return_date, id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
+            <button class="btn btn-outline-danger" id="deposit-return-date-clear" type="button">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <%= f.submit 'Update Deposit', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</section>

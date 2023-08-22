@@ -8,6 +8,6 @@ class KeyTransaction < ApplicationRecord
 
   scope :returned, -> { where.not(return_date: nil) }
   scope :not_returned, -> { where(return_date: nil) }
-  scope :deposit_unpaid,
+  scope :awaiting_deposit_return,
         -> { where.not(return_date: nil).and(where(deposit_return_date: nil)) }
 end
