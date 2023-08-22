@@ -34,16 +34,11 @@
         </div>
         <div class="mb-3">
           <%= f.label :status, 'Status', class: 'form-label' %>
-          <%= f.select :status, options_for_select(Key.statuses.map { |k, _v| [k.humanize.capitalize, k] }, selected: @key.status), {}, { class: 'form-control form-select', id: 'status-select' } %>
+          <%= f.select :status, options_for_select(Key.statuses.except(:held).map { |k, _v| [k.humanize.capitalize, k] }, selected: @key.status), {}, { class: 'form-control form-select', id: 'status-select' } %>
         </div>
         <div class="mb-3">
           <%= f.label :supervisor_id, class: 'form-label' %>
           <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
-        </div>
-
-        <div id="additional-info" class="mb-5" style="display: <%= @key.status_held? ? 'block' : 'none' %>;">
-          <%= f.label :key_request_id, 'Assign key (required if key is held)', class: 'form-label' %>
-          <%= f.select :key_request_id, @key_requests, { prompt: 'Assign Key...' }, { class: 'form-control', id: 'key-request-select' } %>
         </div>
 
         <div class="text-center">

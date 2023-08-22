@@ -48,18 +48,6 @@ if (keyRequestSelect && !keyRequestSelect.tomselect) {
   });
 }
 
-const additionalInfo = document.getElementById("additional-info");
-const statusSelect = document.getElementById("status-select");
-if (statusSelect) {
-  statusSelect.addEventListener("change", (e) => {
-    if (e.target.value === "held") {
-      additionalInfo.style.display = "block";
-    } else {
-      additionalInfo.style.display = "none";
-    }
-  });
-}
-
 const keyTypeSelect = document.getElementById("key-type-select");
 if (keyTypeSelect) {
   keyTypeSelect.addEventListener("change", (e) => {
