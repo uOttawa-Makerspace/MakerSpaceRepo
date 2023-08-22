@@ -4,6 +4,7 @@ class Admin::KeysController < AdminAreaController
 
   def index
     @keys = Key.order(created_at: :desc)
+    @spaces = Space.order(name: :asc)
   end
 
   def show
