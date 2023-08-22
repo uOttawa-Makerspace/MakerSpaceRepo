@@ -23,7 +23,9 @@
           <td><%= key.number %></td>
           <td><%= key.key_type.humanize.capitalize %></td>
           <td><%= key.keycode %></td>
-          <td><%= key.space.name %></td>
+          <td>
+            <%= key.key_type_regular? ? key.space.name : 'N/A' %>
+          </td>
           <td><%= link_to key.user.name, user_path(key.user.username), target: '_blank', rel: 'noopener' unless key.user.nil? %></td>
           <td><%= link_to key.supervisor.name, user_path(key.supervisor.username), target: '_blank', rel: 'noopener' unless key.supervisor.nil? %></td>
           <td><%= key.user&.email %></td>

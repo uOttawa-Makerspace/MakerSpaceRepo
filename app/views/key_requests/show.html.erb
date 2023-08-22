@@ -22,9 +22,9 @@
     <h6>Emergency Contact: <%= @key_request.emergency_contact %></h6>
     <h6>Relation to Emergency Contact: <%= @key_request.emergency_contact_relation %></h6>
     <h6>Emergency Contact Phone Number: <%= @key_request.emergency_contact_phone_number %></h6>
-    <h6>Read and understood lab rules: <%= @key_request.read_lab_rules? ? "yes" : "no" %></h6>
-    <h6>Read and understood policies: <%= @key_request.read_policies? ? "yes" : "no" %></h6>
-    <h6>Read and accepted agreement: <%= @key_request.read_agreement? ? "yes" : "no" %></h6>
+    <h6>Read and understood lab rules: <%= @key_request.read_lab_rules? ? 'yes' : 'no' %></h6>
+    <h6>Read and understood policies: <%= @key_request.read_policies? ? 'yes' : 'no' %></h6>
+    <h6>Read and accepted agreement: <%= @key_request.read_agreement? ? 'yes' : 'no' %></h6>
   </div>
 
   <div class="mb-5">
@@ -69,4 +69,11 @@
       <% end %>
     <% end %>
   </div>
+
+  <% if @user.admin? %>
+    <div class="d-flex flex-row align-items-center justify-content-center gap-2">
+      <%= button_to 'Approve', approve_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-success', method: :patch if @key_request.status_waiting_for_approval? %>
+      <%= button_to 'Deny', deny_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-danger', method: :patch if @key_request.status_waiting_for_approval? %>
+    </div>
+  <% end %>
 </section>

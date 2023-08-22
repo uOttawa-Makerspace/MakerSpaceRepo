@@ -16,38 +16,34 @@
   <%= form_for @key, url: { controller: 'admin/keys', action: 'create' } do |f| %>
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
-        <div id="inventory-only">
-          <div class="mb-3">
-            <%= f.label :key_type, class: 'form-label' %>
-            <%= f.select :key_type, options_for_select(Key.key_types.map{ |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select', id: 'key-type-select' } %>
-          </div>
-          <div class="mb-3">
-            <%= f.label :number, 'Key Number', class: 'form-label' %>
-            <%= f.text_field :number, class: 'form-control', required: true %>
-          </div>
-          <div class="mb-3">
-            <%= f.label :keycode, class: 'form-label' %>
-            <%= f.text_field :keycode, class: 'form-control', required: true %>
-          </div>
-          <div class="mb-3">
-            <%= f.label :space_id, class: 'form-label' %>
-            <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
-          </div>
-          <div class="mb-3">
-            <%= f.label :status, 'Status', class: 'form-label' %>
-            <%= f.select :status, options_for_select(Key.statuses.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select', id: 'status-select' } %>
-          </div>
+        <div class="mb-3">
+          <%= f.label :key_type, class: 'form-label' %>
+          <%= f.select :key_type, options_for_select(Key.key_types.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select', id: 'key-type-select' } %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :number, 'Key number', class: 'form-label' %>
+          <%= f.text_field :number, class: 'form-control', required: true %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :keycode, class: 'form-label' %>
+          <%= f.text_field :keycode, class: 'form-control', required: true %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :space_id, class: 'form-label' %>
+          <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :status, 'Status', class: 'form-label' %>
+          <%= f.select :status, options_for_select(Key.statuses.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select', id: 'status-select' } %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :supervisor_id, 'Supervisor (optional if key is not held)', class: 'form-label' %>
+          <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
         </div>
 
-        <div id="additional-info">
-          <div class="mb-3">
-            <%= f.label :user_id, class: 'form-label' %>
-            <%= f.select :user_id, [], { prompt: 'Choose User...' }, { class: 'form-control', id: 'user-select' } %>
-          </div>
-          <div class="mb-3">
-            <%= f.label :supervisor_id, class: 'form-label' %>
-            <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
-          </div>
+        <div id="additional-info" class="mb-5" style="display: none;">
+          <%= f.label :key_request_id, 'Assign key (required if key is held)', class: 'form-label' %>
+          <%= f.select :key_request_id, @key_requests, { prompt: 'Assign Key...' }, { class: 'form-control', id: 'key-request-select' } %>
         </div>
 
         <div class="text-center">

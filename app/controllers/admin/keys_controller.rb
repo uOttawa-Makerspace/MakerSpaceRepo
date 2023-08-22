@@ -1,5 +1,5 @@
 class Admin::KeysController < AdminAreaController
-  before_action :set_key, only: %i[show edit destroy update revoke_key]
+  before_action :set_key, only: %i[show edit destroy update]
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
@@ -26,6 +26,19 @@ class Admin::KeysController < AdminAreaController
 
   def new
     @key = Key.new
+    @key_requests =
+      KeyRequest
+        .where(status: :approved)
+        .joins(:user)
+        .pluck("users.username", "key_requests.id")
+  end
+
+  def edit
+    @key_requests =
+      KeyRequest
+        .where(status: :approved)
+        .joins(:user)
+        .pluck("users.username", "key_requests.id")
   end
 
   def update
@@ -81,17 +94,24 @@ class Admin::KeysController < AdminAreaController
   def key_params
     params.require(:key).permit(
       :number,
-      :user_id,
       :space_id,
       :supervisor_id,
+      :key_request_id,
       :status,
-      :type,
+      :key_type,
       :keycode
     )
   end
 
   def key_inventory_params
-    params.require(:key).permit(:number, :space_id, :status, :type, :keycode)
+    params.require(:key).permit(
+      :number,
+      :space_id,
+      :status,
+      :key_type,
+      :keycode,
+      :supervisor_id
+    )
   end
 
   def set_key
