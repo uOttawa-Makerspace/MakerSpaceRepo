@@ -1,0 +1,23 @@
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Revoke key</h2>
+
+  <%= form_for @key, url: { controller: 'admin/keys', action: 'revoke_key' } do |f| %>
+    <div class="row">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="mb-5">
+          <label for="deposit_return_date">Deposit Return Date</label>
+          <div class="input-group">
+            <%= text_field_tag 'deposit_return_date', '', id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
+            <button class="btn btn-outline-danger" id="deposit-return-date-clear" type="button">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <%= f.submit 'Revoke Key', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</section>

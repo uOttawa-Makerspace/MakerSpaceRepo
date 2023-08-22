@@ -6,7 +6,7 @@
     <h6>Key Type: <%= @key.key_type.humanize.capitalize %></h6>
     <h6>Key Number: <%= @key.number %></h6>
     <h6>Keycode: <%= @key.keycode %></h6>
-    <h6>Space: <%= @key.space.name %></h6>
+    <h6>Space: <%= @key.key_type_regular? ? @key.space.name : 'N/A' %></h6>
     <h6>User: <%= link_to @key.user.name, user_path(@key.user.username), target: '_blank', rel: 'noopener' unless @key.user.nil? %></h6>
     <h6>Supervisor: <%= link_to @key.supervisor.name, user_path(@key.supervisor.username), target: '_blank', rel: 'noopener' unless @key.supervisor.nil? %></h6>
     <h6>Status: <%= @key.status.humanize.capitalize %></h6>

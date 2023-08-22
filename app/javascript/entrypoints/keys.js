@@ -1,19 +1,19 @@
 import TomSelect from "tom-select";
 
-// const depositDateInput = document.getElementById("deposit-return-date");
-// if (depositDateInput) {
-//   const depositDatePicker = depositDateInput.flatpickr({
-//     enableTime: false,
-//     noCalendar: false,
-//     dateFormat: "Y-m-d",
-//   });
-//
-//   document
-//     .getElementById("deposit-return-date-clear")
-//     .addEventListener("click", () => {
-//       depositDatePicker.clear();
-//     });
-// }
+const depositDateInput = document.getElementById("deposit-return-date");
+if (depositDateInput) {
+  const depositDatePicker = depositDateInput.flatpickr({
+    enableTime: false,
+    noCalendar: false,
+    dateFormat: "Y-m-d",
+  });
+
+  document
+    .getElementById("deposit-return-date-clear")
+    .addEventListener("click", () => {
+      depositDatePicker.clear();
+    });
+}
 
 let supervisorSelect = document.getElementById("supervisor-select");
 if (supervisorSelect && !supervisorSelect.tomselect) {

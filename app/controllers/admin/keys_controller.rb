@@ -1,5 +1,15 @@
 class Admin::KeysController < AdminAreaController
-  before_action :set_key, only: %i[show edit destroy update]
+  before_action :set_key,
+                only: %i[
+                  show
+                  edit
+                  destroy
+                  update
+                  assign
+                  revoke
+                  assign_key
+                  revoke_key
+                ]
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
@@ -63,6 +73,39 @@ class Admin::KeysController < AdminAreaController
     redirect_to admin_keys_path
   end
 
+  def assign_key
+    user = KeyRequest.find(params[:key][:key_request_id]).user
+
+    key_transaction =
+      KeyTransaction.new(
+        user_id: user.id,
+        key_id: @key.id,
+        deposit_amount: params[:deposit_amount]
+      )
+    if @key.status_inventory? &&
+         @key.update(key_params.merge(user_id: user.id, status: :held)) &&
+         key_transaction.save
+      redirect_to admin_keys_path, notice: "Successfully assigned key"
+    else
+      redirect_to admin_keys_path,
+                  alert: "Something went wrong while trying to assign the key"
+    end
+  end
+
+  def revoke_key
+    if @key.status_held? &&
+         @key.update(user_id: nil, key_request_id: nil, status: :inventory) &&
+         @key.get_latest_key_transaction.update(
+           return_date: Date.today,
+           deposit_return_date: params[:deposit_return_date]
+         )
+      redirect_to admin_keys_path, notice: "Successfully revoked key"
+    else
+      redirect_to admin_keys_path,
+                  alert: "Something went wrong while trying to revoke the key"
+    end
+  end
+
   def requests
     @key_requests = KeyRequest.order(created_at: :asc)
   end
@@ -115,7 +158,8 @@ class Admin::KeysController < AdminAreaController
   end
 
   def set_key
-    @key = Key.find_by(id: params[:id])
+    key_id = params[:id].present? ? params[:id] : params[:key_id]
+    @key = Key.find_by(id: key_id)
 
     redirect_to admin_keys_path, alert: "The key id was not found." if @key.nil?
   end

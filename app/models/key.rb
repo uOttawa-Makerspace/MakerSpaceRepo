@@ -33,4 +33,8 @@ class Key < ApplicationRecord
             }
 
   validates :keycode, presence: { message: "A keycode is required" }
+
+  def get_latest_key_transaction
+    KeyTransaction.where(key_id: id).order(created_at: :desc).first
+  end
 end

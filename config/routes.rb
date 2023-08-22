@@ -336,6 +336,9 @@ Rails.application.routes.draw do
 
     resources :keys do
       get :assign
+      patch :assign_key
+      get :revoke
+      patch :revoke_key
       collection do
         get :requests
         patch :approve_key_request
