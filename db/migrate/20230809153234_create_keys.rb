@@ -7,7 +7,7 @@ class CreateKeys < ActiveRecord::Migration[7.0]
       t.references :key_request
 
       t.string :number
-      t.string :keycode
+      t.string :custom_keycode
       t.integer :status, default: 0
       t.integer :key_type, default: 0
 
@@ -66,5 +66,7 @@ class CreateKeys < ActiveRecord::Migration[7.0]
 
       t.timestamps
     end
+
+    add_column :spaces, :keycode, :string, default: ""
   end
 end

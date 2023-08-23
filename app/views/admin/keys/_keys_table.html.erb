@@ -22,7 +22,7 @@
         <tr>
           <td><%= key.number %></td>
           <td><%= key.key_type.humanize.capitalize %></td>
-          <td><%= key.keycode %></td>
+          <td><%= key.get_keycode %></td>
           <td>
             <%= key.key_type_regular? ? key.space.name : 'N/A' %>
           </td>
@@ -33,7 +33,7 @@
             <td><%= key.status.humanize.capitalize %></td>
           <% end %>
           <td>
-            <% if !key.key_request.staff_certification.nil? %>
+            <% if !key.key_request.nil? && !key.key_request.staff_certification.nil? %>
               <%= key.key_request.staff_certification.get_staff_certs_attached %>/<%= StaffCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
               <%= key.key_request.staff_certification.get_supervisor_certs_attached %>/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
             <% else %>

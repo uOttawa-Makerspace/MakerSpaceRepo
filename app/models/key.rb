@@ -32,7 +32,11 @@ class Key < ApplicationRecord
               message: "A key already has that number"
             }
 
-  validates :keycode, presence: { message: "A keycode is required" }
+  validates :custom_keycode,
+            presence: {
+              message: "A keycode is required"
+            },
+            unless: :key_type_regular?
 
   def get_latest_key_transaction
     KeyTransaction.where(key_id: id).order(created_at: :desc).first
@@ -40,5 +44,9 @@ class Key < ApplicationRecord
 
   def get_all_key_transactions
     KeyTransaction.where(key_id: id).order(created_at: :desc)
+  end
+
+  def get_keycode
+    key_type_regular? ? space.keycode : custom_keycode
   end
 end

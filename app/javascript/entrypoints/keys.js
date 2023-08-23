@@ -48,13 +48,16 @@ if (keyRequestSelect && !keyRequestSelect.tomselect) {
   });
 }
 
+const customKeycode = document.getElementById("custom-keycode");
 const keyTypeSelect = document.getElementById("key-type-select");
 if (keyTypeSelect) {
   keyTypeSelect.addEventListener("change", (e) => {
     if (e.target.value === "regular") {
       spaceSelect.parentElement.style.display = "block";
+      customKeycode.parentElement.style.display = "none";
     } else {
       spaceSelect.parentElement.style.display = "none";
+      customKeycode.parentElement.style.display = "block";
     }
   });
 }

@@ -25,12 +25,12 @@
           <%= f.text_field :number, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
-          <%= f.label :keycode, class: 'form-label' %>
-          <%= f.text_field :keycode, class: 'form-control', required: true %>
-        </div>
-        <div class="mb-3">
           <%= f.label :space_id, class: 'form-label' %>
-          <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
+          <%= f.select :space_id, @space_select, { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
+        </div>
+        <div class="mb-3" style="display: none;">
+          <%= f.label :custom_keycode, class: 'form-label' %>
+          <%= f.text_field :custom_keycode, class: 'form-control', id: 'custom-keycode' %>
         </div>
         <div class="mb-3">
           <%= f.label :status, 'Status', class: 'form-label' %>

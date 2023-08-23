@@ -126,6 +126,14 @@ class Admin::SpacesController < AdminAreaController
     end
   end
 
+  def update_keycode
+    @space = Space.find(params[:space_id])
+    if @space.update(keycode: params[:keycode])
+      flash[:notice] = "Space keycode updated!"
+      redirect_back(fallback_location: root_path)
+    end
+  end
+
   def add_space_hours
     unless params[:space_id].present? && params[:day].present? &&
              params[:start_time].present? && params[:end_time].present? &&
@@ -294,6 +302,6 @@ class Admin::SpacesController < AdminAreaController
   private
 
   def space_params
-    params.require(:space_params).permit(:name, :max_capacity)
+    params.require(:space_params).permit(:name, :max_capacity, :keycode)
   end
 end

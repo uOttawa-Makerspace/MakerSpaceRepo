@@ -42,6 +42,10 @@ class Admin::KeysController < AdminAreaController
         .where(status: :approved)
         .joins(:user)
         .pluck("users.username", "key_requests.id")
+    @space_select = []
+    Space.all.each do |space|
+      @space_select << [space.name + " (" + space.keycode + ")", space.id]
+    end
   end
 
   def edit
@@ -50,6 +54,10 @@ class Admin::KeysController < AdminAreaController
         .where(status: :approved)
         .joins(:user)
         .pluck("users.username", "key_requests.id")
+    @space_select = []
+    Space.all.each do |space|
+      @space_select << [space.name + " (" + space.keycode + ")", space.id]
+    end
   end
 
   def update
@@ -143,7 +151,7 @@ class Admin::KeysController < AdminAreaController
       :key_request_id,
       :status,
       :key_type,
-      :keycode
+      :custom_keycode
     )
   end
 
@@ -153,8 +161,8 @@ class Admin::KeysController < AdminAreaController
       :space_id,
       :status,
       :key_type,
-      :keycode,
-      :supervisor_id
+      :supervisor_id,
+      :custom_keycode
     )
   end
 
