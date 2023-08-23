@@ -38,7 +38,7 @@
   </div>
 
   <div class="text-center mb-4">
-    <%= link_to 'View Certifications', staff_certification_path(@key_request.staff_certification.id), class: 'btn btn-primary' %>
+    <%= link_to 'View Certifications', staff_certification_path(@key_request.staff_certification.id), class: 'btn btn-primary' unless @key_request.staff_certification.nil? %>
   </div>
 
   <% if @user.admin? %>
