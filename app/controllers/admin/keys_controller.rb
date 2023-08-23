@@ -9,6 +9,7 @@ class Admin::KeysController < AdminAreaController
                   revoke
                   assign_key
                   revoke_key
+                  history
                 ]
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 

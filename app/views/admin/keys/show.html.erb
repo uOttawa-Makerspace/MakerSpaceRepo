@@ -36,9 +36,10 @@
         </div>
       <% end %>
     </div>
-
-    <div class="text-center">
-      <%= link_to 'View Certifications', staff_certification_path(@key.key_request.staff_certification.id), class: 'btn btn-primary' %>
-    </div>
   <% end %>
+
+  <div class="d-flex flex-row align-items-center justify-content-center gap-3">
+    <%= link_to 'View Certifications', staff_certification_path(@key.key_request.staff_certification.id), class: 'btn btn-primary' unless @key.key_request.nil? %>
+    <%= link_to 'View Key Transactions', admin_key_history_path(key_id: @key.id), class: 'btn btn-primary' %>
+  </div>
 </section>

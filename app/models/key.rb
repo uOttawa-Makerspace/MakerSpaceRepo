@@ -37,4 +37,8 @@ class Key < ApplicationRecord
   def get_latest_key_transaction
     KeyTransaction.where(key_id: id).order(created_at: :desc).first
   end
+
+  def get_all_key_transactions
+    KeyTransaction.where(key_id: id).order(created_at: :desc)
+  end
 end
