@@ -1503,6 +1503,7 @@ GEM
       marcel (~> 1.0)
       nokogiri (~> 1.10, >= 1.10.4)
       rubyzip (>= 1.3.0, < 3)
+    chartkick (5.0.2)
     childprocess (3.0.0)
     chronic (0.10.2)
     clipboard-rails (1.7.1)
@@ -1599,6 +1600,8 @@ GEM
     graphql-client (0.18.0)
       activesupport (>= 3.0)
       graphql
+    groupdate (6.3.0)
+      activesupport (>= 6.1)
     haml (6.1.1)
       temple (>= 0.8.2)
       thor
@@ -2015,6 +2018,7 @@ DEPENDENCIES
   capistrano-rbenv (~> 2.1)
   capybara
   caxlsx (~> 3.3.0)
+  chartkick
   clipboard-rails
   coffee-rails (= 5.0.0)
   concurrent-ruby (~> 1.1, >= 1.1.6)
@@ -2031,6 +2035,7 @@ DEPENDENCIES
   google-api-client (~> 0.53.0)
   googleauth (~> 0.15.0)
   graphlient
+  groupdate
   image_processing
   jbuilder
   kaminari

@@ -1,0 +1,53 @@
+<section>
+  <h1 class="text-center py-4 fw-bold">
+    Kits Purchased <%= link_to fa_icon('download'),
+                               admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'kit_purchased'),
+                               class: 'border-0 bg-transparent text-primary d-print-none' %>
+  </h1>
+
+  <% if @project_kits.empty? %>
+    <div class="text-center">No project kits to display</div>
+  <% else %>
+    <div class="mb-5 text-center">
+      <% if @date_specified %>
+        <p class="m-0 mb-1 fw-bold"><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></p>
+      <% else %>
+        <p class="m-0 mb-1 fw-bold">2015-06-01 to present</p>
+      <% end %>
+      <p class="m-0 mb-2">Displaying <%= @project_kits.count %> <%= 'project kit'.pluralize(@project_kits.count) %></p>
+    </div>
+
+    <%= render partial: 'line_chart', locals: { data: @project_kits, model: 'Project Kits' } %>
+
+    <div class="d-flex flex-row flex-wrap mb-5">
+      <div class="w-50">
+        <h4 class="text-center">Purchased Project Kits by Type</h4>
+        <%= pie_chart @pp_hash, label: 'Project Kits' %>
+      </div>
+      <div class="w-50">
+        <h4 class="text-center">Purchased Project Kits by Delivery Status</h4>
+        <%= pie_chart @project_kits.group(:delivered).count, label: 'Project Kits' %>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <h4 class="text-center">Project Kits</h4>
+      <table class="mb-5 table table-striped text-center">
+        <thead>
+          <th>Kit Name</th>
+          <th>User</th>
+          <th>Date</th>
+          <th>Delivery Status</th>
+        </thead>
+        <% @project_kits.each do |pk| %>
+          <tr>
+            <td><%= link_to pk.proficient_project.title, proficient_project_path(pk.proficient_project_id) %></td>
+            <td><%= link_to pk.user.name, user_path(pk.user.username) %></td>
+            <td><%= pk.created_at.strftime('%Y-%m-%d') %></td>
+            <td><%= pk.delivered ? 'Delivered' : 'Not Yet Delivered' %></td>
+          </tr>
+        <% end %>
+      </table>
+    </div>
+  <% end %>
+</section>

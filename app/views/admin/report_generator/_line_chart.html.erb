@@ -1,0 +1,29 @@
+<div class="mb-5">
+
+    <ul class="nav gap-2 justify-content-center mb-3 d-print-none">
+        <p>Group By:</p>        
+        <a data-bs-toggle="tab" href="#days" class="btn btn-success">Days</a>
+        <a data-bs-toggle="tab" href="#weeks" class="btn btn-success">Weeks</a>
+        <a data-bs-toggle="tab" href="#months" class="active btn btn-success">Months</a>
+        <a data-bs-toggle="tab" href="#years" class="btn btn-success">Years</a>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane container" id="days">
+            <h4 class="text-center">New <%= model %> by Days</h4>
+            <%= line_chart data.group_by_day(:created_at).count, xtitle: 'Days', ytitle: "Number of New #{model}", label: "New #{model}" %>
+        </div>
+        <div class="tab-pane container" id="weeks">
+            <h4 class="text-center">New <%= model %> by Weeks</h4>
+            <%= line_chart data.group_by_week(:created_at).count, xtitle: 'Weeks', ytitle: "Number of New #{model}", label: "New #{model}" %>
+        </div>
+        <div class="tab-pane container active" id="months">
+            <h4 class="text-center">New <%= model %> by Month</h4>  
+            <%= line_chart data.group_by_month(:created_at).count, xtitle: 'Month', ytitle: "Number of New #{model}", label: "New #{model}" %>
+        </div>
+        <div class="tab-pane container" id="years">
+            <h4 class="text-center">New <%= model %> by Years</h4>
+            <%= line_chart data.group_by_year(:created_at).count, xtitle: 'Years', ytitle: "Number of New #{model}", label: "New #{model}" %>
+        </div>
+    </div>
+</div>

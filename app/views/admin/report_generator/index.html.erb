@@ -1,9 +1,9 @@
 <% provide(:title, 'Reports') %>
-<section>
+<section id="reports">
   <br>
-  <h1 class="text-center fw-bold">Reports</h1>
+  <h1 class="text-center fw-bold d-print-none">Reports</h1>
 
-  <%= form_tag admin_report_generator_generate_path, method: :post do %>
+  <%= form_tag admin_report_generator_generate_path, method: :post, class: 'd-print-none' do %>
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
@@ -42,7 +42,14 @@
       </div>
     </div>
 
-    <hr />
+    <div class="row align-items-center">
+      <div class="mb-3 col-md-4">
+        <div class="form-check">
+          <%= radio_button_tag(:range_type, :all_time, false, class: 'form-check-input', data: { 'radio-enable': '.range-type-date-range-fields' }) %>
+          <%= label_tag(:range_type_all_time, 'All Time', class: 'form-check-label') %>
+        </div>
+      </div>
+    </div>
 
     <%= label_tag(:type, 'Report Type', class: 'form-label') %>
     <% @report_types.each_index do |report| %>
@@ -55,6 +62,13 @@
     <br>
 
     <%= button_tag('Generate', { class: 'btn btn-primary' }) %>
+    <p>Generating reports could take a while, please wait for the reports to generate.</p>
   <% end %>
-  <br>
+
+  <% if params[:report_type].present? %>
+    <hr />
+    <div id="report">
+      <%= render params[:report_type] %>
+    </div>
+  <% end %>
 </section>
