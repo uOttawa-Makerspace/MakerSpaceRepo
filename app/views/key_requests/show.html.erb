@@ -1,7 +1,8 @@
 <section class="w-75 mx-auto">
   <h2 class="m-0 fw-bold py-4 text-center">Key Request #<%= @key_request.id %> - <%= @key_request.status.humanize.capitalize %></h2>
 
-  <div class="text-center">
+  <div class="mb-5 d-flex flex-row align-items-center justify-content-center gap-3">
+    <%= link_to 'View Certifications', staff_certification_path(@key_request.staff_certification.id), class: 'btn btn-primary' unless @key_request.staff_certification.nil? %>
     <%= link_to 'Edit Key Request', key_request_steps_path(key_request_id: @key_request.id, step: 1), class: 'btn btn-primary' if @user.eql?(@key_request.user) %>
   </div>
 
@@ -39,10 +40,6 @@
         </div>
       </div>
     <% end %>
-  </div>
-
-  <div class="text-center mb-4">
-    <%= link_to 'View Certifications', staff_certification_path(@key_request.staff_certification.id), class: 'btn btn-primary' unless @key_request.staff_certification.nil? %>
   </div>
 
   <% if @user.admin? %>

@@ -3,3 +3,30 @@
     margin-bottom: 0.75ch;
   }
 }
+
+@media print {
+  nav.keys {
+    display: none !important;
+
+    & ~ .navbar,
+    & ~ .footer,
+    & ~ #flash {
+      display: none !important;
+      height: 0 !important;
+    }
+
+    & ~ section section.w-75 {
+      .card-header {
+        color: black !important;
+        border-bottom: 1px solid rgb(40, 40, 40) !important;
+      }
+      .card {
+        border: 1px solid black !important;
+      }
+    }
+  }
+
+  body {
+    padding: 0 !important;
+  }
+}
