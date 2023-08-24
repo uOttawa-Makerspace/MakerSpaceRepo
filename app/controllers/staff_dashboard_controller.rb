@@ -13,6 +13,8 @@ class StaffDashboardController < StaffAreaController
               .where(trainings: { spaces: { id: space_id } })
           end
         @all_user_certs = Proc.new { |user| user.certifications }
+        @printers_in_use =
+          PrinterSession.order(created_at: :desc).where(in_use: true)
       end
       format.json do
         render json: {

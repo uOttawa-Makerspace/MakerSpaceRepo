@@ -32,7 +32,7 @@ import "./settings";
 import "./sorting";
 import "./accordion-load";
 import "./clipboard";
-
+import "chartkick/chart.js";
 import "../controllers";
 
 import "bootstrap";

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-class QuestionsController < StaffAreaController
-  layout "staff_area"
+class QuestionsController < AdminAreaController
+  layout "admin_area"
   before_action :set_question,
                 only: %i[show edit update destroy remove_answer add_answer]
   before_action :set_levels,
@@ -9,6 +9,12 @@ class QuestionsController < StaffAreaController
                 only: %i[new edit remove_answer add_answer]
 
   def index
+    if current_user.space.present?
+      @space = current_user.space
+    else
+      @space = Space.first
+    end
+
     @questions =
       Question
         .where(
@@ -45,6 +51,19 @@ class QuestionsController < StaffAreaController
   end
 
   def edit
+    if params[:n_answers].present? &&
+         params[:n_answers].to_i > @question.answers.count
+      (params[:n_answers].to_i - @question.answers.count).times do
+        @question.answers.new(correct: false)
+      end
+      flash[:notice] = "Answer added. Please update its content!"
+    end
+    if params[:remove_answer].present?
+      answer = Answer.find_by(id: params[:remove_answer])
+      answer.destroy unless answer.nil?
+      flash[:notice] = "Successfully removed answer"
+    end
+
     @answers = @question.answers.sort_by { |a| a.correct ? 0 : 1 }
   end
 
@@ -54,7 +73,7 @@ class QuestionsController < StaffAreaController
     else
       flash[:alert] = "Something went wrong"
     end
-    redirect_to edit_question_path(@question)
+    redirect_to questions_path
   end
 
   def destroy
@@ -71,19 +90,8 @@ class QuestionsController < StaffAreaController
     question_id = @image.record.id
     @image.purge
     @question = Question.find(question_id)
-    respond_to { |format| format.js }
-  end
-
-  def remove_answer
-    answer = Answer.find(params[:answer_id])
-    answer.destroy
-    redirect_to edit_question_path(@question), notice: "Answer Removed"
-  end
-
-  def add_answer
-    @question.answers.create(description: "Please change this content...")
-    redirect_to edit_question_path(@question),
-                notice: "Answer added. Please update its content!"
+    redirect_to edit_question_path(params[:question_id]),
+                notice: "Question image deleted"
   end
 
   private

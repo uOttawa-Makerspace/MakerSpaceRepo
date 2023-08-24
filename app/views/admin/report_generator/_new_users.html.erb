@@ -1,0 +1,43 @@
+<section>
+    <h1 class="text-center py-4 fw-bold">
+        New Users <%= link_to fa_icon('download'),
+                              admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'new_users'),
+                              class: 'border-0 bg-transparent text-primary d-print-none' %>
+    </h1>
+
+    <% if @users.empty? %>
+        <div class="text-center">No users to display</div>
+    <% else %>
+        <div class="mb-5 text-center">
+          <% if @date_specified %>
+            <p class="m-0 mb-1 fw-bold"><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></p>
+          <% else %>
+            <p class="m-0 mb-1 fw-bold">2015-06-01 to present</p>
+          <% end %>
+          <p class="m-0 mb-2">Displaying <%= @users.count %> <%= 'user'.pluralize(@users.count) %></p>
+        </div>
+
+        <%= render partial: 'line_chart', locals: { data: @users, model: 'Users' } %>
+
+        <div class="mb-5">
+            <h4 class="text-center">Users by Year of Study</h4>
+            <% year_of_study_data = @users.order(year_of_study: :asc).group(:year_of_study).count %>
+            <%= bar_chart year_of_study_data, label: 'New Users', height: "#{year_of_study_data.size * 40}px" %>
+        </div>
+
+        <div class="d-flex flex-row flex-wrap mb-5">
+            <div class="w-50">
+                <h4 class="text-center">Users by Gender</h4>
+                <%= pie_chart @users.group(:gender).count %>
+            </div>
+            <div class="w-50">
+                <h4 class="text-center">Users by Status</h4>
+                <%= pie_chart @users.group(:identity).count %>
+            </div>
+            <div class="w-100">
+                <h4 class="text-center">Users by Faculty</h4>
+                <%= pie_chart @users.group(:faculty).count.slice('Arts', 'Civil Law', 'Common Law', 'Education', 'Engineering', 'Health Sciences', 'Medicine', 'Science', 'Social Sciences', 'Telfer School of Management') %>
+            </div>
+        </div>
+    <% end %>
+</section>

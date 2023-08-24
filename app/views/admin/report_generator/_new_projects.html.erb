@@ -1,0 +1,47 @@
+<section>
+    <h1 class="text-center py-4 fw-bold">
+        New Projects <%= link_to fa_icon('download'),
+                                 admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'new_projects'),
+                                 class: 'border-0 bg-transparent text-primary d-print-none' %>
+    </h1>
+
+    <% if @repos.empty? %>
+        <div class="text-center">No repositories to display</div>
+    <% else %>
+        <div class="mb-5 text-center">
+          <% if @date_specified %>
+            <p class="m-0 mb-1 fw-bold"><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></p>
+          <% else %>
+            <p class="m-0 mb-1 fw-bold">2015-06-01 to present</p>
+          <% end %>
+          <p class="m-0 mb-2">Displaying <%= @repos.count %> <%= 'repository'.pluralize(@repos.count) %></p>
+        </div>
+
+        <%= render partial: 'line_chart', locals: { data: @repos, model: 'Repositories' } %>
+
+        <div class="mb-5">
+            <h4 class="text-center">Repositories by Categories</h4>
+            <%= bar_chart @category_count, height: "#{@category_count.length * 40}px" %>
+        </div>
+
+        <div class="mb-5">
+            <h4 class="text-center">Repositories by Equipments</h4>
+            <%= bar_chart @equipment_count, height: "#{@equipment_count.length * 40}px" %>
+        </div>
+
+        <div class="d-flex flex-row flex-wrap mb-5">
+            <div class="w-50">
+                <h4 class="text-center">Repositories by Share Type</h4>
+                <%= pie_chart @repos.group(:share_type).count %>
+            </div>
+            <div class="w-50">
+                <h4 class="text-center">Repositories by Feature Status</h4>
+                <%= pie_chart(@repos.group(:featured).count.transform_keys { |key| key ? 'featured' : 'non_featured' }) %>
+            </div>
+            <div class="w-100">
+                <h4 class="text-center">Repositories by License</h4>
+                <%= pie_chart @repos.group(:license).count %>
+            </div>
+        </div>
+    <% end %>
+</section>

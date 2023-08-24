@@ -67,6 +67,8 @@ gem "sprockets-rails"
 gem "psych", "~> 4.0.0"
 gem "vite_rails"
 gem "nobspw_rails7"
+gem "chartkick"
+gem "groupdate"
 
 group :development, :test do
   gem "byebug", platform: :mri
