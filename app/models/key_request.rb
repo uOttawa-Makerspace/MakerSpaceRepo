@@ -2,7 +2,6 @@ class KeyRequest < ApplicationRecord
   belongs_to :user, class_name: "User", optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
-  has_one :staff_certification, through: :user
 
   enum :user_status, %i[student professor staff], prefix: true
   enum :status, %i[in_progress waiting_for_approval approved], prefix: true

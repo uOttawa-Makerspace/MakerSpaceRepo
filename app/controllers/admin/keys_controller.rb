@@ -64,6 +64,8 @@ class Admin::KeysController < AdminAreaController
     update_params =
       (params[:key][:status] == "inventory") ? key_inventory_params : key_params
 
+    update_params = update_params.except(:status) if @key.status_held?
+
     if @key.update(update_params)
       flash[:notice] = "The key was successfully updated."
       redirect_to admin_keys_path

@@ -33,9 +33,9 @@
             <td><%= key.status.humanize.capitalize %></td>
           <% end %>
           <td>
-            <% if !key.key_request.nil? && !key.key_request.staff_certification.nil? %>
-              <%= key.key_request.staff_certification.get_staff_certs_attached %>/<%= StaffCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
-              <%= key.key_request.staff_certification.get_supervisor_certs_attached %>/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+            <% if !key.key_request.nil? && !key.key_request.user.staff_certification.nil? %>
+              <%= key.key_request.user.staff_certification.get_staff_certs_attached %>/<%= StaffCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
+              <%= key.key_request.user.staff_certification.get_supervisor_certs_attached %>/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
             <% else %>
               0/<%= StaffCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
               0/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
