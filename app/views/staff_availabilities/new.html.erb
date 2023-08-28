@@ -2,17 +2,13 @@
   <h2 class="text-center pt-2 mb-5 fw-bold">Create a new unavailability</h2>
   <div class="container my-5">
     <div class="row">
-      <div class="col-lg-12">
+      <div class="col-lg-8 mx-auto">
         <%= form_for @staff_availability, url: { controller: 'staff_availabilities', action: 'create' } do |f| %>
           <div class="row">
             <div class="col-md-12">
               <div class="mb-3 text-center">
-                <%= f.label :user_id, 'User to select', class: 'form-label' %>
-                <%= f.select :user_id, options_for_select(@staffs.pluck(:name, :id).sort_by { |n| n[0].titleize }), {}, id: 'userId', autocomplete: 'off', required: true, class: 'form-control form-select' %>
-              </div>
-              <div class="mb-3 text-center">
                 <%= f.label :day, 'Day of the week', class: 'form-label' %>
-                <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), {}, class: 'form-control form-select' %>
+                <%= f.select :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), {}, id: 'day', class: 'form-control form-select' %>
               </div>
 
               <div class="mb-3 text-center">
@@ -21,11 +17,30 @@
               </div>
             </div>
 
+            <div class="mb-3 col-md-6 text-center" style="display: none;">
+              <%= label_tag :start_date, 'Start Date', class: 'form-label' %>
+              <div class="input-group">
+                <%= text_field_tag 'start_date', '', id: 'start_date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
+                <button class="btn btn-outline-danger" id="start_date_clear" type="button">
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+            </div>
             <div class="mb-3 col-md-6 text-center">
               <%= f.label :start_time, 'Start Time (24h format)', class: 'form-label' %>
               <div class="input-group">
                 <%= f.text_field 'start_time', id: 'start_time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
                 <button class="btn btn-outline-danger" id="start_time_clear" type="button">
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-3 col-md-6 text-center" style="display: none;">
+              <%= label_tag :end_date, 'End Date', class: 'form-label' %>
+              <div class="input-group">
+                <%= text_field_tag 'end_date', '', id: 'end_date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
+                <button class="btn btn-outline-danger" id="end_date_clear" type="button">
                   <i class="fa fa-times"></i>
                 </button>
               </div>
@@ -38,6 +53,11 @@
                   <i class="fa fa-times"></i>
                 </button>
               </div>
+            </div>
+
+            <div class="mb-3 col-md-12 text-center">
+              <%= f.label :recurring, 'Recurring', class: 'form-label' %>
+              <%= f.check_box :recurring, id: 'recurring', class: 'form-check-input' %>
             </div>
 
             <div class="col-lg-12 text-center">

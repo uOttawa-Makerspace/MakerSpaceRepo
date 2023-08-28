@@ -25,11 +25,21 @@ class StaffAvailabilitiesController < ApplicationController
       .where(time_period: @time_period)
       .each do |a|
         event = {}
-        event["title"] = "Unavailable"
+        event[
+          "title"
+        ] = "#{a.user.name} is unavailable (#{a.recurring? ? "Recurring" : "One-Time"})"
         event["id"] = a.id
-        event["daysOfWeek"] = [a.day]
-        event["startTime"] = a.start_time.strftime("%H:%M")
-        event["endTime"] = a.end_time.strftime("%H:%M")
+        if a.recurring?
+          event["daysOfWeek"] = [a.day]
+          event["startTime"] = a.start_time.strftime("%H:%M")
+          event["endTime"] = a.end_time.strftime("%H:%M")
+          event["startRecur"] = a.time_period.start_date.beginning_of_day
+          event["endRecur"] = a.time_period.end_date.end_of_day
+        else
+          event["start"] = a.start_datetime
+          event["end"] = a.end_datetime
+        end
+        event["recurring"] = a.recurring?
         staff_availabilities << event
       end
 
@@ -43,6 +53,7 @@ class StaffAvailabilitiesController < ApplicationController
   end
 
   def edit
+    @date_display = @staff_availability.recurring? ? "none" : "block"
     @staffs = User.all.where(id: StaffSpace.all.map(&:user_id).uniq)
     @time_periods = TimePeriod.all
   end
@@ -69,26 +80,72 @@ class StaffAvailabilitiesController < ApplicationController
         )
     end
 
+    # From staff availability form
     if params[:start_date].present? && params[:end_date].present? &&
          time_period_id.present?
-      start_date = DateTime.parse(params[:start_date])
-      end_date = DateTime.parse(params[:end_date])
-      @staff_availability =
-        StaffAvailability.new(
-          user_id: @selected_user.id,
-          day: start_date.wday,
-          start_time: start_date.strftime("%H:%M"),
-          end_time: end_date.strftime("%H:%M"),
-          time_period_id: time_period_id
-        )
-    elsif params[:staff_availability].present? && time_period_id.present?
-      @staff_availability =
-        StaffAvailability.new(
-          staff_availability_params.merge(
+      params_start_time = Time.parse(params[:staff_availability][:start_time])
+      params_end_time = Time.parse(params[:staff_availability][:end_time])
+      params_start_date = Date.parse(params[:start_date])
+      params_end_date = Date.parse(params[:end_date])
+
+      if params[:staff_availability][:recurring].to_i == 0
+        @staff_availability =
+          StaffAvailability.new(
             user_id: @selected_user.id,
-            time_period_id: time_period_id
+            start_datetime:
+              params_start_date +
+                params_start_time.seconds_since_midnight.seconds,
+            end_datetime:
+              params_end_date + params_end_time.seconds_since_midnight.seconds,
+            time_period_id: time_period_id,
+            recurring: false
           )
-        )
+      else
+        @staff_availability =
+          StaffAvailability.new(
+            user_id: @selected_user.id,
+            day: params_start_date.wday,
+            start_time: params_start_time.strftime("%H:%M"),
+            end_time: params_end_time.strftime("%H:%M"),
+            time_period_id: time_period_id,
+            recurring: true
+          )
+      end
+      # From admin area unavailability form
+    elsif params[:staff_availability].present? && time_period_id.present?
+      unless params[:staff_availability][:recurring]
+        params_start_time = Time.parse(params[:staff_availability][:start_time])
+        params_end_time = Time.parse(params[:staff_availability][:end_time])
+        params_start_date = Date.parse(params[:staff_availability][:start_date])
+        params_end_date = Date.parse(params[:staff_availability][:end_date])
+        @staff_availability =
+          StaffAvailability.new(
+            staff_availability_params.except(
+              :start_time,
+              :start_date,
+              :end_time,
+              :end_date,
+              :day
+            ).merge(
+              start_datetime:
+                params_start_date +
+                  params_start_time.seconds_since_midnight.seconds,
+              end_datetime:
+                params_end_date +
+                  params_end_time.seconds_since_midnight.seconds,
+              user_id: @selected_user.id,
+              time_period_id: time_period_id
+            )
+          )
+      else
+        @staff_availability =
+          StaffAvailability.new(
+            staff_availability_params.except(:start_date, :end_date).merge(
+              user_id: @selected_user.id,
+              time_period_id: time_period_id
+            )
+          )
+      end
     else
       respond_to do |format|
         format.html { render :new }
@@ -101,6 +158,8 @@ class StaffAvailabilitiesController < ApplicationController
       end
     end
 
+    time_period = TimePeriod.find(time_period_id)
+
     respond_to do |format|
       if @staff_availability.save!
         format.html do
@@ -110,10 +169,28 @@ class StaffAvailabilitiesController < ApplicationController
         end
         format.json do
           render json: {
-                   title: "#{@staff_availability.user.name} is unavailable",
+                   title:
+                     "#{@staff_availability.user.name} is unavailable (#{@staff_availability.recurring? ? "Recurring" : "One-Time"})",
                    daysOfWeek: [@staff_availability.day],
-                   startTime: @staff_availability.start_time.strftime("%H:%M"),
-                   endTime: @staff_availability.end_time.strftime("%H:%M"),
+                   startTime:
+                     (
+                       if @staff_availability.recurring?
+                         @staff_availability.start_time.strftime("%H:%M")
+                       else
+                         @staff_availability.start_datetime
+                       end
+                     ),
+                   endTime:
+                     (
+                       if @staff_availability.recurring?
+                         @staff_availability.end_time.strftime("%H:%M")
+                       else
+                         @staff_availability.end_datetime
+                       end
+                     ),
+                   recurring: @staff_availability.recurring,
+                   timePeriodStart: time_period.start_date,
+                   timePeriodEnd: time_period.end_date,
                    color:
                      hex_color_to_rgba(
                        @staff_availability
@@ -123,28 +200,72 @@ class StaffAvailabilitiesController < ApplicationController
                          .color,
                        1
                      ),
-                   id: @staff_availability.id
+                   id: @staff_availability.id,
+                   userId: @staff_availability.user.id
                  }
         end
       else
         format.html { render :new }
         format.json do
-          render json: @staff_availability.errors, status: :unprocessable_entity
+          render json: {
+                   errors: @staff_availability.errors
+                 },
+                 status: :unprocessable_entity
         end
       end
     end
   end
 
   def update
-    if params[:staff_availability].present?
+    # from staff availability form
+    if params[:start_date].present? && params[:end_date].present?
+      params_start_time = Time.parse(params[:staff_availability][:start_time])
+      params_end_time = Time.parse(params[:staff_availability][:end_time])
+      params_start_date = Date.parse(params[:start_date])
+      params_end_date = Date.parse(params[:end_date])
+
       respond_to do |format|
-        if @staff_availability.update(staff_availability_params)
+        if params.has_key?(:recurring)
+          updated =
+            @staff_availability.update(
+              staff_availability_params.except(
+                :start_date,
+                :end_date,
+                :recurring
+              ).merge(start_datetime: nil, end_datetime: nil, recurring: true)
+            )
+        else
+          updated =
+            @staff_availability.update(
+              staff_availability_params.except(
+                :start_date,
+                :end_date,
+                :start_time,
+                :end_time,
+                :day,
+                :recurring
+              ).merge(
+                start_datetime:
+                  params_start_date +
+                    params_start_time.seconds_since_midnight.seconds,
+                end_datetime:
+                  params_end_date +
+                    params_end_time.seconds_since_midnight.seconds,
+                start_time: nil,
+                end_time: nil,
+                day: nil,
+                recurring: false
+              )
+            )
+        end
+
+        if updated
           format.html do
             redirect_to staff_availabilities_path,
                         notice:
                           "The staff unavailability was successfully updated."
           end
-          format.json { render :index, status: :ok }
+          format.json { render json: { status: "ok" }, status: :ok }
         else
           format.html { render :edit }
           format.json do
@@ -153,15 +274,38 @@ class StaffAvailabilitiesController < ApplicationController
           end
         end
       end
-    elsif params[:start_date].present? && params[:end_date]
-      start_date = DateTime.parse(params[:start_date])
-      end_date = DateTime.parse(params[:end_date])
+      # from calendar
+    elsif params[:staff_availability].present?
       respond_to do |format|
-        if @staff_availability.update(
-             start_time: start_date.strftime("%H:%M"),
-             end_time: end_date.strftime("%H:%M"),
-             day: start_date.wday
-           )
+        params_start_date = Date.parse(params[:staff_availability][:start_date])
+        params_end_date = Date.parse(params[:staff_availability][:end_date])
+        params_start_time = Time.parse(params[:staff_availability][:start_date])
+        params_end_time = Time.parse(params[:staff_availability][:end_date])
+
+        if @staff_availability.recurring?
+          update_params = {
+            start_time: params_start_time.strftime("%H:%M"),
+            end_time: params_end_time.strftime("%H:%M"),
+            day: Time.parse(params[:staff_availability][:start_date]).wday,
+            start_datetime: nil,
+            end_datetime: nil
+          }
+        else
+          params_start_time = Time.parse(params_start_time.strftime("%H:%M"))
+          params_end_time = Time.parse(params_end_time.strftime("%H:%M"))
+          update_params = {
+            start_datetime:
+              params_start_date +
+                params_start_time.seconds_since_midnight.seconds,
+            end_datetime:
+              params_end_date + params_end_time.seconds_since_midnight.seconds,
+            start_time: nil,
+            end_time: nil,
+            day: nil
+          }
+        end
+
+        if @staff_availability.update(update_params)
           format.html do
             redirect_to staff_availabilities_path,
                         notice:
@@ -219,9 +363,12 @@ class StaffAvailabilitiesController < ApplicationController
     params.require(:staff_availability).permit(
       :day,
       :start_time,
+      :start_date,
       :end_time,
+      :end_date,
       :user_id,
-      :time_period_id
+      :time_period_id,
+      :recurring
     )
   end
 

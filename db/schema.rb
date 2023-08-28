@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_07_25_202024) do
+ActiveRecord::Schema[7.0].define(version: 2023_07_27_203718) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -536,9 +536,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_25_202024) do
     t.string "status", default: "In progress"
     t.text "user_comments", default: ""
     t.text "admin_comments", default: ""
-    t.index ["order_id"], name: "index_order_items_on_order_id"
-    t.index ["proficient_project_id"],
-            name: "index_order_items_on_proficient_project_id"
   end
 
   create_table "order_statuses", id: :serial, force: :cascade do |t|
@@ -913,6 +910,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_25_202024) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "time_period_id"
+    t.boolean "recurring", default: true
+    t.datetime "start_datetime"
+    t.datetime "end_datetime"
     t.index ["time_period_id"],
             name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"

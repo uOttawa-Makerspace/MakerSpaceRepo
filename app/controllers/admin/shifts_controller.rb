@@ -256,15 +256,25 @@ class Admin::ShiftsController < AdminAreaController
       )
       .each do |sa|
         event = {}
-        event["title"] = "#{sa.user.name} is unavailable"
+        event[
+          "title"
+        ] = "#{sa.user.name} is unavailable (#{sa.recurring? ? "Recurring" : "One-Time"})"
         event["id"] = sa.id
-        event["daysOfWeek"] = [sa.day]
-        event["startTime"] = sa.start_time.strftime("%H:%M")
-        event["endTime"] = sa.end_time.strftime("%H:%M")
+        if sa.recurring?
+          event["daysOfWeek"] = [sa.day]
+          event["startTime"] = sa.start_time.strftime("%H:%M")
+          event["endTime"] = sa.end_time.strftime("%H:%M")
+          event["startRecur"] = sa.time_period.start_date.beginning_of_day
+          event["endRecur"] = sa.time_period.end_date.end_of_day
+        else
+          event["start"] = sa.start_datetime
+          event["end"] = sa.end_datetime
+        end
         event["color"] = hex_color_to_rgba(
           sa.user.staff_spaces.find_by(space_id: @space_id).color,
           opacity
         )
+        event["recurring"] = sa.recurring?
         event["userId"] = sa.user.id
         event["className"] = sa.user.name.strip.downcase.gsub(" ", "-")
         staff_availabilities << event
