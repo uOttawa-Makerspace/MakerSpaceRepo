@@ -22,9 +22,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def create
-    create_params =
-      (params[:key][:status] == "inventory") ? key_inventory_params : key_params
-    @key = Key.new(create_params)
+    @key = Key.new(key_params)
 
     if @key.save
       flash[:notice] = "Successfully created key."
@@ -61,10 +59,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def update
-    update_params =
-      (params[:key][:status] == "inventory") ? key_inventory_params : key_params
-
-    update_params = update_params.except(:status) if @key.status_held?
+    update_params = @key.status_held? ? key_params.except(:status) : key_params
 
     if @key.update(update_params)
       flash[:notice] = "The key was successfully updated."
@@ -128,7 +123,7 @@ class Admin::KeysController < AdminAreaController
                   notice: "Successfully approved key request."
     else
       redirect_to requests_admin_keys_path,
-                  alert: "Something went wrong while approving key request."
+                  alert: "Something went wrong while approving the key request."
     end
   end
 
@@ -139,7 +134,7 @@ class Admin::KeysController < AdminAreaController
                   notice: "Successfully denied key request."
     else
       redirect_to requests_admin_keys_path,
-                  alert: "Something went wrong while approving key request."
+                  alert: "Something went wrong while denying the key request."
     end
   end
 
@@ -153,17 +148,6 @@ class Admin::KeysController < AdminAreaController
       :key_request_id,
       :status,
       :key_type,
-      :custom_keycode
-    )
-  end
-
-  def key_inventory_params
-    params.require(:key).permit(
-      :number,
-      :space_id,
-      :status,
-      :key_type,
-      :supervisor_id,
       :custom_keycode
     )
   end

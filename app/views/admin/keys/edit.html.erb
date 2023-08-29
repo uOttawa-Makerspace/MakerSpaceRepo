@@ -18,7 +18,7 @@
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
         <div class="mb-3">
           <%= f.label :key_type, class: 'form-label' %>
-          <%= f.select :key_type, options_for_select(Key.key_types.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select', id: 'key-type-select' } %>
+          <%= f.select :key_type, options_for_select(Key.key_types.map { |k, _v| [k.humanize.capitalize, k] }, selected: @key.key_type), {}, { class: 'form-control form-select', id: 'key-type-select' } %>
         </div>
         <div class="mb-3">
           <%= f.label :number, 'Key Number', class: 'form-label' %>
