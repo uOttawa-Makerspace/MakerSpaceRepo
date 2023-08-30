@@ -1,0 +1,28 @@
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Access Key Form - Agreement</h2>
+
+  <%= form_for(@key_request, url: { controller: 'key_requests', action: 'steps' }, html: { multipart: true }) do |f| %>
+    <%= hidden_field_tag :step, 6 %>
+    <div class="row">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="mb-5">
+          <p>
+            The University work place health and safety issues are governed by Policy 72 - Environmental Management and Sustainability, Policy 77 - Occupational Health and Safety, and Procedure 14-1 - Internal Responsibility Procedure for Health and Safety Issues. All University policies and procedures are published online.
+
+            Workspace assigned to me is in proper order, clean, free of unknown products and I understand that I am responsible for keeping it that way during my entire tenure at the University. I will use the key in a responsible manner and I will return it immediately upon leaving. When I will leave, the assigned workspace will be returned in the same condition as at the beginning, and will be inspected before I leave.
+          </p>
+        </div>
+
+        <div class="mb-5">
+          <%= f.radio_button :read_agreement, true, class: 'form-check-input', required: true %>
+          <%= f.label :read_agreement, 'I have read and accepted the agreement above', class: 'form-label' %>
+        </div>
+
+        <div class="text-center">
+          <%= link_to 'Previous Step', key_request_steps_path(key_request_id: @key_request.id, step: 4), class: 'btn btn-primary' %>
+          <%= f.submit 'Submit Form', class: 'btn btn-success' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</section>

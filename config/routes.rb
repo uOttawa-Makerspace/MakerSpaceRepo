@@ -259,6 +259,7 @@ Rails.application.routes.draw do
 
       collection do
         post :update_max_capacity
+        patch :update_keycode
         post :add_space_hours
         delete :delete_space_hour
         post :add_training_levels
@@ -335,6 +336,32 @@ Rails.application.routes.draw do
         get :demotions
         get :search_demotions
       end
+    end
+
+    resources :keys do
+      get :assign
+      patch :assign_key
+      get :revoke
+      patch :revoke_key
+      get :history
+      collection do
+        get :requests
+        patch :approve_key_request
+        patch :deny_key_request
+      end
+    end
+
+    resources :key_transactions, only: %i[index edit update]
+  end
+
+  resources :key_requests, only: %i[index new create show] do
+    get :steps
+    patch :steps
+  end
+
+  resources :staff_certifications, only: %i[show create update] do
+    member do
+      delete "destroy_pdf/:file_number", action: :destroy_pdf, as: :destroy_pdf
     end
   end
 

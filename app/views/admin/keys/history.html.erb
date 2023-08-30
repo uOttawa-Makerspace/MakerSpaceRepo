@@ -1,0 +1,5 @@
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Key #<%= @key.number %> - History</h2>
+
+  <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key.get_all_key_transactions, show_actions: false } %>
+</section>

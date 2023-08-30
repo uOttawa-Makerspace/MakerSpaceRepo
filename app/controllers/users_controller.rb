@@ -406,6 +406,10 @@ class UsersController < SessionsController
       @space_list = Space.all
       @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
 
+      @keys_owned = @repo_user.keys
+      @keys_supervising = Key.where(supervisor_id: @repo_user.id)
+      @staff_cert = @repo_user.staff_certification
+
       respond_to do |format|
         format.html
         format.json do

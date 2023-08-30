@@ -1,0 +1,48 @@
+<div class="table-responsive">
+  <table class="table text-center m-0">
+    <thead class="table-primary">
+    <tr>
+      <th>User</th>
+      <th>Space</th>
+      <th>Supervisor</th>
+      <th>Email</th>
+      <th>Student/Employee #</th>
+      <th>Phone Number</th>
+      <th>Emergency Contact</th>
+      <th>Certifications</th>
+      <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+      <% key_requests.each do |key_request| %>
+        <tr>
+          <td><%= link_to key_request.user.name, user_path(key_request.user.username), target: '_blank', rel: 'noopener' %></td>
+          <td><%= key_request.space.name %></td>
+          <td><%= link_to key_request.supervisor.name, user_path(key_request.supervisor.username), target: '_blank', rel: 'noopener' %></td>
+          <td><%= key_request.user&.email %></td>
+          <td><%= key_request.student_number %></td>
+          <td><%= key_request.phone_number %></td>
+          <td>
+            <%= key_request.emergency_contact %>
+            <%= key_request.emergency_contact_relation %>
+            <%= key_request.emergency_contact_phone_number %>
+          </td>
+          <td>
+            <% if !key_request.user.staff_certification.nil? %>
+              <%= key_request.user.staff_certification.get_staff_certs_attached %>/<%= StaffCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
+              <%= key_request.user.staff_certification.get_supervisor_certs_attached %>/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+            <% else %>
+              0/<%= StaffCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
+              0/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+            <% end %>
+          </td>
+          <td>
+            <%= link_to 'Show', key_request_path(key_request.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
+            <%= button_to 'Approve', approve_key_request_admin_keys_path(id: key_request.id), class: 'w-100 py-1 mb-1 btn btn-success', method: :patch if key_request.status_waiting_for_approval? %>
+            <%= button_to 'Deny', deny_key_request_admin_keys_path(id: key_request.id), class: 'w-100 py-1 btn btn-danger', method: :patch, data: { confirm: 'Are you sure you want to deny this key request?' } if key_request.status_waiting_for_approval? %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

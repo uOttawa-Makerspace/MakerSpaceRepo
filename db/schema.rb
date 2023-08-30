@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_07_27_203718) do
+ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -473,6 +473,70 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_27_203718) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "key_requests", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "supervisor_id"
+    t.bigint "space_id"
+    t.string "student_number"
+    t.string "phone_number"
+    t.string "emergency_contact"
+    t.string "emergency_contact_relation"
+    t.string "emergency_contact_phone_number"
+    t.integer "user_status"
+    t.integer "status"
+    t.string "question_1"
+    t.string "question_2"
+    t.string "question_3"
+    t.string "question_4"
+    t.string "question_5"
+    t.string "question_6"
+    t.string "question_7"
+    t.string "question_8"
+    t.string "question_9"
+    t.string "question_10"
+    t.string "question_11"
+    t.string "question_12"
+    t.string "question_13"
+    t.string "question_14"
+    t.boolean "read_lab_rules", default: false, null: false
+    t.boolean "read_policies", default: false, null: false
+    t.boolean "read_agreement", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["space_id"], name: "index_key_requests_on_space_id"
+    t.index ["supervisor_id"], name: "index_key_requests_on_supervisor_id"
+    t.index ["user_id"], name: "index_key_requests_on_user_id"
+  end
+
+  create_table "key_transactions", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "key_id"
+    t.date "return_date"
+    t.date "deposit_return_date"
+    t.decimal "deposit_amount", precision: 5, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key_id"], name: "index_key_transactions_on_key_id"
+    t.index ["user_id"], name: "index_key_transactions_on_user_id"
+  end
+
+  create_table "keys", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "supervisor_id"
+    t.bigint "space_id"
+    t.bigint "key_request_id"
+    t.string "number"
+    t.string "custom_keycode"
+    t.integer "status", default: 0
+    t.integer "key_type", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key_request_id"], name: "index_keys_on_key_request_id"
+    t.index ["space_id"], name: "index_keys_on_space_id"
+    t.index ["supervisor_id"], name: "index_keys_on_supervisor_id"
+    t.index ["user_id"], name: "index_keys_on_user_id"
+  end
+
   create_table "lab_sessions", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.datetime "sign_in_time", precision: nil
@@ -895,6 +959,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_27_203718) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "max_capacity"
     t.integer "destroy_admin_id"
+    t.string "keycode", default: ""
   end
 
   create_table "spaces_trainings", id: false, force: :cascade do |t|
@@ -916,6 +981,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_27_203718) do
     t.index ["time_period_id"],
             name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
+  end
+
+  create_table "staff_certifications", force: :cascade do |t|
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_staff_certifications_on_user_id"
   end
 
   create_table "staff_needed_calendars", force: :cascade do |t|
