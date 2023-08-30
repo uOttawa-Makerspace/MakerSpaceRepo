@@ -1,0 +1,50 @@
+<% if @key.errors.any? %>
+  <div id="error_explanation">
+    <h2><%= pluralize(@key.errors.count, 'error') %> prohibited this key from being saved:</h2>
+
+    <ul>
+      <% @key.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Add a new Key</h2>
+
+  <%= form_for @key, url: { controller: 'admin/keys', action: 'create' } do |f| %>
+    <div class="row">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="mb-3">
+          <%= f.label :key_type, class: 'form-label' %>
+          <%= f.select :key_type, options_for_select(Key.key_types.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select', id: 'key-type-select' } %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :number, 'Key number', class: 'form-label' %>
+          <%= f.text_field :number, class: 'form-control', required: true %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :space_id, class: 'form-label' %>
+          <%= f.select :space_id, @space_select, { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
+        </div>
+        <div class="mb-3" style="display: none;">
+          <%= f.label :custom_keycode, class: 'form-label' %>
+          <%= f.text_field :custom_keycode, class: 'form-control', id: 'custom-keycode' %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :status, 'Status', class: 'form-label' %>
+          <%= f.select :status, options_for_select(Key.statuses.except(:held).map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select', id: 'status-select' } %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :supervisor_id, 'Supervisor (optional if key is not held)', class: 'form-label' %>
+          <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+        </div>
+
+        <div class="text-center">
+          <%= f.submit 'Create Key', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</section>

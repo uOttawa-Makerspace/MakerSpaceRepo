@@ -1,0 +1,73 @@
+<section>
+  <h1 class="text-center py-4 fw-bold">
+    Training Attendees <%= link_to fa_icon('download'),
+                                   admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'training_attendees'),
+                                   class: 'border-0 bg-transparent text-primary d-print-none' %>
+  </h1>
+
+  <% if @training_sessions.empty? %>
+    <div class="text-center">No training sessions to display</div>
+  <% else %>
+    <div class="mb-5 text-center">
+      <% if @date_specified %>
+        <p class="m-0 mb-1 fw-bold"><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></p>
+      <% else %>
+        <p class="m-0 mb-1 fw-bold">2015-06-01 to present</p>
+      <% end %>
+      <p class="m-0 mb-2">Displaying <%= @training_sessions.count %> <%= 'training session'.pluralize(@training_sessions.count) %></p>
+    </div>
+
+    <div class="mb-5">
+      <h4 class="text-center">Month Average of Attendees per Session</h4>
+      <%= line_chart @monthly_average %>
+    </div>
+
+    <div class="mb-5 accordion">
+      <% @spaces.each do |space| %>
+        <% space_certs = space.certifications.where(created_at: params[:start_date]..params[:end_date]).reverse_order %>
+        <% if !space_certs.empty? %>
+          <div class="card">
+            <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= space.name.gsub(' ', '-') %>" aria-expanded="true">
+              <h2 class="mb-0 text-center">
+                <button class="btn btn-link" type="button">
+                  <%= space.name %> - <%= space_certs.count %> attendees
+                </button>
+              </h2>
+            </div>
+            <div id="accordion-<%= space.name.gsub(' ', '-') %>" class="collapse" aria-labelledby="#<%= space.name.gsub(' ', '-') %>">
+              <table class="mb-5 table table-striped text-center">
+                <thead>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Certification Type</th>
+                  <th>Certification Date</th>
+                  <th>Instructor</th>
+                  <th>Course</th>
+                </thead>
+                <% space_certs.each do |certification| %>
+                  <% user_present = certification.user.present? %>
+                  <tr>
+                    <td>
+                      <% if user_present %>
+                        <%= link_to certification.user.name, user_path(certification.user.username) %>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if user_present %>
+                        <%= certification.user.email %>
+                      <% end %>
+                    </td>
+                    <td><%= certification.training.name %></td>
+                    <td><%= certification.created_at.strftime('%Y-%m-%d') %></td>
+                    <td><%= link_to certification.training_session.user.name, user_path(certification.training_session.user.username) %></td>
+                    <td><%= certification.training_session.course %></td>
+                  </tr>
+                <% end %>
+              </table>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+</section>

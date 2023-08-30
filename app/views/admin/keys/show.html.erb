@@ -1,0 +1,154 @@
+<section class="w-75 mx-auto">
+  <h2 class="m-0 fw-bold py-4 text-center">Key #<%= @key.number %> - <%= @key.status.humanize.capitalize %></h2>
+
+  <div class="mb-5 d-flex flex-row align-items-center justify-content-center gap-3 d-print-none">
+    <%= link_to 'View Certifications', key_certification_path(@key.key_request.user.key_certification.id), class: 'btn btn-primary' unless @key.key_request.nil? || @key.key_request.user.key_certification.nil? %>
+    <%= link_to 'View Key Transactions', admin_key_history_path(key_id: @key.id), class: 'btn btn-primary' %>
+    <%= button_tag 'Print Page', id: 'print-button', class: 'btn btn-primary' %>
+  </div>
+
+  <div class="mb-5">
+    <h4 class="mb-3">Key Information</h4>
+    <h6><span class="fw-bold">Key Type:</span> <%= @key.key_type.humanize.capitalize %></h6>
+    <h6><span class="fw-bold">Key Number:</span> <%= @key.number %></h6>
+    <h6><span class="fw-bold">Keycode:</span> <%= @key.get_keycode %></h6>
+    <h6><span class="fw-bold">Space:</span> <%= @key.key_type_regular? ? @key.space.name : 'N/A' %></h6>
+    <h6><span class="fw-bold">User:</span> <%= link_to @key.user.name, user_path(@key.user.username), target: '_blank', rel: 'noopener' unless @key.user.nil? %></h6>
+    <h6><span class="fw-bold">Supervisor:</span> <%= link_to @key.supervisor.name, user_path(@key.supervisor.username), target: '_blank', rel: 'noopener' unless @key.supervisor.nil? %></h6>
+    <h6><span class="fw-bold">Status:</span> <%= @key.status.humanize.capitalize %></h6>
+  </div>
+
+  <% unless @key.key_request.nil? %>
+    <div class="mb-5">
+      <h4 class="mb-3">User Information</h4>
+      <h6><span class="fw-bold">User Status:</span> <%= @key.key_request.user_status.humanize.capitalize %></h6>
+      <h6><span class="fw-bold">Email:</span> <%= @key.key_request.user&.email %></h6>
+      <h6><span class="fw-bold">Student/Employee Number:</span> <%= @key.key_request.student_number %></h6>
+      <h6><span class="fw-bold">Phone Number:</span> <%= @key.key_request.phone_number %></h6>
+      <h6><span class="fw-bold">Emergency Contact:</span> <%= @key.key_request.emergency_contact %></h6>
+      <h6><span class="fw-bold">Relation to Emergency Contact:</span> <%= @key.key_request.emergency_contact_relation %></h6>
+      <h6><span class="fw-bold">Emergency Contact Phone Number:</span> <%= @key.key_request.emergency_contact_phone_number %></h6>
+      <h6><span class="fw-bold">Read and understood lab rules:</span> <%= @key.key_request.read_lab_rules? ? 'yes' : 'no' %></h6>
+      <h6><span class="fw-bold">Read and understood policies:</span> <%= @key.key_request.read_policies? ? 'yes' : 'no' %></h6>
+      <h6><span class="fw-bold">Read and accepted agreement:</span> <%= @key.key_request.read_agreement? ? 'yes' : 'no' %></h6>
+    </div>
+
+    <div class="mb-5 d-none d-print-block">
+      <h4 class="mb-3">General laboratory rules</h4>
+
+      <ol class="key-request-list mb-3">
+        <li>Eating, drinking, or storing food is prohibited in the laboratory.</li>
+        <li>Appropriate clothes must be worn: shorts, open toed and open heeled shoes are prohibited. Safety eyewear and laboratory coats must be worn at all times when in the lab or when transporting materials between laboratories.</li>
+        <li>Long hair must be restrained or tied back.</li>
+        <li>Users must agree to follow the Office of Risk Management directive on after-hours access.</li>
+        <li>Do not dispose of anything in the sink. Consult the Sewer-Use Guidelines, the ORM - Environmental Management web page and your supervisor for more information  </li>
+        <li>All accidents, incidents or occupational disease must be reported using the online “Accident, incident, occupational disease or near miss report” form.</li>
+        <li>All spills, incidents or exposures must immediately be reported to the Principal Investigator.</li>
+        <li>No procedure or equipment should be used without proper safety instruction from trained laboratory personnel.</li>
+        <li>All electrical equipment must meet the Ontario Electrical Safety Authority Standards. </li>
+        <li>Untrained people are not allowed in the laboratory. All visitors must wear safety glasses.</li>
+        <li>The laboratory doors must be shut at all times and locked when no one is in the laboratory.</li>
+        <li>Users must be familiar with the Safety data sheets (SDS) for all the hazardous materials they will work with before using them.</li>
+        <li>If emergency treatment is required, take the appropriate SDS with you. </li>
+        <li>Emergency response procedures for fires and chemical hazard and biohazard spills can be found in the Laboratory Safety Manual. Read them in advance!</li>
+        <li>Work surfaces must be cleaned and decontaminated daily. No hazardous chemicals are to be left outside storage cabinets overnight.</li>
+        <li>Hands must be washed with soap before leaving the laboratory.</li>
+        <li>Visit the Faculty’s Health and safety web page, the Office of Risk Management (ORM) web page, the ORM - Environmental Management web page, and the ORM’s Health and Safety Policies and Guidelines web page. </li>
+      </ol>
+
+      <div>
+        <%= radio_button_tag :read_lab_rules, @key.key_request.read_lab_rules?, class: 'form-check-input' %>
+        <%= label_tag :read_lab_rules, 'I have read and understood the rules above', class: 'form-label' %>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <h4 class="mb-3">Safety Questionnaire Answers</h4>
+      <% (1..KeyRequest::NUMBER_OF_QUESTIONS).each do |i| %>
+        <div class="card mb-3">
+          <div class="card-header bg-primary text-light">
+            <%= "Q#{i} - #{KeyRequest::QUESTIONS[i - 1]}" %><br>
+          </div>
+          <div class="card-body">
+            <%= @key.key_request.send("question_#{i}").nil? ? 'No Answer' : @key.key_request.send("question_#{i}") %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="mb-5 d-none d-print-block">
+      <h4 class="mb-3">Informed consent for laboratory workers</h4>
+
+      <ol class="key-request-list mb-3">
+        <li>I accept the risks, dangers and hazards inherent in undertaking my research activities. Such risks may include but are not limited to the following: • (In the laboratory) Any manner of bodily injury, loss or property damage resulting from the exposure to or direct contact with chemical products, biological samples, specimens, radioactive materials in their original state or as modified or changed by laboratory processes and from hazardous reactions, fires, spills or other hazards resulting from laboratory experiments. • (Using equipment) Any manner of bodily injury, loss or property damage resulting from the use, misuse, non-use and failure of any equipment.  </li>
+        <li>I have received the appropriate laboratory safety training to conduct my research activities and have read the Laboratory Safety Manual. It is my responsibility to familiarize myself with the contents of the Manual.  </li>
+        <li>Access to the laboratory is for the sole purpose of conducting my research activities and I agree not to work alone in the laboratory when potentially hazardous material, equipment or activities are involved.  </li>
+        <li>(In the case of a student) I will not undertake any experimental procedure or process that was not discussed or reviewed with the professor and without first having received training, instruction and/or supervision from the professor or someone designated by the professor as competent to train, instruct in or supervise such a procedure or process.  </li>
+        <li>That I will take the necessary measures to ensure that no other person uses my key and/or security card to access the University’s premises and that I will not give or lend the key(s) and/or security card(s) to other persons. I agree to return the key(s) and/or access card to the University upon completion of my research activities. I further agree that the University may, at any time, demand the return of the key(s) and/or security card(s) if I fail to comply with any University policy, procedure, regulation or any of the above. I have read and I understand the contents of this document. </li>
+      </ol>
+
+      <div>
+        <%= radio_button_tag :read_policies, @key.key_request.read_policies?, class: 'form-check-input' %>
+        <%= label_tag :read_policies, 'I have read and understood the policies above', class: 'form-label' %>
+      </div>
+    </div>
+
+    <div class="mb-5 d-none d-print-block">
+      <h4 class="mb-3">Agreement</h4>
+
+      <div class="mb-3">
+        <p>
+          The University work place health and safety issues are governed by Policy 72 - Environmental Management and Sustainability, Policy 77 - Occupational Health and Safety, and Procedure 14-1 - Internal Responsibility Procedure for Health and Safety Issues. All University policies and procedures are published online.
+
+          Workspace assigned to me is in proper order, clean, free of unknown products and I understand that I am responsible for keeping it that way during my entire tenure at the University. I will use the key in a responsible manner and I will return it immediately upon leaving. When I will leave, the assigned workspace will be returned in the same condition as at the beginning, and will be inspected before I leave.
+        </p>
+      </div>
+
+      <div>
+        <%= radio_button_tag :read_agreement, @key.key_request.read_agreement?, class: 'form-check-input' %>
+        <%= label_tag :read_agreement, 'I have read and accepted the agreement above', class: 'form-label' %>
+      </div>
+    </div>
+
+    <div class="mb-5 d-none d-print-block">
+      <h4 class="mb-3 text-center">Staff Files:</h4>
+
+      <% (1..KeyCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
+        <% if !@key.key_request.user.key_certification.nil? && @key.key_request.user.key_certification.send("pdf_file_#{i}").attached? %>
+          <div class="mb-5">
+            <h5><%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
+            <div class="ratio ratio-16x9">
+              <iframe class="key-cert-iframe" src="<%= url_for(@key.key_request.user.key_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+            </div>
+          </div>
+        <% else %>
+          <div class="mb-5">
+            <h5>
+              <%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
+            </h5>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+    <div class="mb-5 d-none d-print-block">
+      <h4 class="mb-3 text-center">Supervisor Files:</h4>
+
+      <% ((KeyCertification::NUMBER_OF_STAFF_FILES + 1)..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
+        <% if !@key.key_request.user.key_certification.nil? && @key.key_request.user.key_certification.send("pdf_file_#{i}").attached? %>
+          <div class="mb-5">
+            <h5><%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
+            <div class="ratio ratio-16x9">
+              <iframe class="key-cert-iframe" src="<%= url_for(@key.key_request.user.key_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+            </div>
+          </div>
+        <% else %>
+          <div class="mb-5">
+            <h5>
+              <%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
+            </h5>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+</section>

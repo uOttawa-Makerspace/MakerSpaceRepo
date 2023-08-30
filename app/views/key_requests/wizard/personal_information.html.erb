@@ -1,0 +1,47 @@
+<section>
+  <h2 class="mb-3 fw-bold py-3 text-center">Access Key Form - Personal Information</h2>
+
+  <%= form_for(@key_request, url: { controller: 'key_requests', action: 'steps' }, html: { multipart: true }) do |f| %>
+    <%= hidden_field_tag :step, 2 %>
+    <div class="row">
+      <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="mb-3">
+          <%= f.label :student_number, 'Student/Employee Number', class: 'form-label' %>
+          <%= f.text_field :student_number, class: 'form-control', required: true %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :phone_number, class: 'form-label' %>
+          <%= f.text_field :phone_number, class: 'form-control', required: true %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :emergency_contact, class: 'form-label' %>
+          <%= f.text_field :emergency_contact, class: 'form-control', required: true %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :emergency_contact_relation, 'Relation to emergency contact (optional)', class: 'form-label' %>
+          <%= f.text_field :emergency_contact_relation, class: 'form-control' %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :emergency_contact_phone_number, class: 'form-label' %>
+          <%= f.text_field :emergency_contact_phone_number, class: 'form-control', required: true %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :space_id, 'Department', class: 'form-label' %>
+          <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
+        </div>
+        <div class="mb-3">
+          <%= f.label :supervisor_id, class: 'form-label' %>
+          <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+        </div>
+        <div class="mb-5">
+          <%= f.label :user_status, 'Status', class: 'form-label' %>
+          <%= f.select :user_status, options_for_select(KeyRequest.user_statuses.map { |k, _v| [k.humanize.capitalize, k] }), {}, { class: 'form-control form-select' } %>
+        </div>
+
+        <div class="text-center">
+          <%= f.submit 'Next Step', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</section>

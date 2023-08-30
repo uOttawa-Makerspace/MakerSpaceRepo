@@ -30,6 +30,18 @@
             href="#certifications-manager" role="tab" aria-controls="profile"
             aria-selected="false">Certifications</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link text-secondary" id="keys-tab" data-bs-toggle="tab" href="#keys-manager" role="tab" aria-controls="profile" aria-selected="false">
+            Staff Keys
+          </a>
+        </li>
+        <% if @user.eql?(@repo_user) || @user.admin? %>
+          <li class="nav-item">
+            <a class="nav-link text-secondary" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
+              Key Certifications
+            </a>
+          </li>
+        <% end %>
       </ul>
     </div>
   <% end %>

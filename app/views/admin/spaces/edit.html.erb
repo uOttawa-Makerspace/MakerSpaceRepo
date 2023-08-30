@@ -14,6 +14,18 @@
     <% end %>
   </div>
 
+  <h4>Keycode</h4>
+
+  <div class="mb-3">
+    <%= form_for update_keycode_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_keycode' }, method: :patch do |f| %>
+      <div class="input-group">
+        <%= hidden_field_tag :space_id, @space.id %> <br>
+        <%= text_field_tag :keycode, '', { class: 'form-control' } %>
+        <%= f.submit 'Update Keycode', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the keycode of the space ?' } %>
+      </div>
+    <% end %>
+  </div>
+
   <br><br>
 
   <h4>Staff needed</h4>

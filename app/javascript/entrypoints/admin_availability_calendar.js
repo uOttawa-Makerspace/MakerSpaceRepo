@@ -12,6 +12,10 @@ const unavailabilityModal = new Modal(
   document.getElementById("unavailabilityModal")
 );
 
+const modalTitle = document.getElementById("modal-title");
+const modalDelete = document.getElementById("modal-delete");
+const unavailabilityId = document.getElementById("unavailability-id");
+
 // Show state
 let showUnavailabilities = "block";
 let hiddenIds = {};
@@ -23,28 +27,63 @@ const dayInput = document.getElementById("day");
 const userIdInput = document.getElementById("user-id");
 const timePeriodIdInput = document.getElementById("time-period-id");
 const startTimeInput = document.getElementById("start-time");
+const startDateInput = document.getElementById("start-date");
 const endTimeInput = document.getElementById("end-time");
+const endDateInput = document.getElementById("end-date");
+const recurringInput = document.getElementById("recurring");
 
-const startPicker = startTimeInput.flatpickr({
+const startTimePicker = startTimeInput.flatpickr({
   enableTime: true,
   noCalendar: true,
   dateFormat: "H:i",
   time_24hr: true,
 });
 
-const endPicker = endTimeInput.flatpickr({
+const endTimePicker = endTimeInput.flatpickr({
   enableTime: true,
   noCalendar: true,
   dateFormat: "H:i",
   time_24hr: true,
+});
+
+const startDatePicker = startDateInput.flatpickr({
+  enableTime: false,
+  noCalendar: false,
+  dateFormat: "Y-m-d",
+});
+
+const endDatePicker = endDateInput.flatpickr({
+  enableTime: false,
+  noCalendar: false,
+  dateFormat: "Y-m-d",
+});
+
+recurringInput.addEventListener("change", function () {
+  if (this.checked) {
+    dayInput.parentElement.style.display = "block";
+    startDateInput.parentElement.parentElement.style.display = "none";
+    endDateInput.parentElement.parentElement.style.display = "none";
+  } else {
+    dayInput.parentElement.style.display = "none";
+    startDateInput.parentElement.parentElement.style.display = "block";
+    endDateInput.parentElement.parentElement.style.display = "block";
+  }
 });
 
 document.getElementById("start-time-clear").addEventListener("click", () => {
-  startPicker.clear();
+  startTimePicker.clear();
 });
 
 document.getElementById("end-time-clear").addEventListener("click", () => {
-  endPicker.clear();
+  endTimePicker.clear();
+});
+
+document.getElementById("start-date-clear").addEventListener("click", () => {
+  startDatePicker.clear();
+});
+
+document.getElementById("end-date-clear").addEventListener("click", () => {
+  endDatePicker.clear();
 });
 
 // Calendar Config
@@ -56,7 +95,7 @@ const calendar = new Calendar(calendarEl, {
     addNewEvent: {
       text: "+",
       click: () => {
-        unavailabilityModal.show();
+        openModal(null);
       },
     },
   },
@@ -68,7 +107,18 @@ const calendar = new Calendar(calendarEl, {
   views: {
     timeGridWeek: {
       dayHeaderFormat: {
+        weekday: "short",
+        month: "2-digit",
+        day: "2-digit",
+        omitCommas: true,
+      },
+    },
+    timeGridDay: {
+      dayHeaderFormat: {
         weekday: "long",
+        month: "2-digit",
+        day: "2-digit",
+        omitCommas: true,
       },
     },
   },
@@ -93,7 +143,7 @@ const calendar = new Calendar(calendarEl, {
     openModal(arg);
   },
   eventClick: (arg) => {
-    removeEvent(arg);
+    editModal(arg);
   },
   eventDrop: (arg) => {
     modifyEvent(arg);
@@ -229,7 +279,10 @@ const createCalendarEvent = () => {
         day: dayInput.value,
         time_period_id: timePeriodIdInput.value,
         start_time: startTimeInput.value,
+        start_date: startDateInput.value,
         end_time: endTimeInput.value,
+        end_date: endDateInput.value,
+        recurring: recurringInput.checked,
       },
       staff_id: userIdInput.value,
       format: "json",
@@ -237,30 +290,61 @@ const createCalendarEvent = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      calendar.addEvent(
-        {
-          title: data.title,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          daysOfWeek: data.daysOfWeek,
-          allDay: false,
-          id: data.id,
-          color: data.color,
-          userId: userIdInput.value,
-        },
-        "unavailabilities"
-      );
+      if (data.recurring) {
+        calendar.addEvent(
+          {
+            title: data.title,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            daysOfWeek: data.daysOfWeek,
+            allDay: false,
+            id: data.id,
+            color: data.color,
+            userId: userIdInput.value,
+            recurring: true,
+            startRecur: data.timePeriodStart,
+            endRecur: data.timePeriodEnd,
+          },
+          "unavailabilities"
+        );
+      } else {
+        calendar.addEvent(
+          {
+            title: data.title,
+            start: data.startTime,
+            end: data.endTime,
+            allDay: false,
+            id: data.id,
+            color: data.color,
+            userId: userIdInput.value,
+            recurring: false,
+          },
+          "unavailabilities"
+        );
+      }
+
+      if (modalDelete.style.display === "block") {
+        removeEvent(parseInt(unavailabilityId.value), true);
+      }
+
       calendar.unselect();
       unavailabilityModal.hide();
+      calendar.refetchEvents();
     })
     .catch((error) => {
       console.log("An error occurred: " + error.message);
     });
 };
 
-const removeEvent = (arg) => {
-  if (confirm("Are you sure you want to delete this unavailability?")) {
-    fetch("/staff_availabilities/" + arg.event.id, {
+const removeEvent = (id, bypass) => {
+  const event = calendar.getEventById(id);
+
+  if (
+    (bypass ||
+      confirm("Are you sure you want to delete this unavailability?")) &&
+    event !== null
+  ) {
+    fetch("/staff_availabilities/" + id, {
       method: "DELETE",
       headers: {
         Accept: "application/json",
@@ -270,9 +354,14 @@ const removeEvent = (arg) => {
     })
       .then((response) => {
         if (response.ok) {
-          arg.event.remove();
+          event.remove();
         } else {
           console.log("An error occurred");
+        }
+        unavailabilityModal.hide();
+
+        if (!bypass) {
+          calendar.refetchEvents();
         }
       })
       .catch((error) => {
@@ -289,8 +378,10 @@ const modifyEvent = (arg) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      start_date: arg.event.start,
-      end_date: arg.event.end,
+      staff_availability: {
+        start_date: arg.event.start,
+        end_date: arg.event.end,
+      },
       format: "json",
     }),
   })
@@ -311,11 +402,54 @@ document
 
 // Open modal with right values inside
 const openModal = (arg) => {
+  modalTitle.innerText = "New Unavailability";
+  modalDelete.style.display = "none";
+  unavailabilityId.value = "";
+
+  recurringInput.checked = true;
+  dayInput.parentElement.style.display = "block";
+  startDateInput.parentElement.parentElement.style.display = "none";
+  endDateInput.parentElement.parentElement.style.display = "none";
+
   if (arg !== undefined && arg !== null) {
-    startPicker.setDate(Date.parse(arg.startStr));
-    endPicker.setDate(Date.parse(arg.endStr));
+    startTimePicker.setDate(Date.parse(arg.startStr));
+    startDatePicker.setDate(Date.parse(arg.startStr));
+    endTimePicker.setDate(Date.parse(arg.endStr));
+    endDatePicker.setDate(Date.parse(arg.endStr));
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
   }
 
   unavailabilityModal.show();
 };
+
+const editModal = (arg) => {
+  modalTitle.innerText = "Edit Unavailability";
+  modalDelete.style.display = "block";
+
+  if (arg !== undefined && arg !== null) {
+    startTimePicker.setDate(Date.parse(arg.event.startStr));
+    startDatePicker.setDate(Date.parse(arg.event.startStr));
+    endTimePicker.setDate(Date.parse(arg.event.endStr));
+    endDatePicker.setDate(Date.parse(arg.event.endStr));
+    dayInput.value = new Date(Date.parse(arg.event.startStr)).getDay();
+
+    unavailabilityId.value = arg.event.id;
+    recurringInput.checked = arg.event.extendedProps.recurring;
+
+    if (arg.event.extendedProps.recurring) {
+      dayInput.parentElement.style.display = "block";
+      startDateInput.parentElement.parentElement.style.display = "none";
+      endDateInput.parentElement.parentElement.style.display = "none";
+    } else {
+      dayInput.parentElement.style.display = "none";
+      startDateInput.parentElement.parentElement.style.display = "block";
+      endDateInput.parentElement.parentElement.style.display = "block";
+    }
+  }
+
+  unavailabilityModal.show();
+};
+
+modalDelete.addEventListener("click", () => {
+  removeEvent(parseInt(unavailabilityId.value), false);
+});

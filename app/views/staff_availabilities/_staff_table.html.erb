@@ -3,6 +3,7 @@
     <thead class="table-primary">
      <tr>
        <th>User</th>
+       <th>Recurring</th>
        <th>Day</th>
        <th>Start Time</th>
        <th>End Time</th>
@@ -17,15 +18,19 @@
         </td>
 
         <td>
-          <%= a.week_day %>
+          <%= a.recurring? ? 'Yes' : 'No' %>
         </td>
 
         <td>
-          <%= a.start_time.strftime('%H:%M') %>
+          <%= a.recurring? ? a.week_day : 'N/A' %>
         </td>
 
         <td>
-          <%= a.end_time.strftime('%H:%M') %>
+          <%= a.recurring? ? a.start_time.strftime('%H:%M') : a.start_datetime.strftime('%Y/%m/%d - %H:%M') %>
+        </td>
+
+        <td>
+          <%= a.recurring? ? a.end_time.strftime('%H:%M') : a.end_datetime.strftime('%Y/%m/%d - %H:%M') %>
         </td>
 
         <td class="action-cell">
