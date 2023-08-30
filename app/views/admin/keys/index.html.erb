@@ -32,6 +32,31 @@
               </div>
             </div>
 
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="held-submaster">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-held-submaster" aria-expanded="true" aria-controls="collapse-held-submaster">
+                  Submaster
+                </button>
+              </h2>
+              <div id="collapse-held-submaster" class="accordion-collapse collapse show" aria-labelledby="held-submaster" data-bs-parent="#keysHeldAccordion">
+                <div class="accordion-body">
+                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(status: :held, key_type: :sub_master), show_status: true } %>
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="held-keycard">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-held-keycard" aria-expanded="true" aria-controls="collapse-held-keycard">
+                  Keycard
+                </button>
+              </h2>
+              <div id="collapse-held-keycard" class="accordion-collapse collapse show" aria-labelledby="held-keycard" data-bs-parent="#keysHeldAccordion">
+                <div class="accordion-body">
+                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(status: :held, key_type: :keycard), show_status: true } %>
+                </div>
+              </div>
+            </div>
+
             <% @spaces.each do |space| %>
               <div class="accordion-item">
                 <h2 class="accordion-header" id="held-<%= space.name.gsub(' ', '-') %>">
@@ -74,22 +99,47 @@
                 </div>
               </div>
             </div>
-          </div>
 
-          <% @spaces.each do |space| %>
             <div class="accordion-item">
-              <h2 class="accordion-header" id="all-<%= space.name.gsub(' ', '-') %>">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-all-<%= space.name.gsub(' ', '-') %>" aria-expanded="true" aria-controls="collapse-all-<%= space.name.gsub(' ', '-') %>">
-                  <%= "#{space.name} (#{space.keycode})" %>
+              <h2 class="accordion-header" id="all-submaster">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-all-submaster" aria-expanded="true" aria-controls="collapse-all-submaster">
+                  Submaster
                 </button>
               </h2>
-              <div id="collapse-all-<%= space.name.gsub(' ', '-') %>" class="accordion-collapse collapse show" aria-labelledby="all-<%= space.name.gsub(' ', '-') %>" data-bs-parent="#keysAllAccordion">
+              <div id="collapse-all-submaster" class="accordion-collapse collapse show" aria-labelledby="all-submaster" data-bs-parent="#keysAllAccordion">
                 <div class="accordion-body">
-                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(space:), show_status: true } %>
+                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(key_type: :sub_master), show_status: true } %>
                 </div>
               </div>
             </div>
-          <% end %>
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="all-keycard">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-all-keycard" aria-expanded="true" aria-controls="collapse-all-keycard">
+                  Keycard
+                </button>
+              </h2>
+              <div id="collapse-all-keycard" class="accordion-collapse collapse show" aria-labelledby="all-keycard" data-bs-parent="#keysAllAccordion">
+                <div class="accordion-body">
+                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(key_type: :keycard), show_status: true } %>
+                </div>
+              </div>
+            </div>
+
+            <% @spaces.each do |space| %>
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="all-<%= space.name.gsub(' ', '-') %>">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-all-<%= space.name.gsub(' ', '-') %>" aria-expanded="true" aria-controls="collapse-all-<%= space.name.gsub(' ', '-') %>">
+                    <%= "#{space.name} (#{space.keycode})" %>
+                  </button>
+                </h2>
+                <div id="collapse-all-<%= space.name.gsub(' ', '-') %>" class="accordion-collapse collapse show" aria-labelledby="all-<%= space.name.gsub(' ', '-') %>" data-bs-parent="#keysAllAccordion">
+                  <div class="accordion-body">
+                    <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(space:), show_status: true } %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
         </div>
       </div>
     </div>
