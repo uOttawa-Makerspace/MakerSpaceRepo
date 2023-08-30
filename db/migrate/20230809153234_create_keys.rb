@@ -61,7 +61,7 @@ class CreateKeys < ActiveRecord::Migration[7.0]
       t.timestamps
     end
 
-    create_table :staff_certifications do |t|
+    create_table :key_certifications do |t|
       t.references :user
 
       t.timestamps

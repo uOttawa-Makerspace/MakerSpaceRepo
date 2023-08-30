@@ -406,9 +406,14 @@ class UsersController < SessionsController
       @space_list = Space.all
       @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
 
+      if @user.eql?(@repo_user) && @user.staff? && @user.key_certification.nil?
+        key_cert = @user.build_key_certification
+        key_cert.save
+      end
+
       @keys_owned = @repo_user.keys
       @keys_supervising = Key.where(supervisor_id: @repo_user.id)
-      @staff_cert = @repo_user.staff_certification
+      @key_cert = @repo_user.key_certification
 
       respond_to do |format|
         format.html

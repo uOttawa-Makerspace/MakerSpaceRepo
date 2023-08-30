@@ -10,11 +10,11 @@
   <div class="accordion" id="keysAccordion">
     <div class="accordion-item">
       <h2 class="accordion-header" id="returned">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
           Returned
         </button>
       </h2>
-      <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="returned" data-bs-parent="#keysAccordion">
+      <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="returned" data-bs-parent="#keysAccordion">
         <div class="accordion-body">
           <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions.returned, show_actions: false } %>
         </div>
@@ -22,11 +22,11 @@
     </div>
     <div class="accordion-item">
       <h2 class="accordion-header" id="currently-held">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
           Currently Held
         </button>
       </h2>
-      <div id="collapseTwo" class="accordion-collapse collapse show" aria-labelledby="currently-held" data-bs-parent="#keysAccordion">
+      <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="currently-held" data-bs-parent="#keysAccordion">
         <div class="accordion-body">
           <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions.not_returned, show_actions: false } %>
         </div>
@@ -34,11 +34,11 @@
     </div>
     <div class="accordion-item">
       <h2 class="accordion-header" id="deposit-refund">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="true" aria-controls="collapseThree">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
           Awaiting deposit refund
         </button>
       </h2>
-      <div id="collapseThree" class="accordion-collapse collapse show" aria-labelledby="deposit-refund" data-bs-parent="#keysAccordion">
+      <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="deposit-refund" data-bs-parent="#keysAccordion">
         <div class="accordion-body">
           <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions.awaiting_deposit_return, show_actions: true } %>
         </div>

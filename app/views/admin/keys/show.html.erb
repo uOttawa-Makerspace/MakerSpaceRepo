@@ -2,7 +2,7 @@
   <h2 class="m-0 fw-bold py-4 text-center">Key #<%= @key.number %> - <%= @key.status.humanize.capitalize %></h2>
 
   <div class="mb-5 d-flex flex-row align-items-center justify-content-center gap-3 d-print-none">
-    <%= link_to 'View Certifications', staff_certification_path(@key.key_request.user.staff_certification.id), class: 'btn btn-primary' unless @key.key_request.nil? || @key.key_request.user.staff_certification.nil? %>
+    <%= link_to 'View Certifications', key_certification_path(@key.key_request.user.key_certification.id), class: 'btn btn-primary' unless @key.key_request.nil? || @key.key_request.user.key_certification.nil? %>
     <%= link_to 'View Key Transactions', admin_key_history_path(key_id: @key.id), class: 'btn btn-primary' %>
     <%= button_tag 'Print Page', id: 'print-button', class: 'btn btn-primary' %>
   </div>
@@ -113,18 +113,18 @@
     <div class="mb-5 d-none d-print-block">
       <h4 class="mb-3 text-center">Staff Files:</h4>
 
-      <% (1..StaffCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
-        <% if !@key.key_request.user.staff_certification.nil? && @key.key_request.user.staff_certification.send("pdf_file_#{i}").attached? %>
+      <% (1..KeyCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
+        <% if !@key.key_request.user.key_certification.nil? && @key.key_request.user.key_certification.send("pdf_file_#{i}").attached? %>
           <div class="mb-5">
-            <h5><%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
+            <h5><%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
             <div class="ratio ratio-16x9">
-              <iframe class="staff-cert-iframe" src="<%= url_for(@key.key_request.user.staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+              <iframe class="key-cert-iframe" src="<%= url_for(@key.key_request.user.key_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
             </div>
           </div>
         <% else %>
           <div class="mb-5">
             <h5>
-              <%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
+              <%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
             </h5>
           </div>
         <% end %>
@@ -133,18 +133,18 @@
     <div class="mb-5 d-none d-print-block">
       <h4 class="mb-3 text-center">Supervisor Files:</h4>
 
-      <% ((StaffCertification::NUMBER_OF_STAFF_FILES + 1)..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
-        <% if !@key.key_request.user.staff_certification.nil? && @key.key_request.user.staff_certification.send("pdf_file_#{i}").attached? %>
+      <% ((KeyCertification::NUMBER_OF_STAFF_FILES + 1)..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
+        <% if !@key.key_request.user.key_certification.nil? && @key.key_request.user.key_certification.send("pdf_file_#{i}").attached? %>
           <div class="mb-5">
-            <h5><%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
+            <h5><%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
             <div class="ratio ratio-16x9">
-              <iframe class="staff-cert-iframe" src="<%= url_for(@key.key_request.user.staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+              <iframe class="key-cert-iframe" src="<%= url_for(@key.key_request.user.key_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
             </div>
           </div>
         <% else %>
           <div class="mb-5">
             <h5>
-              <%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
+              <%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
             </h5>
           </div>
         <% end %>

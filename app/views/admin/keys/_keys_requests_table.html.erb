@@ -28,12 +28,12 @@
             <%= key_request.emergency_contact_phone_number %>
           </td>
           <td>
-            <% if !key_request.user.staff_certification.nil? %>
-              <%= key_request.user.staff_certification.get_staff_certs_attached %>/<%= StaffCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
-              <%= key_request.user.staff_certification.get_supervisor_certs_attached %>/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+            <% if !key_request.user.key_certification.nil? %>
+              <%= key_request.user.key_certification.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
+              <%= key_request.user.key_certification.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
             <% else %>
-              0/<%= StaffCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
-              0/<%= StaffCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+              0/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
+              0/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
             <% end %>
           </td>
           <td>

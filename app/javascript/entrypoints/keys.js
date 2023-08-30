@@ -64,15 +64,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const printButton = document.getElementById("print-button");
-  const staffCertIframes = document.querySelectorAll(".staff-cert-iframe");
+  const keyCertIframes = document.querySelectorAll(".key-cert-iframe");
   let loadedIframes = 0;
   let shouldPrint = false;
 
-  staffCertIframes.forEach((iframe) => {
+  keyCertIframes.forEach((iframe) => {
     iframe.addEventListener("load", () => {
       loadedIframes++;
 
-      if (shouldPrint && loadedIframes === staffCertIframes.length) {
+      if (shouldPrint && loadedIframes === keyCertIframes.length) {
         setTimeout(() => {
           window.print();
         }, 1000);
@@ -82,12 +82,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (printButton) {
     printButton.addEventListener("click", () => {
-      if (staffCertIframes.length === 0) {
+      if (keyCertIframes.length === 0) {
         window.print();
       } else {
         loadedIframes = 0;
         shouldPrint = true;
-        staffCertIframes.forEach((iframe) => {
+        keyCertIframes.forEach((iframe) => {
           iframe.src = iframe.getAttribute("src");
         });
       }

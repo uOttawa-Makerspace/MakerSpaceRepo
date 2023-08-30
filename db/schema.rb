@@ -473,6 +473,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "key_certifications", force: :cascade do |t|
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_key_certifications_on_user_id"
+  end
+
   create_table "key_requests", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "supervisor_id"
@@ -981,13 +988,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.index ["time_period_id"],
             name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
-  end
-
-  create_table "staff_certifications", force: :cascade do |t|
-    t.bigint "user_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["user_id"], name: "index_staff_certifications_on_user_id"
   end
 
   create_table "staff_needed_calendars", force: :cascade do |t|

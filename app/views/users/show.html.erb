@@ -156,8 +156,8 @@
               <%= render partial: 'users/tabs/keys' %>
             </div>
             <% if @user.eql?(@repo_user) || @user.admin? %>
-              <div class="tab-pane fade" id="staff-certs-manager" role="tabpanel" aria-labelledby="profile-tab">
-                <%= render partial: 'users/tabs/staff_certs' %>
+              <div class="tab-pane fade" id="key-certs-manager" role="tabpanel" aria-labelledby="profile-tab">
+                <%= render partial: 'users/tabs/key_certs' %>
               </div>
             <% end %>
           <% end %>
