@@ -23,23 +23,25 @@
     <% end %>
   </div>
   <div>
-    <h4 class="mb-3 text-center">Supervisor Files:</h4>
+    <% if @user.admin? %>
+      <h4 class="mb-3 text-center">Supervisor Files:</h4>
 
-    <% ((StaffCertification::NUMBER_OF_STAFF_FILES + 1)..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
-      <% if @staff_certification.send("pdf_file_#{i}").attached? %>
-        <div class="mb-5">
-          <h5><%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
-          <div class="ratio ratio-16x9">
-            <iframe src="<%= url_for(@staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+      <% ((StaffCertification::NUMBER_OF_STAFF_FILES + 1)..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
+        <% if @staff_certification.send("pdf_file_#{i}").attached? %>
+          <div class="mb-5">
+            <h5><%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
+            <div class="ratio ratio-16x9">
+              <iframe src="<%= url_for(@staff_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+            </div>
+            <%= button_to 'Delete', destroy_pdf_staff_certification_path(id: @staff_certification.id, file_number: i), class: 'btn btn-danger mt-2', method: :delete, data: { confirm: 'Are you sure you want to delete this certification?' } if @user.eql?(@staff_certification.user) %>
           </div>
-          <%= button_to 'Delete', destroy_pdf_staff_certification_path(id: @staff_certification.id, file_number: i), class: 'btn btn-danger mt-2', method: :delete, data: { confirm: 'Are you sure you want to delete this certification?' } if @user.eql?(@staff_certification.user) %>
-        </div>
-      <% else %>
-        <div class="mb-5">
-          <h5>
-            <%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
-          </h5>
-        </div>
+        <% else %>
+          <div class="mb-5">
+            <h5>
+              <%= StaffCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
+            </h5>
+          </div>
+        <% end %>
       <% end %>
     <% end %>
   </div>

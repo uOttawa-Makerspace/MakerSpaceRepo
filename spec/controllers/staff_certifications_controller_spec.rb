@@ -1,47 +1,6 @@
 require "rails_helper"
 
 RSpec.describe StaffCertificationsController, type: :controller do
-  describe "create" do
-    context "staff" do
-      before(:each) do
-        @user = create(:user, :staff)
-        session[:user_id] = @user.id
-        session[:expires_at] = Time.zone.now + 10_000
-      end
-
-      it "should create the staff certification" do
-        post :create
-
-        expect(response).to redirect_to user_path(@user.username)
-        expect(flash[:notice]).to eql(
-          "Successfully created staff certification"
-        )
-      end
-
-      it "should not create more than one staff certification" do
-        create(:staff_certification, user_id: @user.id)
-
-        post :create
-        expect(response).to redirect_to user_path(@user.username)
-        expect(flash[:alert]).to eql(
-          "You have already created a staff certification"
-        )
-      end
-    end
-
-    context "regular user" do
-      it "should not allow regular users" do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
-        session[:expires_at] = Time.zone.now + 10_000
-
-        post :create
-        expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eql("You cannot access this area.")
-      end
-    end
-  end
-
   describe "show" do
     context "staff" do
       before(:each) do

@@ -10,24 +10,6 @@ class StaffCertificationsController < StaffAreaController
     end
   end
 
-  def create
-    unless @user.staff_certification.nil?
-      redirect_to user_path(@user.username),
-                  alert: "You have already created a staff certification"
-      return
-    end
-
-    @staff_certification = @user.build_staff_certification
-    if @staff_certification.save
-      redirect_to user_path(@user.username),
-                  notice: "Successfully created staff certification"
-    else
-      redirect_to user_path(@user.username),
-                  alert:
-                    "Something went wrong while trying to create the staff certification"
-    end
-  end
-
   def update
     (1..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i|
       file_param = "pdf_file_#{i}"
