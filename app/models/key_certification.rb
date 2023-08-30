@@ -1,4 +1,4 @@
-class StaffCertification < ApplicationRecord
+class KeyCertification < ApplicationRecord
   belongs_to :user, optional: true
   has_one_attached :pdf_file_1, dependent: :destroy
   has_one_attached :pdf_file_2, dependent: :destroy
@@ -43,7 +43,7 @@ class StaffCertification < ApplicationRecord
   validate :validate_files
 
   def generate_filename(file_number)
-    "#{user.name.parameterize}-#{StaffCertification::FILE_NAMES[file_number - 1]}.pdf"
+    "#{user.name.parameterize}-#{KeyCertification::FILE_NAMES[file_number - 1]}.pdf"
   end
 
   def attach_pdf_file(file_number, uploaded_file)
@@ -52,7 +52,7 @@ class StaffCertification < ApplicationRecord
     send(file_name).blob.update(filename: generate_filename(file_number))
   end
 
-  def get_staff_certs_attached
+  def get_key_certs_attached
     count = 0
     (1..NUMBER_OF_STAFF_FILES).each do |i|
       file_param = "pdf_file_#{i}"

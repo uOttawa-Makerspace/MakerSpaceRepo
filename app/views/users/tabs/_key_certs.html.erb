@@ -1,0 +1,53 @@
+<div>
+  <% if @key_cert.nil? %>
+    <%= @user.eql?(@repo_user) ? 'You have' : 'This user has' %> no key certifications
+  <% else %>
+    <div>
+      <% if @user.eql?(@repo_user) %>
+        <%= form_with url: key_certification_path(@key_cert.id), method: :patch do |f| %>
+          <div>
+            <div class="mb-4">
+              <h5 class="mb-3">Key Certifications: (<%= @key_cert.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %>)</h5>
+
+              <% (1..KeyCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
+                <div class="mb-3">
+                  <%= f.label "pdf_file_#{i}", "#{KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize} - #{@key_cert.send("pdf_file_#{i}").attached? ? 'Attached' : 'Not Attached'}", class: 'form-label mb-1' %>
+                  <br><a href="<%= KeyCertification::FILE_URLS[i - 1] %>"><%= KeyCertification::FILE_URLS[i - 1] %></a>
+                  <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2' %>
+                </div>
+              <% end %>
+            </div>
+
+            <% if @repo_user.admin? %>
+              <div class="mb-4">
+                <h5>Supervisor Certifications: (<%= @key_cert.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %>)</h5>
+
+                <% ((KeyCertification::NUMBER_OF_STAFF_FILES + 1)..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
+                  <div class="mb-3">
+                    <%= f.label "pdf_file_#{i}", "#{KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize} - #{@key_cert.send("pdf_file_#{i}").attached? ? 'Attached' : 'Not Attached'}", class: 'form-label mb-1' %>
+                    <br><a href="<%= KeyCertification::FILE_URLS[i - 1] %>"><%= KeyCertification::FILE_URLS[i - 1] %></a>
+                    <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2' %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <%= f.submit 'Save', class: 'btn btn-success' %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="mb-4">
+          <h5 class="mb-3">Key Certifications: (<%= @key_cert.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %>)</h5>
+        </div>
+
+        <% if @repo_user.admin? %>
+          <div>
+            <h5>Supervisor Certifications: (<%= @key_cert.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %>)</h5>
+          </div>
+        <% end %>
+      <% end %>
+
+      <%= link_to 'View Key Certifications', key_certification_path(@key_cert.id), class: 'mt-4 btn btn-primary' %>
+    </div>
+  <% end %>
+</div>

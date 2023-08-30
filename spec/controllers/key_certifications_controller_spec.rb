@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe StaffCertificationsController, type: :controller do
+RSpec.describe KeyCertificationsController, type: :controller do
   describe "show" do
     context "staff" do
       before(:each) do
@@ -11,15 +11,15 @@ RSpec.describe StaffCertificationsController, type: :controller do
         @other_user = create(:user, :staff)
       end
 
-      it "should allow staff to view their own staff certification" do
-        sc = create(:staff_certification, user_id: @user.id)
+      it "should allow staff to view their own key certification" do
+        sc = create(:key_certification, user_id: @user.id)
 
         get :show, params: { id: sc.id }
         expect(response).to have_http_status(:success)
       end
 
-      it "should not allow staff to view other staff certifications" do
-        sc = create(:staff_certification, user_id: @other_user.id)
+      it "should not allow staff to view other key certifications" do
+        sc = create(:key_certification, user_id: @other_user.id)
 
         get :show, params: { id: sc.id }
         expect(response).to redirect_to users_path(@user.username)
@@ -34,7 +34,7 @@ RSpec.describe StaffCertificationsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
 
         other_user = create(:user, :staff)
-        sc = create(:staff_certification, user_id: other_user.id)
+        sc = create(:key_certification, user_id: other_user.id)
 
         get :show, params: { id: sc.id }
         expect(response).to have_http_status(:success)
@@ -44,12 +44,12 @@ RSpec.describe StaffCertificationsController, type: :controller do
 
   describe "update" do
     context "staff" do
-      it "should update the staff certification" do
+      it "should update the key certification" do
         user = create(:user, :staff)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
 
-        sc = create(:staff_certification, user_id: user.id)
+        sc = create(:key_certification, user_id: user.id)
         pdf_file =
           fixture_file_upload(
             Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
@@ -57,10 +57,8 @@ RSpec.describe StaffCertificationsController, type: :controller do
           )
         patch :update, params: { id: sc.id, pdf_file_1: pdf_file }
 
-        expect(flash[:notice]).to eql(
-          "Successfully updated staff certifications"
-        )
-        expect(StaffCertification.last.get_staff_certs_attached).to eql(1)
+        expect(flash[:notice]).to eql("Successfully updated key certifications")
+        expect(KeyCertification.last.get_key_certs_attached).to eql(1)
       end
     end
   end
@@ -72,9 +70,9 @@ RSpec.describe StaffCertificationsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
 
-        sc = create(:staff_certification, user_id: user.id)
+        sc = create(:key_certification, user_id: user.id)
 
-        (1..StaffCertification::TOTAL_NUMBER_OF_FILES).each do |i|
+        (1..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i|
           pdf_file =
             fixture_file_upload(
               Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
@@ -86,8 +84,8 @@ RSpec.describe StaffCertificationsController, type: :controller do
         delete :destroy_pdf, params: { id: sc.id, file_number: 1 }
 
         expect(flash[:notice]).to eql("Successfully deleted certification")
-        expect(StaffCertification.last.get_staff_certs_attached).to eql(
-          StaffCertification::NUMBER_OF_STAFF_FILES - 1
+        expect(KeyCertification.last.get_key_certs_attached).to eql(
+          KeyCertification::NUMBER_OF_STAFF_FILES - 1
         )
       end
 
@@ -96,7 +94,7 @@ RSpec.describe StaffCertificationsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
 
-        sc = create(:staff_certification, user_id: user.id)
+        sc = create(:key_certification, user_id: user.id)
         delete :destroy_pdf, params: { id: sc.id, file_number: 1 }
 
         expect(flash[:alert]).to eql("Couldn't find attached file")

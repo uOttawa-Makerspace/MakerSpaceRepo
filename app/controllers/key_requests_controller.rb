@@ -23,7 +23,7 @@ class KeyRequestsController < StaffAreaController
                   alert: "You don't have the permissions to view this"
     end
 
-    @staff_certification = @key_request.user.staff_certification
+    @key_certification = @key_request.user.key_certification
   end
 
   def new
