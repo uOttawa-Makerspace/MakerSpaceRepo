@@ -21,7 +21,7 @@ en:
     buy_cc_money: "Buy CC"
     user:
       profile: "Profile"
-      liked: "Liked"
+      liked: "Your Likes"
       settings: "Settings"
       admin_area: "Admin Area"
       staff_area: "Staff Area"
@@ -91,7 +91,9 @@ en:
         no_specify: "I prefer not to specify"
         i_am: "I am..."
         undergrad: "an undergraduate student"
+        international_undergrad: "an international undergraduate student"
         grad: "a graduate student"
+        international_grad: "an international graduate student"
         faculty_member: "a faculty member"
         community_member: "a community member"
         faculty: "Faculty"

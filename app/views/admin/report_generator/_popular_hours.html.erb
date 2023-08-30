@@ -1,33 +1,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.0"></script>
-<% provide(:title, 'Reports') %>
 <section>
   <h1 class="text-center py-4 fw-bold">Popular Hours</h1>
+  <div class="mb-5 text-center fw-bold d-print-none">Displaying all-time popular hours</div>
 
-  <%= form_tag admin_report_generator_popular_hours_per_period_path(space_id: @space.id), method: :get do %>
-    <div style=" display: flex; justify-content: center;">
-      <div class="row align-items-center">
-        <div class="mb-3 col-md-4" style="width: 300px">
-          <%= label_tag(:start_date, 'From', class: 'form-label') %>
-          <%= date_field_tag(:start_date, 1.month.ago.beginning_of_month.strftime('%Y-%m-%d'), class: %w[form-control range-type-date-range-fields]) %>
-        </div>
-
-        <div class="mb-3 col-md-4" style="width: 300px">
-          <%= label_tag(:end_date, 'To', class: 'form-label') %>
-          <%= date_field_tag(:end_date, DateTime.now.strftime('%Y-%m-%d'), class: %w[form-control range-type-date-range-fields]) %>
-        </div>
-
-        <div class="mb-3 col-md-4">
-          <label for="end_date">Start</label>
-          <br>
-          <%= button_tag('Generate', { class: 'btn btn-primary' }) %>
-        </div>
-
-      </div>
-    </div>
-
-  <% end %>
-
-  <ul class="nav nav-tabs">
+  <ul class="nav nav-tabs d-print-none">
     <% @spaces.each do |space| %>
       <li class="nav-item">
         <a class="nav-link  <%= @space.name == space.name ? 'active' : '' %>" data-bs-toggle="tab" href="#<%= space.name.gsub(' ', '-') %>"><%= space.name %></a>
@@ -41,7 +17,9 @@
         <br>
         <% popular_hours = PopularHour.from_space(space.id) %>
 
-        <span style="text-align: center!important; display: block;">The following stats are being updated automatically over time. It takes the average per hour for every day of the week and every spaces.</span>
+        <span style="text-align: center!important; display: block;" class="d-print-none">The following stats are being updated automatically over time. It takes the average per hour for every day of the week and every spaces.</span>
+        <div class="mb-3 text-center fw-bold d-none d-print-block">Displaying all-time popular hours in <%= space.name %></div>
+
         <div class="row">
           <% (0..6).each do |weekday| %>
             <% popular_hour = popular_hours.where(day: weekday) %>
@@ -49,7 +27,7 @@
 
             <% if popular_hour.present? %>
 
-              <div class="col-4">
+              <div class="col-4 popular-hour-graph">
                 <h3 class="text-center"><%= @weekdays[popular_hour.first.day] if popular_hour.present? %></h3>
                 <canvas id="<%= space.name.gsub(' ', '-') %>-<%= popular_hour.first.day if popular_hour.present? %>" width="450" height="300"></canvas>
               </div>

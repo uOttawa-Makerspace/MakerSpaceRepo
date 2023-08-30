@@ -1,0 +1,46 @@
+<section>
+    <h1 class="text-center py-4 fw-bold">
+         Certifications <%= link_to fa_icon('download'),
+                                    admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'certifications'),
+                                    class: 'border-0 bg-transparent text-primary d-print-none' %>
+    </h1>
+
+    <% if @certs.empty? %>
+        <div class="text-center">No certifications to display</div>
+    <% else %>
+        <div class="mb-5 text-center">
+          <% if @date_specified %>
+            <p class="m-0 mb-1 fw-bold"><%= params[:start_date][0..9] %> to <%= params[:end_date][0..9] %></p>
+          <% else %>
+            <p class="m-0 mb-1 fw-bold">2015-06-01 to present</p>
+          <% end %>
+          <p class="m-0 mb-2">Displaying <%= @certs.count %> <%= 'certification'.pluralize(@certs.count) %></p>
+        </div>
+        
+        <%= render partial: 'line_chart', locals: { data: @certs, model: 'Certifications' } %>
+
+        <div class="mb-5">
+            <h4 class="text-center">Certifications by Badges</h4>
+            <%= bar_chart @badge_count, height: "#{@badge_count.length * 40}px" %>
+        </div>
+        <div class="mb-5">
+            <h4 class="text-center">Certifications by Trainings</h4>
+            <%= bar_chart @training_count, height: "#{@training_count.length * 40}px" %>
+        </div>
+
+        <div class="d-flex flex-row flex-wrap mb-5">
+            <div class="w-50">
+                <h4 class="text-center">Certifications by Courses</h4>
+                <%= pie_chart @course_count %>
+            </div>
+            <div class="w-50">
+                <h4 class="text-center">Certifications by Skills</h4>
+                <%= pie_chart @skill_count %>
+            </div>
+            <div class="w-100">
+                <h4 class="text-center">Certifications by Spaces</h4>
+                <%= pie_chart @space_count %>
+            </div>
+        </div>
+    <% end %>
+</section>

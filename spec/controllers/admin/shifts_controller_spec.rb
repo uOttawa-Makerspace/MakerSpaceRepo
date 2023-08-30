@@ -72,24 +72,32 @@ RSpec.describe Admin::ShiftsController, type: :controller do
         expect(response.body).to eq(
           [
             {
-              title: "#{sa1.user.name} is unavailable",
+              title:
+                "#{sa1.user.name} is unavailable (#{sa1.recurring? ? "Recurring" : "One-Time"})",
               id: sa1.id,
               daysOfWeek: [sa1.day],
               startTime: sa1.start_time.strftime("%H:%M"),
               endTime: sa1.end_time.strftime("%H:%M"),
+              startRecur: time_period.start_date.beginning_of_day,
+              endRecur: time_period.end_date.end_of_day,
               color:
                 "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+              recurring: sa1.recurring?,
               userId: sa1.user.id,
               className: sa1.user.name.strip.downcase.gsub(" ", "-")
             },
             {
-              title: "#{sa2.user.name} is unavailable",
+              title:
+                "#{sa2.user.name} is unavailable (#{sa2.recurring? ? "Recurring" : "One-Time"})",
               id: sa2.id,
               daysOfWeek: [sa2.day],
               startTime: sa2.start_time.strftime("%H:%M"),
               endTime: sa2.end_time.strftime("%H:%M"),
+              startRecur: time_period.start_date.beginning_of_day,
+              endRecur: time_period.end_date.end_of_day,
               color:
                 "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
+              recurring: sa2.recurring?,
               userId: sa2.user.id,
               className: sa2.user.name.strip.downcase.gsub(" ", "-")
             }
@@ -106,24 +114,32 @@ RSpec.describe Admin::ShiftsController, type: :controller do
         expect(response.body).to eq(
           [
             {
-              title: "#{sa1.user.name} is unavailable",
+              title:
+                "#{sa1.user.name} is unavailable (#{sa1.recurring? ? "Recurring" : "One-Time"})",
               id: sa1.id,
               daysOfWeek: [sa1.day],
               startTime: sa1.start_time.strftime("%H:%M"),
               endTime: sa1.end_time.strftime("%H:%M"),
+              startRecur: time_period.start_date.beginning_of_day,
+              endRecur: time_period.end_date.end_of_day,
               color:
                 "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
+              recurring: sa1.recurring?,
               userId: sa1.user.id,
               className: sa1.user.name.strip.downcase.gsub(" ", "-")
             },
             {
-              title: "#{sa2.user.name} is unavailable",
+              title:
+                "#{sa2.user.name} is unavailable (#{sa2.recurring? ? "Recurring" : "One-Time"})",
               id: sa2.id,
               daysOfWeek: [sa2.day],
               startTime: sa2.start_time.strftime("%H:%M"),
               endTime: sa2.end_time.strftime("%H:%M"),
+              startRecur: time_period.start_date.beginning_of_day,
+              endRecur: time_period.end_date.end_of_day,
               color:
                 "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
+              recurring: sa2.recurring?,
               userId: sa2.user.id,
               className: sa2.user.name.strip.downcase.gsub(" ", "-")
             }

@@ -218,9 +218,11 @@ Rails.application.routes.draw do
 
     namespace :report_generator do
       get "/", as: "index", action: "index"
-      post "/generate", as: "generate", action: "generate", format: :xlsx
-      get :popular_hours
-      get :popular_hours_per_period
+      post "/generate", as: "generate", action: "generate"
+      get "/generate_spreadsheet",
+          as: "generate_spreadsheet",
+          action: "generate_spreadsheet",
+          format: :xlsx
     end
 
     resources :users, only: %i[index edit update show] do
@@ -296,8 +298,6 @@ Rails.application.routes.draw do
 
     resources :drop_off_locations
 
-    resources :course_names
-
     resources :contact_infos
 
     resources :time_periods, except: [:show]
@@ -323,6 +323,9 @@ Rails.application.routes.draw do
         post "remove_equipment"
         post "submit_pi"
         post "remove_pi"
+        post "add_course"
+        delete "remove_course"
+        patch "rename_course"
         patch "pin_unpin_repository"
       end
     end
@@ -473,11 +476,7 @@ Rails.application.routes.draw do
   end
 
   resources :questions do
-    collection do
-      delete :delete_individually
-      delete :remove_answer
-      post :add_answer
-    end
+    collection { delete :delete_individually }
   end
 
   resources :staff_availabilities, except: :show do
@@ -541,7 +540,6 @@ Rails.application.routes.draw do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
-  post "vote/:comment_id", as: "vote", action: "vote", to: "users#vote"
 
   # USER RESOURCES
   resources :users, path: "/", param: :username, except: %i[edit destroy] do
@@ -583,8 +581,9 @@ Rails.application.routes.draw do
             id: %r{[^/]+}
           }
       patch :link_to_pp
-      patch :add_owner
-      patch :remove_owner
+      patch :add_member
+      patch :remove_member
+      patch :transfer_owner
     end
     member do
       get "/password_entry", as: "password_entry", action: "password_entry"
@@ -601,6 +600,7 @@ Rails.application.routes.draw do
   namespace :comments do
     post :create, path: "/:id"
     delete :destroy, path: "/:id/destroy"
+    post :vote, path: "/:id/vote"
   end
 
   namespace :quick_access_links do

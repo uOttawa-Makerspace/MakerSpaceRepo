@@ -28,3 +28,12 @@ div.title {
     color: #5f9ea0;
   }
 }
+
+.staff_printers {
+  & ~ section .form-select {
+    .ts-dropdown-content div[data-value="clear"],
+    .ts-control div[data-value="clear"] {
+      color: #dc3545 !important;
+    }
+  }
+}

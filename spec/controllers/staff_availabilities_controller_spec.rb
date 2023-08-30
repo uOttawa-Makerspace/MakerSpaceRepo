@@ -53,18 +53,26 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
         expect(response.body).to eq(
           [
             {
-              title: "Unavailable",
+              title:
+                "#{sa1.user.name} is unavailable (#{sa1.recurring? ? "Recurring" : "One-Time"})",
               id: sa1.id,
               daysOfWeek: [sa1.day],
               startTime: sa1.start_time.strftime("%H:%M"),
-              endTime: sa1.end_time.strftime("%H:%M")
+              endTime: sa1.end_time.strftime("%H:%M"),
+              startRecur: @time_period.start_date.beginning_of_day,
+              endRecur: @time_period.end_date.end_of_day,
+              recurring: sa1.recurring?
             },
             {
-              title: "Unavailable",
+              title:
+                "#{sa2.user.name} is unavailable (#{sa2.recurring? ? "Recurring" : "One-Time"})",
               id: sa2.id,
               daysOfWeek: [sa2.day],
               startTime: sa2.start_time.strftime("%H:%M"),
-              endTime: sa2.end_time.strftime("%H:%M")
+              endTime: sa2.end_time.strftime("%H:%M"),
+              startRecur: @time_period.start_date.beginning_of_day,
+              endRecur: @time_period.end_date.end_of_day,
+              recurring: sa2.recurring?
             }
           ].to_json
         )
@@ -122,17 +130,21 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
             user_id: @staff.id,
             time_period: @time_period
           )
-        time = Time.now.utc
+        time = Time.now
         patch :update,
               params: {
                 id: sa1.id,
                 staff_availability: {
-                  start_time: time
-                }
+                  start_time: time.strftime("%H:%M"),
+                  end_time: (time + 1.hour).strftime("%H:%M")
+                },
+                start_date: Date.today,
+                end_date: Date.today + 1.hour,
+                recurring: true
               }
         expect(response).to redirect_to staff_availabilities_path
         expect(
-          StaffAvailability.find(sa1.id).start_time.utc.strftime("%H:%M")
+          StaffAvailability.find(sa1.id).start_time.strftime("%H:%M")
         ).to eq(time.strftime("%H:%M"))
       end
     end

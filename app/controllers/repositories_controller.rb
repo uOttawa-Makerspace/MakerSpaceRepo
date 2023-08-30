@@ -36,8 +36,8 @@ class RepositoriesController < SessionsController
         .pluck(:comment_id, :downvote)
     @project_proposals =
       ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
-    @owners = @repository.users
-    @all_users = User.where.not(id: @owners.pluck(:id)).pluck(:name, :id)
+    @members = @repository.users
+    @all_users = User.where.not(id: @members.pluck(:id)).pluck(:name, :id)
     @liked = @repository.likes.find_by(user_id: @user.id).nil? ? false : true
   end
 
@@ -261,42 +261,74 @@ class RepositoriesController < SessionsController
     redirect_to repository_path(repository.user_username, repository.slug)
   end
 
-  def add_owner
+  def add_member
     repository = Repository.find params[:repo_owner][:repository_id]
-    owner_id = params[:repo_owner][:owner_id]
-    owner = User.find_by(id: owner_id)
+    member_id = params[:repo_owner][:owner_id]
+    member = User.find_by(id: member_id)
 
-    if repository.users.include? owner
-      flash[:alert] = "This user is already in your repository"
+    if member.nil?
+      flash[:alert] = "Couldn't find user, please try again."
+      redirect_to repository_path(repository.user_username, repository.slug)
+      return
+    elsif repository.users.include? member
+      flash[:alert] = "This user is already a member of your repository."
       redirect_to repository_path(repository.user_username, repository.slug)
       return
     end
 
-    repository.users << owner if !owner.nil?
+    repository.users << member
 
     if repository.save
-      flash[:notice] = "This owner was added to your repository"
+      flash[:notice] = "This user was added to your repository."
     else
       flash[:alert] = "Something went wrong."
     end
     redirect_to repository_path(repository.user_username, repository.slug)
   end
 
-  def remove_owner
+  def remove_member
     repository = Repository.find params[:repo_owner][:repository_id]
-    owner_id = params[:repo_owner][:owner_id]
-    owner = User.find(owner_id)
+    member_id = params[:repo_owner][:owner_id]
+    member = User.find_by(id: member_id)
 
-    if repository.users.length == 1
+    if member.nil?
+      flash[:alert] = "Couldn't find user, please try again."
+    elsif repository.users.length == 1
       flash[
         :alert
-      ] = "You cannot remove the last person in this repository. Please go to profile if you want to delete this repository."
-    elsif owner.id == repository.user_id
-      flash[:alert] = "You cannot remove the original owner of this repository."
-    elsif repository.users.delete(owner)
-      flash[:notice] = "This owner was removed from your repository"
+      ] = "You cannot remove the last person in this repository. Please go to your profile page if you want to delete this repository."
+    elsif member.id == repository.user_id
+      flash[:alert] = "You cannot remove the current owner of this repository."
+    elsif repository.users.delete(member)
+      flash[:notice] = "This user was removed from your repository."
     else
       flash[:alert] = "Something went wrong."
+    end
+    redirect_to repository_path(repository.user_username, repository.slug)
+  end
+
+  def transfer_owner
+    repository = Repository.find(params[:repo_owner][:repository_id])
+    member_id = params[:repo_owner][:owner_id]
+    member = User.find_by(id: member_id)
+
+    if member.nil?
+      flash[:alert] = "Couldn't find user, please try again."
+    elsif current_user.username != repository.user_username &&
+          !current_user.admin?
+      flash[
+        :alert
+      ] = "You don't have the right permissions to perform this action"
+    elsif !repository.users.include? member
+      flash[:alert] = "This user is not a member of your repository."
+    elsif member.id == repository.user_id
+      flash[:alert] = "This user is already the owner of the repository."
+    elsif repository.update(user_id: member_id, user_username: member.username)
+      flash[:notice] = "Repository ownership was successfully transferred."
+    else
+      flash[
+        :alert
+      ] = "Something went wrong when transferring ownership. Please try again later."
     end
     redirect_to repository_path(repository.user_username, repository.slug)
   end

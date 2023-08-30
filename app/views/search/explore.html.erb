@@ -36,6 +36,7 @@
             <li><%= link_to t('home.categories.vr'), explore_path(category: 'virtual-reality'), class: 'dropdown-item' %></li>
             <li><%= link_to t('home.categories.team_projects'), explore_path(category: 'uottawa-team-projects'), class: 'dropdown-item' %></li>
             <li><%= link_to t('home.categories.other_projects'), explore_path(category: 'other-projects'), class: 'dropdown-item' %></li>
+            <li><%= link_to t('navbar.user.liked'), likes_user_path(@user.username), class: 'dropdown-item' %></li>
           </ul>
           </div>
       </section>

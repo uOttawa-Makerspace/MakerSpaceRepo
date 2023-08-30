@@ -124,7 +124,15 @@ class User < ApplicationRecord
   validates :identity,
             presence: true,
             inclusion: {
-              in: %w[grad undergrad faculty_member community_member unknown]
+              in: %w[
+                grad
+                undergrad
+                international_grad
+                international_undergrad
+                faculty_member
+                community_member
+                unknown
+              ]
             }
 
   default_scope { where(deleted: false) }
@@ -159,7 +167,17 @@ class User < ApplicationRecord
           )
         }
   scope :staff, -> { where(role: %w[admin staff]) }
-  scope :students, -> { where(identity: %w[undergrad grad]) }
+  scope :students,
+        -> {
+          where(
+            identity: %w[
+              undergrad
+              grad
+              international_undergrad
+              international_grad
+            ]
+          )
+        }
   scope :volunteers,
         -> {
           joins(:programs).where(programs: { program_type: Program::VOLUNTEER })
@@ -216,7 +234,8 @@ class User < ApplicationRecord
   end
 
   def student?
-    identity == "grad" || identity == "undergrad"
+    identity == "grad" || identity == "undergrad" ||
+      identity == "international_grad" || identity == "international_undergrad"
   end
 
   def admin?
@@ -245,7 +264,8 @@ class User < ApplicationRecord
 
   def internal?
     identity == "faculty_member" || identity == "grad" ||
-      identity == "undergrad"
+      identity == "undergrad" || identity == "international_grad" ||
+      identity == "international_undergrad"
   end
 
   def self.to_csv(attributes)
