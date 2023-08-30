@@ -29,7 +29,7 @@ class Admin::KeysController < AdminAreaController
       redirect_to admin_keys_path
     else
       flash[:alert] = "Something went wrong while creating the key."
-      render :new
+      redirect_to new_admin_key_path
     end
   end
 
@@ -66,7 +66,7 @@ class Admin::KeysController < AdminAreaController
       redirect_to admin_keys_path
     else
       flash[:alert] = "Something went wrong while updating the key."
-      render :edit
+      redirect_to edit_admin_key_path
     end
   end
 

@@ -34,8 +34,20 @@ class Key < ApplicationRecord
               message: "A key number is required"
             },
             uniqueness: {
+              scope: :space_id,
               message: "A key already has that number"
-            }
+            },
+            unless: -> { space.nil? }
+
+  validates :number,
+            presence: {
+              message: "A key number is required"
+            },
+            uniqueness: {
+              scope: :key_type,
+              message: "A key already has that number"
+            },
+            unless: :key_type_regular?
 
   validates :custom_keycode,
             presence: {
