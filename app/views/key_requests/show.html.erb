@@ -45,7 +45,7 @@
   <% if @user.admin? %>
     <div class="d-flex flex-row align-items-center justify-content-center gap-2">
       <%= button_to 'Approve', approve_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-success', method: :patch if @key_request.status_waiting_for_approval? %>
-      <%= button_to 'Deny', deny_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-danger', method: :patch if @key_request.status_waiting_for_approval? %>
+      <%= button_to 'Deny', deny_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-danger', method: :patch, data: { confirm: 'Are you sure you want to deny this key request?' } if @key_request.status_waiting_for_approval? %>
     </div>
   <% end %>
 </section>

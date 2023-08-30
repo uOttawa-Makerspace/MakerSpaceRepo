@@ -39,7 +39,7 @@
           <td>
             <%= link_to 'Show', key_request_path(key_request.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
             <%= button_to 'Approve', approve_key_request_admin_keys_path(id: key_request.id), class: 'w-100 py-1 mb-1 btn btn-success', method: :patch if key_request.status_waiting_for_approval? %>
-            <%= button_to 'Deny', deny_key_request_admin_keys_path(id: key_request.id), class: 'w-100 py-1 btn btn-danger', method: :patch if key_request.status_waiting_for_approval? %>
+            <%= button_to 'Deny', deny_key_request_admin_keys_path(id: key_request.id), class: 'w-100 py-1 btn btn-danger', method: :patch, data: { confirm: 'Are you sure you want to deny this key request?' } if key_request.status_waiting_for_approval? %>
           </td>
         </tr>
       <% end %>

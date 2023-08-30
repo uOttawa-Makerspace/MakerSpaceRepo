@@ -2,6 +2,11 @@
 <section>
   <h2 class="m-0 fw-bold py-4 text-center">Key Transactions</h2>
 
+  <div class="d-flex flex-row gap-2 justify-content-center mb-4">
+    <%= link_to 'Key Management', admin_keys_path, class: 'btn btn-primary' %>
+    <%= link_to 'Key Requests', requests_admin_keys_path, class: 'btn btn-primary' %>
+  </div>
+
   <div class="accordion" id="keysAccordion">
     <div class="accordion-item">
       <h2 class="accordion-header" id="returned">
