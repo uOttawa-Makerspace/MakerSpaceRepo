@@ -482,13 +482,10 @@ class Admin::ShiftsController < AdminAreaController
       @time_period = TimePeriod.find(params[:time_period_id])
     else
       date = Date.today
-      if TimePeriod.where(
-           "start_date < ? AND end_date > ?",
-           date,
-           date
-         ).present?
-        @time_period =
-          TimePeriod.where("start_date < ? AND end_date > ?", date, date).first
+      time_periods =
+        TimePeriod.where("start_date <= ? AND end_date >= ?", date, date)
+      if time_periods.present?
+        @time_period = time_periods.first
       else
         @missing_time_period = true
       end
