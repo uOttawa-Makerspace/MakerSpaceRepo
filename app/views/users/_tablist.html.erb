@@ -41,6 +41,11 @@
               Key Certifications
             </a>
           </li>
+          <% if @user.eql?(@repo_user) %>
+            <li class="nav-item">
+              <%= link_to 'Request Keys', key_requests_path, class: 'nav-link text-secondary' %>
+            </li>
+          <% end %>
         <% end %>
       </ul>
     </div>
