@@ -169,11 +169,6 @@
               <%= render partial: 'users/tabs/quick_access', locals: { user: @user, repo_user: @repo_user } %>
             </div>
           <% end %>
-          <% if @repo_user.staff? %>
-            <div class="tab-pane fade" id="staff-manager" role="tabpanel" aria-labelledby="profile-tab">
-              <%= render partial: 'users/tabs/staff', locals: { space_list: @space_list, repo_user: @repo_user } %>
-            </div>
-          <% end %>
           <% if @user.admin? %>
             <div class="tab-pane fade" id="user-delete" role="tabpanel" aria-labelledby="profile-tab">
               <%= render partial: 'users/tabs/delete' %>

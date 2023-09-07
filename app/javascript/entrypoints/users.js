@@ -30,4 +30,18 @@ document.addEventListener("turbo:load", function () {
       searchOnKeyUp: true,
     });
   }
+
+  const staffRoleButtons = document.querySelectorAll(".role-button");
+  const staffSpaceChanger = document.getElementById("staff-space-changer");
+  if (staffRoleButtons) {
+    staffRoleButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        if (e.target.value === "regular_user") {
+          staffSpaceChanger.style.display = "none";
+        } else {
+          staffSpaceChanger.style.display = "block";
+        }
+      });
+    });
+  }
 });

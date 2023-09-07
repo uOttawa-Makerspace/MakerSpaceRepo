@@ -208,6 +208,7 @@ class Admin::UsersController < AdminAreaController
   end
 
   def set_role
+    # Update user roles
     @user = User.find(params[:id])
     @user.role = params[:role]
     @user.save
@@ -221,6 +222,20 @@ class Admin::UsersController < AdminAreaController
         .where(programs: { program_type: Program::VOLUNTEER })
         .order("lower(name) ASC")
     @roles = %w[admin staff regular_user]
+
+    # Update user staff spaces
+    if @user.present? && @user.staff?
+      space_list = params[:space].present? ? params[:space] : []
+
+      space_list.each do |space|
+        StaffSpace.find_or_create_by(space_id: space, user: @user)
+      end
+
+      @user.staff_spaces.where.not(space_id: space_list).destroy_all
+
+      flash[:notice] = "Successfully changed spaces for the user."
+    end
+
     # response is js
     respond_to do |format|
       format.html { redirect_back(fallback_location: root_path) }
