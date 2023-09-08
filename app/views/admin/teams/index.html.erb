@@ -1,0 +1,28 @@
+<% provide(:title, 'Teams') %>
+<section>
+  <h2 class="m-0 fw-bold py-4 text-center">Team Management</h2>
+
+  <div class="d-flex flex-row gap-2 justify-content-center mb-4">
+    <%= link_to 'Create Team', new_admin_team_path, class: 'btn btn-success' %>
+  </div>
+
+  <div class="row">
+      <% @teams.each do |team| %>
+        <div class="col-sm-6">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title fw-bold"><%= team.name %></h5>
+              <div class="d-flex flex-row align-items-center justify-content-between flex-nowrap">
+                <p class="card-text">Team Captain: <%= link_to team.captain.name, user_path(team.captain.username), target: '_blank', rel: 'noopener' unless team.captain.nil? %></p>
+                <p class="card-text">Members: <%= team.members.count %></p>
+              </div>
+              <div class="d-flex flex-row align-items-center justify-content-center gap-2 flex-nowrap mt-2">
+                <%= link_to 'Show', admin_team_path(team.id), class: 'btn btn-primary' %>
+                <%= link_to 'Edit', edit_admin_team_path(team.id), class: 'btn btn-secondary' %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+  </div>
+</section>

@@ -352,6 +352,21 @@ Rails.application.routes.draw do
     end
 
     resources :key_transactions, only: %i[index edit update]
+
+    resources :teams, only: %i[index show new edit create update] do
+      member do
+        patch :add_member, action: :add_member, as: :add_member
+        patch "promote_member/:member_id",
+              action: :promote_member,
+              as: :promote_member
+        patch "demote_member/:demote_id",
+              action: :demote_member,
+              as: :demote_member
+        delete "remove_member/:member_id",
+               action: :remove_member,
+               as: :remove_member
+      end
+    end
   end
 
   resources :key_requests, only: %i[index new create show] do
