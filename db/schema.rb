@@ -1066,11 +1066,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_09_08_003643) do
   end
 
   create_table "teams", force: :cascade do |t|
-    t.bigint "captain_id"
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["captain_id"], name: "index_teams_on_captain_id"
   end
 
   create_table "time_periods", force: :cascade do |t|
