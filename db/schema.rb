@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
+ActiveRecord::Schema[7.0].define(version: 2023_09_08_003643) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1053,6 +1053,24 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_153234) do
     t.boolean "default_public", default: false
     t.integer "max_automatic_approval_hour"
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
+  end
+
+  create_table "team_memberships", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "team_id"
+    t.integer "role", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["team_id"], name: "index_team_memberships_on_team_id"
+    t.index ["user_id"], name: "index_team_memberships_on_user_id"
+  end
+
+  create_table "teams", force: :cascade do |t|
+    t.bigint "captain_id"
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["captain_id"], name: "index_teams_on_captain_id"
   end
 
   create_table "time_periods", force: :cascade do |t|
