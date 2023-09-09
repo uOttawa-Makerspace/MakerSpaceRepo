@@ -102,7 +102,13 @@ Coming soon.
    bundle exec rake
    ```
 
-13. Start the Rails server:
+13. Install yarn and yarn packages
+   ```bash
+   npm install -g yarn
+   yarn install
+   ```
+
+14. Start the Rails server:
 
    ```bash
    foreman start -f Procfile.dev
