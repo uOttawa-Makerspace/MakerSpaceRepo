@@ -359,7 +359,7 @@ Rails.application.routes.draw do
         patch "promote_member/:member_id",
               action: :promote_member,
               as: :promote_member
-        patch "demote_member/:demote_id",
+        patch "demote_member/:member_id",
               action: :demote_member,
               as: :demote_member
         delete "remove_member/:member_id",

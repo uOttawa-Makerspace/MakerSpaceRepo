@@ -36,7 +36,11 @@
             <td><%= link_to tm.user.name, user_path(tm.user.username), target: '_blank', rel: 'noopener' %></td>
             <td><%= tm.role.humanize.capitalize %></td>
             <td><%= tm.created_at.strftime('%Y-%m-%d') %></td>
-            <td></td>
+            <td>
+              <%= button_to 'Promote', promote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-success', method: :patch, data: { confirm: 'Are you sure you want to promote this member?' } if tm.role_regular_member? %>
+              <%= button_to 'Demote', demote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-warning', method: :patch, data: { confirm: 'Are you sure you want to demote this member?' } if tm.role_lead? %>
+              <%= button_to 'Remove', remove_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-danger', method: :delete, data: { confirm: 'Are you sure you want to remove this member from the team?' } unless tm.role_captain? %>
+            </td>
           </tr>
         <% end %>
       </tbody>

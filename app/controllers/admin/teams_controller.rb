@@ -9,6 +9,8 @@ class Admin::TeamsController < AdminAreaController
                   promote_member
                   demote_member
                 ]
+  before_action :set_team_member,
+                only: %i[add_member remove_member promote_member demote_member]
 
   def index
     @teams = Team.order(name: :asc)
@@ -55,35 +57,69 @@ class Admin::TeamsController < AdminAreaController
   end
 
   def add_member
-    member = User.find_by(id: params[:member_id])
+    tm =
+      TeamMembership.new(
+        user_id: @member.id,
+        team_id: @team.id,
+        role: params[:role]
+      )
 
-    if member.nil?
-      flash[:alert] = "Couldn't find user, please try again later."
+    if tm.save
+      flash[:notice] = "Successfully added user."
     else
-      tm =
-        TeamMembership.new(
-          user_id: member.id,
-          team_id: @team.id,
-          role: params[:role]
-        )
-
-      if tm.save
-        flash[:notice] = "Successfully added user."
-      else
-        flash[:alert] = "Something went wrong while trying to add the user."
-      end
+      flash[:alert] = "Something went wrong while trying to add the user."
     end
 
     redirect_to admin_team_path(@team.id)
   end
 
   def remove_member
+    tm = @team.team_memberships.where(user_id: @member.id).first
+
+    if tm.nil?
+      flash[:alert] = "Couldn't find the user in the team."
+    elsif tm.role_captain?
+      flash[:alert] = "You can't remove the captain."
+    else
+      tm.destroy
+      flash[:notice] = "Successfully removed the member from the team."
+    end
+
+    redirect_to admin_team_path(@team.id)
   end
 
   def promote_member
+    tm = @team.team_memberships.where(user_id: @member.id).first
+
+    if tm.nil?
+      flash[:alert] = "Couldn't find the user in the team."
+    elsif tm.role_regular_member?
+      tm.update(role: :lead)
+      flash[:notice] = "Successfully promoted member."
+    else
+      flash[
+        :alert
+      ] = "Something went wrong while promoting the team member. You can only promote regular team members."
+    end
+
+    redirect_to admin_team_path(@team.id)
   end
 
   def demote_member
+    tm = @team.team_memberships.where(user_id: @member.id).first
+
+    if tm.nil?
+      flash[:alert] = "Couldn't find the user in the team."
+    elsif tm.role_lead?
+      tm.update(role: :regular_member)
+      flash[:notice] = "Successfully demoted member."
+    else
+      flash[
+        :alert
+      ] = "Something went wrong while demoting the team member. You can only demote team leads."
+    end
+
+    redirect_to admin_team_path(@team.id)
   end
 
   private
@@ -96,5 +132,11 @@ class Admin::TeamsController < AdminAreaController
     @team = Team.find_by(id: params[:id])
 
     redirect_to admin_teams_path, alert: "Could not find team" if @team.nil?
+  end
+
+  def set_team_member
+    @member = User.find_by(id: params[:member_id])
+
+    redirect_to admin_teams_path, alert: "Couldn't find member" if @member.nil?
   end
 end

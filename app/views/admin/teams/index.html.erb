@@ -6,12 +6,14 @@
     <%= link_to 'Create Team', new_admin_team_path, class: 'btn btn-success' %>
   </div>
 
-  <div class="row">
+  <div class="row gy-3">
       <% @teams.each do |team| %>
         <div class="col-sm-6">
           <div class="card">
+            <div class="card-header">
+              <h5 class="card-title fw-bold my-1"><%= team.name %></h5>
+            </div>
             <div class="card-body">
-              <h5 class="card-title fw-bold"><%= team.name %></h5>
               <div class="d-flex flex-row align-items-center justify-content-between flex-nowrap">
                 <p class="card-text">Team Captain: <%= link_to team.captain.name, user_path(team.captain.username), target: '_blank', rel: 'noopener' unless team.captain.nil? %></p>
                 <p class="card-text">Members: <%= team.members.count %></p>
