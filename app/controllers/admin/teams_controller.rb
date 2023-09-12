@@ -25,6 +25,23 @@ class Admin::TeamsController < AdminAreaController
     @team = Team.new
   end
 
+  def edit
+    @captain_select = []
+    captain = @team.captain
+    @captain_select << [
+      captain.name + " (" + captain.username + ")",
+      captain.id
+    ]
+
+    team_memberships = @team.team_memberships.except(:captain)
+    team_memberships.each do |tm|
+      @captain_select << [
+        tm.user.name + " (" + tm.user.username + ")",
+        tm.user.id
+      ]
+    end
+  end
+
   def create
     @team = Team.new(team_params)
 
@@ -48,7 +65,15 @@ class Admin::TeamsController < AdminAreaController
   end
 
   def update
+    tm = @team.team_memberships.find_by(user_id: params[:captain])
+    owner_tm = @team.team_memberships.where(role: :captain).first
+
     if @team.update(team_params)
+      unless tm.eql?(owner_tm)
+        owner_tm.update(role: :lead)
+        tm.update(role: :captain)
+      end
+
       redirect_to admin_teams_path, notice: "Successfully updated team"
     else
       redirect_to edit_admin_team_path,

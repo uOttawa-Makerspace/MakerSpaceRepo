@@ -8,6 +8,10 @@
           <%= f.label :name, 'Team Name', class: 'form-label' %>
           <%= f.text_field :name, class: 'form-control', required: true %>
         </div>
+        <div class="mb-3">
+          <%= label_tag :captain, 'Team Captain', class: 'form-label' %>
+          <%= select_tag :captain, options_for_select(@captain_select), class: 'form-control', id: 'edit_captain_select' %>
+        </div>
 
         <div class="text-center">
           <%= f.submit 'Update Team', class: 'btn btn-primary' %>
