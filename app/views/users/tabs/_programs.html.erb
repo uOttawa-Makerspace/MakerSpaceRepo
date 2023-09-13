@@ -10,6 +10,9 @@
               <br>
               <%= check_box_tag :volunteer, '1', @programs.include?(Program::VOLUNTEER), class: 'form-check-input' %>
               <%= label_tag :volunteer, Program::VOLUNTEER, class: 'form-label' %>
+              <br>
+              <%= check_box_tag :teams, '1', @programs.include?(Program::TEAMS), class: 'form-check-input' %>
+              <%= label_tag :teams, Program::TEAMS, class: 'form-label' %>
             </div>
           </div>
           <button type="submit" class="btn btn-success">Change Programs</button>

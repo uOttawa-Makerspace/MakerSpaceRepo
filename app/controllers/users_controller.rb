@@ -327,6 +327,14 @@ class UsersController < SessionsController
           user.programs.find_by(program_type: Program::VOLUNTEER).destroy
         end
       end
+
+      if params[:teams].present?
+        user.programs.find_or_create_by(program_type: Program::TEAMS)
+      else
+        if user.programs.find_by(program_type: Program::TEAMS).present?
+          user.programs.find_by(program_type: Program::TEAMS).destroy
+        end
+      end
       flash[:notice] = "The programs for #{user.name} has been updated!"
       redirect_to user_path(user.username)
     else
