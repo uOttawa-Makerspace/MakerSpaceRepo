@@ -414,7 +414,11 @@ class UsersController < SessionsController
       @space_list = Space.all
       @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
 
-      if @user.eql?(@repo_user) && @user.staff? && @user.key_certification.nil?
+      if @user.key_certification.nil? && @user.eql?(@repo_user) &&
+           (
+             @user.staff? ||
+               @user.programs.pluck(:program_type).include?(Program::TEAMS)
+           )
         key_cert = @user.build_key_certification
         key_cert.save
       end

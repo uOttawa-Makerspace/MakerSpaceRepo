@@ -1,6 +1,5 @@
-class KeyRequestsController < StaffAreaController
-  layout "staff_area"
-
+class KeyRequestsController < ApplicationController
+  before_action :ensure_staff_or_teams_program
   before_action :check_key_request, only: %i[new create]
   before_action :set_key_request, only: %i[show steps]
 
@@ -170,6 +169,15 @@ class KeyRequestsController < StaffAreaController
 
     if @key_request.nil?
       redirect_to staff_dashboard_index_path, alert: "Key was not found."
+    end
+  end
+
+  def ensure_staff_or_teams_program
+    @user = current_user
+    unless @user.staff? || @user.admin? ||
+             @user.programs.pluck(:program_type).include?(Program::TEAMS)
+      redirect_to root_path
+      flash[:alert] = "You cannot access this area."
     end
   end
 end

@@ -155,11 +155,11 @@
             <div class="tab-pane fade" id="keys-manager" role="tabpanel" aria-labelledby="profile-tab">
               <%= render partial: 'users/tabs/keys' %>
             </div>
-            <% if @user.eql?(@repo_user) || @user.admin? %>
-              <div class="tab-pane fade" id="key-certs-manager" role="tabpanel" aria-labelledby="profile-tab">
-                <%= render partial: 'users/tabs/key_certs' %>
-              </div>
-            <% end %>
+          <% end %>
+          <% if (@user.staff? || @user.programs.pluck(:program_type).include?(Program::TEAMS)) && @user.eql?(@repo_user) || @user.admin? %>
+            <div class="tab-pane fade" id="key-certs-manager" role="tabpanel" aria-labelledby="profile-tab">
+              <%= render partial: 'users/tabs/key_certs' %>
+            </div>
           <% end %>
           <% if @user.admin? %>
             <div class="tab-pane fade" id="role-manager" role="tabpanel" aria-labelledby="profile-tab">
