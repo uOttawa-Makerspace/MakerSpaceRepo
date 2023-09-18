@@ -406,6 +406,7 @@ Rails.application.routes.draw do
     post :import_excel
     get :refresh_capacity
     get :refresh_tables
+    patch :add_signed_in_users_to_teams
   end
 
   resources :sub_space_booking, only: %i[index create] do
