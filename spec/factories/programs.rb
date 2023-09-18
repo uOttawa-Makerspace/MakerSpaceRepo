@@ -10,5 +10,9 @@ FactoryBot.define do
     trait :volunteer_program do
       program_type { Program::VOLUNTEER }
     end
+
+    trait :teams_program do
+      program_type { Program::TEAMS }
+    end
   end
 end

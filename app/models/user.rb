@@ -57,6 +57,8 @@ class User < ApplicationRecord
   has_many :key_transactions, dependent: :destroy
   has_one :key_certification, dependent: :destroy
   has_many :keys, class_name: "Key", foreign_key: "user_id"
+  has_many :team_memberships, dependent: :destroy
+  has_many :teams, through: :team_memberships
 
   MAX_AUTH_ATTEMPTS = 5
 

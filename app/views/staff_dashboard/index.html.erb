@@ -34,6 +34,7 @@
       <p id="user-count" class="text-center">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>
       <div class="container text-center mx-auto">
         <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary mx-auto text-center' %>
+        <%= button_to 'Add Signed In Users to Teams Program', staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, class: 'btn btn-primary mx-auto text-center mt-1' if @space.jmts? %>
       </div>
       <table class="staff-users-table text-center mb-5 table table-striped" >
         <thead class="table-primary">

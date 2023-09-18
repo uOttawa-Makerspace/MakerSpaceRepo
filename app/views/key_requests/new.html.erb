@@ -1,3 +1,5 @@
+<section id="setting" style="width:100%">
+<div class="setting-grid">
 <% if @key_request.errors.any? %>
   <div id="error_explanation">
     <h2><%= pluralize(@key_request.errors.count, 'error') %> prohibited this form from being saved:</h2>
@@ -55,4 +57,6 @@
       </div>
     </div>
   <% end %>
+</section>
+</div>
 </section>

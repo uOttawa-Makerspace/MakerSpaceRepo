@@ -73,4 +73,8 @@ class Space < ApplicationRecord
   def ceed?
     name.eql?("CEED")
   end
+
+  def jmts?
+    name.eql?("JMTS")
+  end
 end
