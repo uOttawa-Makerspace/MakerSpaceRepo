@@ -142,6 +142,20 @@ class StaffDashboardController < StaffAreaController
     end
   end
 
+  def add_signed_in_users_to_teams
+    if @space.jmts?
+      @space.signed_in_users.each do |user|
+        user.programs.find_or_create_by(program_type: Program::TEAMS)
+      end
+
+      flash[:notice] = "Successfully added all users to teams program"
+    else
+      flash[:alert] = "You can't perform this operation in this space."
+    end
+
+    redirect_to staff_dashboard_index_path
+  end
+
   def sign_out_all_users
     space = @space
     @certifications_on_space =

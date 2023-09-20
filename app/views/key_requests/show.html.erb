@@ -1,3 +1,5 @@
+<section id="setting" style="width:100%">
+<div class="setting-grid">
 <section class="w-75 mx-auto">
   <h2 class="m-0 fw-bold py-4 text-center">Key Request #<%= @key_request.id %> - <%= @key_request.status.humanize.capitalize %></h2>
 
@@ -48,4 +50,6 @@
       <%= button_to 'Deny', deny_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-danger', method: :patch, data: { confirm: 'Are you sure you want to deny this key request?' } if @key_request.status_waiting_for_approval? %>
     </div>
   <% end %>
+</section>
+</div>
 </section>

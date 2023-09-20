@@ -13,8 +13,9 @@ class Program < ApplicationRecord
   validates :program_type,
             presence: {
               message:
-                "The type of the program is required. Either 'Volunteer Program' or 'Development Program'"
+                "The type of the program is required. Either 'Volunteer Program', 'Development Program', or 'Teams Program'"
             }
   VOLUNTEER = "Volunteer Program"
   DEV_PROGRAM = "Development Program"
+  TEAMS = "Teams Program"
 end

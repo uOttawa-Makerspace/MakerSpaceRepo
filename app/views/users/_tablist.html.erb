@@ -49,6 +49,21 @@
         <% end %>
       </ul>
     </div>
+  <% elsif @user.programs.pluck(:program_type).include?(Program::TEAMS) && @user.eql?(@repo_user) %>
+    <div class="nav-item dropdown">
+      <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown" href="#" role="button"
+         aria-haspopup="true" aria-expanded="false">Staff</a>
+      <ul class="dropdown-menu">
+        <li class="nav-item">
+          <a class="nav-link text-secondary" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
+            Key Certifications
+          </a>
+        </li>
+        <li class="nav-item">
+          <%= link_to 'Request Keys', key_requests_path, class: 'nav-link text-secondary' %>
+        </li>
+      </ul>
+    </div>
   <% end %>
   <!--- Admin Tabs -->
   <% if @user.admin? %>
@@ -71,14 +86,6 @@
             Delete User
           </a>
         </li>
-        <% if @repo_user.staff? %>
-          <li class="nav-item">
-            <a class="nav-link text-danger" id="staff-tab" data-bs-toggle="tab" href="#staff-manager"
-              role="tab" aria-controls="profile" aria-selected="false">
-              Staff Manager
-            </a>
-          </li>
-        <% end %>
       </ul>
     </div>
   <% end %>

@@ -1,0 +1,49 @@
+<section>
+  <h2 class="m-0 fw-bold pt-4 pb-5 text-center">Team #<%= @team.id %> - <%= @team.name %></h2>
+
+  <div class="mb-5">
+    <%= form_for @team, url: { controller: 'admin/teams', action: 'add_member' } do |f| %>
+      <div class="row">
+        <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+          <%= label_tag :member_id, 'Search users to add', class: 'form-label' %>
+          <div class="mb-2 input-group">
+            <%= select_tag :member_id, '', class: 'form-control', id: 'search_users_add' %>
+            <%= select_tag :role, options_for_select(TeamMembership.roles.map { |k, _v| [k.humanize.capitalize, k] }), class: 'form-control' %>
+          </div>
+          <div class="text-center">
+            <%= f.submit 'Add Member', class: 'd-inline btn btn-primary' %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div>
+    <h5 class="text-center">Team Members</h5>
+
+    <table class="table table-striped">
+      <thead class="table-primary">
+        <tr>
+          <td>User</td>
+          <td>Role</td>
+          <td>Date Added</td>
+          <td>Actions</td>
+        </tr>
+      </thead>
+      <tbody>
+        <% @team_members.each do |tm| %>
+          <tr>
+            <td><%= link_to tm.user.name, user_path(tm.user.username), target: '_blank', rel: 'noopener' %></td>
+            <td><%= tm.role.humanize.capitalize %></td>
+            <td><%= tm.created_at.strftime('%Y-%m-%d') %></td>
+            <td>
+              <%= button_to 'Promote', promote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-success', method: :patch, data: { confirm: 'Are you sure you want to promote this member?' } if tm.role_regular_member? %>
+              <%= button_to 'Demote', demote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-warning', method: :patch, data: { confirm: 'Are you sure you want to demote this member?' } if tm.role_lead? %>
+              <%= button_to 'Remove', remove_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-danger', method: :delete, data: { confirm: 'Are you sure you want to remove this member from the team?' } unless tm.role_captain? %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>

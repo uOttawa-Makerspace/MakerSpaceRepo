@@ -155,11 +155,11 @@
             <div class="tab-pane fade" id="keys-manager" role="tabpanel" aria-labelledby="profile-tab">
               <%= render partial: 'users/tabs/keys' %>
             </div>
-            <% if @user.eql?(@repo_user) || @user.admin? %>
-              <div class="tab-pane fade" id="key-certs-manager" role="tabpanel" aria-labelledby="profile-tab">
-                <%= render partial: 'users/tabs/key_certs' %>
-              </div>
-            <% end %>
+          <% end %>
+          <% if (@user.staff? || @user.programs.pluck(:program_type).include?(Program::TEAMS)) && @user.eql?(@repo_user) || @user.admin? %>
+            <div class="tab-pane fade" id="key-certs-manager" role="tabpanel" aria-labelledby="profile-tab">
+              <%= render partial: 'users/tabs/key_certs' %>
+            </div>
           <% end %>
           <% if @user.admin? %>
             <div class="tab-pane fade" id="role-manager" role="tabpanel" aria-labelledby="profile-tab">
@@ -167,11 +167,6 @@
             </div>
             <div class="tab-pane fade" id="quick-access-manager" role="tabpanel" aria-labelledby="quick-access-tab">
               <%= render partial: 'users/tabs/quick_access', locals: { user: @user, repo_user: @repo_user } %>
-            </div>
-          <% end %>
-          <% if @repo_user.staff? %>
-            <div class="tab-pane fade" id="staff-manager" role="tabpanel" aria-labelledby="profile-tab">
-              <%= render partial: 'users/tabs/staff', locals: { space_list: @space_list, repo_user: @repo_user } %>
             </div>
           <% end %>
           <% if @user.admin? %>

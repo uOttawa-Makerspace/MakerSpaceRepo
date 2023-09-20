@@ -1,6 +1,5 @@
-class KeyCertificationsController < StaffAreaController
-  layout "staff_area"
-
+class KeyCertificationsController < ApplicationController
+  before_action :ensure_staff_or_teams_program
   before_action :set_key_certification, only: %i[update show destroy_pdf]
 
   def show
@@ -44,5 +43,14 @@ class KeyCertificationsController < StaffAreaController
 
   def set_key_certification
     @key_certification = KeyCertification.find(params[:id])
+  end
+
+  def ensure_staff_or_teams_program
+    @user = current_user
+    unless @user.staff? || @user.admin? ||
+             @user.programs.pluck(:program_type).include?(Program::TEAMS)
+      redirect_to root_path
+      flash[:alert] = "You cannot access this area."
+    end
   end
 end
