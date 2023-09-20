@@ -52,7 +52,7 @@
   <% elsif @user.programs.pluck(:program_type).include?(Program::TEAMS) && @user.eql?(@repo_user) %>
     <div class="nav-item dropdown">
       <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown" href="#" role="button"
-         aria-haspopup="true" aria-expanded="false">Staff</a>
+         aria-haspopup="true" aria-expanded="false">Teams</a>
       <ul class="dropdown-menu">
         <li class="nav-item">
           <a class="nav-link text-secondary" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
