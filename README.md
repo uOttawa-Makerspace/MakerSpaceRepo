@@ -39,12 +39,14 @@ Coming soon.
    exit
    ```
    
-4. Install RVM and Ruby 3.1.2:
+4. Install rbenv and Ruby 3.1.2:
 
    ```bash
-   curl -sSL https://get.rvm.io | bash
-   source $HOME/.rvm/scripts/rvm
-   rvm install 3.1.2
+   curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash
+   echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+   echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+   source ~/.bashrc
+   rbenv install 3.1.2
    ```
    
 5. Install NVM and Node 18 LTS:
@@ -100,7 +102,13 @@ Coming soon.
    bundle exec rake
    ```
 
-13. Start the Rails server:
+13. Install yarn and yarn packages
+   ```bash
+   npm install -g yarn
+   yarn install
+   ```
+
+14. Start the Rails server:
 
    ```bash
    foreman start -f Procfile.dev
