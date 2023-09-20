@@ -5,9 +5,9 @@
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
         <div class="mb-5">
-          <label for="deposit_return_date">Deposit Return Date</label>
+          <label for="deposit_return_date">Deposit Return Date - $<%= @key.get_latest_key_transaction.deposit_amount %></label>
           <div class="input-group">
-            <%= text_field_tag 'deposit_return_date', '', id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
+            <%= text_field_tag 'Deposit Return Date', '', id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
             <button class="btn btn-outline-danger" id="deposit-return-date-clear" type="button">
               <i class="fa fa-times"></i>
             </button>

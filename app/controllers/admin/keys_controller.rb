@@ -35,27 +35,21 @@ class Admin::KeysController < AdminAreaController
 
   def new
     @key = Key.new
-    @key_requests =
-      KeyRequest
-        .where(status: :approved)
-        .joins(:user)
-        .pluck("users.username", "key_requests.id")
     @space_select = []
-    Space.all.each do |space|
-      @space_select << [space.name + " (" + space.keycode + ")", space.id]
-    end
+    Space
+      .order(name: :asc)
+      .each do |space|
+        @space_select << [space.name + " (" + space.keycode + ")", space.id]
+      end
   end
 
   def edit
-    @key_requests =
-      KeyRequest
-        .where(status: :approved)
-        .joins(:user)
-        .pluck("users.username", "key_requests.id")
     @space_select = []
-    Space.all.each do |space|
-      @space_select << [space.name + " (" + space.keycode + ")", space.id]
-    end
+    Space
+      .order(name: :asc)
+      .each do |space|
+        @space_select << [space.name + " (" + space.keycode + ")", space.id]
+      end
   end
 
   def update
