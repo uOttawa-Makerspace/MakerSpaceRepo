@@ -14,7 +14,13 @@ class Admin::KeysController < AdminAreaController
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
-    @keys = Key.order(created_at: :desc)
+    @keys =
+      Key.all.sort_by do |key|
+        value = key.number
+
+        value =~ /\A\d+\z/ ? value.to_i * -1 : value
+      end
+
     @spaces = Space.order(name: :asc)
   end
 
