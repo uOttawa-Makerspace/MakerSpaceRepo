@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_09_08_003643) do
+ActiveRecord::Schema[7.0].define(version: 2023_09_27_235205) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -523,6 +523,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_09_08_003643) do
     t.decimal "deposit_amount", precision: 5, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "notes", default: ""
     t.index ["key_id"], name: "index_key_transactions_on_key_id"
     t.index ["user_id"], name: "index_key_transactions_on_user_id"
   end

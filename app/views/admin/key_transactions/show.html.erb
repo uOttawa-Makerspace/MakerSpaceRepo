@@ -1,0 +1,25 @@
+<section class="w-75 mx-auto">
+  <h2 class="m-0 fw-bold py-4 text-center">Key Transaction #<%= @key_transaction.id %></h2>
+
+  <div class="mb-5">
+    <h4 class="mb-3">Key Transaction Information</h4>
+    <h6><span class="fw-bold">Key:</span> <%= @key_transaction.key.number %></h6>
+    <h6><span class="fw-bold">User:</span> <%= link_to @key_transaction.user.name, user_path(@key_transaction.user.username), target: '_blank', rel: 'noopener' unless @key_transaction.user.nil? %></h6>
+    <h6><span class="fw-bold">Supervisor:</span> <%= link_to @key_transaction.key.supervisor.name, user_path(@key_transaction.key.supervisor.username), target: '_blank', rel: 'noopener' unless @key_transaction.key.supervisor.nil? %></h6>
+    <h6><span class="fw-bold">Key Given On:</span> <%= @key_transaction.created_at.strftime('%Y-%m-%d') %></h6>
+    <h6><span class="fw-bold">Deposit Amount:</span> $<%= @key_transaction.deposit_amount %></h6>
+    <h6><span class="fw-bold">Return Date:</span> <%= @key_transaction.return_date.nil? ? 'Not Returned' : @key_transaction.return_date %></h6>
+    <h6><span class="fw-bold">Deposit Return Date:</span> <%= @key_transaction.deposit_return_date.nil? ? 'Not Returned' : @key_transaction.deposit_return_date %></h6>
+
+    <div class="mt-4">
+      <div class="card mb-3">
+        <div class="card-header bg-primary text-light">
+          Notes
+        </div>
+        <div class="card-body">
+          <%= @key_transaction.notes.empty? ? 'None' : @key_transaction.notes.html_safe %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
