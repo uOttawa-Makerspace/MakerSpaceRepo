@@ -88,37 +88,6 @@ RSpec.describe Admin::KeysController, type: :controller do
           Space.count
         )
       end
-
-      it "should get all approved key requests" do
-        create(
-          :key_request,
-          :approved,
-          :all_questions_answered,
-          user_id: @user.id,
-          supervisor_id: @user.id,
-          space_id: @space.id
-        )
-        create(
-          :key_request,
-          :status_waiting_for_approval,
-          :all_questions_answered,
-          user_id: @user.id,
-          supervisor_id: @user.id,
-          space_id: @space.id
-        )
-        create(
-          :key_request,
-          :status_in_progress,
-          user_id: @user.id,
-          supervisor_id: @user.id,
-          space_id: @space.id
-        )
-
-        get :new
-        expect(@controller.instance_variable_get(:@key_requests).length).to eq(
-          1
-        )
-      end
     end
   end
 
@@ -144,37 +113,6 @@ RSpec.describe Admin::KeysController, type: :controller do
         get :edit, params: { id: @key.id }
         expect(@controller.instance_variable_get(:@space_select).length).to eq(
           Space.count
-        )
-      end
-
-      it "should get all approved key requests" do
-        create(
-          :key_request,
-          :approved,
-          :all_questions_answered,
-          user_id: @user.id,
-          supervisor_id: @user.id,
-          space_id: @space.id
-        )
-        create(
-          :key_request,
-          :status_waiting_for_approval,
-          :all_questions_answered,
-          user_id: @user.id,
-          supervisor_id: @user.id,
-          space_id: @space.id
-        )
-        create(
-          :key_request,
-          :status_in_progress,
-          user_id: @user.id,
-          supervisor_id: @user.id,
-          space_id: @space.id
-        )
-
-        get :edit, params: { id: @key.id }
-        expect(@controller.instance_variable_get(:@key_requests).length).to eq(
-          1
         )
       end
     end

@@ -9,9 +9,7 @@
       <th>Deposit Amount</th>
       <th>Return Date</th>
       <th>Deposit Return Date</th>
-      <% if show_actions %>
-        <th>Actions</th>
-      <% end %>
+      <th>Actions</th>
     </tr>
     </thead>
 
@@ -25,11 +23,10 @@
         <td>$<%= kt.deposit_amount %></td>
         <td><%= kt.return_date.nil? ? 'Not Returned' : kt.return_date %></td>
         <td><%= kt.deposit_return_date.nil? ? 'Not Returned' : kt.deposit_return_date %></td>
-        <% if show_actions %>
-          <td>
-            <%= link_to 'Return Deposit', edit_admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' %>
-          </td>
-        <% end %>
+        <td>
+          <%= link_to 'Show', admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' %>
+          <%= link_to 'Return Deposit', edit_admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' if show_edit %>
+        </td>
       </tr>
     <% end %>
     </tbody>

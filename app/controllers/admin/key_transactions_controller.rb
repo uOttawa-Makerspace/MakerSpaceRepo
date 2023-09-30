@@ -1,5 +1,5 @@
 class Admin::KeyTransactionsController < AdminAreaController
-  before_action :set_key_transaction, only: %i[edit update]
+  before_action :set_key_transaction, only: %i[edit update show]
 
   def index
     @key_transactions = KeyTransaction.order(created_at: :desc)
