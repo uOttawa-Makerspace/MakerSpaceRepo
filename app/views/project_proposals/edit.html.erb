@@ -171,11 +171,20 @@
           </div>
 
           <div class="mb-5 required">
+            <%= f.label :project_cost, 'Prototype budget / Budget du prototype', class: 'form-label' %>
+            <div>Prototype budget / Budget du prototype</div>
+            <div class="input-group mb-3">
+              <span class="input-group-text">$</span>
+              <%= f.number_field :prototype_cost, class: 'form-control', value: f.object.prototype_cost.presence || 0 %>
+            </div>
+          </div>
+
+          <div class="mb-5">
             <%= f.label :project_cost, 'Expected cost of the project / Coût prévu du projet', class: 'form-label' %>
             <div>Expected cost of the project / Coût attendu du projet</div>
             <div class="input-group mb-3">
               <span class="input-group-text" id="basic-addon1">$</span>
-              <%= f.number_field :project_cost, class: 'form-control', required: true, value: f.object.project_cost.presence || 0 %>
+              <%= f.number_field :project_cost, class: 'form-control', value: f.object.project_cost.presence || 0 %>
               <div class="invalid-feedback">
                 Please enter the expected project cost / Veuillez entrer le coût prévu du projet
               </div>
