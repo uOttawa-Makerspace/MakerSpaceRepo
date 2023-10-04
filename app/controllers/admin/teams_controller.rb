@@ -38,7 +38,7 @@ class Admin::TeamsController < AdminAreaController
         .team_memberships
         .except(:captain)
         .joins(:user)
-        .order("users.name ASC")
+        .order("LOWER(users.name) ASC")
     team_memberships.each do |tm|
       @captain_select << [
         tm.user.name + " (" + tm.user.username + ")",
