@@ -5,7 +5,9 @@ class Key < ApplicationRecord
   belongs_to :key_request, optional: true
   has_many :key_transactions, dependent: :destroy
 
-  enum :status, %i[unknown inventory held lost], prefix: true
+  enum :status,
+       %i[unknown inventory held lost broken unrecoverable],
+       prefix: true
   enum :key_type, %i[regular sub_master keycard], prefix: true
 
   validates :user,

@@ -4,16 +4,24 @@
   <% else %>
     <div>
       <% if @user.eql?(@repo_user) %>
-        <%= form_with url: key_certification_path(@key_cert.id), method: :patch do |f| %>
           <div>
             <div class="mb-4">
               <h5 class="mb-3">Key Certifications: (<%= @key_cert.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %>)</h5>
 
               <% (1..KeyCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
-                <div class="mb-3">
-                  <%= f.label "pdf_file_#{i}", "#{KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize} - #{@key_cert.send("pdf_file_#{i}").attached? ? 'Attached' : 'Not Attached'}", class: 'form-label mb-1' %>
-                  <br><a href="<%= KeyCertification::FILE_URLS[i - 1] %>"><%= KeyCertification::FILE_URLS[i - 1] %></a>
-                  <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2' %>
+                <% unless @key_cert.send("pdf_file_#{i}").attached? %>
+                  <%= form_with url: key_certification_path(@key_cert.id), method: :patch, html: { id: "pdf_file_#{i}_form" } do |f| %>
+                    <div class="mb-3" id="pdf_file_<%= i %>_show">
+                      <%= f.label "pdf_file_#{i}", KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize.to_s, class: 'form-label mb-1' %>
+                      <br><a href="<%= KeyCertification::FILE_URLS[i - 1] %>"><%= KeyCertification::FILE_URLS[i - 1] %></a>
+                      <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2 key-cert-file' %>
+                    </div>
+                  <% end %>
+                <% end %>
+
+                <div class="mb-3" id="pdf_file_<%= i %>_hide" style="display: <%= @key_cert.send("pdf_file_#{i}").attached? ? 'block' : 'none' %>">
+                  <p class="fw-bold"><%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %> - Already Attached</p>
+                  <%= button_to 'Delete', destroy_pdf_key_certification_path(id: @key_cert.id, file_number: i), class: 'btn btn-danger mt-2', method: :delete, data: { confirm: 'Are you sure you want to delete this certification?' } %>
                 </div>
               <% end %>
             </div>
@@ -23,18 +31,24 @@
                 <h5>Supervisor Certifications: (<%= @key_cert.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %>)</h5>
 
                 <% ((KeyCertification::NUMBER_OF_STAFF_FILES + 1)..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
-                  <div class="mb-3">
-                    <%= f.label "pdf_file_#{i}", "#{KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize} - #{@key_cert.send("pdf_file_#{i}").attached? ? 'Attached' : 'Not Attached'}", class: 'form-label mb-1' %>
-                    <br><a href="<%= KeyCertification::FILE_URLS[i - 1] %>"><%= KeyCertification::FILE_URLS[i - 1] %></a>
-                    <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2' %>
+                  <% unless @key_cert.send("pdf_file_#{i}").attached? %>
+                    <%= form_with url: key_certification_path(@key_cert.id), method: :patch, html: { id: "pdf_file_#{i}_form" } do |f| %>
+                      <div class="mb-3" id="pdf_file_<%= i %>_show">
+                        <%= f.label "pdf_file_#{i}", KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize.to_s, class: 'form-label mb-1' %>
+                        <br><a href="<%= KeyCertification::FILE_URLS[i - 1] %>"><%= KeyCertification::FILE_URLS[i - 1] %></a>
+                        <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2 key-cert-file' %>
+                      </div>
+                    <% end %>
+                  <% end %>
+
+                  <div class="mb-3" id="pdf_file_<%= i %>_hide" style="display: <%= @key_cert.send("pdf_file_#{i}").attached? ? 'block' : 'none' %>">
+                    <p class="fw-bold"><%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %> - Already Attached</p>
+                    <%= button_to 'Delete', destroy_pdf_key_certification_path(id: @key_cert.id, file_number: i), class: 'btn btn-danger mt-2', method: :delete, data: { confirm: 'Are you sure you want to delete this certification?' } %>
                   </div>
                 <% end %>
               </div>
             <% end %>
-
-            <%= f.submit 'Save', class: 'btn btn-success' %>
           </div>
-        <% end %>
       <% else %>
         <div class="mb-4">
           <h5 class="mb-3">Key Certifications: (<%= @key_cert.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %>)</h5>

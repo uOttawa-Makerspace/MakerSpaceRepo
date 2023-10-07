@@ -351,7 +351,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :key_transactions, only: %i[index edit update]
+    resources :key_transactions, only: %i[index show edit update]
 
     resources :teams, only: %i[index show new edit create update] do
       member do
