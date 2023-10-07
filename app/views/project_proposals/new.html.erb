@@ -117,8 +117,8 @@
 
           <div id="file-container"></div>
 
-          <div class="mb-3 required">
-            <%= label_tag :photo, 'Gallery/Galerie', class: 'form-label required' %>
+          <div class="mb-3">
+            <%= label_tag :photo, 'Gallery/Galerie', class: 'form-label' %>
             <div class="input-group mb-3">
               <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control d-inline-block float-start image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
               <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
