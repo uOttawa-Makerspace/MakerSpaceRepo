@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_09_27_235205) do
+ActiveRecord::Schema[7.0].define(version: 2023_10_04_220434) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -806,6 +806,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_09_27_235205) do
     t.string "past_experiences"
     t.string "slug"
     t.bigint "linked_project_proposal_id"
+    t.integer "prototype_cost"
     t.index ["linked_project_proposal_id"],
             name: "index_project_proposals_on_linked_project_proposal_id"
   end
