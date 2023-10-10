@@ -31,6 +31,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
   describe "GET #show" do
     context "show" do
       it "should show the project proposal" do
+        session[:user_id] = @admin.id
         pp = ProjectProposal.where(approved: 1).first
         get :show, params: { id: pp.id }
         expect(response).to have_http_status(:success)
