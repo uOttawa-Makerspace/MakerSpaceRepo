@@ -16,7 +16,7 @@
       </h2>
       <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="returned" data-bs-parent="#keysAccordion">
         <div class="accordion-body">
-          <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions.returned, show_actions: false } %>
+          <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions.returned, show_edit: false } %>
         </div>
       </div>
     </div>
@@ -28,7 +28,7 @@
       </h2>
       <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="currently-held" data-bs-parent="#keysAccordion">
         <div class="accordion-body">
-          <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions.not_returned, show_actions: false } %>
+          <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions.not_returned, show_edit: false } %>
         </div>
       </div>
     </div>
@@ -40,7 +40,7 @@
       </h2>
       <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="deposit-refund" data-bs-parent="#keysAccordion">
         <div class="accordion-body">
-          <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions.awaiting_deposit_return, show_actions: true } %>
+          <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions.awaiting_deposit_return, show_edit: true } %>
         </div>
       </div>
     </div>
@@ -52,7 +52,7 @@
       </h2>
       <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="all" data-bs-parent="#keysAccordion">
         <div class="accordion-body">
-          <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions, show_actions: false } %>
+          <%= render partial: 'admin/key_transactions/key_transaction_table', locals: { key_transactions: @key_transactions, show_edit: false } %>
         </div>
       </div>
     </div>

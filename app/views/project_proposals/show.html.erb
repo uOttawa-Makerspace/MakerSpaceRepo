@@ -37,6 +37,8 @@
         <br>
         <b>Project Type / Type de projet</b> : <%= @project_proposal.project_type %>
         <br>
+        <b>Expected prototype budget / Budget prévu pour le prototype:</b> <%= @project_proposal.prototype_cost.present? ? "$#{@project_proposal.prototype_cost}" : 'Not available' %>
+        <br>
         <b>Expected project cost / Coût prévu du projet
           cost</b>: <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : 'Not available' %>
       </div>

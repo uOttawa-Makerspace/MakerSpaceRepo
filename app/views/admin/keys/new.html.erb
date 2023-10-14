@@ -38,7 +38,7 @@
         </div>
         <div class="mb-3">
           <%= f.label :supervisor_id, 'Supervisor (optional if key is not held)', class: 'form-label' %>
-          <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+          <%= f.select :supervisor_id, User.where(role: 'admin').order(name: :asc).pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
         </div>
 
         <div class="text-center">

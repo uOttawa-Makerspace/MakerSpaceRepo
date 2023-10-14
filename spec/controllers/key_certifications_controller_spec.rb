@@ -57,7 +57,9 @@ RSpec.describe KeyCertificationsController, type: :controller do
           )
         patch :update, params: { id: sc.id, pdf_file_1: pdf_file }
 
-        expect(flash[:notice]).to eql("Successfully updated key certifications")
+        expect(response.body).to eql(
+          { message: "Successfully updated key certifications" }.to_json
+        )
         expect(KeyCertification.last.get_key_certs_attached).to eql(1)
       end
     end

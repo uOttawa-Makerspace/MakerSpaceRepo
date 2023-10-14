@@ -10,33 +10,36 @@ class KeyCertificationsController < ApplicationController
   end
 
   def update
-    (1..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i|
-      file_param = "pdf_file_#{i}"
-      if params[file_param]
-        if @key_certification.send(file_param).attached?
-          @key_certification.send(file_param).purge
-        end
+    if @user.eql?(@key_certification.user)
+      (1..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i|
+        file_param = "pdf_file_#{i}"
+        if params[file_param]
+          if @key_certification.send(file_param).attached?
+            @key_certification.send(file_param).purge
+          end
 
-        @key_certification.attach_pdf_file(i, params[file_param])
+          @key_certification.attach_pdf_file(i, params[file_param])
+        end
       end
     end
 
-    redirect_to user_path(@user.username),
-                notice: "Successfully updated key certifications"
+    render json: { message: "Successfully updated key certifications" }
   end
 
   def destroy_pdf
-    file_number = params[:file_number].to_i
-    file_attr = "pdf_file_#{file_number}"
+    if @user.eql?(@key_certification.user)
+      file_number = params[:file_number].to_i
+      file_attr = "pdf_file_#{file_number}"
 
-    if @key_certification.send(file_attr).attached?
-      @key_certification.send(file_attr).purge
-      redirect_to key_certification_path(@key_certification.id),
-                  notice: "Successfully deleted certification"
-    else
-      redirect_to key_certification_path(@key_certification.id),
-                  alert: "Couldn't find attached file"
+      if @key_certification.send(file_attr).attached?
+        @key_certification.send(file_attr).purge
+        flash[:notice] = "Successfully deleted certification"
+      else
+        flash[:alert] = "Couldn't find attached file"
+      end
     end
+
+    redirect_back(fallback_location: root_path)
   end
 
   private

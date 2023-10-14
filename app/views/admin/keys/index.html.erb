@@ -28,7 +28,7 @@
               </h2>
               <div id="collapse-held-all" class="accordion-collapse collapse" aria-labelledby="held-all" data-bs-parent="#keysHeldAccordion">
                 <div class="accordion-body">
-                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(status: :held), show_status: false } %>
+                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.select(&:status_held?), show_status: false } %>
                 </div>
               </div>
             </div>
@@ -41,7 +41,7 @@
               </h2>
               <div id="collapse-held-submaster" class="accordion-collapse collapse" aria-labelledby="held-submaster" data-bs-parent="#keysHeldAccordion">
                 <div class="accordion-body">
-                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(status: :held, key_type: :sub_master), show_status: true } %>
+                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.select { |key| key.status_held? && key.key_type_sub_master? }, show_status: true } %>
                 </div>
               </div>
             </div>
@@ -53,7 +53,7 @@
               </h2>
               <div id="collapse-held-keycard" class="accordion-collapse collapse" aria-labelledby="held-keycard" data-bs-parent="#keysHeldAccordion">
                 <div class="accordion-body">
-                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(status: :held, key_type: :keycard), show_status: true } %>
+                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.select { |key| key.status_held? && key.key_type_keycard? }, show_status: true } %>
                 </div>
               </div>
             </div>
@@ -67,7 +67,7 @@
                 </h2>
                 <div id="collapse-held-<%= space.name.gsub(' ', '-') %>" class="accordion-collapse collapse" aria-labelledby="held-<%= space.name.gsub(' ', '-') %>" data-bs-parent="#keysHeldAccordion">
                   <div class="accordion-body">
-                    <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(status: :held, space:), show_status: false } %>
+                    <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.select { |key| key.status_held? && key.space.eql?(space) }, show_status: false } %>
                   </div>
                 </div>
               </div>
@@ -109,7 +109,7 @@
               </h2>
               <div id="collapse-all-submaster" class="accordion-collapse collapse" aria-labelledby="all-submaster" data-bs-parent="#keysAllAccordion">
                 <div class="accordion-body">
-                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(key_type: :sub_master), show_status: true } %>
+                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.select(&:key_type_sub_master?), show_status: true } %>
                 </div>
               </div>
             </div>
@@ -121,7 +121,7 @@
               </h2>
               <div id="collapse-all-keycard" class="accordion-collapse collapse" aria-labelledby="all-keycard" data-bs-parent="#keysAllAccordion">
                 <div class="accordion-body">
-                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(key_type: :keycard), show_status: true } %>
+                  <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.select(&:key_type_keycard?), show_status: true } %>
                 </div>
               </div>
             </div>
@@ -135,7 +135,7 @@
                 </h2>
                 <div id="collapse-all-<%= space.name.gsub(' ', '-') %>" class="accordion-collapse collapse" aria-labelledby="all-<%= space.name.gsub(' ', '-') %>" data-bs-parent="#keysAllAccordion">
                   <div class="accordion-body">
-                    <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.where(space:), show_status: true } %>
+                    <%= render partial: 'admin/keys/keys_table', locals: { keys: @keys.select { |key| key.space.eql?(space) }, show_status: true } %>
                   </div>
                 </div>
               </div>
