@@ -26,6 +26,7 @@ class VolunteerTasksController < ApplicationController
     @volunteer_task = VolunteerTask.new(volunteer_task_params)
     @volunteer_task.user_id = @user.try(:id)
     if @volunteer_task.save!
+      update_photos
       if params[:certifications_id].present?
         @volunteer_task.create_certifications(params[:certifications_id])
       end
@@ -82,6 +83,7 @@ class VolunteerTasksController < ApplicationController
           .where(role: %w[staff admin])
           .where(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
           .pluck(:name, :id)
+      @photos = @volunteer_task.photos.joins(:image_attachment)&.first(5) || []
     end
   end
 
@@ -136,6 +138,7 @@ class VolunteerTasksController < ApplicationController
     add_volunteer_join(volunteer_task.id)
     remove_volunteer_join(volunteer_task.id)
     if volunteer_task.update(volunteer_task_params)
+      update_photos
       flash[:notice] = "Volunteer task updated"
     else
       flash[:alert] = "Something went wrong"
@@ -265,6 +268,31 @@ class VolunteerTasksController < ApplicationController
           ] = "The volunteer could not be delete from this task, please try again later."
         end
       end
+    end
+  end
+  def update_photos
+    if params[:deleteimages].present?
+      @volunteer_task.photos.each do |img|
+        if params[:deleteimages].include?(img.image.filename.to_s)
+          # checks if the file should be deleted
+          img.image.purge
+          img.destroy
+        end
+      end
+    end
+
+    if params[:images].present?
+      params[:images]
+        .first(5)
+        .each do |img|
+          dimension = FastImage.size(img.tempfile, raise_on_failure: true)
+          Photo.create(
+            image: img,
+            volunteer_task_id: @volunteer_task.id,
+            width: dimension.first,
+            height: dimension.last
+          )
+        end
     end
   end
 
