@@ -285,13 +285,15 @@ class VolunteerTasksController < ApplicationController
       params[:images]
         .first(5)
         .each do |img|
-          dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-          Photo.create(
-            image: img,
-            volunteer_task_id: @volunteer_task.id,
-            width: dimension.first,
-            height: dimension.last
-          )
+          if !img.eql?("")
+            dimension = FastImage.size(img.tempfile, raise_on_failure: true)
+            Photo.create(
+              image: img,
+              volunteer_task_id: @volunteer_task.id,
+              width: dimension.first,
+              height: dimension.last
+            )
+          end
         end
     end
   end
