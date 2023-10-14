@@ -14,6 +14,17 @@
     <div class="jumbotron card bg-light text-center text-wrap">
       <b>Description:</b>
       <%= @volunteer_task.description %>
+
+      <% if @photos.present? && @photos.first.image.attached? %>
+        <div id="show-photo">
+            <%= image_tag @photos.first.image, alt: 'Volunteer Task Main image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
+        </div>
+        <div id="photo-slide">
+          <% @photos.each do |p| %>
+            <%= image_tag p.image, alt: 'Volunteer Task Image', data: { width: p.width, height: p.height } %>
+          <% end %>
+        </div>
+      <% end %>
     </div>
 
     <% if @volunteer_task.volunteer_task_joins.active.pluck(:user_id).include?(current_user.id) %>
@@ -154,3 +165,5 @@
     </div>
   </div>
 </section>
+
+<%= render 'layouts/photoswipe' %>

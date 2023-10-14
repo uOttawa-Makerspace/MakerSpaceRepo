@@ -6,7 +6,7 @@
     <div class="container my-5">
       <div class="row">
         <div class="col-lg-12">
-          <%= form_for @volunteer_task, url: { controller: 'volunteer_tasks', action: 'update' }, html: { id: 'volunteerForm', class: 'needs-validation', novalidate: 'novalidate' } do |f| %>
+          <%= form_for @volunteer_task, url: { controller: 'volunteer_tasks', action: 'update' }, html: { id: 'volunteerForm', class: 'needs-validation', novalidate: 'novalidate', multipart: true } do |f| %>
             <div class="row">
               <div class="col-md-12">
                 <div class="mb-3 text-center">
@@ -26,6 +26,26 @@
                   </div>
                 </div>
               </div>
+
+              <div class="col-md-12">
+                <div class="mb-3 text-center">
+                  <%= label_tag :photo, 'Images', class: 'form-label' %>
+                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload mb-3', aria_label: 'Select Pictures / Selectionner des images' %>
+
+                  <div id="image-container" class="mb-2 mx-auto">
+                    <% @volunteer_task.photos.each do |img| %>
+                      <div class="image-item">
+                        <span id="<%= img.image.filename %>" class="image-remove"></span>
+                        <%= image_tag img.image, alt: 'Project Proposal Picture' %>
+                      </div>
+                    <% end %>
+                    <%= hidden_field_tag 'deleteimages' %>
+                  </div>
+
+                  <div class="text-muted mb-2">Allowed file types: JPEG, PNG, GIF, SVG, ICO</div>
+                </div>
+              </div>
+
               <div class="mx-auto col-md-4 text-center">
                 <b>Status:</b> <br />
                 <div class="d-inline-block text-start form-check">

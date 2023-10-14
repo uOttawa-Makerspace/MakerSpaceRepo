@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_10_04_220434) do
+ActiveRecord::Schema[7.0].define(version: 2023_10_14_005258) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -638,6 +638,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_04_220434) do
     t.integer "proficient_project_id"
     t.integer "learning_module_id"
     t.integer "project_proposal_id"
+    t.integer "volunteer_task_id"
     t.index ["repository_id"], name: "index_photos_on_repository_id"
   end
 
