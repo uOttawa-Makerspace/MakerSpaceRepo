@@ -4,10 +4,16 @@
   <% end %>
 </td>
 <td>
-  <%= link_to jo.user.name, user_path(jo.user.username) %>
-  <%= jo.user.email %>
+  <% if !jo.user.nil? %>
+    <%= link_to jo.user.name, user_path(jo.user.username) %>
+    <%= jo.user.email %>
+  <% else %>
+    [DELETED USER]
+  <% end %>
 </td>
-<td><%= jo.user.internal? ? 'Internal' : 'External' %></td>
+<td><%= unless jo.user.nil?
+          jo.user.internal? ? 'Internal' : 'External'
+        end %></td>
 <td><%= jo.id %></td>
 <td><%= jo.created_at.to_formatted_s(:long_ordinal) %></td></td>
 <td>
@@ -33,7 +39,7 @@
   <% end %>
 </td>
 <td>
-  <% if jo.user_files.attached? %>
+  <% if !jo.user.nil? && jo.user_files.attached? %>
     <% jo.user_files.each do |file| %>
       <%= link_to 'Download', rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
       <br>
@@ -123,7 +129,7 @@
 </td>
 <td>
   <% if @user.admin? %>
-    <%= link_to('Delete', job_order_path(jo), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: 'btn btn-danger btn-sm') %>
+    <%= button_to('Delete', job_order_path(id: jo.id), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: 'btn btn-danger btn-sm') %>
   <% else %>
     Can not delete
   <% end %>
