@@ -20,7 +20,7 @@ RSpec.describe VolunteerTasksController, type: :controller do
         get :index
         expect(response).to have_http_status(:success)
         expect(
-          @controller.instance_variable_get(:@volunteer_tasks).count
+          @controller.instance_variable_get(:@open_volunteer_tasks).count
         ).to eq(1)
       end
     end
