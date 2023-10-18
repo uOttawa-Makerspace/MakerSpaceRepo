@@ -7,9 +7,16 @@ class VolunteerTasksController < ApplicationController
   before_action :volunteer_access, only: %i[show index]
 
   def index
-    @volunteer_tasks =
+    @open_volunteer_tasks =
       VolunteerTask
         .all
+        .where(status: "open")
+        .order(created_at: :desc)
+        .paginate(page: params[:page], per_page: 50)
+    @completed_volunteer_tasks =
+      VolunteerTask
+        .all
+        .where(status: "completed")
         .order(created_at: :desc)
         .paginate(page: params[:page], per_page: 50)
   end
