@@ -25,59 +25,38 @@ window.findSession = function (table_class, id = "query") {
 };
 
 var sort_direction = 1;
-window.sortTable = function (table_class, col) {
-  if (sort_direction === 1) {
-    var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementsByClassName(table_class)[0];
-    switching = true;
-    while (switching) {
-      switching = false;
-      if (table) {
-        rows = table.getElementsByTagName("tr");
-      }
-      if (rows) {
-        for (i = 1; i < rows.length - 1; i++) {
-          shouldSwitch = false;
-          x = rows[i].getElementsByTagName("td")[col];
-          y = rows[i + 1].getElementsByTagName("td")[col];
-          if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-            shouldSwitch = true;
-            break;
+window.sortTable = function (table_name, col) {
+  const table = document.getElementsByClassName(table_name)[0];
+  var rows;
+  var swapElement, currentElement;
+
+  if (table) {
+    rows = table.getElementsByTagName("tr");
+
+    if (rows) {
+      for (let i = 1; i < rows.length - 1; i++) {
+        swapElement = rows[i].getElementsByTagName("td")[col];
+
+        for (let j = i + 1; j < rows.length; j++) {
+          currentElement = rows[j].getElementsByTagName("td")[col];
+
+          if (
+            (sort_direction === 1 &&
+              swapElement.innerText.toLowerCase() >
+                currentElement.innerText.toLowerCase()) ||
+            (sort_direction === 0 &&
+              swapElement.innerText.toLowerCase() <
+                currentElement.innerText.toLowerCase())
+          ) {
+            swapElement = currentElement;
           }
         }
-        if (shouldSwitch) {
-          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-          switching = true;
-        }
+
+        rows[i].parentNode.insertBefore(swapElement.parentNode, rows[i]);
       }
+
+      sort_direction = sort_direction === 1 ? 0 : 1;
     }
-    sort_direction = 0;
-  } else {
-    var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementsByClassName(table_class)[0];
-    switching = true;
-    while (switching) {
-      switching = false;
-      if (table) {
-        rows = table.getElementsByTagName("tr");
-      }
-      if (rows) {
-        for (i = 1; i < rows.length - 1; i++) {
-          shouldSwitch = false;
-          x = rows[i].getElementsByTagName("td")[col];
-          y = rows[i + 1].getElementsByTagName("td")[col];
-          if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
-            shouldSwitch = true;
-            break;
-          }
-        }
-        if (shouldSwitch) {
-          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-          switching = true;
-        }
-      }
-    }
-    sort_direction = 1;
   }
 };
 
