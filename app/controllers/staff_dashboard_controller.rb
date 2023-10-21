@@ -15,6 +15,7 @@ class StaffDashboardController < StaffAreaController
         @all_user_certs = Proc.new { |user| user.certifications }
         @printers_in_use =
           PrinterSession.order(created_at: :desc).where(in_use: true)
+        @table_column_count = 0
       end
       format.json do
         render json: {

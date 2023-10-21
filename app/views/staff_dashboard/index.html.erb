@@ -39,15 +39,34 @@
       <table class="staff-users-table text-center mb-5 table table-striped" >
         <thead class="table-primary">
           <tr>
-            <th class="name-header">Name</th>
-            <th class="email-header">Email</th>
-            <th class="name-header">Flagged?</th>
-            <th class="certifications-header">Certifications in <%= @space.name %></th>
+            <th class="name-header">
+              Name<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              <% @table_column_count += 1 %>
+            </th>
+            <th class="email-header">
+              Email<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              <% @table_column_count += 1 %>
+            </th>
+            <th class="name-header">
+              Flagged?<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              <% @table_column_count += 1 %>
+            </th>
+            <th class="certifications-header">
+              Certifications in <%= @space.name %><span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              <% @table_column_count += 1 %>
+            </th>
             <% if @space.makerspace? %>
-              <th class="printers-header">Assigned Printers</th>
+              <th class="printers-header">Assigned Printers<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span></th>
+              <% @table_column_count += 1 %>
             <% end %>
-            <th class="email-header"> # of visits <br> (Past 2 months)</th>
-            <th class="last-seen-header">Last Seen</th>
+            <th class="email-header">
+              # of visits <br> (Past 2 months)<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              <% @table_column_count += 1 %>
+            </th>
+            <th class="last-seen-header">
+              Last Seen<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              <% @table_column_count += 1 %>
+            </th>
             <th class="action-header disable-sort">Sign Out of <%= @space.name %></th>
           </tr>
         </thead>
@@ -61,9 +80,9 @@
       <table class="staff-recent-users-table text-center mb-5 table table-striped table-sort table-arrows">
         <thead class="table-primary">
           <tr>
-            <th class="name-header">Name</th>
-            <th class="email-header">Email</th>
-            <th class="last-seen-header">Last Seen</th>
+            <th class="name-header">Name<span onclick="sortTable('staff-recent-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="email-header">Email<span onclick="sortTable('staff-recent-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="last-seen-header">Last Seen<span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
             <th class="action-header disable-sort"><%= fa_icon('check') %>&nbsp; TO SIGN IN <br> <%= fa_icon('times') %>&nbsp; TO SIGN OUT</th>
           </tr>
         </thead>
@@ -76,8 +95,8 @@
       <table class="text-center table table-striped staff-newly-signed-up-users-table mb-5 table-sort table-arrows">
         <thead class="table-primary">
           <tr>
-            <th class="name-header">Name</th>
-            <th class="email-header">Email</th>
+            <th class="name-header">Name<span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="email-header">Email<span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
             <th class="action-header disable-sort">Sign In To <%= @space.name %></span></th>
           </tr>
         </thead>
