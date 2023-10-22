@@ -12,7 +12,7 @@ class JobOrderMailer < ApplicationMailer
       )
     else
       mail(
-        to: "cliu8@uottawa.ca",
+        to: "makerspace@uottawa.ca",
         subject: "A new Job Order has been submitted"
       )
     end
