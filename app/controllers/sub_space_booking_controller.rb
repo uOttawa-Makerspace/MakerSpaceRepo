@@ -365,6 +365,11 @@ class SubSpaceBookingController < ApplicationController
          booking.sub_space_booking_status.booking_status_id ==
            BookingStatus::PENDING.id
       BookingMailer.send_booking_needs_approval(booking.id).deliver_now
+    elsif !booking.sub_space.approval_required &&
+          booking.sub_space_booking_status.booking_status_id ==
+            BookingStatus::APPROVED.id
+      BookingMailer.send_booking_automatically_approved(booking.id).deliver_now
+      BookingMailer.send_booking_approved(booking.id).deliver_now
     end
   end
   def edit
