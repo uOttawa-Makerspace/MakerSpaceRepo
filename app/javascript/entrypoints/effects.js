@@ -72,15 +72,16 @@ document.addEventListener("turbo:load", function (event) {
       }
     });
   }
-  let categoryHeader = document.getElementById("category-header");
-  if (categoryHeader) {
-    categoryHeader.addEventListener("click", function (event) {
-      let element = document.getElementById("category-filter");
-      if (element.style.display == "none" || element.style.display == "") {
-        element.style.display = "block";
-      } else {
-        element.style.display = "none";
-      }
-    });
-  }
+  // Dropdown was fixed after commenting out this code -- keeping it here in case it's needed later
+  // let categoryHeader = document.getElementById("category-header");
+  // if (categoryHeader) {
+  //   categoryHeader.addEventListener("click", function (event) {
+  //     let element = document.getElementById("category-filter");
+  //     if (element.style.display == "none" || element.style.display == "") {
+  //       element.style.display = "block";
+  //     } else {
+  //       element.style.display = "none";
+  //     }
+  //   });
+  // }
 });
