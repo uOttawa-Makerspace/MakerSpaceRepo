@@ -3,7 +3,7 @@ class BookingMailer < ApplicationMailer
     @email =
       ContactInfo.find_by(
         space_id: SubSpaceBooking.where(id: booking_id).first.sub_space.space.id
-      ).email
+      )&.email
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
 
@@ -21,7 +21,7 @@ class BookingMailer < ApplicationMailer
     @email =
       ContactInfo.find_by(
         space_id: SubSpaceBooking.where(id: booking_id).first.sub_space.space.id
-      ).email
+      )&.email
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
 
