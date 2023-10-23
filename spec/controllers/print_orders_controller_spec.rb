@@ -191,12 +191,12 @@ RSpec.describe PrintOrdersController, type: :controller do
         }.to change(PrintOrder, :count).by(1)
       end
 
-      it "should send an email to mspace@uottawa.ca" do
+      it "should send an email to makerspace@uottawa.ca" do
         print_order_params = FactoryBot.attributes_for(:print_order)
         post :create, params: { print_order: print_order_params }
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(
-          "mspace@uottawa.ca"
+          "makerspace@uottawa.ca"
         )
       end
 
@@ -265,7 +265,7 @@ RSpec.describe PrintOrdersController, type: :controller do
         expect(PrintOrder.find(print_order.id).user_approval?).to eq(true)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(
-          "mspace@uottawa.ca"
+          "makerspace@uottawa.ca"
         )
       end
     end

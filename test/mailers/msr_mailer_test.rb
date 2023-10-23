@@ -46,7 +46,7 @@ class MsrMailerTest < ActionMailer::TestCase
 
     # assert
     assert_equal ["ceedinfo@makerepo.com"], email.from
-    assert_equal ["mspace@uottawa.ca"], email.to
+    assert_equal ["makerspace@uottawa.ca"], email.to
     assert_equal to, email.bcc
     assert_not_nil(email.attachments, "No attachments found")
   end
@@ -60,7 +60,7 @@ class MsrMailerTest < ActionMailer::TestCase
 
     # assert
     assert_equal ["ceedinfo@makerepo.com"], email.from
-    assert_equal ["mspace@uottawa.ca"], email.to
+    assert_equal ["makerspace@uottawa.ca"], email.to
     assert_equal to, email.bcc
 
     assert_not_nil email.attachments
@@ -76,7 +76,7 @@ class MsrMailerTest < ActionMailer::TestCase
 
     # assert
     assert_equal ["ceedinfo@makerepo.com"], email.from
-    assert_equal ["mspace@uottawa.ca"], email.to
+    assert_equal ["makerspace@uottawa.ca"], email.to
     assert_equal to, email.bcc
 
     assert_not_nil email.attachments
