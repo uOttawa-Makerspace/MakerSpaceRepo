@@ -5,14 +5,14 @@ class JobOrderMailer < ApplicationMailer
       return
     if @job_order.expedited?
       mail(
-        to: "makerspace@uottawa.ca",
+        to: "mspace@uottawa.ca",
         subject: "EXPEDITED: A new Job Order has been submitted",
         Importance: "high",
         "X-Priority": "1"
       )
     else
       mail(
-        to: "makerspace@uottawa.ca",
+        to: "mspace@uottawa.ca",
         subject: "A new Job Order has been submitted"
       )
     end
@@ -27,7 +27,7 @@ class JobOrderMailer < ApplicationMailer
       Rails.application.message_verifier(:job_order_id).generate(job_order_id)
     mail(
       to: @job_order.user.email,
-      reply_to: "makerspace@uottawa.ca",
+      reply_to: "mspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject:
         "Your job ##{@job_order.id} (#{@job_order.user_files.first.filename}) has been #{"re-" if @job_order.job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).count > 1}approved!"
@@ -40,7 +40,7 @@ class JobOrderMailer < ApplicationMailer
       return
     mail(
       to: @job_order.user.email,
-      reply_to: "makerspace@uottawa.ca",
+      reply_to: "mspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject:
         "Your job ##{@job_order.id} (#{@job_order.user_files.first.filename}) has been declined"
@@ -53,16 +53,13 @@ class JobOrderMailer < ApplicationMailer
       return
     if @job_order.expedited?
       mail(
-        to: "makerspace@uottawa.ca",
+        to: "mspace@uottawa.ca",
         subject: "EXPEDITED: A user has approved a Job Order",
         Importance: "high",
         "X-Priority": "1"
       )
     else
-      mail(
-        to: "makerspace@uottawa.ca",
-        subject: "A user has approved a Job Order"
-      )
+      mail(to: "mspace@uottawa.ca", subject: "A user has approved a Job Order")
     end
   end
 
@@ -83,7 +80,7 @@ class JobOrderMailer < ApplicationMailer
 
     mail(
       to: @job_order.user.email,
-      reply_to: "makerspace@uottawa.ca",
+      reply_to: "mspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject: "Your Job Order ##{@job_order.id} has been completed"
     )
@@ -95,7 +92,7 @@ class JobOrderMailer < ApplicationMailer
       return
     mail(
       to: @job_order.user.email,
-      reply_to: "makerspace@uottawa.ca",
+      reply_to: "mspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject: "Your Job Order ##{@job_order.id} is now ready for pickup"
     )
@@ -107,7 +104,7 @@ class JobOrderMailer < ApplicationMailer
       return
     mail(
       to: @job_order.user.email,
-      reply_to: "makerspace@uottawa.ca",
+      reply_to: "mspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject: "Your Job Order Payment has failed for Order ##{@job_order.id}"
     )
