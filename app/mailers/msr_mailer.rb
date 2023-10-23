@@ -64,14 +64,14 @@ class MsrMailer < ApplicationMailer
     @print_id = id
     if PrintOrder.find(id).expedited?
       mail(
-        to: "mspace@uottawa.ca",
+        to: "makerspace@uottawa.ca",
         subject: "EXPEDITED: A user has approved a print order",
         Importance: "high",
         "X-Priority": "1"
       )
     else
       mail(
-        to: "mspace@uottawa.ca",
+        to: "makerspace@uottawa.ca",
         subject: "A user has approved a print order"
       )
     end
@@ -81,14 +81,14 @@ class MsrMailer < ApplicationMailer
     @print_id = id
     if PrintOrder.find(id).expedited?
       mail(
-        to: "mspace@uottawa.ca",
+        to: "makerspace@uottawa.ca",
         subject: "EXPEDITED: A new print order has been submitted",
         Importance: "high",
         "X-Priority": "1"
       )
     else
       mail(
-        to: "mspace@uottawa.ca",
+        to: "makerspace@uottawa.ca",
         subject: "A new print order has been submitted"
       )
     end
@@ -111,7 +111,7 @@ class MsrMailer < ApplicationMailer
     @resend = resend
     mail(
       to: @user.email,
-      reply_to: "mspace@uottawa.ca",
+      reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject: "Your print \"#{@print_order.file.filename}\" has been approved!"
     )
@@ -127,7 +127,7 @@ class MsrMailer < ApplicationMailer
     @filename = filename
     mail(
       to: @user.email,
-      reply_to: "mspace@uottawa.ca",
+      reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject: "Your print \"#{filename}\" has been denied"
     )
@@ -140,7 +140,7 @@ class MsrMailer < ApplicationMailer
     @message = message.html_safe
     mail(
       to: @user.email,
-      reply_to: "mspace@uottawa.ca",
+      reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject: "Your print is available for pickup"
     )
@@ -159,7 +159,7 @@ class MsrMailer < ApplicationMailer
     @pp = pp
     email =
       if @pp.training.skill.name.downcase == "technical"
-        "mspace@uottawa.ca"
+        "makerspace@uottawa.ca"
       else
         "mtc@uottawa.ca"
       end
@@ -171,7 +171,7 @@ class MsrMailer < ApplicationMailer
     @user = user
     @email =
       if @pp.training.skill.name.downcase == "technical"
-        "mspace@uottawa.ca"
+        "makerspace@uottawa.ca"
       else
         "mtc@uottawa.ca"
       end
@@ -235,7 +235,7 @@ class MsrMailer < ApplicationMailer
           .read
     }
 
-    mail(to: "mspace@uottawa.ca", subject: "Training Reports", bcc: to)
+    mail(to: "makerspace@uottawa.ca", subject: "Training Reports", bcc: to)
   end
 
   # @param [Array<String>] to
@@ -268,7 +268,7 @@ class MsrMailer < ApplicationMailer
           .read
     }
 
-    mail(to: "mspace@uottawa.ca", subject: "Monthly Reports", bcc: to)
+    mail(to: "makerspace@uottawa.ca", subject: "Monthly Reports", bcc: to)
   end
 
   # @param [Array<String>] to
@@ -301,7 +301,7 @@ class MsrMailer < ApplicationMailer
           .read
     }
 
-    mail(to: "mspace@uottawa.ca", subject: "Weekly Reports", bcc: to)
+    mail(to: "makerspace@uottawa.ca", subject: "Weekly Reports", bcc: to)
   end
 
   # Not in use currently
