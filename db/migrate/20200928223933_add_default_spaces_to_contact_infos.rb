@@ -3,7 +3,7 @@ class AddDefaultSpacesToContactInfos < ActiveRecord::Migration[6.0]
     ContactInfo.create(
       name: "Richard L’Abbé Makerspace",
       url: "https://engineering.uottawa.ca/makerspace",
-      email: "makerspace@uottawa.ca",
+      email: "mspace@uottawa.ca",
       address: "STM 107, 150 Louis Pasteur",
       phone_number: "613-562-5800 ext. 1559",
       show_hours: true
