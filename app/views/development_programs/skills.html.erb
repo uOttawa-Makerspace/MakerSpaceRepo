@@ -47,9 +47,9 @@
                               </div>
                             <% end %>
                           </div>
-                          <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
-                          <p>Learning Modules finished : <%= @learning_modules_completed.call(training).count %> / <%= training.learning_modules.count %></p>
-                          <p>Recomended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, current_user.id)) %></p>
+                          <p>Proficient projects awarded: <%= training.proficient_projects.where(user_id: current_user.id).count %> / <%= training.proficient_projects.count %></p>
+                          <p>Learning modules completed: <%= @learning_modules_completed.call(training, current_user.id) %> / <%= training.learning_modules.count %></p>
+                          <p>Recommended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, current_user.id)) %></p>
                         </div>
                       </div>
                     </div>
