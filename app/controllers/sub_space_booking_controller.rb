@@ -374,6 +374,16 @@ class SubSpaceBookingController < ApplicationController
   end
   def edit
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+
+    ssb_status = @sub_space_booking.sub_space_booking_status.booking_status_id
+
+    if (
+         ssb_status == BookingStatus::PENDING.id && !@user.admin? &&
+           !@user.eql?(@sub_space_booking.user)
+       ) || (ssb_status == BookingStatus::APPROVED.id && !@user.admin?)
+      redirect_to sub_space_booking_index_path,
+                  alert: "You can't access this subspace booking."
+    end
   end
 
   def update

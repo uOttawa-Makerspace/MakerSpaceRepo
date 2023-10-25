@@ -143,7 +143,7 @@
                     <td><%= booking.end_time.to_formatted_s(:short) %></td>
                     <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? 'Approved' : 'Not Approved' %></td>
                     <td class="input-group">
-                    <%= button_to 'Edit', sub_space_booking_edit_path(booking.id), method: :get, class: 'btn btn-secondary', form_style: 'border: none;background: none;', form_class: '' if booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
+                    <%= button_to 'Edit', sub_space_booking_edit_path(booking.id), method: :get, class: 'btn btn-secondary', form_style: 'border: none;background: none;', form_class: '' if @user.admin? || booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
                     <%= button_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
                     </td>
                   </tr>
