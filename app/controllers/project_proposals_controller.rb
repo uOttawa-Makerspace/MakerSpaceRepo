@@ -465,6 +465,7 @@ class ProjectProposalsController < ApplicationController
       :equipments,
       :project_type,
       :project_cost,
+      :prototype_cost,
       :past_experiences,
       :linked_project_proposal_id,
       area: [],
