@@ -196,39 +196,66 @@ class SubSpaceBookingController < ApplicationController
           params[:sub_space_booking][:recurring_frequency] == "weekly" ?
             recurrence = 7.days :
             recurrence = 1.month
-          epoch_start = params[:sub_space_booking][:start_time].to_datetime
-          start_time = params[:sub_space_booking][:start_time].to_datetime
-          end_time = params[:sub_space_booking][:end_time].to_datetime
-          end_date = params[:sub_space_booking][:recurring_end].to_date
+          start_date = Date.parse(params[:sub_space_booking][:start_time])
+          end_date = Date.parse(params[:sub_space_booking][:end_time])
+
+          start_time_str = Time.parse(params[:sub_space_booking][:start_time])
+          end_time_str = Time.parse(params[:sub_space_booking][:end_time])
+
+          end_date_r = Date.parse(params[:sub_space_booking][:recurring_end])
+
+          start_time =
+            DateTime.new(
+              start_date.year,
+              start_date.month,
+              start_date.day,
+              start_time_str.hour,
+              start_time_str.min
+            )
+          end_time =
+            DateTime.new(
+              end_date.year,
+              end_date.month,
+              end_date.day,
+              end_time_str.hour,
+              end_time_str.min
+            )
+          end_date_recurring =
+            DateTime.new(
+              end_date_r.year,
+              end_date_r.month,
+              end_date_r.day
+            ).beginning_of_day
+
           book(params)
-          corrected = false
-          while start_time < end_date
-            params[:sub_space_booking][:start_time] = start_time + recurrence
-            params[:sub_space_booking][:end_time] = end_time + recurrence
-            if params[:sub_space_booking][:start_time].in_time_zone.dst? !=
-                 epoch_start.in_time_zone.dst? && !corrected
-              params[:sub_space_booking][:start_time] += (
-                if params[:sub_space_booking][:start_time].in_time_zone.dst?
-                  -1.hour
-                else
-                  1.hour
-                end
+
+          while start_time < end_date_recurring
+            params[:sub_space_booking][:start_time] = (
+              start_time + recurrence
+            ).strftime("%Y-%m-%d %H:%M")
+            params[:sub_space_booking][:end_time] = (
+              end_time + recurrence
+            ).strftime("%Y-%m-%d %H:%M")
+
+            start_date = Date.parse(params[:sub_space_booking][:start_time])
+            end_date = Date.parse(params[:sub_space_booking][:end_time])
+
+            start_time =
+              DateTime.new(
+                start_date.year,
+                start_date.month,
+                start_date.day,
+                start_time_str.hour,
+                start_time_str.min
               )
-              params[:sub_space_booking][:end_time] += (
-                if params[:sub_space_booking][:end_time].in_time_zone.dst?
-                  -1.hour
-                else
-                  1.hour
-                end
+            end_time =
+              DateTime.new(
+                end_date.year,
+                end_date.month,
+                end_date.day,
+                end_time_str.hour,
+                end_time_str.min
               )
-              corrected = true
-            elsif corrected &&
-                  params[:sub_space_booking][:start_time].in_time_zone.dst? ==
-                    epoch_start.in_time_zone.dst?
-              corrected = false
-            end
-            start_time = params[:sub_space_booking][:start_time].to_datetime
-            end_time = params[:sub_space_booking][:end_time].to_datetime
             book(params)
           end
         end
@@ -374,6 +401,16 @@ class SubSpaceBookingController < ApplicationController
   end
   def edit
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+
+    ssb_status = @sub_space_booking.sub_space_booking_status.booking_status_id
+
+    if (
+         ssb_status == BookingStatus::PENDING.id && !@user.admin? &&
+           !@user.eql?(@sub_space_booking.user)
+       ) || (ssb_status == BookingStatus::APPROVED.id && !@user.admin?)
+      redirect_to sub_space_booking_index_path,
+                  alert: "You can't access this subspace booking."
+    end
   end
 
   def update

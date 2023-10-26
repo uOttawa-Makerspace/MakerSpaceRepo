@@ -33,6 +33,15 @@ document.addEventListener("turbo:load", function () {
       });
     }
   }
+
+  [...document.getElementsByClassName("image-remove")].forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById("deleteimages").value += el.id + ",";
+      el.parentElement.remove();
+    });
+  });
 });
 
 window.addEventListener(

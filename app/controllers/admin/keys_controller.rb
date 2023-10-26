@@ -14,7 +14,13 @@ class Admin::KeysController < AdminAreaController
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
-    @keys = Key.order(created_at: :desc)
+    @keys =
+      Key.all.sort_by do |key|
+        value = key.number
+
+        value =~ /\A\d+\z/ ? value.to_i * -1 : value
+      end
+
     @spaces = Space.order(name: :asc)
   end
 
@@ -35,27 +41,21 @@ class Admin::KeysController < AdminAreaController
 
   def new
     @key = Key.new
-    @key_requests =
-      KeyRequest
-        .where(status: :approved)
-        .joins(:user)
-        .pluck("users.username", "key_requests.id")
     @space_select = []
-    Space.all.each do |space|
-      @space_select << [space.name + " (" + space.keycode + ")", space.id]
-    end
+    Space
+      .order(name: :asc)
+      .each do |space|
+        @space_select << [space.name + " (" + space.keycode + ")", space.id]
+      end
   end
 
   def edit
-    @key_requests =
-      KeyRequest
-        .where(status: :approved)
-        .joins(:user)
-        .pluck("users.username", "key_requests.id")
     @space_select = []
-    Space.all.each do |space|
-      @space_select << [space.name + " (" + space.keycode + ")", space.id]
-    end
+    Space
+      .order(name: :asc)
+      .each do |space|
+        @space_select << [space.name + " (" + space.keycode + ")", space.id]
+      end
   end
 
   def update
@@ -86,7 +86,8 @@ class Admin::KeysController < AdminAreaController
       KeyTransaction.new(
         user_id: user.id,
         key_id: @key.id,
-        deposit_amount: params[:deposit_amount]
+        deposit_amount: params[:deposit_amount],
+        notes: params[:notes]
       )
     if @key.status_inventory? &&
          @key.update(key_params.merge(user_id: user.id, status: :held)) &&
