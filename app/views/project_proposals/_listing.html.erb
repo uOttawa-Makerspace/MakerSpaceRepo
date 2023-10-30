@@ -20,10 +20,8 @@
         <th>Title</th>
         <th>Categories</th>
         <th>Proposed on</th>
-        <% if @user.admin? %>
-          <% if title == "Pending Project Proposals" %>
+        <% if @user.admin? && title == "Pending Project Proposals" %>
             <th>Approval</th>
-          <% end %>
         <% end %>
         <th>Action</th>
       </tr>
@@ -63,7 +61,7 @@
               <%= button_to 'Delete', project_proposal, method: :delete,
                                                         class: 'btn btn-danger d-block w-100 btn-sm my-2', data: { confirm: 'Are you sure?' } %>
               </td>
-          <% elsif project_proposal.user.eql?(@user) %>
+          <% elsif project_proposal.user.eql?(@user) || project_proposal.approved == 1 %>
               <td><%= link_to 'Show', project_proposal, class: 'btn btn-success d-block w-100 btn-sm' %></td>
           <% else %>
             <td></td>
