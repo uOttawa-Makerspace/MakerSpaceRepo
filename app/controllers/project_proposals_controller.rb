@@ -3,6 +3,7 @@
 class ProjectProposalsController < ApplicationController
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
+  # before_action :show_only_project_approved, only: [:show]
 
   # GET /project_proposals
   # GET /project_proposals.json
@@ -77,7 +78,8 @@ class ProjectProposalsController < ApplicationController
   # GET /project_proposals/1
   # GET /project_proposals/1.json
   def show
-    if !@user.admin? && !@project_proposal.user.eql?(@user)
+    if !@user.admin? && !@project_proposal.user.eql?(@user) &&
+         @project_proposal.approved != 1
       redirect_to root_path,
                   alert: "You are not allowed to access this project."
       return
@@ -487,12 +489,13 @@ class ProjectProposalsController < ApplicationController
     params.permit(:project_proposal_id)
   end
 
-  def show_only_project_approved
-    if !@user.admin? && @project_proposal.approved != 1
-      redirect_to root_path,
-                  alert: "You are not allowed to access this project."
-    end
-  end
+  # No longer used
+  # def show_only_project_approved
+  #   if !@user.admin? && @project_proposal.approved != 1
+  #     redirect_to root_path,
+  #                 alert: "You are not allowed to access this project."
+  #   end
+  # end
 
   # TODO: sort_order and photo_hash for everyone
   def sort_order
