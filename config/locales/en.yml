@@ -331,3 +331,123 @@ en:
         best to accommodate within reason."
       footer: "If you have any questions, please feel free to either email us at
         <a href='mailto:volunteer@makerepo.com'>volunteer@makerepo.com</a>"
+  development_program:
+    header: "Welcome to the Development Program Area"
+    not_in_dev_program:
+      header: "Congratulations! <br>You can now join the Development Program!"
+      content: "You can join the program through the button below or learn more by reading this page!"
+      link: "<a href='/development_programs/join_development_program' class='btn btn-primary'>Join Development Program</a>"
+    overview:
+      header: "Overview"
+      paragraph:
+        "With the World Wide Web connecting experiences from across the globe, many of today’s professional
+        skills can be effectively self-taught outside the traditional and costly classroom method. The problem
+        is no matter how talented a person becomes, they will still lack an official accreditation for their skill.
+        The classic certificates can expand employment opportunities, but they are difficult to plan and hard
+        to verify by employers. Our modular Development Program is designed to plan, track, and accredit your
+        skill development effortlessly. The Development Program will make use of industry standardized
+        certificates that are convenient to share, and electronically verifiable for your future employers.
+        The Development program not only allows you to track your development on your own time, but it also
+        allows you to:"
+    learning_area:
+      header: "<a href='#'>Learning Area</a>"
+      paragraph: "You can learn from all these projects for free. Some of them are a pre-requisite for other projects in the Proficient Projects Area."
+    proficient_projects:
+      header: "<a href='/proficient_projects'>Proficient Projects</a>"
+      paragraph: "These projects are more advanced and not free. You can either purchase it with your credit \ card or use your CC points."
+    skills_badges:
+      header: "<a href='/proficient_projects'>Skills & Badges</a>"
+      paragraph:
+        "The Centre for Entrepreneurship and Engineering Design (CEED) has always been committed to helping
+        students and community members achieve success. In addition to our free basic introductory workshops,
+        you can now achieve higher level of technical abilities in each skill offered by the development program.
+        As you progress in building your skill sets, you will unlock new tasks and challenges designed to push
+        your limits into a whole new level. Once you are confident in your abilities you can tackle our
+        proficiency projects. The hands-on proficiency projects are qualifying projects put together by our
+        expert team to test your abilities to complete a project at a specific level of quality (intermediate,
+        advanced, mastery) upon satisfactory completion of each proficiency project you will be rewarded with
+        the appropriate digital badges."
+      footer:
+        "To help you understand the structure better, we made a flow diagram of skill progression.
+        <a href='/assets/development_program/Skill.png' target='_blank' rel='noopener noreferrer'>HERE</a>"
+    digital_badges:
+      header: "Digital Badges"
+      example: "<a href='/assets/development_program/BADGE.png' target='_blank' rel='noopener noreferrer'>Example of what employers see on each badge profile</a>"
+      tables:
+        digital_technologies:
+          title: "Digital Technologies"
+          3d_printing: "3D-Printing"
+          laser_cutting: "Laser Cutting"
+          arduino: "Arduino"
+          soldering: "Soldering"
+          virtual_reality: "Virtual reality"
+          embroidery: "Embroidery"
+        professional_development:
+          title: "Professional development"
+          design_thinking: "Design Thinking"
+          entrepreneurship_basics: "Entrepreneurship Basics"
+          project_management: "Project Management"
+          effective_communication: "Effective Communication (written and oral)"
+        manufacturing_technologies:
+          title: "Manufacturing Technologies"
+          shop_fundamentals: "Shop Fundamentals"
+          lathe: "Lathe"
+          mill: "Mill"
+          cnc: "CNC"
+          welding: "Welding"
+    volunteer:
+      header: "Volunteer"
+      paragraph_1:
+        "Gaining experiences through volunteering is an excellent way to broaden your horizons and acquire valuable skills
+        required in the working world! Numerous studies show that those who volunteer to help others also feel better
+        about themselves. With your desire to enrich your community and your own life, and by giving your time and
+        expertise, you will realize that you truly can make a difference."
+      paragraph_2:
+        "The development program will improve our current volunteer program. In particular the development program will
+        focus on guiding our volunteers to complete increasingly challenging tasks to develop their skills and reward them
+        in the process. To understand how the volunteer portion of the development program work click here."
+      list:
+        title: "Volunteers can now:"
+        point_1: "Unlock different tasks based on their skill level."
+        point_2: "Track their skill progress through their MakerRepo account."
+        point_3: "Each task will reward CEED Credit (CC) to be used in our MakerStore."
+        point_4: "Each task will have predetermined hours to be rewarded upon completion."
+      paragraph_3: "We have compiled an updated info
+        sheet  <a href='/assets/development_program/Volunteerinfo.pdf' target='_blank' rel='noopener'>HERE</a>, and a
+        presentation
+        <a href='/assets/development_program/Volunteerpresentation.pdf' target='_blank' rel='noopener'>HERE</a> to guild you
+        on the registration process and how the program work."
+    courses:
+      header: "Courses"
+      paragraph_1: "What's better than a course that's only hand-on? the fact that you will have no final!!."
+      paragraph_2:
+        "Starting summer 2020 Graduate and Undergrad students will be able to register for an official course as part of
+        the development program and earn credits."
+      requirement_list:
+        title: "Requirements before being accepted to the course:"
+        point_1: "Completed 1.5 hours 3D printing"
+        point_2: "Completed 3 hours: Basic training"
+        point_3: "Completed Shadowing: 6 hours at Makerspace and 6 hours at Brunsfield."
+        point_4: "Two intermediate level badges from the list of skills above"
+      on_completion_list:
+        title: "On completion of the course you will have:"
+        point_1: "Committed 10hr/week of doing tasks in a facility of your choosing."
+        point_2: "Advanced level badges in all of the skills related to the facility of your choosing"
+      paragraph_3: "For more information about the graduate level course
+        click <a href='https://www.site.uottawa.ca/~lpeyton/PDWsyllabus.html' target='_blank' rel='noopener noreferrer'>HERE</a>
+        <br> For more information about the undergrad level course stay tuned"
+    employment:
+      header: "Employment"
+      paragraph_1:
+        "Not only will the development program build your personal skills, but it will make you more attractive to
+        employers. The different proficiency level badges and the trainings will offer you an opportunity to find
+        employment opportunities with the Centre for Entrepreneurship and Engineering Design (CEED) and other
+        organizations. CEED hires over 50 students every term in addition to 15 TAs for the courses."
+      paragraph_2:
+        "We are also currently working with industry partners and government branshes to add their desired skills to our
+        program"
+    contact:
+      header: "Contact"
+      paragraph_1: "Do you want know more? Email us and we will answer all your questions"
+      contact_1: "Mohamed Elsageyer <br>Team lead <br> melsa036@uottawa.ca"
+      contact_2: "Stephanie Chiarotto <br> Volunteer Coordinator <br> volunteer@makerrepo.com"
