@@ -1,84 +1,84 @@
 <div class="col-md-12">
-  <% @skills.each do |skill| %>
+    <% @skills.each do |skill| %>
 
-    <div class="accordion mb-3" id="accordion-skill-<%= skill.name %>">
-      <div class="accordion-item">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                data-bs-target="#trainings-skill-<%= skill.id %>" aria-expanded="false"
-                aria-controls="trainings-<%= skill.id %>">
-          <h6 id="header-skill-<%= skill.name %>">
-            <%= skill.name %>
-          </h6>
-        </button>
-        <div id="trainings-skill-<%= skill.id %>" class="accordion-collapse collapse">
-          <% skill.trainings.each do |training| %>
+      <div class="accordion mb-3" id="accordion-skill-<%= skill.name %>">
+        <div class="accordion-item">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse"
+            data-bs-target="#trainings-skill-<%= skill.id %>" aria-expanded="false"
+            aria-controls="trainings-<%= skill.id %>">
+            <h6 id="header-skill-<%= skill.name %>">
+              <%= skill.name %>
+            </h6>
+          </button>
+          <div id="trainings-skill-<%= skill.id %>" class="accordion-collapse collapse">
+            <% skill.trainings.each do |training| %>
 
-            <div class="accordion" id="accordion-<% training.name %>">
-              <div class="accordion-item">
-                <div class="accordion-header" id="header-training-<% training.name %>" type="button"
-                     data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>"
-                     aria-expanded="false" aria-controls="training-<%= training.id %>">
-                  <div class="row">
-                    <div class="col-4"></div>
-                    <div class="col-4 text-center">
-                      <button class="btn btn-link">
-                        <%= training.name %>
-                      </button>
-                    </div>
-                    <div class="col-4">
-                      <%= training_status(training.id, @repo_user.id).html_safe %>
+              <div class="accordion" id="accordion-<% training.name %>">
+                <div class="accordion-item">
+                  <div class="accordion-header" id="header-training-<% training.name %>" type="button"
+                    type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>"
+                    aria-expanded="false" aria-controls="training-<%= training.id %>">
+                    <div class="row">
+                      <div class="col-4"></div>
+                      <div class="col-4 text-center">
+                        <button class="btn btn-link">
+                          <%= training.name %>
+                        </button>
+                      </div>
+                      <div class="col-4">
+                        <%= training_status(training.id, @repo_user.id).html_safe %>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div id="training-<%= training.id %>" class="accordion-collapse collapse"
-                     aria-labelledby="header-<% training.name %>"
-                     data-bs-parent="#accordion-<% training.name %>">
-                  <div class="accordion-body">
-                    <% if training.description.present? %>
-                      <div class="jumbotron card bg-light text-center text-wrap">
-                        <%= training.description %>
-                      </div>
-                    <% end %>
+                  <div id="training-<%= training.id %>" class="accordion-collapse collapse"
+                    aria-labelledby="header-<% training.name %>"
+                    data-bs-parent="#accordion-<% training.name %>">
+                    <div class="accordion-body">
+                      <% if training.description.present? %>
+                        <div class="jumbotron card bg-light text-center text-wrap">
+                          <%= training.description %>
+                        </div>
+                        <% end %>
 
-                    <div class="row">
-                      <% badge = @repo_user.highest_badge(training) %>
-                      <% unless badge.nil? %>
-                        <div class="col-lg-4 text-center">
-                          <%= image_tag(badge.badge_template.image_url, alt: 'Badge',
-                                                                        style: 'width: 150px') %>
-                        </div>
-                        <div class="col-lg-8 my-auto">
-                          <b>
-                            <%= badge.badge_template.badge_name %>
-                            :
-                          </b>
-                          <%= badge.badge_template.badge_description %>
-                        </div>
-                        <div class="col-12 pt-2">
-                          <p>Skills Acquired: <b>
-                            <%= badge.badge_template.list_of_skills %>
-                          </b></p>
-                        </div>
-                      <% end %>
+                          <div class="row">
+                            <% badge = @repo_user.highest_badge(training) %>
+                              <% unless badge.nil? %>
+                                <div class="col-lg-4 text-center">
+                                  <%= image_tag(badge.badge_template.image_url, alt: 'Badge',
+                                                                                style: 'width: 150px') %>
+                                </div>
+                                <div class="col-lg-8 my-auto">
+                                  <b>
+                                    <%= badge.badge_template.badge_name %>
+                                      :
+                                  </b>
+                                  <%= badge.badge_template.badge_description %>
+                                </div>
+                                <div class="col-12 pt-2">
+                                  <p>Skills Acquired: <b>
+                                      <%= badge.badge_template.list_of_skills %>
+                                    </b></p>
+                                </div>
+                                <% end %>
+                          </div>
+@proficient_projects_awarded.call(training).count %>
+                              / <%= training.proficient_projects.count %>
+                          </p>
+@learning_modules_completed.call(training).count %>
+                              / <%= training.learning_modules.count %>
+                          </p>
+                          <p>Recomended hours before moving
+                            on: <%= @recomended_hours.call(training, return_levels(training.id,
+                                                                                   @repo_user.id)) %>
+                          </p>
                     </div>
-                    <p>Proficient projects awarded:
-                      <%= @proficient_projects_awarded.call(training).count %>
-                    </p>
-                    <p>Learning modules completed:
-                      <%= @learning_modules_completed.call(training).count %>
-                    </p>
-                    <p>Recommended hours before moving on:
-                      <%= @recomended_hours.call(training, return_levels(training.id, @repo_user.id)) %>
-                    </p>
-
                   </div>
                 </div>
               </div>
-            </div>
-          <% end %>
+              <% end %>
+          </div>
         </div>
       </div>
-    </div>
-  <% end %>
-</div>
+      <% end %>
+  </div>
