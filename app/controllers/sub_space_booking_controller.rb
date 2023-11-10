@@ -276,6 +276,29 @@ class SubSpaceBookingController < ApplicationController
              status: :unprocessable_entity
       return
     end
+
+    start_date = Date.parse(params[:sub_space_booking][:start_time])
+    end_date = Date.parse(params[:sub_space_booking][:end_time])
+    start_time = Time.parse(params[:sub_space_booking][:start_time])
+    end_time = Time.parse(params[:sub_space_booking][:end_time])
+
+    start_datetime =
+      Time.new(
+        start_date.year,
+        start_date.month,
+        start_date.day,
+        start_time.hour,
+        start_time.min
+      ).in_time_zone("UTC")
+    end_datetime =
+      Time.new(
+        end_date.year,
+        end_date.month,
+        end_date.day,
+        end_time.hour,
+        end_time.min
+      ).in_time_zone("UTC")
+
     if params[:sub_space_booking][:blocking] != "true" &&
          SubSpaceBooking
            .where(sub_space_id: params[:sub_space_booking][:sub_space_id])
@@ -283,11 +306,12 @@ class SubSpaceBookingController < ApplicationController
            .where.not(id: booking.id)
            .where(
              "(start_time, end_time) OVERLAPS (?,?)",
-             params[:sub_space_booking][:start_time].to_datetime,
-             params[:sub_space_booking][:end_time].to_datetime
+             start_datetime,
+             end_datetime
            )
            .any?
       booking.destroy
+      flash[:alert] = "This time slot is already booked."
       respond_to do |format|
         format.json do
           render json: {
@@ -296,7 +320,6 @@ class SubSpaceBookingController < ApplicationController
                  status: :unprocessable_entity
         end
         format.html do
-          flash[:alert] = "This time slot is already booked."
           redirect_to sub_space_booking_index_path(
                         anchor: "booking-calendar-tab",
                         room: params[:sub_space_booking][:sub_space_id]
@@ -415,6 +438,52 @@ class SubSpaceBookingController < ApplicationController
 
   def update
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+    start_date = Date.parse(params[:sub_space_booking][:start_time])
+    end_date = Date.parse(params[:sub_space_booking][:end_time])
+    start_time = Time.parse(params[:sub_space_booking][:start_time])
+    end_time = Time.parse(params[:sub_space_booking][:end_time])
+
+    start_datetime =
+      Time.new(
+        start_date.year,
+        start_date.month,
+        start_date.day,
+        start_time.hour,
+        start_time.min
+      ).in_time_zone("UTC")
+    end_datetime =
+      Time.new(
+        end_date.year,
+        end_date.month,
+        end_date.day,
+        end_time.hour,
+        end_time.min
+      ).in_time_zone("UTC")
+
+    if SubSpaceBooking
+         .where(sub_space_id: @sub_space_booking.sub_space.id)
+         .where(blocking: true)
+         .where.not(id: @sub_space_booking.id)
+         .where(
+           "(start_time, end_time) OVERLAPS (?,?)",
+           start_datetime,
+           end_datetime
+         )
+         .any?
+      flash[:alert] = "This time slot is already booked."
+      respond_to do |format|
+        format.json do
+          render json: {
+                   errors: ["TimeSlot This time slot is already booked."]
+                 },
+                 status: :unprocessable_entity
+        end
+        format.html { redirect_to sub_space_booking_edit_path }
+      end
+
+      return
+    end
+
     if @sub_space_booking.update(sub_space_booking_params)
       redirect_to sub_space_booking_index_path(
                     anchor: "booking-calendar-tab",
