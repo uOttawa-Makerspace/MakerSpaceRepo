@@ -13,7 +13,7 @@
     </thead>
       <% @order_item_waiting_for_approval.each do |oi| %>
         <tr>
-          <td><%= link_to oi.order.user.name, user_path(oi.order.user.username) %></td>
+          <td><%= link_to oi.order.user.username, user_path(oi.order.user.username) %></td>
           <td><%= link_to oi.proficient_project.title, oi.proficient_project %></td>
           <td><%= oi.updated_at.strftime('%Y/%m/%d') %></td>
           <td><%= oi.user_comments.truncate(120).html_safe %></td>
