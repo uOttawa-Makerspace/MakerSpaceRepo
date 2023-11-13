@@ -17,13 +17,13 @@
     <div class="form-check">
 
     <% if response.answer.eql?(a) %>
-    <input name=<%= question.id %> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)" checked=true>
-    <label for=<%= a.id %> class="form-check-label d-block">
-    <%= a.description %>
+    <input name="<%= question.id %>" type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)" checked=true>
+    <label for="<%= a.id %>" class="form-check-label d-block">
+      <%= a.description %>
     </label>
     <% else %>
-    <input name=<%= question.id %> type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
-    <label for=<%= a.id %> class="form-check-label">
+    <input name="<%= question.id %>" type="radio" class="answers form-check-input" id=<%= a.id %> value=<%= a.id %> onclick="examResponse(<%= @exam.id %>, <%= a.id %>)">
+        <label for="<%= a.id %>" class="form-check-label"></label>
     <%= a.description %>
     <% end %>
       </div>

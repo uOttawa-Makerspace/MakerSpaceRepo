@@ -2,7 +2,7 @@
     <div class="card">
         <div class="card-header bg-primary text-light">Order Item Information</div>
         <div class="card-body">
-            <h6>User: <%= link_to @order_item.order.user.name, user_path(@order_item.order.user.username) %></h6>
+            <h6>User: <%= link_to @order_item.order.user.username, user_path(@order_item.order.user.username) %></h6>
             <h6>Proficient Project: <%= link_to @order_item.proficient_project.title, @order_item.proficient_project %></h6>
             <h6>Virtual Project: <%= @order_item.proficient_project.is_virtual? ? 'Yes' : 'No' %></h6>
             <h6>Date Submitted: <%= @order_item.updated_at.strftime('%Y/%m/%d') %></h6>

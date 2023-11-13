@@ -124,13 +124,12 @@
     <div class="text-center">
       <% if @current_training_session.users.present? %>
         <% if @current_training_session.training.questions.where(level: @current_training_session.level).count >= $n_exams_question && @current_training_session.created_at > DateTime.new(2019, 8, 9) %>
-          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class: 'certify-button', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
-          <%= link_to 'Send Exams', create_from_training_exams_path(training_session_id: @current_training_session.id), class: 'certify-button', data: { confirm: 'Are you sure? This send exams to the users.' } if @current_training_session.exams.blank? %>
-          <%= button_to 'Certify (Without Issuing Badges)', certify_trainees_staff_training_session_path(@current_training_session, skip_badges: true), method: 'POST', class: 'certify-button', form_class: 'mt-3', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
-
+          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_training_session, skip_badges: true), method: 'POST', class: 'certify-button', form_class: 'mt-3', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
+          <%= link_to 'Send Exams', create_from_training_exams_path(training_session_id: @current_training_session.id), class: 'd-inline-block certify-button', data: { confirm: 'Are you sure? This send exams to the users.' } if @current_training_session.exams.blank? %>
+          <%= button_to 'Certify & Issue Badges', certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class: 'certify-button', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
         <% else %>
-          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class: 'certify-button', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
-          <%= button_to 'Certify  (Without Issuing Badges)', certify_trainees_staff_training_session_path(@current_training_session, skip_badges: true), method: 'POST', class: 'certify-button', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
+          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_training_session, skip_badges: true), method: 'POST', class: 'certify-button', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
+          <%= button_to 'Certify & Issue Badges', certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class: 'certify-button', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
         <% end %>
       <% end %>
     </div>
