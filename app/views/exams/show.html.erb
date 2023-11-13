@@ -2,13 +2,14 @@
   <div class="text-center">
     <% @questions.find_each.each_with_index do |question, i| %>
       Question <%= i + 1 %>
-response = question.response_for_exam(@exam)
-        if response
-          render partial: 'question_with_response', locals: { question: question, response: response }
-        else
-          render partial: 'question_without_response', locals: { question: question }
-        end
-      %>
+      <% response = question.response_for_exam(@exam) %>
+        <% if response %>
+          With response
+          <%= render partial: 'question_with_response', locals: { question:, response: } %>
+        <% else %>
+          without response
+          <%= render partial: 'question_without_response', locals: { question: } %>
+        <% end %>
       <br />
       <br />
       <br />
