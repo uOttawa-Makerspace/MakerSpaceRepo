@@ -289,7 +289,7 @@ class SubSpaceBookingController < ApplicationController
         start_date.day,
         start_time.hour,
         start_time.min
-      ).in_time_zone("UTC")
+      ).in_time_zone("EST")
     end_datetime =
       Time.new(
         end_date.year,
@@ -297,7 +297,7 @@ class SubSpaceBookingController < ApplicationController
         end_date.day,
         end_time.hour,
         end_time.min
-      ).in_time_zone("UTC")
+      ).in_time_zone("EST")
 
     if params[:sub_space_booking][:blocking] != "true" &&
          SubSpaceBooking
@@ -450,7 +450,7 @@ class SubSpaceBookingController < ApplicationController
         start_date.day,
         start_time.hour,
         start_time.min
-      ).in_time_zone("UTC")
+      ).in_time_zone("EST")
     end_datetime =
       Time.new(
         end_date.year,
@@ -458,7 +458,7 @@ class SubSpaceBookingController < ApplicationController
         end_date.day,
         end_time.hour,
         end_time.min
-      ).in_time_zone("UTC")
+      ).in_time_zone("EST")
 
     if SubSpaceBooking
          .where(sub_space_id: @sub_space_booking.sub_space.id)
