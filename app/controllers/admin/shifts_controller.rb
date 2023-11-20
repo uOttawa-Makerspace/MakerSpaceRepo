@@ -398,41 +398,74 @@ class Admin::ShiftsController < AdminAreaController
     weekday = params[:day]
     start_time = params[:start]
     end_time = params[:end]
+
+    shift_start_date =
+      DateTime.parse(params[:start]).strftime("%Y%m%d%H%M").to_i
+    shift_end_date = DateTime.parse(params[:end]).strftime("%Y%m%d%H%M").to_i
+    shift_start_time = Time.parse(params[:start]).strftime("%H%M").to_i
+    shift_end_time = Time.parse(params[:end]).strftime("%H%M").to_i
+
     @suggestions = []
     @excluded = []
 
     StaffSpace
       .where(space_id: @space_id)
       .each do |staff|
-        StaffAvailability
-          .where(user_id: staff.user_id)
-          .where(day: weekday)
-          .each do |availability|
-            availability_start_time =
-              availability.start_time.strftime("%H%M").to_i
-            availability_end_time = availability.end_time.strftime("%H%M").to_i
-            shift_start_time = start_time.gsub(":", "").to_i
-            shift_end_time = end_time.gsub(":", "").to_i
-            if (
-                 availability_start_time <= shift_start_time &&
-                   availability_end_time <= shift_start_time
-               ) ||
-                 (
-                   availability_start_time >= shift_end_time &&
-                     availability_end_time >= shift_end_time
-                 )
-              unless @suggestions.include?(staff.user) ||
-                       @excluded.include?(staff.user)
-                @suggestions << staff.user
-              end
-            else
-              @excluded << staff.user unless @excluded.include?(staff.user)
+        recurring_query =
+          StaffAvailability.where(user_id: staff.user_id).where(
+            recurring: true,
+            day: weekday
+          )
+        one_time_query =
+          StaffAvailability.where(user_id: staff.user_id).where(
+            recurring: false
+          )
+
+        recurring_query.each do |availability|
+          availability_start_time =
+            availability.start_time.strftime("%H%M").to_i
+          availability_end_time = availability.end_time.strftime("%H%M").to_i
+          if (
+               availability_start_time <= shift_start_time &&
+                 availability_end_time <= shift_start_time
+             ) ||
+               (
+                 availability_start_time >= shift_end_time &&
+                   availability_end_time >= shift_end_time
+               )
+            unless @suggestions.include?(staff.user) ||
+                     @excluded.include?(staff.user)
+              @suggestions << staff.user
             end
+          else
+            @excluded << staff.user unless @excluded.include?(staff.user)
           end
-        if StaffAvailability
-             .where(user_id: staff.user_id)
-             .where(day: weekday)
-             .empty?
+        end
+
+        one_time_query.each do |availability|
+          availability_start_date =
+            availability.start_datetime.strftime("%Y%m%d%H%M").to_i
+          availability_end_date =
+            availability.end_datetime.strftime("%Y%m%d%H%M").to_i
+
+          if (
+               availability_start_date <= shift_start_date &&
+                 availability_end_date <= shift_start_date
+             ) ||
+               (
+                 availability_start_date >= shift_end_date &&
+                   availability_end_date >= shift_end_date
+               )
+            unless @suggestions.include?(staff.user) ||
+                     @excluded.include?(staff.user)
+              @suggestions << staff.user
+            end
+          else
+            @excluded << staff.user unless @excluded.include?(staff.user)
+          end
+        end
+
+        if recurring_query.empty? && one_time_query.empty?
           @suggestions << staff.user
         end
       end
