@@ -53,7 +53,7 @@ class BookingMailer < ApplicationMailer
   def send_booking_approval_request_sent(booking_approval_id)
     @user_booking_approval = UserBookingApproval.find(booking_approval_id)
     @user = @user_booking_approval.user
-    @email = "" # TODO: add email for booking approval requests
+    @email = "mtc@uottawa.ca"
 
     return if @email.blank?
     @message =
