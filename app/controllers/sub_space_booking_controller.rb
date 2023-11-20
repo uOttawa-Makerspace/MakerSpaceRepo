@@ -80,13 +80,24 @@ class SubSpaceBookingController < ApplicationController
 
   def request_access
     if UserBookingApproval.where(user: current_user).first.nil?
-      UserBookingApproval.create(
-        user: current_user,
-        date: Time.now,
-        comments: params[:comments],
-        approved: false
-      )
-      flash[:notice] = "Access request submitted successfully."
+      booking_approval =
+        UserBookingApproval.new(
+          user: current_user,
+          date: Time.now,
+          comments: params[:comments],
+          approved: false
+        )
+
+      if booking_approval.save
+        BookingMailer.send_booking_approval_request_sent(
+          booking_approval.id
+        ).deliver_now
+        flash[:notice] = "Access request submitted successfully."
+      else
+        flash[
+          :alert
+        ] = "Something went wrong when trying to request MakeRoom access. Please try again later."
+      end
     else
       flash[:alert] = "You have already requested access."
     end
