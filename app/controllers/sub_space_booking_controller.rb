@@ -80,13 +80,24 @@ class SubSpaceBookingController < ApplicationController
 
   def request_access
     if UserBookingApproval.where(user: current_user).first.nil?
-      UserBookingApproval.create(
-        user: current_user,
-        date: Time.now,
-        comments: params[:comments],
-        approved: false
-      )
-      flash[:notice] = "Access request submitted successfully."
+      booking_approval =
+        UserBookingApproval.new(
+          user: current_user,
+          date: Time.now,
+          comments: params[:comments],
+          approved: false
+        )
+
+      if booking_approval.save
+        BookingMailer.send_booking_approval_request_sent(
+          booking_approval.id
+        ).deliver_now
+        flash[:notice] = "Access request submitted successfully."
+      else
+        flash[
+          :alert
+        ] = "Something went wrong when trying to request MakeRoom access. Please try again later."
+      end
     else
       flash[:alert] = "You have already requested access."
     end
@@ -96,21 +107,25 @@ class SubSpaceBookingController < ApplicationController
   def approve_access
     if params[:id].nil?
       user = User.find(params[:user_id])
-      UserBookingApproval.new(
-        user: user,
-        date: Time.now,
-        approved: true,
-        staff: current_user
-      ).save
+      uba =
+        UserBookingApproval.new(
+          user: user,
+          date: Time.now,
+          approved: true,
+          staff: current_user
+        )
+      uba.save
       user.update(booking_approval: true)
       user.save!
+      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
     else
       user = UserBookingApproval.find(params[:id]).user
-      UserBookingApproval.find(params[:id]).update(approved: true)
-      UserBookingApproval.find(params[:id]).update(staff_id: current_user.id)
-      user.booking_approval = true
+      uba = UserBookingApproval.find(params[:id])
+      uba.update(approved: true, staff_id: current_user.id)
+      user.update(booking_approval: true)
       user.save!
+      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access request approved successfully."
     end
