@@ -117,7 +117,7 @@ class SubSpaceBookingController < ApplicationController
       uba.save
       user.update(booking_approval: true)
       user.save!
-      BookingMailer.send_booking_approval_request_approved(uba.id)
+      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
     else
       user = UserBookingApproval.find(params[:id]).user
@@ -125,7 +125,7 @@ class SubSpaceBookingController < ApplicationController
       uba.update(approved: true, staff_id: current_user.id)
       user.update(booking_approval: true)
       user.save!
-      BookingMailer.send_booking_approval_request_approved(uba.id)
+      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access request approved successfully."
     end
