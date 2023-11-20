@@ -57,8 +57,8 @@ class BookingMailer < ApplicationMailer
 
     return if @email.blank?
     @message =
-      "A user (" + @user.name +
-        ") has requested to be a room booker in makeroom. Please go to the
+      "A user by the name of " + @user.name +
+        " has requested to be a room booker in makeroom. Please go to the
                 <a href='https://makerepo.com/sub_space_booking'>MakeRepo Booking</a> admin
                 panel to approve or deny this request."
     mail(to: @email, subject: "Booking approval request sent")
