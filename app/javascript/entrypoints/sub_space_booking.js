@@ -263,6 +263,27 @@ document.addEventListener("turbo:load", function () {
       altFormat: "F j, Y at H:i",
     });
   }
+
+  const commentsContainer = document.getElementById("comments-container");
+  const identitySelects = document.querySelectorAll(".identity-button");
+  const supervisorsContainer = document.getElementById("supervisor-select");
+  if (commentsContainer && identitySelects && supervisorsContainer) {
+    identitySelects.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        if (e.target.value === "Other") {
+          commentsContainer.style.display = "block";
+        } else {
+          commentsContainer.style.display = "none";
+        }
+
+        if (e.target.value === "Staff") {
+          supervisorsContainer.style.display = "block";
+        } else {
+          supervisorsContainer.style.display = "none";
+        }
+      });
+    });
+  }
 });
 document.addEventListener("turbo:render", ready);
 function ready() {

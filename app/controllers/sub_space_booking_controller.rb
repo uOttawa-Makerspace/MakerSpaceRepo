@@ -7,6 +7,11 @@ class SubSpaceBookingController < ApplicationController
   before_action :user_admin, only: [:publish]
   before_action :user_booking_belongs, only: %i[delete edit update]
   def index
+    @supervisors =
+      User.where(
+        role: "admin",
+        username: UserBookingApproval::BOOKING_SUPERVISORS
+      )
     if params[:room].present?
       @subspace = SubSpace.find(params[:room])
       @rules = []
@@ -85,13 +90,28 @@ class SubSpaceBookingController < ApplicationController
           user: current_user,
           date: Time.now,
           comments: params[:comments],
-          approved: false
+          approved: false,
+          identity: params[:identity]
         )
 
       if booking_approval.save
+        email_to_send = ""
+        case params[:identity]
+        when "JMTS"
+          email_to_send = "JMTS@uottawa.ca"
+        when "Staff"
+          # TODO: add staff email
+        when "GNG"
+          # TODO: add GNG email
+        else
+          email_to_send = "mtc@uottawa.ca"
+        end
+
         BookingMailer.send_booking_approval_request_sent(
-          booking_approval.id
+          booking_approval.id,
+          email_to_send
         ).deliver_now
+
         flash[:notice] = "Access request submitted successfully."
       else
         flash[
