@@ -389,6 +389,16 @@ Rails.application.routes.draw do
         get "training_report"
       end
     end
+    resources :shifts_schedule, except: %i[new show] do
+      collection do
+        get :shifts
+        get :get_availabilities
+        get :get_shifts
+        get :get_shift
+        get :pending_shifts
+        get :ics
+      end
+    end
   end
 
   namespace :staff_dashboard do
