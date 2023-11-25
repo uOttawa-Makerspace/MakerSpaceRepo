@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Space < ApplicationRecord
+  belongs_to :space_manager, class_name: "User", optional: true
   has_many :pi_readers
   has_many :lab_sessions, dependent: :destroy
   has_many :users, through: :lab_sessions
@@ -18,6 +19,8 @@ class Space < ApplicationRecord
   has_many :staff_needed_calendars, dependent: :destroy
 
   after_create :create_popular_hours
+
+  validate :space_manager_is_admin
 
   validates :name,
             presence: {
@@ -76,5 +79,13 @@ class Space < ApplicationRecord
 
   def jmts?
     name.eql?("JMTS")
+  end
+
+  private
+
+  def space_manager_is_admin
+    if !space_manager.nil? && !space_manager.admin?
+      errors.add(:space_manager, "must be an admin")
+    end
   end
 end

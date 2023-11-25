@@ -104,6 +104,7 @@ class Admin::SpacesController < AdminAreaController
     @space_staff_hours = SpaceStaffHour.where(space: params[:id])
     @new_training = Training.new
     @sub_spaces = SubSpace.where(space: Space.find(params[:id]))
+    @admins = User.where(role: "admin")
     unless @space = Space.find(params[:id])
       flash[:alert] = "Not Found"
       redirect_back(fallback_location: root_path)
@@ -132,6 +133,19 @@ class Admin::SpacesController < AdminAreaController
       flash[:notice] = "Space keycode updated!"
       redirect_back(fallback_location: root_path)
     end
+  end
+
+  def update_space_manager
+    @space = Space.find(params[:space_id])
+    @space_manager = User.find(params[:space_manager_id])
+
+    if @space_manager.admin? &&
+         @space.update(space_manager_id: params[:space_manager_id])
+      flash[:notice] = "Successfully updated space manager"
+    else
+      flash[:alert] = "Failed to update space manager"
+    end
+    redirect_to admin_spaces_path
   end
 
   def add_space_hours
@@ -302,6 +316,11 @@ class Admin::SpacesController < AdminAreaController
   private
 
   def space_params
-    params.require(:space_params).permit(:name, :max_capacity, :keycode)
+    params.require(:space_params).permit(
+      :name,
+      :max_capacity,
+      :keycode,
+      :space_manager_id
+    )
   end
 end

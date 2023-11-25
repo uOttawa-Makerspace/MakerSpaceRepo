@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_11_23_013753) do
+ActiveRecord::Schema[7.0].define(version: 2023_11_25_041342) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -970,6 +970,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_23_013753) do
     t.integer "max_capacity"
     t.integer "destroy_admin_id"
     t.string "keycode", default: ""
+    t.bigint "space_manager_id"
+    t.index ["space_manager_id"], name: "index_spaces_on_space_manager_id"
   end
 
   create_table "spaces_trainings", id: false, force: :cascade do |t|
@@ -1308,6 +1310,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_23_013753) do
   add_foreign_key "space_staff_hours", "course_names"
   add_foreign_key "space_staff_hours", "spaces"
   add_foreign_key "space_staff_hours", "training_levels"
+  add_foreign_key "spaces", "users", column: "space_manager_id"
   add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
