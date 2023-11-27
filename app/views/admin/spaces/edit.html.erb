@@ -31,7 +31,7 @@
     <%= form_for update_space_manager_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_space_manager' }, method: :patch do |f| %>
       <div class="input-group">
         <%= hidden_field_tag :space_id, @space.id %> <br>
-        <%= select_tag(:space_manager_id, options_for_select(@admins.order('LOWER(name) ASC').pluck(:name, :id)), class: 'form-control form-select', id: 'space-manager-select') %>
+        <%= select_tag(:space_manager_id, options_for_select(@admins.order('LOWER(name) ASC').pluck(:name, :id), selected: @space.space_manager_id), class: 'form-control form-select', id: 'space-manager-select') %>
         <%= f.submit 'Update Space Manager', class: 'btn btn-primary', data: { confirm: 'Are you sure you want to update this space\'s manager?' } %>
       </div>
     <% end %>
