@@ -197,7 +197,7 @@
 
           <div class="mb-4" id="supervisor-select" style="display: none;">
               <%= label_tag :supervisor, 'Supervisor', class: 'form-label' %>
-              <%= select_tag :supervisor, options_for_select(@supervisors.pluck(:name, :id)), class: 'form-select form-control' %>
+              <%= select_tag :supervisor, options_for_select(@supervisors), class: 'form-select form-control' %>
           </div>
 
           <div class="mb-4" id="comments-container" style="display: none;">

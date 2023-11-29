@@ -7,11 +7,6 @@ class SubSpaceBookingController < ApplicationController
   before_action :user_admin, only: [:publish]
   before_action :user_booking_belongs, only: %i[delete edit update]
   def index
-    @supervisors =
-      User.where(
-        role: "admin",
-        username: UserBookingApproval::BOOKING_SUPERVISORS
-      )
     if params[:room].present?
       @subspace = SubSpace.find(params[:room])
       @rules = []
@@ -81,6 +76,17 @@ class SubSpaceBookingController < ApplicationController
           .reverse
           .paginate(page: params[:old_denied_page], per_page: 15)
     end
+
+    @supervisors = []
+    Space.all.each do |space|
+      if space.space_manager_id.present?
+        admin = User.find(space.space_manager_id)
+        unless @supervisors.include?([admin.name, admin.id])
+          @supervisors << [admin.name, admin.id]
+        end
+      end
+    end
+    @supervisors = @supervisors.sort_by { |elem| elem[0].downcase }
   end
 
   def request_access
