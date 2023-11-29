@@ -102,11 +102,14 @@ class SubSpaceBookingController < ApplicationController
 
       if booking_approval.save
         email_to_send = ""
+
         case params[:identity]
         when "JMTS"
-          email_to_send = "JMTS@uottawa.ca"
+          unless Space.find_by(name: "JMTS").space_manager.nil?
+            email_to_send = Space.find_by(name: "JMTS").space_manager.email
+          end
         when "Staff"
-          # TODO: add staff email
+          email_to_send = User.find(params[:supervisor]).email
         when "GNG"
           # TODO: add GNG email
         else
