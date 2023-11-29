@@ -111,7 +111,7 @@ class SubSpaceBookingController < ApplicationController
         when "Staff"
           email_to_send = User.find(params[:supervisor]).email
         when "GNG"
-          # TODO: add GNG email
+          email_to_send = "makerlab@uottawa.ca"
         else
           email_to_send = "mtc@uottawa.ca"
         end
