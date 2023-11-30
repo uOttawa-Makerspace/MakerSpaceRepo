@@ -340,11 +340,6 @@ class Admin::SpacesController < AdminAreaController
   private
 
   def space_params
-    params.require(:space_params).permit(
-      :name,
-      :max_capacity,
-      :keycode,
-      :space_manager_id
-    )
+    params.require(:space_params).permit(:name, :max_capacity, :keycode)
   end
 end

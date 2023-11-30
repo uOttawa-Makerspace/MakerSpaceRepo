@@ -50,17 +50,17 @@ class BookingMailer < ApplicationMailer
     mail(to: @email, subject: "Booking approved")
   end
 
-  def send_booking_approval_request_sent(booking_approval_id, email)
+  def send_booking_approval_request_sent(booking_approval_id, emails)
     @user_booking_approval = UserBookingApproval.find(booking_approval_id)
     @user = @user_booking_approval.user
 
-    return if email.blank?
+    return if emails.empty?
     @message =
       "A user by the name of " + @user.name +
         " has requested to be a room booker in makeroom. Please go to the
                 <a href='https://makerepo.com/sub_space_booking'>MakeRepo Booking</a> admin
                 panel to approve or deny this request."
-    mail(to: email, subject: "Booking approval request sent")
+    mail(to: emails, subject: "Booking approval request sent")
   end
 
   def send_booking_approval_request_approved(booking_approval_id)
@@ -73,5 +73,10 @@ class BookingMailer < ApplicationMailer
       "Your booking approval request has been reviewed and accepted by an admin. Please go to the
                 <a href='https://makerepo.com/sub_space_booking'>MakeRepo Booking</a> page if you would like to book rooms."
     mail(to: @email, subject: "Booking approval request accepted")
+  end
+
+  private
+
+  def get_emails(space_id)
   end
 end

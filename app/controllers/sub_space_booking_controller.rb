@@ -78,12 +78,9 @@ class SubSpaceBookingController < ApplicationController
     end
 
     @supervisors = []
-    Space.all.each do |space|
-      if space.space_manager_id.present?
-        admin = User.find(space.space_manager_id)
-        unless @supervisors.include?([admin.name, admin.id])
-          @supervisors << [admin.name, admin.id]
-        end
+    SpaceManagerJoin.all.each do |smj|
+      unless @supervisors.include?([smj.user.name, smj.user.id])
+        @supervisors << [smj.user.name, smj.user.id]
       end
     end
     @supervisors = @supervisors.sort_by { |elem| elem[0].downcase }
@@ -101,24 +98,24 @@ class SubSpaceBookingController < ApplicationController
         )
 
       if booking_approval.save
-        email_to_send = ""
+        emails = []
 
         case params[:identity]
         when "JMTS"
-          unless Space.find_by(name: "JMTS").space_manager.nil?
-            email_to_send = Space.find_by(name: "JMTS").space_manager.email
-          end
+          jmts = Space.find_by(name: "JMTS")
+
+          jmts.space_managers.each { |sm| emails << sm.email }
         when "Staff"
-          email_to_send = User.find(params[:supervisor]).email
+          emails << User.find(params[:supervisor]).email
         when "GNG"
-          email_to_send = "makerlab@uottawa.ca"
+          emails << "makerlab@uottawa.ca"
         else
-          email_to_send = "mtc@uottawa.ca"
+          emails << "mtc@uottawa.ca"
         end
 
         BookingMailer.send_booking_approval_request_sent(
           booking_approval.id,
-          email_to_send
+          emails
         ).deliver_now
 
         flash[:notice] = "Access request submitted successfully."
