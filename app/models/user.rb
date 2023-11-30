@@ -59,6 +59,8 @@ class User < ApplicationRecord
   has_many :keys, class_name: "Key", foreign_key: "user_id"
   has_many :team_memberships, dependent: :destroy
   has_many :teams, through: :team_memberships
+  has_many :space_manager_joins, dependent: :destroy
+  has_many :supervised_spaces, through: :space_manager_joins, source: :space
 
   MAX_AUTH_ATTEMPTS = 5
 
