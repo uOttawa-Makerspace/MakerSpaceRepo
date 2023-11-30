@@ -3,6 +3,7 @@ class SpaceManagerJoin < ApplicationRecord
   belongs_to :space, optional: true
 
   validate :is_admin
+  validates_uniqueness_of :user_id, scope: :space_id
 
   private
 
