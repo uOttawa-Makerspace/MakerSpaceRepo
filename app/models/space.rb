@@ -21,8 +21,6 @@ class Space < ApplicationRecord
 
   after_create :create_popular_hours
 
-  validate :space_manager_is_admin
-
   validates :name,
             presence: {
               message: "A name is required for the space"
@@ -80,13 +78,5 @@ class Space < ApplicationRecord
 
   def jmts?
     name.eql?("JMTS")
-  end
-
-  private
-
-  def space_manager_is_admin
-    if !space_manager.nil? && !space_manager.admin?
-      errors.add(:space_manager, "must be an admin")
-    end
   end
 end
