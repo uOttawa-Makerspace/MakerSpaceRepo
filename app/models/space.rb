@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Space < ApplicationRecord
-  belongs_to :space_manager, class_name: "User", optional: true
   has_many :pi_readers
   has_many :lab_sessions, dependent: :destroy
   has_many :users, through: :lab_sessions
