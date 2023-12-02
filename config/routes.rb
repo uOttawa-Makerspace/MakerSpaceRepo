@@ -260,6 +260,8 @@ Rails.application.routes.draw do
       collection do
         post :update_max_capacity
         patch :update_keycode
+        patch :add_space_manager
+        patch :remove_space_manager
         post :add_space_hours
         delete :delete_space_hour
         post :add_training_levels

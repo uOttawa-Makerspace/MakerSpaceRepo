@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_10_14_005258) do
+ActiveRecord::Schema[7.0].define(version: 2023_11_29_214424) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -946,6 +946,15 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_14_005258) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "space_manager_joins", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "space_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["space_id"], name: "index_space_manager_joins_on_space_id"
+    t.index ["user_id"], name: "index_space_manager_joins_on_user_id"
+  end
+
   create_table "space_staff_hours", force: :cascade do |t|
     t.time "start_time"
     t.time "end_time"
@@ -1140,6 +1149,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_14_005258) do
     t.boolean "approved"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "identity"
     t.index ["staff_id"], name: "index_user_booking_approvals_on_staff_id"
     t.index ["user_id"], name: "index_user_booking_approvals_on_user_id"
   end

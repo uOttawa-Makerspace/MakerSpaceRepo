@@ -104,6 +104,10 @@ class Admin::SpacesController < AdminAreaController
     @space_staff_hours = SpaceStaffHour.where(space: params[:id])
     @new_training = Training.new
     @sub_spaces = SubSpace.where(space: Space.find(params[:id]))
+    admins = User.where(role: "admin").order("LOWER(name) ASC")
+    @admin_options = admins.map { |admin| [admin.name, admin.id] }
+    @admin_options.unshift(["Select an Admin", -1])
+
     unless @space = Space.find(params[:id])
       flash[:alert] = "Not Found"
       redirect_back(fallback_location: root_path)
@@ -130,6 +134,40 @@ class Admin::SpacesController < AdminAreaController
     @space = Space.find(params[:space_id])
     if @space.update(keycode: params[:keycode])
       flash[:notice] = "Space keycode updated!"
+      redirect_back(fallback_location: root_path)
+    end
+  end
+
+  def add_space_manager
+    if params[:space_manager_id].to_i == -1
+      flash[:alert] = "Please select an admin"
+      redirect_back(fallback_location: admin_spaces_path)
+      return
+    end
+
+    @space = Space.find(params[:space_id])
+    @space_manager = User.find(params[:space_manager_id])
+    space_manager_join =
+      SpaceManagerJoin.new(user_id: @space_manager.id, space_id: @space.id)
+
+    if space_manager_join.save
+      flash[:notice] = "Successfully added space manager"
+    else
+      flash[:alert] = "Failed to add space manager"
+    end
+    redirect_to admin_spaces_path
+  end
+
+  def remove_space_manager
+    @space_manager_join =
+      SpaceManagerJoin.find_by(id: params[:space_manager_join_id])
+
+    if !@space_manager_join.nil?
+      @space_manager_join.destroy
+      redirect_to admin_spaces_path,
+                  notice: "Successfully removed space manager"
+    else
+      flash[:alert] = "Cannot find space manager"
       redirect_back(fallback_location: root_path)
     end
   end

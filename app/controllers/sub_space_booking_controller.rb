@@ -76,6 +76,14 @@ class SubSpaceBookingController < ApplicationController
           .reverse
           .paginate(page: params[:old_denied_page], per_page: 15)
     end
+
+    @supervisors = []
+    SpaceManagerJoin.all.each do |smj|
+      unless @supervisors.include?([smj.user.name, smj.user.id])
+        @supervisors << [smj.user.name, smj.user.id]
+      end
+    end
+    @supervisors = @supervisors.sort_by { |elem| elem[0].downcase }
   end
 
   def request_access
@@ -85,13 +93,31 @@ class SubSpaceBookingController < ApplicationController
           user: current_user,
           date: Time.now,
           comments: params[:comments],
-          approved: false
+          approved: false,
+          identity: params[:identity]
         )
 
       if booking_approval.save
+        emails = []
+
+        case params[:identity]
+        when "JMTS"
+          jmts = Space.find_by(name: "JMTS")
+
+          jmts.space_managers.each { |sm| emails << sm.email }
+        when "Staff"
+          emails << User.find(params[:supervisor]).email
+        when "GNG"
+          emails << "makerlab@uottawa.ca"
+        else
+          emails << "mtc@uottawa.ca"
+        end
+
         BookingMailer.send_booking_approval_request_sent(
-          booking_approval.id
+          booking_approval.id,
+          emails
         ).deliver_now
+
         flash[:notice] = "Access request submitted successfully."
       else
         flash[
