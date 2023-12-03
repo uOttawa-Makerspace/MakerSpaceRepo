@@ -30,7 +30,6 @@ class Staff::ShiftsScheduleController < StaffAreaController
           space_id: @space_id
         )
         .map { |shift| shift_to_event(shift) }
-
     render json: shifts
   end
 
