@@ -389,15 +389,8 @@ Rails.application.routes.draw do
         get "training_report"
       end
     end
-    resources :shifts_schedule, except: %i[new show] do
-      collection do
-        get :shifts
-        get :get_availabilities
-        get :get_shifts
-        get :get_shift
-        get :pending_shifts
-        get :ics
-      end
+    resources :shifts_schedule, except: %i[new show destroy] do
+      collection { get :get_shifts }
     end
   end
 
@@ -533,10 +526,6 @@ Rails.application.routes.draw do
       get :search_pending
       get :search_processed
     end
-  end
-
-  resources :announcements do
-    collection { put :dismiss }
   end
 
   resources :volunteer_task_joins, only: [:create] do
