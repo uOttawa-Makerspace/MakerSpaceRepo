@@ -21,11 +21,13 @@ class Admin::ShiftsController < AdminAreaController
       .where(space_id: @space_id)
       .order("users.name")
       .each do |staff|
-        @colors << {
-          id: staff.user.id,
-          name: staff.user.name,
-          color: staff.color
-        }
+        if !staff.nil? && !staff.user.nil?
+          @colors << {
+            id: staff.user.id,
+            name: staff.user.name,
+            color: staff.color
+          }
+        end
       end
   end
 
