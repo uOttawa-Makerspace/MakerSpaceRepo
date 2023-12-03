@@ -42,11 +42,13 @@ class Admin::ShiftsController < AdminAreaController
       .where(space_id: @space_id)
       .order("users.name")
       .each do |staff|
-        @colors << {
-          id: staff.user.id,
-          name: staff.user.name,
-          color: staff.color
-        }
+        if !staff.nil? && !staff.user.nil? && !staff.user_id.nil?
+          @colors << {
+            id: staff.user.id,
+            name: staff.user.name,
+            color: staff.color
+          }
+        end
       end
   end
 
@@ -400,11 +402,10 @@ class Admin::ShiftsController < AdminAreaController
     end_time = params[:end]
     time_period_id = params[:time_period_id]
 
-    shift_start_date =
-      DateTime.parse(params[:start]).strftime("%Y%m%d%H%M").to_i
-    shift_end_date = DateTime.parse(params[:end]).strftime("%Y%m%d%H%M").to_i
-    shift_start_time = Time.parse(params[:start]).strftime("%H%M").to_i
-    shift_end_time = Time.parse(params[:end]).strftime("%H%M").to_i
+    shift_start_date = DateTime.parse(start_time).strftime("%Y%m%d%H%M").to_i
+    shift_end_date = DateTime.parse(end_time).strftime("%Y%m%d%H%M").to_i
+    shift_start_time = Time.parse(start_time).strftime("%H%M").to_i
+    shift_end_time = Time.parse(end_time).strftime("%H%M").to_i
 
     @suggestions = []
     @excluded = []
@@ -412,64 +413,66 @@ class Admin::ShiftsController < AdminAreaController
     StaffSpace
       .where(space_id: @space_id)
       .each do |staff|
-        recurring_query =
-          staff.user.staff_availabilities.where(
-            time_period_id: time_period_id,
-            recurring: true,
-            day: weekday
-          )
-        one_time_query =
-          staff.user.staff_availabilities.where(
-            time_period_id: time_period_id,
-            recurring: false
-          )
+        if !staff.nil? && !staff.user.nil? && !staff.user_id.nil?
+          recurring_query =
+            staff.user.staff_availabilities.where(
+              time_period_id: time_period_id,
+              recurring: true,
+              day: weekday
+            )
+          one_time_query =
+            staff.user.staff_availabilities.where(
+              time_period_id: time_period_id,
+              recurring: false
+            )
 
-        recurring_query.each do |availability|
-          availability_start_time =
-            availability.start_time.strftime("%H%M").to_i
-          availability_end_time = availability.end_time.strftime("%H%M").to_i
-          if (
-               availability_start_time <= shift_start_time &&
-                 availability_end_time <= shift_start_time
-             ) ||
-               (
-                 availability_start_time >= shift_end_time &&
-                   availability_end_time >= shift_end_time
-               )
-            unless @suggestions.include?(staff.user) ||
-                     @excluded.include?(staff.user)
-              @suggestions << staff.user
+          recurring_query.each do |availability|
+            availability_start_time =
+              availability.start_time.strftime("%H%M").to_i
+            availability_end_time = availability.end_time.strftime("%H%M").to_i
+            if (
+                 availability_start_time <= shift_start_time &&
+                   availability_end_time <= shift_start_time
+               ) ||
+                 (
+                   availability_start_time >= shift_end_time &&
+                     availability_end_time >= shift_end_time
+                 )
+              unless @suggestions.include?(staff.user) ||
+                       @excluded.include?(staff.user)
+                @suggestions << staff.user
+              end
+            else
+              @excluded << staff.user unless @excluded.include?(staff.user)
             end
-          else
-            @excluded << staff.user unless @excluded.include?(staff.user)
           end
-        end
 
-        one_time_query.each do |availability|
-          availability_start_date =
-            availability.start_datetime.strftime("%Y%m%d%H%M").to_i
-          availability_end_date =
-            availability.end_datetime.strftime("%Y%m%d%H%M").to_i
+          one_time_query.each do |availability|
+            availability_start_date =
+              availability.start_datetime.strftime("%Y%m%d%H%M").to_i
+            availability_end_date =
+              availability.end_datetime.strftime("%Y%m%d%H%M").to_i
 
-          if (
-               availability_start_date <= shift_start_date &&
-                 availability_end_date <= shift_start_date
-             ) ||
-               (
-                 availability_start_date >= shift_end_date &&
-                   availability_end_date >= shift_end_date
-               )
-            unless @suggestions.include?(staff.user) ||
-                     @excluded.include?(staff.user)
-              @suggestions << staff.user
+            if (
+                 availability_start_date <= shift_start_date &&
+                   availability_end_date <= shift_start_date
+               ) ||
+                 (
+                   availability_start_date >= shift_end_date &&
+                     availability_end_date >= shift_end_date
+                 )
+              unless @suggestions.include?(staff.user) ||
+                       @excluded.include?(staff.user)
+                @suggestions << staff.user
+              end
+            else
+              @excluded << staff.user unless @excluded.include?(staff.user)
             end
-          else
-            @excluded << staff.user unless @excluded.include?(staff.user)
           end
-        end
 
-        if recurring_query.empty? && one_time_query.empty?
-          @suggestions << staff.user
+          if recurring_query.empty? && one_time_query.empty?
+            @suggestions << staff.user
+          end
         end
       end
     render json:
