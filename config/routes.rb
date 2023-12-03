@@ -528,6 +528,10 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :announcements do
+    collection { put :dismiss }
+  end
+
   resources :volunteer_task_joins, only: [:create] do
     collection { post :remove }
   end

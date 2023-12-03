@@ -7,10 +7,7 @@ class AnnouncementsController < StaffAreaController
 
   def index
     @announcements =
-      Announcement
-        .all
-        .where(public_goal: %w[volunteer staff])
-        .order(created_at: :asc)
+      Announcement.all.where(public_goal: %w[volunteer]).order(created_at: :asc)
   end
 
   def new
@@ -77,7 +74,7 @@ class AnnouncementsController < StaffAreaController
     @announcement =
       Announcement.find_by(id: params[:id]) ||
         Announcement.new(announcement_params)
-    unless %w[volunteer staff].include?(@announcement.public_goal) ||
+    unless %w[volunteer].include?(@announcement.public_goal) ||
              current_user.admin?
       flash[:alert] = "Please select another public goal"
       redirect_to new_announcement_path
