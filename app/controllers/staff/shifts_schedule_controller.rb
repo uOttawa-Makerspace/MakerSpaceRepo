@@ -23,6 +23,7 @@ class Staff::ShiftsScheduleController < StaffAreaController
       Shift
         .includes(:users)
         .where(
+          pending: false,
           users: {
             id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
           },
