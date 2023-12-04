@@ -76,17 +76,54 @@ class SubSpaceBookingController < ApplicationController
           .reverse
           .paginate(page: params[:old_denied_page], per_page: 15)
     end
+
+    @supervisors = []
+    SpaceManagerJoin.all.each do |smj|
+      unless @supervisors.include?([smj.user.name, smj.user.id])
+        @supervisors << [smj.user.name, smj.user.id]
+      end
+    end
+    @supervisors = @supervisors.sort_by { |elem| elem[0].downcase }
   end
 
   def request_access
     if UserBookingApproval.where(user: current_user).first.nil?
-      UserBookingApproval.create(
-        user: current_user,
-        date: Time.now,
-        comments: params[:comments],
-        approved: false
-      )
-      flash[:notice] = "Access request submitted successfully."
+      booking_approval =
+        UserBookingApproval.new(
+          user: current_user,
+          date: Time.now,
+          comments: params[:comments],
+          approved: false,
+          identity: params[:identity]
+        )
+
+      if booking_approval.save
+        emails = []
+
+        case params[:identity]
+        when "JMTS"
+          jmts = Space.find_by(name: "JMTS")
+
+          jmts.space_managers.each { |sm| emails << sm.email }
+        when "Staff"
+          emails << User.find(params[:supervisor]).email
+        when "GNG"
+          emails << "makerlab@uottawa.ca"
+        else
+          emails << "mtc@uottawa.ca"
+        end
+
+        BookingMailer.send_booking_approval_request_sent(
+          booking_approval.id,
+          emails
+        ).deliver_now
+
+        flash[:notice] = "Access request submitted successfully."
+      else
+        flash[
+          :alert
+        ] = "Something went wrong when trying to request MakeRoom access. Please try again later."
+      end
     else
       flash[:alert] = "You have already requested access."
     end
@@ -96,21 +133,25 @@ class SubSpaceBookingController < ApplicationController
   def approve_access
     if params[:id].nil?
       user = User.find(params[:user_id])
-      UserBookingApproval.new(
-        user: user,
-        date: Time.now,
-        approved: true,
-        staff: current_user
-      ).save
+      uba =
+        UserBookingApproval.new(
+          user: user,
+          date: Time.now,
+          approved: true,
+          staff: current_user
+        )
+      uba.save
       user.update(booking_approval: true)
       user.save!
+      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
     else
       user = UserBookingApproval.find(params[:id]).user
-      UserBookingApproval.find(params[:id]).update(approved: true)
-      UserBookingApproval.find(params[:id]).update(staff_id: current_user.id)
-      user.booking_approval = true
+      uba = UserBookingApproval.find(params[:id])
+      uba.update(approved: true, staff_id: current_user.id)
+      user.update(booking_approval: true)
       user.save!
+      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access request approved successfully."
     end
@@ -276,6 +317,33 @@ class SubSpaceBookingController < ApplicationController
              status: :unprocessable_entity
       return
     end
+
+    start_date = Date.parse(params[:sub_space_booking][:start_time])
+    end_date = Date.parse(params[:sub_space_booking][:end_time])
+    start_time = Time.parse(params[:sub_space_booking][:start_time])
+    end_time = Time.parse(params[:sub_space_booking][:end_time])
+
+    start_datetime =
+      DateTime.new(
+        start_date.year,
+        start_date.month,
+        start_date.day,
+        start_time.hour,
+        start_time.min,
+        0,
+        "EST"
+      )
+    end_datetime =
+      DateTime.new(
+        end_date.year,
+        end_date.month,
+        end_date.day,
+        end_time.hour,
+        end_time.min,
+        0,
+        "EST"
+      )
+
     if params[:sub_space_booking][:blocking] != "true" &&
          SubSpaceBooking
            .where(sub_space_id: params[:sub_space_booking][:sub_space_id])
@@ -283,11 +351,12 @@ class SubSpaceBookingController < ApplicationController
            .where.not(id: booking.id)
            .where(
              "(start_time, end_time) OVERLAPS (?,?)",
-             params[:sub_space_booking][:start_time].to_datetime,
-             params[:sub_space_booking][:end_time].to_datetime
+             start_datetime,
+             end_datetime
            )
            .any?
       booking.destroy
+      flash[:alert] = "This time slot is already booked."
       respond_to do |format|
         format.json do
           render json: {
@@ -296,7 +365,6 @@ class SubSpaceBookingController < ApplicationController
                  status: :unprocessable_entity
         end
         format.html do
-          flash[:alert] = "This time slot is already booked."
           redirect_to sub_space_booking_index_path(
                         anchor: "booking-calendar-tab",
                         room: params[:sub_space_booking][:sub_space_id]
@@ -415,6 +483,56 @@ class SubSpaceBookingController < ApplicationController
 
   def update
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+    start_date = Date.parse(params[:sub_space_booking][:start_time])
+    end_date = Date.parse(params[:sub_space_booking][:end_time])
+    start_time = Time.parse(params[:sub_space_booking][:start_time])
+    end_time = Time.parse(params[:sub_space_booking][:end_time])
+
+    start_datetime =
+      DateTime.new(
+        start_date.year,
+        start_date.month,
+        start_date.day,
+        start_time.hour,
+        start_time.min,
+        0,
+        "EST"
+      )
+    end_datetime =
+      DateTime.new(
+        end_date.year,
+        end_date.month,
+        end_date.day,
+        end_time.hour,
+        end_time.min,
+        0,
+        "EST"
+      )
+
+    if SubSpaceBooking
+         .where(sub_space_id: @sub_space_booking.sub_space.id)
+         .where(blocking: true)
+         .where.not(id: @sub_space_booking.id)
+         .where(
+           "(start_time, end_time) OVERLAPS (?,?)",
+           start_datetime,
+           end_datetime
+         )
+         .any?
+      flash[:alert] = "This time slot is already booked."
+      respond_to do |format|
+        format.json do
+          render json: {
+                   errors: ["TimeSlot This time slot is already booked."]
+                 },
+                 status: :unprocessable_entity
+        end
+        format.html { redirect_to sub_space_booking_edit_path }
+      end
+
+      return
+    end
+
     if @sub_space_booking.update(sub_space_booking_params)
       redirect_to sub_space_booking_index_path(
                     anchor: "booking-calendar-tab",

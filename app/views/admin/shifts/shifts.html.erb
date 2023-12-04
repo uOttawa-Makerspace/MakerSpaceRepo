@@ -76,7 +76,7 @@
   <%= hidden_field_tag :shift_id, nil, id: 'shift-id' %>
     <div class="modal-dialog" role="document">
       <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header" id="modalHeader">
           <h5 class="modal-title" id="shift-modal-title">New Shift</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
@@ -170,4 +170,8 @@
         padding-left: 3%;
         padding-right: 3%;
     }
+    #shiftModal {
+        outline: none;
+    }
+
 </style>

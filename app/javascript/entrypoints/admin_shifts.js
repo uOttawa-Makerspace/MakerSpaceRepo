@@ -12,9 +12,70 @@ import TomSelect from "tom-select";
 // Time slot constants
 const SLOT_MIN_TIME = new Date(new Date().setHours(7, 0, 0, 0));
 const SLOT_MAX_TIME = new Date(new Date().setHours(23, 0, 0, 0));
+const monthsToInt = {
+  Jan: 1,
+  Feb: 2,
+  Mar: 3,
+  Apr: 4,
+  May: 5,
+  Jun: 6,
+  Jul: 7,
+  Aug: 8,
+  Sep: 9,
+  Oct: 10,
+  Nov: 11,
+  Dec: 12,
+};
+const dayToInt = {
+  "Sun,": 0,
+  "Mon,": 1,
+  "Tue,": 2,
+  "Wed,": 3,
+  "Thu,": 4,
+  "Fri,": 5,
+  "Sat,": 6,
+};
 
 // Modal
 const shiftModal = new Modal(document.getElementById("shiftModal"));
+
+function makeModalDraggable(shiftModal) {
+  const header = shiftModal.querySelector(".modal-header");
+
+  let isDragging = false;
+  let offsetX, offsetY;
+
+  header.addEventListener("mousedown", function (e) {
+    isDragging = true;
+    offsetX = e.clientX - shiftModal.getBoundingClientRect().left;
+    offsetY = e.clientY - shiftModal.getBoundingClientRect().top;
+  });
+
+  document.addEventListener("mousemove", function (e) {
+    if (isDragging) {
+      shiftModal.style.position = "absolute";
+      shiftModal.style.left = e.clientX - offsetX + "px";
+      shiftModal.style.top = e.clientY - offsetY + "px";
+    }
+  });
+
+  document.addEventListener("mouseup", function () {
+    isDragging = false;
+  });
+
+  shiftModal.addEventListener("hidden.bs.modal", function () {
+    shiftModal.style.position = "";
+    shiftModal.style.left = "";
+    shiftModal.style.top = "";
+  });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const modalDOMElement = document.getElementById("shiftModal");
+  if (modalDOMElement) {
+    makeModalDraggable(modalDOMElement);
+  }
+});
 
 // Show
 let sourceShow = {
@@ -343,21 +404,28 @@ const populateUsers = (arg) => {
       startDate = arg.start;
       endDate = arg.end;
     }
-    let startHour = startDate.toUTCString().split(" ")[4].split(":")[0];
-    let startMinute = startDate.toUTCString().split(" ")[4].split(":")[1];
-    let endHour = endDate.toUTCString().split(" ")[4].split(":")[0];
-    let endMinute = endDate.toUTCString().split(" ")[4].split(":")[1];
-    let weekDayInt = {
-      "Sun,": 0,
-      "Mon,": 1,
-      "Tue,": 2,
-      "Wed,": 3,
-      "Thu,": 4,
-      "Fri,": 5,
-      "Sat,": 6,
-    }[startDate.toUTCString().split(" ")[0]];
+    let startSplit = startDate.toUTCString().split(" ");
+    let endSplit = endDate.toUTCString().split(" ");
+
+    let startYear = startSplit[3];
+    let startMonth = monthsToInt[startSplit[2]];
+    let startDay = startSplit[1];
+    let startHour = startSplit[4].split(":")[0];
+    let startMinute = startSplit[4].split(":")[1];
+
+    let endYear = endSplit[3];
+    let endMonth = monthsToInt[endSplit[2]];
+    let endDay = endSplit[1];
+    let endHour = endSplit[4].split(":")[0];
+    let endMinute = endSplit[4].split(":")[1];
+
+    let weekDayInt = dayToInt[startSplit[0]];
+
+    let startDateTime = `${startYear}-${startMonth}-${startDay} ${startHour}:${startMinute}`;
+    let endDateTime = `${endYear}-${endMonth}-${endDay} ${endHour}:${endMinute}`;
+
     fetch(
-      `/admin/shifts/shift_suggestions?start=${startHour}:${startMinute}&end=${endHour}:${endMinute}&day=${weekDayInt}`,
+      `/admin/shifts/shift_suggestions?start=${startDateTime}&end=${endDateTime}&day=${weekDayInt}`,
       {
         method: "GET",
         headers: {

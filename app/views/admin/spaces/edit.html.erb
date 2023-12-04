@@ -26,6 +26,36 @@
     <% end %>
   </div>
 
+  <h4>Space Managers</h4>
+  <div class="mb-3">
+    <div class="mb-3">
+      <%= form_for add_space_manager_admin_spaces_path, url: { controller: 'admin/spaces', action: 'add_space_manager' }, method: :patch do |f| %>
+        <div class="input-group">
+          <%= hidden_field_tag :space_id, @space.id %> <br>
+          <%= select_tag(:space_manager_id, options_for_select(@admin_options), class: 'form-control form-select', id: 'space-manager-select') %>
+          <%= f.submit 'Add Space Manager', class: 'btn btn-primary', data: { confirm: 'Are you sure you want to add this admin as a space manager?' } %>
+        </div>
+      <% end %>
+    </div>
+
+    <table class="table text-center table-striped">
+      <thead class="table-primary">
+        <tr>
+          <th>User</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <% @space.space_manager_joins.each do |smj| %>
+        <tr>
+          <td><%= link_to smj.user.name, user_path(smj.user.username), target: '_blank', rel: 'noopener' %></td>
+          <td>
+            <%= button_to 'Remove', remove_space_manager_admin_spaces_path(space_manager_join_id: smj.id), class: 'btn btn-danger', data: { confirm: 'Are you sure you want to remove this admin from the list of space managers?' }, method: :patch %>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+  </div>
+
   <br><br>
 
   <h4>Staff needed</h4>
@@ -345,3 +375,4 @@
 </section>
 <%= vite_javascript_tag 'staff_availability', 'data-turbo-track': 'reload' %>
 <%= vite_javascript_tag 'space_staff_needed_calendar', 'data-turbo-track': 'reload' %>
+<%= vite_javascript_tag 'admin_spaces' %>

@@ -260,6 +260,8 @@ Rails.application.routes.draw do
       collection do
         post :update_max_capacity
         patch :update_keycode
+        patch :add_space_manager
+        patch :remove_space_manager
         post :add_space_hours
         delete :delete_space_hour
         post :add_training_levels
@@ -389,6 +391,9 @@ Rails.application.routes.draw do
         get "training_report"
       end
     end
+    resources :shifts_schedule, except: %i[new show destroy] do
+      collection { get :get_shifts }
+    end
   end
 
   namespace :staff_dashboard do
@@ -502,7 +507,7 @@ Rails.application.routes.draw do
   resources :exams, only: %i[index create show destroy] do
     collection do
       get :finish_exam
-      get :create_from_training
+      post :create_from_training
       get :create_for_single_user
     end
   end
