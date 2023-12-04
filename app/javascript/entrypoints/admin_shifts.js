@@ -39,6 +39,44 @@ const dayToInt = {
 // Modal
 const shiftModal = new Modal(document.getElementById("shiftModal"));
 
+function makeModalDraggable(shiftModal) {
+  const header = shiftModal.querySelector(".modal-header");
+
+  let isDragging = false;
+  let offsetX, offsetY;
+
+  header.addEventListener("mousedown", function (e) {
+    isDragging = true;
+    offsetX = e.clientX - shiftModal.getBoundingClientRect().left;
+    offsetY = e.clientY - shiftModal.getBoundingClientRect().top;
+  });
+
+  document.addEventListener("mousemove", function (e) {
+    if (isDragging) {
+      shiftModal.style.position = "absolute";
+      shiftModal.style.left = e.clientX - offsetX + "px";
+      shiftModal.style.top = e.clientY - offsetY + "px";
+    }
+  });
+
+  document.addEventListener("mouseup", function () {
+    isDragging = false;
+  });
+
+  shiftModal.addEventListener("hidden.bs.modal", function () {
+    shiftModal.style.position = "";
+    shiftModal.style.left = "";
+    shiftModal.style.top = "";
+  });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const modalDOMElement = document.getElementById("shiftModal");
+  if (modalDOMElement) {
+    makeModalDraggable(modalDOMElement);
+  }
+});
+
 // Show
 let sourceShow = {
   google: document.getElementById("hide-show-google-events").checked
