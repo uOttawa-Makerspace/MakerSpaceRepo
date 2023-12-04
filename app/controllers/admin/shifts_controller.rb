@@ -402,7 +402,6 @@ class Admin::ShiftsController < AdminAreaController
     weekday = params[:day]
     start_time = params[:start]
     end_time = params[:end]
-    time_period_id = params[:time_period_id]
 
     shift_start_date = DateTime.parse(start_time).strftime("%Y%m%d%H%M").to_i
     shift_end_date = DateTime.parse(end_time).strftime("%Y%m%d%H%M").to_i
@@ -418,13 +417,13 @@ class Admin::ShiftsController < AdminAreaController
         if !staff.nil? && !staff.user.nil? && !staff.user_id.nil?
           recurring_query =
             staff.user.staff_availabilities.where(
-              time_period_id: time_period_id,
+              time_period_id: @time_period.id,
               recurring: true,
               day: weekday
             )
           one_time_query =
             staff.user.staff_availabilities.where(
-              time_period_id: time_period_id,
+              time_period_id: @time_period.id,
               recurring: false
             )
 

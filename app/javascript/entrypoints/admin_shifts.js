@@ -387,7 +387,7 @@ const populateUsers = (arg) => {
     let endDateTime = `${endYear}-${endMonth}-${endDay} ${endHour}:${endMinute}`;
 
     fetch(
-      `/admin/shifts/shift_suggestions?start=${startDateTime}&end=${endDateTime}&day=${weekDayInt}&time_period_id=${time_period_id}`,
+      `/admin/shifts/shift_suggestions?start=${startDateTime}&end=${endDateTime}&day=${weekDayInt}`,
       {
         method: "GET",
         headers: {
