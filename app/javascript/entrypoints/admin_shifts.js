@@ -423,17 +423,19 @@ const populateUsers = (arg) => {
 
     let startDateTime = `${startYear}-${startMonth}-${startDay} ${startHour}:${startMinute}`;
     let endDateTime = `${endYear}-${endMonth}-${endDay} ${endHour}:${endMinute}`;
+    let searchUrl = `/admin/shifts/shift_suggestions?start=${startDateTime}&end=${endDateTime}&day=${weekDayInt}`;
 
-    fetch(
-      `/admin/shifts/shift_suggestions?start=${startDateTime}&end=${endDateTime}&day=${weekDayInt}`,
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      }
-    )
+    if (time_period_id !== null) {
+      searchUrl += `&time_period_id=${time_period_id}`;
+    }
+
+    fetch(searchUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    })
       .then((res) => res.json())
       .then((res) => {
         res.forEach((user) => {
