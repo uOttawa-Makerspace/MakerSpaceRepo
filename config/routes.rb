@@ -427,6 +427,7 @@ Rails.application.routes.draw do
       put :approve_access
       get :bookings
       get :users
+      get :get_sub_space_booking
     end
   end
 
