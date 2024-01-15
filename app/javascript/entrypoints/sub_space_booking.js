@@ -59,7 +59,10 @@ document.addEventListener("turbo:load", function () {
             end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
 
             document.getElementById("book-recurring").checked = false;
-            document.getElementById("book-blocking").checked = data.blocking;
+            const blockingElement = document.getElementById("book-blocking");
+            if (blockingElement) {
+              blockingElement.checked = data.blocking;
+            }
 
             modal.style.display = "block";
             modal.classList.add("show");

@@ -490,6 +490,18 @@ class SubSpaceBookingController < ApplicationController
 
   def update
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+
+    unless @user.admin? ||
+             @sub_space_booking.sub_space_booking_status.booking_status_id !=
+               BookingStatus::APPROVED.id
+      redirect_to sub_space_booking_index_path(
+                    anchor: "booking-calendar-tab",
+                    room: @sub_space_booking.sub_space_id
+                  ),
+                  alert: "You do not have permission to edit this booking"
+      return
+    end
+
     start_date = Date.parse(params[:sub_space_booking][:start_time])
     end_date = Date.parse(params[:sub_space_booking][:end_time])
     start_time = Time.parse(params[:sub_space_booking][:start_time])
