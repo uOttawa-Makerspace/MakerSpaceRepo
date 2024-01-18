@@ -66,10 +66,11 @@
               </div>
             </div>
             <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
+            <%= hidden_field_tag :sub_space_booking_id, nil, id: 'sub_space_booking_id' %>
             <div class="modal-dialog" role="document">
               <div class="modal-content">
                 <div class="modal-header">
-                  <h5 class="modal-title" id="exampleModalLabel">New Booking</h5>
+                  <h5 class="modal-title" id="bookingModalLabel">New Booking</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" id="bookClose" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -89,7 +90,7 @@
                     <span class="invalid-feedback d-none" id="end-date-validation" >The End Date needs to be greater than the Start Date.</span>
                     <br>
                     <input type="checkbox" id="book-recurring" class="form-check-input">
-                    <label for="book-recurring">Is this a recurring booking?</label>
+                    <label for="book-recurring" id="book-recurring-label">Is this a recurring booking?</label>
                     <br>
                     <div class="flatpickr">
                     <label for="book-recurring-end" id="book-recurring-end-label">Recurring End Date</label>
@@ -109,6 +110,7 @@
                 <div class="modal-footer">
                   <button type="button" id="bookCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                   <button type="button" id="bookSave" class="btn btn-primary">Book</button>
+                  <button type="button" id="bookUpdate" class="btn btn-primary">Update</button>
                 </div>
               </div>
             </div>

@@ -3,7 +3,14 @@ class SubSpaceBookingController < ApplicationController
   before_action :user_signed_in, only: %i[index request_access bookings]
   before_action :user_approved, only: [:create]
   before_action :user_admin_or_staff,
-                only: %i[approve decline approve_access deny_access users]
+                only: %i[
+                  approve
+                  decline
+                  approve_access
+                  deny_access
+                  users
+                  get_sub_space_booking
+                ]
   before_action :user_admin, only: [:publish]
   before_action :user_booking_belongs, only: %i[delete edit update]
   def index
@@ -483,6 +490,18 @@ class SubSpaceBookingController < ApplicationController
 
   def update
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+
+    unless @user.admin? ||
+             @sub_space_booking.sub_space_booking_status.booking_status_id !=
+               BookingStatus::APPROVED.id
+      redirect_to sub_space_booking_index_path(
+                    anchor: "booking-calendar-tab",
+                    room: @sub_space_booking.sub_space_id
+                  ),
+                  alert: "You do not have permission to edit this booking"
+      return
+    end
+
     start_date = Date.parse(params[:sub_space_booking][:start_time])
     end_date = Date.parse(params[:sub_space_booking][:end_time])
     start_time = Time.parse(params[:sub_space_booking][:start_time])
@@ -534,10 +553,16 @@ class SubSpaceBookingController < ApplicationController
     end
 
     if @sub_space_booking.update(sub_space_booking_params)
-      redirect_to sub_space_booking_index_path(
-                    anchor: "booking-calendar-tab",
-                    room: @sub_space_booking.sub_space_id
-                  )
+      flash[:notice] = "Successfully updated booking"
+      respond_to do |format|
+        format.json { render json: { status: "ok" }, status: :ok }
+        format.html do
+          redirect_to sub_space_booking_index_path(
+                        anchor: "booking-calendar-tab",
+                        room: @sub_space_booking.sub_space_id
+                      )
+        end
+      end
     else
       render "edit"
     end
@@ -608,6 +633,11 @@ class SubSpaceBookingController < ApplicationController
     booking.destroy
     redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
                 notice: "Booking for #{subspaceName} deleted successfully."
+  end
+
+  def get_sub_space_booking
+    sub_space_booking = SubSpaceBooking.find(params[:id])
+    render json: { **sub_space_booking.as_json }
   end
 
   private
