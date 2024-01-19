@@ -102,6 +102,7 @@ const trainingIdInput = document.getElementById("training_id");
 const languageInput = document.getElementById("language");
 const courseInput = document.getElementById("course");
 const modalSave = document.getElementById("modal-save");
+const trainingContainer = document.getElementById("training-container");
 
 const modalDelete = document.getElementById("modal-delete");
 const modalClose = document.getElementById("modal-close");
@@ -640,10 +641,6 @@ const editShift = (arg) => {
         trainingIdInput.value = data.training_id;
         languageInput.value = data.language;
         courseInput.value = data.course;
-
-        const trainingContainer = document.getElementById("training-container");
-        trainingContainer.classList.remove("d-none");
-        trainingContainer.classList.add("d-block");
       }
 
       populateUsers({
@@ -768,13 +765,10 @@ document.getElementById("reason").addEventListener("change", (el) => {
 });
 
 function toggleShiftReason(el) {
-  const trainingContainer = document.getElementById("training-container");
   if (el.value === "Training") {
-    trainingContainer.classList.remove("d-none");
-    trainingContainer.classList.add("d-block");
+    trainingContainer.style.display = "block";
   } else {
-    trainingContainer.classList.remove("d-block");
-    trainingContainer.classList.add("d-none");
+    trainingContainer.style.display = "none";
   }
 }
 
