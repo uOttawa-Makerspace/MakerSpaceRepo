@@ -508,6 +508,7 @@ const createCalendarEvent = () => {
         if (modalDelete.classList.contains("d-block")) {
           removeEvent(document.getElementById("shift-id").value, true);
         }
+        calendar.refetchEvents();
       }
     })
     .catch((error) => {
