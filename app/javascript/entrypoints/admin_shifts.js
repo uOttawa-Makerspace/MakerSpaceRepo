@@ -555,6 +555,7 @@ const openModal = (arg) => {
     }
   }
   populateUsers(arg).then(() => {
+    toggleShiftReason(reasonInput);
     shiftModal.show();
   });
 };
@@ -659,6 +660,7 @@ const editShift = (arg) => {
           userIdInput.tomselect.addItem(user.id);
         });
       });
+      toggleShiftReason(reasonInput);
       shiftModal.show();
     });
 };
@@ -762,15 +764,19 @@ document
   });
 
 document.getElementById("reason").addEventListener("change", (el) => {
+  toggleShiftReason(el.target);
+});
+
+function toggleShiftReason(el) {
   const trainingContainer = document.getElementById("training-container");
-  if (el.target.value === "Training") {
+  if (el.value === "Training") {
     trainingContainer.classList.remove("d-none");
     trainingContainer.classList.add("d-block");
   } else {
     trainingContainer.classList.remove("d-block");
     trainingContainer.classList.add("d-none");
   }
-});
+}
 
 // Toggle Staff Visibility
 window.toggleVisibility = (id) => {
