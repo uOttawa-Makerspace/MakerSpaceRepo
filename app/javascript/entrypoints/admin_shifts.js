@@ -102,6 +102,7 @@ const trainingIdInput = document.getElementById("training_id");
 const languageInput = document.getElementById("language");
 const courseInput = document.getElementById("course");
 const modalSave = document.getElementById("modal-save");
+const trainingContainer = document.getElementById("training-container");
 
 const modalDelete = document.getElementById("modal-delete");
 const modalClose = document.getElementById("modal-close");
@@ -555,6 +556,7 @@ const openModal = (arg) => {
     }
   }
   populateUsers(arg).then(() => {
+    toggleShiftReason(reasonInput);
     shiftModal.show();
   });
 };
@@ -639,10 +641,6 @@ const editShift = (arg) => {
         trainingIdInput.value = data.training_id;
         languageInput.value = data.language;
         courseInput.value = data.course;
-
-        const trainingContainer = document.getElementById("training-container");
-        trainingContainer.classList.remove("d-none");
-        trainingContainer.classList.add("d-block");
       }
 
       populateUsers({
@@ -659,6 +657,7 @@ const editShift = (arg) => {
           userIdInput.tomselect.addItem(user.id);
         });
       });
+      toggleShiftReason(reasonInput);
       shiftModal.show();
     });
 };
@@ -762,15 +761,16 @@ document
   });
 
 document.getElementById("reason").addEventListener("change", (el) => {
-  const trainingContainer = document.getElementById("training-container");
-  if (el.target.value === "Training") {
-    trainingContainer.classList.remove("d-none");
-    trainingContainer.classList.add("d-block");
-  } else {
-    trainingContainer.classList.remove("d-block");
-    trainingContainer.classList.add("d-none");
-  }
+  toggleShiftReason(el.target);
 });
+
+function toggleShiftReason(el) {
+  if (el.value === "Training") {
+    trainingContainer.style.display = "block";
+  } else {
+    trainingContainer.style.display = "none";
+  }
+}
 
 // Toggle Staff Visibility
 window.toggleVisibility = (id) => {

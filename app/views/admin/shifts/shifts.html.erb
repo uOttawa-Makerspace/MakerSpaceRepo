@@ -104,7 +104,7 @@
                 <option value="Other">Other</option>
               </select>
             </div>
-            <div id="training-container" class="d-none">
+            <div id="training-container" style="display: none;">
               <div class="mb-2">
                 <%= label_tag :training_id, 'Training' %>
                 <%= select_tag :training_id, options_from_collection_for_select(Space.find(@space_id).trainings.order(name: :asc), 'id', 'name'), id: 'training_id', prompt: 'Select training', class: 'form-control form-select', required: true %>
