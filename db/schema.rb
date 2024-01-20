@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_11_29_214424) do
+ActiveRecord::Schema[7.0].define(version: 2024_01_20_024957) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -539,6 +539,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_29_214424) do
     t.integer "key_type", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "additional_info", default: ""
     t.index ["key_request_id"], name: "index_keys_on_key_request_id"
     t.index ["space_id"], name: "index_keys_on_space_id"
     t.index ["supervisor_id"], name: "index_keys_on_supervisor_id"

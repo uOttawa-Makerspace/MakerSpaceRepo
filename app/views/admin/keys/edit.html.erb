@@ -36,9 +36,13 @@
           <%= f.label :status, 'Status', class: 'form-label' %>
           <%= f.select :status, options_for_select(Key.statuses.except(:held).map { |k, _v| [k.humanize.capitalize, k] }, selected: @key.status), {}, { class: 'form-control form-select', id: 'status-select' } %>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <%= f.label :supervisor_id, class: 'form-label' %>
           <%= f.select :supervisor_id, User.where(role: 'admin').order(name: :asc).pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+        </div>
+        <div class="mb-5">
+          <%= f.label :additional_info, 'Additional Info (Optional)', class: 'form-label' %>
+          <%= f.trix_editor :additional_info, class: 'form-control' %>
         </div>
 
         <div class="text-center">

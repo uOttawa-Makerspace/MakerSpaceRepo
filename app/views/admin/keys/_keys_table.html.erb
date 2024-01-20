@@ -13,6 +13,7 @@
         <th>Status</th>
       <% end %>
       <th>Certifications</th>
+      <th>Notes</th>
       <th>Actions</th>
     </tr>
     </thead>
@@ -40,6 +41,9 @@
               0/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
               0/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
             <% end %>
+          </td>
+          <td>
+            <%= key.additional_info.blank? ? 'None' : key.additional_info.truncate(30).html_safe %>
           </td>
           <td>
             <%= link_to 'Show', admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
