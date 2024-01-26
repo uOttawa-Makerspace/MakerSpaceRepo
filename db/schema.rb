@@ -523,7 +523,6 @@ ActiveRecord::Schema[7.0].define(version: 2024_01_20_024957) do
     t.decimal "deposit_amount", precision: 5, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "notes", default: ""
     t.index ["key_id"], name: "index_key_transactions_on_key_id"
     t.index ["user_id"], name: "index_key_transactions_on_user_id"
   end

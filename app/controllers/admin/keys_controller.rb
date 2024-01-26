@@ -86,8 +86,7 @@ class Admin::KeysController < AdminAreaController
       KeyTransaction.new(
         user_id: user.id,
         key_id: @key.id,
-        deposit_amount: params[:deposit_amount],
-        notes: params[:notes]
+        deposit_amount: params[:deposit_amount]
       )
     if @key.status_inventory? &&
          @key.update(key_params.merge(user_id: user.id, status: :held)) &&

@@ -40,8 +40,8 @@
           <%= f.label :supervisor_id, 'Supervisor (optional if key is not held)', class: 'form-label' %>
           <%= f.select :supervisor_id, User.where(role: 'admin').order(name: :asc).pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
         </div>
-        <div class="mb-5">
-          <%= f.label :additional_info, 'Additional Info (Optional)', class: 'form-label' %>
+        <div class="mb-5" id="notes-container">
+          <%= f.label :additional_info, 'Notes (Optional)', class: 'form-label' %>
           <%= f.trix_editor :additional_info, class: 'form-control' %>
         </div>
 
