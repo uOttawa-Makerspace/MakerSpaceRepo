@@ -9,9 +9,10 @@ class Admin::ShiftsController < AdminAreaController
 
   def index
     @staff =
-      User.where(
-        id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
-      ).pluck(:name, :id)
+      User
+        .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
+        .order("LOWER(name) ASC")
+        .pluck(:name, :id)
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @space_id = @user.space_id || Space.first.id
     @colors = []
@@ -33,9 +34,10 @@ class Admin::ShiftsController < AdminAreaController
 
   def shifts
     @staff =
-      User.where(
-        id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
-      ).pluck(:name, :id)
+      User
+        .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
+        .order("LOWER(name) ASC")
+        .pluck(:name, :id)
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @colors = []
 
