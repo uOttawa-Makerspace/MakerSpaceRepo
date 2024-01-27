@@ -435,6 +435,7 @@ const editModal = (arg) => {
 
     unavailabilityId.value = arg.event.id;
     recurringInput.checked = arg.event.extendedProps.recurring;
+    userIdInput.value = arg.event.extendedProps.userId;
 
     if (arg.event.extendedProps.recurring) {
       dayInput.parentElement.style.display = "block";
