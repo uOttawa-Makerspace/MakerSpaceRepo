@@ -10,16 +10,5 @@
     <h6><span class="fw-bold">Deposit Amount:</span> $<%= @key_transaction.deposit_amount %></h6>
     <h6><span class="fw-bold">Return Date:</span> <%= @key_transaction.return_date.nil? ? 'Not Returned' : @key_transaction.return_date %></h6>
     <h6><span class="fw-bold">Deposit Return Date:</span> <%= @key_transaction.deposit_return_date.nil? ? 'Not Returned' : @key_transaction.deposit_return_date %></h6>
-
-    <div class="mt-4">
-      <div class="card mb-3">
-        <div class="card-header bg-primary text-light">
-          Notes
-        </div>
-        <div class="card-body">
-          <%= @key_transaction.notes.empty? ? 'None' : @key_transaction.notes.html_safe %>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
