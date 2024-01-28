@@ -18,7 +18,7 @@ class Admin::KeysController < AdminAreaController
       Key.all.sort_by do |key|
         value = key.number
 
-        value =~ /\A\d+\z/ ? value.to_i * -1 : value
+        value =~ /\A\d+\z/ ? value.to_i * -1 : Float::INFINITY
       end
 
     @spaces = Space.order(name: :asc)

@@ -1,15 +1,15 @@
 <div class="table-responsive">
-  <table class="table text-center m-0">
+  <table class="<%= "table text-center m-0 #{table_name}" %>">
     <thead class="table-primary">
     <tr>
-      <th>User</th>
-      <th>Space</th>
-      <th>Supervisor</th>
-      <th>Email</th>
-      <th>Student/Employee #</th>
-      <th>Phone Number</th>
-      <th>Emergency Contact</th>
-      <th>Certifications</th>
+      <th>User<span onclick="sortTable('<%= table_name %>', 0)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Space<span onclick="sortTable('<%= table_name %>', 1)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Supervisor<span onclick="sortTable('<%= table_name %>', 2)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Email<span onclick="sortTable('<%= table_name %>', 3)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Student/Employee #<span onclick="sortTable('<%= table_name %>', 4)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Phone Number<span onclick="sortTable('<%= table_name %>', 5)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Emergency Contact<span onclick="sortTable('<%= table_name %>', 6)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Certifications<span onclick="sortTable('<%= table_name %>', 7)"><%= fa_icon('arrow-down') %></span></th>
       <th>Actions</th>
     </tr>
     </thead>
