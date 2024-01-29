@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_11_29_214424) do
+ActiveRecord::Schema[7.0].define(version: 2024_01_29_060736) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -523,7 +523,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_29_214424) do
     t.decimal "deposit_amount", precision: 5, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "notes", default: ""
     t.index ["key_id"], name: "index_key_transactions_on_key_id"
     t.index ["user_id"], name: "index_key_transactions_on_user_id"
   end
@@ -539,6 +538,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_29_214424) do
     t.integer "key_type", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "additional_info", default: ""
     t.index ["key_request_id"], name: "index_keys_on_key_request_id"
     t.index ["space_id"], name: "index_keys_on_space_id"
     t.index ["supervisor_id"], name: "index_keys_on_supervisor_id"
@@ -724,11 +724,18 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_29_214424) do
     t.boolean "in_use", default: false
   end
 
+  create_table "printer_types", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "printers", id: :serial, force: :cascade do |t|
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.string "model"
     t.string "number"
+    t.bigint "printer_type_id"
+    t.index ["printer_type_id"], name: "index_printers_on_printer_type_id"
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
@@ -1301,6 +1308,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_29_214424) do
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
   add_foreign_key "popular_hours", "spaces"
+  add_foreign_key "printers", "printer_types"
   add_foreign_key "proficient_projects", "badge_templates"
   add_foreign_key "proficient_projects", "drop_off_locations"
   add_foreign_key "project_kits", "learning_modules"
