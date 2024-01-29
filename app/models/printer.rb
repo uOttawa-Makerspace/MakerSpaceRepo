@@ -2,6 +2,7 @@
 
 class Printer < ApplicationRecord
   has_many :printer_sessions, dependent: :destroy
+  belongs_to :printer_type, optional: true
   scope :show_options, -> { order("lower(model) ASC").all }
 
   def model_and_number
