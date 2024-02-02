@@ -6,19 +6,19 @@
 
     <% @printer_types.each do |type| %>
       <div>
-        <h2><%= type[:name] %></h2>
-
-        <% if Printer.get_last_model_session(type[:name]).present? %>
-          <div class="mb-2"><%= "Last Update: Printer Number: #{Printer.get_last_model_session(type[:name]).printer.number} |
-                User: #{Printer.get_last_model_session(type[:name]).user.username.capitalize}" %></div>
+        <h2><%= type %></h2>
+        <% latest_session = Printer.get_last_model_session(type) %>
+        <% if latest_session.present? %>
+          <div class="mb-2"><%= "Last Update: Printer Number: #{latest_session.printer.number} |
+                User: #{latest_session.user.username.capitalize}" %></div>
         <% end %>
         <%= form_for :printer, url: { controller: 'printers', action: 'link_printer_to_user' }, method: :patch do |f| %>
           <div class="row mb-3">
             <div class="col-md-5">
-              <%= f.select(:printer_id, @printers.where(model: type[:name]).pluck(:number, :id), { prompt: 'Choose Number...' }, { class: 'link_pp form-control form-select', id: 'options' }) %>
+              <%= f.select(:printer_id, PrinterType.find_by(name: type).printers.pluck(:number, :id), { prompt: 'Choose Number...' }, { class: 'link_pp form-control form-select', id: 'options' }) %>
             </div>
             <div class="col-md-5">
-              <%= f.select(:user_id, @list_users, { prompt: 'Choose User...' }, { class: 'link_pp form-control form-select', id: type[:id] }) %>
+              <%= f.select(:user_id, @list_users, { prompt: 'Choose User...' }, { class: 'link_pp form-control form-select', id: type.gsub(' ', '_') }) %>
             </div>
             <div class="col-md-2 justify-content-center align-self-center">
               <%= f.submit 'Submit', class: 'btn btn-secondary' %>

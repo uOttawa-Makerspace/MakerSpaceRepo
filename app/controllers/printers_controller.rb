@@ -17,20 +17,11 @@ class PrintersController < StaffAreaController
         .uniq
         .pluck(:name, :id)
     @list_users.unshift(%w[Clear clear])
-    @printer_types = [
-      { name: "Ultimaker 2+", id: "ultimaker2p" },
-      { name: "Ultimaker 3", id: "ultimaker3" },
-      { name: "Replicator 2", id: "replicator2" },
-      { name: "Dremel", id: "dremel" }
-    ]
+    @printer_types = PrinterType.all.pluck(:name)
   end
 
   def staff_printers_updates
-    @ultimaker_printer_ids = Printer.get_printer_ids("Ultimaker 2+")
-    @ultimaker3_printer_ids = Printer.get_printer_ids("Ultimaker 3")
-    @replicator2_printer_ids = Printer.get_printer_ids("Replicator 2")
-    @dremel_printer_ids = Printer.get_printer_ids("Dremel")
-    @printer_types = ["Ultimaker 2+", "Ultimaker 3", "Replicator 2", "Dremel"]
+    @printer_types = PrinterType.all.pluck(:name)
   end
 
   def link_printer_to_user
