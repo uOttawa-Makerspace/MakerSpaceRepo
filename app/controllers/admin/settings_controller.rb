@@ -10,6 +10,7 @@ class Admin::SettingsController < AdminAreaController
     @job_order_processed_message = JobOrderMessage.find_by(name: "processed")
     @area_option = AreaOption.new
     @printer = Printer.new
+    @printer_type = PrinterType.new
     @printer_models = PrinterType.all.order(name: :asc).pluck(:name, :id)
   end
 
@@ -43,6 +44,20 @@ class Admin::SettingsController < AdminAreaController
         Printer.new(printer_params.merge(printer_type_id: params[:model_id]))
       @printer.save
       flash[:notice] = "Printer added successfully!"
+    end
+    redirect_to admin_settings_path
+  end
+
+  def add_printer_type
+    if params[:printer_type][:name].blank?
+      flash[:alert] = "Please put in a printer model"
+    else
+      @printer_type = PrinterType.new(name: params[:printer_type][:name])
+      if @printer_type.save
+        flash[:notice] = "Successfully created new printer model"
+      else
+        flash[:alert] = "Printer model already exists"
+      end
     end
     redirect_to admin_settings_path
   end
