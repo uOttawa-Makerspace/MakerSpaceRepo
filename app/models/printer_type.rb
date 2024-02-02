@@ -1,5 +1,5 @@
 class PrinterType < ApplicationRecord
-  has_many :printers
+  has_many :printers, dependent: :destroy
 
   validates :name, presence: true
 end

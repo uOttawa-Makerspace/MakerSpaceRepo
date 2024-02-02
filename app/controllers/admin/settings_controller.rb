@@ -10,6 +10,7 @@ class Admin::SettingsController < AdminAreaController
     @job_order_processed_message = JobOrderMessage.find_by(name: "processed")
     @area_option = AreaOption.new
     @printer = Printer.new
+    @printer_models = PrinterType.all.order(name: :asc).pluck(:name, :id)
   end
 
   def add_category
@@ -35,10 +36,11 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def add_printer
-    if params[:printer][:model].blank? || params[:printer][:number].blank?
+    if params[:printer][:number].blank? || params[:model_id].blank?
       flash[:alert] = "Invalid printer model or number"
     else
-      @printer = Printer.new(printer_params)
+      @printer =
+        Printer.new(printer_params.merge(printer_type_id: params[:model_id]))
       @printer.save
       flash[:notice] = "Printer added successfully!"
     end
@@ -221,7 +223,7 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def printer_params
-    params.require(:printer).permit(:model, :number)
+    params.require(:printer).permit(:number)
   end
 
   def course_params

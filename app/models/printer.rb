@@ -3,22 +3,24 @@
 class Printer < ApplicationRecord
   has_many :printer_sessions, dependent: :destroy
   belongs_to :printer_type, optional: true
-  scope :show_options, -> { order("lower(model) ASC").all }
+  scope :show_options,
+        -> { joins(:printer_type).order("lower(printer_types.name) ASC") }
 
   def model_and_number
-    "#{model}; Number #{number}"
+    "#{printer_type.name}; Number #{number}"
   end
 
   def self.get_printer_ids(model)
-    Printer.where(model: model).pluck(:id)
+    PrinterType.find_by(name: model).printers.pluck(:id)
   end
 
   def self.get_last_model_session(printer_model)
     PrinterSession
       .joins(:printer)
       .order(created_at: :desc)
-      .where("printers.model = ?", printer_model)
-      .first
+      .each { |ps| return ps if ps.printer.printer_type.name == printer_model }
+
+    return nil
   end
 
   def self.get_last_number_session(printer_id)
