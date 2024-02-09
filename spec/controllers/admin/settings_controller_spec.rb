@@ -59,14 +59,16 @@ RSpec.describe Admin::SettingsController, type: :controller do
   end
 
   describe "POST /add_printer" do
+    before(:each) { @printer_type = create(:printer_type, :UM2P) }
+
     context "add printer" do
       it "should add the printer" do
         post :add_printer,
              params: {
                printer: {
-                 model: "Ultimaker 2+",
                  number: "UM2P-01"
-               }
+               },
+               model_id: PrinterType.first.id
              }
         expect(response).to redirect_to admin_settings_path
         expect(flash[:notice]).to eq("Printer added successfully!")
@@ -76,22 +78,22 @@ RSpec.describe Admin::SettingsController, type: :controller do
         post :add_printer,
              params: {
                printer: {
-                 model: "Ultimaker 2+",
                  number: ""
-               }
+               },
+               model_id: PrinterType.first.id
              }
         expect(response).to redirect_to admin_settings_path
         expect(flash[:alert]).to eq("Invalid printer model or number")
       end
 
       it "should not add the printer" do
-        post :add_printer, params: { printer: { model: "", number: "UM2P-01" } }
+        post :add_printer, params: { printer: { number: "UM2P-01" } }
         expect(response).to redirect_to admin_settings_path
         expect(flash[:alert]).to eq("Invalid printer model or number")
       end
 
       it "should not add the printer" do
-        post :add_printer, params: { printer: { model: "", number: "" } }
+        post :add_printer, params: { printer: { number: "" }, model_id: "" }
         expect(response).to redirect_to admin_settings_path
         expect(flash[:alert]).to eq("Invalid printer model or number")
       end
@@ -135,7 +137,7 @@ RSpec.describe Admin::SettingsController, type: :controller do
   describe "POST /remove_printer" do
     context "remove printer" do
       it "should remove the printer" do
-        printer = Printer.create(model: "Ultimaker 2+", number: "UM2P-01")
+        printer = Printer.create(number: "UM2P-01")
         post :remove_printer, params: { remove_printer: printer.id }
         expect(response).to redirect_to admin_settings_path
         expect(flash[:notice]).to eq("Printer removed successfully!")
