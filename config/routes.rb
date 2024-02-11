@@ -288,6 +288,7 @@ Rails.application.routes.draw do
         post :update_color
         post :confirm_shifts
         post :clear_pending_shifts
+        post :confirm_current_week_shifts
         post :copy_to_next_week
       end
     end

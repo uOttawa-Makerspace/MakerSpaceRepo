@@ -72,6 +72,20 @@ class Admin::ShiftsController < AdminAreaController
                 notice: "Shifts have been successfully cleared!"
   end
 
+  def confirm_current_week_shifts
+    end_of_week_param = DateTime.parse(params[:end_of_week])
+    start_of_week = end_of_week_param.beginning_of_week - 1.day
+    end_of_week = end_of_week_param.end_of_week - 1.day
+
+    Shift.where(
+      space_id: @user.space_id,
+      pending: true,
+      start_datetime: start_of_week..end_of_week
+    ).update(pending: false)
+
+    render json: { status: "ok" }
+  end
+
   def create
     if params[:shift].present? && params[:user_id].present?
       @shift = Shift.new(shift_params.merge(space_id: @space_id))

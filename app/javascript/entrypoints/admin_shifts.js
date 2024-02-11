@@ -219,10 +219,16 @@ document.addEventListener("turbo:load", () => {
               copyToNextWeek();
             },
           },
+          confirmCurrentWeek: {
+            text: "Confirm current week's shifts",
+            click: () => {
+              confirmCurrentWeekShifts();
+            },
+          },
         },
         headerToolbar: {
           left: "prev,today,next",
-          center: "copyToNextWeek",
+          center: "copyToNextWeek,confirmCurrentWeek",
           right: "addNewEvent,timeGridWeek,timeGridDay",
         },
         contentHeight: "auto",
@@ -520,26 +526,62 @@ const createCalendarEvent = () => {
 };
 
 const copyToNextWeek = () => {
-  fetch("/admin/shifts/copy_to_next_week", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      end_of_week: calendar.currentData.dateProfile.currentRange.end,
-    }),
-  }).then((response) => {
-    if (response.ok) {
-      calendar.refetchEvents();
-      calendar.gotoDate(
-        new Date(
-          calendar.currentData.dateProfile.currentRange.end.getTime() +
-            1000 * 60 * 60 * 24
-        )
-      );
-    }
-  });
+  var isConfirmed = window.confirm(
+    "Are you sure you want to copy this week's shifts to the next week's?"
+  );
+
+  if (isConfirmed) {
+    fetch("/admin/shifts/copy_to_next_week", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        end_of_week: calendar.currentData.dateProfile.currentRange.end,
+      }),
+    }).then((response) => {
+      if (response.ok) {
+        calendar.refetchEvents();
+        calendar.gotoDate(
+          new Date(
+            calendar.currentData.dateProfile.currentRange.end.getTime() +
+              1000 * 60 * 60 * 24
+          )
+        );
+      }
+    });
+  }
+};
+
+const confirmCurrentWeekShifts = () => {
+  var isConfirmed = window.confirm(
+    "Are you sure you want to confirm this week's shifts?"
+  );
+
+  if (isConfirmed) {
+    fetch("/admin/shifts/confirm_current_week_shifts", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        end_of_week: calendar.currentData.dateProfile.currentRange.end,
+      }),
+    }).then((response) => {
+      console.log("response", response);
+      if (response.ok) {
+        console.log("ok");
+        calendar.refetchEvents();
+        calendar.gotoDate(
+          new Date(
+            calendar.currentData.dateProfile.currentRange.start.getTime()
+          )
+        );
+      }
+    });
+  }
 };
 
 const openModal = (arg) => {
