@@ -42,8 +42,11 @@ class Admin::SettingsController < AdminAreaController
     else
       @printer =
         Printer.new(printer_params.merge(printer_type_id: params[:model_id]))
-      @printer.save
-      flash[:notice] = "Printer added successfully!"
+      if @printer.save
+        flash[:notice] = "Printer added successfully!"
+      else
+        flash[:alert] = "Printer number already exists"
+      end
     end
     redirect_to admin_settings_path
   end

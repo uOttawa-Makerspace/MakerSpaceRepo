@@ -6,6 +6,8 @@ class Printer < ApplicationRecord
   scope :show_options,
         -> { joins(:printer_type).order("lower(printer_types.name) ASC") }
 
+  validates :number, presence: true, uniqueness: { scope: :printer_type_id }
+
   def model_and_number
     "#{printer_type.name}; Number #{number}"
   end
