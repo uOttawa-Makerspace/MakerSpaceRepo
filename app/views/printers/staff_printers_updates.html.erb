@@ -9,15 +9,15 @@
     </div>
 
     <div>
-      <% @printer_types.each do |pt| %>
+      <% @printer_types.each_with_index do |pt, index| %>
         <div class="mb-3">
           <h2><%= pt.name %></h2>
-          <table class="table table-striped">
+          <table class="table table-striped <%= "table-#{index}" %>">
             <thead class="table-primary text-center">
-              <th>Printer Number</th>
-              <th>User</th>
-              <th>Time</th>
-              <th>In Use</th>
+              <th>Printer Number<span onclick="sortTable('table-<%= index %>', 0)"><%= fa_icon('arrow-down') %></span></th>
+              <th>User<span onclick="sortTable('table-<%= index %>', 1)"><%= fa_icon('arrow-down') %></span></th>
+              <th>Time<span onclick="sortTable('table-<%= index %>', 2)"><%= fa_icon('arrow-down') %></span></th>
+              <th>In Use<span onclick="sortTable('table-<%= index %>', 3)"><%= fa_icon('arrow-down') %></span></th>
             </thead>
             <tbody>
               <% Printer.get_printer_ids(pt.name).sort_by do |printer|
