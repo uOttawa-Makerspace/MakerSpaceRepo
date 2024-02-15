@@ -16,11 +16,10 @@ class Printer < ApplicationRecord
 
   def self.get_last_model_session(printer_model)
     PrinterSession
-      .joins(:printer)
+      .joins(:printer_type)
       .order(created_at: :desc)
-      .each { |ps| return ps if ps.printer.printer_type.name == printer_model }
-
-    return nil
+      .where("printer_types.name = ?", printer_model)
+      .first
   end
 
   def self.get_last_number_session(printer_id)

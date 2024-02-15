@@ -17,11 +17,11 @@ class PrintersController < StaffAreaController
         .uniq
         .pluck(:name, :id)
     @list_users.unshift(%w[Clear clear])
-    @printer_types = PrinterType.all.pluck(:name)
+    @printer_types = PrinterType.all
   end
 
   def staff_printers_updates
-    @printer_types = PrinterType.all.pluck(:name)
+    @printer_types = PrinterType.all
   end
 
   def link_printer_to_user
