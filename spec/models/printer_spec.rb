@@ -2,12 +2,17 @@ require "rails_helper"
 
 RSpec.describe Printer, type: :model do
   before(:each) do
-    @um2p_1 = create :printer, :UM2P_01
-    @um2p_2 = create :printer, :UM2P_02
-    @um3 = create :printer, :UM3_01
-    @rpl2_1 = create :printer, :RPL2_01
-    @rpl2_2 = create :printer, :RPL2_02
-    @dremel = create :printer, :dremel_10_17
+    @um2p = create(:printer_type, :UM2P)
+    @um3 = create(:printer_type, :UM3)
+    @rpl2 = create(:printer_type, :RPL2)
+    @dremel = create(:printer_type, :Dremel)
+
+    @um2p_1 = create(:printer, :UM2P_01, printer_type_id: @um2p.id)
+    @um2p_2 = create(:printer, :UM2P_02, printer_type_id: @um2p.id)
+    @um3_01 = create(:printer, :UM3_01, printer_type_id: @um3.id)
+    @rpl2_1 = create(:printer, :RPL2_01, printer_type_id: @rpl2.id)
+    @rpl2_2 = create(:printer, :RPL2_02, printer_type_id: @rpl2.id)
+    @dremel10_17 = create(:printer, :dremel_10_17, printer_type_id: @dremel.id)
   end
 
   describe "model method" do
@@ -22,18 +27,18 @@ RSpec.describe Printer, type: :model do
         expect(Printer.get_printer_ids("Ultimaker 2+")).to eq(
           [@um2p_1.id, @um2p_2.id]
         )
-        expect(Printer.get_printer_ids("Ultimaker 3")).to eq([@um3.id])
+        expect(Printer.get_printer_ids("Ultimaker 3")).to eq([@um3_01.id])
         expect(Printer.get_printer_ids("Replicator 2")).to eq(
           [@rpl2_1.id, @rpl2_2.id]
         )
-        expect(Printer.get_printer_ids("Dremel")).to eq([@dremel.id])
+        expect(Printer.get_printer_ids("Dremel")).to eq([@dremel10_17.id])
       end
     end
 
     context "Get last session" do
       it "should return last session" do
         create :user, :regular_user
-        create(:printer_session, :um2p_session)
+        create(:printer_session, printer_id: @um2p_2.id)
         expect(
           Printer.get_last_model_session("Ultimaker 2+").printer.number
         ).to eq("UM2P - 02")
