@@ -81,10 +81,10 @@ RSpec.describe PrintersController, type: :controller do
         create :user, :regular_user
         admin = create(:user, :admin)
         session[:user_id] = admin.id
-        um2p_session = create(:printer_session, :um2p_session)
-        um3_session = create(:printer_session, :um3_session)
-        rpl2_session = create(:printer_session, :rpl2_session)
-        dremel_session = create(:printer_session, :dremel_session)
+        um2p_session = create(:printer_session, printer_id: @um2_2.id)
+        um3_session = create(:printer_session, printer_id: @um3.id)
+        rpl2_session = create(:printer_session, printer_id: @rpl2.id)
+        dremel_session = create(:printer_session, printer_id: @dremel.id)
         get :staff_printers
         expect(response).to have_http_status(:success)
       end
