@@ -3,8 +3,7 @@
 class Printer < ApplicationRecord
   has_many :printer_sessions, dependent: :destroy
   belongs_to :printer_type, optional: true
-  scope :show_options,
-        -> { joins(:printer_type).order("lower(printer_types.name) ASC") }
+  scope :show_options, -> { order("lower(number) ASC") }
 
   validates :number, presence: true, uniqueness: { scope: :printer_type_id }
 
