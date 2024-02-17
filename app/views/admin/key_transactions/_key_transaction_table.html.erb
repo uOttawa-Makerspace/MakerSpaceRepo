@@ -1,14 +1,14 @@
 <div class="table-responsive">
-  <table class="table text-center m-0">
+  <table class="<%= "table text-center m-0 #{table_name}" %>">
     <thead class="table-primary">
     <tr>
-      <th>Key</th>
-      <th>User</th>
-      <th>Supervisor</th>
-      <th>Key given on</th>
-      <th>Deposit Amount</th>
-      <th>Return Date</th>
-      <th>Deposit Return Date</th>
+      <th>Key<span onclick="sortTable('<%= table_name %>', 0)"><%= fa_icon('arrow-down') %></span></th>
+      <th>User<span onclick="sortTable('<%= table_name %>', 1)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Supervisor<span onclick="sortTable('<%= table_name %>', 2)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Key given on<span onclick="sortTable('<%= table_name %>', 3)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Deposit Amount<span onclick="sortTable('<%= table_name %>', 4)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Return Date<span onclick="sortTable('<%= table_name %>', 5)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Deposit Return Date<span onclick="sortTable('<%= table_name %>', 6)"><%= fa_icon('arrow-down') %></span></th>
       <th>Actions</th>
     </tr>
     </thead>

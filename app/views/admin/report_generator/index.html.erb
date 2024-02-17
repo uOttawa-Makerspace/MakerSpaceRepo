@@ -7,41 +7,48 @@
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
-          <%= radio_button_tag(:range_type, :semester, true, class: 'form-check-input', data: { 'radio-enable': '.range-type-semester-fields' }) %>
+          <%= radio_button_tag(:range_type, :semester, true, class: 'form-check-input', id: 'semester_radio') %>
           <%= label_tag(:range_type_semester, 'Semester', class: 'form-check-label') %>
         </div>
       </div>
+      
+      <div id="semester_fields" class="col-md-8">
+        <div class="row">
+          <div class="mb-3 col-md-6">
+            <%= label_tag(:term, 'Term', class: 'form-label') %>
+            <%= select_tag(:term, options_for_select([['Winter', :winter], ['Spring/Summer', :summer], ['Fall', :fall]]), class: %w[form-control form-select]) %>
+          </div>
 
-      <div class="mb-3 col-md-4">
-        <%= label_tag(:term, 'Term', class: 'form-label') %>
-        <%= select_tag(:term, options_for_select([['Winter', :winter], ['Spring/Summer', :summer], ['Fall', :fall]]), class: %w[form-control form-select range-type-semester-fields]) %>
-      </div>
-
-      <div class="mb-3 col-md-4">
-        <%= label_tag(:year, 'Year', class: 'form-label') %>
-        <%= number_field_tag(:year, DateTime.now.year, class: %w[form-control range-type-semester-fields]) %>
+          <div class="mb-3 col-md-6">
+            <%= label_tag(:year, 'Year', class: 'form-label') %>
+            <%= number_field_tag(:year, DateTime.now.year, class: %w[form-control]) %>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
-          <%= radio_button_tag(:range_type, :date_range, false, class: 'form-check-input', data: { 'radio-enable': '.range-type-date-range-fields' }) %>
+          <%= radio_button_tag(:range_type, :date_range, false, class: 'form-check-input', id: 'date_range_radio') %>
           <%= label_tag(:range_type_date_range, 'Date Range', class: 'form-check-label') %>
         </div>
       </div>
 
-      <div class="mb-3 col-md-4">
-        <%= label_tag(:from_date, 'From', class: 'form-label') %>
-        <%= date_field_tag(:from_date, 1.week.ago.beginning_of_week.strftime('%Y-%m-%d'), class: %w[form-control range-type-date-range-fields]) %>
-      </div>
+      <div id="date_range_fields" class="col-md-8" style="display: none;">
+        <div class="row">
+          <div class="mb-3 col-md-6">
+            <%= label_tag(:from_date, 'From', class: 'form-label') %>
+            <%= date_field_tag(:from_date, 1.week.ago.beginning_of_week.strftime('%Y-%m-%d'), class: %w[form-control]) %>
+          </div>
 
-      <div class="mb-3 col-md-4">
-        <%= label_tag(:to_date, 'To', class: 'form-label') %>
-        <%= date_field_tag(:to_date, 1.week.ago.end_of_week.strftime('%Y-%m-%d'), class: %w[form-control range-type-date-range-fields]) %>
+          <div class="mb-3 col-md-6">
+            <%= label_tag(:to_date, 'To', class: 'form-label') %>
+            <%= date_field_tag(:to_date, 1.week.ago.end_of_week.strftime('%Y-%m-%d'), class: %w[form-control]) %>
+          </div>
+        </div>
       </div>
     </div>
-
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
@@ -72,3 +79,18 @@
     </div>
   <% end %>
 </section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    function toggleFields() {
+      var isSemester = document.getElementById('semester_radio').checked;
+      document.getElementById('semester_fields').style.display = isSemester ? 'block' : 'none';
+      document.getElementById('date_range_fields').style.display = isSemester ? 'none' : 'block';
+    }
+
+    document.getElementById('semester_radio').addEventListener('change', toggleFields);
+    document.getElementById('date_range_radio').addEventListener('change', toggleFields);
+
+    toggleFields();
+  });
+</script>

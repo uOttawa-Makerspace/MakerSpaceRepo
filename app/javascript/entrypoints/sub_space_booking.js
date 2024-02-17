@@ -9,6 +9,14 @@ document.addEventListener("turbo:load", function () {
   if (bookedCalendarEl) {
     function createEvent(arg) {
       let modal = document.getElementById("bookModal");
+
+      document.getElementById("bookSave").style.display = "block";
+      document.getElementById("bookUpdate").style.display = "none";
+      document.getElementById("bookingModalLabel").innerText = "New Booking";
+      document.getElementById("book-recurring").style.display = "inline-block";
+      document.getElementById("book-recurring-label").style.display =
+        "inline-block";
+
       toggleRecurring();
       if (modal) {
         modal.style.display = "block";
@@ -17,6 +25,50 @@ document.addEventListener("turbo:load", function () {
           start_picker.setDate(Date.parse(arg.startStr));
           end_picker.setDate(Date.parse(arg.endStr));
         }
+      }
+    }
+    function editEvent(arg) {
+      let modal = document.getElementById("bookModal");
+
+      document.getElementById("bookSave").style.display = "none";
+      document.getElementById("bookUpdate").style.display = "block";
+      document.getElementById("bookingModalLabel").innerText = "Update Booking";
+      document.getElementById("sub_space_booking_id").value =
+        arg.event.id.split("_")[1];
+      document.getElementById("book-recurring").style.display = "none";
+      document.getElementById("book-recurring-label").style.display = "none";
+
+      if (modal) {
+        fetch(
+          "/sub_space_booking/get_sub_space_booking?id=" +
+            arg.event.id.split("_")[1],
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("book-name").value = data.name;
+            document.getElementById("book-description").value =
+              data.description;
+            start_picker.setDate(Date.parse(data.start_time.slice(0, -6)));
+            end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
+
+            document.getElementById("book-recurring").checked = false;
+            const blockingElement = document.getElementById("book-blocking");
+            if (blockingElement) {
+              blockingElement.checked = data.blocking;
+            }
+
+            modal.style.display = "block";
+            modal.classList.add("show");
+
+            toggleRecurring();
+          });
       }
     }
     let start_picker = document.getElementById("book-start").flatpickr({
@@ -42,6 +94,9 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("bookCancel").addEventListener("click", closeModal);
     document.getElementById("bookClose").addEventListener("click", closeModal);
     document.getElementById("bookSave").addEventListener("click", bookEvent);
+    document
+      .getElementById("bookUpdate")
+      .addEventListener("click", updateEvent);
     document
       .getElementById("book-recurring")
       .addEventListener("change", toggleRecurring);
@@ -113,6 +168,52 @@ document.addEventListener("turbo:load", function () {
         },
         body: JSON.stringify(data),
       });
+
+      makeRequest(request);
+    }
+    function updateEvent() {
+      if (start_picker.selectedDates[0] >= end_picker.selectedDates[0]) {
+        document
+          .getElementById("end-date-validation")
+          .classList.remove("d-none");
+        document.getElementById("book-end").classList.add("is-invalid");
+        end_picker.altInput.classList.add("is-invalid");
+        return;
+      } else {
+        document.getElementById("end-date-validation").classList.add("d-none");
+        document.getElementById("book-end").classList.remove("is-invalid");
+        end_picker.altInput.classList.remove("is-invalid");
+      }
+
+      let data = {
+        sub_space_booking: {
+          name: document.getElementById("book-name").value,
+          description: document.getElementById("book-description").value,
+          start_time: start_picker.input.value,
+          end_time: end_picker.input.value,
+          blocking: document.getElementById("book-blocking")
+            ? document.getElementById("book-blocking").checked
+            : false,
+        },
+      };
+
+      let sub_space_booking_id = document.getElementById(
+        "sub_space_booking_id"
+      ).value;
+      let url = `/sub_space_booking/${sub_space_booking_id}/update`;
+
+      let request = new Request(url, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      makeRequest(request);
+    }
+    function makeRequest(request) {
       fetch(request)
         .then((response) => response.text())
         .then((data) => {
@@ -214,6 +315,9 @@ document.addEventListener("turbo:load", function () {
       ],
       select: function (arg) {
         createEvent(arg);
+      },
+      eventClick: (arg) => {
+        editEvent(arg);
       },
     });
     bookedCalendar.render();
