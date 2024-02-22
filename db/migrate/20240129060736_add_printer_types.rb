@@ -3,6 +3,7 @@ class AddPrinterTypes < ActiveRecord::Migration[7.0]
     # Create the PrinterType table
     create_table :printer_types do |t|
       t.string :name
+      t.string :short_form, default: ""
 
       t.timestamps
     end
@@ -33,9 +34,9 @@ class AddPrinterTypes < ActiveRecord::Migration[7.0]
     add_column :printers, :model, :string
 
     Printer.all.each do |printer|
-      printer_type = PrinterType.find(printer.printer_type_id)
+      printer_type = PrinterType.find_by(id: printer.printer_type_id)
 
-      printer.model = printer_type.name
+      printer.update(model: printer_type.name) unless printer_type.nil?
     end
 
     remove_reference :printers, :printer_type

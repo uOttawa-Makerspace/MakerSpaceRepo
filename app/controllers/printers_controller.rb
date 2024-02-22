@@ -17,11 +17,11 @@ class PrintersController < StaffAreaController
         .uniq
         .pluck(:name, :id)
     @list_users.unshift(%w[Clear clear])
-    @printer_types = PrinterType.all
+    @printer_types = PrinterType.all.order("lower(name) ASC")
   end
 
   def staff_printers_updates
-    @printer_types = PrinterType.all
+    @printer_types = PrinterType.all.order("lower(name) ASC")
   end
 
   def link_printer_to_user

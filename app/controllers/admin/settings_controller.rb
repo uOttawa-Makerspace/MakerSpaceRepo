@@ -11,7 +11,13 @@ class Admin::SettingsController < AdminAreaController
     @area_option = AreaOption.new
     @printer = Printer.new
     @printer_type = PrinterType.new
-    @printer_models = PrinterType.all.order(name: :asc).pluck(:name, :id)
+    @printer_models =
+      PrinterType
+        .all
+        .order(name: :asc)
+        .map do |pt|
+          [pt.name + (pt.short_form.blank? ? "" : " (#{pt.short_form})"), pt.id]
+        end
   end
 
   def add_category
@@ -37,29 +43,24 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def add_printer
+    printer_type = PrinterType.find_by(id: params[:model_id])
+    number =
+      (
+        if printer_type.short_form.blank?
+          params[:printer][:number]
+        else
+          "#{printer_type.short_form} - #{params[:printer][:number]}"
+        end
+      )
+
     if params[:printer][:number].blank? || params[:model_id].blank?
       flash[:alert] = "Invalid printer model or number"
     else
-      @printer =
-        Printer.new(printer_params.merge(printer_type_id: params[:model_id]))
+      @printer = Printer.new(number: number, printer_type_id: params[:model_id])
       if @printer.save
         flash[:notice] = "Printer added successfully!"
       else
         flash[:alert] = "Printer number already exists"
-      end
-    end
-    redirect_to admin_settings_path
-  end
-
-  def add_printer_type
-    if params[:printer_type][:name].blank?
-      flash[:alert] = "Please put in a printer model"
-    else
-      @printer_type = PrinterType.new(name: params[:printer_type][:name])
-      if @printer_type.save
-        flash[:notice] = "Successfully created new printer model"
-      else
-        flash[:alert] = "Printer model already exists"
       end
     end
     redirect_to admin_settings_path

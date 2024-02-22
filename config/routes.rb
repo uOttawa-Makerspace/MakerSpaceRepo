@@ -117,6 +117,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :printer_types, except: %i[show]
+
   root "static_pages#home"
 
   # STATIC PAGES
@@ -315,7 +317,6 @@ Rails.application.routes.draw do
         post "add_category"
         post "add_area"
         post "add_printer"
-        post "add_printer_type"
         # post 'rename_category'
         patch "update_job_order_processed"
         post "remove_category"

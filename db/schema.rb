@@ -726,6 +726,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_01_29_060736) do
 
   create_table "printer_types", force: :cascade do |t|
     t.string "name"
+    t.string "short_form", default: ""
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

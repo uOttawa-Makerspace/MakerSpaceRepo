@@ -4,8 +4,9 @@
 
     <div class="title">Last Updates 3D-Printers Usage</div>
 
-    <div class="text-center">
-      <div><%= link_to 'Manage 3D Printers', staff_printers_printers_path, class: 'btn btn-secondary' %></div>
+    <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
+      <%= link_to 'Manage 3D Printers', staff_printers_printers_path, class: 'btn btn-secondary' %>
+      <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-secondary' %>
     </div>
 
     <div>
