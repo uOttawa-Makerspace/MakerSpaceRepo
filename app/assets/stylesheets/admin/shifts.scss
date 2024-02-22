@@ -19,3 +19,12 @@
   margin-left: auto !important;
   margin-right: auto !important;
 }
+.fc-button-group {
+  &:has(.fc-copyToNextWeek-button) {
+    gap: 10px;
+
+    & .fc-button {
+      border-radius: 0.25em !important;
+    }
+  }
+}
