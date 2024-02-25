@@ -44,18 +44,19 @@ class Admin::SettingsController < AdminAreaController
 
   def add_printer
     printer_type = PrinterType.find_by(id: params[:model_id])
-    number =
-      (
-        if printer_type.short_form.blank?
-          params[:printer][:number]
-        else
-          "#{printer_type.short_form} - #{params[:printer][:number]}"
-        end
-      )
 
     if params[:printer][:number].blank? || params[:model_id].blank?
       flash[:alert] = "Invalid printer model or number"
     else
+      number =
+        (
+          if printer_type.short_form.blank?
+            params[:printer][:number]
+          else
+            "#{printer_type.short_form} - #{params[:printer][:number]}"
+          end
+        )
+
       @printer = Printer.new(number: number, printer_type_id: params[:model_id])
       if @printer.save
         flash[:notice] = "Printer added successfully!"
