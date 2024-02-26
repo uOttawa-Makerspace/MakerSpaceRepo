@@ -18,7 +18,7 @@
           <th>Actions</th>
         </thead>
         <tbody>
-        <% PrinterType.all.order('LOWER(name) ASC').each do |pt| %>
+        <% @printer_types.each do |pt| %>
           <tr>
             <td><%= pt.name %></td>
             <td><%= pt.short_form.empty? ? 'None' : pt.short_form %></td>

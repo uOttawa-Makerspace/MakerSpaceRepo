@@ -5,6 +5,10 @@ class PrinterTypesController < StaffAreaController
 
   before_action :get_printer_type, only: %i[edit update destroy]
 
+  def index
+    @printer_types = PrinterType.all.order("LOWER(name) ASC")
+  end
+
   def new
     @printer_type = PrinterType.new
   end
