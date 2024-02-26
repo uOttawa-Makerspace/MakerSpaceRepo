@@ -18,22 +18,20 @@ RSpec.describe Printer, type: :model do
   describe "model method" do
     context "model and number" do
       it "should return the model and number" do
-        expect(@um2p_1.model_and_number).to eq(
-          "Ultimaker 2+ Test; Number UM2P - 01"
-        )
+        expect(@um2p_1.model_and_number).to eq("Ultimaker 2+; Number UM2P - 01")
       end
     end
 
     context "get printer id" do
       it "should return matching ids" do
-        expect(Printer.get_printer_ids("Ultimaker 2+ Test")).to eq(
+        expect(Printer.get_printer_ids("Ultimaker 2+")).to eq(
           [@um2p_1.id, @um2p_2.id]
         )
-        expect(Printer.get_printer_ids("Ultimaker 3 Test")).to eq([@um3_01.id])
-        expect(Printer.get_printer_ids("Replicator 2 Test")).to eq(
+        expect(Printer.get_printer_ids("Ultimaker 3")).to eq([@um3_01.id])
+        expect(Printer.get_printer_ids("Replicator 2")).to eq(
           [@rpl2_1.id, @rpl2_2.id]
         )
-        expect(Printer.get_printer_ids("Dremel Test")).to eq([@dremel10_17.id])
+        expect(Printer.get_printer_ids("Dremel")).to eq([@dremel10_17.id])
       end
     end
 
@@ -42,7 +40,7 @@ RSpec.describe Printer, type: :model do
         create :user, :regular_user
         create(:printer_session, printer_id: @um2p_2.id)
         expect(
-          Printer.get_last_model_session("Ultimaker 2+ Test").printer.number
+          Printer.get_last_model_session("Ultimaker 2+").printer.number
         ).to eq("UM2P - 02")
       end
     end
