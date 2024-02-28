@@ -4,17 +4,6 @@
   <%= form_for @key, url: { controller: 'admin/keys', action: 'revoke_key' } do |f| %>
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
-        <div class="mb-4">
-          <div class="card mb-3">
-            <div class="card-header bg-primary text-light">
-              Notes
-            </div>
-            <div class="card-body">
-              <%= @key.get_latest_key_transaction.notes.empty? ? 'None' : @key.get_latest_key_transaction.notes.html_safe %>
-            </div>
-          </div>
-        </div>
-
         <div class="mb-5">
           <label for="deposit_return_date">Deposit Return Date - $<%= @key.get_latest_key_transaction.deposit_amount %></label>
           <div class="input-group">

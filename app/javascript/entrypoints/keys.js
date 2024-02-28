@@ -27,6 +27,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  const statusSelect = document.getElementById("status-select");
+  const notesField = document.getElementById("notes-container");
+  if (statusSelect && notesField) {
+    statusSelect.addEventListener("change", (e) => {
+      if (e.target.value === "inventory") {
+        notesField.style.display = "none";
+      } else {
+        notesField.style.display = "block";
+      }
+    });
+  }
+
   let spaceSelect = document.getElementById("space-select");
   if (spaceSelect && !spaceSelect.tomselect) {
     new TomSelect("#space-select", {

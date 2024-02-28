@@ -16,6 +16,17 @@
     <h6><span class="fw-bold">User:</span> <%= link_to @key.user.name, user_path(@key.user.username), target: '_blank', rel: 'noopener' unless @key.user.nil? %></h6>
     <h6><span class="fw-bold">Supervisor:</span> <%= link_to @key.supervisor.name, user_path(@key.supervisor.username), target: '_blank', rel: 'noopener' unless @key.supervisor.nil? %></h6>
     <h6><span class="fw-bold">Status:</span> <%= @key.status.humanize.capitalize %></h6>
+
+    <div class="mt-4">
+      <div class="card mb-3">
+        <div class="card-header bg-primary text-light">
+          Notes
+        </div>
+        <div class="card-body">
+          <%= @key.additional_info.empty? ? 'None' : @key.additional_info.html_safe %>
+        </div>
+      </div>
+    </div>
   </div>
 
   <% unless @key.key_request.nil? %>

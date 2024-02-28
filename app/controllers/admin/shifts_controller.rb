@@ -9,9 +9,10 @@ class Admin::ShiftsController < AdminAreaController
 
   def index
     @staff =
-      User.where(
-        id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
-      ).pluck(:name, :id)
+      User
+        .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
+        .order("LOWER(name) ASC")
+        .pluck(:name, :id)
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @space_id = @user.space_id || Space.first.id
     @colors = []
@@ -33,9 +34,10 @@ class Admin::ShiftsController < AdminAreaController
 
   def shifts
     @staff =
-      User.where(
-        id: StaffSpace.where(space_id: @space_id).pluck(:user_id)
-      ).pluck(:name, :id)
+      User
+        .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
+        .order("LOWER(name) ASC")
+        .pluck(:name, :id)
     @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @colors = []
 
@@ -68,6 +70,20 @@ class Admin::ShiftsController < AdminAreaController
     Shift.where(space_id: @user.space_id, pending: true).destroy_all
     redirect_to shifts_admin_shifts_path,
                 notice: "Shifts have been successfully cleared!"
+  end
+
+  def confirm_current_week_shifts
+    end_of_week_param = DateTime.parse(params[:end_of_week])
+    start_of_week = end_of_week_param.beginning_of_week - 1.day
+    end_of_week = end_of_week_param.end_of_week - 1.day
+
+    Shift.where(
+      space_id: @user.space_id,
+      pending: true,
+      start_datetime: start_of_week..end_of_week
+    ).update(pending: false)
+
+    render json: { status: "ok" }
   end
 
   def create
