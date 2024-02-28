@@ -3,13 +3,12 @@
   <h1 style="font-weight:bold;text-align:center;"><%= @space.name.upcase %></h1><br>
 
   <h4>Max Capacity</h4>
-
   <div class="mb-3">
     <%= form_for update_max_capacity_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_max_capacity' }, method: :post do |f| %>
       <div class="input-group">
-      <%= hidden_field_tag :space_id, @space.id %> <br>
-      <%= number_field_tag :max_capacity, @space.max_capacity, { class: 'form-control', placeholder: 'Maximum Capacity' } %>
-      <%= f.submit 'Update Max Capacity', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the maximum capacity of the space ?' } %>
+        <%= hidden_field_tag :space_id, @space.id %> <br>
+        <%= number_field_tag :max_capacity, @space.max_capacity, { class: 'form-control', placeholder: 'Maximum Capacity' } %>
+        <%= f.submit 'Update Max Capacity', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the maximum capacity of the space ?' } %>
       </div>
     <% end %>
   </div>

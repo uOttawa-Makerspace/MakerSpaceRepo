@@ -26,17 +26,17 @@
       </div>
 
       <% @colors.each do |user| %>
-          <div class="pb-2">
-            <label><%= user[:name] %></label>
-            <br>
-            <div class="d-flex">
-              <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
-              <input class="form-check-input checkbox-lg ms-1 shift-hide-button" id="user-<%= user[:id] %>" type="checkbox" onclick="toggleVisibility(<%= user[:id] %>)" checked>
-              <div id="user-hour-counter-<%= user[:id] %>" class="d-flex align-items-center text-bg-primary ms-1 py-1 px-2 rounded">
-                0 hour(s)
-              </div>
+        <div class="pb-2">
+          <label><%= user[:name] %></label>
+          <br>
+          <div class="d-flex">
+            <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
+            <input class="form-check-input checkbox-lg ms-1 shift-hide-button" id="user-<%= user[:id] %>" type="checkbox" onclick="toggleVisibility(<%= user[:id] %>)" checked>
+            <div id="user-hour-counter-<%= user[:id] %>" class="d-flex align-items-center text-bg-primary ms-1 py-1 px-2 rounded">
+              0 hour(s)
             </div>
           </div>
+        </div>
       <% end %>
     </div>
     <div class="col-md-10">
@@ -73,7 +73,7 @@
   <br>
 
   <div class="modal fade" id="shiftModal" tabindex="-1" role="dialog" aria-labelledby="shiftModal" aria-hidden="true">
-  <%= hidden_field_tag :shift_id, nil, id: 'shift-id' %>
+    <%= hidden_field_tag :shift_id, nil, id: 'shift-id' %>
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header" id="modalHeader">
@@ -104,7 +104,7 @@
                 <option value="Other">Other</option>
               </select>
             </div>
-            <div id="training-container" class="d-none">
+            <div id="training-container" style="display: none;">
               <div class="mb-2">
                 <%= label_tag :training_id, 'Training' %>
                 <%= select_tag :training_id, options_from_collection_for_select(Space.find(@space_id).trainings.order(name: :asc), 'id', 'name'), id: 'training_id', prompt: 'Select training', class: 'form-control form-select', required: true %>
@@ -153,13 +153,13 @@
 
     <div id="toast-color-shift-failed" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
-          <div class="toast-body">
-            There was a entry missing for the shift. Please try again after filling all the fields.
-          </div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        <div class="toast-body">
+          There was a entry missing for the shift. Please try again after filling all the fields.
         </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
     </div>
+  </div>
 
   <%= vite_javascript_tag 'admin_shifts' %>
 </div>
