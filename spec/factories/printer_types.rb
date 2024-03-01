@@ -16,5 +16,9 @@ FactoryBot.define do
       name { "Dremel" }
       short_form { "" }
     end
+    trait :Random do
+      name { Faker::Alphanumeric.alphanumeric(number: 10) }
+      short_form { Faker::Alphanumeric.alphanumeric(number: 4) }
+    end
   end
 end

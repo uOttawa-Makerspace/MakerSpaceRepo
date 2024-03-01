@@ -1,57 +1,89 @@
 require "rails_helper"
 
 RSpec.describe Printer, type: :model do
-  before(:each) do
-    @um2p = create(:printer_type, :UM2P)
-    @um3 = create(:printer_type, :UM3)
-    @rpl2 = create(:printer_type, :RPL2)
-    @dremel = create(:printer_type, :Dremel)
+  before(:all) do
+    @pt_1 = create(:printer_type, :Random)
+    @pt_2 = create(:printer_type, :Random)
+    @pt_3 = create(:printer_type, :Random)
+    @pt_4 = create(:printer_type, :Random)
 
-    @um2p_1 = create(:printer, :UM2P_01, printer_type_id: @um2p.id)
-    @um2p_2 = create(:printer, :UM2P_02, printer_type_id: @um2p.id)
-    @um3_01 = create(:printer, :UM3_01, printer_type_id: @um3.id)
-    @rpl2_1 = create(:printer, :RPL2_01, printer_type_id: @rpl2.id)
-    @rpl2_2 = create(:printer, :RPL2_02, printer_type_id: @rpl2.id)
-    @dremel10_17 = create(:printer, :dremel_10_17, printer_type_id: @dremel.id)
+    @pt_1_1 =
+      create(
+        :printer,
+        number: "#{@pt_1.short_form} - 1",
+        printer_type_id: @pt_1.id
+      )
+    @pt_1_2 =
+      create(
+        :printer,
+        number: "#{@pt_1.short_form} - 2",
+        printer_type_id: @pt_1.id
+      )
+    @pt_2_1 =
+      create(
+        :printer,
+        number: "#{@pt_2.short_form} - 1",
+        printer_type_id: @pt_2.id
+      )
+    @pt_3_1 =
+      create(
+        :printer,
+        number: "#{@pt_3.short_form} - 1",
+        printer_type_id: @pt_3.id
+      )
+    @pt_3_2 =
+      create(
+        :printer,
+        number: "#{@pt_3.short_form} - 2",
+        printer_type_id: @pt_3.id
+      )
+    @pt_4_1 =
+      create(
+        :printer,
+        number: "#{@pt_4.short_form} - 1",
+        printer_type_id: @pt_4.id
+      )
   end
 
   describe "model method" do
     context "model and number" do
       it "should return the model and number" do
-        expect(@um2p_1.model_and_number).to eq("Ultimaker 2+; Number UM2P - 01")
+        expect(@pt_1_1.model_and_number).to eq(
+          "#{@pt_1.name}; Number #{@pt_1_1.number}"
+        )
       end
     end
 
     context "get printer id" do
       it "should return matching ids" do
-        expect(Printer.get_printer_ids("Ultimaker 2+")).to eq(
-          [@um2p_1.id, @um2p_2.id]
+        expect(Printer.get_printer_ids(@pt_1.name)).to eq(
+          [@pt_1_1.id, @pt_1_2.id]
         )
-        expect(Printer.get_printer_ids("Ultimaker 3")).to eq([@um3_01.id])
-        expect(Printer.get_printer_ids("Replicator 2")).to eq(
-          [@rpl2_1.id, @rpl2_2.id]
+        expect(Printer.get_printer_ids(@pt_2.name)).to eq([@pt_2_1.id])
+        expect(Printer.get_printer_ids(@pt_3.name)).to eq(
+          [@pt_3_1.id, @pt_3_2.id]
         )
-        expect(Printer.get_printer_ids("Dremel")).to eq([@dremel10_17.id])
+        expect(Printer.get_printer_ids(@pt_4.name)).to eq([@pt_4_1.id])
       end
     end
 
     context "Get last session" do
       it "should return last session" do
         create :user, :regular_user
-        create(:printer_session, printer_id: @um2p_2.id)
-        expect(
-          Printer.get_last_model_session("Ultimaker 2+").printer.number
-        ).to eq("UM2P - 02")
+        create(:printer_session, printer_id: @pt_1_2.id)
+        expect(Printer.get_last_model_session(@pt_1.name).printer.number).to eq(
+          @pt_1_2.number
+        )
       end
     end
 
     context "Get last session for printer" do
       it "should return last session of that specific printer" do
         create :user, :regular_user
-        create :printer_session, :um2p_session
+        create(:printer_session, printer_id: @pt_1_2.id)
         expect(
-          Printer.get_last_number_session(Printer.last.id).printer.number
-        ).to eq("UM2P - 02")
+          Printer.get_last_number_session(@pt_1_2.id).printer.number
+        ).to eq(@pt_1_2.number)
       end
     end
   end
