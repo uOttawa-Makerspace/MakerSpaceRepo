@@ -15,7 +15,7 @@
         </h2>
         <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="waitingForApproval" data-bs-parent="#keysAccordion">
           <div class="accordion-body">
-            <%= render partial: 'admin/keys/keys_requests_table', locals: { key_requests: @key_requests.where(status: :waiting_for_approval) } %>
+            <%= render partial: 'admin/keys/keys_requests_table', locals: { key_requests: @key_requests.where(status: :waiting_for_approval), table_name: 'key-requests-table-approval' } %>
           </div>
         </div>
       </div>
@@ -27,7 +27,7 @@
         </h2>
         <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="keysAll" data-bs-parent="#keysAccordion">
           <div class="accordion-body">
-            <%= render partial: 'admin/keys/keys_requests_table', locals: { key_requests: @key_requests.where(status: :approved) } %>
+            <%= render partial: 'admin/keys/keys_requests_table', locals: { key_requests: @key_requests.where(status: :approved), table_name: 'key-requests-table-approved' } %>
           </div>
         </div>
       </div>
