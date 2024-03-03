@@ -39,8 +39,11 @@ class PrinterTypesController < StaffAreaController
         previous_short_form += " - " if new_short_form.blank?
 
         @printer_type.printers.each do |printer|
-          new_number = printer.number.sub(previous_short_form, new_short_form)
-          printer.update(number: new_number)
+          unless printer.number.start_with?(new_short_form) &&
+                   previous_short_form.blank?
+            new_number = printer.number.sub(previous_short_form, new_short_form)
+            printer.update(number: new_number)
+          end
         end
       end
 
