@@ -117,6 +117,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :printer_types, except: %i[show]
+
   root "static_pages#home"
 
   # STATIC PAGES

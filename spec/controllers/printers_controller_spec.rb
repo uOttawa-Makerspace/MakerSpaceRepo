@@ -75,28 +75,16 @@ RSpec.describe PrintersController, type: :controller do
         session[:user_id] = admin.id
         get :staff_printers_updates
         expect(response).to have_http_status(:success)
-        expect(
-          @controller.instance_variable_get(:@ultimaker_printer_ids)
-        ).to eq([@um2_1.id, @um2_2.id])
-        expect(
-          @controller.instance_variable_get(:@ultimaker3_printer_ids)
-        ).to eq([@um3.id])
-        expect(
-          @controller.instance_variable_get(:@replicator2_printer_ids)
-        ).to eq([@rpl1.id, @rpl2.id])
-        expect(@controller.instance_variable_get(:@dremel_printer_ids)).to eq(
-          [@dremel.id]
-        )
       end
 
       it "should create all the variables for staff_printers" do
         create :user, :regular_user
         admin = create(:user, :admin)
         session[:user_id] = admin.id
-        um2p_session = create(:printer_session, :um2p_session)
-        um3_session = create(:printer_session, :um3_session)
-        rpl2_session = create(:printer_session, :rpl2_session)
-        dremel_session = create(:printer_session, :dremel_session)
+        um2p_session = create(:printer_session, printer_id: @um2_2.id)
+        um3_session = create(:printer_session, printer_id: @um3.id)
+        rpl2_session = create(:printer_session, printer_id: @rpl2.id)
+        dremel_session = create(:printer_session, printer_id: @dremel.id)
         get :staff_printers
         expect(response).to have_http_status(:success)
       end

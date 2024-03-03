@@ -10,6 +10,14 @@ class Admin::SettingsController < AdminAreaController
     @job_order_processed_message = JobOrderMessage.find_by(name: "processed")
     @area_option = AreaOption.new
     @printer = Printer.new
+    @printer_type = PrinterType.new
+    @printer_models =
+      PrinterType
+        .all
+        .order(name: :asc)
+        .map do |pt|
+          [pt.name + (pt.short_form.blank? ? "" : " (#{pt.short_form})"), pt.id]
+        end
   end
 
   def add_category
@@ -35,12 +43,26 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def add_printer
-    if params[:printer][:model].blank? || params[:printer][:number].blank?
+    printer_type = PrinterType.find_by(id: params[:model_id])
+
+    if params[:printer][:number].blank? || params[:model_id].blank?
       flash[:alert] = "Invalid printer model or number"
     else
-      @printer = Printer.new(printer_params)
-      @printer.save
-      flash[:notice] = "Printer added successfully!"
+      number =
+        (
+          if printer_type.short_form.blank?
+            params[:printer][:number]
+          else
+            "#{printer_type.short_form} - #{params[:printer][:number]}"
+          end
+        )
+
+      @printer = Printer.new(number: number, printer_type_id: params[:model_id])
+      if @printer.save
+        flash[:notice] = "Printer added successfully!"
+      else
+        flash[:alert] = "Printer number already exists"
+      end
     end
     redirect_to admin_settings_path
   end
@@ -221,7 +243,7 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def printer_params
-    params.require(:printer).permit(:model, :number)
+    params.require(:printer).permit(:number)
   end
 
   def course_params

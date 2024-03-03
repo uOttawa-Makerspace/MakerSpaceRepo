@@ -35,21 +35,22 @@
     </div>
     <div class="col-md-6">
       <h5>Printer</h5><hr>
-      <%= form_for @printer, url: { controller: 'admin/settings', action: 'add_printer' } do |f| %>
-        <%= f.label 'Printer Model', class: 'form-label profile-label' %>
-        <%= f.text_field :model, class: 'profile-text' %>
-        <%= f.label 'Printer Number', class: 'form-label profile-label' %>
-        <%= f.text_field :number, class: 'profile-text' %>
-        <br>
-        <%= f.submit 'Add', class: 'btn btn-primary' %>
-      <% end %>
-      <br>
-      <%= form_for @printer, url: { controller: 'admin/settings', action: 'remove_printer' } do |f| %>
-        <%= f.label :remove_a_printer, class: 'form-label profile-label' %>
-        <%= select_tag :remove_printer, options_from_collection_for_select(Printer.show_options, :id, :model_and_number), class: 'profile-select form-select', include_blank: 'Select a printer...' %>
-        <%= f.submit 'Remove', class: 'btn btn-primary' %>
-      <% end %>
-      <br><br>
+      <div class="mb-4">
+        <%= form_for @printer, url: { controller: 'admin/settings', action: 'add_printer' } do |f| %>
+          <%= label_tag :model_id, 'Printer Model', class: 'form-label profile-label' %>
+          <%= select_tag(:model_id, options_for_select(@printer_models), class: 'profile-select form-select') %>
+          <%= f.label 'Printer Number', class: 'form-label profile-label' %>
+          <%= f.text_field :number, class: 'profile-text' %>
+          <%= f.submit 'Add', class: 'btn btn-primary' %>
+        <% end %>
+      </div>
+      <div class="mb-4">
+          <%= form_for @printer, url: { controller: 'admin/settings', action: 'remove_printer' } do |f| %>
+            <%= f.label :remove_a_printer, class: 'form-label profile-label' %>
+            <%= select_tag :remove_printer, options_from_collection_for_select(Printer.show_options, :id, :model_and_number), class: 'profile-select form-select', include_blank: 'Select a printer...' %>
+            <%= f.submit 'Remove', class: 'btn btn-primary' %>
+          <% end %>
+      </div>
     </div>
     <div class="col-md-6">
       <h5>Equipment options</h5><hr><br>
