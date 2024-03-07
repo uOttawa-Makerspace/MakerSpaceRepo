@@ -15,6 +15,12 @@ const unavailabilityModal = new Modal(
 const modalTitle = document.getElementById("modal-title");
 const modalDelete = document.getElementById("modal-delete");
 const unavailabilityId = document.getElementById("unavailability-id");
+const timePeriodStart = new Date(
+  document.getElementById("time-period-start").value
+);
+const timePeriodEnd = new Date(
+  document.getElementById("time-period-end").value
+);
 
 // Show state
 let showUnavailabilities = "block";
@@ -139,6 +145,14 @@ const calendar = new Calendar(calendarEl, {
     hour12: false,
   },
   dayMaxEvents: true,
+  dayCellDidMount: function (info) {
+    const currentDate = info.date;
+
+    // gray out days that are not in the range of the time period
+    if (currentDate < timePeriodStart || currentDate > timePeriodEnd) {
+      info.el.style.backgroundColor = "#CCCCCC";
+    }
+  },
   select: (arg) => {
     openModal(arg);
   },

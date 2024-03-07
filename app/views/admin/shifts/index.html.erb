@@ -49,6 +49,8 @@
 
   <div class="modal fade" id="unavailabilityModal" tabindex="-1" role="dialog" aria-labelledby="unavailabilityModal" aria-hidden="true">
     <%= hidden_field_tag :unavailability_id, nil, id: 'unavailability-id' %>
+    <%= hidden_field_tag :time_period_start, @time_period.start_date, id: 'time-period-start' %>
+    <%= hidden_field_tag :time_period_end, @time_period.end_date, id: 'time-period-end' %>
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
