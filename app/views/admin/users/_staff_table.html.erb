@@ -1,22 +1,70 @@
-      <thead class="table-primary">
-      <tr class="text-center">
-        <th class="name-header">Username</th>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="email-header">Role</th>
-      </tr>
-      </thead>
-      <% @staff.each do |staff| %>
-        <tr>
-          <td class="username-cell"><%= link_to staff.username, user_url(staff.username) %></td>
-          <td class="name-cell"><%= staff.name %></td>
-          <td class="email-cell"><%= staff.email %></td>
-          <td class="w-auto">
-            <%= form_tag set_role_admin_users_path(id: staff.id), method: :patch, format: 'js', remote: true do %>
-              <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]] %>
-              <%= select_tag(:role, options_for_select(@roles, selected: staff.role), class: 'form-control form-select d-inline w-auto') %>
-              <%= submit_tag 'Change', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
-            <% end %>
-          </td>
-        </tr>
+<%# Helper method to convert RGB color to rgba string with specified opacity %>
+<% def rgba(color, opacity)
+     "rgba(#{color.join(', ')}, #{opacity})"
+   end
+%>
+
+<thead class="table-primary">
+<tr class="text-center">
+  <th class="name-header">Username</th>
+  <th class="name-header">Name</th>
+  <th class="email-header">Email</th>
+  <th class="email-header">Role</th>
+  <th class="space-header">Space</th>
+</tr>
+</thead>
+<% @staff.each do |staff| %>
+  <tr>
+    <td class="username-cell"><%= link_to staff.username, user_url(staff.username) %></td>
+    <td class="name-cell"><%= staff.name %></td>
+    <td class="email-cell"><%= staff.email %></td>
+    <td class="w-auto">
+      <%= form_tag set_role_admin_users_path(id: staff.id), method: :patch, format: 'js', remote: true do %>
+        <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]] %>
+        <%= select_tag(:role, options_for_select(@roles, selected: staff.role), class: 'form-control form-select d-inline w-auto') %>
+        <%= submit_tag 'Change', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
       <% end %>
+    </td>
+    <td class="space-cell">
+      <% if staff.spaces.empty? %>
+        <span>No space assigned</span>
+      <% else %>
+        <% staff.spaces.each do |space| %>
+          <% color = space.assigned_color %>
+          <span class="space-bubble" style="border-color: <%= rgba(color, 1) %>; background-color: <%= rgba(color, 0.3) %>;"><%= space.name %></span>
+        <% end %>
+      <% end %>
+      <%= link_to 'Change', '#', class: 'btn btn-primary btn-sm change-button', data: { toggle: 'modal', target: '#spaceUpdateModal' } %>
+    </td>
+  </tr>
+<% end %>
+
+<!-- Space Update Modal -->
+<div class="modal fade" id="spaceUpdateModal" tabindex="-1" role="dialog" aria-labelledby="spaceUpdateModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="spaceUpdateModalLabel">Update Spaces</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <%= form_tag update_space_admin_users_path, method: :patch, id: 'space-update-form' do %>
+          <% Space.all.each do |space| %>
+            <div class="form-check">
+              <%= check_box_tag 'space_ids[]', space.id, false, id: "space_#{space.id}", class: 'form-check-input' %>
+              <%= label_tag "space_#{space.id}", space.name, class: 'form-check-label' %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <%= submit_tag 'Save Changes', class: 'btn btn-primary', form: 'space-update-form' %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%= vite_javascript_tag 'space_dialog' %>

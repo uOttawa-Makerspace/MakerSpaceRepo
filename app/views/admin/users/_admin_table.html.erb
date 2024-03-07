@@ -1,22 +1,40 @@
-    <thead class="table-primary">
-      <tr class="text-center">
-        <th class="name-header">Username</th>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="email-header">Role</th>
-      </tr>
-    </thead>
-    <% @admins.each do |admin| %>
-    <tr>
-      <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
-      <td class="name-cell"><%= admin.name %></td>
-      <td class="email-cell"><%= admin.email %></td>
-      <td class="w-auto">
-        <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch, format: 'js', remote: true do %>
-          <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]] %>
-          <%= select_tag(:role, options_for_select(@roles, selected: admin.role), class: 'form-control form-select d-inline w-auto') %>
-          <%= submit_tag 'Change', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
+<%# Helper method to convert RGB color to rgba string with specified opacity %>
+<% def rgba(color, opacity)
+     "rgba(#{color.join(', ')}, #{opacity})"
+   end
+%>
+
+<thead class="table-primary">
+<tr class="text-center">
+  <th class="name-header">Username</th>
+  <th class="name-header">Name</th>
+  <th class="email-header">Email</th>
+  <th class="email-header">Role</th>
+  <th class="space-header">Space</th>
+</tr>
+</thead>
+<% @admins.each do |admin| %>
+  <tr>
+    <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
+    <td class="name-cell"><%= admin.name %></td>
+    <td class="email-cell"><%= admin.email %></td>
+    <td class="w-auto">
+      <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch, format: 'js', remote: true do %>
+        <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]] %>
+        <%= select_tag(:role, options_for_select(@roles, selected: admin.role), class: 'form-control form-select d-inline w-auto') %>
+        <%= submit_tag 'Change', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
+      <% end %>
+    </td>
+    <td class="space-cell">
+      <% if admin.spaces.empty? %>
+        <span>No space assigned</span>
+      <% else %>
+        <% admin.spaces.each do |space| %>
+          <% color = space.assigned_color %>
+          <span class="space-bubble" style="border-color: <%= rgba(color, 1) %>; background-color: <%= rgba(color, 0.3) %>;"><%= space.name %></span>
         <% end %>
-      </td>
-    </tr>
-    <% end %>
+      <% end %>
+      <%= link_to 'Change', update_space_admin_users_path, method: :patch, class: 'btn btn-primary btn-sm change-button', remote: true %>
+    </td>
+  </tr>
+<% end %>

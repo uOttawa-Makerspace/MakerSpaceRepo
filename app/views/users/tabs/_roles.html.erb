@@ -1,39 +1,52 @@
-<div class="row mb-1">
-  <div class="col-md-6">
-    <label>Current role</label>
-  </div>
-  <div class="col-md-6">
-    <label class="right-side">
-      <%= @repo_user.role.gsub('_', ' ').capitalize %>
-    </label>
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-6">
-    <label>Update Role</label>
-  </div>
-  <div class="col-md-6 float-end">
-    <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
-      <div class="mb-4">
-        <%= radio_button_tag :role, 'admin', @repo_user.admin?, class: 'form-check-input role-button' %>
-        <%= label_tag :role_admin, 'Admin', class: 'form-label' %> <br />
-        <%= radio_button_tag :role, 'staff', @repo_user.staff? && !@repo_user.admin?, class: 'form-check-input role-button' %>
-        <%= label_tag :role_staff, 'Staff', class: 'form-label' %> <br />
-        <%= radio_button_tag :role, 'regular_user', !(@repo_user.staff? || @repo_user.admin?), class: 'form-check-input role-button' %>
-        <%= label_tag :role_regular, 'Regular', class: 'form-label' %> <br />
-      </div>
-
-      <div class="field form-group mb-3" id="staff-space-changer" style="display: <%= @repo_user.staff? ? 'block' : 'none' %>;">
-        <div class="checkbox-inline">
-          <% @space_list.each do |space| %>
-            <%= check_box_tag 'space[]', space.id, @staff_spaces.include?(space.id), class: 'form-check-input' %>
-            <%= label_tag 'space[]', space.name %>
-            <br>
+<div class="tab-content" style="display: flex; justify-content: center; align-items: center; height: 100%;">
+  <div class="tab-pane active" id="your-tab-id" role="tabpanel">
+    <div class="container" style="max-width: 600px;"> <!-- Adjust max-width as needed -->
+      <div class="row">
+        <div class="col-md-12">
+          <%= form_tag set_role_admin_users_path(@user, id: @repo_user.id), method: :patch do %>
+            <div class="mb-3">
+              <label>Role</label><br>
+              <%= radio_button_tag :role, 'admin', @repo_user.admin?, class: 'form-check-input role-button', id: 'role_admin' %>
+              <%= label_tag :role_admin, 'Admin', class: 'form-label' %><br>
+              <%= radio_button_tag :role, 'staff', @repo_user.staff? && !@repo_user.admin?, class: 'form-check-input role-button', id: 'role_staff' %>
+              <%= label_tag :role_staff, 'Staff', class: 'form-label' %><br>
+              <%= radio_button_tag :role, 'regular_user', !(@repo_user.staff? || @repo_user.admin?), class: 'form-check-input role-button', id: 'role_regular_user' %>
+              <%= label_tag :role_regular_user, 'Regular', class: 'form-label' %><br>
+            </div>
+            <div class="field form-group" id="staff-space-changer" style="display: <%= @repo_user.staff? ? 'block' : 'none' %>;">
+              <label>Manage Spaces</label>
+              <div class="checkbox-inline">
+                <% @space_list.each do |space| %>
+                  <% color = space.assigned_color %>
+                  <div class="space-bubble" style="margin-right: 10px; border-color: <%= rgba(color, 1) %>; background-color: <%= rgba(color, 0.3) %>;">
+                    <%= check_box_tag 'space[]', space.id, @staff_spaces.include?(space.id), class: 'form-check-input', id: "space_#{space.id}" %>
+                    <%= label_tag "space_#{space.id}", space.name, class: 'form-check-label' %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+            <%= submit_tag 'Update', class: 'btn btn-primary' %>
           <% end %>
         </div>
       </div>
-
-      <%= submit_tag 'Update', class: 'btn btn-primary' %>
-    <% end %>
+    </div>
   </div>
 </div>
+
+<style>
+    .space-bubble {
+        display: inline-block;
+        padding: 5px 10px;
+        margin-right: 5px;
+        border-radius: 20px;
+        border: 2px solid #ddd;
+        background-color: #f2f2f2;
+        color: #333;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    .space-bubble:hover {
+        background-color: #e2e2e2;
+    }
+</style>
