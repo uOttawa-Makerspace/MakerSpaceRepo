@@ -2,7 +2,12 @@ require "rails_helper"
 
 RSpec.describe PrintersController, type: :controller do
   describe "POST /add_printer" do
-    before(:all) { @printer_type = create(:printer_type, :UM2P) }
+    before(:each) do
+      @printer_type = create(:printer_type, :UM2P)
+      admin = create(:user, :admin)
+      session[:user_id] = admin.id
+      session[:expires_at] = Time.zone.now + 10_000
+    end
 
     context "add printer" do
       it "should add the printer" do
@@ -44,6 +49,12 @@ RSpec.describe PrintersController, type: :controller do
   end
 
   describe "POST /remove_printer" do
+    before(:each) do
+      admin = create(:user, :admin)
+      session[:user_id] = admin.id
+      session[:expires_at] = Time.zone.now + 10_000
+    end
+
     context "remove printer" do
       it "should remove the printer" do
         printer = Printer.create(number: "UM2P-01")
