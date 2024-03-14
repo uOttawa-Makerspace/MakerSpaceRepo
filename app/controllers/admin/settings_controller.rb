@@ -9,15 +9,6 @@ class Admin::SettingsController < AdminAreaController
     @pi_option = PiReader.new
     @job_order_processed_message = JobOrderMessage.find_by(name: "processed")
     @area_option = AreaOption.new
-    @printer = Printer.new
-    @printer_type = PrinterType.new
-    @printer_models =
-      PrinterType
-        .all
-        .order(name: :asc)
-        .map do |pt|
-          [pt.name + (pt.short_form.blank? ? "" : " (#{pt.short_form})"), pt.id]
-        end
   end
 
   def add_category
@@ -38,31 +29,6 @@ class Admin::SettingsController < AdminAreaController
       @area_option = AreaOption.new(area_params)
       @area_option.save
       flash[:notice] = "Area added successfully!"
-    end
-    redirect_to admin_settings_path
-  end
-
-  def add_printer
-    printer_type = PrinterType.find_by(id: params[:model_id])
-
-    if params[:printer][:number].blank? || params[:model_id].blank?
-      flash[:alert] = "Invalid printer model or number"
-    else
-      number =
-        (
-          if printer_type.short_form.blank?
-            params[:printer][:number]
-          else
-            "#{printer_type.short_form} - #{params[:printer][:number]}"
-          end
-        )
-
-      @printer = Printer.new(number: number, printer_type_id: params[:model_id])
-      if @printer.save
-        flash[:notice] = "Printer added successfully!"
-      else
-        flash[:alert] = "Printer number already exists"
-      end
     end
     redirect_to admin_settings_path
   end
@@ -129,17 +95,6 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-
-  def remove_printer
-    if params[:remove_printer] != ""
-      Printer.where(id: params[:remove_printer]).destroy_all
-      flash[:notice] = "Printer removed successfully!"
-    else
-      flash[:alert] = "Please select a Printer."
-    end
-    redirect_to admin_settings_path
-  end
-
   def add_equipment
     if params[:equipment_option][:name].blank?
       flash[:alert] = "Invalid equipment name."
