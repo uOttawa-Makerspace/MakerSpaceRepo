@@ -23,8 +23,13 @@
         aria-haspopup="true" aria-expanded="false">Staff</a>
       <ul class="dropdown-menu">
         <li class="nav-item">
-          <%= link_to 'Staff Unavailabilities', staff_availabilities_path, class: 'nav-link text-secondary' %>
+          <% if current_user.admin? %>
+            <%= link_to 'Staff Unavailabilities', admin_shifts_path, class: 'nav-link text-secondary' %>
+          <% else %>
+            <%= link_to 'Staff Unavailabilities', staff_availabilities_path, class: 'nav-link text-secondary' %>
+          <% end %>
         </li>
+
         <li class="nav-item">
           <a class="nav-link text-secondary" id="certifications-tab" data-bs-toggle="tab"
             href="#certifications-manager" role="tab" aria-controls="profile"
