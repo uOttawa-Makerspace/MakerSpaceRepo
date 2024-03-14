@@ -59,11 +59,7 @@ class Space < ApplicationRecord
   def create_popular_hours
     (0..6).each do |weekday|
       (0..23).each do |hour|
-        PopularHour.find_or_create_by(
-          space_id: self.id,
-          hour: hour,
-          day: weekday
-        )
+        PopularHour.find_or_create_by(space_id: id, hour: hour, day: weekday)
       end
     end
   end
@@ -78,5 +74,21 @@ class Space < ApplicationRecord
 
   def jmts?
     name.eql?("JMTS")
+  end
+
+  def assigned_color
+    colors = [
+      [230, 25, 75], # #e6194b
+      [60, 180, 75], # #3cb44b
+      [255, 225, 25], # #ffe119
+      [67, 99, 216], # #4363d8
+      [245, 130, 49], # #f58231
+      [145, 30, 180], # #911eb4
+      [70, 240, 240], # #46f0f0
+      [240, 50, 230], # #f032e6
+      [128, 128, 0], # #808000
+      [0, 128, 128] # #008080
+    ]
+    colors[id % colors.size]
   end
 end
