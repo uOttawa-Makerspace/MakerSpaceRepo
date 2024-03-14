@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe PrintersController, type: :controller do
   describe "POST /add_printer" do
     before(:each) do
-      @printer_type = create(:printer_type, :UM2P)
+      @printer_type = create(:printer_type, :Random)
       admin = create(:user, :admin)
       session[:user_id] = admin.id
       session[:expires_at] = Time.zone.now + 10_000
@@ -16,7 +16,7 @@ RSpec.describe PrintersController, type: :controller do
                printer: {
                  number: "UM2P-01"
                },
-               model_id: PrinterType.first.id
+               model_id: @printer_type.id
              }
         expect(response).to redirect_to printers_path
         expect(flash[:notice]).to eq("Printer added successfully!")
@@ -28,7 +28,7 @@ RSpec.describe PrintersController, type: :controller do
                printer: {
                  number: ""
                },
-               model_id: PrinterType.first.id
+               model_id: @printer_type.id
              }
         expect(response).to redirect_to printers_path
         expect(flash[:alert]).to eq("Invalid printer model or number")
