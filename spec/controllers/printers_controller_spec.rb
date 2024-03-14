@@ -1,6 +1,76 @@
 require "rails_helper"
 
 RSpec.describe PrintersController, type: :controller do
+  describe "POST /add_printer" do
+    before(:each) do
+      @printer_type = create(:printer_type, :Random)
+      admin = create(:user, :admin)
+      session[:user_id] = admin.id
+      session[:expires_at] = Time.zone.now + 10_000
+    end
+
+    context "add printer" do
+      it "should add the printer" do
+        post :add_printer,
+             params: {
+               printer: {
+                 number: "UM2P-01"
+               },
+               model_id: @printer_type.id
+             }
+        expect(response).to redirect_to printers_path
+        expect(flash[:notice]).to eq("Printer added successfully!")
+      end
+
+      it "should not add the printer" do
+        post :add_printer,
+             params: {
+               printer: {
+                 number: ""
+               },
+               model_id: @printer_type.id
+             }
+        expect(response).to redirect_to printers_path
+        expect(flash[:alert]).to eq("Invalid printer model or number")
+      end
+
+      it "should not add the printer" do
+        post :add_printer, params: { printer: { number: "UM2P-01" } }
+        expect(response).to redirect_to printers_path
+        expect(flash[:alert]).to eq("Invalid printer model or number")
+      end
+
+      it "should not add the printer" do
+        post :add_printer, params: { printer: { number: "" }, model_id: "" }
+        expect(response).to redirect_to printers_path
+        expect(flash[:alert]).to eq("Invalid printer model or number")
+      end
+    end
+  end
+
+  describe "POST /remove_printer" do
+    before(:each) do
+      admin = create(:user, :admin)
+      session[:user_id] = admin.id
+      session[:expires_at] = Time.zone.now + 10_000
+    end
+
+    context "remove printer" do
+      it "should remove the printer" do
+        printer = Printer.create(number: "UM2P-01")
+        post :remove_printer, params: { remove_printer: printer.id }
+        expect(response).to redirect_to printers_path
+        expect(flash[:notice]).to eq("Printer removed successfully!")
+      end
+
+      it "should not remove the printer" do
+        post :remove_printer, params: { remove_printer: "" }
+        expect(response).to redirect_to printers_path
+        expect(flash[:alert]).to eq("Please select a Printer.")
+      end
+    end
+  end
+
   describe "Link printer to user" do
     before(:all) do
       build :printer, :UM2P_01
@@ -75,28 +145,16 @@ RSpec.describe PrintersController, type: :controller do
         session[:user_id] = admin.id
         get :staff_printers_updates
         expect(response).to have_http_status(:success)
-        expect(
-          @controller.instance_variable_get(:@ultimaker_printer_ids)
-        ).to eq([@um2_1.id, @um2_2.id])
-        expect(
-          @controller.instance_variable_get(:@ultimaker3_printer_ids)
-        ).to eq([@um3.id])
-        expect(
-          @controller.instance_variable_get(:@replicator2_printer_ids)
-        ).to eq([@rpl1.id, @rpl2.id])
-        expect(@controller.instance_variable_get(:@dremel_printer_ids)).to eq(
-          [@dremel.id]
-        )
       end
 
       it "should create all the variables for staff_printers" do
         create :user, :regular_user
         admin = create(:user, :admin)
         session[:user_id] = admin.id
-        um2p_session = create(:printer_session, :um2p_session)
-        um3_session = create(:printer_session, :um3_session)
-        rpl2_session = create(:printer_session, :rpl2_session)
-        dremel_session = create(:printer_session, :dremel_session)
+        um2p_session = create(:printer_session, printer_id: @um2_2.id)
+        um3_session = create(:printer_session, printer_id: @um3.id)
+        rpl2_session = create(:printer_session, printer_id: @rpl2.id)
+        dremel_session = create(:printer_session, printer_id: @dremel.id)
         get :staff_printers
         expect(response).to have_http_status(:success)
       end

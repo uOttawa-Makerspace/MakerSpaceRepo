@@ -3,12 +3,13 @@
   <h1 style="font-weight:bold;text-align:center;"><%= @space.name.upcase %></h1><br>
 
   <h4>Max Capacity</h4>
+  <small class="text-muted">Note: Setting the capacity to 0 means there is no limit to the capacity.</small>
   <div class="mb-3">
     <%= form_for update_max_capacity_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_max_capacity' }, method: :post do |f| %>
       <div class="input-group">
         <%= hidden_field_tag :space_id, @space.id %> <br>
         <%= number_field_tag :max_capacity, @space.max_capacity, { class: 'form-control', placeholder: 'Maximum Capacity' } %>
-        <%= f.submit 'Update Max Capacity', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the maximum capacity of the space ?' } %>
+        <%= f.submit 'Update Max Capacity', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the maximum capacity of the space?' } %>
       </div>
     <% end %>
   </div>
@@ -20,7 +21,7 @@
       <div class="input-group">
         <%= hidden_field_tag :space_id, @space.id %> <br>
         <%= text_field_tag :keycode, '', { class: 'form-control' } %>
-        <%= f.submit 'Update Keycode', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the keycode of the space ?' } %>
+        <%= f.submit 'Update Keycode', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the keycode of the space?' } %>
       </div>
     <% end %>
   </div>
@@ -39,10 +40,10 @@
 
     <table class="table text-center table-striped">
       <thead class="table-primary">
-        <tr>
-          <th>User</th>
-          <th>Actions</th>
-        </tr>
+      <tr>
+        <th>User</th>
+        <th>Actions</th>
+      </tr>
       </thead>
       <% @space.space_manager_joins.each do |smj| %>
         <tr>
@@ -241,7 +242,7 @@
     <%= form_for @new_training, url: { action: 'create', controller: 'admin/trainings' } do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
       <div class="input-group">
-      <%= f.text_field :name, placeholder: 'Enter a unique name', class: 'form-control' %>
+        <%= f.text_field :name, placeholder: 'Enter a unique name', class: 'form-control' %>
         <%= submit_tag 'Add', class: 'btn btn-primary' %>
       </div>
     <% end %>
@@ -284,8 +285,8 @@
     <div class="mb-3 input-group">
       <div class="input-group-text">
         <div class="form-check form-check-inline">
-        <%= check_box_tag :approval_required, 1, false, class: 'form-check-input' %>
-        <%= label_tag :approval_required, 'Require Approval', class: 'form-check-label' %>
+          <%= check_box_tag :approval_required, 1, false, class: 'form-check-input' %>
+          <%= label_tag :approval_required, 'Require Approval', class: 'form-check-label' %>
         </div>
       </div>
       <%= text_field_tag :name, '', class: 'form-control', placeholder: 'Subspace Name' %>
@@ -296,31 +297,31 @@
   <h3 id="sub_space_area">Sub Spaces</h3>
   <i> Hover over the question mark to see the description of the setting</i>
   <div class="table-responsive">
-  <table class="table table-striped">
-    <thead class="table-primary text-center">
-    <tr>
-      <th>Sub Space</th>
-      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If enabled, bookings will be automatically approved if they are within the maximum booking duration and weekly maximum.">
-        Automatic Booking Approval?
-      </th>
-      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, bookings will be automatically approved even if the subspace is on manual approval and the user is within the maximum booking duration and weekly maximum .">
-        Automatically Approve Booking Duration?
-      </th>
-      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, a user will not be able to book a slot longer than this duration.">
-        Maximum Hours per Booking?
-      </th>
-      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, a user will not be able to book more than this amount of hours per week.">
-        Maximum Hours per Week?
-      </th>
-      <th data-bs-toggle="tooltip" data-bs-placement="top" title="If private by default, booking details like name, and description will not be shown on the calendar">
-        Default booking privacy?
-      </th>
-      <th>Delete Sub Space</th>
-    </tr>
-    </thead>
-    <% SubSpace.where(space: @space).order(:name).each do |sub_space| %>
+    <table class="table table-striped">
+      <thead class="table-primary text-center">
       <tr>
-        <td><%= sub_space.name %></td>
+        <th>Sub Space</th>
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If enabled, bookings will be automatically approved if they are within the maximum booking duration and weekly maximum.">
+          Automatic Booking Approval?
+        </th>
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, bookings will be automatically approved even if the subspace is on manual approval and the user is within the maximum booking duration and weekly maximum .">
+          Automatically Approve Booking Duration?
+        </th>
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, a user will not be able to book a slot longer than this duration.">
+          Maximum Hours per Booking?
+        </th>
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, a user will not be able to book more than this amount of hours per week.">
+          Maximum Hours per Week?
+        </th>
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If private by default, booking details like name, and description will not be shown on the calendar">
+          Default booking privacy?
+        </th>
+        <th>Delete Sub Space</th>
+      </tr>
+      </thead>
+      <% SubSpace.where(space: @space).order(:name).each do |sub_space| %>
+        <tr>
+          <td><%= sub_space.name %></td>
           <td><%= button_to "#{sub_space.approval_required ? 'Enable' : 'Disable'} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id: @space.id, id: sub_space.id), method: :put, action: :change_sub_space_approval, class: 'btn btn-primary btn-sm' %></td>
           <td>
             <%= form_tag admin_space_set_max_automatic_approval_hour_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_auto_approve_booking_duration, method: :patch, class: 'input-group' do %>
@@ -346,13 +347,13 @@
 
             <%= button_to "Make #{sub_space.default_public ? 'Private' : 'Public'} by default", admin_space_change_sub_space_default_public_path(space_id: @space.id, id: sub_space.id), method: :post, action: :change_sub_space_default_public, class: "btn #{sub_space.default_public ? ' btn-secondary' : ' btn-primary'}" %>
           </td>
-        <td><%= button_to 'Destroy', admin_space_delete_sub_space_path(space_id: @space.id, id: sub_space.id), method: :delete, action: :delete_sub_space,
-                                                                                                               data: { confirm: 'Are you sure you want to delete this sub space ?' }, class: 'btn btn-danger' %></td>
-      </tr>
-    <% end %>
-  </table>
+          <td><%= button_to 'Destroy', admin_space_delete_sub_space_path(space_id: @space.id, id: sub_space.id), method: :delete, action: :delete_sub_space,
+                                                                                                                 data: { confirm: 'Are you sure you want to delete this sub space ?' }, class: 'btn btn-danger' %></td>
+        </tr>
+      <% end %>
+    </table>
   </div>
-    <br>
+  <br>
 
 
   <h2 class="mb-3 fw-bold">Destroy Space</h2>
@@ -363,9 +364,9 @@
     <br>
     <%= form_for admin_spaces_path, action: :destroy, method: :delete do |f| %>
       <div class="mb-3 input-group">
-      <%= text_field_tag :admin_input, '', class: 'form-control' %>
-      <%= hidden_field_tag :id, @space.id %>
-      <%= f.submit 'DESTROY', class: 'btn btn-danger', data: { confirm: 'Are your sure you want to completely DELETE this space and all related informaion?! Ok to confirm' } %>
+        <%= text_field_tag :admin_input, '', class: 'form-control' %>
+        <%= hidden_field_tag :id, @space.id %>
+        <%= f.submit 'DESTROY', class: 'btn btn-danger', data: { confirm: 'Are your sure you want to completely DELETE this space and all related informaion?! Ok to confirm' } %>
       </div>
     <% end %>
   </div>

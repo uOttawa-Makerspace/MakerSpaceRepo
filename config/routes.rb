@@ -109,13 +109,17 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :printers do
+  resources :printers, only: %i[index] do
     collection do
       get :staff_printers
       get :staff_printers_updates
       patch :link_printer_to_user
+      post :add_printer
+      post :remove_printer
     end
   end
+
+  resources :printer_types, except: %i[show]
 
   root "static_pages#home"
 
@@ -315,12 +319,11 @@ Rails.application.routes.draw do
       collection do
         post "add_category"
         post "add_area"
-        post "add_printer"
+
         # post 'rename_category'
         patch "update_job_order_processed"
         post "remove_category"
         post "remove_area"
-        post "remove_printer"
         post "add_equipment"
         post "rename_equipment"
         post "remove_equipment"
