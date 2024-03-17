@@ -27,6 +27,9 @@ let showUnavailabilities = "block";
 let hiddenIds = {};
 const urlParams = new URLSearchParams(window.location.search);
 const time_period_id = urlParams.get("time_period_id");
+const timePeriodWarningContainer = document.getElementById(
+  "time-period-warning-container"
+);
 
 // Inputs
 const dayInput = document.getElementById("day");
@@ -37,6 +40,7 @@ const startDateInput = document.getElementById("start-date");
 const endTimeInput = document.getElementById("end-time");
 const endDateInput = document.getElementById("end-date");
 const recurringInput = document.getElementById("recurring");
+const saveButton = document.getElementById("modal-save");
 
 const startTimePicker = startTimeInput.flatpickr({
   enableTime: true,
@@ -76,6 +80,8 @@ recurringInput.addEventListener("change", function () {
   }
 });
 
+recurringInput.addEventListener("change", checkDate);
+
 document.getElementById("start-time-clear").addEventListener("click", () => {
   startTimePicker.clear();
 });
@@ -91,6 +97,40 @@ document.getElementById("start-date-clear").addEventListener("click", () => {
 document.getElementById("end-date-clear").addEventListener("click", () => {
   endDatePicker.clear();
 });
+
+function checkDate() {
+  if (recurringInput.checked) {
+    timePeriodWarningContainer.style.display = "none";
+    saveButton.disabled = false;
+  } else {
+    const selectedStartDate = new Date(startDateInput.value);
+    const selectedEndDate = new Date(endDateInput.value);
+
+    let startDateInRange = true;
+    let endDateInRange = true;
+
+    if (
+      selectedStartDate < timePeriodStart ||
+      selectedStartDate > timePeriodEnd
+    ) {
+      startDateInRange = false;
+    }
+    if (selectedEndDate < timePeriodStart || selectedEndDate > timePeriodEnd) {
+      endDateInRange = false;
+    }
+
+    if (!startDateInRange || !endDateInRange) {
+      timePeriodWarningContainer.style.display = "block";
+      saveButton.disabled = true;
+    } else {
+      timePeriodWarningContainer.style.display = "none";
+      saveButton.disabled = false;
+    }
+  }
+}
+
+startDateInput.addEventListener("change", checkDate);
+endDateInput.addEventListener("change", checkDate);
 
 // Calendar Config
 const calendarEl = document.getElementById("calendar");
@@ -410,9 +450,7 @@ const modifyEvent = (arg) => {
 };
 
 // Save event on modal save button click
-document
-  .getElementById("modal-save")
-  .addEventListener("click", () => createCalendarEvent());
+saveButton.addEventListener("click", () => createCalendarEvent());
 
 // Open modal with right values inside
 const openModal = (arg) => {
@@ -433,6 +471,7 @@ const openModal = (arg) => {
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
   }
 
+  checkDate();
   unavailabilityModal.show();
 };
 
