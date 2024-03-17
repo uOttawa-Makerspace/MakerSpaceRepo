@@ -4,6 +4,7 @@ class PrinterTypesController < StaffAreaController
   layout "staff_area"
 
   before_action :get_printer_type, only: %i[edit update destroy]
+  before_action :ensure_admin
 
   def index
     @printer_types = PrinterType.all.order("LOWER(name) ASC")
@@ -56,14 +57,9 @@ class PrinterTypesController < StaffAreaController
   end
 
   def destroy
-    if !@user.admin?
-      redirect_to root_path, alert: "You do not have permission to do this"
-    else
-      @printer_type.destroy
+    @printer_type.destroy
 
-      redirect_to printer_types_path,
-                  notice: "Successfully deleted printer model"
-    end
+    redirect_to printer_types_path, notice: "Successfully deleted printer model"
   end
 
   private
@@ -77,6 +73,15 @@ class PrinterTypesController < StaffAreaController
 
     if @printer_type.nil?
       redirect_to printer_types_path, alert: "Couldn't find Printer Model"
+    end
+  end
+
+  def ensure_admin
+    @user = current_user
+
+    unless @user.admin?
+      flash[:alert] = "You cannot access this area"
+      redirect_back(fallback_location: root_path)
     end
   end
 end

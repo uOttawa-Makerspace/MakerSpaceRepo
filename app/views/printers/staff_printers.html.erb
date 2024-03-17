@@ -6,10 +6,12 @@
       <%= link_to 'View Last Updates All 3D-Printers', staff_printers_updates_printers_path, class: 'btn btn-secondary' %>
     </div>
 
-    <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
-      <%= link_to 'Manage Printers', printers_path, class: 'btn btn-primary' %>
-      <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-primary' %>
-    </div>
+    <% if @user.admin? %>
+      <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
+        <%= link_to 'Manage Printers', printers_path, class: 'btn btn-primary' %>
+        <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-primary' %>
+      </div>
+    <% end %>
 
     <% @printer_types.each do |pt| %>
       <div>
