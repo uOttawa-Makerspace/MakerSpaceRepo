@@ -22,23 +22,20 @@ RSpec.describe PrinterTypesController, type: :controller do
     end
 
     context "logged in as a staff" do
-      it "should show the printer models" do
+      it "should not show the printer models" do
         session[:user_id] = @staff.id
         session[:expires_at] = Time.zone.now + 10_000
 
         get :index
-        expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@printer_types)).to eq(
-          [@um2p, @um3]
-        )
+        expect(flash[:alert]).to eq("You cannot access this area")
       end
     end
   end
 
   describe "#create" do
-    context "logged in as staff" do
+    context "logged in as admin" do
       before(:each) do
-        session[:user_id] = @staff.id
+        session[:user_id] = @admin.id
         session[:expires_at] = Time.zone.now + 10_000
       end
 
@@ -96,7 +93,19 @@ RSpec.describe PrinterTypesController, type: :controller do
                 }
               }
 
-        expect(flash[:alert]).to eq("Failed to update printer model")
+        expect(flash[:alert]).to eq("You cannot access this area")
+      end
+    end
+
+    context "logged in as admin" do
+      before(:each) do
+        session[:user_id] = @admin.id
+        session[:expires_at] = Time.zone.now + 10_000
+
+        @um2p_1 =
+          create(:printer, printer_type_id: @um2p.id, number: "UM2P - 1")
+        @um2p_2 =
+          create(:printer, printer_type_id: @um2p.id, number: "UM2P - 2")
       end
 
       it "should update the printer type and its short form" do
@@ -126,7 +135,7 @@ RSpec.describe PrinterTypesController, type: :controller do
         delete :destroy, params: { id: @um2p.id }
 
         expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("You do not have permission to do this")
+        expect(flash[:alert]).to eq("You cannot access this area")
       end
     end
 
