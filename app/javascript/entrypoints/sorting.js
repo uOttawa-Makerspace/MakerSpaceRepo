@@ -25,10 +25,11 @@ window.findSession = function (table_class, id = "query") {
 };
 
 var sort_direction = 1;
-window.sortTable = function (table_name, col) {
+window.sortTable = function (table_name, col, isDateColumn = false) {
+  console.log(`sortTable(${table_name}, ${col}, ${isDateColumn})`);
   const table = document.getElementsByClassName(table_name)[0];
-  var rows;
-  var swapElement, currentElement;
+  let rows;
+  let swapElement, currentElement;
 
   if (table) {
     rows = table.getElementsByTagName("tr");
@@ -39,14 +40,23 @@ window.sortTable = function (table_name, col) {
 
         for (let j = i + 1; j < rows.length; j++) {
           currentElement = rows[j].getElementsByTagName("td")[col];
+          const swapElStr = swapElement.innerText;
+          const currElStr = currentElement.innerText;
 
           if (
-            (sort_direction === 1 &&
-              swapElement.innerText.toLowerCase() >
-                currentElement.innerText.toLowerCase()) ||
-            (sort_direction === 0 &&
-              swapElement.innerText.toLowerCase() <
-                currentElement.innerText.toLowerCase())
+            !isDateColumn &&
+            ((sort_direction === 1 &&
+              swapElStr.toLowerCase() > currElStr.toLowerCase()) ||
+              (sort_direction === 0 &&
+                swapElStr.toLowerCase() < currElStr.toLowerCase()))
+          ) {
+            swapElement = currentElement;
+          } else if (
+            isDateColumn &&
+            ((sort_direction === 1 &&
+              Date.parse(swapElStr) > Date.parse(currElStr)) ||
+              (sort_direction === 0 &&
+                Date.parse(swapElStr) < Date.parse(currElStr)))
           ) {
             swapElement = currentElement;
           }
