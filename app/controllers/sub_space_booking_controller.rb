@@ -164,6 +164,27 @@ class SubSpaceBookingController < ApplicationController
     end
   end
 
+  def bulk_approve_access
+    if params[:ids].present?
+      UserBookingApproval.transaction do
+        params[:ids].each do |id|
+          uba = UserBookingApproval.find(id)
+          user = uba.user
+          uba.update!(approved: true, staff_id: current_user.id)
+          user.update!(booking_approval: true)
+          BookingMailer.send_booking_approval_request_approved(
+            uba.id
+          ).deliver_now
+        end
+      end
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  notice: "Access requests approved successfully."
+    else
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  alert: "No access requests selected for approval."
+    end
+  end
+
   def deny_access
     user = UserBookingApproval.find(params[:id]).user
     UserBookingApproval.find(params[:id]).destroy
@@ -185,40 +206,41 @@ class SubSpaceBookingController < ApplicationController
         .each do |booking|
           booking_status =
             SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
-          if booking_status.booking_status_id == BookingStatus::APPROVED.id ||
-               booking_status.booking_status_id == BookingStatus::PENDING.id
-            title = "#{booking.name} - #{booking.description}"
-            title =
-              if current_user.admin? || booking.user == current_user ||
-                   booking.public
-                title
-              else
-                booking.public ? title : "Space Booked"
-              end
-            title =
-              if booking_status.booking_status_id == BookingStatus::PENDING.id
-                title + " (Pending)"
-              else
-                title
-              end
-            title += " - #{booking.user.name}" if current_user.admin? &&
-              booking.user != current_user
-            if booking.blocking
-              title = "Space Blocked" if (
-                !booking.public &&
-                  ((!current_user.admin?) || booking.user != current_user)
-              )
-            end
-            event = {
-              id:
-                "booking_" + booking.id.to_s + "_" + booking.sub_space_id.to_s,
-              title: title,
-              start: booking.start_time,
-              end: booking.end_time,
-              color: booking.color(current_user.id)
-            }
-            @bookings << event
+          unless booking_status.booking_status_id ==
+                   BookingStatus::APPROVED.id ||
+                   booking_status.booking_status_id == BookingStatus::PENDING.id
+            next
           end
+          title = "#{booking.name} - #{booking.description}"
+          title =
+            if current_user.admin? || booking.user == current_user ||
+                 booking.public
+              title
+            else
+              booking.public ? title : "Space Booked"
+            end
+          title =
+            if booking_status.booking_status_id == BookingStatus::PENDING.id
+              title + " (Pending)"
+            else
+              title
+            end
+          title += " - #{booking.user.name}" if current_user.admin? &&
+            booking.user != current_user
+          if booking.blocking
+            title = "Space Blocked" if (
+              !booking.public &&
+                ((!current_user.admin?) || booking.user != current_user)
+            )
+          end
+          event = {
+            id: "booking_" + booking.id.to_s + "_" + booking.sub_space_id.to_s,
+            title: title,
+            start: booking.start_time,
+            end: booking.end_time,
+            color: booking.color(current_user.id)
+          }
+          @bookings << event
         end
     end
     render json: @bookings
@@ -588,6 +610,28 @@ class SubSpaceBookingController < ApplicationController
     BookingMailer.send_booking_approved(
       params[:sub_space_booking_id]
     ).deliver_now
+  end
+
+  def bulk_approve
+    if params[:sub_space_booking_ids].present?
+      SubSpaceBooking.transaction do
+        params[:sub_space_booking_ids].each do |booking_id|
+          booking = SubSpaceBooking.find(booking_id)
+          booking_status = booking.sub_space_booking_status
+          booking_status.update!(booking_status_id: BookingStatus::APPROVED.id)
+          booking.update!(
+            approved_at: DateTime.now,
+            approved_by_id: current_user.id
+          )
+          #BookingMailer.send_booking_approved(booking_id).deliver_now
+        end
+      end
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  notice: "Selected bookings have been approved successfully."
+    else
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  alert: "No bookings selected for approval."
+    end
   end
 
   def decline
