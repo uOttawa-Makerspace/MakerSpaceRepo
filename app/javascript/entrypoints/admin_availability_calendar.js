@@ -7,6 +7,20 @@ import listPlugin from "@fullcalendar/list";
 import { Modal, Toast } from "bootstrap";
 import { Turbo } from "@hotwired/turbo-rails";
 
+const parseDateString = (dateString, endOfDay = false) => {
+  const split = dateString.split("-");
+  // Note: month is 0-based in JavaScript Date objects, so we subtract 1 from the month
+  const year = parseInt(split[0], 10);
+  const month = parseInt(split[1], 10) - 1;
+  const day = parseInt(split[2], 10);
+
+  if (endOfDay) {
+    return new Date(year, month, day, 23, 59, 59, 999);
+  } else {
+    return new Date(year, month, day, 0, 0, 0, 0);
+  }
+};
+
 // Modal
 const unavailabilityModal = new Modal(
   document.getElementById("unavailabilityModal")
@@ -15,11 +29,14 @@ const unavailabilityModal = new Modal(
 const modalTitle = document.getElementById("modal-title");
 const modalDelete = document.getElementById("modal-delete");
 const unavailabilityId = document.getElementById("unavailability-id");
-const timePeriodStart = new Date(
-  document.getElementById("time-period-start").value
+
+const timePeriodStart = parseDateString(
+  document.getElementById("time-period-start").value,
+  false
 );
-const timePeriodEnd = new Date(
-  document.getElementById("time-period-end").value
+const timePeriodEnd = parseDateString(
+  document.getElementById("time-period-end").value,
+  true
 );
 
 // Show state
@@ -106,16 +123,26 @@ function checkDate() {
     const selectedStartDate = new Date(startDateInput.value);
     const selectedEndDate = new Date(endDateInput.value);
 
+    const startTimeZoneOffsetMinutes = selectedStartDate.getTimezoneOffset();
+    const endTimeZoneOffsetMinutes = selectedEndDate.getTimezoneOffset();
+
+    const adjustedStartDate = new Date(
+      selectedStartDate.getTime() + startTimeZoneOffsetMinutes * 60000
+    );
+    const adjustedEndDate = new Date(
+      selectedEndDate.getTime() + endTimeZoneOffsetMinutes * 60000
+    );
+
     let startDateInRange = true;
     let endDateInRange = true;
 
     if (
-      selectedStartDate < timePeriodStart ||
-      selectedStartDate > timePeriodEnd
+      adjustedStartDate < timePeriodStart ||
+      adjustedStartDate > timePeriodEnd
     ) {
       startDateInRange = false;
     }
-    if (selectedEndDate < timePeriodStart || selectedEndDate > timePeriodEnd) {
+    if (adjustedEndDate < timePeriodStart || adjustedEndDate > timePeriodEnd) {
       endDateInRange = false;
     }
 
@@ -186,15 +213,24 @@ const calendar = new Calendar(calendarEl, {
   },
   dayMaxEvents: true,
   dayCellDidMount: function (info) {
-    const currentDate = info.date;
+    const originalDate = info.date;
+    const timeZoneOffsetMinutes = originalDate.getTimezoneOffset();
+    const adjustedDate = new Date(
+      originalDate.getTime() + timeZoneOffsetMinutes * 60000
+    );
 
     // gray out days that are not in the range of the time period
-    if (currentDate < timePeriodStart || currentDate > timePeriodEnd) {
+    if (adjustedDate < timePeriodStart || adjustedDate > timePeriodEnd) {
       info.el.style.backgroundColor = "#CCCCCC";
     }
   },
   select: (arg) => {
-    openModal(arg);
+    if (arg.start >= timePeriodStart && arg.start <= timePeriodEnd) {
+      openModal(arg);
+    } else {
+      alert("This date is outside of the time period");
+      calendar.unselect();
+    }
   },
   eventClick: (arg) => {
     editModal(arg);
