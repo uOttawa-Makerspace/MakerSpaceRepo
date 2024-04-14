@@ -11,9 +11,15 @@ A website where makers can publish projects. An initiative by the University of 
 
 ### Windows
 
-Note: If using WSL2, make sure project is installed in the right directory (not in shared directories with windows)
+1. Open Powershell & Install WSL for Ubuntu
 
-Coming soon.
+   ```bash
+   wsl --install -d Ubuntu
+   ```
+
+2. Follow the [Debian-based Linux Distributions](#Debian-based-Linux-distributions) setup instructions using WSL.
+
+- **Note**: When cloning the repository in step 6, make sure to not clone it within the `mnt/` directory as this directory is shared with windows and may cause performance issues.
 
 ### macOS
 
@@ -173,10 +179,11 @@ foreman start -f Procfile.dev
 
 6. Clone this repository and go into it:
 
-   ```bash
-   git clone https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git
-   cd MakerSpaceRepo
-   ```
+- **Note**: For WSL users, make sure the repository isn't cloned within the `mnt/`directory
+  ```bash
+  git clone https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git
+  cd MakerSpaceRepo
+  ```
 
 7. Install gems:
 
