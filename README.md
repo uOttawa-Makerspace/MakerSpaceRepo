@@ -19,7 +19,7 @@ A website where makers can publish projects. An initiative by the University of 
 
 2. Follow the [Debian-based Linux Distributions](#Debian-based-Linux-distributions) setup instructions using WSL.
 
-- **Note**: When cloning the repository in step 6, make sure to not clone it within the `mnt/` directory as this directory is shared with windows and may cause performance issues.
+- **Note**: When cloning the repository in step 6, make sure to not clone it within the `/mnt` directory as this directory is shared with windows and may cause performance issues.
 
 ### macOS
 
@@ -179,7 +179,7 @@ foreman start -f Procfile.dev
 
 6. Clone this repository and go into it:
 
-- **Note**: For WSL users, make sure the repository isn't cloned within the `mnt/`directory
+- **Note**: For WSL users, make sure the repository isn't cloned within the `/mnt`directory
   ```bash
   git clone https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git
   cd MakerSpaceRepo
