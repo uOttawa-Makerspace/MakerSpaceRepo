@@ -50,6 +50,22 @@ class StaticPagesController < SessionsController
   def development_program_info
   end
 
+  def join_team_program
+    if signed_in?
+      if current_user.programs.exists?(program_type: Program::TEAMS)
+        flash[:alert] = "You are already part of the Teams Program."
+      else
+        current_user.programs.create(program_type: Program::TEAMS)
+        flash[
+          :notice
+        ] = "You have successfully joined the Teams Program! See below for more information."
+      end
+    else
+      flash[:alert] = "You need to sign in to join the Teams Program."
+    end
+    redirect_to root_path
+  end
+
   def reset_password
     unless verify_recaptcha
       flash[:alert] = "There was a problem with the captcha, please try again."
