@@ -328,32 +328,7 @@ class User < ApplicationRecord
   end
 
   def return_program_status
-    # case when the user is not part of any program
-    if !volunteer_program? && !dev_program? && !teams_program?
-      status = 1
-      # case when the user is part of the volunteer program only
-    elsif volunteer_program? && !dev_program? && !teams_program?
-      status = 2
-      # case when the user is part of the development program only
-    elsif !volunteer_program? && dev_program? && !teams_program?
-      status = 3
-      # case when the user is part of both the volunteer and development programs
-    elsif volunteer_program? && dev_program? && !teams_program?
-      status = 4
-      # case when the user is part of both the volunteer and teams programs
-    elsif volunteer_program? && !dev_program? && teams_program?
-      status = 5
-      # case when the user is part of both the development and teams programs
-    elsif !volunteer_program? && dev_program? && teams_program?
-      status = 6
-      # case when the user is part of all three programs
-    elsif volunteer_program? && dev_program? && teams_program?
-      status = 7
-      # case when the user is part of the teams program only
-    elsif !volunteer_program? && !dev_program? && teams_program?
-      status = 8
-    end
-    status
+    { volunteer: volunteer_program?, dev: dev_program?, teams: teams_program? }
   end
 
   def update_wallet

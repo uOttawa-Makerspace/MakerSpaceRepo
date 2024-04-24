@@ -1,56 +1,21 @@
-<% if status == 1 %>
-  <%= render 'congratulations_volunteer' %>
-  <hr />
-  <%= render 'congratulations_dev_program' %>
-  <hr />
-  <%= render 'congratulations_teams_program' %>
+<% status = @user.return_program_status %>
 
-<% elsif status == 2 %>
+<% if status[:volunteer] %>
   <%= render 'already_volunteer' %>
-  <hr />
-  <%= render 'congratulations_dev_program' %>
-  <hr />
-  <%= render 'congratulations_teams_program' %>
-
-<% elsif status == 3 %>
+<% else %>
   <%= render 'congratulations_volunteer' %>
-  <hr />
-  <%= render 'already_dev_program' %>
-  <hr />
-  <%= render 'congratulations_teams_program' %>
+<% end %>
+<hr />
 
-<% elsif status == 4 %>
-  <%= render 'already_volunteer' %>
-  <hr />
+<% if status[:dev] %>
   <%= render 'already_dev_program' %>
-  <hr />
-  <%= render 'congratulations_teams_program' %>
-
-<% elsif status == 5 %>
-  <%= render 'congratulations_volunteer' %>
-  <hr />
+<% else %>
   <%= render 'congratulations_dev_program' %>
-  <hr />
-  <%= render 'already_teams_program' %>
+<% end %>
+<hr />
 
-<% elsif status == 6 %>
-  <%= render 'already_volunteer' %>
-  <hr />
-  <%= render 'congratulations_dev_program' %>
-  <hr />
+<% if status[:teams] %>
   <%= render 'already_teams_program' %>
-
-<% elsif status == 7 %>
-  <%= render 'already_volunteer' %>
-  <hr />
-  <%= render 'already_dev_program' %>
-  <hr />
-  <%= render 'already_teams_program' %>
-
-<% elsif status == 8 %>
-  <%= render 'congratulations_volunteer' %>
-  <hr />
-  <%= render 'already_dev_program' %>
-  <hr />
-  <%= render 'already_teams_program' %>
+<% else %>
+  <%= render 'congratulations_teams_program' %>
 <% end %>
