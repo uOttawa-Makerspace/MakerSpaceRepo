@@ -7,6 +7,20 @@ import listPlugin from "@fullcalendar/list";
 import { Modal, Toast } from "bootstrap";
 import { Turbo } from "@hotwired/turbo-rails";
 
+const parseDateString = (dateString, endOfDay = false) => {
+  const split = dateString.split("-");
+  // Note: month is 0-based in JavaScript Date objects, so we subtract 1 from the month
+  const year = parseInt(split[0], 10);
+  const month = parseInt(split[1], 10) - 1;
+  const day = parseInt(split[2], 10);
+
+  if (endOfDay) {
+    return new Date(year, month, day, 23, 59, 59, 999);
+  } else {
+    return new Date(year, month, day, 0, 0, 0, 0);
+  }
+};
+
 // Modal
 const unavailabilityModal = new Modal(
   document.getElementById("unavailabilityModal")
@@ -16,11 +30,23 @@ const modalTitle = document.getElementById("modal-title");
 const modalDelete = document.getElementById("modal-delete");
 const unavailabilityId = document.getElementById("unavailability-id");
 
+const timePeriodStart = parseDateString(
+  document.getElementById("time-period-start").value,
+  false
+);
+const timePeriodEnd = parseDateString(
+  document.getElementById("time-period-end").value,
+  true
+);
+
 // Show state
 let showUnavailabilities = "block";
 let hiddenIds = {};
 const urlParams = new URLSearchParams(window.location.search);
 const time_period_id = urlParams.get("time_period_id");
+const timePeriodWarningContainer = document.getElementById(
+  "time-period-warning-container"
+);
 
 // Inputs
 const dayInput = document.getElementById("day");
@@ -31,6 +57,7 @@ const startDateInput = document.getElementById("start-date");
 const endTimeInput = document.getElementById("end-time");
 const endDateInput = document.getElementById("end-date");
 const recurringInput = document.getElementById("recurring");
+const saveButton = document.getElementById("modal-save");
 
 const startTimePicker = startTimeInput.flatpickr({
   enableTime: true,
@@ -70,6 +97,8 @@ recurringInput.addEventListener("change", function () {
   }
 });
 
+recurringInput.addEventListener("change", checkDate);
+
 document.getElementById("start-time-clear").addEventListener("click", () => {
   startTimePicker.clear();
 });
@@ -85,6 +114,50 @@ document.getElementById("start-date-clear").addEventListener("click", () => {
 document.getElementById("end-date-clear").addEventListener("click", () => {
   endDatePicker.clear();
 });
+
+function checkDate() {
+  if (recurringInput.checked) {
+    timePeriodWarningContainer.style.display = "none";
+    saveButton.disabled = false;
+  } else {
+    const selectedStartDate = new Date(startDateInput.value);
+    const selectedEndDate = new Date(endDateInput.value);
+
+    const startTimeZoneOffsetMinutes = selectedStartDate.getTimezoneOffset();
+    const endTimeZoneOffsetMinutes = selectedEndDate.getTimezoneOffset();
+
+    const adjustedStartDate = new Date(
+      selectedStartDate.getTime() + startTimeZoneOffsetMinutes * 60000
+    );
+    const adjustedEndDate = new Date(
+      selectedEndDate.getTime() + endTimeZoneOffsetMinutes * 60000
+    );
+
+    let startDateInRange = true;
+    let endDateInRange = true;
+
+    if (
+      adjustedStartDate < timePeriodStart ||
+      adjustedStartDate > timePeriodEnd
+    ) {
+      startDateInRange = false;
+    }
+    if (adjustedEndDate < timePeriodStart || adjustedEndDate > timePeriodEnd) {
+      endDateInRange = false;
+    }
+
+    if (!startDateInRange || !endDateInRange) {
+      timePeriodWarningContainer.style.display = "block";
+      saveButton.disabled = true;
+    } else {
+      timePeriodWarningContainer.style.display = "none";
+      saveButton.disabled = false;
+    }
+  }
+}
+
+startDateInput.addEventListener("change", checkDate);
+endDateInput.addEventListener("change", checkDate);
 
 // Calendar Config
 const calendarEl = document.getElementById("calendar");
@@ -139,8 +212,25 @@ const calendar = new Calendar(calendarEl, {
     hour12: false,
   },
   dayMaxEvents: true,
+  dayCellDidMount: function (info) {
+    const originalDate = info.date;
+    const timeZoneOffsetMinutes = originalDate.getTimezoneOffset();
+    const adjustedDate = new Date(
+      originalDate.getTime() + timeZoneOffsetMinutes * 60000
+    );
+
+    // gray out days that are not in the range of the time period
+    if (adjustedDate < timePeriodStart || adjustedDate > timePeriodEnd) {
+      info.el.style.backgroundColor = "#CCCCCC";
+    }
+  },
   select: (arg) => {
-    openModal(arg);
+    if (arg.start >= timePeriodStart && arg.start <= timePeriodEnd) {
+      openModal(arg);
+    } else {
+      alert("This date is outside of the time period");
+      calendar.unselect();
+    }
   },
   eventClick: (arg) => {
     editModal(arg);
@@ -396,9 +486,7 @@ const modifyEvent = (arg) => {
 };
 
 // Save event on modal save button click
-document
-  .getElementById("modal-save")
-  .addEventListener("click", () => createCalendarEvent());
+saveButton.addEventListener("click", () => createCalendarEvent());
 
 // Open modal with right values inside
 const openModal = (arg) => {
@@ -419,6 +507,7 @@ const openModal = (arg) => {
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
   }
 
+  checkDate();
   unavailabilityModal.show();
 };
 

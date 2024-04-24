@@ -3,6 +3,8 @@
 class PrintersController < StaffAreaController
   layout "staff_area"
 
+  before_action :ensure_admin, only: %i[index add_printer remove_printer]
+
   def index
     @printer = Printer.new
     @printer_models =
@@ -91,5 +93,16 @@ class PrintersController < StaffAreaController
       flash[:alert] = "Something went wrong"
     end
     redirect_to staff_printers_printers_path
+  end
+
+  private
+
+  def ensure_admin
+    @user = current_user
+
+    unless @user.admin?
+      flash[:alert] = "You cannot access this area"
+      redirect_back(fallback_location: root_path)
+    end
   end
 end
