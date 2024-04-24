@@ -1,19 +1,21 @@
 <section class="padding-10 mt-4">
   <div>
     <div class="title">Last Updates 3D-Printers Usage</div>
-
     <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
       <%= link_to 'Manage Printer Usage', staff_printers_printers_path, class: 'btn btn-secondary' %>
-      <% if @user.admin? %>
+    </div>
+
+    <% if @user.admin? %>
+      <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
         <%= link_to 'Manage Printers', printers_path, class: 'btn btn-primary' %>
         <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-primary' %>
-      <% end %>
-    </div>
+      </div>
+    <% end %>
 
     <% @printer_types.each_with_index do |pt, index| %>
       <div class="mb-3">
         <h2><%= pt.name %></h2>
-        <table class="table table-striped table-<%= index %>">
+        <table class="table table-striped <%= "table-#{index}" %>">
           <thead class="table-primary text-center">
           <th>Printer Number<span onclick="sortTable('table-<%= index %>', 0)"><%= fa_icon('arrow-down') %></span></th>
           <th>User<span onclick="sortTable('table-<%= index %>', 1)"><%= fa_icon('arrow-down') %></span></th>
