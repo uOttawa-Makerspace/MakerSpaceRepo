@@ -1,47 +1,172 @@
 # frozen_string_literal: true
 
 class ReportGenerator
-  require "axlsx"
+  require "caxlsx"
   # region Date Range Reports
 
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
+  # Normalizes and merges faculty statistics, specifically duplicate statistics that should be the same thing,
+  # as well as more readable output results.
+  # @param faculties [Hash] The hash containing faculty names as keys and their statistics as values.
+  # @return [Hash] A new hash with normalized faculty names and merged statistics.
+  def self.normalize_and_merge_faculties(faculties)
+    faculties.each_with_object({}) do |(faculty_name, stats), memo|
+      normalized_name =
+        case faculty_name
+        when "ComputerScience"
+          "Computer Science"
+        when "Génie"
+          "Engineering"
+        when "Self"
+          "Unknown"
+        else
+          faculty_name
+        end
+      memo[normalized_name] ||= { unique: 0, total: 0 }
+      memo[normalized_name][:unique] += stats[:unique]
+      memo[normalized_name][:total] += stats[:total]
+    end
+  end
+
+  # Generates a visitors report for a given date range (custom or semester).
+  # @param start_date [DateTime] The start date of the report.
+  # @param end_date [DateTime] The end date of the report.
+  # @return [Axlsx::Package] The generated spreadsheet.
   def self.generate_visitors_report(start_date, end_date)
     spreadsheet = Axlsx::Package.new
-
     space_details = get_visitors(start_date, end_date)
+    normalized_faculties =
+      normalize_and_merge_faculties(space_details[:faculties])
 
     spreadsheet
       .workbook
       .add_worksheet(name: "Report") do |sheet|
         merge_cell = sheet.styles.add_style alignment: { vertical: :center }
-
         header(sheet, "Visitors", start_date, end_date)
 
-        # region Overview
+        # Overview section
         title(sheet, "Overview")
         table_header(sheet, ["Space", "Distinct Users", "", "Total Visits"])
+
+        # Pie chart for spaces
+        space_data =
+          space_details[:spaces].map do |space_name, space|
+            [space_name, space[:unique]]
+          end
+        sheet.add_chart(
+          Axlsx::Pie3DChart,
+          rot_x: 90,
+          start_at: "F5",
+          end_at: "L17",
+          grouping: :stacked,
+          show_legend: true,
+          title: "Space of Unique Users"
+        ) do |chart|
+          chart.add_series data: space_data.map(&:last),
+                           labels: space_data.map(&:first),
+                           colors: %w[
+                             4E79A7
+                             F28E2B
+                             E15759
+                             76B7B2
+                             59A14F
+                             EDC948
+                             B07AA1
+                             FF9DA7
+                           ]
+          chart.d_lbls.show_percent = true
+          chart.d_lbls.d_lbl_pos = :bestFit
+        end
 
         space_details[:spaces].each do |space_name, space|
           sheet.add_row [space_name, space[:unique], "", space[:total]]
         end
 
         sheet.add_row # spacing
+        sheet.add_row # spacing
+        sheet.add_row # spacing
+        sheet.add_row # spacing
+        sheet.add_row # spacing
+        sheet.add_row # spacing
 
+        # identities part of overview section
         table_header(sheet, ["Identity", "Distinct Users", "", "Total Visits"])
+
+        # Pie chart for identities
+        identity_data =
+          space_details[:identities].map do |identity_name, space|
+            [identity_name, space[:unique]]
+          end
+        sheet.add_chart(
+          Axlsx::Pie3DChart,
+          rot_x: 90,
+          start_at: "F19",
+          end_at: "L31",
+          grouping: :stacked,
+          show_legend: true,
+          title: "Identity of Unique Users"
+        ) do |chart|
+          chart.add_series data: identity_data.map(&:last),
+                           labels: identity_data.map(&:first),
+                           colors: %w[76B7B2 B07AA1 59A14F EDC948 FF9DA7]
+          chart.d_lbls.show_percent = true
+          chart.d_lbls.d_lbl_pos = :bestFit
+        end
 
         space_details[:identities].each do |identity_name, space|
           sheet.add_row [identity_name, space[:unique], "", space[:total]]
         end
 
         sheet.add_row # spacing
+        sheet.add_row # spacing
+        sheet.add_row # spacing
+        sheet.add_row # spacing
+        sheet.add_row # spacing
+        sheet.add_row # spacing
 
+        # faculties part of overview section
         table_header(sheet, ["Faculty", "Distinct Users", "", "Total Visits"])
 
-        space_details[:faculties].each do |faculty_name, space|
+        # Pie chart for faculties
+        faculty_data =
+          normalized_faculties.map do |faculty_name, space|
+            [faculty_name, space[:unique]]
+          end
+        sheet.add_chart(
+          Axlsx::Pie3DChart,
+          rot_x: 90,
+          start_at: "F33",
+          end_at: "M45",
+          grouping: :stacked,
+          show_legend: true,
+          title: "Faculty of Unique Users"
+        ) do |chart|
+          chart.add_series data: faculty_data.map(&:last),
+                           labels: faculty_data.map(&:first),
+                           colors: %w[
+                             416145
+                             33EEDD
+                             860F48
+                             88E615
+                             6346F0
+                             F5E1FE
+                             E9A55B
+                             A2F8FA
+                             260AD2
+                             12032E
+                             755025
+                             723634
+                           ]
+          chart.d_lbls.show_percent = true
+          chart.d_lbls.d_lbl_pos = :bestFit
+        end
+
+        normalized_faculties.each do |faculty_name, space|
           sheet.add_row [faculty_name, space[:unique], "", space[:total]]
         end
 
+        sheet.add_row # spacing
+        sheet.add_row # spacing
+        sheet.add_row # spacing
         sheet.add_row # spacing
 
         table_header(
@@ -50,8 +175,10 @@ class ReportGenerator
         )
         space_details[:identities].each do |identity_name, identity|
           start_index = sheet.rows.last.row_index + 1
+          normalized_identity_faculties =
+            normalize_and_merge_faculties(identity[:faculties])
 
-          identity[:faculties].each do |faculty_name, faculty|
+          normalized_identity_faculties.each do |faculty_name, faculty|
             sheet.add_row [
                             identity_name,
                             faculty[:unique],
@@ -74,11 +201,13 @@ class ReportGenerator
 
     # region Per-space details
     space_details[:spaces].each do |space_name, space_detail|
+      space_normalized_faculties =
+        normalize_and_merge_faculties(space_detail[:faculties])
+
       spreadsheet
         .workbook
         .add_worksheet(name: space_name) do |sheet|
           title(sheet, space_name)
-
           faculty_hash = {}
           merge_cell = sheet.styles.add_style alignment: { vertical: :center }
 
@@ -98,7 +227,7 @@ class ReportGenerator
           sheet.add_row # spacing
 
           table_header(sheet, ["Faculty", "Distinct Users", "", "Total Visits"])
-          space_detail[:faculties].each do |faculty_name, faculty|
+          space_normalized_faculties.each do |faculty_name, faculty|
             sheet.add_row [faculty_name, faculty[:unique], "", faculty[:total]]
           end
 
@@ -108,10 +237,13 @@ class ReportGenerator
             sheet,
             ["Identity", "Distinct Users", "", "Total Visits", "", "Faculty"]
           )
+
           space_detail[:identities].each do |identity_name, identity|
             start_index = sheet.rows.last.row_index + 1
+            normalized_identity_faculties =
+              normalize_and_merge_faculties(identity[:faculties])
 
-            identity[:faculties].each do |faculty_name, faculty|
+            normalized_identity_faculties.each do |faculty_name, faculty|
               sheet.add_row [
                               identity_name,
                               faculty[:unique],
@@ -141,7 +273,7 @@ class ReportGenerator
             sheet.add_row [gender_name, gender[:unique], "", gender[:total]]
           end
 
-          space = sheet.add_row # spacing
+          sheet.add_row # spacing
 
           male =
             (
@@ -177,11 +309,12 @@ class ReportGenerator
             )
           final_other = other + prefer_not
 
+          # GENDERS PIE CHART
           sheet.add_chart(
             Axlsx::Pie3DChart,
             rot_x: 90,
-            start_at: "A#{space.row_index + 2}",
-            end_at: "E#{space.row_index + 14}",
+            start_at: "H25",
+            end_at: "M31",
             grouping: :stacked,
             show_legend: true,
             title: "Gender of unique users"
@@ -192,43 +325,21 @@ class ReportGenerator
                                "Female",
                                "Other/Prefer not to specify"
                              ],
-                             colors: %w[1FC3AA 8624F5 A8A8A8 A8A8A8]
-            chart.add_series data: [male, female, final_other],
-                             labels: [
-                               "Male",
-                               "Female",
-                               "Other/Prefer not to specify"
-                             ],
-                             colors: %w[FFFF00 FFFF00 FFFF00]
+                             colors: %w[4E79A7 E15759 F28E2B]
             chart.d_lbls.show_percent = true
             chart.d_lbls.d_lbl_pos = :bestFit
           end
 
+          # UNIQUE USERS PIE CHART
           sheet.add_chart(
             Axlsx::Pie3DChart,
             rot_x: 90,
-            start_at: "A#{space.row_index + 16}",
-            end_at: "E#{space.row_index + 28}",
+            start_at: "H6",
+            end_at: "O16",
             grouping: :stacked,
             show_legend: true,
             title: "Faculty of unique users"
           ) do |chart2|
-            chart2.add_series data: faculty_hash.values,
-                              labels: faculty_hash.keys,
-                              colors: %w[
-                                416145
-                                33EEDD
-                                860F48
-                                88E615
-                                6346F0
-                                F5E1FE
-                                E9A55B
-                                A2F8FA
-                                260AD2
-                                12032E
-                                755025
-                                723634
-                              ]
             chart2.add_series data: faculty_hash.values,
                               labels: faculty_hash.keys,
                               colors: %w[
@@ -259,7 +370,6 @@ class ReportGenerator
   # @param [DateTime] end_date
   def self.generate_trainings_report(start_date, end_date)
     trainings = get_trainings(start_date, end_date)
-
     spreadsheet = Axlsx::Package.new
 
     spreadsheet
@@ -330,17 +440,18 @@ class ReportGenerator
     spreadsheet
   end
 
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
+  #@param [DateTime] start_date
+  #@param [DateTime] end_date
   def self.generate_certifications_report(start_date, end_date)
     spreadsheet = Axlsx::Package.new
+    spaces = ["MTC", "Makerspace", "Makerlab 119", "Makerlab 121"]
 
-    ["MTC", "Makerspace", "Makerlab 119", "Makerlab 121"].each do |space|
+    spaces.each do |space|
       if Space.find_by(name: space).present?
         spreadsheet
           .workbook
           .add_worksheet(name: space) do |sheet|
-            space_id = Space.find_by_name(space).id
+            space_id = Space.find_by(name: space).id
 
             header(sheet, "Certifications in #{space}", start_date, end_date)
 
@@ -409,7 +520,7 @@ class ReportGenerator
                   if training.skill_id.present?
                     if training.skill.name == "Machine Shop Training"
                       { bg_color: "ed7d31" }
-                    elsif training.skill..name == "Technology Trainings"
+                    elsif training.skill.name == "Technology Trainings"
                       { bg_color: "70ad47" }
                     elsif training.skill.name == "CEED Trainings"
                       { bg_color: "ffc000" }
@@ -423,96 +534,88 @@ class ReportGenerator
                 sheet.add_row training_row, style: [style]
               end
 
-            final_s = ["Total # sessions"]
-            final_c = ["Total # certifications", ""]
-            final_total_sessions.values.each { |value| final_s.push(value, "") }
-            final_total_certifications.values.each do |value|
-              final_c.push(value, "")
+            final_totals = ["Total"]
+            final_total_sessions
+              .values
+              .each_with_index do |session_value, index|
+              certification_value = final_total_certifications.values[index]
+              final_totals.push(session_value, certification_value)
             end
-            sheet.add_row final_s
-            sheet.add_row final_c
+            sheet.add_row final_totals
+
+            sheet.add_row # spacing
+            sheet.add_row # spacing
+
+            trainings = get_trainings(start_date, end_date)
+            table_header(
+              sheet,
+              ["Training", "Session Count", "Total Attendees"]
+            )
+
+            trainings[:training_types].each do |_, training_type|
+              sheet.add_row [
+                              training_type[:name],
+                              training_type[:count],
+                              training_type[:total_attendees]
+                            ]
+            end
 
             sheet.add_row # spacing
 
-            # Summary
-            summary_total = { "total" => 0 }
-            certification_summary = {}
+            table_header(
+              sheet,
+              [
+                "Training",
+                "Level",
+                "Course",
+                "Instructor",
+                "Date",
+                "Facility",
+                "Attendee Count"
+              ]
+            )
 
-            # Header
-            header_summary = [""]
-            CourseName.all.each do |course|
-              header_summary << if course.name == "no course"
-                "Open"
-              else
-                course.name
-              end
-            end
-            header_summary << "Total"
-            sheet.add_row header_summary
-
-            Training
-              .all
-              .joins(:spaces_trainings)
-              .where(spaces_trainings: { space_id: space_id })
-              .each do |training|
-                training_sessions =
-                  TrainingSession.where(
-                    training_id: training.id,
-                    space_id: space_id,
-                    created_at: start_date..end_date
-                  )
-                training_row = [training.name]
-                total_certifications = 0
-
-                # One row
-                CourseName.all.each do |course|
-                  if certification_summary[course.name].nil?
-                    certification_summary[course.name] = 0
-                    summary_total[course.name] = 0
+            trainings[:training_sessions].each do |row|
+              training = Training.find(row[:training_id])
+              color =
+                if training.skill_id.present?
+                  if training.skill.name == "Machine Shop Training"
+                    { bg_color: "ed7d31" }
+                  elsif training.skill.name == "Technology Trainings"
+                    { bg_color: "70ad47" }
+                  elsif training.skill.name == "CEED Trainings"
+                    { bg_color: "ffc000" }
+                  else
+                    {}
                   end
-
-                  user_count = 0
-                  training_sessions
-                    .where(course_name_id: course.id)
-                    .each { |session| user_count += session.users.count }
-
-                  training_row << user_count
-                  total_certifications += user_count
-                  certification_summary[course.name] += user_count
-                  summary_total[course.name] += user_count
+                else
+                  {}
                 end
+              style = sheet.styles.add_style(color)
 
-                training_row << total_certifications
-                certification_summary["total"] = 0 if certification_summary[
-                  "total"
-                ].nil?
-                certification_summary["total"] += total_certifications
-                summary_total["total"] = summary_total["total"] +
-                  total_certifications
-
-                sheet.add_row training_row
-              end
-
-            # Adding the summary
-            final_summary = ["Total"]
-            final = summary_total["total"].to_i # Adding the final number last
-            summary_total.delete("total")
-            summary_total.values.each { |value| final_summary.push(value) }
-
-            final_summary << final
-
-            sheet.add_row final_summary
+              sheet.add_row [
+                              row[:training_name],
+                              row[:training_level],
+                              row[:course_name],
+                              row[:instructor_name],
+                              row[:date].localtime.strftime("%Y-%m-%d %H:%M"),
+                              row[:facility],
+                              row[:attendee_count]
+                            ],
+                            style: [style]
+            end
           end
       end
     end
-
     spreadsheet
   end
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
+  # NEW USERS SPREADSHEET
   def self.generate_new_users_report(start_date, end_date)
-    users = User.between_dates_picked(start_date, end_date)
+    users = User.between_dates_picked(start_date, end_date).order(:created_at) # sort by date joined
+    faculty_mapping = { "Génie" => "Engineering" } # map genie to engineering since its the same thing
 
     spreadsheet = Axlsx::Package.new
 
@@ -520,11 +623,10 @@ class ReportGenerator
       .workbook
       .add_worksheet(name: "Report") do |sheet|
         title(sheet, "New Users")
-
         sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
         sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
-        sheet.add_row # spacing
 
+        sheet.add_row # spacing
         sheet.add_row # spacing
         sheet.add_row # spacing
 
@@ -534,11 +636,12 @@ class ReportGenerator
         prefer_not = users.where(gender: "Prefer not to specify").count
         final_other = other + prefer_not
 
+        # GENDER PIE CHART
         sheet.add_chart(
           Axlsx::Pie3DChart,
           rot_x: 90,
-          start_at: "D1",
-          end_at: "G13",
+          start_at: "G1",
+          end_at: "H15",
           grouping: :stacked,
           show_legend: true,
           title: "Gender of new users"
@@ -549,14 +652,63 @@ class ReportGenerator
                              "Female",
                              "Other/Prefer not to specify"
                            ],
-                           colors: %w[1FC3AA 8624F5 A8A8A8 A8A8A8]
-          chart.add_series data: [male, female, final_other],
-                           labels: [
-                             "Male",
-                             "Female",
-                             "Other/Prefer not to specify"
-                           ],
-                           colors: %w[FFFF00 FFFF00 FFFF00]
+                           colors: %w[4E79A7 E15759 F28E2B]
+          chart.d_lbls.show_percent = true
+          chart.d_lbls.d_lbl_pos = :bestFit
+        end
+
+        # MAJORS PIE CHART
+        groups_faculty =
+          users
+            .group_by do |u|
+              faculty_mapping[u.faculty] || u.faculty.presence ||
+                "No faculty specified"
+            end
+            .transform_values(&:size)
+        sheet.add_chart(
+          Axlsx::Pie3DChart,
+          rot_x: 90,
+          start_at: "H1",
+          end_at: "N15",
+          grouping: :stacked,
+          show_legend: true,
+          title: "Majors of new users"
+        ) do |chart|
+          chart.add_series data: groups_faculty.values,
+                           labels: groups_faculty.keys,
+                           colors: %w[
+                             4E79A7
+                             F28E2B
+                             E15759
+                             76B7B2
+                             59A14F
+                             EDC948
+                             B07AA1
+                             FF9DA7
+                           ]
+          chart.d_lbls.show_percent = true
+          chart.d_lbls.d_lbl_pos = :bestFit
+        end
+
+        # IDENTITIES PIE CHART
+        groups_identity = users.group_by(&:identity).transform_values(&:size)
+        sheet.add_chart(
+          Axlsx::Pie3DChart,
+          rot_x: 90,
+          start_at: "N1",
+          end_at: "U15",
+          grouping: :stacked,
+          show_legend: true,
+          title: "Identities of new users"
+        ) do |chart|
+          chart.add_series data: groups_identity.values,
+                           labels:
+                             groups_identity
+                               .keys
+                               .map(&:to_s)
+                               .map(&:humanize)
+                               .map(&:titleize),
+                           colors: %w[76B7B2 B07AA1 59A14F EDC948 FF9DA7]
           chart.d_lbls.show_percent = true
           chart.d_lbls.d_lbl_pos = :bestFit
         end
@@ -565,44 +717,122 @@ class ReportGenerator
         sheet.add_row # spacing
         sheet.add_row # spacing
         sheet.add_row # spacing
+        sheet.add_row # spacing
 
+        # OVERVIEW: IDENTITIES + FACULTY
         title(sheet, "Overview")
 
-        groups = users.group_by(&:identity)
+        # Define the styles
+        identity_header_style =
+          sheet.styles.add_style(
+            bg_color: "CBA3D5",
+            b: true,
+            alignment: {
+              horizontal: :center
+            }
+          )
+        faculty_header_style =
+          sheet.styles.add_style(
+            bg_color: "76B7B2",
+            b: true,
+            alignment: {
+              horizontal: :center
+            }
+          )
+        gender_header_style =
+          sheet.styles.add_style(
+            bg_color: "FFA07A",
+            b: true,
+            alignment: {
+              horizontal: :center
+            }
+          )
+        data_style =
+          sheet.styles.add_style(border: { style: :thin, color: "000000" })
 
-        groups.each do |group_name, values|
-          sheet.add_row [group_name, values.length]
+        # overview headers
+        sheet.add_row %w[Identity Count Faculty Count Gender Count],
+                      style: [
+                        identity_header_style,
+                        identity_header_style,
+                        faculty_header_style,
+                        faculty_header_style,
+                        gender_header_style,
+                        gender_header_style
+                      ]
+
+        # overview data
+        groups_identity =
+          users
+            .group_by(&:identity)
+            .transform_values(&:size)
+            .map { |k, v| [k.to_s.humanize.titleize, v] }
+        groups_faculty =
+          users
+            .group_by do |u|
+              faculty_mapping[u.faculty] || u.faculty.presence ||
+                "No faculty specified"
+            end
+            .transform_values(&:size)
+            .map { |k, v| [k.to_s.humanize.titleize, v] }
+        genders = [
+          ["Male", male],
+          ["Female", female],
+          ["Other/Prefer not to specify", final_other]
+        ]
+
+        # find the max length
+        max_length = [
+          groups_identity.length,
+          groups_faculty.length,
+          genders.length
+        ].max
+
+        # loop through the maximum number of possible rows
+        max_length.times do |i|
+          identity_data = groups_identity[i] || [nil, nil]
+          faculty_data = groups_faculty[i] || [nil, nil]
+          gender_data = genders[i] || [nil, nil]
+
+          row_data = identity_data + faculty_data + gender_data
+          sheet.add_row row_data, style: [data_style] * row_data.size
         end
 
         sheet.add_row # spacing
 
-        table_header(
-          sheet,
-          [
-            "Name",
-            "Username",
-            "Email",
-            "Gender",
-            "Identity",
-            "Faculty",
-            "Year of Study",
-            "Student ID",
-            "Joined on"
-          ]
-        )
+        headers = [
+          "Name",
+          "Username",
+          "Email",
+          "Gender",
+          "Identity",
+          "Faculty",
+          "Program",
+          "Year of Study",
+          "Joined on"
+        ]
+        sheet.add_row headers
 
-        users.each do |user|
+        users_sorted = users.sort_by(&:created_at)
+
+        users_sorted.each do |user|
           sheet.add_row [
                           user.name,
                           user.username,
                           user.email,
                           user.gender,
-                          user.identity,
-                          user.faculty,
+                          user.identity.to_s.humanize.titleize,
+                          faculty_mapping[user.faculty] ||
+                            user.faculty.presence || "No faculty specified",
+                          user.program.presence || "No program specified",
                           user.year_of_study,
                           user.created_at.localtime.strftime("%Y-%m-%d %H:%M")
                         ]
         end
+
+        # turn into an actual table
+        sheet.add_table "A23:I#{users.size + 22}", name: "UsersTable"
+        sheet.column_widths nil, nil, nil, nil, nil, nil, 30, nil, 15
       end
 
     spreadsheet
@@ -645,7 +875,6 @@ class ReportGenerator
           table_header(
             sheet,
             [
-              "Student ID",
               "Name",
               "Email Address",
               "Certification Type",
@@ -687,7 +916,8 @@ class ReportGenerator
                               "%Y-%m-%d %H:%M"
                             ),
                             certification.training_session.user.name,
-                            certification.training_session.course,
+                            certification.training_session.course ||
+                              "No course specified",
                             certification.training_session.space.name
                           ],
                           style: [
@@ -784,7 +1014,6 @@ class ReportGenerator
       )
 
     spreadsheet = Axlsx::Package.new
-
     spreadsheet
       .workbook
       .add_worksheet(name: "Report") do |sheet|
@@ -792,6 +1021,7 @@ class ReportGenerator
 
         sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
         sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+
         sheet.add_row # spacing
 
         table_header(sheet, %w[Title Users URL Categories])
@@ -807,6 +1037,16 @@ class ReportGenerator
                           repository.categories.map(&:name).join(", ")
                         ]
         end
+
+        new_style = spreadsheet.workbook.styles.add_style(bg_color: "F2F2F2")
+        sheet.add_table "A5:D#{repositories.size + 4}",
+                        style: new_style,
+                        columns: [
+                          { name: "Title" },
+                          { name: "Users" },
+                          { name: "URL" },
+                          { name: "Categories" }
+                        ]
       end
 
     spreadsheet
@@ -818,7 +1058,6 @@ class ReportGenerator
       TrainingSession.includes(:user, :users, :space, :training).find(id)
 
     spreadsheet = Axlsx::Package.new
-
     spreadsheet
       .workbook
       .add_worksheet(name: "Report") do |sheet|
@@ -854,7 +1093,6 @@ class ReportGenerator
         .where("sign_out_time > ?", DateTime.now)
 
     spreadsheet = Axlsx::Package.new
-
     spreadsheet
       .workbook
       .add_worksheet(name: "Report") do |sheet|
@@ -876,6 +1114,7 @@ class ReportGenerator
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
+  # PHYSICAL VISITS
   def self.generate_peak_hours_report(start_date, end_date)
     ls = LabSession.arel_table
 
@@ -966,7 +1205,6 @@ class ReportGenerator
     kits = ProjectKit.where("created_at" => start_date..end_date)
 
     spreadsheet = Axlsx::Package.new
-
     spreadsheet
       .workbook
       .add_worksheet(name: "Report") do |sheet|
@@ -974,6 +1212,7 @@ class ReportGenerator
 
         sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
         sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+
         sheet.add_row # spacing
 
         table_header(sheet, ["Kit name", "User", "Date", "Delivery Status"])
@@ -1319,6 +1558,7 @@ class ReportGenerator
     self.title(worksheet, title)
     worksheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
     worksheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+
     worksheet.add_row # spacing
   end
 

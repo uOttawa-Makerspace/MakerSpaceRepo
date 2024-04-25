@@ -2,16 +2,48 @@
   <%= render 'congratulations_volunteer' %>
   <hr />
   <%= render 'congratulations_dev_program' %>
+  <hr />
+  <%= render 'interested_teams_program' %>
 <% elsif status == 2 %>
   <%= render 'already_volunteer' %>
   <hr />
   <%= render 'congratulations_dev_program' %>
+  <hr />
+  <%= render 'interested_teams_program' %>
 <% elsif status == 3 %>
   <%= render 'congratulations_volunteer' %>
   <hr />
   <%= render 'already_dev_program' %>
+  <hr />
+  <%= render 'interested_teams_program' %>
 <% elsif status == 4 %>
+  <%= render 'congratulations_volunteer' %>
+  <hr />
+  <%= render 'congratulations_dev_program' %>
+  <hr />
+  <%= render 'congratulations_teams_program' %>
+<% elsif status == 5 %>
   <%= render 'already_volunteer' %>
   <hr />
   <%= render 'already_dev_program' %>
+  <hr />
+  <%= render 'interested_teams_program' %>
+<% elsif status == 6 %>
+  <%= render 'already_volunteer' %>
+  <hr />
+  <%= render 'congratulations_dev_program' %>
+  <hr />
+  <%= render 'congratulations_teams_program' %>
+<% elsif status == 7 %>
+  <%= render 'congratulations_volunteer' %>
+  <hr />
+  <%= render 'already_dev_program' %>
+  <hr />
+  <%= render 'congratulations_teams_program' %>
+<% elsif status == 8 %>
+  <%= render 'already_volunteer' %>
+  <hr />
+  <%= render 'already_dev_program' %>
+  <hr />
+  <%= render 'congratulations_teams_program' %>
 <% end %>
