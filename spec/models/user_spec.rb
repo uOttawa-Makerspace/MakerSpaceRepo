@@ -478,41 +478,53 @@ RSpec.describe User, type: :model do
     end
 
     context "#return_program_status" do
-      it "should return status 1" do
+      it "should return false for all programs for a regular user" do
         user = create(:user, :regular_user)
         create(:space)
-        expect(user.return_program_status).to eq(1)
+        expect(user.return_program_status).to eq(
+          { volunteer: false, dev: false, teams: false }
+        )
       end
 
-      it "should return status 1" do
+      it "should return false for all programs for a regular user with certifications" do
         user = create(:user, :regular_user_with_certifications)
-        expect(user.return_program_status).to eq(1)
+        expect(user.return_program_status).to eq(
+          { volunteer: false, dev: false, teams: false }
+        )
       end
 
-      it "should return status 2" do
+      it "should return true for volunteer only" do
         user = create(:user, :regular_user_with_certifications)
         Program.create(user_id: user.id, program_type: Program::VOLUNTEER)
-        expect(user.return_program_status).to eq(2)
+        expect(user.return_program_status).to eq(
+          { volunteer: true, dev: false, teams: false }
+        )
       end
 
-      it "should return status 2" do
+      it "should return true for volunteer only" do
         volunteer = create(:user, :volunteer_with_volunteer_program)
         create(:certification, :"3d_printing", user_id: volunteer.id)
         create(:certification, :basic_training, user_id: volunteer.id)
-        expect(volunteer.return_program_status).to eq(2)
+        expect(volunteer.return_program_status).to eq(
+          { volunteer: true, dev: false, teams: false }
+        )
       end
 
-      it "should return status 3" do
+      it "should return true for development program only" do
         user = create(:user, :regular_user_with_certifications)
         Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
-        expect(user.return_program_status).to eq(3)
+        expect(user.return_program_status).to eq(
+          { volunteer: false, dev: true, teams: false }
+        )
       end
 
-      it "should return status 4" do
+      it "should return true for both volunteer and development programs" do
         user = create(:user, :regular_user_with_certifications)
         Program.create(user_id: user.id, program_type: Program::VOLUNTEER)
         Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
-        expect(user.return_program_status).to eq(4)
+        expect(user.return_program_status).to eq(
+          { volunteer: true, dev: true, teams: false }
+        )
       end
     end
 
