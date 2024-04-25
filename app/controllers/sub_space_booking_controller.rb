@@ -7,6 +7,7 @@ class SubSpaceBookingController < ApplicationController
                   approve
                   decline
                   approve_access
+                  bulk_approve_access
                   deny_access
                   users
                   get_sub_space_booking
@@ -164,27 +165,6 @@ class SubSpaceBookingController < ApplicationController
     end
   end
 
-  def bulk_approve_access
-    if params[:ids].present?
-      UserBookingApproval.transaction do
-        params[:ids].each do |id|
-          uba = UserBookingApproval.find(id)
-          user = uba.user
-          uba.update!(approved: true, staff_id: current_user.id)
-          user.update!(booking_approval: true)
-          BookingMailer.send_booking_approval_request_approved(
-            uba.id
-          ).deliver_now
-        end
-      end
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  notice: "Access requests approved successfully."
-    else
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "No access requests selected for approval."
-    end
-  end
-
   def deny_access
     user = UserBookingApproval.find(params[:id]).user
     UserBookingApproval.find(params[:id]).destroy
@@ -192,6 +172,44 @@ class SubSpaceBookingController < ApplicationController
     user.save!
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "Access request declined successfully."
+  end
+
+  def bulk_approve_access
+    # set identity to 'Regular' if it's null
+    identity = params[:identity].presence || "Regular"
+
+    if params[:user_booking_approval_ids].blank?
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  alert: "No approvals selected."
+      return
+    end
+
+    UserBookingApproval
+      .where(id: params[:user_booking_approval_ids])
+      .each do |uba|
+        uba.assign_attributes(
+          approved: true,
+          staff_id: current_user.id,
+          identity: identity
+        )
+        if uba.save
+          uba.user.update!(booking_approval: true)
+          BookingMailer.send_booking_approval_request_approved(
+            uba.id
+          ).deliver_later
+        else
+          Rails.logger.error(
+            "Failed to save UserBookingApproval: #{uba.errors.full_messages.join(", ")}"
+          )
+        end
+      end
+
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                notice: "All access requests approved successfully."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                alert:
+                  "Failed to approve: #{e.record.errors.full_messages.join(", ")}"
   end
 
   def users
@@ -610,28 +628,6 @@ class SubSpaceBookingController < ApplicationController
     BookingMailer.send_booking_approved(
       params[:sub_space_booking_id]
     ).deliver_now
-  end
-
-  def bulk_approve
-    if params[:sub_space_booking_ids].present?
-      SubSpaceBooking.transaction do
-        params[:sub_space_booking_ids].each do |booking_id|
-          booking = SubSpaceBooking.find(booking_id)
-          booking_status = booking.sub_space_booking_status
-          booking_status.update!(booking_status_id: BookingStatus::APPROVED.id)
-          booking.update!(
-            approved_at: DateTime.now,
-            approved_by_id: current_user.id
-          )
-          #BookingMailer.send_booking_approved(booking_id).deliver_now
-        end
-      end
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  notice: "Selected bookings have been approved successfully."
-    else
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "No bookings selected for approval."
-    end
   end
 
   def decline
