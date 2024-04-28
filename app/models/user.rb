@@ -262,6 +262,10 @@ class User < ApplicationRecord
     programs.pluck(:program_type).include?(Program::DEV_PROGRAM)
   end
 
+  def teams_program?
+    programs.pluck(:program_type).include?(Program::TEAMS)
+  end
+
   def staff_in_space?
     staff_spaces.count > 0
   end
@@ -324,16 +328,7 @@ class User < ApplicationRecord
   end
 
   def return_program_status
-    if !volunteer_program? && !dev_program?
-      status = 1
-    elsif volunteer_program? && !dev_program?
-      status = 2
-    elsif !volunteer_program? && dev_program?
-      status = 3
-    elsif volunteer_program? && dev_program?
-      status = 4
-    end
-    status
+    { volunteer: volunteer_program?, dev: dev_program?, teams: teams_program? }
   end
 
   def update_wallet
