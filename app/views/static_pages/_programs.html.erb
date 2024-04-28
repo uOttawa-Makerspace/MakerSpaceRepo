@@ -1,3 +1,5 @@
+<% status = @user.return_program_status %>
+
 <% if status[:volunteer] %>
   <%= render 'already_volunteer' %>
 <% else %>
