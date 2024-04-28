@@ -137,6 +137,7 @@ Rails.application.routes.draw do
         action: "report_repository"
     get "volunteer_program_info"
     get "development_program_info"
+    post "join_team_program"
   end
 
   # RFID

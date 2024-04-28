@@ -1,19 +1,19 @@
-<% if status == 1 %>
-  <%= render 'congratulations_volunteer' %>
-  <hr />
-  <%= render 'congratulations_dev_program' %>
-  <hr />
-  <%= render 'interested_jmts_program' %>
-<% elsif status == 2 %>
+<% if status[:volunteer] %>
   <%= render 'already_volunteer' %>
-  <hr />
-  <%= render 'congratulations_dev_program' %>
-<% elsif status == 3 %>
+<% else %>
   <%= render 'congratulations_volunteer' %>
-  <hr />
+<% end %>
+<hr />
+
+<% if status[:dev] %>
   <%= render 'already_dev_program' %>
-<% elsif status == 4 %>
-  <%= render 'already_volunteer' %>
-  <hr />
-  <%= render 'already_dev_program' %>
+<% else %>
+  <%= render 'congratulations_dev_program' %>
+<% end %>
+<hr />
+
+<% if status[:teams] %>
+  <%= render 'already_teams_program' %>
+<% else %>
+  <%= render 'congratulations_teams_program' %>
 <% end %>
