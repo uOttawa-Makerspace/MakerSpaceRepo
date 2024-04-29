@@ -430,6 +430,7 @@ Rails.application.routes.draw do
       put :request_access
       put :deny_access
       put :approve_access
+      put :bulk_approve_access
       get :bookings
       get :users
       get :get_sub_space_booking

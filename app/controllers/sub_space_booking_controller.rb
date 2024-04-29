@@ -7,6 +7,7 @@ class SubSpaceBookingController < ApplicationController
                   approve
                   decline
                   approve_access
+                  bulk_approve_access
                   deny_access
                   users
                   get_sub_space_booking
@@ -173,6 +174,44 @@ class SubSpaceBookingController < ApplicationController
                 notice: "Access request declined successfully."
   end
 
+  def bulk_approve_access
+    # set identity to 'Regular' if it's null
+    identity = params[:identity].presence || "Regular"
+
+    if params[:user_booking_approval_ids].blank?
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  alert: "No approvals selected."
+      return
+    end
+
+    UserBookingApproval
+      .where(id: params[:user_booking_approval_ids])
+      .each do |uba|
+        uba.assign_attributes(
+          approved: true,
+          staff_id: current_user.id,
+          identity: identity
+        )
+        if uba.save
+          uba.user.update!(booking_approval: true)
+          BookingMailer.send_booking_approval_request_approved(
+            uba.id
+          ).deliver_later
+        else
+          Rails.logger.error(
+            "Failed to save UserBookingApproval: #{uba.errors.full_messages.join(", ")}"
+          )
+        end
+      end
+
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                notice: "All access requests approved successfully."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                alert:
+                  "Failed to approve: #{e.record.errors.full_messages.join(", ")}"
+  end
+
   def users
     render json: User.all
   end
@@ -185,40 +224,41 @@ class SubSpaceBookingController < ApplicationController
         .each do |booking|
           booking_status =
             SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
-          if booking_status.booking_status_id == BookingStatus::APPROVED.id ||
-               booking_status.booking_status_id == BookingStatus::PENDING.id
-            title = "#{booking.name} - #{booking.description}"
-            title =
-              if current_user.admin? || booking.user == current_user ||
-                   booking.public
-                title
-              else
-                booking.public ? title : "Space Booked"
-              end
-            title =
-              if booking_status.booking_status_id == BookingStatus::PENDING.id
-                title + " (Pending)"
-              else
-                title
-              end
-            title += " - #{booking.user.name}" if current_user.admin? &&
-              booking.user != current_user
-            if booking.blocking
-              title = "Space Blocked" if (
-                !booking.public &&
-                  ((!current_user.admin?) || booking.user != current_user)
-              )
-            end
-            event = {
-              id:
-                "booking_" + booking.id.to_s + "_" + booking.sub_space_id.to_s,
-              title: title,
-              start: booking.start_time,
-              end: booking.end_time,
-              color: booking.color(current_user.id)
-            }
-            @bookings << event
+          unless booking_status.booking_status_id ==
+                   BookingStatus::APPROVED.id ||
+                   booking_status.booking_status_id == BookingStatus::PENDING.id
+            next
           end
+          title = "#{booking.name} - #{booking.description}"
+          title =
+            if current_user.admin? || booking.user == current_user ||
+                 booking.public
+              title
+            else
+              booking.public ? title : "Space Booked"
+            end
+          title =
+            if booking_status.booking_status_id == BookingStatus::PENDING.id
+              title + " (Pending)"
+            else
+              title
+            end
+          title += " - #{booking.user.name}" if current_user.admin? &&
+            booking.user != current_user
+          if booking.blocking
+            title = "Space Blocked" if (
+              !booking.public &&
+                ((!current_user.admin?) || booking.user != current_user)
+            )
+          end
+          event = {
+            id: "booking_" + booking.id.to_s + "_" + booking.sub_space_id.to_s,
+            title: title,
+            start: booking.start_time,
+            end: booking.end_time,
+            color: booking.color(current_user.id)
+          }
+          @bookings << event
         end
     end
     render json: @bookings
