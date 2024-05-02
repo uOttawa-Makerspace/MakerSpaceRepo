@@ -27,19 +27,18 @@
                 <div class="mb-3 form-floating w-50 mx-auto">
                   <%= f.text_field :end_time, class: 'form-control' %>
                   <%= f.label :end_time, 'End Time', class: 'form-label' %>
-                  </div>
                 </div>
               </div>
-              <%= f.hidden_field :sub_space_booking_id, value: @sub_space_booking.id %>
+            </div>
+            <%= f.hidden_field :sub_space_booking_id, value: @sub_space_booking.id %>
 
-              <div class="col-lg-12 text-center">
-                <br>
-                <%= f.submit 'Update', class: 'btn btn-secondary btn-xl' %>
-              </div>
+            <div class="col-lg-12 text-center">
+              <br>
+              <%= f.submit 'Update', class: 'btn btn-secondary btn-xl' %>
+            </div>
             </div>
           <% end %>
-        </div>
-      </div>
+          </div>
     </div>
   </div>
 </section>

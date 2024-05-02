@@ -1,39 +1,53 @@
 <section class="padding-10 mt-4">
-
   <div>
-
     <div class="title">Last Updates 3D-Printers Usage</div>
-
-    <div class="text-center">
-      <div><%= link_to 'Manage 3D Printers', staff_printers_printers_path, class: 'btn btn-secondary' %></div>
+    <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
+      <%= link_to 'Manage Printer Usage', staff_printers_printers_path, class: 'btn btn-secondary' %>
     </div>
 
-    <div>
-      <% @printer_types.each do |type| %>
-        <div class="mb-3">
-          <h2><%= type %></h2>
-          <table class="table table-striped">
-            <thead class="table-primary text-center">
-              <th>Printer Number</th>
-              <th>User</th>
-              <th>Time</th>
-              <th>In Use</th>
-            </thead>
-            <tbody>
-              <% Printer.get_printer_ids(type).sort_by { |printer| Printer.get_last_number_session(printer).created_at }.reverse.each do |printer_id| %>
-                          <% last_session = Printer.get_last_number_session(printer_id) %>
-                <tr>
-                  <td><%= Printer.find(printer_id).number %></td>
-                  <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
-                  <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
-                  <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
-                </tr>
+    <% if @user.admin? %>
+      <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
+        <%= link_to 'Manage Printers', printers_path, class: 'btn btn-primary' %>
+        <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-primary' %>
+      </div>
+    <% end %>
+
+    <% @printer_types.each_with_index do |pt, index| %>
+      <div class="mb-3">
+        <h2><%= pt.name %></h2>
+        <table class="table table-striped <%= "table-#{index}" %>">
+          <thead class="table-primary text-center">
+          <th>Printer Number<span onclick="sortTable('table-<%= index %>', 0)"><%= fa_icon('arrow-down') %></span></th>
+          <th>User<span onclick="sortTable('table-<%= index %>', 1)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Time<span onclick="sortTable('table-<%= index %>', 2)"><%= fa_icon('arrow-down') %></span></th>
+          <th>In Use<span onclick="sortTable('table-<%= index %>', 3)"><%= fa_icon('arrow-down') %></span></th>
+          </thead>
+          <tbody>
+          <% Printer.get_printer_ids(pt.name).sort_by do |printer_id|
+            number_str = Printer.find(printer_id).number
+            prefix, main_part = number_str.split(' - ', 2)
+            numeric_part = main_part.scan(/\d+/)[0].to_i
+            alphabetic_part = main_part.gsub(/\d+/, '')
+            [prefix, alphabetic_part, numeric_part]
+          end.each do |printer_id|
+            last_session = Printer.get_last_number_session(printer_id)
+          %>
+            <tr>
+              <td><%= Printer.find(printer_id).number %></td>
+              <% if last_session.nil? %>
+                <% 3.times do %>
+                  <td>-------</td>
+                <% end %>
+              <% else %>
+                <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
+                <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
+                <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
               <% end %>
-
-          </table>
-        </div>
-      <% end %>
-
-    </div>
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
   </div>
 </section>

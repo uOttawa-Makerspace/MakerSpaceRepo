@@ -9,7 +9,6 @@ class Admin::SettingsController < AdminAreaController
     @pi_option = PiReader.new
     @job_order_processed_message = JobOrderMessage.find_by(name: "processed")
     @area_option = AreaOption.new
-    @printer = Printer.new
   end
 
   def add_category
@@ -30,17 +29,6 @@ class Admin::SettingsController < AdminAreaController
       @area_option = AreaOption.new(area_params)
       @area_option.save
       flash[:notice] = "Area added successfully!"
-    end
-    redirect_to admin_settings_path
-  end
-
-  def add_printer
-    if params[:printer][:model].blank? || params[:printer][:number].blank?
-      flash[:alert] = "Invalid printer model or number"
-    else
-      @printer = Printer.new(printer_params)
-      @printer.save
-      flash[:notice] = "Printer added successfully!"
     end
     redirect_to admin_settings_path
   end
@@ -107,17 +95,6 @@ class Admin::SettingsController < AdminAreaController
     end
     redirect_to admin_settings_path
   end
-
-  def remove_printer
-    if params[:remove_printer] != ""
-      Printer.where(id: params[:remove_printer]).destroy_all
-      flash[:notice] = "Printer removed successfully!"
-    else
-      flash[:alert] = "Please select a Printer."
-    end
-    redirect_to admin_settings_path
-  end
-
   def add_equipment
     if params[:equipment_option][:name].blank?
       flash[:alert] = "Invalid equipment name."
@@ -221,7 +198,7 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def printer_params
-    params.require(:printer).permit(:model, :number)
+    params.require(:printer).permit(:number)
   end
 
   def course_params

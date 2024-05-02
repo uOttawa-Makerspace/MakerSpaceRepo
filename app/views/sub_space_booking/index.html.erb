@@ -2,18 +2,18 @@
 
   <% if current_user.booking_approval || current_user.admin? %>
     <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast bg-warning text-black" data-bs-autohide="false">
-    <div class="toast-header">
-      <strong id="toast_title" class="me-auto"></strong>
-      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-    <div id="toast_text" class="toast-body">
-    </div>
+      <div class="toast-header">
+        <strong id="toast_title" class="me-auto"></strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div id="toast_text" class="toast-body">
+      </div>
     </div>
     <div class="col-md-10 mx-auto">
       <ul class="nav nav-tabs nav-fill" id="booking-tab-list" role="tablist">
-          <button class="nav-link tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab" aria-controls="booking-calendar-tab" aria-selected="true">Book</button>
-          <button class="nav-link tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab" aria-controls="booking-tab" aria-selected="false">My Bookings</button>
-          <% if current_user.admin? %><button class="nav-link tab-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab" aria-controls="booking-admin-tab" aria-selected="false">Admin Panel</button><% end %>
+        <button class="nav-link tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab" aria-controls="booking-calendar-tab" aria-selected="true">Book</button>
+        <button class="nav-link tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab" aria-controls="booking-tab" aria-selected="false">My Bookings</button>
+        <% if current_user.admin? %><button class="nav-link tab-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab" aria-controls="booking-admin-tab" aria-selected="false">Admin Panel</button><% end %>
       </ul>
       <div class="tab-content" id="tabContent">
         <div class="tab-pane active show" id="booking-calendar-tab" role="tabpanel" aria-labelledby="tab-calendar">
@@ -22,34 +22,34 @@
               <a class="navbar-brand" href="<%= sub_space_booking_index_path %>">Maker<strong>Room</strong></a>
               <% Space.all.order(:name).each do |space| %>
                 <% subspaces = SubSpace.where(space_id: space.id).order(:name) %>
-                  <% if subspaces.length > 0 %>
-                    <% if subspaces.length == 1 %>
-                      <div class="nav-item ms-4"><%= link_to(subspaces.last.name, sub_space_booking_index_path(room: subspaces.last.id), class: 'nav-link') %></div>
-                    <% else %>
-                      <div class="nav-item dropdown ms-4">
-                        <a class="nav-link dropdown-toggle" role="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                          <%= space.name %>
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                          <% subspaces.each do |subspace| %>
-                            <a class="dropdown-item" href="<%= sub_space_booking_index_path(room: subspace.id) %>"><%= subspace.name %></a>
-                          <% end %>
-                        </div>
+                <% if subspaces.length > 0 %>
+                  <% if subspaces.length == 1 %>
+                    <div class="nav-item ms-4"><%= link_to(subspaces.last.name, sub_space_booking_index_path(room: subspaces.last.id), class: 'nav-link') %></div>
+                  <% else %>
+                    <div class="nav-item dropdown ms-4">
+                      <a class="nav-link dropdown-toggle" role="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <%= space.name %>
+                      </a>
+                      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <% subspaces.each do |subspace| %>
+                          <a class="dropdown-item" href="<%= sub_space_booking_index_path(room: subspace.id) %>"><%= subspace.name %></a>
+                        <% end %>
                       </div>
-                    <% end %>
+                    </div>
                   <% end %>
                 <% end %>
-              </div>
+              <% end %>
             </div>
+          </div>
           <% if params[:room].present? %>
             <h3 class="text-center my-3"> <%= @subspace.name %> Availability Calendar</h3>
             <div>
-            <% unless @rules.empty? %>
-              <p class="text-center alert alert-info">
-                <%= @subspace.name %> 
-                <%= @rules.to_sentence %>
-              </p>
-            <% end %>
+              <% unless @rules.empty? %>
+                <p class="text-center alert alert-info">
+                  <%= @subspace.name %>
+                  <%= @rules.to_sentence %>
+                </p>
+              <% end %>
             </div>
             <div class="row">
               <div class="col-md-2 border border-2 rounded-2 p-3" style="height: fit-content">
@@ -66,54 +66,54 @@
               </div>
             </div>
             <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
-            <%= hidden_field_tag :sub_space_booking_id, nil, id: 'sub_space_booking_id' %>
-            <div class="modal-dialog" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="bookingModalLabel">New Booking</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" id="bookClose" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                  <div class="mb-3 text-center">
-                    <label for="book-name" class="form-label">Name</label>
-                    <input type="text" class="form-control" id="book-name" placeholder="John Doe">
-                    <br>
-                    <div id="TimeSlot"></div>
-                    <label for="book-description" class="form-label">Description</label>
-                    <input type="text" class="form-control" id="book-description" placeholder="Meeting with John Doe">
-                    <br>
-                    <label for="book-start">Start Date</label>
-                    <input id="book-start" autocomplete="false" class="form-control inanimate">
-                    <br>
-                    <label for="book-end">End Date</label>
-                    <input id="book-end" autocomplete="false" class="form-control inanimate">
-                    <span class="invalid-feedback d-none" id="end-date-validation" >The End Date needs to be greater than the Start Date.</span>
-                    <br>
-                    <input type="checkbox" id="book-recurring" class="form-check-input">
-                    <label for="book-recurring" id="book-recurring-label">Is this a recurring booking?</label>
-                    <br>
-                    <div class="flatpickr">
-                    <label for="book-recurring-end" id="book-recurring-end-label">Recurring End Date</label>
-                    <input id="book-recurring-end" autocomplete="false" class="form-control inanimate">
+              <%= hidden_field_tag :sub_space_booking_id, nil, id: 'sub_space_booking_id' %>
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="bookingModalLabel">New Booking</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" id="bookClose" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="mb-3 text-center">
+                      <label for="book-name" class="form-label">Name</label>
+                      <input type="text" class="form-control" id="book-name" placeholder="John Doe">
+                      <br>
+                      <div id="TimeSlot"></div>
+                      <label for="book-description" class="form-label">Description</label>
+                      <input type="text" class="form-control" id="book-description" placeholder="Meeting with John Doe">
+                      <br>
+                      <label for="book-start">Start Date</label>
+                      <input id="book-start" autocomplete="false" class="form-control inanimate">
+                      <br>
+                      <label for="book-end">End Date</label>
+                      <input id="book-end" autocomplete="false" class="form-control inanimate">
+                      <span class="invalid-feedback d-none" id="end-date-validation" >The End Date needs to be greater than the Start Date.</span>
+                      <br>
+                      <input type="checkbox" id="book-recurring" class="form-check-input">
+                      <label for="book-recurring" id="book-recurring-label">Is this a recurring booking?</label>
+                      <br>
+                      <div class="flatpickr">
+                        <label for="book-recurring-end" id="book-recurring-end-label">Recurring End Date</label>
+                        <input id="book-recurring-end" autocomplete="false" class="form-control inanimate">
+                      </div>
+                      <label for="book-recurring-type" id="book-recurring-type-label">Recurring Frequency</label>
+                      <select id="book-recurring-type" class="form-select form-control">
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                      <% if current_user.admin? %>
+                        <input type="checkbox" id="book-blocking" !checked class="form-check-input">
+                        <label for="book-blocking">Block from booking in this timeframe?</label>
+                      <% end %>
                     </div>
-                    <label for="book-recurring-type" id="book-recurring-type-label">Recurring Frequency</label>
-                    <select id="book-recurring-type" class="form-select form-control">
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                    </select>
-                    <% if current_user.admin? %>
-                      <input type="checkbox" id="book-blocking" !checked class="form-check-input">
-                      <label for="book-blocking">Block from booking in this timeframe?</label>
-                    <% end %>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" id="bookCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="bookSave" class="btn btn-primary">Book</button>
+                    <button type="button" id="bookUpdate" class="btn btn-primary">Update</button>
                   </div>
                 </div>
-                <div class="modal-footer">
-                  <button type="button" id="bookCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="button" id="bookSave" class="btn btn-primary">Book</button>
-                  <button type="button" id="bookUpdate" class="btn btn-primary">Update</button>
-                </div>
               </div>
-            </div>
             </div>
           <% else %>
             <div class="alert mt-3 alert-warning text-center" role="alert">
@@ -125,31 +125,31 @@
           <div id="my-booking-table" class="mt-3">
             <table class="table table-striped">
               <thead class="table-primary text-center">
-                <tr>
-                  <th>Space</th>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Approved?</th>
-                  <th>Actions</th>
-                </tr>
+              <tr>
+                <th>Space</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Approved?</th>
+                <th>Actions</th>
+              </tr>
               </thead>
               <tbody>
-                <% @bookings.each do |booking| %>
-                  <tr>
-                    <td><%= booking.sub_space.name %></td>
-                    <td><%= booking.name %></td>
-                    <td><%= booking.description %></td>
-                    <td><%= booking.start_time.to_formatted_s(:short) %></td>
-                    <td><%= booking.end_time.to_formatted_s(:short) %></td>
-                    <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? 'Approved' : 'Not Approved' %></td>
-                    <td class="input-group">
+              <% @bookings.each do |booking| %>
+                <tr>
+                  <td><%= booking.sub_space.name %></td>
+                  <td><%= booking.name %></td>
+                  <td><%= booking.description %></td>
+                  <td><%= booking.start_time.to_formatted_s(:short) %></td>
+                  <td><%= booking.end_time.to_formatted_s(:short) %></td>
+                  <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? 'Approved' : 'Not Approved' %></td>
+                  <td class="input-group">
                     <%= button_to 'Edit', sub_space_booking_edit_path(booking.id), method: :get, class: 'btn btn-secondary', form_style: 'border: none;background: none;', form_class: '' if @user.admin? || booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
                     <%= button_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
-                    </td>
-                  </tr>
-                <% end %>
+                  </td>
+                </tr>
+              <% end %>
               </tbody>
             </table>
           </div>
@@ -198,8 +198,8 @@
           </div>
 
           <div class="mb-4" id="supervisor-select" style="display: none;">
-              <%= label_tag :supervisor, 'Supervisor', class: 'form-label' %>
-              <%= select_tag :supervisor, options_for_select(@supervisors), class: 'form-select form-control' %>
+            <%= label_tag :supervisor, 'Supervisor', class: 'form-label' %>
+            <%= select_tag :supervisor, options_for_select(@supervisors), class: 'form-select form-control' %>
           </div>
 
           <div class="mb-4" id="comments-container" style="display: none;">
@@ -210,7 +210,7 @@
           <div class="text-center">
             <%= f.submit 'Request Access', class: 'btn btn-primary' %>
           </div>
-          <% end %>
+        <% end %>
       </div>
     <% end %>
   <% end %>

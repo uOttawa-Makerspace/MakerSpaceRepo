@@ -90,3 +90,7 @@ module ApplicationHelper
     MakerSpaceRepo::Application.load_tasks if Rake::Task.tasks.empty?
   end
 end
+
+def rgba(color, opacity)
+  "rgba(#{color.join(", ")}, #{opacity})"
+end

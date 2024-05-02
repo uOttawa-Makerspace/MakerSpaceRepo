@@ -124,10 +124,14 @@ class Admin::SpacesController < AdminAreaController
 
   def update_max_capacity
     @space = Space.find(params[:space_id])
+    max_capacity = params[:max_capacity].to_i
+    max_capacity = nil if max_capacity.zero? # 0 is no limit
     if @space.update(max_capacity: params[:max_capacity])
-      flash[:notice] = "Space Capacity updated !"
-      redirect_back(fallback_location: root_path)
+      flash[:notice] = "Space Capacity updated!"
+    else
+      flash[:alert] = "Failed to update space capacity."
     end
+    redirect_back(fallback_location: root_path)
   end
 
   def update_keycode

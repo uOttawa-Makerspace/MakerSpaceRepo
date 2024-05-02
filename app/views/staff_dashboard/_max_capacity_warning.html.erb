@@ -1,4 +1,4 @@
-<% if @space.max_capacity.present? %>
+<% if @space.max_capacity.present? && !@space.max_capacity.nil? && @space.max_capacity > 0 %>
 
   <% if @space.signed_in_users.count == @space.max_capacity %>
     <div class="alert alert-danger text-center" role="alert">

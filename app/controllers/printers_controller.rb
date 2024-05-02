@@ -3,6 +3,54 @@
 class PrintersController < StaffAreaController
   layout "staff_area"
 
+  before_action :ensure_admin, only: %i[index add_printer remove_printer]
+
+  def index
+    @printer = Printer.new
+    @printer_models =
+      PrinterType
+        .all
+        .order(name: :asc)
+        .map do |pt|
+          [pt.name + (pt.short_form.blank? ? "" : " (#{pt.short_form})"), pt.id]
+        end
+  end
+
+  def add_printer
+    printer_type = PrinterType.find_by(id: params[:model_id])
+
+    if params[:printer][:number].blank? || params[:model_id].blank?
+      flash[:alert] = "Invalid printer model or number"
+    else
+      number =
+        (
+          if printer_type.short_form.blank?
+            params[:printer][:number]
+          else
+            "#{printer_type.short_form} - #{params[:printer][:number]}"
+          end
+        )
+
+      @printer = Printer.new(number: number, printer_type_id: params[:model_id])
+      if @printer.save
+        flash[:notice] = "Printer added successfully!"
+      else
+        flash[:alert] = "Printer number already exists"
+      end
+    end
+    redirect_to printers_path
+  end
+
+  def remove_printer
+    if params[:remove_printer] != ""
+      Printer.where(id: params[:remove_printer]).destroy_all
+      flash[:notice] = "Printer removed successfully!"
+    else
+      flash[:alert] = "Please select a Printer."
+    end
+    redirect_to printers_path
+  end
+
   def staff_printers
     @printers = Printer.all
     @list_users =
@@ -17,20 +65,11 @@ class PrintersController < StaffAreaController
         .uniq
         .pluck(:name, :id)
     @list_users.unshift(%w[Clear clear])
-    @printer_types = [
-      { name: "Ultimaker 2+", id: "ultimaker2p" },
-      { name: "Ultimaker 3", id: "ultimaker3" },
-      { name: "Replicator 2", id: "replicator2" },
-      { name: "Dremel", id: "dremel" }
-    ]
+    @printer_types = PrinterType.all.order("lower(name) ASC")
   end
 
   def staff_printers_updates
-    @ultimaker_printer_ids = Printer.get_printer_ids("Ultimaker 2+")
-    @ultimaker3_printer_ids = Printer.get_printer_ids("Ultimaker 3")
-    @replicator2_printer_ids = Printer.get_printer_ids("Replicator 2")
-    @dremel_printer_ids = Printer.get_printer_ids("Dremel")
-    @printer_types = ["Ultimaker 2+", "Ultimaker 3", "Replicator 2", "Dremel"]
+    @printer_types = PrinterType.all.order("lower(name) ASC")
   end
 
   def link_printer_to_user
@@ -54,5 +93,16 @@ class PrintersController < StaffAreaController
       flash[:alert] = "Something went wrong"
     end
     redirect_to staff_printers_printers_path
+  end
+
+  private
+
+  def ensure_admin
+    @user = current_user
+
+    unless @user.admin?
+      flash[:alert] = "You cannot access this area"
+      redirect_back(fallback_location: root_path)
+    end
   end
 end
