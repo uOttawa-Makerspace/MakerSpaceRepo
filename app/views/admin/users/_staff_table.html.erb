@@ -1,22 +1,32 @@
-      <thead class="table-primary">
-      <tr class="text-center">
-        <th class="name-header">Username</th>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="email-header">Role</th>
-      </tr>
-      </thead>
-      <% @staff.each do |staff| %>
-        <tr>
-          <td class="username-cell"><%= link_to staff.username, user_url(staff.username) %></td>
-          <td class="name-cell"><%= staff.name %></td>
-          <td class="email-cell"><%= staff.email %></td>
-          <td class="w-auto">
-            <%= form_tag set_role_admin_users_path(id: staff.id), method: :patch, format: 'js', remote: true do %>
-              <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]] %>
-              <%= select_tag(:role, options_for_select(@roles, selected: staff.role), class: 'form-control form-select d-inline w-auto') %>
-              <%= submit_tag 'Change', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
-            <% end %>
-          </td>
-        </tr>
-      <% end %>
+<table class="table">
+  <thead class="table-primary">
+  <tr class="text-center">
+    <th>Username</th>
+    <th>Name</th>
+    <th>Email</th>
+    <th>Role</th>
+    <th>Space</th>
+  </tr>
+  </thead>
+  <tbody>
+  <% @staff.each do |staff| %>
+    <tr>
+      <td><%= link_to staff.username, user_url(staff) %></td>
+      <td><%= staff.name %></td>
+      <td><%= staff.email %></td>
+      <td style="white-space: nowrap;">
+        <%= form_with url: set_role_admin_users_path(staff), method: :patch, local: true, class: 'd-inline' do |form| %>
+          <%= form.select :role, options_for_select(@roles.map { |name, value| [name, value] }, staff.role), {}, class: 'form-control form-select d-inline w-auto', style: 'width: auto; vertical-align: middle;' %>
+          <%= form.submit 'Change', class: 'btn btn-primary btn-sm ml-2' %>
+        <% end %>
+      </td>
+      <td>
+        <%= form_with url: manage_spaces_admin_user_path(staff), method: :put, local: true do |form| %>
+          <%= form.collection_select :space_ids, Space.all, :id, :name, { selected: staff.spaces.pluck(:id), include_blank: false }, { multiple: true, class: 'form-control' } %>
+          <%= form.submit 'Change', class: 'btn btn-primary btn-sm' %>
+        <% end %>
+      </td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>

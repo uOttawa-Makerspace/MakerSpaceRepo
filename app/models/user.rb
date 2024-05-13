@@ -45,6 +45,7 @@ class User < ApplicationRecord
   has_many :learning_module_tracks
   has_many :shadowing_hours
   has_many :staff_spaces, dependent: :destroy
+  has_many :spaces, through: :staff_spaces
   has_many :staff_availabilities, dependent: :destroy
   has_and_belongs_to_many :shifts, dependent: :destroy
   has_many :job_orders, dependent: :destroy

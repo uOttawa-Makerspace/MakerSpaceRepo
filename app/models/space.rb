@@ -10,7 +10,7 @@ class Space < ApplicationRecord
   has_many :volunteer_tasks, dependent: :destroy
   has_many :popular_hours, dependent: :destroy
   has_many :shadowing_hours
-  has_many :users
+  has_many :users, through: :staff_spaces
   has_many :staff_spaces
   has_many :space_staff_hour
   has_many :shifts, dependent: :destroy

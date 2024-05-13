@@ -255,6 +255,18 @@ class Admin::UsersController < AdminAreaController
     @roles = %w[admin staff regular_user]
   end
 
+  def manage_spaces
+    @user = User.find(params[:id])
+    @user.space_ids = params[:space_ids].reject(&:blank?)
+    if @user.save
+      redirect_to manage_roles_admin_users_path,
+                  notice: "Space successfully updated for #{@user.name}"
+    else
+      redirect_to manage_roles_admin_users_path,
+                  alert: "Failed to update space."
+    end
+  end
+
   private
 
   def user_params

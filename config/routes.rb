@@ -109,17 +109,13 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :printers, only: %i[index] do
+  resources :printers do
     collection do
       get :staff_printers
       get :staff_printers_updates
       patch :link_printer_to_user
-      post :add_printer
-      post :remove_printer
     end
   end
-
-  resources :printer_types, except: %i[show]
 
   root "static_pages#home"
 
@@ -241,6 +237,8 @@ Rails.application.routes.draw do
         put "toggle_lock_user"
         get "manage_roles"
       end
+
+      member { put :manage_spaces }
     end
 
     resources :spaces, only: %i[index create edit] do
@@ -293,7 +291,6 @@ Rails.application.routes.draw do
         post :update_color
         post :confirm_shifts
         post :clear_pending_shifts
-        post :confirm_current_week_shifts
         post :copy_to_next_week
       end
     end
@@ -320,11 +317,12 @@ Rails.application.routes.draw do
       collection do
         post "add_category"
         post "add_area"
-
+        post "add_printer"
         # post 'rename_category'
         patch "update_job_order_processed"
         post "remove_category"
         post "remove_area"
+        post "remove_printer"
         post "add_equipment"
         post "rename_equipment"
         post "remove_equipment"
@@ -433,7 +431,6 @@ Rails.application.routes.draw do
       put :bulk_approve_access
       get :bookings
       get :users
-      get :get_sub_space_booking
     end
   end
 
