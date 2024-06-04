@@ -1,5 +1,15 @@
 # frozen_string_literal: true
 
+# this is awful man.
+# ReportGenerator here
+# TODO: A whole lot of refactoring needed?
+#   1. Separation of concerns. xslx template and data retrieval separated
+#   2. Keep queries on controller side, you're sending network requests anyways to get the data
+# axlsx doesn't read xlsx files, just writes them out. This sucks cuz I wanted to design a template and have it fill it in. Not sure if it's worth introducing a new gem.
+# CSV won't work, this isn't the stone age and I want charts.
+# I could move this all to controller side, but then it'll be difficult
+# to use outside of that controller. This a massive file and smartparens is being stupid
+
 class ReportGenerator
   require "axlsx"
   # region Date Range Reports
@@ -9,6 +19,8 @@ class ReportGenerator
   def self.generate_visitors_report(start_date, end_date)
     spreadsheet = Axlsx::Package.new
 
+    # Query database for visitors
+    # Our report gives
     space_details = get_visitors(start_date, end_date)
 
     spreadsheet
@@ -330,15 +342,140 @@ class ReportGenerator
     spreadsheet
   end
 
+  # FIXME: there is a separate fetch function, use it???
+  # Fetch certifications, per space
+  # FUN FACT: This thing never touches the 'certifications' table, for some unfathomable reason.
+  # tldr this is broken and doesn't actually count handed out certs, rewrite completely.
+  # I'm assuming there's some double counted certs here :/
+  # FIXME no infinte date range
+  # FIXME funfact some training sessions aren't marked as completed?
+  # We're
+  def self.generate_certifications_report(start_date, end_date)
+    # FIXME I can see why we don't use that, data is v. weird and might be missing?
+    aggregate_data = get_certifications(start_date, end_date)
+
+    # completed sessions and certs awarded
+    # ___________|_______Course 1_______|________Total_________|
+    # Topic name | Sessions | Attendees | Sessions | Attendees |
+    # ----------------------|-----------|----------|-----------|
+    # topic 1    |          |           |          |           |
+    # topic 2    |          |           |          |           |
+    #
+    #
+
+    spreadsheet = Axlsx::Package.new
+    spreadsheet.workbook.use_autowidth = true
+    #heading_style = spreadsheet.workbook.styles.add_style
+    centered_style =
+      spreadsheet.workbook.styles.add_style alignment: { horizontal: :center }
+
+    # collect categories for easier looping
+    spaces = []
+    topics = []
+    courses = []
+    aggregate_data.each do |row|
+      spaces << row["space_name"]
+      topics << row["name"]
+      courses << row["course"]
+    end
+    # remove dupes
+    spaces = spaces.uniq.sort.reverse
+    topics = topics.uniq
+    courses = courses.uniq #.map { |d| d || "None" }
+
+    #raise "repl pls"
+    spaces.each do |space|
+      # WARNING: DOUBLE CHECK some spaces/courses == "", replace those with "Open"
+      spreadsheet
+        .workbook
+        .add_worksheet(name: space || "Unknown") do |sheet|
+          title(sheet, "Makerepo Certifications report")
+          title_string = "Certifications granted in #{space}"
+          header(sheet, title_string, start_date, end_date)
+          sheet.column_widths title_string.length + 2
+
+          # push headers, add space to be merged
+          sheet.add_row [""] + courses.map { |d| [d || "Open", ""] }.flatten,
+                        style: centered_style
+          # merge subheaders
+          courses.count.times do |n|
+            n = n * 2 + 1
+            sheet.merge_cells sheet.rows.last.cells[(n..n + 1)]
+          end
+
+          # add an extra for the topic totals
+          sheet.add_row ["Training"] +
+                          ["Completed sessions", "Certs awarded"] *
+                            (courses.count + 1),
+                        style: centered_style
+
+          course_totals = {}
+          courses.each { |c| course_totals[c] = { sessions: 0, certs: 0 } }
+
+          # push data, collect totals meanwhile
+          topics.each do |topic|
+            entry = [topic]
+            courses.each do |course|
+              # push number of completed sessions and certs
+              entry +=
+                aggregate_data
+                  .find do |d|
+                    d["space_name"] == space and d["name"] == topic and
+                      d["course"] == course
+                  end
+                  &.values_at("total_sessions", "total_certifications") ||
+                  [0, 0] # default if not found
+            end
+
+            # sum sessions
+            total_sessions = entry.drop(1).each_slice(2).map(&:first).sum
+            total_certs = entry.drop(1).each_slice(2).map(&:last).sum
+            entry += [total_sessions, total_certs]
+
+            # finally push row
+            sheet.add_row entry, style: centered_style
+          end
+
+          # push final total row, for each course
+          totals_row = ["Total"]
+          courses.each do |course|
+            totals_row +=
+              course_total =
+                aggregate_data
+                  .find_all do |d|
+                    d["space_name"] == space and d["course"] == course
+                  end
+                  .map do |d|
+                    d.values_at("total_sessions", "total_certifications")
+                  end
+                  .transpose
+                  .map(&:sum)
+          end
+
+          sheet.add_row totals_row, style: centered_style
+        end
+    end
+    spreadsheet
+  end
+
+  #FIXME: when generating report, group trainings by topic
   # @param [DateTime] start_date
   # @param [DateTime] end_date
-  def self.generate_certifications_report(start_date, end_date)
+  def self.generate_certifications_report_but_sucks(start_date, end_date)
     spreadsheet = Axlsx::Package.new
 
-    ["MTC", "Makerspace", "Makerlab 119", "Makerlab 121"].each do |space|
+    # FIXME: hardcoded spaces are no no, what if more spaces are added?
+    # but there's a lot of spaces that don't have training.
+    [
+      "MTC",
+      "Makerspace",
+      "Makerlab 119",
+      "Makerlab 121",
+      "Brunsfield Centre"
+    ].each do |space|
       if Space.find_by(name: space).present?
         spreadsheet
-          .workbook
+          .workbook # Add worksheet for each space
           .add_worksheet(name: space) do |sheet|
             space_id = Space.find_by_name(space).id
 
@@ -346,6 +483,7 @@ class ReportGenerator
 
             header = ["Certification"]
             header2 = [""]
+            # create course name headers
             CourseName.all.each do |course|
               header << (course.name == "no course" ? "Open" : course.name)
               header << ""
@@ -359,12 +497,13 @@ class ReportGenerator
             final_total_sessions = {}
             final_total_certifications = {}
 
+            # for each space ID, get training topic
             Training
               .all
               .joins(:spaces_trainings)
               .where(spaces_trainings: { space_id: space_id })
-              .each do |training|
-                training_sessions =
+              .each do |training| # for each training type
+                training_sessions = # get training sessions
                   TrainingSession.where(
                     training_id: training.id,
                     space_id: space_id,
@@ -373,6 +512,7 @@ class ReportGenerator
                 training_row = [training.name]
                 total_certifications = 0
 
+                # get course assossciated with each
                 CourseName.all.each do |course|
                   if final_total_sessions[course.name].nil?
                     final_total_sessions[course.name] = 0
@@ -383,10 +523,13 @@ class ReportGenerator
                   course_training_session =
                     training_sessions.where(course_name_id: course.id)
                   course_training_session.each do |session|
-                    user_count += session.users.count
+                    # NOTE: where does the count actually come from?
+                    user_count += session.users.count # count attendees in each session
                   end
                   training_row << course_training_session.count
                   training_row << user_count
+                  # add attendee count to final session
+                  # FIXME: maybe you failed a training session?
                   total_certifications += user_count
                   final_total_sessions[
                     course.name
@@ -403,6 +546,7 @@ class ReportGenerator
                   "total"
                 ] = 0 if final_total_certifications["total"].nil?
                 final_total_sessions["total"] += training_sessions.count
+                # add certs to total count
                 final_total_certifications["total"] += total_certifications
 
                 color =
@@ -1004,6 +1148,8 @@ class ReportGenerator
     u = User.arel_table
     s = Space.arel_table
 
+    # NOTE: notice how this dance isn't necessary, you can just hit the activerecord
+    # you want without passing by exec_query
     result =
       ActiveRecord::Base.connection.exec_query(
         g
@@ -1273,14 +1419,17 @@ class ReportGenerator
     t = Training.arel_table
     s = Space.arel_table
 
+    # NOTE: this counts sessions that resulted in at least one certification
+    # not sure if this is a good idea really, what if a session had everyone fail?
     ActiveRecord::Base.connection.exec_query(
       Certification
         .select(
           [
-            t["name"].minimum.as("name"),
-            s["name"].minimum.as("space_name"),
-            ts["course"],
-            Arel.star.count.as("total_certifications")
+            t["name"].minimum.as("name"), # training subject
+            s["name"].minimum.as("space_name"), # space name
+            ts["course"], # associated course
+            c["training_session_id"].count(:distinct).as("total_sessions"), # number sessions
+            Arel.star.count.as("total_certifications") #  active certs
           ]
         )
         .joins(
@@ -1298,7 +1447,7 @@ class ReportGenerator
   # endregion
 
   # region Axlsx helpers
-
+  # FIXME: make this nicer, add more styling
   # @param [Axlsx::Worksheet] worksheet
   # @param [String] title
   def self.title(worksheet, title)
