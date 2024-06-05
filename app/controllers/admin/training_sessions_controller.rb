@@ -6,11 +6,14 @@ class Admin::TrainingSessionsController < AdminAreaController
   before_action :training_session, only: %i[update destroy]
 
   def index
-    @sessions =
-      TrainingSession
-        .left_outer_joins(:training, :user)
-        .filter_by_attribute(params[:search])
-        .paginate(page: params[:page], per_page: 20)
+    date_range = params[:date_range].presence || '30_days'
+
+    Rails.logger.debug "Date Range Param: #{date_range}"
+
+    @sessions = TrainingSession.filter_by_date_range(date_range)
+
+    Rails.logger.debug "Sessions Count: #{@sessions.count}"
+    Rails.logger.debug "Generated SQL: #{@sessions.to_sql}"
 
     respond_to do |format|
       format.js
@@ -19,7 +22,6 @@ class Admin::TrainingSessionsController < AdminAreaController
   end
 
   def update
-    # TODO: check where this is being used?
     if @training_session.update(training_session_params)
       flash[:notice] = "Updated Successfully"
       redirect_back(fallback_location: root_path)
@@ -45,9 +47,6 @@ class Admin::TrainingSessionsController < AdminAreaController
   end
 
   def training_session_params
-    params
-      .require(:training_session)
-      .permit(:user_id)
-      .reject { |_, v| v.blank? }
+    params.require(:training_session).permit(:user_id).reject { |_, v| v.blank? }
   end
 end

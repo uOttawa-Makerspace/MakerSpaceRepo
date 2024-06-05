@@ -14,14 +14,39 @@ class TrainingSession < ApplicationRecord
   validates :level, presence: { message: "A level is required" }
   validate :is_staff
   before_save :check_course
-  scope :between_dates_picked,
-        ->(start_date, end_date) {
-          where("created_at BETWEEN ? AND ? ", start_date, end_date)
-        }
+
   default_scope -> { order(updated_at: :desc) }
 
+  scope :between_dates_picked, ->(start_date, end_date) {
+    where("created_at BETWEEN ? AND ?", start_date, end_date)
+  }
+
+  scope :filter_by_date_range, ->(range) do
+    Rails.logger.debug "Selected Date Range: #{range}"
+    case range
+    when '30_days'
+      where('created_at >= ?', 30.days.ago)
+    when '90_days'
+      where('created_at >= ?', 90.days.ago)
+    when '1_year'
+      where('created_at >= ?', 1.year.ago)
+    when '2024'
+      where(created_at: Date.new(2024).all_year)
+    when '2023'
+      where(created_at: Date.new(2023).all_year)
+    when '2022'
+      where(created_at: Date.new(2022).all_year)
+    when '2021'
+      where(created_at: Date.new(2021).all_year)
+    when '2020'
+      where(created_at: Date.new(2020).all_year)
+    else
+      all
+    end.tap { |scope| Rails.logger.debug "Generated Scope SQL: #{scope.to_sql}" }
+  end
+
   def is_staff
-    errors.add(:string, "user must be staff") unless user.staff?
+    errors.add(:string, "user must be staff") unless user&.staff?
   end
 
   def completed?
@@ -37,16 +62,16 @@ class TrainingSession < ApplicationRecord
   end
 
   def self.filter_by_attribute(value)
-    if value
+    if value.present?
       if value == "search="
-        default_scoped
+        all
       else
-        value = value.split("=").last.gsub("+", " ").gsub("%20", " ")
+        value = value.split('=').last.gsub('+', ' ').gsub('%20', ' ')
         joins(:user).where(
-          "LOWER(trainings.name) like LOWER(?) OR
-                 LOWER(users.name) like LOWER(?) OR
-                 CAST(to_char(training_sessions.created_at, 'HH:MI mon DD YYYY') AS text) LIKE LOWER(?) OR
-                 LOWER(training_sessions.course) like LOWER(?)",
+          "LOWER(trainings.name) LIKE LOWER(?) OR
+           LOWER(users.name) LIKE LOWER(?) OR
+           CAST(to_char(training_sessions.created_at, 'HH:MI mon DD YYYY') AS text) LIKE LOWER(?) OR
+           LOWER(training_sessions.course) LIKE LOWER(?)",
           "%#{value}%",
           "%#{value}%",
           "%#{value}%",
@@ -54,7 +79,7 @@ class TrainingSession < ApplicationRecord
         )
       end
     else
-      default_scoped
+      all
     end
   end
 

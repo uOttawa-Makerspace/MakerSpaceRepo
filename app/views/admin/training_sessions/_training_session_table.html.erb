@@ -14,10 +14,24 @@
 
   <tbody>
 
-  <div class="apple_pagination">
-    <%= page_entries_info @sessions, model: 'training_session' %>
-    <%= will_paginate @sessions, container: false %>
-  </div>
+  <%= form_with(url: admin_training_sessions_path, method: :get, local: true) do %>
+    <div class="date_range_filter">
+      <%= label_tag :date_range, "Filter by Date Range:" %>
+      <%= select_tag :date_range, options_for_select([
+                                                       ['30 days ago', '30_days'],
+                                                       ['90 days ago', '90_days'],
+                                                       ['1 year ago', '1_year'],
+                                                       ['2024', '2024'],
+                                                       ['2023', '2023'],
+                                                       ['2022', '2022'],
+                                                       ['2021', '2021'],
+                                                       ['2020', '2020'],
+                                                       ['All', 'all']
+                                                     ], selected: params[:date_range] || '30_days') %>
+      <%= submit_tag 'Filter' %>
+    </div>
+  <% end %>
+
 
   <br>
   <% @sessions.each do |sesh| %>
