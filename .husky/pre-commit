@@ -1,8 +1,5 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
-
-export PATH="$PATH:/home/christopher/.rbenv/shims"
-
 bundle lock --add-platform aarch64-linux
 npx lint-staged
 printf "Changed Files:"
