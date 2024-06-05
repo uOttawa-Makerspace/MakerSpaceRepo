@@ -36,7 +36,7 @@
       </div>
       <div class="w-50">
         <h4 class="text-center">Training Sessions by Courses</h4>
-        <%= pie_chart @training_sessions.group(:course).count %>
+        <%= pie_chart @training_sessions.group(:course).count.transform_keys({ |k| k || 'None' }) %>
       </div>
     </div>
   <% end %>

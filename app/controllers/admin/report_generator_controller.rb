@@ -436,6 +436,8 @@ class Admin::ReportGeneratorController < AdminAreaController
           end
         end
       end
+    @identity_total_count = @identity_total_count.transform_keys &:humanize
+    @identity_unique_count = @identity_unique_count.transform_keys &:humanize
   end
 
   def visits_by_hour

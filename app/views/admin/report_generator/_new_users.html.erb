@@ -21,7 +21,7 @@
 
         <div class="mb-5">
             <h4 class="text-center">Users by Year of Study</h4>
-            <% year_of_study_data = @users.order(year_of_study: :asc).group(:year_of_study).count %>
+            <% year_of_study_data = @users.order(year_of_study: :asc).group(:year_of_study).count.transform_keys(&:to_i) %>
             <%= bar_chart year_of_study_data, label: 'New Users', height: "#{year_of_study_data.size * 40}px" %>
         </div>
 
@@ -32,7 +32,7 @@
             </div>
             <div class="w-50">
                 <h4 class="text-center">Users by Status</h4>
-                <%= pie_chart @users.group(:identity).count %>
+                <%= pie_chart @users.group(:identity).count.transform_keys(&:humanize) %>
             </div>
             <div class="w-100">
                 <h4 class="text-center">Users by Faculty</h4>
