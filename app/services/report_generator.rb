@@ -368,6 +368,12 @@ class ReportGenerator
     #heading_style = spreadsheet.workbook.styles.add_style
     centered_style =
       spreadsheet.workbook.styles.add_style alignment: { horizontal: :center }
+    outside_borders =
+      spreadsheet.workbook.styles.add_style border: {
+                                              style: :thick,
+                                              color: "FF000000",
+                                              edges: %i[left right top bottom]
+                                            }
 
     # collect categories for easier looping
     spaces = []
@@ -395,10 +401,11 @@ class ReportGenerator
           sheet.column_widths title_string.length + 2
 
           # push headers, add space to be merged
-          sheet.add_row [""] + courses.map { |d| [d || "Open", ""] }.flatten,
+          sheet.add_row [""] + courses.map { |d| [d || "Open", ""] }.flatten +
+                          ["Total", ""],
                         style: centered_style
           # merge subheaders
-          courses.count.times do |n|
+          (courses.count + 2).times do |n|
             n = n * 2 + 1
             sheet.merge_cells sheet.rows.last.cells[(n..n + 1)]
           end
@@ -439,19 +446,24 @@ class ReportGenerator
           # push final total row, for each course
           totals_row = ["Total"]
           courses.each do |course|
-            totals_row +=
-              course_total =
-                aggregate_data
-                  .find_all do |d|
-                    d["space_name"] == space and d["course"] == course
-                  end
-                  .map do |d|
-                    d.values_at("total_sessions", "total_certifications")
-                  end
-                  .transpose
-                  .map(&:sum)
+            course_total =
+              aggregate_data
+                .find_all do |d|
+                  d["space_name"] == space and d["course"] == course
+                end
+                .map do |d|
+                  d.values_at("total_sessions", "total_certifications")
+                end
+                .transpose
+                .map(&:sum)
+            course_total = [0, 0] if course_total == []
+            totals_row += course_total
           end
 
+          totals_row += [
+            totals_row.drop(1).each_slice(2).map(&:first).sum,
+            totals_row.drop(1).each_slice(2).map(&:last).sum
+          ]
           sheet.add_row totals_row, style: centered_style
         end
     end
