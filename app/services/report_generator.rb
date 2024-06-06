@@ -383,14 +383,12 @@ class ReportGenerator
       topics << row["name"]
       courses << row["course"]
     end
-    # remove dupes
-    spaces = spaces.uniq.sort.reverse
+    # remove dupes, might include nil so put it at top
+    spaces = spaces.uniq.sort { |a, b| a && b ? a <=> b : a ? 1 : -1 }.reverse
     topics = topics.uniq
     courses = courses.uniq #.map { |d| d || "None" }
 
-    #raise "repl pls"
     (spaces + ["total"]).each do |space|
-      # WARNING: DOUBLE CHECK some spaces/courses == "", replace those with "Open"
       spreadsheet
         .workbook
         .add_worksheet(name: space || "Unknown") do |sheet|
@@ -423,6 +421,9 @@ class ReportGenerator
             entry = [topic]
             courses.each do |course|
               # push number of completed sessions and certs
+              # for each space, course, topic, get numer of sessions and certs
+              # put each result into an array that looks like [[1,2], [3,4]...]
+              # then element wise sum each into a final [4, 6]
               this_space =
                 aggregate_data
                   .find_all do |d|
@@ -431,10 +432,10 @@ class ReportGenerator
                       d["name"] == topic and d["course"] == course
                   end
                   .map do |d|
-                    d.values_at("total_sessions", "total_certifications")
+                    d.values_at("total_sessions", "total_certifications") # get from each result
                   end
                   .transpose
-                  .map(&:sum)
+                  .map(&:sum) # vector sum
 
               #|| [0, 0] # default if not found
               entry += this_space == [] ? [0, 0] : this_space
@@ -1345,8 +1346,9 @@ class ReportGenerator
     t = Training.arel_table
     s = Space.arel_table
 
-    # NOTE: this counts sessions that resulted in at least one certification
-    # not sure if this is a good idea really, what if a session had everyone fail?
+    # FIXME please, if anyone else touches this again, replace it with active record functions instead
+    # I'm not sure what this is called, I can't find any docs and uses Arel which is private API
+    # except for https://api.rubyonrails.org/classes/ActiveRecord/QueryMethods.html
     ActiveRecord::Base.connection.exec_query(
       Certification
         .select(
@@ -1362,7 +1364,11 @@ class ReportGenerator
           c.join(ts).on(c["training_session_id"].eq(ts["id"])).join_sources
         )
         .joins(ts.join(t).on(ts["training_id"].eq(t["id"])).join_sources)
-        .joins(ts.join(s).on(ts["space_id"].eq(s["id"])).join_sources)
+        #.joins(ts.join(s).on(ts["space_id"].eq(s["id"])).join_sources)
+        # HACK you can't chain left_joins for some reason, https://github.com/rails/rails/issues/34332
+        # so this is a manual left join string, because some training sessions don't have a space id attached?
+        # and this causes some certs to be left out. Try Winter 2024 for an example.
+        .joins("LEFT JOIN spaces on spaces.id=training_sessions.space_id")
         .where(ts["created_at"].between(start_date..end_date))
         .group(t["id"], s["id"], ts["course"])
         .order("name", "course", "space_name")
