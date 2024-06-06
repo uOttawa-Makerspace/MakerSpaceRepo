@@ -749,11 +749,10 @@ class ReportGenerator
     #aggregate_data = get_new_projects(start_date, end_date)
 
     repositories =
-      Repository.where("created_at" => start_date..end_date).includes(
-        :users,
-        :categories,
-        :equipments
-      )
+      Repository
+        .where("created_at" => start_date..end_date)
+        .includes(:users, :categories, :equipments)
+        .preload(:categories, :equipments)
 
     spreadsheet = Axlsx::Package.new
     #raise "repl pls"
@@ -765,7 +764,16 @@ class ReportGenerator
 
     # group by category, first find all categories
     # FIXME schema is messed up, yes there's a separate category for each repo
-    category_count = Category.group(:name).count
+    #category_count = Category.where(created_at: start_date..end_date).group(:name).count
+    #category_count = Category.where(created_at: start_date..end_date).joins(:repository).group(:name).count
+    #repositories.select(:category).group(:name).count
+
+    category_count = Hash.new(0)
+    equipment_count = Hash.new(0)
+    repositories.each do |repo|
+      repo.categories.each { |cat| category_count[cat.name] += 1 }
+      repo.equipments.each { |equip| equipment_count[equip.name] += 1 }
+    end
 
     spreadsheet
       .workbook
@@ -781,9 +789,7 @@ class ReportGenerator
         sheet.add_row
 
         title(sheet, "Equipment usage")
-        equipment =
-          Equipment.where(created_at: start_date..end_date).group(:name).count
-        equipment.each { |key, value| sheet.add_row [key, value] }
+        equipment_count.each { |key, value| sheet.add_row [key, value] }
 
         sheet.add_row
 

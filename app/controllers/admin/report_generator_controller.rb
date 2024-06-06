@@ -311,7 +311,8 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           TrainingSession.all
         end
-      )
+      ).includes(:training, :space, :user)
+
     @training_sessions = @training_sessions.unscope(:order)
 
     @space_count = Hash.new
