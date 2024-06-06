@@ -61,7 +61,7 @@
     <%= label_tag(:type, 'Report Type', class: 'form-label') %>
     <% @report_types.each_index do |report| %>
       <div class="form-check">
-        <%= radio_button_tag(:type, @report_types[report][1], (true if report == 0), class: 'form-check-input') %>
+        <%= radio_button_tag(:type, @report_types[report][1], (true if report == @report_parameter.index(params[:report_type])), class: 'form-check-input') %>
         <%= label_tag(:type, @report_types[report][0], class: 'form-check-label', style: 'font-size: 16px;') %>
         <br>
       </div>

@@ -17,6 +17,18 @@ class Admin::ReportGeneratorController < AdminAreaController
       ["Popular Hours", :popular_hours]
     ]
 
+    @report_parameter = %w[
+      certifications
+      new_projects
+      new_users
+      trainings
+      training_attendees
+      visitors
+      visits_by_hour
+      kit_purchased
+      popular_hours
+    ]
+
     if params[:report_type].present?
       set_date_specified
 
@@ -201,6 +213,7 @@ class Admin::ReportGeneratorController < AdminAreaController
           User.all
         end
       )
+    #raise 'huh'
   end
 
   def certifications
@@ -214,6 +227,11 @@ class Admin::ReportGeneratorController < AdminAreaController
           Certification.all
         end
       )
+        .includes(:badges)
+        .includes(badges: :badge_template)
+        .includes(:space)
+        .includes(training_session: %i[course_name training])
+        .includes(training: [:skill])
     @space_count = Hash.new
     @space_count["unknown"] = 0
 
@@ -365,7 +383,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           LabSession.all
         end
-      )
+      ).includes(:user)
 
     @space_total_count = Hash.new
     @space_unique_count = Hash.new
