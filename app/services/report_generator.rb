@@ -351,7 +351,6 @@ class ReportGenerator
   # FIXME funfact some training sessions aren't marked as completed?
   # We're
   def self.generate_certifications_report(start_date, end_date)
-    # FIXME I can see why we don't use that, data is v. weird and might be missing?
     aggregate_data = get_certifications(start_date, end_date)
 
     # completed sessions and certs awarded
@@ -390,7 +389,7 @@ class ReportGenerator
     courses = courses.uniq #.map { |d| d || "None" }
 
     #raise "repl pls"
-    spaces.each do |space|
+    (spaces + ["total"]).each do |space|
       # WARNING: DOUBLE CHECK some spaces/courses == "", replace those with "Open"
       spreadsheet
         .workbook
@@ -424,14 +423,21 @@ class ReportGenerator
             entry = [topic]
             courses.each do |course|
               # push number of completed sessions and certs
-              entry +=
+              this_space =
                 aggregate_data
-                  .find do |d|
-                    d["space_name"] == space and d["name"] == topic and
-                      d["course"] == course
+                  .find_all do |d|
+                    # get all spaces if doing totals
+                    (d["space_name"] == space || space == "total") and
+                      d["name"] == topic and d["course"] == course
                   end
-                  &.values_at("total_sessions", "total_certifications") ||
-                  [0, 0] # default if not found
+                  .map do |d|
+                    d.values_at("total_sessions", "total_certifications")
+                  end
+                  .transpose
+                  .map(&:sum)
+
+              #|| [0, 0] # default if not found
+              entry += this_space == [] ? [0, 0] : this_space
             end
 
             # sum sessions
@@ -449,7 +455,8 @@ class ReportGenerator
             course_total =
               aggregate_data
                 .find_all do |d|
-                  d["space_name"] == space and d["course"] == course
+                  (d["space_name"] == space || space == "total") and
+                    d["course"] == course
                 end
                 .map do |d|
                   d.values_at("total_sessions", "total_certifications")
@@ -738,13 +745,61 @@ class ReportGenerator
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_new_projects_report(start_date, end_date)
+    #aggregate_data = get_new_projects(start_date, end_date)
+
     repositories =
       Repository.where("created_at" => start_date..end_date).includes(
         :users,
-        :categories
+        :categories,
+        :equipments
       )
 
     spreadsheet = Axlsx::Package.new
+    #raise "repl pls"
+
+    # Category|Count
+    # --------|-----
+    # cat 1   |10
+    # cat 2   |20
+
+    # group by category, first find all categories
+    # FIXME schema is messed up, yes there's a separate category for each repo
+    category_count = Category.group(:name).count
+
+    spreadsheet
+      .workbook
+      .add_worksheet(name: "Statistics") do |sheet|
+        title(sheet, "Various statistics")
+        sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
+        sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+        sheet.add_row # spacing
+
+        title(sheet, "Categories")
+        category_count.each { |key, value| sheet.add_row [key, value] }
+
+        sheet.add_row
+
+        title(sheet, "Equipment usage")
+        equipment =
+          Equipment.where(created_at: start_date..end_date).group(:name).count
+        equipment.each { |key, value| sheet.add_row [key, value] }
+
+        sheet.add_row
+
+        title(sheet, "Licenses")
+        repositories
+          .group(:license)
+          .count
+          .each { |key, value| sheet.add_row [key, value] }
+
+        sheet.add_row
+        title(sheet, "Share types")
+
+        repositories
+          .group(:share_type)
+          .count
+          .each { |key, value| sheet.add_row [key, value] }
+      end
 
     spreadsheet
       .workbook
@@ -755,8 +810,11 @@ class ReportGenerator
         sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
         sheet.add_row # spacing
 
+        # FIXME this sucks, fix it
+        # Title, created_at, URL
         table_header(sheet, %w[Title Users URL Categories])
 
+        # who the fuck wrote this?
         repositories.each do |repository|
           sheet.add_row [
                           repository.title,
@@ -956,6 +1014,57 @@ class ReportGenerator
   # endregion
 
   # region Database helpers
+
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.get_new_projects(start_date, end_date)
+    # Essentially a copy of html report as xlsx
+    # Breakdown of projects by month
+    # By category, license, project type,
+    repos = Repository.arel_table
+    categories = Category.arel_table
+    propos = ProjectProposal.arel_table
+    equips = Equipment.arel_table
+
+    # Repository.select("date_trunc('year', created_at) as year, date_trunc('month', created_at) as month")
+    #           .includes(:categories)
+    #           .includes(:equipments)
+    #           .where(created_at: start_date..end_date)
+    #           .group("month")
+    ActiveRecord::Base.connection.exec_query(
+      Repository
+        .select(
+          [
+            #repos["created_at"].as("created"),
+            repos["id"],
+            "to_char(repositories.created_at, 'MM') as created_month", # NOTE postgresql specific hack to get month, year
+            "to_char(repositories.created_at, 'YYYY') as created_year",
+            repos["license"],
+            #repos["license"].count().as("license_count"),
+            repos["share_type"],
+            categories["name"],
+            equips["name"]
+            #Arel.star.count
+          ]
+        )
+        .joins(
+          repos
+            .join(categories)
+            .on(repos["id"].eq(categories["repository_id"]))
+            .join_sources
+        )
+        .joins(
+          repos
+            .join(equips)
+            .on(repos["id"].eq(equips["repository_id"]))
+            .join_sources
+        )
+        .where(repos["created_at"].between(start_date..end_date))
+        .to_sql
+      #.group(repos["share_type"], repos["license"], categories["name"],
+      #       equips["name"], "created_month", "created_year")
+    )
+  end
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
