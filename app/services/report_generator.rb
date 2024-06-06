@@ -755,7 +755,6 @@ class ReportGenerator
         .preload(:categories, :equipments)
 
     spreadsheet = Axlsx::Package.new
-    #raise "repl pls"
 
     # Category|Count
     # --------|-----
@@ -785,27 +784,39 @@ class ReportGenerator
 
         title(sheet, "Categories")
         category_count.each { |key, value| sheet.add_row [key, value] }
+        # add total sum
+        sheet.add_row ["Total", category_count.values.sum]
 
         sheet.add_row
 
         title(sheet, "Equipment usage")
         equipment_count.each { |key, value| sheet.add_row [key, value] }
+        sheet.add_row ["Total", equipment_count.values.sum]
 
         sheet.add_row
 
         title(sheet, "Licenses")
+        total_licenses = 0
         repositories
           .group(:license)
           .count
-          .each { |key, value| sheet.add_row [key, value] }
+          .each do |key, value|
+            sheet.add_row [key, value]
+            total_licenses += value
+          end
+        sheet.add_row ["Total", total_licenses]
 
         sheet.add_row
         title(sheet, "Share types")
-
+        total_share_type = 0
         repositories
           .group(:share_type)
           .count
-          .each { |key, value| sheet.add_row [key, value] }
+          .each do |key, value|
+            sheet.add_row [key, value]
+            total_share_type += value
+          end
+        sheet.add_row ["Total", total_share_type]
       end
 
     spreadsheet
