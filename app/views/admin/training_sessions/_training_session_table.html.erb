@@ -1,3 +1,21 @@
+<%= form_with(url: admin_training_sessions_path, method: :get, local: true) do %>
+  <div class="date_range_filter">
+    <%= label_tag :date_range, "Filter by Date Range:" %>
+    <%= select_tag :date_range, options_for_select([
+                                                     ['30 days ago', '30_days'],
+                                                     ['90 days ago', '90_days'],
+                                                     ['1 year ago', '1_year'],
+                                                     ['2024', '2024'],
+                                                     ['2023', '2023'],
+                                                     ['2022', '2022'],
+                                                     ['2021', '2021'],
+                                                     ['2020', '2020'],
+                                                     ['All', 'all']
+                                                   ], selected: params[:date_range] || '30_days') %>
+    <%= submit_tag 'Filter' %>
+  </div>
+<% end %>
+
 <table class="sessions-table table table-striped text-center">
   <thead class="table-primary">
   <tr>
@@ -7,33 +25,10 @@
     <th>Course <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
     <th>Status <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
     <th>Users <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
-
     <th class="action-header">Action</th>
   </tr>
   </thead>
-
   <tbody>
-
-  <%= form_with(url: admin_training_sessions_path, method: :get, local: true) do %>
-    <div class="date_range_filter">
-      <%= label_tag :date_range, "Filter by Date Range:" %>
-      <%= select_tag :date_range, options_for_select([
-                                                       ['30 days ago', '30_days'],
-                                                       ['90 days ago', '90_days'],
-                                                       ['1 year ago', '1_year'],
-                                                       ['2024', '2024'],
-                                                       ['2023', '2023'],
-                                                       ['2022', '2022'],
-                                                       ['2021', '2021'],
-                                                       ['2020', '2020'],
-                                                       ['All', 'all']
-                                                     ], selected: params[:date_range] || '30_days') %>
-      <%= submit_tag 'Filter' %>
-    </div>
-  <% end %>
-
-
-  <br>
   <% @sessions.each do |sesh| %>
     <tr>
       <td class="date-cell">
@@ -41,19 +36,15 @@
         <br>
         <%= sesh.created_at.strftime('%b %e %Y').downcase %>
       </td>
-
       <td class="training-cell">
         <%= sesh.training.name %>
       </td>
-
       <td class="trainer-cell" style="horizontal-alginment:center;">
         <%= link_to sesh.user.name, user_url(sesh.user.username) %>
       </td>
-
       <td class="course-cell">
         <%= sesh.course %>
       </td>
-
       <td class="status-cell">
         <% if sesh.completed? %>
           COMPLETED
@@ -61,11 +52,8 @@
           NOT COMPLETED
         <% end %>
       </td>
-
       <td class="users-cell">
-        <div
-          class="users-count"
-          style="display:inline">
+        <div class="users-count" style="display:inline">
           <div class="count-holder" style="display:inline">
             <%= sesh.users.length %>
             <div id="sesh-users" style="display:inline">
@@ -78,19 +66,18 @@
           </div>
         </div>
       </td>
-
       <td class="action-cell">
         <%= link_to 'Visit', staff_training_session_url(sesh), class: 'btn btn-primary d-block w-100 btn-sm' %>
-        <%= link_to 'Download',
-                    training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'),
-                    action: :training_report,
-                    class: 'btn btn-info d-block w-100 btn-sm my-2' %>
+        <%= link_to 'Download', training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'), action: :training_report, class: 'btn btn-info d-block w-100 btn-sm my-2' %>
         <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'btn btn-danger d-block w-100 btn-sm' %>
         <br></br>
       </td>
-
     </tr>
   <% end %>
   </tbody>
-
 </table>
+
+<div class="apple_pagination">
+  <%= page_entries_info @sessions %>
+  <%= will_paginate @sessions, container: false %>
+</div>
