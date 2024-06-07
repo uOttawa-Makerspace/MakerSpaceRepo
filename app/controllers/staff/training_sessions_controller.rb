@@ -19,6 +19,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
     end
   end
 
+
+
   def new
     respond_to do |format|
       format.html { @new_training_session = TrainingSession.new }
