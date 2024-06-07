@@ -37,6 +37,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
     end
   end
 
+
+
   def create
     @new_training_session = TrainingSession.new(default_params)
     course_name = CourseName.find_by(name: @new_training_session.course)
@@ -62,6 +64,9 @@ class Staff::TrainingSessionsController < StaffDashboardController
       end
     end
   end
+  \
+  
+
 
   def show
   end
