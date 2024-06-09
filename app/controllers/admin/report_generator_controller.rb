@@ -132,7 +132,10 @@ class Admin::ReportGeneratorController < AdminAreaController
                   start_date: start_date,
                   end_date: end_date,
                   report_type: type,
-                  anchor: "report"
+                  anchor: "report",
+                  range_type: range_type, # save selection params
+                  term: term, # Semester params
+                  year: year
                 ),
                 notice: "Successfully generated #{type.gsub("_", " ")} report"
   end
