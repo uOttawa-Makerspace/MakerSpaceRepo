@@ -762,7 +762,7 @@ class ReportGenerator
     # cat 2   |20
 
     # group by category, first find all categories
-    # FIXME schema is messed up, yes there's a separate category for each repo
+    # NOTE schema is messed up, yes there's a separate category for each repo
     #category_count = Category.where(created_at: start_date..end_date).group(:name).count
     #category_count = Category.where(created_at: start_date..end_date).joins(:repository).group(:name).count
     #repositories.select(:category).group(:name).count
@@ -780,6 +780,8 @@ class ReportGenerator
         title(sheet, "Various statistics")
         sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
         sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+        sheet.add_row ["Total New Projects", repositories.count]
+
         sheet.add_row # spacing
 
         title(sheet, "Categories")
