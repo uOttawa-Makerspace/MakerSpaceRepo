@@ -20,7 +20,6 @@ class Admin::TrainingSessionsController < AdminAreaController
     end
   end
 
-
   def update
     if @training_session.update(training_session_params)
       flash[:notice] = "Updated Successfully"
