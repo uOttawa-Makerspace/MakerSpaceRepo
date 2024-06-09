@@ -211,12 +211,16 @@ class Admin::ReportGeneratorController < AdminAreaController
     @users =
       (
         if @date_specified
-          User.where(created_at: params[:start_date]..params[:end_date])
+          # params gives everything as space
+          # passing this as a string CHANGES the result
+          ReportGenerator.get_new_users(
+            params[:start_date].to_date,
+            params[:end_date].to_date
+          )
         else
           User.all
         end
       )
-    #raise 'huh'
   end
 
   def certifications

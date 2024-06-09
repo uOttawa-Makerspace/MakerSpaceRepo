@@ -478,12 +478,92 @@ class ReportGenerator
     spreadsheet
   end
 
+  def self.get_new_users(start_date, end_date)
+    User.where(created_at: start_date..end_date)
+  end
+
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_new_users_report(start_date, end_date)
-    users = User.between_dates_picked(start_date, end_date)
+    #users = User.between_dates_picked(start_date, end_date)
+    #users = User.where(created_at: start_date..end_date)
+    users = get_new_users(start_date, end_date)
+
+    # Breakdown by year of study, gender. We don't track age?
+    # Breakdown by faculty, department (for engineering/non-engineer %), Study level
 
     spreadsheet = Axlsx::Package.new
+
+    spreadsheet
+      .workbook
+      .add_worksheet(name: "Demographics") do |sheet|
+        header(sheet, "New Users Breakdown", start_date, end_date)
+
+        sheet.add_row ["Total", users.count]
+        sheet.add_row
+
+        title(sheet, "Year of Study")
+        # year of study is stored as text, transform key to int for sorting
+        users
+          .group(:year_of_study)
+          .count
+          .transform_keys { |k| k.to_i }
+          .sort
+          .each { |key, value| sheet.add_row [key, value] }
+
+        sheet.add_row
+        title(sheet, "Level of Study")
+        push_hash(
+          sheet,
+          users.group(:identity).count.transform_keys(&:humanize)
+        )
+
+        sheet.add_row
+        title(sheet, "Gender")
+        users
+          .group(:gender)
+          .count
+          .each { |key, value| sheet.add_row [key, value] }
+      end
+
+    spreadsheet
+      .workbook
+      .add_worksheet(name: "Faculties") do |sheet|
+        header(sheet, "Users by Faculty, Department", start_date, end_date)
+
+        # By Study level
+        # Engineering/non-engineering
+
+        # By faculty
+        # FIXME there's a lot of weird faculties included here
+        # HACK ffs, merge génie with engineering, or don't?
+        title(sheet, "By Faculty")
+        push_hash(
+          sheet,
+          users
+            .group(:faculty)
+            .count
+            .transform_keys { |k| k == "" ? "None" : k }
+        )
+        sheet.add_row ["Total", users.count]
+        sheet.add_row
+
+        # program summaries
+        # FIXME do this later
+        programs = users.group(:program).count
+        #title(sheet, "Program summaries")
+        #sheet.add_row ["Blank", programs[""]]
+        #group_by = ["BASc", ""]
+
+        # By program
+        title(sheet, "By program")
+        push_hash(
+          sheet,
+          programs
+            .transform_keys { |k| k == "" ? "Blank - No Program" : k }
+            .sort_by { |k, v| [-v, k] }
+        )
+      end
 
     spreadsheet
       .workbook
@@ -1420,6 +1500,10 @@ class ReportGenerator
     worksheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
     worksheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
     worksheet.add_row # spacing
+  end
+
+  def self.push_hash(sheet, hash)
+    hash.each { |key, value| sheet.add_row [key, value] }
   end
 
   # endregion
