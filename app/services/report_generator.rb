@@ -270,6 +270,7 @@ class ReportGenerator
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_trainings_report(start_date, end_date)
+    # TODO this is wrong, replace it with active queries not raw sql
     trainings = get_trainings(start_date, end_date)
 
     spreadsheet = Axlsx::Package.new
@@ -549,11 +550,15 @@ class ReportGenerator
         sheet.add_row
 
         # program summaries
-        # FIXME do this later
+        # Count who's in engineering, who's not
+        # Count who's in Masters, phd, etc.
+        # HACK this is literally just a regex count.
+        # Try to categorize programs into a relational database
+        # Because I don't believe this is totally accurate
         programs = users.group(:program).count
-        #title(sheet, "Program summaries")
-        #sheet.add_row ["Blank", programs[""]]
-        #group_by = ["BASc", ""]
+        title(sheet, "Program summaries")
+        push_hash(sheet, programs)
+        sheet.add_row
 
         # By program
         title(sheet, "By program")
@@ -1504,6 +1509,21 @@ class ReportGenerator
 
   def self.push_hash(sheet, hash)
     hash.each { |key, value| sheet.add_row [key, value] }
+  end
+
+  # Pass users.group(:program).count
+  def self.categorize_programs(programs)
+    {
+      "Blank" => programs.select { |k, _| k == "" }.values.sum,
+      "Engineering" =>
+        programs.select { |k, _| k =~ /Engineering/i }.values.sum,
+      "Non-Engineering" =>
+        programs.select { |k, _| k !~ /Engineering/i }.values.sum,
+      "Bachelors" =>
+        programs.select { |k, _| k =~ /BASc|Bachelor|BA/i }.values.sum,
+      "Masters" => programs.select { |k, _| k =~ /Master/i }.values.sum,
+      "Doctorate" => programs.select { |k, _| k =~ /Doctorate/i }.values.sum
+    }
   end
 
   # endregion
