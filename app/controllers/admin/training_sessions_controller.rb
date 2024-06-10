@@ -11,7 +11,7 @@ class Admin::TrainingSessionsController < AdminAreaController
                                .left_outer_joins(:training, :user)
 
     if params[:start_date].present? && params[:end_date].present?
-      @sessions = @sessions.between_dates(params[:start_date], params[:end_date])
+      @sessions = @sessions.between_dates_picked(params[:start_date], params[:end_date])
     end
 
     if params[:training].present?

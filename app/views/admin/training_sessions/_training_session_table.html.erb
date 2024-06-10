@@ -3,7 +3,9 @@
     <%= form_with(url: admin_training_sessions_path, method: :get, local: true) do %>
       <div class="filter-section">
         <h3 class="text-lg font-bold mb-4">Filters</h3>
-        <div class="date_range_filter">
+
+        <!-- Date Range Filter -->
+        <div class="mb-4">
           <%= label_tag :date_range, "Filter by Date Range:", class: "block mb-2" %>
           <%= select_tag :date_range, options_for_select([
                                                            ['30 days ago', '30_days'],
@@ -16,61 +18,46 @@
                                                            ['2020', '2020'],
                                                            ['All', 'all']
                                                          ], selected: params[:date_range] || '30_days'), class: "block w-full mb-4 p-2 border border-gray-300 rounded" %>
-          <%= submit_tag 'Filter', class: "block w-full bg-blue-500 text-white py-2 rounded" %>
         </div>
+
+        <!-- Custom Date Range Filter -->
+        <div class="mb-4">
+          <%= label_tag :start_date, "Start Date:", class: "block mb-2" %>
+          <%= date_field_tag :start_date, params[:start_date], class: "block w-full mb-4 p-2 border border-gray-300 rounded" %>
+          <%= label_tag :end_date, "End Date:", class: "block mb-2" %>
+          <%= date_field_tag :end_date, params[:end_date], class: "block w-full mb-4 p-2 border border-gray-300 rounded" %>
+        </div>
+
+        <!-- Training Dropdown -->
+        <div class="mb-4">
+          <%= label_tag :training, "Training:", class: "block mb-2" %>
+          <%= select_tag :training, options_from_collection_for_select(Training.order(:name), :id, :name, params[:training]), include_blank: "All", class: "block w-full mb-4 p-2 border border-gray-300 rounded" %>
+        </div>
+
+        <!-- Trainer Search -->
+        <div class="mb-4">
+          <%= label_tag :trainers, "Trainers:", class: "block mb-2" %>
+          <%= select_tag :trainers, options_from_collection_for_select(User.order(:name), :id, :name, params[:trainers]), { multiple: true, id: "trainers", class: "block w-full mb-4 p-2 border border-gray-300 rounded" } %>
+        </div>
+
+        <!-- Course Search -->
+        <div class="mb-4">
+          <%= label_tag :course, "Course:", class: "block mb-2" %>
+          <%= text_field_tag :course, params[:course], class: "block w-full mb-4 p-2 border border-gray-300 rounded" %>
+        </div>
+
+        <!-- Status Checkbox -->
+        <div class="mb-4">
+          <%= label_tag :status, "Status:", class: "block mb-2" %>
+          <%= check_box_tag :status, "completed", params[:status] == "completed", class: "mr-2" %> Completed
+          <%= check_box_tag :status, "not_completed", params[:status] == "not_completed", class: "mr-2" %> Not Completed
+        </div>
+
+        <%= submit_tag 'Filter', class: "block w-full bg-blue-500 text-white py-2 rounded" %>
       </div>
     <% end %>
-
-    <div class="container">
-      <div class="sidebar">
-        <%= form_with(url: admin_training_sessions_path, method: :get, local: true) do %>
-          <div class="filter-section">
-            <h3 class="text-lg font-bold mb-4">Filters</h3>
-
-            <!-- Date Range Filter -->
-            <div class="mb-4">
-              <%= label_tag :start_date, "Start Date:", class: "block mb-2" %>
-              <%= date_field_tag :start_date, params[:start_date], class: "block w-full mb-4 p-2 border border-gray-300 rounded" %>
-              <%= label_tag :end_date, "End Date:", class: "block mb-2" %>
-              <%= date_field_tag :end_date, params[:end_date], class: "block w-full mb-4 p-2 border border-gray-300 rounded" %>
-            </div>
-
-            <!-- Training Dropdown -->
-            <div class="mb-4">
-              <%= label_tag :training, "Training:", class: "block mb-2" %>
-              <%= select_tag :training, options_from_collection_for_select(Training.order(:name), :id, :name, params[:training]), include_blank: "All", class: "block w-full mb-4 p-2 border border-gray-300 rounded" %>
-            </div>
-
-            <!-- Trainer Search -->
-            <div class="mb-4">
-              <%= label_tag :trainers, "Trainers:", class: "block mb-2" %>
-              <%= select_tag :trainers, options_from_collection_for_select(User.order(:name), :id, :name, params[:trainers]), { multiple: true, id: "trainers", class: "block w-full mb-4 p-2 border border-gray-300 rounded" } %>
-            </div>
-
-            <!-- Course Search -->
-            <div class="mb-4">
-              <%= label_tag :course, "Course:", class: "block mb-2" %>
-              <%= text_field_tag :course, params[:course], class: "block w-full mb-4 p-2 border border-gray-300 rounded" %>
-            </div>
-
-            <!-- Status Checkbox -->
-            <div class="mb-4">
-              <%= label_tag :status, "Status:", class: "block mb-2" %>
-              <%= check_box_tag :status, "completed", params[:status] == "completed", class: "mr-2" %> Completed
-              <%= check_box_tag :status, "not_completed", params[:status] == "not_completed", class: "mr-2" %> Not Completed
-            </div>
-
-            <%= submit_tag 'Filter', class: "block w-full bg-blue-500 text-white py-2 rounded" %>
-          </div>
-        <% end %>
-      </div>
-      <div class="main-content">
-        <!-- Existing table and pagination go here -->
-        ...
-      </div>
-    </div>
-
   </div>
+
   <div class="w-4/5 p-4">
     <table class="sessions-table table-auto w-full text-center">
       <thead class="bg-blue-100">
