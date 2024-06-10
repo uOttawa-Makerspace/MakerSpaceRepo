@@ -45,6 +45,20 @@ class TrainingSession < ApplicationRecord
     end.tap { |scope| Rails.logger.debug "Generated Scope SQL: #{scope.to_sql}" }
   end
 
+  scope :by_training, ->(training_id) { where(training_id: training_id) }
+
+  scope :by_trainers, ->(trainer_ids) { joins(:user).where(users: { id: trainer_ids }) }
+
+  scope :by_course, ->(course) { where("training_sessions.course LIKE ?", "%#{course}%") }
+
+  scope :by_status, ->(status) {
+    case status
+    when "completed"
+      joins(:certifications).distinct
+    when "not_completed"
+      left_outer_joins(:certifications).where(certifications: { id: nil })
+    end
+  }
   def is_staff
     errors.add(:string, "user must be staff") unless user&.staff?
   end

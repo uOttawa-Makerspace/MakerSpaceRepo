@@ -7,12 +7,35 @@ class Admin::TrainingSessionsController < AdminAreaController
 
   def index
     date_range = params[:date_range].presence || '30_days'
-    @sessions =
-      TrainingSession
-        .filter_by_date_range(date_range)
-        .left_outer_joins(:training, :user)
-        .filter_by_attribute(params[:search])
-        .paginate(page: params[:page], per_page: 20)
+    @sessions = TrainingSession.filter_by_date_range(date_range)
+                               .left_outer_joins(:training, :user)
+
+    if params[:start_date].present? && params[:end_date].present?
+      @sessions = @sessions.between_dates(params[:start_date], params[:end_date])
+    end
+
+    if params[:training].present?
+      @sessions = @sessions.by_training(params[:training])
+    end
+
+    if params[:trainers].present?
+      @sessions = @sessions.by_trainers(params[:trainers])
+    end
+
+    if params[:course].present?
+      @sessions = @sessions.by_course(params[:course])
+    end
+
+    if params[:status].present?
+      @sessions = @sessions.by_status(params[:status])
+    end
+
+    if params[:search].present?
+      @sessions = @sessions.filter_by_attribute(params[:search])
+    end
+
+    #pagination
+    @sessions = @sessions.paginate(page: params[:page], per_page: 20)
 
     respond_to do |format|
       format.js
