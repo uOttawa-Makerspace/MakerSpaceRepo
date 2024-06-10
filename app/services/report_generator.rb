@@ -267,11 +267,62 @@ class ReportGenerator
     spreadsheet
   end
 
+  def self.get_training_sessions(start_date, end_date)
+    t = Training.arel_table
+    ts = TrainingSession.arel_table
+    tsu = Arel::Table.new(:training_sessions_users)
+    u = User.arel_table
+    uu = User.arel_table.alias("trainers")
+    s = Space.arel_table
+
+    # NOTE I commented out the whole trainer stuff because that was disappearing some sessions
+    # FIXME add trainer names
+    query =
+      TrainingSession
+        .select(
+          [
+            t[:id].minimum.as("training_id"),
+            t[:name].minimum.as("training_name"),
+            ts[:level].minimum.as("training_level"),
+            ts[:course].minimum.as("course_name"),
+            uu[:name].minimum.as("instructor_name"),
+            ts[:created_at].minimum.as("date"),
+            s[:name].minimum.as("space_name"),
+            Arel.star.count.as("attendee_count")
+          ]
+        )
+        .where(ts[:created_at].between(start_date..end_date))
+        .joins(
+          ts.join(t).on(t[:id].eq(ts[:training_id])).join_sources
+        ) # training type
+        # NOTE LEFT JOIN because some sessions aren't showing up otherwise
+        #.joins(ts.join(tsu).on(ts[:id].eq(tsu[:training_session_id])).join_sources)
+        .joins(
+          "LEFT JOIN training_sessions_users ON training_sessions_users.training_session_id=training_sessions.id"
+        )
+        #.joins(ts.join(u).on(u[:id].eq(tsu[:user_id])).join_sources) # get users
+        .joins("LEFT JOIN users ON users.id=training_sessions_users.user_id")
+        .joins(
+          ts.join(uu).on(uu[:id].eq(ts[:user_id])).join_sources
+        ) # join trainers
+        #.joins('LEFT JOIN users trainers on trainers.id=training_sessions.user_id')
+        #.joins(ts.join(s).on(s[:id].eq(ts[:space_id])).join_sources)
+        .joins(
+          "LEFT JOIN spaces ON spaces.id=training_sessions.space_id"
+        ) # some don't have space id?
+        .group(ts[:id])
+        .order(ts[:created_at].minimum)
+        .to_sql
+
+    result = ActiveRecord::Base.connection.exec_query(query)
+    result
+  end
+
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_trainings_report(start_date, end_date)
     # TODO this is wrong, replace it with active queries not raw sql
-    trainings = get_trainings(start_date, end_date)
+    trainings = get_training_sessions(start_date, end_date)
 
     spreadsheet = Axlsx::Package.new
 
@@ -286,13 +337,17 @@ class ReportGenerator
 
         table_header(sheet, ["Training", "Session Count", "Total Attendees"])
 
-        trainings[:training_types].each do |_, training_type|
-          sheet.add_row [
-                          training_type[:name],
-                          training_type[:count],
-                          training_type[:total_attendees]
-                        ]
-        end
+        #trainings[:training_types].each do |_, training_type|
+        trainings
+          .to_a
+          .group_by { |d| d["training_name"] }
+          .each do |k, training_type|
+            sheet.add_row [
+                            k,
+                            training_type.count,
+                            training_type.sum { |d| d["attendee_count"] }
+                          ]
+          end
 
         sheet.add_row # spacing
 
@@ -309,34 +364,34 @@ class ReportGenerator
           ]
         )
 
-        trainings[:training_sessions].each do |row|
-          training = Training.find(row[:training_id])
-          color =
-            if training.skill_id.present?
-              if training.skill.name == "Machine Shop Training"
-                { bg_color: "ed7d31" }
-              elsif training.skill.name == "Technology Trainings"
-                { bg_color: "70ad47" }
-              elsif training.skill.name == "CEED Trainings"
-                { bg_color: "ffc000" }
-              else
-                {}
-              end
-            else
-              {}
-            end
-          style = sheet.styles.add_style(color)
+        trainings.each do |row|
+          #training = Training.find(row[:training_id])
+          # color =
+          #   if training.skill_id.present?
+          #     if training.skill.name == "Machine Shop Training"
+          #       { bg_color: "ed7d31" }
+          #     elsif training.skill.name == "Technology Trainings"
+          #       { bg_color: "70ad47" }
+          #     elsif training.skill.name == "CEED Trainings"
+          #       { bg_color: "ffc000" }
+          #     else
+          #       {}
+          #     end
+          #   else
+          #     {}
+          #   end
+          # style = sheet.styles.add_style(color)
 
           sheet.add_row [
-                          row[:training_name],
-                          row[:training_level],
-                          row[:course_name],
-                          row[:instructor_name],
-                          row[:date].localtime.strftime("%Y-%m-%d %H:%M"),
-                          row[:facility],
-                          row[:attendee_count]
-                        ],
-                        style: [style]
+                          row["training_name"],
+                          row["training_level"],
+                          row["course_name"],
+                          row["instructor_name"],
+                          row["date"].localtime.strftime("%Y-%m-%d %H:%M"),
+                          row["facility"],
+                          row["attendee_count"]
+                        ] #,
+          #style: [style]
         end
       end
 
@@ -556,8 +611,8 @@ class ReportGenerator
         # Try to categorize programs into a relational database
         # Because I don't believe this is totally accurate
         programs = users.group(:program).count
-        title(sheet, "Program summaries")
-        push_hash(sheet, programs)
+        #title(sheet, "Program summaries")
+        #push_hash(sheet, programs)
         sheet.add_row
 
         # By program
@@ -566,7 +621,7 @@ class ReportGenerator
           sheet,
           programs
             .transform_keys { |k| k == "" ? "Blank - No Program" : k }
-            .sort_by { |k, v| [-v, k] }
+            .sort_by { |k, v| [-v] }
         )
       end
 
@@ -1403,7 +1458,8 @@ class ReportGenerator
         )
         .joins(ts.join(u).on(u[:id].eq(tsu[:user_id])).join_sources)
         .joins(ts.join(uu).on(uu[:id].eq(ts[:user_id])).join_sources)
-        .joins(ts.join(s).on(s[:id].eq(ts[:space_id])).join_sources)
+        #.joins(ts.join(s).on(s[:id].eq(ts[:space_id])).join_sources)
+        .joins("LEFT JOIN spaces on spaces.id=training_sessions.space_id")
         .group(ts[:id])
         .order(ts[:created_at].minimum)
         .to_sql
