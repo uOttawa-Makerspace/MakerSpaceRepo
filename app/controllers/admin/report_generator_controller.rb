@@ -527,8 +527,8 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           TrainingSession.all
         end
-      )
-    @spaces = Space.order(name: :asc)
+      ).includes(:users, :user, :trainings)
+    @spaces = Space.order(name: :asc).includes(:certifications)
 
     total_certs = Hash.new
     total_sessions = Hash.new

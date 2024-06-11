@@ -24,7 +24,7 @@
 
     <div class="mb-5 accordion">
       <% @spaces.each do |space| %>
-        <% space_certs = space.certifications.where(created_at: params[:start_date]..params[:end_date]).reverse_order %>
+        <% space_certs = space.certifications.includes(:user, :training_session, :training).where(created_at: params[:start_date]..params[:end_date]).reverse_order %>
         <% if !space_certs.empty? %>
           <div class="card">
             <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= space.name.gsub(' ', '-') %>" aria-expanded="true">
