@@ -84,6 +84,36 @@ class ReportGenerator
         # endregion
       end
 
+    # Breakdown of users by program
+    # HACK I don't think I have time to fix the get_visitors function
+    # Do this instead :(
+    spreadsheet
+      .workbook
+      .add_worksheet(name: "By Program") do |sheet|
+        title(sheet, "Visitors by program")
+
+        # Preliminary format, clean up
+        # Program | Distinct | Total
+        # ---------------------
+        # Prog 1  | ###      | ###
+        # Prog 2  | ###      | ###
+
+        # FIXME duplicate programs, how???
+        get_visitors_by_program(start_date, end_date)
+          .group_by do |d|
+            d["program"]&.strip&.gsub(/[^\S ]+/, "") or "No Program"
+          end # program can be nil
+          .map do |prog, counts|
+            [
+              prog,
+              counts.map { |d| d["visitor_count"] }.sum,
+              counts.map { |d| d["distinct_count"] }.sum
+            ]
+          end
+          .sort_by { |x| x[0] }
+          .each { |x| sheet.add_row x }
+      end
+
     # region Per-space details
     space_details[:spaces].each do |space_name, space_detail|
       spreadsheet
@@ -267,6 +297,8 @@ class ReportGenerator
     spreadsheet
   end
 
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
   def self.get_training_sessions(start_date, end_date)
     t = Training.arel_table
     ts = TrainingSession.arel_table
@@ -398,12 +430,7 @@ class ReportGenerator
     spreadsheet
   end
 
-  # FIXME: there is a separate fetch function, use it???
   # Fetch certifications, per space
-  # FUN FACT: This thing never touches the 'certifications' table, for some unfathomable reason.
-  # tldr this is broken and doesn't actually count handed out certs, rewrite completely.
-  # I'm assuming there's some double counted certs here :/
-  # FIXME no infinte date range
   # FIXME funfact some training sessions aren't marked as completed?
   # We're
   def self.generate_certifications_report(start_date, end_date)
@@ -723,28 +750,34 @@ class ReportGenerator
     certifications =
       Certification
         .includes({ training_session: %i[user training space] }, :user)
-        .where("created_at" => start_date..end_date)
+        .where(created_at: start_date..end_date)
         .order(
           "spaces.name",
           "training_sessions.created_at",
           "users_certifications.name"
         )
-        .group_by { |item| item.training_session.space.id }
+        .group_by { |item| item.training_session.space&.id or 0 }
 
     spreadsheet = Axlsx::Package.new
+
+    # FIXME plan here:
+    # remove the stupid cell merging, why are we doing this?
+    # sum training attendees total
+    # Verify accuracy of reports - missing one visit, eh
+    #
 
     certifications.each do |_space, space_certifications|
       spreadsheet
         .workbook
         .add_worksheet(
           name:
-            "Report - #{space_certifications[0].training_session.space.name}"
+            "Report - #{space_certifications[0].training_session.space&.name}"
         ) do |sheet|
           merge_cell = sheet.styles.add_style alignment: { vertical: :center }
 
           title(
             sheet,
-            "Training Attendees - #{space_certifications[0].training_session.space.name}"
+            "Training Attendees - #{space_certifications[0].training_session.space&.name}"
           )
 
           sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
@@ -769,25 +802,6 @@ class ReportGenerator
           last_training_session_id = nil
 
           space_certifications.each do |certification|
-            if (
-                 last_training_session_id != certification.training_session.id
-               ) && !last_training_session_id.nil?
-              end_index = sheet.rows.last.row_index + 1
-
-              if start_index < end_index
-                sheet.merge_cells("A#{start_index}:A#{end_index}")
-                sheet.merge_cells("B#{start_index}:B#{end_index}")
-                sheet.merge_cells("C#{start_index}:C#{end_index}")
-                sheet.merge_cells("D#{start_index}:D#{end_index}")
-                sheet.merge_cells("E#{start_index}:E#{end_index}")
-                sheet.merge_cells("F#{start_index}:F#{end_index}")
-                sheet.merge_cells("G#{start_index}:G#{end_index}")
-                sheet.merge_cells("H#{start_index}:H#{end_index}")
-              end
-
-              start_index = sheet.rows.last.row_index + 2
-            end
-
             sheet.add_row [
                             certification.user.name,
                             certification.user.email,
@@ -797,17 +811,10 @@ class ReportGenerator
                             ),
                             certification.training_session.user.name,
                             certification.training_session.course,
-                            certification.training_session.space.name
-                          ],
-                          style: [
-                            merge_cell,
-                            merge_cell,
-                            merge_cell,
-                            merge_cell,
-                            merge_cell
+                            certification.training_session.space&.name
                           ]
 
-            last_training_session_id = certification.training_session.id
+            #last_training_session_id = certification.training_session.id
           end
 
           sheet.add_row #spacing
@@ -1228,14 +1235,44 @@ class ReportGenerator
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
+  def self.get_visitors_by_program(start_date, end_date)
+    # select users.program, spaces.name, count(distinct user_id), count(user_id) from lab_sessions
+    # join users on users.id=lab_sessions.user_id
+    # where lab_sessions.created_at between '2024-01-01' and '2024-04-30'
+    # group by lab_sessions.space_id, users.program;
+
+    ls = LabSession.arel_table
+    users = User.arel_table
+    spaces = Space.arel_table
+
+    ActiveRecord::Base.connection.exec_query(
+      LabSession
+        .select(
+          [
+            users[:program],
+            spaces[:name],
+            #users[:id].count.as('distinct_count'),
+            users[:id].count.as("visitor_count")
+          ]
+        )
+        .select(users[:id].count.as("distinct_count"))
+        .distinct
+        .joins(ls.join(users).on(ls[:user_id].eq(users[:id])).join_sources)
+        .joins(ls.join(spaces).on(ls[:space_id].eq(spaces[:id])).join_sources)
+        .where(ls[:created_at].between(start_date..end_date))
+        .group(users[:program], spaces[:name])
+        .to_sql
+    )
+  end
+
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
   def self.get_visitors(start_date, end_date)
     g = Arel::Table.new("g")
     ls = LabSession.arel_table
     u = User.arel_table
     s = Space.arel_table
 
-    # NOTE: notice how this dance isn't necessary, you can just hit the activerecord
-    # you want without passing by exec_query
     result =
       ActiveRecord::Base.connection.exec_query(
         g
@@ -1425,77 +1462,6 @@ class ReportGenerator
     end
 
     organized
-  end
-
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
-  def self.get_trainings(start_date, end_date)
-    t = Training.arel_table
-    ts = TrainingSession.arel_table
-    tsu = Arel::Table.new(:training_sessions_users)
-    u = User.arel_table
-    uu = User.arel_table.alias("trainers")
-    s = Space.arel_table
-
-    query =
-      TrainingSession
-        .select(
-          [
-            t[:id].minimum.as("training_id"),
-            t[:name].minimum.as("training_name"),
-            ts[:level].minimum.as("training_level"),
-            ts[:course].minimum.as("course_name"),
-            uu[:name].minimum.as("instructor_name"),
-            ts[:created_at].minimum.as("date"),
-            s[:name].minimum.as("space_name"),
-            Arel.star.count.as("attendee_count")
-          ]
-        )
-        .where(ts[:created_at].between(start_date..end_date))
-        .joins(ts.join(t).on(t[:id].eq(ts[:training_id])).join_sources)
-        .joins(
-          ts.join(tsu).on(ts[:id].eq(tsu[:training_session_id])).join_sources
-        )
-        .joins(ts.join(u).on(u[:id].eq(tsu[:user_id])).join_sources)
-        .joins(ts.join(uu).on(uu[:id].eq(ts[:user_id])).join_sources)
-        #.joins(ts.join(s).on(s[:id].eq(ts[:space_id])).join_sources)
-        .joins("LEFT JOIN spaces on spaces.id=training_sessions.space_id")
-        .group(ts[:id])
-        .order(ts[:created_at].minimum)
-        .to_sql
-
-    result = { training_sessions: [], training_types: {} }
-
-    ActiveRecord::Base
-      .connection
-      .exec_query(query)
-      .each do |row|
-        result[:training_sessions] << {
-          training_id: row["training_id"],
-          training_name: row["training_name"],
-          training_level: row["training_level"],
-          course_name: row["course_name"],
-          instructor_name: row["instructor_name"],
-          date: DateTime.strptime(row["date"].to_s, "%Y-%m-%d %H:%M:%S"),
-          facility: row["space_name"],
-          attendee_count: row["attendee_count"].to_i
-        }
-
-        unless result[:training_types][row["training_id"]]
-          result[:training_types][row["training_id"]] = {
-            name: row["training_name"],
-            count: 0,
-            total_attendees: 0
-          }
-        end
-
-        result[:training_types][row["training_id"]][:count] += 1
-        result[:training_types][row["training_id"]][:total_attendees] += row[
-          "attendee_count"
-        ].to_i
-      end
-
-    result
   end
 
   # @param [DateTime] start_date
