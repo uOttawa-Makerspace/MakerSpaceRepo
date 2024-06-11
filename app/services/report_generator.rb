@@ -114,6 +114,42 @@ class ReportGenerator
           .each { |x| sheet.add_row x }
       end
 
+    spreadsheet
+      .workbook
+      .add_worksheet(name: "By Department") do |sheet|
+        title(sheet, "Visitors by engineering department")
+
+        # Preliminary format, clean up
+        # Program | Distinct | Total
+        # ---------------------
+        # Prog 1  | ###      | ###
+        # Prog 2  | ###      | ###
+
+        department_list = %w[
+          Mechanical
+          Electrical
+          Chemical
+          Civil
+          Software
+          Computer
+        ]
+
+        # FIXME duplicate programs, how???
+        get_visitors_by_program(start_date, end_date)
+          .group_by do |d|
+            department_list.detect { |x| d["program"]&.include? x } or "Other"
+          end # program can be nil
+          .map do |prog, counts|
+            [
+              prog + " Engineering",
+              counts.map { |d| d["visitor_count"] }.sum,
+              counts.map { |d| d["distinct_count"] }.sum
+            ]
+          end
+          .sort_by { |x| x[0] }
+          .each { |x| sheet.add_row x }
+      end
+
     # region Per-space details
     space_details[:spaces].each do |space_name, space_detail|
       spreadsheet
@@ -1251,11 +1287,11 @@ class ReportGenerator
           [
             users[:program],
             spaces[:name],
-            #users[:id].count.as('distinct_count'),
+            users[:id].count(true).as("distinct_count"),
             users[:id].count.as("visitor_count")
           ]
         )
-        .select(users[:id].count.as("distinct_count"))
+        #.select(users[:id].count.as("distinct_count")
         .distinct
         .joins(ls.join(users).on(ls[:user_id].eq(users[:id])).join_sources)
         .joins(ls.join(spaces).on(ls[:space_id].eq(spaces[:id])).join_sources)
