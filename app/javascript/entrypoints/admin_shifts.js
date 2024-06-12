@@ -401,8 +401,7 @@ const refreshPendingShifts = () => {
 
 const populateUsers = (arg) => {
   return new Promise((resolve, reject) => {
-    userIdInput.tomselect.clear();
-    userIdInput.tomselect.clearOptions();
+
     let startDate, endDate;
     if (arg.event) {
       startDate = arg.event.start;
@@ -444,19 +443,14 @@ const populateUsers = (arg) => {
       },
     })
       .then((res) => res.json())
-      .then((res) => {
-        res.forEach((user) => {
-          userIdInput.tomselect.addOption({
-            value: user.id,
-            text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,
-          });
-        });
+
         resolve();
       })
       .catch((err) => {
         reject(err);
       });
-  });
+
+
 };
 
 // Calendar CRUD
