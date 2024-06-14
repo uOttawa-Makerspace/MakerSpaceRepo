@@ -38,7 +38,6 @@ class ReportGenerator
         )
         .to_a
     # TODO: use visits[0].attributes to auto populate uniq map
-    department_list = %w[Mechanical Electrical Chemical Civil Software Computer]
     all_columns = {
       faculty: all_visits.map { |x| x.faculty }.uniq,
       identity: all_visits.map { |x| x.identity }.uniq,
@@ -69,15 +68,10 @@ class ReportGenerator
               ["Space", "Distinct Users per space", "", "Total Visits to space"]
             )
 
-            visits
+            space_visits
               .group_by { |d| d["space_name"] }
               .each do |space, counts|
-                sheet.add_row [
-                                space,
-                                counts.map { |x| x["distinct_count"] }.sum,
-                                "",
-                                counts.map { |x| x["visitor_count"] }.sum
-                              ]
+                sheet.add_row [space, counts.uniq.count, "", counts.count]
               end
           end
 
@@ -91,12 +85,7 @@ class ReportGenerator
           space_visits
             .group_by { |d| d["identity"] }
             .each do |iden, counts|
-              sheet.add_row [
-                              iden.humanize,
-                              sum_by_key(counts, "distinct_count"),
-                              "",
-                              sum_by_key(counts, "visitor_count")
-                            ]
+              sheet.add_row [iden.humanize, counts.uniq.count, "", counts.count]
             end
 
           sheet.add_row # spacing
@@ -156,7 +145,40 @@ class ReportGenerator
                                   ":" + Axlsx.cell_r(end_cell[0], end_cell[1])
             end
 
+          # FIXME test if sorting by users.faculty gives different count than
+          # users.program.include? engineering. Community users might affect this
+          # so also filter by identity == undergrad or grad
+
+          sheet.add_row # spacing
+
+          # group by engineering department
+          # Some programs have the BOM, we need to sanitize at input really
+          table_header(
+            sheet,
+            ["Department", "Distinct Users", "", "Total Visits", "", "Level"]
+          )
           space_visits
+            .group_by { |x| get_program_department(x.program) }
+            .each do |program, rest|
+              start_cell = sheet.rows.last.cells.first.pos # for merging
+              rest
+                .group_by { |x| get_study_level(x.program) }
+                .sort
+                .each do |level, counts|
+                  sheet.add_row [
+                                  program,
+                                  counts.uniq.count,
+                                  "",
+                                  counts.uniq.count,
+                                  "",
+                                  level
+                                ],
+                                style: merge_cell
+                end
+              end_cell = sheet.rows.last.cells.first.pos
+              sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
+                                  ":" + Axlsx.cell_r(end_cell[0], end_cell[1])
+            end
         end
     end
     spreadsheet
@@ -1757,7 +1779,29 @@ class ReportGenerator
     hash.map { |x| x[key] }.sum
   end
 
+  # Returns which engineering department a program belongs to
+  def self.get_program_department(program)
+    # HACK Department list, this is hardcoded because we have no
+    # structured way to describe them
+    %w[Mechanical Electrical Chemical Civil Software Computer].detect do |x|
+      program&.include? "Engineering" and program&.include? x
+    end or "Non-Engineering"
+  end
+
+  def self.get_study_level(program)
+    if program =~ /BASc|(?<!M)BA|BSc|Bachel|BSocSc/
+      "Bachelors"
+    elsif program =~ /Master/
+      "Masters"
+    elsif program =~ /PhD|Doctor/
+      "PhD"
+    else
+      "None"
+    end
+  end
+
   # Pass users.group(:program).count
+  # FIXME this detects MBA as bachelors, very false
   def self.categorize_programs(programs)
     {
       "Blank" => programs.select { |k, _| k == "" }.values.sum,
@@ -1766,7 +1810,10 @@ class ReportGenerator
       "Non-Engineering" =>
         programs.select { |k, _| k !~ /Engineering/i }.values.sum,
       "Bachelors" =>
-        programs.select { |k, _| k =~ /BASc|Bachelor|BA/i }.values.sum,
+        programs
+          .select { |k, _| k =~ /BASc|Bachelor|(?<!M)BA|BSc/i }
+          .values
+          .sum,
       "Masters" => programs.select { |k, _| k =~ /Master/i }.values.sum,
       "Doctorate" => programs.select { |k, _| k =~ /Doctorate/i }.values.sum
     }
