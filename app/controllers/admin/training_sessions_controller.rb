@@ -22,6 +22,8 @@ class Admin::TrainingSessionsController < AdminAreaController
       @sessions = @sessions.by_trainers(params[:trainers])
     end
 
+    @trainers = User.joins(:training_sessions).distinct.order(:name)
+
     if params[:course].present?
       @sessions = @sessions.by_course(params[:course])
     end
