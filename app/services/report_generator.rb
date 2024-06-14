@@ -1,21 +1,8 @@
 # frozen_string_literal: true
 
-# TODO: A whole lot of refactoring needed?
-# Separation of concerns. xslx template and data retrieval separated
-# axlsx doesn't read xlsx files, just writes them out.
-
 class ReportGenerator
   require "axlsx"
   # region Date Range Reports
-
-  # FIXME: This is 100% fucked, throw this all away.
-  # Make sure we're not double counting users per space
-  # community members are not in any faculty, don't count them
-  # keep the formatting, it's nice really
-  # by department should be a cross table with bachelors, masters, phd, etc..
-  # also department per space
-  # Visitors by program should have a total count
-  # honors are the same
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
@@ -203,382 +190,9 @@ class ReportGenerator
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
-  def self.generate_visitors_report_sucks(start_date, end_date)
-    spreadsheet = Axlsx::Package.new
-
-    # Query database for visitors
-    # Our report gives
-    space_details = get_visitors(start_date, end_date)
-
-    spreadsheet
-      .workbook
-      .add_worksheet(name: "Report") do |sheet|
-        merge_cell = sheet.styles.add_style alignment: { vertical: :center }
-
-        header(sheet, "Visitors", start_date, end_date)
-
-        # region Overview
-        title(sheet, "Overview")
-        table_header(
-          sheet,
-          ["Space", "Distinct Users per space", "", "Total Visits to space"]
-        )
-
-        space_details[:spaces].each do |space_name, space|
-          sheet.add_row [space_name, space[:unique], "", space[:total]]
-        end
-
-        sheet.add_row # spacing
-
-        table_header(sheet, ["Identity", "Distinct Users", "", "Total Visits"])
-
-        space_details[:identities].each do |identity_name, space|
-          sheet.add_row [identity_name, space[:unique], "", space[:total]]
-        end
-
-        sheet.add_row # spacing
-
-        table_header(sheet, ["Faculty", "Distinct Users", "", "Total Visits"])
-
-        space_details[:faculties].each do |faculty_name, space|
-          sheet.add_row [faculty_name, space[:unique], "", space[:total]]
-        end
-
-        sheet.add_row # spacing
-
-        table_header(
-          sheet,
-          ["Identity", "Distinct Users", "", "Total Visits", "", "Faculty"]
-        )
-        space_details[:identities].each do |identity_name, identity|
-          start_index = sheet.rows.last.row_index + 1
-
-          identity[:faculties].each do |faculty_name, faculty|
-            sheet.add_row [
-                            identity_name,
-                            faculty[:unique],
-                            "",
-                            faculty[:total],
-                            "",
-                            faculty_name
-                          ],
-                          style: [merge_cell]
-          end
-
-          end_index = sheet.rows.last.row_index
-
-          sheet.merge_cells("A#{start_index + 1}:A#{end_index + 1}")
-        end
-
-        sheet.add_row # spacing
-        # endregion
-      end
-
-    # Breakdown of users by program
-    # HACK I don't think I have time to fix the get_visitors function
-    # Do this instead :(
-    spreadsheet
-      .workbook
-      .add_worksheet(name: "By Program") do |sheet|
-        title(sheet, "Visitors by program")
-
-        # Preliminary format, clean up
-        # Program | Distinct | Total
-        # ---------------------
-        # Prog 1  | ###      | ###
-        # Prog 2  | ###      | ###
-
-        # FIXME: duplicate programs, how???
-        get_visitors_by_program(start_date, end_date)
-          .group_by do |d|
-            d["program"]&.strip&.gsub(/[^\S ]+/, "") or "No Program"
-          end # program can be nil
-          .map do |prog, counts|
-            [
-              prog,
-              counts.map { |d| d["visitor_count"] }.sum,
-              counts.map { |d| d["distinct_count"] }.sum
-            ]
-          end
-          .sort_by { |x| x[0] }
-          .each { |x| sheet.add_row x }
-      end
-
-    spreadsheet
-      .workbook
-      .add_worksheet(name: "By Department") do |sheet|
-        title(sheet, "Visitors by engineering department")
-
-        # Preliminary format, clean up
-        # Program | Distinct | Total
-        # ---------------------
-        # Prog 1  | ###      | ###
-        # Prog 2  | ###      | ###
-
-        department_list = %w[
-          Mechanical
-          Electrical
-          Chemical
-          Civil
-          Software
-          Computer
-        ]
-
-        # FIXME: duplicate programs, how???
-        get_visitors_by_program(start_date, end_date)
-          .group_by do |d|
-            department_list.detect { |x| d["program"]&.include? x } or "Other"
-          end # program can be nil
-          .map do |prog, counts|
-            [
-              prog + " Engineering",
-              counts.map { |d| d["visitor_count"] }.sum,
-              counts.map { |d| d["distinct_count"] }.sum
-            ]
-          end
-          .sort_by { |x| x[0] }
-          .each { |x| sheet.add_row x }
-      end
-
-    # region Per-space details
-    space_details[:spaces].each do |space_name, space_detail|
-      spreadsheet
-        .workbook
-        .add_worksheet(name: space_name) do |sheet|
-          title(sheet, space_name)
-
-          faculty_hash = {}
-          merge_cell = sheet.styles.add_style alignment: { vertical: :center }
-
-          table_header(
-            sheet,
-            ["Identity", "Distinct Users", "", "Total Visits"]
-          )
-          space_detail[:identities].each do |identity_name, identity|
-            sheet.add_row [
-                            identity_name,
-                            identity[:unique],
-                            "",
-                            identity[:total]
-                          ]
-          end
-
-          sheet.add_row # spacing
-
-          table_header(sheet, ["Faculty", "Distinct Users", "", "Total Visits"])
-          space_detail[:faculties].each do |faculty_name, faculty|
-            sheet.add_row [faculty_name, faculty[:unique], "", faculty[:total]]
-          end
-
-          sheet.add_row # spacing
-
-          table_header(
-            sheet,
-            ["Identity", "Distinct Users", "", "Total Visits", "", "Faculty"]
-          )
-          space_detail[:identities].each do |identity_name, identity|
-            start_index = sheet.rows.last.row_index + 1
-
-            identity[:faculties].each do |faculty_name, faculty|
-              sheet.add_row [
-                              identity_name,
-                              faculty[:unique],
-                              "",
-                              faculty[:total],
-                              "",
-                              faculty_name
-                            ],
-                            style: [merge_cell]
-              faculty_hash[faculty_name] = if faculty_hash[faculty_name].blank?
-                faculty[:unique]
-              else
-                faculty[:unique] + faculty_hash[faculty_name]
-              end
-            end
-
-            end_index = sheet.rows.last.row_index
-
-            sheet.merge_cells("A#{start_index + 1}:A#{end_index + 1}")
-          end
-
-          sheet.add_row # spacing
-
-          table_header(sheet, ["Gender", "Distinct Users", "", "Total Visits"])
-          space_detail[:genders].each do |gender_name, gender|
-            sheet.add_row [gender_name, gender[:unique], "", gender[:total]]
-          end
-
-          space = sheet.add_row # spacing
-
-          male =
-            (
-              if space_detail[:genders]["Male"].present?
-                space_detail[:genders]["Male"][:unique]
-              else
-                0
-              end
-            )
-          female =
-            (
-              if space_detail[:genders]["Female"].present?
-                space_detail[:genders]["Female"][:unique]
-              else
-                0
-              end
-            )
-          other =
-            (
-              if space_detail[:genders]["Other"].present?
-                space_detail[:genders]["Other"][:unique]
-              else
-                0
-              end
-            )
-          prefer_not =
-            (
-              if space_detail[:genders]["Prefer not to specify"].present?
-                space_detail[:genders]["Prefer not to specify"][:unique]
-              else
-                0
-              end
-            )
-          final_other = other + prefer_not
-
-          sheet.add_chart(
-            Axlsx::Pie3DChart,
-            rot_x: 90,
-            start_at: "A#{space.row_index + 2}",
-            end_at: "E#{space.row_index + 14}",
-            grouping: :stacked,
-            show_legend: true,
-            title: "Gender of unique users"
-          ) do |chart|
-            chart.add_series data: [male, female, final_other],
-                             labels: [
-                               "Male",
-                               "Female",
-                               "Other/Prefer not to specify"
-                             ],
-                             colors: %w[1FC3AA 8624F5 A8A8A8 A8A8A8]
-            chart.add_series data: [male, female, final_other],
-                             labels: [
-                               "Male",
-                               "Female",
-                               "Other/Prefer not to specify"
-                             ],
-                             colors: %w[FFFF00 FFFF00 FFFF00]
-            chart.d_lbls.show_percent = true
-            chart.d_lbls.d_lbl_pos = :bestFit
-          end
-
-          sheet.add_chart(
-            Axlsx::Pie3DChart,
-            rot_x: 90,
-            start_at: "A#{space.row_index + 16}",
-            end_at: "E#{space.row_index + 28}",
-            grouping: :stacked,
-            show_legend: true,
-            title: "Faculty of unique users"
-          ) do |chart2|
-            chart2.add_series data: faculty_hash.values,
-                              labels: faculty_hash.keys,
-                              colors: %w[
-                                416145
-                                33EEDD
-                                860F48
-                                88E615
-                                6346F0
-                                F5E1FE
-                                E9A55B
-                                A2F8FA
-                                260AD2
-                                12032E
-                                755025
-                                723634
-                              ]
-            chart2.add_series data: faculty_hash.values,
-                              labels: faculty_hash.keys,
-                              colors: %w[
-                                416145
-                                33EEDD
-                                860F48
-                                88E615
-                                6346F0
-                                F5E1FE
-                                E9A55B
-                                A2F8FA
-                                260AD2
-                                12032E
-                                755025
-                                723634
-                              ]
-            chart2.d_lbls.show_percent = true
-            chart2.d_lbls.d_lbl_pos = :bestFit
-          end
-        end
-    end
-    # endregion
-
-    spreadsheet
-  end
-
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
-  def self.get_training_sessions(start_date, end_date)
-    t = Training.arel_table
-    ts = TrainingSession.arel_table
-    tsu = Arel::Table.new(:training_sessions_users)
-    u = User.arel_table
-    uu = User.arel_table.alias("trainers")
-    s = Space.arel_table
-
-    # NOTE: I commented out the whole trainer stuff because that was disappearing some sessions
-    # FIXME add trainer names
-    query =
-      TrainingSession
-        .select(
-          [
-            t[:id].minimum.as("training_id"),
-            t[:name].minimum.as("training_name"),
-            ts[:level].minimum.as("training_level"),
-            ts[:course].minimum.as("course_name"),
-            uu[:name].minimum.as("instructor_name"),
-            ts[:created_at].minimum.as("date"),
-            s[:name].minimum.as("space_name"),
-            Arel.star.count.as("attendee_count")
-          ]
-        )
-        .where(ts[:created_at].between(start_date..end_date))
-        .joins(
-          ts.join(t).on(t[:id].eq(ts[:training_id])).join_sources
-        ) # training type
-        # NOTE LEFT JOIN because some sessions aren't showing up otherwise
-        # .joins(ts.join(tsu).on(ts[:id].eq(tsu[:training_session_id])).join_sources)
-        .joins(
-          "LEFT JOIN training_sessions_users ON training_sessions_users.training_session_id=training_sessions.id"
-        )
-        # .joins(ts.join(u).on(u[:id].eq(tsu[:user_id])).join_sources) # get users
-        .joins("LEFT JOIN users ON users.id=training_sessions_users.user_id")
-        .joins(
-          ts.join(uu).on(uu[:id].eq(ts[:user_id])).join_sources
-        ) # join trainers
-        # .joins('LEFT JOIN users trainers on trainers.id=training_sessions.user_id')
-        # .joins(ts.join(s).on(s[:id].eq(ts[:space_id])).join_sources)
-        .joins(
-          "LEFT JOIN spaces ON spaces.id=training_sessions.space_id"
-        ) # some don't have space id?
-        .group(ts[:id])
-        .order(ts[:created_at].minimum)
-        .to_sql
-
-    ActiveRecord::Base.connection.exec_query(query)
-  end
-
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
   def self.generate_trainings_report(start_date, end_date)
     # TODO: this is wrong, replace it with active queries not raw sql
-    trainings = get_training_sessions(start_date, end_date)
+    trainings = get_trainings(start_date, end_date)
 
     spreadsheet = Axlsx::Package.new
 
@@ -852,8 +466,7 @@ class ReportGenerator
         # Engineering/non-engineering
 
         # By faculty
-        # FIXME there's a lot of weird faculties included here
-        # HACK ffs, merge génie with engineering, or don't?
+        # HACK you should merge génie with engineering instead?
         title(sheet, "By Faculty")
         push_hash(
           sheet,
@@ -994,12 +607,6 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    # FIXME: plan here:
-    # remove the stupid cell merging, why are we doing this?
-    # sum training attendees total
-    # Verify accuracy of reports - missing one visit, eh
-    #
-
     certifications.each do |_space, space_certifications|
       spreadsheet
         .workbook
@@ -1032,9 +639,6 @@ class ReportGenerator
             ]
           )
 
-          start_index = sheet.rows.last.row_index + 2
-          last_training_session_id = nil
-
           space_certifications.each do |certification|
             sheet.add_row [
                             certification.user.name,
@@ -1047,11 +651,9 @@ class ReportGenerator
                             certification.training_session.course,
                             certification.training_session.space&.name
                           ]
-
-            # last_training_session_id = certification.training_session.id
           end
 
-          sheet.add_row # spacing
+          sheet.add_row #spacing
 
           month_average = ["Month average of attendees per sessions"]
           month_header = ["Month"]
@@ -1215,7 +817,6 @@ class ReportGenerator
         # Title, created_at, URL
         table_header(sheet, %w[Title Users URL Categories])
 
-        # who the fuck wrote this?
         repositories.each do |repository|
           sheet.add_row [
                           repository.title,
@@ -1489,8 +1090,6 @@ class ReportGenerator
             users[:id].count.as("visitor_count")
           ]
         )
-        # .select(users[:id].count.as("distinct_count")
-        # .distinct
         .joins(ls.join(users).on(ls[:user_id].eq(users[:id])).join_sources)
         .joins(ls.join(spaces).on(ls[:space_id].eq(spaces[:id])).join_sources)
         .where(ls[:created_at].between(start_date..end_date))
@@ -1721,6 +1320,58 @@ class ReportGenerator
     end
 
     organized
+  end
+
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.get_trainings(start_date, end_date)
+    t = Training.arel_table
+    ts = TrainingSession.arel_table
+    tsu = Arel::Table.new(:training_sessions_users)
+    u = User.arel_table
+    uu = User.arel_table.alias("trainers")
+    s = Space.arel_table
+
+    # NOTE: I commented out the whole trainer stuff because that was disappearing some sessions
+    # FIXME add trainer names
+    query =
+      TrainingSession
+        .select(
+          [
+            t[:id].minimum.as("training_id"),
+            t[:name].minimum.as("training_name"),
+            ts[:level].minimum.as("training_level"),
+            ts[:course].minimum.as("course_name"),
+            uu[:name].minimum.as("instructor_name"),
+            ts[:created_at].minimum.as("date"),
+            s[:name].minimum.as("space_name"),
+            Arel.star.count.as("attendee_count")
+          ]
+        )
+        .where(ts[:created_at].between(start_date..end_date))
+        .joins(
+          ts.join(t).on(t[:id].eq(ts[:training_id])).join_sources
+        ) # training type
+        # NOTE LEFT JOIN because some sessions aren't showing up otherwise
+        # .joins(ts.join(tsu).on(ts[:id].eq(tsu[:training_session_id])).join_sources)
+        .joins(
+          "LEFT JOIN training_sessions_users ON training_sessions_users.training_session_id=training_sessions.id"
+        )
+        # .joins(ts.join(u).on(u[:id].eq(tsu[:user_id])).join_sources) # get users
+        .joins("LEFT JOIN users ON users.id=training_sessions_users.user_id")
+        .joins(
+          ts.join(uu).on(uu[:id].eq(ts[:user_id])).join_sources
+        ) # join trainers
+        # .joins('LEFT JOIN users trainers on trainers.id=training_sessions.user_id')
+        # .joins(ts.join(s).on(s[:id].eq(ts[:space_id])).join_sources)
+        .joins(
+          "LEFT JOIN spaces ON spaces.id=training_sessions.space_id"
+        ) # some don't have space id?
+        .group(ts[:id])
+        .order(ts[:created_at].minimum)
+        .to_sql
+
+    ActiveRecord::Base.connection.exec_query(query)
   end
 
   # @param [DateTime] start_date
