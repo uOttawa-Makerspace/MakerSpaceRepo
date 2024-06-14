@@ -69,7 +69,7 @@ class ReportGenerator
             )
 
             space_visits
-              .group_by { |d| d["space_name"] }
+              .group_by { |d| d.name }
               .each do |space, counts|
                 sheet.add_row [space, counts.uniq.count, "", counts.count]
               end
@@ -101,7 +101,6 @@ class ReportGenerator
           table_header(sheet, ["Faculty", "Distinct Users", "", "Total Visits"])
 
           # sort by faculty
-          # this is where things get ugly, dude
           space_visits
             .group_by { |d| d.faculty }
             .each do |faculty, counts|
@@ -114,7 +113,6 @@ class ReportGenerator
             end
 
           # group by faculty, identity
-          # fun one
           sheet.add_row # spacing
 
           table_header(
@@ -181,6 +179,25 @@ class ReportGenerator
             end
         end
     end
+
+    spreadsheet
+      .workbook
+      .add_worksheet(name: "Programs") do |sheet|
+        table_header(sheet, ["program", "Distinct Users", "", "Total Visits"])
+        all_visits
+          .group_by do |x|
+            if (x.program != nil and !x.program&.empty?)
+              x.program.strip.gsub(/^\W+/, "")
+            else
+              "None"
+            end
+          end
+          .sort
+          .each do |program, counts|
+            sheet.add_row [program, counts.uniq.count, "", counts.count]
+          end
+      end
+
     spreadsheet
   end
 
