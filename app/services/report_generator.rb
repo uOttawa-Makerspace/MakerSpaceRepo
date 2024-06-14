@@ -1,22 +1,170 @@
 # frozen_string_literal: true
 
-# this is awful man.
-# ReportGenerator here
 # TODO: A whole lot of refactoring needed?
-#   1. Separation of concerns. xslx template and data retrieval separated
-#   2. Keep queries on controller side, you're sending network requests anyways to get the data
-# axlsx doesn't read xlsx files, just writes them out. This sucks cuz I wanted to design a template and have it fill it in. Not sure if it's worth introducing a new gem.
-# CSV won't work, this isn't the stone age and I want charts.
-# I could move this all to controller side, but then it'll be difficult
-# to use outside of that controller. This a massive file and smartparens is being stupid
+# Separation of concerns. xslx template and data retrieval separated
+# axlsx doesn't read xlsx files, just writes them out.
 
 class ReportGenerator
   require "axlsx"
   # region Date Range Reports
 
+  # FIXME: This is 100% fucked, throw this all away.
+  # Make sure we're not double counting users per space
+  # community members are not in any faculty, don't count them
+  # keep the formatting, it's nice really
+  # by department should be a cross table with bachelors, masters, phd, etc..
+  # also department per space
+  # Visitors by program should have a total count
+  # honors are the same
+
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_visitors_report(start_date, end_date)
+    spreadsheet = Axlsx::Package.new
+    spreadsheet.workbook.use_autowidth = true
+
+    all_visits =
+      LabSession
+        .where(created_at: start_date..end_date)
+        .joins(:user, :space)
+        .select(
+          :"users.id",
+          :"users.faculty",
+          :"users.gender",
+          :"users.identity",
+          :"users.program",
+          :"users.program",
+          :"spaces.name"
+        )
+        .to_a
+    # TODO: use visits[0].attributes to auto populate uniq map
+    department_list = %w[Mechanical Electrical Chemical Civil Software Computer]
+    all_columns = {
+      faculty: all_visits.map { |x| x.faculty }.uniq,
+      identity: all_visits.map { |x| x.identity }.uniq,
+      space: ["Report"] + all_visits.map { |x| x.name }.uniq
+    }
+
+    all_columns[:space].each do |space_name|
+      spreadsheet
+        .workbook
+        .add_worksheet(name: space_name) do |sheet|
+          merge_cell = sheet.styles.add_style alignment: { vertical: :center }
+
+          header(sheet, "Visitors", start_date, end_date)
+          space_visits =
+            (
+              if space_name == "Report"
+                all_visits
+              else
+                all_visits.select { |x| x["name"] == space_name }
+              end
+            )
+
+          # Visits by space, special case if overview
+          if space_name == "Report"
+            title(sheet, "Overview")
+            table_header(
+              sheet,
+              ["Space", "Distinct Users per space", "", "Total Visits to space"]
+            )
+
+            visits
+              .group_by { |d| d["space_name"] }
+              .each do |space, counts|
+                sheet.add_row [
+                                space,
+                                counts.map { |x| x["distinct_count"] }.sum,
+                                "",
+                                counts.map { |x| x["visitor_count"] }.sum
+                              ]
+              end
+          end
+
+          sheet.add_row # spacing
+
+          # sort by identity
+          table_header(
+            sheet,
+            ["Identity", "Distinct Users", "", "Total Visits"]
+          )
+          space_visits
+            .group_by { |d| d["identity"] }
+            .each do |iden, counts|
+              sheet.add_row [
+                              iden.humanize,
+                              sum_by_key(counts, "distinct_count"),
+                              "",
+                              sum_by_key(counts, "visitor_count")
+                            ]
+            end
+
+          sheet.add_row # spacing
+
+          # sort by gender
+          title(sheet, "Gender")
+          space_visits
+            .group_by { |x| x["gender"] }
+            .each { |gender, counts| sheet.add_row [gender, counts.uniq.count] }
+
+          sheet.add_row # spacing
+
+          table_header(sheet, ["Faculty", "Distinct Users", "", "Total Visits"])
+
+          # sort by faculty
+          # this is where things get ugly, dude
+          space_visits
+            .group_by { |d| d.faculty }
+            .each do |faculty, counts|
+              sheet.add_row [
+                              faculty == "" ? "None" : faculty,
+                              counts.uniq.count,
+                              "",
+                              counts.count
+                            ]
+            end
+
+          # group by faculty, identity
+          # fun one
+          sheet.add_row # spacing
+
+          table_header(
+            sheet,
+            ["Identity", "Distinct Users", "", "Total Visits", "", "Faculty"]
+          )
+          merge_cell = sheet.styles.add_style alignment: { vertical: :center }
+
+          space_visits
+            .group_by { |x| x.identity }
+            .each do |iden, rest|
+              start_cell = sheet.rows.last.cells.first.pos # for merging
+              rest
+                .group_by { |y| y.faculty }
+                .each do |faculty, counts|
+                  sheet.add_row [
+                                  iden.humanize,
+                                  counts.uniq.count,
+                                  "",
+                                  counts.count,
+                                  "",
+                                  faculty == "" ? "None" : faculty
+                                ],
+                                style: merge_cell
+                end
+              end_cell = sheet.rows.last.cells.first.pos
+              sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
+                                  ":" + Axlsx.cell_r(end_cell[0], end_cell[1])
+            end
+
+          space_visits
+        end
+    end
+    spreadsheet
+  end
+
+  # @param [DateTime] start_date
+  # @param [DateTime] end_date
+  def self.generate_visitors_report_sucks(start_date, end_date)
     spreadsheet = Axlsx::Package.new
 
     # Query database for visitors
@@ -32,7 +180,10 @@ class ReportGenerator
 
         # region Overview
         title(sheet, "Overview")
-        table_header(sheet, ["Space", "Distinct Users", "", "Total Visits"])
+        table_header(
+          sheet,
+          ["Space", "Distinct Users per space", "", "Total Visits to space"]
+        )
 
         space_details[:spaces].each do |space_name, space|
           sheet.add_row [space_name, space[:unique], "", space[:total]]
@@ -98,7 +249,7 @@ class ReportGenerator
         # Prog 1  | ###      | ###
         # Prog 2  | ###      | ###
 
-        # FIXME duplicate programs, how???
+        # FIXME: duplicate programs, how???
         get_visitors_by_program(start_date, end_date)
           .group_by do |d|
             d["program"]&.strip&.gsub(/[^\S ]+/, "") or "No Program"
@@ -134,7 +285,7 @@ class ReportGenerator
           Computer
         ]
 
-        # FIXME duplicate programs, how???
+        # FIXME: duplicate programs, how???
         get_visitors_by_program(start_date, end_date)
           .group_by do |d|
             department_list.detect { |x| d["program"]&.include? x } or "Other"
@@ -199,11 +350,10 @@ class ReportGenerator
                               faculty_name
                             ],
                             style: [merge_cell]
-              if faculty_hash[faculty_name].blank?
-                faculty_hash[faculty_name] = faculty[:unique]
+              faculty_hash[faculty_name] = if faculty_hash[faculty_name].blank?
+                faculty[:unique]
               else
-                faculty_hash[faculty_name] = faculty[:unique] +
-                  faculty_hash[faculty_name]
+                faculty[:unique] + faculty_hash[faculty_name]
               end
             end
 
@@ -343,7 +493,7 @@ class ReportGenerator
     uu = User.arel_table.alias("trainers")
     s = Space.arel_table
 
-    # NOTE I commented out the whole trainer stuff because that was disappearing some sessions
+    # NOTE: I commented out the whole trainer stuff because that was disappearing some sessions
     # FIXME add trainer names
     query =
       TrainingSession
@@ -364,17 +514,17 @@ class ReportGenerator
           ts.join(t).on(t[:id].eq(ts[:training_id])).join_sources
         ) # training type
         # NOTE LEFT JOIN because some sessions aren't showing up otherwise
-        #.joins(ts.join(tsu).on(ts[:id].eq(tsu[:training_session_id])).join_sources)
+        # .joins(ts.join(tsu).on(ts[:id].eq(tsu[:training_session_id])).join_sources)
         .joins(
           "LEFT JOIN training_sessions_users ON training_sessions_users.training_session_id=training_sessions.id"
         )
-        #.joins(ts.join(u).on(u[:id].eq(tsu[:user_id])).join_sources) # get users
+        # .joins(ts.join(u).on(u[:id].eq(tsu[:user_id])).join_sources) # get users
         .joins("LEFT JOIN users ON users.id=training_sessions_users.user_id")
         .joins(
           ts.join(uu).on(uu[:id].eq(ts[:user_id])).join_sources
         ) # join trainers
-        #.joins('LEFT JOIN users trainers on trainers.id=training_sessions.user_id')
-        #.joins(ts.join(s).on(s[:id].eq(ts[:space_id])).join_sources)
+        # .joins('LEFT JOIN users trainers on trainers.id=training_sessions.user_id')
+        # .joins(ts.join(s).on(s[:id].eq(ts[:space_id])).join_sources)
         .joins(
           "LEFT JOIN spaces ON spaces.id=training_sessions.space_id"
         ) # some don't have space id?
@@ -382,14 +532,13 @@ class ReportGenerator
         .order(ts[:created_at].minimum)
         .to_sql
 
-    result = ActiveRecord::Base.connection.exec_query(query)
-    result
+    ActiveRecord::Base.connection.exec_query(query)
   end
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_trainings_report(start_date, end_date)
-    # TODO this is wrong, replace it with active queries not raw sql
+    # TODO: this is wrong, replace it with active queries not raw sql
     trainings = get_training_sessions(start_date, end_date)
 
     spreadsheet = Axlsx::Package.new
@@ -405,7 +554,7 @@ class ReportGenerator
 
         table_header(sheet, ["Training", "Session Count", "Total Attendees"])
 
-        #trainings[:training_types].each do |_, training_type|
+        # trainings[:training_types].each do |_, training_type|
         trainings
           .to_a
           .group_by { |d| d["training_name"] }
@@ -433,7 +582,7 @@ class ReportGenerator
         )
 
         trainings.each do |row|
-          #training = Training.find(row[:training_id])
+          # training = Training.find(row[:training_id])
           # color =
           #   if training.skill_id.present?
           #     if training.skill.name == "Machine Shop Training"
@@ -456,10 +605,10 @@ class ReportGenerator
                           row["course_name"],
                           row["instructor_name"],
                           row["date"].localtime.strftime("%Y-%m-%d %H:%M"),
-                          row["facility"],
+                          row["space_name"],
                           row["attendee_count"]
-                        ] #,
-          #style: [style]
+                        ] # ,
+          # style: [style]
         end
       end
 
@@ -483,7 +632,7 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
     spreadsheet.workbook.use_autowidth = true
-    #heading_style = spreadsheet.workbook.styles.add_style
+    # heading_style = spreadsheet.workbook.styles.add_style
     centered_style =
       spreadsheet.workbook.styles.add_style alignment: { horizontal: :center }
     outside_borders =
@@ -503,9 +652,19 @@ class ReportGenerator
       courses << row["course"]
     end
     # remove dupes, might include nil so put it at top
-    spaces = spaces.uniq.sort { |a, b| a && b ? a <=> b : a ? 1 : -1 }.reverse
+    spaces =
+      spaces
+        .uniq
+        .sort do |a, b|
+          if a && b
+            a <=> b
+          else
+            a ? 1 : -1
+          end
+        end
+        .reverse
     topics = topics.uniq
-    courses = courses.uniq #.map { |d| d || "None" }
+    courses = courses.uniq # .map { |d| d || "None" }
 
     (spaces + ["total"]).each do |space|
       spreadsheet
@@ -556,7 +715,7 @@ class ReportGenerator
                   .transpose
                   .map(&:sum) # vector sum
 
-              #|| [0, 0] # default if not found
+              # || [0, 0] # default if not found
               entry += this_space == [] ? [0, 0] : this_space
             end
 
@@ -604,8 +763,8 @@ class ReportGenerator
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_new_users_report(start_date, end_date)
-    #users = User.between_dates_picked(start_date, end_date)
-    #users = User.where(created_at: start_date..end_date)
+    # users = User.between_dates_picked(start_date, end_date)
+    # users = User.where(created_at: start_date..end_date)
     users = get_new_users(start_date, end_date)
 
     # Breakdown by year of study, gender. We don't track age?
@@ -674,8 +833,8 @@ class ReportGenerator
         # Try to categorize programs into a relational database
         # Because I don't believe this is totally accurate
         programs = users.group(:program).count
-        #title(sheet, "Program summaries")
-        #push_hash(sheet, programs)
+        # title(sheet, "Program summaries")
+        # push_hash(sheet, programs)
         sheet.add_row
 
         # By program
@@ -684,7 +843,7 @@ class ReportGenerator
           sheet,
           programs
             .transform_keys { |k| k == "" ? "Blank - No Program" : k }
-            .sort_by { |k, v| [-v] }
+            .sort_by { |_k, v| [-v] }
         )
       end
 
@@ -796,7 +955,7 @@ class ReportGenerator
 
     spreadsheet = Axlsx::Package.new
 
-    # FIXME plan here:
+    # FIXME: plan here:
     # remove the stupid cell merging, why are we doing this?
     # sum training attendees total
     # Verify accuracy of reports - missing one visit, eh
@@ -850,10 +1009,10 @@ class ReportGenerator
                             certification.training_session.space&.name
                           ]
 
-            #last_training_session_id = certification.training_session.id
+            # last_training_session_id = certification.training_session.id
           end
 
-          sheet.add_row #spacing
+          sheet.add_row # spacing
 
           month_average = ["Month average of attendees per sessions"]
           month_header = ["Month"]
@@ -886,7 +1045,7 @@ class ReportGenerator
 
           table_header(sheet, month_header)
           sheet.add_row month_average
-          sheet.add_row #spacing
+          sheet.add_row # spacing
 
           week_average = ["Week average of attendees per sessions"]
           week_header = ["Week"]
@@ -919,7 +1078,7 @@ class ReportGenerator
 
           table_header(sheet, week_header)
           sheet.add_row week_average
-          sheet.add_row #spacing
+          sheet.add_row # spacing
         end
     end
 
@@ -929,7 +1088,7 @@ class ReportGenerator
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.generate_new_projects_report(start_date, end_date)
-    #aggregate_data = get_new_projects(start_date, end_date)
+    # aggregate_data = get_new_projects(start_date, end_date)
 
     repositories =
       Repository
@@ -946,9 +1105,9 @@ class ReportGenerator
 
     # group by category, first find all categories
     # NOTE schema is messed up, yes there's a separate category for each repo
-    #category_count = Category.where(created_at: start_date..end_date).group(:name).count
-    #category_count = Category.where(created_at: start_date..end_date).joins(:repository).group(:name).count
-    #repositories.select(:category).group(:name).count
+    # category_count = Category.where(created_at: start_date..end_date).group(:name).count
+    # category_count = Category.where(created_at: start_date..end_date).joins(:repository).group(:name).count
+    # repositories.select(:category).group(:name).count
 
     category_count = Hash.new(0)
     equipment_count = Hash.new(0)
@@ -1013,7 +1172,7 @@ class ReportGenerator
         sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
         sheet.add_row # spacing
 
-        # FIXME this sucks, fix it
+        # FIXME: this sucks, fix it
         # Title, created_at, URL
         table_header(sheet, %w[Title Users URL Categories])
 
@@ -1165,13 +1324,13 @@ class ReportGenerator
         row = [date.strftime("%Y-%m-%d")]
 
         (min_hour..max_hour).each do |hour|
-          if visits_by_hour[date.year] &&
+          row << if visits_by_hour[date.year] &&
                visits_by_hour[date.year][date.month] &&
                visits_by_hour[date.year][date.month][date.day] &&
                visits_by_hour[date.year][date.month][date.day][hour]
-            row << visits_by_hour[date.year][date.month][date.day][hour]
+            visits_by_hour[date.year][date.month][date.day][hour]
           else
-            row << 0
+            0
           end
         end
 
@@ -1238,16 +1397,16 @@ class ReportGenerator
       Repository
         .select(
           [
-            #repos["created_at"].as("created"),
+            # repos["created_at"].as("created"),
             repos["id"],
-            "to_char(repositories.created_at, 'MM') as created_month", # NOTE postgresql specific hack to get month, year
+            "to_char(repositories.created_at, 'MM') as created_month", # NOTE: postgresql specific hack to get month, year
             "to_char(repositories.created_at, 'YYYY') as created_year",
             repos["license"],
-            #repos["license"].count().as("license_count"),
+            # repos["license"].count().as("license_count"),
             repos["share_type"],
             categories["name"],
             equips["name"]
-            #Arel.star.count
+            # Arel.star.count
           ]
         )
         .joins(
@@ -1264,7 +1423,7 @@ class ReportGenerator
         )
         .where(repos["created_at"].between(start_date..end_date))
         .to_sql
-      #.group(repos["share_type"], repos["license"], categories["name"],
+      # .group(repos["share_type"], repos["license"], categories["name"],
       #       equips["name"], "created_month", "created_year")
     )
   end
@@ -1291,12 +1450,35 @@ class ReportGenerator
             users[:id].count.as("visitor_count")
           ]
         )
-        #.select(users[:id].count.as("distinct_count")
-        .distinct
+        # .select(users[:id].count.as("distinct_count")
+        # .distinct
         .joins(ls.join(users).on(ls[:user_id].eq(users[:id])).join_sources)
         .joins(ls.join(spaces).on(ls[:space_id].eq(spaces[:id])).join_sources)
         .where(ls[:created_at].between(start_date..end_date))
         .group(users[:program], spaces[:name])
+        .to_sql
+    )
+  end
+
+  # This only returns total counts per space
+  # NOT per program, that's a separate query
+  def self.get_visitors_per_space(start_date, end_date)
+    ls = LabSession.arel_table
+    users = User.arel_table
+    spaces = Space.arel_table
+
+    ActiveRecord::Base.connection.exec_query(
+      LabSession
+        .select(
+          [
+            ls["user_id"].count.as("visitor_count"),
+            ls["user_id"].count(:distinct).as("distinct_count"),
+            spaces["name"].as("space_name")
+          ]
+        )
+        .joins(ls.join(spaces).on(ls[:space_id].eq(spaces[:id])).join_sources)
+        .where(ls[:created_at].between(start_date..end_date))
+        .group(spaces[:name])
         .to_sql
     )
   end
@@ -1429,12 +1611,14 @@ class ReportGenerator
         }
       end
 
-      organized[:identities][identity] = {
-        unique: 0,
-        total: 0,
-        faculties: {
+      unless organized[:identities][identity]
+        organized[:identities][identity] = {
+          unique: 0,
+          total: 0,
+          faculties: {
+          }
         }
-      } unless organized[:identities][identity]
+      end
 
       unless organized[:identities][identity][:faculties][faculty]
         organized[:identities][identity][:faculties][faculty] = {
@@ -1474,8 +1658,8 @@ class ReportGenerator
       organized[:genders][gender][:total] += total
 
       organized[:spaces][space_name][:unique] += unique
-      organized[:spaces][space_name][:total] += total
 
+      organized[:spaces][space_name][:total] += total
       organized[:spaces][space_name][:identities][identity][:unique] += unique
       organized[:spaces][space_name][:identities][identity][:total] += total
 
@@ -1508,7 +1692,7 @@ class ReportGenerator
     t = Training.arel_table
     s = Space.arel_table
 
-    # FIXME please, if anyone else touches this again, replace it with active record functions instead
+    # FIXME: please, if anyone else touches this again, replace it with active record functions instead
     # I'm not sure what this is called, I can't find any docs and uses Arel which is private API
     # except for https://api.rubyonrails.org/classes/ActiveRecord/QueryMethods.html
     ActiveRecord::Base.connection.exec_query(
@@ -1526,7 +1710,7 @@ class ReportGenerator
           c.join(ts).on(c["training_session_id"].eq(ts["id"])).join_sources
         )
         .joins(ts.join(t).on(ts["training_id"].eq(t["id"])).join_sources)
-        #.joins(ts.join(s).on(ts["space_id"].eq(s["id"])).join_sources)
+        # .joins(ts.join(s).on(ts["space_id"].eq(s["id"])).join_sources)
         # HACK you can't chain left_joins for some reason, https://github.com/rails/rails/issues/34332
         # so this is a manual left join string, because some training sessions don't have a space id attached?
         # and this causes some certs to be left out. Try Winter 2024 for an example.
@@ -1567,6 +1751,10 @@ class ReportGenerator
 
   def self.push_hash(sheet, hash)
     hash.each { |key, value| sheet.add_row [key, value] }
+  end
+
+  def self.sum_by_key(hash, key)
+    hash.map { |x| x[key] }.sum
   end
 
   # Pass users.group(:program).count
