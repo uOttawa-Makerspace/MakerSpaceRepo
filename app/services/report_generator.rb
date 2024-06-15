@@ -420,7 +420,6 @@ class ReportGenerator
     # users = User.where(created_at: start_date..end_date)
     users = get_new_users(start_date, end_date)
 
-    # Breakdown by year of study, gender. We don't track age?
     # Breakdown by faculty, department (for engineering/non-engineer %), Study level
 
     spreadsheet = Axlsx::Package.new
@@ -430,7 +429,7 @@ class ReportGenerator
       .add_worksheet(name: "Demographics") do |sheet|
         header(sheet, "New Users Breakdown", start_date, end_date)
 
-        sheet.add_row ["Total", users.count]
+        sheet.add_row ["Total new users", users.count]
         sheet.add_row
 
         title(sheet, "Year of Study")
@@ -462,12 +461,15 @@ class ReportGenerator
       .add_worksheet(name: "Faculties") do |sheet|
         header(sheet, "Users by Faculty, Department", start_date, end_date)
 
+        merge_cell = sheet.styles.add_style alignment: { vertical: :center }
+
         # By Study level
         # Engineering/non-engineering
 
         # By faculty
         # HACK you should merge génie with engineering instead?
         title(sheet, "By Faculty")
+        table_header(sheet, ["Faculty", "New Users"])
         push_hash(
           sheet,
           users
@@ -478,18 +480,33 @@ class ReportGenerator
         sheet.add_row ["Total", users.count]
         sheet.add_row
 
-        # program summaries
+        # program summaries as a cross table
         # Count who's in engineering, who's not
         # Count who's in Masters, phd, etc.
         # HACK this is literally just a regex count.
         # Try to categorize programs into a relational database
         # Because I don't believe this is totally accurate
-        programs = users.group(:program).count
-        # title(sheet, "Program summaries")
-        # push_hash(sheet, programs)
+        title(sheet, "By Department")
+        table_header(sheet, ["Department", "New Users", "", "Level"])
+        users
+          .group_by { |x| get_program_department(x.program) }
+          .each do |program, counts|
+            start_cell = sheet.rows.last.cells.first.pos # for merging
+            counts
+              .group_by { |x| get_study_level(x.program) }
+              .each do |level, counts|
+                sheet.add_row [program, counts.count, "", level],
+                              style: merge_cell
+              end
+            end_cell = sheet.rows.last.cells.first.pos
+            sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
+                                ":" + Axlsx.cell_r(end_cell[0], end_cell[1])
+          end
+
         sheet.add_row
 
         # By program
+        programs = users.group(:program).count
         title(sheet, "By program")
         push_hash(
           sheet,
@@ -497,6 +514,8 @@ class ReportGenerator
             .transform_keys { |k| k == "" ? "Blank - No Program" : k }
             .sort_by { |_k, v| [-v] }
         )
+
+        sheet.column_widths 55
       end
 
     spreadsheet
@@ -1451,9 +1470,11 @@ class ReportGenerator
   def self.get_program_department(program)
     # HACK Department list, this is hardcoded because we have no
     # structured way to describe them
-    %w[Mechanical Electrical Chemical Civil Software Computer].detect do |x|
-      program&.include? "Engineering" and program&.include? x
-    end or "Non-Engineering"
+    /(Mechanical|Electrical|Chemical|Civil|Software|Computer) Engineering/
+      .match(program)
+      &.captures
+      &.first or (program.include? "Computer Science" and "Computer Science") or # Engineering category # CompSci Category
+      "Non Engineering"
   end
 
   def self.get_study_level(program)
