@@ -90,7 +90,9 @@ class ReportGenerator
 
           # sort by faculty
           space_visits
-            .group_by { |d| d.faculty }
+            .group_by do |d|
+              d.faculty == "Génie" ? "Engineering" : d.faculty
+            end # Merge french
             .each do |faculty, counts|
               sheet.add_row [
                               faculty == "" ? "None" : faculty,
@@ -114,7 +116,9 @@ class ReportGenerator
             .each do |iden, rest|
               start_cell = sheet.rows.last.cells.first.pos # for merging
               rest
-                .group_by { |y| y.faculty }
+                .group_by do |y|
+                  y.faculty == "Génie" ? "Engineering" : y.faculty
+                end # Merge french
                 .each do |faculty, counts|
                   sheet.add_row [
                                   iden.humanize,
@@ -1419,21 +1423,34 @@ class ReportGenerator
   def self.get_program_department(program)
     # HACK Department list, this is hardcoded because we have no
     # structured way to describe them
-    /(Mechanical|Electrical|Chemical|Civil|Software|Computer) Engineering/
-      .match(program)
-      &.captures
-      &.first or
-      (program&.include? "Computer Science" and "Computer Science") or # Engineering category # CompSci Category
-      "Non Engineering"
+    # Chemical/Bio, Civil, Mech, Elec, Innovation?
+    case program
+    when /Mechanical/
+      "Mechanical"
+    when /(Electrical|Computer|Software) Engineering/
+      "EECS"
+    when /Civil/
+      "Civil"
+    when /Chemical|Biotechnology|Biomedical/
+      "Chemical & Biological"
+    else
+      "Other Departments"
+    end
+    # /(Mechanical|Electrical|Chemical|Civil|Software|Computer) Engineering/
+    #   .match(program)
+    #   &.captures
+    #   &.first or
+    #   (program&.include? "Computer Science" and "Computer Science") or # Engineering category # CompSci Category
+    #   "Non Engineering"
   end
 
   def self.get_study_level(program)
     if program =~ /BASc|(?<!M)BA|BSc|Bachel|BSocSc/
       "Bachelors"
-    elsif program =~ /Master/
+    elsif program =~ /Mast/
       "Masters"
     elsif program =~ /PhD|Doctor/
-      "PhD"
+      "Doctorate"
     else
       "None"
     end
