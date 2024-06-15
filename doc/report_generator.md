@@ -3,3 +3,7 @@ Report Generator Controller creates the html view with charts and all, and is re
 Note that they both use different methods to fetch their data, and I hope to make the html version fetch everything from the service. This is the main reason why we're getting inaccurate reports. Passing dates as strings, subtle join/left_joins omitting results, even pluck/select gives different results sometimes.
 
 Try not to hard code or assume anything, since literally any changes to schema or adding/removing new data might break the report generator.
+
+look at https://api.rubyonrails.org/classes/ActiveRecord/QueryMethods.html
+
+lab_sessions tracks visits and taps on each card reader

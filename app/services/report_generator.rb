@@ -81,6 +81,7 @@ class ReportGenerator
           title(sheet, "Gender")
           space_visits
             .group_by { |x| x["gender"] }
+            .sort
             .each { |gender, counts| sheet.add_row [gender, counts.uniq.count] }
 
           sheet.add_row # spacing
@@ -154,7 +155,7 @@ class ReportGenerator
                                   program,
                                   counts.uniq.count,
                                   "",
-                                  counts.uniq.count,
+                                  counts.count,
                                   "",
                                   level
                                 ],
@@ -453,6 +454,7 @@ class ReportGenerator
         users
           .group(:gender)
           .count
+          .sort
           .each { |key, value| sheet.add_row [key, value] }
       end
 
@@ -1089,60 +1091,7 @@ class ReportGenerator
 
   # @param [DateTime] start_date
   # @param [DateTime] end_date
-  def self.get_visitors_by_program(start_date, end_date)
-    # select users.program, spaces.name, count(distinct user_id), count(user_id) from lab_sessions
-    # join users on users.id=lab_sessions.user_id
-    # where lab_sessions.created_at between '2024-01-01' and '2024-04-30'
-    # group by lab_sessions.space_id, users.program;
-
-    ls = LabSession.arel_table
-    users = User.arel_table
-    spaces = Space.arel_table
-
-    ActiveRecord::Base.connection.exec_query(
-      LabSession
-        .select(
-          [
-            users[:program],
-            spaces[:name],
-            users[:id].count(true).as("distinct_count"),
-            users[:id].count.as("visitor_count")
-          ]
-        )
-        .joins(ls.join(users).on(ls[:user_id].eq(users[:id])).join_sources)
-        .joins(ls.join(spaces).on(ls[:space_id].eq(spaces[:id])).join_sources)
-        .where(ls[:created_at].between(start_date..end_date))
-        .group(users[:program], spaces[:name])
-        .to_sql
-    )
-  end
-
-  # This only returns total counts per space
-  # NOT per program, that's a separate query
-  def self.get_visitors_per_space(start_date, end_date)
-    ls = LabSession.arel_table
-    users = User.arel_table
-    spaces = Space.arel_table
-
-    ActiveRecord::Base.connection.exec_query(
-      LabSession
-        .select(
-          [
-            ls["user_id"].count.as("visitor_count"),
-            ls["user_id"].count(:distinct).as("distinct_count"),
-            spaces["name"].as("space_name")
-          ]
-        )
-        .joins(ls.join(spaces).on(ls[:space_id].eq(spaces[:id])).join_sources)
-        .where(ls[:created_at].between(start_date..end_date))
-        .group(spaces[:name])
-        .to_sql
-    )
-  end
-
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
-  def self.get_visitors(start_date, end_date)
+  def self.get_visitors(start_date, end_date) # NOTE This duplicates counts
     g = Arel::Table.new("g")
     ls = LabSession.arel_table
     u = User.arel_table
@@ -1473,7 +1422,8 @@ class ReportGenerator
     /(Mechanical|Electrical|Chemical|Civil|Software|Computer) Engineering/
       .match(program)
       &.captures
-      &.first or (program.include? "Computer Science" and "Computer Science") or # Engineering category # CompSci Category
+      &.first or
+      (program&.include? "Computer Science" and "Computer Science") or # Engineering category # CompSci Category
       "Non Engineering"
   end
 

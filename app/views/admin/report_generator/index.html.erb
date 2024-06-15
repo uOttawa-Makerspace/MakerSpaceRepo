@@ -7,7 +7,7 @@
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
-          <%= radio_button_tag(:range_type, :semester, params[:range_type] == 'semester', class: 'form-check-input', id: 'semester_radio') %>
+          <%= radio_button_tag(:range_type, :semester, (params[:range_type] == 'semester') || params[:range_type].nil?, class: 'form-check-input', id: 'semester_radio') %>
           <%= label_tag(:range_type_semester, 'Semester', class: 'form-check-label') %>
         </div>
       </div>
