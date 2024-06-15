@@ -59,6 +59,8 @@ class Admin::ShiftsController < AdminAreaController
         }
       end
     end
+
+    @colors.sort_by! { |color| color[:name].downcase }
   end
 
   def pending_shifts
