@@ -36,6 +36,11 @@ class ReportGenerator
         .workbook
         .add_worksheet(name: space_name) do |sheet|
           merge_cell = sheet.styles.add_style alignment: { vertical: :center }
+          grey_cell =
+            sheet.styles.add_style bg_color: "dddddd",
+                                   alignment: {
+                                     vertical: :center
+                                   }
 
           header(sheet, "Visitors", start_date, end_date)
           space_visits =
@@ -110,7 +115,12 @@ class ReportGenerator
             ["Identity", "Distinct Users", "", "Total Visits", "", "Faculty"]
           )
           merge_cell = sheet.styles.add_style alignment: { vertical: :center }
-
+          grey_cell =
+            sheet.styles.add_style bg_color: "dddddd",
+                                   alignment: {
+                                     vertical: :center
+                                   }
+          toggle_grey = true
           space_visits
             .group_by { |x| x.identity }
             .each do |iden, rest|
@@ -128,11 +138,12 @@ class ReportGenerator
                                   "",
                                   faculty == "" ? "None" : faculty
                                 ],
-                                style: merge_cell
+                                style: toggle_grey ? grey_cell : merge_cell
                 end
               end_cell = sheet.rows.last.cells.first.pos
               sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
                                   ":" + Axlsx.cell_r(end_cell[0], end_cell[1])
+              toggle_grey = !toggle_grey
             end
 
           # FIXME test if sorting by users.faculty gives different count than
@@ -163,11 +174,12 @@ class ReportGenerator
                                   "",
                                   level
                                 ],
-                                style: merge_cell
+                                style: toggle_grey ? grey_cell : merge_cell
                 end
               end_cell = sheet.rows.last.cells.first.pos
               sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
                                   ":" + Axlsx.cell_r(end_cell[0], end_cell[1])
+              toggle_grey = !toggle_grey
             end
         end
     end
@@ -468,6 +480,11 @@ class ReportGenerator
         header(sheet, "Users by Faculty, Department", start_date, end_date)
 
         merge_cell = sheet.styles.add_style alignment: { vertical: :center }
+        grey_cell =
+          sheet.styles.add_style bg_color: "dddddd",
+                                 alignment: {
+                                   vertical: :center
+                                 }
 
         # By Study level
         # Engineering/non-engineering
@@ -481,7 +498,13 @@ class ReportGenerator
           users
             .group(:faculty)
             .count
-            .transform_keys { |k| k == "" ? "None" : k }
+            .transform_keys do |k|
+              if k == ""
+                "None"
+              elsif k == "Génie"
+                "Engineering"
+              end
+            end
         )
         sheet.add_row ["Total", users.count]
         sheet.add_row
@@ -494,6 +517,7 @@ class ReportGenerator
         # Because I don't believe this is totally accurate
         title(sheet, "By Department")
         table_header(sheet, ["Department", "New Users", "", "Level"])
+        toggle_grey = true
         users
           .group_by { |x| get_program_department(x.program) }
           .each do |program, counts|
@@ -502,8 +526,9 @@ class ReportGenerator
               .group_by { |x| get_study_level(x.program) }
               .each do |level, counts|
                 sheet.add_row [program, counts.count, "", level],
-                              style: merge_cell
+                              style: toggle_grey ? grey_cell : merge_cell
               end
+            toggle_grey = !toggle_grey
             end_cell = sheet.rows.last.cells.first.pos
             sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
                                 ":" + Axlsx.cell_r(end_cell[0], end_cell[1])
@@ -616,8 +641,6 @@ class ReportGenerator
     spreadsheet
   end
 
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
   def self.generate_training_attendees_report(start_date, end_date)
     certifications =
       Certification
@@ -751,8 +774,6 @@ class ReportGenerator
     spreadsheet
   end
 
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
   def self.generate_new_projects_report(start_date, end_date)
     # aggregate_data = get_new_projects(start_date, end_date)
 
@@ -858,7 +879,6 @@ class ReportGenerator
     spreadsheet
   end
 
-  # @param [Integer] id
   def self.generate_training_session_report(id)
     session =
       TrainingSession.includes(:user, :users, :space, :training).find(id)
@@ -889,7 +909,6 @@ class ReportGenerator
     spreadsheet
   end
 
-  # @param [Integer] id
   def self.generate_space_present_users_report(id)
     lab_sessions =
       LabSession
@@ -920,8 +939,6 @@ class ReportGenerator
     spreadsheet
   end
 
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
   def self.generate_peak_hours_report(start_date, end_date)
     ls = LabSession.arel_table
 
@@ -1006,8 +1023,6 @@ class ReportGenerator
     spreadsheet
   end
 
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
   def self.generate_kit_purchased_report(start_date, end_date)
     kits = ProjectKit.where("created_at" => start_date..end_date)
 
@@ -1038,12 +1053,6 @@ class ReportGenerator
     spreadsheet
   end
 
-  # endregion
-
-  # region Database helpers
-
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
   def self.get_new_projects(start_date, end_date)
     # Essentially a copy of html report as xlsx
     # Breakdown of projects by month
@@ -1062,16 +1071,13 @@ class ReportGenerator
       Repository
         .select(
           [
-            # repos["created_at"].as("created"),
             repos["id"],
             "to_char(repositories.created_at, 'MM') as created_month", # NOTE: postgresql specific hack to get month, year
             "to_char(repositories.created_at, 'YYYY') as created_year",
             repos["license"],
-            # repos["license"].count().as("license_count"),
             repos["share_type"],
             categories["name"],
             equips["name"]
-            # Arel.star.count
           ]
         )
         .joins(
@@ -1088,13 +1094,9 @@ class ReportGenerator
         )
         .where(repos["created_at"].between(start_date..end_date))
         .to_sql
-      # .group(repos["share_type"], repos["license"], categories["name"],
-      #       equips["name"], "created_month", "created_year")
     )
   end
 
-  # @param [DateTime] start_date
-  # @param [DateTime] end_date
   def self.get_visitors(start_date, end_date) # NOTE This duplicates counts
     g = Arel::Table.new("g")
     ls = LabSession.arel_table
@@ -1144,7 +1146,6 @@ class ReportGenerator
           .to_sql
       )
 
-    # shove everything into a hash
     organized = {
       unique: 0,
       total: 0,
@@ -1172,6 +1173,43 @@ class ReportGenerator
         when "faculty_member"
           "Faculty Member"
         when "community_member"
+          # @param [DateTime] start_date
+          # @param [DateTime] end_date
+
+          # @param [DateTime] start_date
+          # @param [DateTime] end_date
+
+          # @param [Integer] id
+
+          # @param [Integer] id
+
+          # @param [DateTime] start_date
+          # @param [DateTime] end_date
+
+          # @param [DateTime] start_date
+          # @param [DateTime] end_date
+
+          # endregion
+
+          # region Database helpers
+
+          # @param [DateTime] start_date
+          # @param [DateTime] end_date
+
+          # repos["created_at"].as("created"),
+
+          # repos["license"].count().as("license_count"),
+
+          # Arel.star.count
+
+          # .group(repos["share_type"], repos["license"], categories["name"],
+          #       equips["name"], "created_month", "created_year")
+
+          # @param [DateTime] start_date
+          # @param [DateTime] end_date
+
+          # shove everything into a hash
+
           "Community Member"
         else
           "Unknown"
