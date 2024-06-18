@@ -17,6 +17,18 @@ class Admin::ReportGeneratorController < AdminAreaController
       ["Popular Hours", :popular_hours]
     ]
 
+    @report_parameter = %w[
+      certifications
+      new_projects
+      new_users
+      trainings
+      training_attendees
+      visitors
+      visits_by_hour
+      kit_purchased
+      popular_hours
+    ]
+
     if params[:report_type].present?
       set_date_specified
 
@@ -46,6 +58,8 @@ class Admin::ReportGeneratorController < AdminAreaController
     end
   end
 
+  # generate report as an html graph
+  # This is a button on the page btw
   def generate
     range_type = params[:range_type]
     term = params[:term]
@@ -112,11 +126,16 @@ class Admin::ReportGeneratorController < AdminAreaController
       return
     end
 
+    # reload page but with GET params
+    # the index template renders parameters if present
     redirect_to admin_report_generator_index_path(
                   start_date: start_date,
                   end_date: end_date,
                   report_type: type,
-                  anchor: "report"
+                  anchor: "report",
+                  range_type: range_type, # save selection params
+                  term: term, # Semester params
+                  year: year
                 ),
                 notice: "Successfully generated #{type.gsub("_", " ")} report"
   end
@@ -181,6 +200,9 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   private
 
+  # Each function below corresponds to a report type
+  # We collect the data in the controller
+
   def set_date_specified
     @date_specified = params[:start_date].present? && params[:end_date].present?
   end
@@ -189,7 +211,12 @@ class Admin::ReportGeneratorController < AdminAreaController
     @users =
       (
         if @date_specified
-          User.where(created_at: params[:start_date]..params[:end_date])
+          # params gives everything as space
+          # passing this as a string CHANGES the result
+          ReportGenerator.get_new_users(
+            params[:start_date].to_date,
+            params[:end_date].to_date
+          )
         else
           User.all
         end
@@ -207,6 +234,11 @@ class Admin::ReportGeneratorController < AdminAreaController
           Certification.all
         end
       )
+        .includes(:badges)
+        .includes(badges: :badge_template)
+        .includes(:space)
+        .includes(training_session: %i[course_name training])
+        .includes(training: [:skill])
     @space_count = Hash.new
     @space_count["unknown"] = 0
 
@@ -219,8 +251,11 @@ class Admin::ReportGeneratorController < AdminAreaController
 
     @training_count = Hash.new
 
+    # For each certification in our database
     @certs.each do |cert|
       if cert.space.present?
+        # Go through each cert, count number of distinct certifying spaces
+        # Because CEED has a bunch of spaces that aren't what we want
         if !@space_count.has_key?(cert.space.name)
           @space_count[cert.space.name] = 1
         else
@@ -230,18 +265,22 @@ class Admin::ReportGeneratorController < AdminAreaController
         @space_count["unknown"] += 1
       end
 
+      # get said cert's training session
       if cert.training_session.present? &&
            cert.training_session.course_name.present?
         course_name = cert.training_session.course_name.name
+        # count certifying courses too
         if !@course_count.has_key?(course_name)
           @course_count[course_name] = 1
         else
           @course_count[course_name] += 1
         end
       else
+        # some don't have courses (open to public)
         @course_count["unknown"] += 1
       end
 
+      # Count by skill and name
       skill_name = cert.training.skill.name
       if !@skill_count.has_key?(skill_name)
         @skill_count[skill_name] = 1
@@ -249,6 +288,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         @skill_count[skill_name] += 1
       end
 
+      # get cert training topic (?)
       training_name = cert.training.name
       if !@training_count.has_key?(training_name)
         @training_count[training_name] = 1
@@ -256,6 +296,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         @training_count[training_name] += 1
       end
 
+      # number of badges handed out
       cert.badges.each do |badge|
         badge_name = badge.badge_template.badge_name
         if !@badge_count.has_key?(badge_name)
@@ -277,7 +318,8 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           TrainingSession.all
         end
-      )
+      ).includes(:training, :space, :user)
+
     @training_sessions = @training_sessions.unscope(:order)
 
     @space_count = Hash.new
@@ -349,7 +391,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           LabSession.all
         end
-      )
+      ).includes(:user)
 
     @space_total_count = Hash.new
     @space_unique_count = Hash.new
@@ -420,6 +462,8 @@ class Admin::ReportGeneratorController < AdminAreaController
           end
         end
       end
+    @identity_total_count = @identity_total_count.transform_keys &:humanize
+    @identity_unique_count = @identity_unique_count.transform_keys &:humanize
   end
 
   def visits_by_hour
@@ -483,8 +527,8 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           TrainingSession.all
         end
-      )
-    @spaces = Space.order(name: :asc)
+      ).includes(:users, :user, :trainings)
+    @spaces = Space.order(name: :asc).includes(:certifications)
 
     total_certs = Hash.new
     total_sessions = Hash.new

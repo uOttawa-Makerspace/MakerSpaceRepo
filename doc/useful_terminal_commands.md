@@ -31,6 +31,8 @@ ssh deploy@wiki-server.makerepo.com
 rails c -e development
 ```
 
+If the console exits after each exception, try doing `$SAFE=0` first
+
 5. Launch Rails Console (Staging/Production Environment)
 
 - **Note**: It is a good idea to create a [manual database backup](#create-a-database-backup) if you are using the console to create, modify, or delete data in the production environment
