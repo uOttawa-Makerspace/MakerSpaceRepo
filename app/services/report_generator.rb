@@ -65,6 +65,8 @@ class ReportGenerator
               .each do |space, counts|
                 sheet.add_row [space, counts.uniq.count, "", counts.count]
               end
+          else
+            title(sheet, "Report for #{space_name}")
           end
 
           sheet.add_row # spacing
@@ -83,7 +85,7 @@ class ReportGenerator
           sheet.add_row # spacing
 
           # sort by gender
-          title(sheet, "Gender")
+          table_header(sheet, %w[Gender Count])
           space_visits
             .group_by { |x| x["gender"] }
             .sort
@@ -1425,17 +1427,19 @@ class ReportGenerator
   # endregion
 
   # region Axlsx helpers
-  # FIXME: make this nicer, add more styling
   # @param [Axlsx::Worksheet] worksheet
   # @param [String] title
   def self.title(worksheet, title)
-    worksheet.add_row [title], b: true, u: true
+    worksheet.add_row [title, ""], b: true, u: true
   end
 
   # @param [Axlsx::Worksheet] worksheet
   # @param [Array<String>] headers
   def self.table_header(worksheet, headers)
-    worksheet.add_row headers, b: true
+    header_row = worksheet.add_row headers, b: true
+    worksheet.add_border header_row.cells.first.reference + ":" +
+                           header_row.cells.last.reference,
+                         { style: :thick, color: "00000000", edges: [:bottom] }
   end
 
   # @param [Axlsx::Worksheet] worksheet
@@ -1443,9 +1447,11 @@ class ReportGenerator
   # @param [DateTime] start_date
   # @param [DateTime] end_date
   def self.header(worksheet, title, start_date, end_date)
-    self.title(worksheet, title)
+    top_row = self.title(worksheet, title)
     worksheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
-    worksheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+    bottom_row = worksheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
+    worksheet.add_border top_row.cells.first.reference + ":" +
+                           bottom_row.cells.last.reference
     worksheet.add_row # spacing
   end
 
