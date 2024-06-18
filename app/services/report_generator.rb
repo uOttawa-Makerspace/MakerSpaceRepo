@@ -55,16 +55,8 @@ class ReportGenerator
           # Visits by space, special case if overview
           if space_name == "Report"
             title(sheet, "Overview")
-            table_header(
-              sheet,
-              ["Space", "Distinct Users per space", "", "Total Visits to space"]
-            )
-
-            space_visits
-              .group_by { |d| d.name }
-              .each do |space, counts|
-                sheet.add_row [space, counts.uniq.count, "", counts.count]
-              end
+            sheet.add_row ["CEED-Wide unique visitors", all_visits.uniq.count]
+            sheet.add_row ["CEED-Wide total visitors", all_visits.count]
           else
             title(sheet, "Report for #{space_name}")
           end
@@ -1472,6 +1464,8 @@ class ReportGenerator
     when /Mechanical/
       "Mechanical"
     when /(Electrical|Computer|Software) Engineering/
+      "EECS"
+    when /Computer Science/
       "EECS"
     when /Civil/
       "Civil"
