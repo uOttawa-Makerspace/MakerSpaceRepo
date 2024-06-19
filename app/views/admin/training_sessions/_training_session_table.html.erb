@@ -35,7 +35,7 @@
     <!-- Trainer Search -->
     <div class="col-md-2">
       <%= label_tag :trainers, "Trainers:", class: "form-label" %>
-      <%= select_tag :trainers, options_from_collection_for_select(@trainers, :id, :name, params[:trainers]), { multiple: true, id: "trainers", class: "form-select" } %>
+      <%= select_tag :trainers, options_from_collection_for_select(@trainers, :id, :name, params[:trainers]), { id: "trainers", class: "form-select" } %>
     </div>
 
 
