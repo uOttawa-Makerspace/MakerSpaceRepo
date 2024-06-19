@@ -374,6 +374,16 @@ Rails.application.routes.draw do
                as: :remove_member
       end
     end
+
+    # not a resource, just a service???
+    namespace :programs do
+      get '/', as: 'index', action: 'index'
+      get '/current_programs',
+          as: 'current_programs',
+          action: 'current_programs',
+          format: :csv
+      post 'import_programs'
+    end
   end
 
   resources :key_requests, only: %i[index new create show] do

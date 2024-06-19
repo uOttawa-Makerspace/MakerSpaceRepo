@@ -1,0 +1,50 @@
+<div class="text-center">
+  <br />
+  <h2 class="fw-bold">Programs</h2>
+  <%= link_to 'Download University Programs', admin_programs_current_programs_path, class: 'btn btn-primary m-5' %>
+  <div class="row">
+    <%= form_tag admin_programs_import_programs_path, method: :post, multipart: true, class: 'w-100' do %>
+    <p>Upload CSV file to replace programs table</p>
+    <div class="input-group mb-3">
+      <%= file_field_tag :file, style: 'display: inline;', class: 'form-control', id: 'excel-input', accept: 'text/csv' %>
+      <%= submit_tag 'Import File', class: 'btn btn-primary' %>
+    </div>
+    <% end %>
+  </div>
+
+  <% @uni_programs.each do |faculty, rest| %>
+  <div class="mb-5 accordion">
+    <div class="card">
+      <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= faculty %>" aria-expanded="true">
+        <h2 class="mb-0 text-center">
+          <button class="btn btn-link" type="button">
+            <%= faculty %> - num progs
+          </button>
+        </h2>
+      </div>
+      <div id="accordion-<%= faculty %>" class="collapse" aria-labelledby="<%= faculty %>">
+
+        <table class="mb-5 table table-striped text-center">
+          <thead>
+            <th>Program</th>
+            <th>Department</th>
+            <th>Level</th>
+          </thead>
+
+          <% rest.each do |program|%>
+            <tr>
+              <td><%= program[0] %></td>
+              <td><%= program[3] %></td>
+              <td><%= program[1] %></td>
+            </tr>
+          <% end %>
+        </table>
+
+        <p>what</p>
+
+      </div>
+    </div>
+  </div>
+  <% end %>
+
+</div>
