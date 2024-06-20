@@ -121,7 +121,14 @@ class User < ApplicationRecord
 
   validates :faculty, presence: true, if: :student?
 
-  validates :program, presence: true, if: :student?
+  validates :program,
+            presence: true,
+            if: :student?,
+            inclusion: {
+              in: ProgramList.faculty_list
+            }
+
+  before_validation :program
 
   validates :year_of_study, presence: true, if: :student?
 
