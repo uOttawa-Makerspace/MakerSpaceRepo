@@ -31,6 +31,37 @@ document.addEventListener("turbo:load", function () {
       searchOnKeyUp: true,
     });
   }
+  // Disable all program options by default
+  // this is a non-live NodeList, we store it for later use
+  const optgroups = Array.from(programSelect.querySelectorAll("optgroup"));
+  for (let i = 0; i < optgroups.length; i++) {
+    //optgroups[i].setAttribute("disabled", "")
+  }
+  programSelect.tomselect.clear();
+  programSelect.tomselect.sync();
+
+  const facultySelect = document.getElementById("user_faculty");
+  if (facultySelect) {
+    facultySelect.addEventListener("change", function () {
+      programSelect.tomselect.clear(); // Clear chosen program
+      // Remove all possible options
+      let removeGroups = programSelect.getElementsByTagName("optgroup");
+      while (removeGroups[0]) {
+        // Live NodeList
+        removeGroups[0].remove();
+      }
+      // Add allowed programs
+      let target_label = facultySelect.value;
+      for (let i = 0; i < optgroups.length; i++) {
+        let option = optgroups[i];
+        if (option.getAttribute("label") == target_label)
+          programSelect.appendChild(option);
+      }
+
+      programSelect.tomselect.clearOptions(); // Clear chosen program
+      programSelect.tomselect.sync();
+    });
+  }
 
   const staffRoleButtons = document.querySelectorAll(".role-button");
   const staffSpaceChanger = document.getElementById("staff-space-changer");
