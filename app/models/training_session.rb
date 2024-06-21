@@ -47,9 +47,9 @@ class TrainingSession < ApplicationRecord
 
   scope :by_training, ->(training_id) { where(training_id: training_id) }
 
-  scope :by_trainers, -> (trainer_ids) { where(user_id: trainer_ids) }
+  scope :by_trainers, -> (trainer_id) { where(user_id: trainer_id) }
 
-  scope :by_course, ->(course) { where("training_sessions.course LIKE ?", "%#{course}%") }
+  scope :by_course, ->(course) { where(course_names: course) }
 
   scope :by_status, ->(status) {
     case status
