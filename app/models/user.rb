@@ -119,16 +119,18 @@ class User < ApplicationRecord
               ]
             }
 
-  validates :faculty, presence: true, if: :student?
-
-  validates :program,
+  validates :faculty,
             presence: true,
             if: :student?,
             inclusion: {
               in: ProgramList.faculty_list
             }
 
-  before_validation :program
+  before_validation do |user|
+    user.faculty = ProgramList.faculty_fr_to_en(faculty) || faculty
+  end
+
+  validates :program, presence: true, if: :student?
 
   validates :year_of_study, presence: true, if: :student?
 

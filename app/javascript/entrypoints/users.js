@@ -43,13 +43,10 @@ document.addEventListener("turbo:load", function () {
   const facultySelect = document.getElementById("user_faculty");
   if (facultySelect) {
     facultySelect.addEventListener("change", function () {
+      // https://tom-select.js.org/docs/api/
       programSelect.tomselect.clear(); // Clear chosen program
-      // Remove all possible options
-      let removeGroups = programSelect.getElementsByTagName("optgroup");
-      while (removeGroups[0]) {
-        // Live NodeList
-        removeGroups[0].remove();
-      }
+      programSelect.tomselect.clearOptions(); // Clear chosen program
+      programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
       // Add allowed programs
       let target_label = facultySelect.value;
       for (let i = 0; i < optgroups.length; i++) {
@@ -58,7 +55,6 @@ document.addEventListener("turbo:load", function () {
           programSelect.appendChild(option);
       }
 
-      programSelect.tomselect.clearOptions(); // Clear chosen program
       programSelect.tomselect.sync();
     });
   }
