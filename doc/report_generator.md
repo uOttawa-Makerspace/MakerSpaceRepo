@@ -7,3 +7,5 @@ Try not to hard code or assume anything, since literally any changes to schema o
 look at https://api.rubyonrails.org/classes/ActiveRecord/QueryMethods.html
 
 lab_sessions tracks visits and taps on each card reader
+
+All programs and faculties are stored as strings, the only authority is the CSV located in `/lib/assets/programs.csv`.

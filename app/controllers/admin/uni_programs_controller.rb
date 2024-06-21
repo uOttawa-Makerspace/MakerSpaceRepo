@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Admin::ProgramsController < AdminAreaController
+class Admin::UniProgramsController < AdminAreaController
   @cached_programs = nil
 
   def index

@@ -376,13 +376,13 @@ Rails.application.routes.draw do
     end
 
     # not a resource, just a service???
-    namespace :programs do
-      get '/', as: 'index', action: 'index'
-      get '/current_programs',
-          as: 'current_programs',
-          action: 'current_programs',
+    namespace :uni_programs do
+      get "/", as: "index", action: "index"
+      get "/current_programs",
+          as: "current_programs",
+          action: "current_programs",
           format: :csv
-      post 'import_programs'
+      post "import_programs"
     end
   end
 
