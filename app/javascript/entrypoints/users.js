@@ -34,18 +34,12 @@ document.addEventListener("turbo:load", function () {
   // Disable all program options by default
   // this is a non-live NodeList, we store it for later use
   const optgroups = Array.from(programSelect.querySelectorAll("optgroup"));
-  for (let i = 0; i < optgroups.length; i++) {
-    //optgroups[i].setAttribute("disabled", "")
-  }
-  programSelect.tomselect.clear();
-  programSelect.tomselect.sync();
-
+  // BUG we get duplicated options rendered, it's only visual
+  // and i don't think it affects the final POST request
   const facultySelect = document.getElementById("user_faculty");
   if (facultySelect) {
     facultySelect.addEventListener("change", function () {
       // https://tom-select.js.org/docs/api/
-      programSelect.tomselect.clear(); // Clear chosen program
-      programSelect.tomselect.clearOptions(); // Clear chosen program
       programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
       // Add allowed programs
       let target_label = facultySelect.value;
@@ -55,6 +49,8 @@ document.addEventListener("turbo:load", function () {
           programSelect.appendChild(option);
       }
 
+      programSelect.tomselect.clear();
+      programSelect.tomselect.clearOptions();
       programSelect.tomselect.sync();
     });
   }

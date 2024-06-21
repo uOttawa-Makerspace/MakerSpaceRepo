@@ -11,20 +11,20 @@ class ProgramList
   end
 
   def self.faculty_fr_to_en(faculty)
-    {
-      Arts: "Arts",
-      "Éducation": "Education",
-      "Génie": "Engineering",
-      "Sciences de la santé": "Health Sciences",
-      "Droit civil": "Civil Law",
-      "Droit commun": "Common Law",
-      "Médecine": "Medicine",
-      Sciences: "Science",
-      "Sciences sociales": "Social Sciences",
-      "École de gestion Telfer": "Telfer School of Management"
-    }[
-      faculty
-    ]
+    translation = {
+      "Arts" => "Arts",
+      "Éducation" => "Education",
+      "Génie" => "Engineering",
+      "Sciences de la santé" => "Health Sciences",
+      "Droit civil" => "Civil Law",
+      "Droit commun" => "Common Law",
+      "Droit" => "Law",
+      "Médecine" => "Medicine",
+      "Sciences" => "Science",
+      "Sciences sociales" => "Social Sciences",
+      "École de gestion Telfer" => "Telfer School of Management"
+    }
+    translation[faculty]
   end
 
   def self.faculty_list

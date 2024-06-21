@@ -127,14 +127,14 @@ Honours Bachelor of Science in Nursing (Coming Soon),Bachelor's,Health Sciences,
 Honours Bachelor of Science in Nutrition and Dietetics,Bachelor's,Health Sciences,Non-Engineering
 Honours BSc Human Kinetics,Bachelor's,Health Sciences,Non-Engineering
 Honours BSc Human Kinetics - Applied Studies in Kinesiology,Bachelor's,Health Sciences,Non-Engineering
-Honours Bachelor of Commerce and Juris Doctor,Bachelor's,Civil Law,Non-Engineering
-Honours BSocSc Political Science and Juris Doctor (JD),Bachelor's,Civil Law,Non-Engineering
-Juris Doctor (JD),Bachelor's,Civil Law,Non-Engineering
-Juris Doctor (JD) / American University Washington College of Law or Michigan State University College of Law) - Incoming,Bachelor's,Civil Law,Non-Engineering
-Juris Doctor (JD) / American University Washington College of Law or Michigan State University College of Law) - Outgoing,Bachelor's,Civil Law,Non-Engineering
-Licentiate in Law (LLL) and Honours BSocSc in International Development and Globalization,Bachelor's,Civil Law,Non-Engineering
-National Program (JD),Bachelor's,Civil Law,Non-Engineering
-National Program (LL.L.),Bachelor's,Civil Law,Non-Engineering
+Honours Bachelor of Commerce and Juris Doctor,Bachelor's,Law,Non-Engineering
+Honours BSocSc Political Science and Juris Doctor (JD),Bachelor's,Law,Non-Engineering
+Juris Doctor (JD),Bachelor's,Law,Non-Engineering
+Juris Doctor (JD) / American University Washington College of Law or Michigan State University College of Law) - Incoming,Bachelor's,Law,Non-Engineering
+Juris Doctor (JD) / American University Washington College of Law or Michigan State University College of Law) - Outgoing,Bachelor's,Law,Non-Engineering
+Licentiate in Law (LLL) and Honours BSocSc in International Development and Globalization,Bachelor's,Law,Non-Engineering
+National Program (JD),Bachelor's,Law,Non-Engineering
+National Program (LL.L.),Bachelor's,Law,Non-Engineering
 Honours Bachelor of Commerce (Option in Accounting),Bachelor's,Telfer School of Management,Non-Engineering
 Honours Bachelor of Commerce (Option in Accounting) (Complementary Option in Business Analytics),Bachelor's,Telfer School of Management,Non-Engineering
 Honours Bachelor of Commerce (Option in Accounting) (Complementary Option in Entrepreneurship),Bachelor's,Telfer School of Management,Non-Engineering
@@ -278,8 +278,8 @@ Certificate Professional Writing,Certificate,Arts,Non-Engineering
 Certificate translation English-French (Online),Certificate,Arts,Non-Engineering
 Certificat/Baccalauréat en éducation - Éducation technologique,Certificate,Education,Non-Engineering
 Indigenous Teacher Education Program - Certificate/BEd (Primary/Junior division),Certificate,Education,Non-Engineering
-Certificate Indigenous Laws,Certificate,Civil Law,Non-Engineering
-Certificate Law,Certificate,Civil Law,Non-Engineering
+Certificate Indigenous Laws,Certificate,Law,Non-Engineering
+Certificate Law,Certificate,Law,Non-Engineering
 Certificate Human Resource Management,Certificate,Telfer School of Management,Non-Engineering
 Certificate Management,Certificate,Telfer School of Management,Non-Engineering
 Certificate Political Science,Certificate,Social Sciences,Non-Engineering
@@ -323,7 +323,7 @@ Doctorate in Philosophy Nursing,Doctorate,Health Sciences,Non-Engineering
 Doctorate in Philosophy Nursing - Distance Option,Doctorate,Health Sciences,Non-Engineering
 Doctorate in Philosophy Population Health,Doctorate,Health Sciences,Non-Engineering
 Doctorate in Philosophy Rehabilitation Sciences,Doctorate,Health Sciences,Non-Engineering
-Doctorate in Philosophy Law,Doctorate,Civil Law,Non-Engineering
+Doctorate in Philosophy Law,Doctorate,Law,Non-Engineering
 Doctorate in Philosophy Management,Doctorate,Telfer School of Management,Non-Engineering
 Doctorate in Philosophy Biochemistry,Doctorate,Medicine,Non-Engineering
 Doctorate in Philosophy Biochemistry and Specialization Bioinformatics,Doctorate,Medicine,Non-Engineering
@@ -405,13 +405,13 @@ Honours Bachelor of Human Kinetics and Master of Health Sciences Physiotherapy,D
 Honours Bachelor of Science in Human Kinetics and Master of Health Sciences Occupational Therapy,Dual Degrees,Health Sciences,Non-Engineering
 Honours Bachelor of Science in Human Kinetics and Master of Health Sciences Physiotherapy,Dual Degrees,Health Sciences,Non-Engineering
 Master of Science Nursing with Graduate Diploma Primary Health Care for Nurse Practitioners,Dual Degrees,Health Sciences,Non-Engineering
-Honours Bachelor of Commerce and Juris Doctor,Dual Degrees,Civil Law,Non-Engineering
-Honours BSocSc Political Science and Juris Doctor (JD),Dual Degrees,Civil Law,Non-Engineering
-Joint Licenciate in Law (LLL) and Master of Business Administration (MBA),Dual Degrees,Civil Law,Non-Engineering
-Juris Doctor (JD) / Master of Arts (International Affairs) - Carleton University,Dual Degrees,Civil Law,Non-Engineering
-Juris Doctor (JD) / Master of Business Administration (MBA),Dual Degrees,Civil Law,Non-Engineering
-Licentiate in Law (LLL) and Honours BSocSc in International Development and Globalization,Dual Degrees,Civil Law,Non-Engineering
-Programme de droit canadien – Juris Doctor (J.D.) et Licence en droit (LL.L.),Dual Degrees,Civil Law,Non-Engineering
+Honours Bachelor of Commerce and Juris Doctor,Dual Degrees,Law,Non-Engineering
+Honours BSocSc Political Science and Juris Doctor (JD),Dual Degrees,Law,Non-Engineering
+Joint Licenciate in Law (LLL) and Master of Business Administration (MBA),Dual Degrees,Law,Non-Engineering
+Juris Doctor (JD) / Master of Arts (International Affairs) - Carleton University,Dual Degrees,Law,Non-Engineering
+Juris Doctor (JD) / Master of Business Administration (MBA),Dual Degrees,Law,Non-Engineering
+Licentiate in Law (LLL) and Honours BSocSc in International Development and Globalization,Dual Degrees,Law,Non-Engineering
+Programme de droit canadien – Juris Doctor (J.D.) et Licence en droit (LL.L.),Dual Degrees,Law,Non-Engineering
 Honours Bachelor of Commerce (Option in Accounting) and Master of Science in Management,Dual Degrees,Telfer School of Management,Non-Engineering
 Honours Bachelor of Commerce (Option in Business Technology Management) and Master of Science in Management,Dual Degrees,Telfer School of Management,Non-Engineering
 Honours Bachelor of Commerce (Option in Finance) and Master of Science in Management,Dual Degrees,Telfer School of Management,Non-Engineering
@@ -458,20 +458,20 @@ Diplôme d’études supérieures Enseignement en santé,Graduate diplomas,Medic
 Graduate Diploma Population Health Risk Assessment and Management,Graduate diplomas,Medicine,Non-Engineering
 Graduate Diploma Scientific Management and Leadership,Graduate diplomas,Science,Non-Engineering
 Graduate Diploma Public Management and Governance,Graduate diplomas,Social Sciences,Non-Engineering
-Honours Bachelor of Commerce and Juris Doctor,Juris Doctor,Civil Law,Non-Engineering
-Honours BSocSc Political Science and Juris Doctor (JD),Juris Doctor,Civil Law,Non-Engineering
-Juris Doctor (JD) / Master of Arts (International Affairs) - Carleton University,Juris Doctor,Civil Law,Non-Engineering
-Juris Doctor (JD) / Master of Business Administration (MBA),Juris Doctor,Civil Law,Non-Engineering
-Programme de droit canadien – Juris Doctor (J.D.) et Licence en droit (LL.L.),Juris Doctor,Civil Law,Non-Engineering
+Honours Bachelor of Commerce and Juris Doctor,Juris Doctor,Law,Non-Engineering
+Honours BSocSc Political Science and Juris Doctor (JD),Juris Doctor,Law,Non-Engineering
+Juris Doctor (JD) / Master of Arts (International Affairs) - Carleton University,Juris Doctor,Law,Non-Engineering
+Juris Doctor (JD) / Master of Business Administration (MBA),Juris Doctor,Law,Non-Engineering
+Programme de droit canadien – Juris Doctor (J.D.) et Licence en droit (LL.L.),Juris Doctor,Law,Non-Engineering
 Honours Bachelor of Commerce and Juris Doctor,Juris Doctor,Telfer School of Management,Non-Engineering
 Honours BSocSc Political Science and Juris Doctor (JD),Juris Doctor,Social Sciences,Non-Engineering
-Joint Licenciate in Law (LLL) and Master of Business Administration (MBA),Licentiate,Civil Law,Non-Engineering
-Juris Doctor (JD),Licentiate,Civil Law,Non-Engineering
-Juris Doctor (JD) / American University Washington College of Law or Michigan State University College of Law) - Incoming,Licentiate,Civil Law,Non-Engineering
-Juris Doctor (JD) / American University Washington College of Law or Michigan State University College of Law) - Outgoing,Licentiate,Civil Law,Non-Engineering
-Licentiate in Law (LLL),Licentiate,Civil Law,Non-Engineering
-Licentiate in Law (LLL) and Honours BSocSc in International Development and Globalization,Licentiate,Civil Law,Non-Engineering
-Programme de droit canadien – Juris Doctor (J.D.) et Licence en droit (LL.L.),Licentiate,Civil Law,Non-Engineering
+Joint Licenciate in Law (LLL) and Master of Business Administration (MBA),Licentiate,Law,Non-Engineering
+Juris Doctor (JD),Licentiate,Law,Non-Engineering
+Juris Doctor (JD) / American University Washington College of Law or Michigan State University College of Law) - Incoming,Licentiate,Law,Non-Engineering
+Juris Doctor (JD) / American University Washington College of Law or Michigan State University College of Law) - Outgoing,Licentiate,Law,Non-Engineering
+Licentiate in Law (LLL),Licentiate,Law,Non-Engineering
+Licentiate in Law (LLL) and Honours BSocSc in International Development and Globalization,Licentiate,Law,Non-Engineering
+Programme de droit canadien – Juris Doctor (J.D.) et Licence en droit (LL.L.),Licentiate,Law,Non-Engineering
 Joint Licenciate in Law (LLL) and Master of Business Administration (MBA),Licentiate,Telfer School of Management,Non-Engineering
 Licentiate in Law (LLL) and Honours BSocSc in International Development and Globalization,Licentiate,Social Sciences,Non-Engineering
 Majeure en lettres françaises,Major,Arts,Non-Engineering
@@ -646,19 +646,19 @@ Master of Science Nursing - Distance Option,Master's,Health Sciences,Non-Enginee
 Master of Science Nursing and Specialization Feminist and Gender Studies,Master's,Health Sciences,Non-Engineering
 Master of Science Nursing with Graduate Diploma Primary Health Care for Nurse Practitioners,Master's,Health Sciences,Non-Engineering
 Master of Science Nutrition and Food Biosciences,Master's,Health Sciences,Non-Engineering
-Joint Licenciate in Law (LLL) and Master of Business Administration (MBA),Master's,Civil Law,Non-Engineering
-Juris Doctor (JD) / Master of Arts (International Affairs) - Carleton University,Master's,Civil Law,Non-Engineering
-Juris Doctor (JD) / Master of Business Administration (MBA),Master's,Civil Law,Non-Engineering
-Master of Laws (LLM),Master's,Civil Law,Non-Engineering
-Master of Laws (LLM) and Concentration Global Sustainability and Environmental Law,Master's,Civil Law,Non-Engineering
-Master of Laws (LLM) and Concentration Health Law Policy and Ethics,Master's,Civil Law,Non-Engineering
-Master of Laws (LLM) and Concentration International Humanitarian and Security Law,Master's,Civil Law,Non-Engineering
-Master of Laws (LLM) and Concentration International Trade and Foreign Investment,Master's,Civil Law,Non-Engineering
-Master of Laws (LLM) and Concentration Law and Social Justice,Master's,Civil Law,Non-Engineering
-Master of Laws (LLM) and Concentration Law and Technology,Master's,Civil Law,Non-Engineering
-Master of Laws (LLM) and Concentration Legislative Studies,Master's,Civil Law,Non-Engineering
-Master of Laws (LLM) and Concentration Notarial Law,Master's,Civil Law,Non-Engineering
-Master of Laws (LLM) and Specialization Feminist and Gender Studies,Master's,Civil Law,Non-Engineering
+Joint Licenciate in Law (LLL) and Master of Business Administration (MBA),Master's,Law,Non-Engineering
+Juris Doctor (JD) / Master of Arts (International Affairs) - Carleton University,Master's,Law,Non-Engineering
+Juris Doctor (JD) / Master of Business Administration (MBA),Master's,Law,Non-Engineering
+Master of Laws (LLM),Master's,Law,Non-Engineering
+Master of Laws (LLM) and Concentration Global Sustainability and Environmental Law,Master's,Law,Non-Engineering
+Master of Laws (LLM) and Concentration Health Law Policy and Ethics,Master's,Law,Non-Engineering
+Master of Laws (LLM) and Concentration International Humanitarian and Security Law,Master's,Law,Non-Engineering
+Master of Laws (LLM) and Concentration International Trade and Foreign Investment,Master's,Law,Non-Engineering
+Master of Laws (LLM) and Concentration Law and Social Justice,Master's,Law,Non-Engineering
+Master of Laws (LLM) and Concentration Law and Technology,Master's,Law,Non-Engineering
+Master of Laws (LLM) and Concentration Legislative Studies,Master's,Law,Non-Engineering
+Master of Laws (LLM) and Concentration Notarial Law,Master's,Law,Non-Engineering
+Master of Laws (LLM) and Specialization Feminist and Gender Studies,Master's,Law,Non-Engineering
 Executive Master of Health Administration (EMHA) (Online),Master's,Telfer School of Management,Non-Engineering
 Honours Bachelor of Commerce (Option in Accounting) and Master of Science in Management,Master's,Telfer School of Management,Non-Engineering
 Honours Bachelor of Commerce (Option in Business Technology Management) and Master of Science in Management,Master's,Telfer School of Management,Non-Engineering
@@ -760,7 +760,7 @@ Microprogram Program Evaluation in Professional Contexts,Microprogram,Education,
 Microprogram Science Education,Microprogram,Education,Non-Engineering
 Microprogram Cybersecurity,Microprogram,Engineering,EECS
 Microprogram Interdisciplinary Artificial Intelligence,Microprogram,Engineering,Design
-Microprogram Law and Technology,Microprogram,Civil Law,Non-Engineering
+Microprogram Law and Technology,Microprogram,Law,Non-Engineering
 Microprogram Capital Markets,Microprogram,Telfer School of Management,Non-Engineering
 Microprogram Complex Project and Procurement Leadership,Microprogram,Telfer School of Management,Non-Engineering
 Microprogram Entrepreneurship,Microprogram,Telfer School of Management,Non-Engineering
@@ -834,7 +834,7 @@ Minor in Computer Science,Minor,Engineering,EECS
 Minor in Computer Science for Scientists,Minor,Engineering,EECS
 Minor in Health Sciences,Minor,Health Sciences,Non-Engineering
 Minor in Studies of Social Issues in Sport Physical Activity and Leisure,Minor,Health Sciences,Non-Engineering
-Minor in Law,Minor,Civil Law,Non-Engineering
+Minor in Law,Minor,Law,Non-Engineering
 Minor in Entrepreneurship,Minor,Telfer School of Management,Non-Engineering
 Minor in Management,Minor,Telfer School of Management,Non-Engineering
 Minor in Biochemistry,Minor,Science,Non-Engineering
@@ -873,7 +873,7 @@ Master of Engineering Management (Online),Online,Engineering,Design
 Master of Interdisciplinary Applied Artificial Intelligence (Online),Online,Engineering,Design
 Doctorate in Philosophy Nursing - Distance Option,Online,Health Sciences,Non-Engineering
 Master of Science Nursing - Distance Option,Online,Health Sciences,Non-Engineering
-Certificate Law,Online,Civil Law,Non-Engineering
-Minor in Law,Online,Civil Law,Non-Engineering
+Certificate Law,Online,Law,Non-Engineering
+Minor in Law,Online,Law,Non-Engineering
 Executive Master of Health Administration (EMHA) (Online),Online,Telfer School of Management,Non-Engineering
 African Studies Option,Option,Social Sciences,Non-Engineering
