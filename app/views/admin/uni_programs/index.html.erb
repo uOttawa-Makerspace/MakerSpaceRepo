@@ -41,7 +41,7 @@
                   <th>Program</th>
                   <th>Level</th>
                 </thead>
-                <% rest.each do |program| %>
+                <% rest.sort_by { |x| x['program'] }.each do |program| %>
                 <tr>
                   <td><%= program['program'] %></td>
                   <td><%= program['level'] %></td>
@@ -57,10 +57,10 @@
           <th>Program</th>
           <th>Level</th>
         </thead>
-        <% rest.each do |program| %>
+        <% rest.sort_by { |x| x['program'] }.each do |program| %>
         <tr>
-          <td><%= program[0] %></td>
-          <td><%= program[1] %></td>
+          <td><%= program['program'] %></td>
+          <td><%= program['level'] %></td>
         </tr>
         <% end %>
       </table>

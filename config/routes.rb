@@ -375,7 +375,6 @@ Rails.application.routes.draw do
       end
     end
 
-    # not a resource, just a service???
     namespace :uni_programs do
       get "/", as: "index", action: "index"
       get "/current_programs",

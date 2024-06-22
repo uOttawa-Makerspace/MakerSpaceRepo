@@ -4,7 +4,7 @@ class Admin::UniProgramsController < AdminAreaController
   @cached_programs = nil
 
   def index
-    @uni_programs = fetch_programs
+    @uni_programs = ProgramList.fetch_all_csv
   end
 
   def current_programs
@@ -13,39 +13,39 @@ class Admin::UniProgramsController < AdminAreaController
     send_file "#{Rails.root}/lib/assets/programs.csv"
   end
 
-  # Returns programs as a hash
-  # TODO this sucks man, do we have to do a disk hit every time we
-  # query programs?
-  # TODO how does rails storage work?
-  # NOTE this is just patchwork, because we store user program as a string
-  # so this takes the string and attempts to categorize it.
-  # a better plan would be a DB migration to a separate programs table.
-  # FIXME don't call this programs, do something like uni_programs
-
-  # from cache
-  def fetch_programs
-    if @cached_programs
-      return @cached_programs # test cache
-    end
-
-    program, level, faculty, department = *(0..3) # Assign indexes
-    @cached_programs =
-      CSV
-        .read(Rails.root.join("lib/assets/programs.csv"), headers: true)
-        .group_by { |x| x[faculty] }
-        .transform_values do |x|
-          x.sort_by { |x| [x[level], x[department], x[program]] }
-        end
-    @cached_programs
-  end
   # Takes in a csv file, parses and verifies all
   def import_programs
-    begin
-      # file = params[:file]
+    file = params[:file]
+    file_ext = File.extname(file.original_filename)
+    raise "Unknown file type: #{file_ext}" unless file_ext == ".csv"
 
-      flash[:notice] = "Upload complete"
-      cached_programs = nil
+    test_data = CSV.new(file.to_io)
+
+    # test header
+    expected_header = %w[program level faculty department]
+    unless test_data.shift.to_a == expected_header
+      raise "Wrong header, expecting #{expected_header}"
     end
-    redirect_to admin_programs_index_path
+
+    # test each row for existence, trim and watch out for whitespace
+    test_data.each do |row|
+      expected_header
+        .each
+        .with_index(1) do |k, lineno|
+          if row[k].nil? || row[k] == ""
+            raise "Error line number #{lineno}, column #{k} is empty"
+          end
+
+          row[k] = row[k].squish # remove possible BOM issues
+        end
+    end
+
+    flash[:notice] = "Upload complete"
+    # Save to assets
+    newfile.rewind
+    File.open(Rails.root.join("lib/assets/programs.csv"), "w") do |newfile|
+      newfile.write(file.read)
+    end
+    redirect_to admin_uni_programs_index_path
   end
 end
