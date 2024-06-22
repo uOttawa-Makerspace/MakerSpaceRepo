@@ -12,25 +12,26 @@
     <% end %>
   </div>
 
-  <% @uni_programs.each do |faculty, rest| %>
+  <%# This shows duplicated programs under multiple faculties/levels, intentional %>
+  <% @uni_programs.group_by { |x| x['faculty'] }.each do |faculty, rest| %>
   <div class="mb-5 accordion">
     <div class="card">
       <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= faculty.gsub(/[ ()]/, '') %>" aria-expanded="true">
         <h2 class="mb-0 text-center">
           <button class="btn btn-link" type="button">
-            <%= faculty %> - num progs
+            <%= faculty %> - <%= rest.count %> programs
           </button>
         </h2>
       </div>
       <div id="accordion-<%= faculty.gsub(/[ ()]/, '') %>" class="collapse" aria-labelledby="<%= faculty %>">
         <% if faculty == "Engineering" then %>
-        <% rest.group_by { |x| x[3] }.each { |department, rest| %>
+        <% rest.group_by { |x| x['department'] }.each { |department, rest| %>
         <div class="mb-5 accordion">
           <div class="card">
             <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= department.gsub(/[ ()]/, '') %>" aria-expanded="true">
               <h2 class="mb-0 text-center">
                 <button class="btn btn-link" type="button">
-                  <%= department %> - num progs
+                  <%= department %> - <%= rest.count %> programs
                 </button>
               </h2>
             </div>
@@ -42,8 +43,8 @@
                 </thead>
                 <% rest.each do |program| %>
                 <tr>
-                  <td><%= program[0] %></td>
-                  <td><%= program[1] %></td>
+                  <td><%= program['program'] %></td>
+                  <td><%= program['level'] %></td>
                 </tr>
                 <% end %>
               </table>

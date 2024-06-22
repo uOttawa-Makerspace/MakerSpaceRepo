@@ -93,7 +93,7 @@
 
             <div class="mb-3">
               <% programs = ProgramList.fetch_all %>
-              <% programs_by_faculty = ProgramList.fetch_by_faculty %>
+              <% programs_by_faculty = ProgramList.programs_by_faculty %>
               <%= form.label :program, t('users.new.form.program'), class: 'required' %>
               <%= form.select :program, programs_by_faculty, { prompt: t('users.new.form.choose.program') }, { class: 'form-control form-select', 'data-live-search': 'true' } %>
             </div>

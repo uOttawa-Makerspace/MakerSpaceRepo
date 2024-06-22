@@ -2,6 +2,7 @@
 
 class ProgramList
   # TODO: figure out a better way to do this
+  # FIXME remove all references to this
   def self.fetch_all
     @programs = []
     File
@@ -28,27 +29,30 @@ class ProgramList
   end
 
   def self.faculty_list
-    _program, _level, faculty, _department = *(0..3) # Assign indexes
-    fetch_all_csv.map { |x| x[faculty] }.uniq
+    fetch_all_csv["faculty"].uniq
   end
 
+  def self.programs_by_faculty
+    ProgramList
+      .fetch_all_csv
+      .group_by { |x| x["faculty"] } # Group by faculty
+      .transform_values { |x| x.map { |x| x["program"] }.uniq } # Duplicates...
+  end
+
+  # This returns the CSV structure as is,
+  # so you can do fetch_all_csv['faculty'].uniq to get faculties,
+  # fetch_all_csv['program']
+  # fetch_all_csv.select { |x| x['department'] == 'Chemical' }
+  # fetch_all_csv['faculty'].tally
+  # NOTE This returns duplicates, because some programs are listed
+  # as both Bachelor's and PhD for some reason. Check docs for more info
+  # program, level, faculty, department
   def self.fetch_all_csv
     CSV.read(Rails.root.join("lib/assets/programs.csv"), headers: true)
   end
 
-  def self.fetch_by_faculty
-    programs = fetch_all_csv
-
-    programs_by_faculty = {}
-    programs.each do |prog|
-      program, _level, faculty, _department = prog.values_at(*(0..3)) # Assign indexes
-      programs_by_faculty[faculty] ||= []
-      programs_by_faculty[faculty] << program
-    end
-    programs_by_faculty
-  end
-
   def categorize_program(program)
     # https://developer.snapappointments.com/bootstrap-select/options/
+    raise NotImplementedError
   end
 end
