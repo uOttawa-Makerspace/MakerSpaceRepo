@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_01_29_060736) do
+ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1137,6 +1137,16 @@ ActiveRecord::Schema[7.0].define(version: 2024_01_29_060736) do
     t.string "description"
     t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
+  end
+
+  create_table "uni_programs", id: false, force: :cascade do |t|
+    t.string "program", null: false
+    t.string "faculty", null: false
+    t.string "level", null: false
+    t.string "department", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["program"], name: "index_uni_programs_on_program"
   end
 
   create_table "upvotes", id: :serial, force: :cascade do |t|
