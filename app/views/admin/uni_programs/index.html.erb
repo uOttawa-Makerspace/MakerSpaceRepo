@@ -1,17 +1,22 @@
 <div class="text-center">
   <br />
   <h2 class="fw-bold">University Programs</h2>
-  <%= link_to 'Download University Programs', admin_uni_programs_current_programs_path, class: 'btn btn-primary m-5' %>
-  <div class="row">
+  <%= link_to 'Download University Programs', admin_uni_programs_current_programs_path, class: 'btn btn-primary m-3' %>
+  <div class="mb-3">
     <%= form_tag admin_uni_programs_import_programs_path, method: :post, multipart: true, class: 'w-100' do %>
     <p>Upload CSV file to replace programs table</p>
     <div class="input-group mb-3">
-      <%= file_field_tag :file, style: 'display: inline;', class: 'form-control', id: 'excel-input', accept: 'text/csv' %>
+      <%= file_field_tag :file, style: 'display: inline;', class: 'form-control', accept: 'text/csv' %>
       <%= submit_tag 'Import File', class: 'btn btn-primary' %>
     </div>
+    <%= check_box_tag :allow_new_programs, class: 'form-check-input' %>
+    <%= label_tag :allow_new_programs, 'Allow introducing new faculties', class: 'form-check-label' %>
     <% end %>
   </div>
-
+  <hr/>
+  <% if @uni_programs.empty? %>
+  <h2>No Programs...</h2>
+  <% end %>
   <%# This shows duplicated programs under multiple faculties/levels, intentional %>
   <% @uni_programs.group_by { |x| x['faculty'] }.each do |faculty, rest| %>
   <div class="mb-5 accordion">
