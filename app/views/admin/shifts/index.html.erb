@@ -64,7 +64,7 @@
               <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), class: 'form-control form-select', id: 'day' %>
             </div>
 
-              <div class="col-md-6 mb-3" style="display: none;">
+              <div class="col-md-6 mb-3" style="display: none;" id="start-date-container">
                 <label for="start-date">Start Date</label>
                 <div class="input-group">
                   <%= text_field_tag 'start_date', '', id: 'start-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
@@ -74,7 +74,7 @@
                 </div>
               </div>
 
-              <div class="col-md-6 mb-3">
+              <div class="col-md-6 mb-3" id="start-time-container">
                 <label for="start-datetime">Start Time</label>
                 <div class="input-group">
                   <%= text_field_tag 'start_time', '', id: 'start-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
@@ -84,7 +84,7 @@
                 </div>
               </div>
 
-              <div class="col-md-6 mb-3" style="display: none;">
+              <div class="col-md-6 mb-3" style="display: none;" id="end-date-container">
                 <label for="end-date">End Date</label>
                 <div class="input-group">
                   <%= text_field_tag 'end_date', '', id: 'end-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
@@ -94,7 +94,7 @@
                 </div>
               </div>
 
-              <div class="col-md-6 mb-3">
+              <div class="col-md-6 mb-3" id="end-time-container">
                 <label for="end-datetime">End Time</label>
                 <div class="input-group">
                   <%= text_field_tag 'end_time', '', id: 'end-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
@@ -112,6 +112,12 @@
               <%= label_tag :recurring, 'Recurring' %>
               <%= check_box_tag :recurring, true, true, id: 'recurring', class: 'form-check-input', required: true %>
             </div>
+
+            <div class="col-md-12 mb-3">
+            <%= label_tag :whole_day, 'Whole Day' %>
+            <%= check_box_tag :whole_day, true, false, id: 'whole_day', class: 'form-check-input' %>
+          </div>
+          
 
             <div style="padding-left: 0.75rem; padding-right: 0.75rem" class="mb-3">
               <%= label_tag :user_id, 'User' %>
