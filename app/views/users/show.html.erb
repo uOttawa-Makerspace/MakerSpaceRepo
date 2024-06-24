@@ -64,6 +64,9 @@
               <p class="proile-rating">REPUTATION : <span>
                   <%= @repo_user.reputation %>
                 </span></p>
+              <% if @repo_user.staff? %>
+              <p class="text-secondary fw-bold" >Makerepo <%= @repo_user.role.humanize %></p>
+              <% end %>
           </div>
           <div class="col-md-3">
             <!--      EDIT PROFILE Section-->
