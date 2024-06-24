@@ -61,10 +61,12 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def confirm_shifts
-    Shift.where(space_id: @user.space_id, pending: true).update(pending: false)
-    redirect_to shifts_admin_shifts_path,
-                notice: "Shifts have been successfully confirmed!"
+    if params[:shift_ids]
+      Shift.where(id: params[:shift_ids], space_id: @user.space_id).update_all(pending: false)
+    end
+    redirect_to shifts_admin_shifts_path, notice: "Selected shifts have been successfully confirmed!"
   end
+  
 
   def clear_pending_shifts
     Shift.where(space_id: @user.space_id, pending: true).destroy_all
@@ -86,6 +88,10 @@ class Admin::ShiftsController < AdminAreaController
     render json: { status: "ok" }
   end
 
+  def show_modal
+    @pending_shifts = Shift.where(space_id: @user.space_id, pending: true)
+  end
+  
   def create
     if params[:shift].present? && params[:user_id].present?
       @shift = Shift.new(shift_params.merge(space_id: @space_id))
