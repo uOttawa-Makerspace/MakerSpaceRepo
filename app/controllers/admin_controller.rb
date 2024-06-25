@@ -6,8 +6,6 @@ class AdminController < AdminAreaController
   def index
   end
 
-
-
   def manage_badges
     if params[:refresh].present?
       if params[:refresh] == "templates"

@@ -6,12 +6,16 @@ class Admin::TrainingSessionsController < AdminAreaController
   before_action :training_session, only: %i[update destroy]
 
   def index
-    date_range = params[:date_range].presence || '30_days'
-    @sessions = TrainingSession.filter_by_date_range(date_range)
-                               .left_outer_joins(:training, :user)
+    date_range = params[:date_range].presence || "30_days"
+    @sessions =
+      TrainingSession.filter_by_date_range(date_range).left_outer_joins(
+        :training,
+        :user
+      )
 
     if params[:start_date].present? && params[:end_date].present?
-      @sessions = @sessions.between_dates_picked(params[:start_date], params[:end_date])
+      @sessions =
+        @sessions.between_dates_picked(params[:start_date], params[:end_date])
     end
 
     if params[:training].present?
@@ -25,14 +29,12 @@ class Admin::TrainingSessionsController < AdminAreaController
     @trainers = User.joins(:training_sessions).distinct.order(:name)
 
     @course_names = CourseName.all.order(:name)
-  
+
     if params[:course_names].present?
       @sessions = @sessions.by_course(params[:course_names])
     end
 
-    if params[:status].present?
-      @sessions = @sessions.by_status(params[:status])
-    end
+    @sessions = @sessions.by_status(params[:status]) if params[:status].present?
 
     if params[:search].present?
       @sessions = @sessions.filter_by_attribute(params[:search])
@@ -73,6 +75,9 @@ class Admin::TrainingSessionsController < AdminAreaController
   end
 
   def training_session_params
-    params.require(:training_session).permit(:user_id).reject { |_, v| v.blank? }
+    params
+      .require(:training_session)
+      .permit(:user_id)
+      .reject { |_, v| v.blank? }
   end
 end

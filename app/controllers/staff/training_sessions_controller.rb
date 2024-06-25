@@ -19,8 +19,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
     end
   end
 
-
-
   def new
     respond_to do |format|
       format.html { @new_training_session = TrainingSession.new }
@@ -36,8 +34,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
       end
     end
   end
-
-
 
   def create
     @new_training_session = TrainingSession.new(default_params)
@@ -64,9 +60,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
       end
     end
   end
-  \
-  
-
 
   def show
   end

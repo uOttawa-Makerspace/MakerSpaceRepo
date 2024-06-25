@@ -401,7 +401,6 @@ const refreshPendingShifts = () => {
 
 const populateUsers = (arg) => {
   return new Promise((resolve, reject) => {
-
     let startDate, endDate;
     if (arg.event) {
       startDate = arg.event.start;
@@ -441,16 +440,12 @@ const populateUsers = (arg) => {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-    })
-      .then((res) => res.json())
+    }).then((res) => res.json());
 
-        resolve();
-      })
-      .catch((err) => {
-        reject(err);
-      });
-
-
+    resolve();
+  }).catch((err) => {
+    reject(err);
+  });
 };
 
 // Calendar CRUD

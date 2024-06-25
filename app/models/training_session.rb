@@ -17,48 +17,56 @@ class TrainingSession < ApplicationRecord
 
   default_scope -> { order(updated_at: :desc) }
 
-  scope :between_dates_picked, ->(start_date, end_date) {
-    where("training_sessions.created_at BETWEEN ? AND ?", start_date, end_date)
-  }
+  scope :between_dates_picked,
+        ->(start_date, end_date) {
+          where(
+            "training_sessions.created_at BETWEEN ? AND ?",
+            start_date,
+            end_date
+          )
+        }
 
-  scope :filter_by_date_range, ->(range) do
-
-    case range
-    when '30_days'
-      where('training_sessions.created_at >= ?', 30.days.ago)
-    when '90_days'
-      where('training_sessions.created_at >= ?', 90.days.ago)
-    when '1_year'
-      where('training_sessions.created_at >= ?', 1.year.ago)
-    when '2024'
-      where(training_sessions: { created_at: Date.new(2024).all_year })
-    when '2023'
-      where(training_sessions: { created_at: Date.new(2023).all_year })
-    when '2022'
-      where(training_sessions: { created_at: Date.new(2022).all_year })
-    when '2021'
-      where(training_sessions: { created_at: Date.new(2021).all_year })
-    when '2020'
-      where(training_sessions: { created_at: Date.new(2020).all_year })
-    else
-      all
-    end.tap { |scope| Rails.logger.debug "Generated Scope SQL: #{scope.to_sql}" }
-  end
+  scope :filter_by_date_range,
+        ->(range) {
+          case range
+          when "30_days"
+            where("training_sessions.created_at >= ?", 30.days.ago)
+          when "90_days"
+            where("training_sessions.created_at >= ?", 90.days.ago)
+          when "1_year"
+            where("training_sessions.created_at >= ?", 1.year.ago)
+          when "2024"
+            where(training_sessions: { created_at: Date.new(2024).all_year })
+          when "2023"
+            where(training_sessions: { created_at: Date.new(2023).all_year })
+          when "2022"
+            where(training_sessions: { created_at: Date.new(2022).all_year })
+          when "2021"
+            where(training_sessions: { created_at: Date.new(2021).all_year })
+          when "2020"
+            where(training_sessions: { created_at: Date.new(2020).all_year })
+          else
+            all
+          end.tap do |scope|
+            Rails.logger.debug "Generated Scope SQL: #{scope.to_sql}"
+          end
+        }
 
   scope :by_training, ->(training_id) { where(training_id: training_id) }
 
-  scope :by_trainers, -> (trainer_id) { where(user_id: trainer_id) }
+  scope :by_trainers, ->(trainer_id) { where(user_id: trainer_id) }
 
   scope :by_course, ->(course) { where(course_names: course) }
 
-  scope :by_status, ->(status) {
-    case status
-    when "completed"
-      joins(:certifications).distinct
-    when "not_completed"
-      left_outer_joins(:certifications).where(certifications: { id: nil })
-    end
-  }
+  scope :by_status,
+        ->(status) {
+          case status
+          when "completed"
+            joins(:certifications).distinct
+          when "not_completed"
+            left_outer_joins(:certifications).where(certifications: { id: nil })
+          end
+        }
   def is_staff
     errors.add(:string, "user must be staff") unless user&.staff?
   end
@@ -80,7 +88,7 @@ class TrainingSession < ApplicationRecord
       if value == "search="
         all
       else
-        value = value.split('=').last.gsub('+', ' ').gsub('%20', ' ')
+        value = value.split("=").last.gsub("+", " ").gsub("%20", " ")
         joins(:user).where(
           "LOWER(trainings.name) LIKE LOWER(?) OR
            LOWER(users.name) LIKE LOWER(?) OR
