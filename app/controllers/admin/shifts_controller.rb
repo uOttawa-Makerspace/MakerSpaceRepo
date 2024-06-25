@@ -33,6 +33,7 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def shifts
+    @pending_shifts = Shift.where(space_id: @user.space_id, pending: true)
     @staff =
       User
         .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
