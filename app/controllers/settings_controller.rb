@@ -7,13 +7,13 @@ class SettingsController < SessionsController
   layout "setting"
 
   def profile
-    @programs = UniProgram.unique_programs
-    if current_user.program.present?
-      @user_program = current_user.program.gsub("\n", "")
-      @user_program = @user_program.gsub("\r", "")
-    else
-      @user_program = ""
-    end
+    @programs = UniProgram.programs_by_faculty
+    # if current_user.program.present?
+    #   @user_program = current_user.program.gsub("\n", "")
+    #   @user_program = @user_program.gsub("\r", "")
+    # else
+    #   @user_program = ""
+    # end
   end
 
   def admin

@@ -31,11 +31,8 @@ document.addEventListener("turbo:load", function () {
       searchOnKeyUp: true,
     });
   }
-  // Disable all program options by default
   // this is a non-live NodeList, we store it for later use
   const optgroups = Array.from(programSelect.querySelectorAll("optgroup"));
-  // BUG we get duplicated options rendered, it's only visual
-  // and i don't think it affects the final POST request
   const facultySelect = document.getElementById("user_faculty");
   if (facultySelect) {
     facultySelect.addEventListener("change", function () {
