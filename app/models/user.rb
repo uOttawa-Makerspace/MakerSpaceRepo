@@ -123,11 +123,34 @@ class User < ApplicationRecord
             presence: true,
             if: :student?,
             inclusion: {
-              in: ProgramList.faculty_list
+              in: UniProgram.all_faculties
             }
 
   before_validation do |user|
-    user.faculty = ProgramList.faculty_fr_to_en(faculty) || faculty
+    case user.faculty # Translate faculty
+    when "Arts"
+      users.faculty = "Arts"
+    when "Éducation"
+      users.faculty = "Education"
+    when "Génie"
+      users.faculty = "Engineering"
+    when "Sciences de la santé"
+      users.faculty = "Health Sciences"
+    when "Droit civil"
+      users.faculty = "Civil Law"
+    when "Droit commun"
+      users.faculty = "Common Law"
+    when "Droit"
+      users.faculty = "Law"
+    when "Médecine"
+      users.faculty = "Medicine"
+    when "Sciences"
+      users.faculty = "Science"
+    when "Sciences sociales"
+      users.faculty = "Social Sciences"
+    when "École de gestion Telfer"
+      users.faculty = "Telfer School of Management"
+    end
   end
 
   validates :program, presence: true, if: :student?

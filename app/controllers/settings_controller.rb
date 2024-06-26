@@ -7,7 +7,7 @@ class SettingsController < SessionsController
   layout "setting"
 
   def profile
-    @programs = ProgramList.fetch_all
+    @programs = UniProgram.unique_programs
     if current_user.program.present?
       @user_program = current_user.program.gsub("\n", "")
       @user_program = @user_program.gsub("\r", "")

@@ -4,13 +4,13 @@ class Admin::UniProgramsController < AdminAreaController
   @cached_programs = nil
 
   def index
-    @uni_programs = ProgramList.fetch_all_csv
+    @uni_programs = UniProgram.all
   end
 
   def current_programs
     # program_data = CSV.read("#{Rails.root}/lib/assets/programs.csv")
     # send_data program_data, type: 'text/csv', filename: 'huh.csv'
-    send_file "#{Rails.root}/lib/assets/programs.csv"
+    send_file Rails.root.join("/lib/assets/programs.csv")
   end
 
   # Takes in a csv file, parses and verifies all
@@ -30,7 +30,7 @@ class Admin::UniProgramsController < AdminAreaController
 
     # test each row for existence, trim and watch out for whitespace
     # lineno skip headers
-    current_faculties = ProgramList.faculty_list
+    current_faculties = UniProgram.all_faculties
     test_data
       .filter
       .with_index(2) do |row, lineno|
@@ -49,9 +49,18 @@ class Admin::UniProgramsController < AdminAreaController
         end
       end
 
-    # Save to assets
-    File.open(Rails.root.join("lib/assets/programs.csv"), "w") do |newfile|
-      newfile.write(test_data.to_csv) # write out as string
+    # Save to DB
+    UniProgram.transaction do
+      UniProgram.destroy_all # purge DB
+      test_data.each do |row|
+        # push each row
+        UniProgram.create(
+          program: row["program"],
+          faculty: row["faculty"],
+          level: row["level"],
+          department: row["department"]
+        ).save
+      end
     end
   rescue StandardError => e # Grab any error, display to user
     flash[:alert] = "Programs upload error: #{e}"

@@ -6,7 +6,7 @@ class CreateUniPrograms < ActiveRecord::Migration[7.0]
       t.string :level, null: false
       t.string :department, null: false
 
-      t.timestamps
+      #t.timestamps
     end
 
     reversible do |direction|

@@ -1144,8 +1144,6 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
     t.string "faculty", null: false
     t.string "level", null: false
     t.string "department", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.index ["program"], name: "index_uni_programs_on_program"
   end
 
