@@ -14,6 +14,12 @@ class CreateUniPrograms < ActiveRecord::Migration[7.0]
         progs =
           CSV.read(Rails.root.join("lib/assets/programs.csv"), headers: true)
         UniProgram.transaction do
+          UniProgram.create(
+            program: "My program is not in the list",
+            faculty: "",
+            level: "",
+            department: ""
+          ).save
           progs.each do |row|
             UniProgram.create(
               program: row["program"],
@@ -24,8 +30,6 @@ class CreateUniPrograms < ActiveRecord::Migration[7.0]
           end
         end
       end
-
-      direction.down { UniProgram.destroy_all }
     end
   end
 end
