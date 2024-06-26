@@ -123,7 +123,17 @@ class User < ApplicationRecord
             presence: true,
             if: :student?,
             inclusion: {
-              in: UniProgram.all_faculties
+              in: [
+                "Engineering",
+                "Social Sciences",
+                "Education",
+                "Arts",
+                "Medicine",
+                "Law",
+                "Health Sciences",
+                "Science",
+                "Telfer School of Management"
+              ]
             }
 
   before_validation do |user|
