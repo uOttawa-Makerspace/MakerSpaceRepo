@@ -92,9 +92,8 @@
             </div>
 
             <div class="mb-3">
-              <% programs_by_faculty = UniProgram.programs_by_faculty %>
               <%= form.label :program, t('users.new.form.program'), class: 'required' %>
-              <%= form.select :program, programs_by_faculty, { prompt: t('users.new.form.choose.program') }, { class: 'form-control form-select', 'data-live-search': 'true' } %>
+              <%= form.select :program, @programs_by_faculty, { prompt: t('users.new.form.choose.program') }, { class: 'form-control form-select', 'data-live-search': 'true' } %>
             </div>
 
             <div class="mb-3">

@@ -8,6 +8,10 @@ class UniProgram < ApplicationRecord
   default_scope { where.not(faculty: "") }
   scope :per_faculty, -> { group(:faculty) }
 
+  def self.no_program
+    UniProgram.unscoped.find_by(faculty: "").program
+  end
+
   def self.unique_programs
     distinct.pluck :program
   end
