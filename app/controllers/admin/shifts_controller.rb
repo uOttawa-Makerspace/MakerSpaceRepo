@@ -8,53 +8,61 @@ class Admin::ShiftsController < AdminAreaController
   before_action :set_time_period
 
   def index
-    @staff =
-      User
-        .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
-        .order("LOWER(name) ASC")
-        .pluck(:name, :id)
-    @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
     @space_id = @user.space_id || Space.first.id
+
+    staff_ids = StaffSpace.where(space_id: @space_id).pluck(:user_id)
+    @staff = User.where(id: staff_ids).pluck(:name, :id)
+
+    @staff.sort_by! do |name, id|
+      [name.downcase.gsub(" (unavailable)", ""), name.include?(" (unavailable)") ? 1 : 0]
+    end
+
+    @spaces = Space.where(id: SpaceStaffHour.pluck(:space_id))
     @colors = []
 
     StaffSpace
       .joins(:user)
       .where(space_id: @space_id)
-      .order("users.name")
       .each do |staff|
-        if !staff.nil? && !staff.user.nil?
-          @colors << {
-            id: staff.user.id,
-            name: staff.user.name,
-            color: staff.color
-          }
-        end
+      if !staff.nil? && !staff.user.nil?
+        @colors << {
+          id: staff.user.id,
+          name: staff.user.name,
+          color: staff.color
+        }
       end
+    end
   end
 
   def shifts
-    @pending_shifts = Shift.where(space_id: @user.space_id, pending: true)
-    @staff =
-      User
-        .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
-        .order("LOWER(name) ASC")
-        .pluck(:name, :id)
-    @spaces = Space.all.where(id: SpaceStaffHour.all.pluck(:space_id))
+
+    @space_id = @user.space_id || Space.first.id
+
+    staff_ids = StaffSpace.where(space_id: @space_id).pluck(:user_id)
+    @staff = User.where(id: staff_ids).pluck(:name, :id)
+
+    @staff.sort_by! do |name, id|
+      [name.downcase.gsub(" (unavailable)", ""), name.include?(" (unavailable)") ? 1 : 0]
+    end
+
+    @spaces = Space.where(id: SpaceStaffHour.pluck(:space_id))
+
     @colors = []
 
     StaffSpace
       .joins(:user)
       .where(space_id: @space_id)
-      .order("users.name")
       .each do |staff|
-        if !staff.nil? && !staff.user.nil? && !staff.user_id.nil?
-          @colors << {
-            id: staff.user.id,
-            name: staff.user.name,
-            color: staff.color
-          }
-        end
+      if !staff.nil? && !staff.user.nil?
+        @colors << {
+          id: staff.user.id,
+          name: staff.user.name,
+          color: staff.color
+        }
       end
+    end
+
+    @colors.sort_by! { |color| color[:name].downcase }
   end
 
   def pending_shifts

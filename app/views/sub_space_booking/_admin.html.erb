@@ -191,7 +191,7 @@
                   <tbody>
                   <% UserBookingApproval.where(approved: false).each_with_index do |user_booking_approval, index| %>
                     <tr>
-                      <td><%= check_box_tag 'user_booking_approval_ids[]', user_booking_approval.id, false, id: "user_booking_approval_ids_#{index}", class: 'form-check-input' %></td>
+                      <td><%= check_box_tag 'user_booking_approval_ids[]', user_booking_approval.id, false, id: "user_booking_approval_ids_#{index}", style: "transform: scale(1.5); margin: 10px;" %></td>
                       <td><%= user_booking_approval.user.name %></td>
                       <td><%= user_booking_approval.user.email %></td>
                       <td><%= user_booking_approval.comments %></td>

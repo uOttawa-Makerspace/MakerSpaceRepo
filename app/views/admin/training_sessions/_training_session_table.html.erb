@@ -1,22 +1,8 @@
-<table class="sessions-table table table-striped text-center">
-  <thead class="table-primary">
-  <tr>
-    <th>Date <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
-    <th>Training <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-    <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-    <th>Course <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-    <th>Status <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
-    <th>Users <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
-
-    <th class="action-header">Action</th>
-  </tr>
-  </thead>
-
-  <tbody>
-
-  <%= form_with(url: admin_training_sessions_path, method: :get, local: true) do %>
-    <div class="date_range_filter">
-      <%= label_tag :date_range, 'Filter by Date Range:' %>
+<div class="container mt-4">
+  <%= form_with(url: admin_training_sessions_path, method: :get, local: true, class: 'row g-3 align-items-end') do %>
+    <!-- Date Range Filter -->
+    <div class="col-md-2">
+      <%= label_tag :date_range, 'Filter by Date Range:', class: 'form-label' %>
       <%= select_tag :date_range, options_for_select([
                                                        ['30 days ago', '30_days'],
                                                        ['90 days ago', '90_days'],
@@ -27,69 +13,118 @@
                                                        ['2021', '2021'],
                                                        ['2020', '2020'],
                                                        ['All', 'all']
-                                                     ], selected: params[:date_range] || '30_days') %>
-      <%= submit_tag 'Filter' %>
+                                                     ], selected: params[:date_range] || '30_days'), class: 'form-select' %>
+    </div>
+
+    <!-- Custom Date Range Filter -->
+    <div class="col-md-2">
+      <%= label_tag :start_date, 'Start Date:', class: 'form-label' %>
+      <%= date_field_tag :start_date, params[:start_date], class: 'form-control' %>
+    </div>
+    <div class="col-md-2">
+      <%= label_tag :end_date, 'End Date:', class: 'form-label' %>
+      <%= date_field_tag :end_date, params[:end_date], class: 'form-control' %>
+    </div>
+
+    <!-- Training Dropdown -->
+    <div class="col-md-2">
+      <%= label_tag :training, 'Training:', class: 'form-label' %>
+      <%= select_tag :training, options_from_collection_for_select(Training.order(:name), :id, :name, params[:training]), include_blank: 'All', class: 'form-select' %>
+    </div>
+    <!-- Trainer Search -->
+    <div class="col-md-2">
+      <%= label_tag :trainers, 'Trainers:', class: 'form-label' %>
+      <%= select_tag :trainers, options_from_collection_for_select(@trainers, :id, :name, params[:trainers]), { id: 'trainers', class: 'form-select', prompt: 'All' } %>
+    </div>
+
+
+    <!-- Course Search -->
+    <div class="col-md-2">
+    <%= label_tag :course_names, 'CourseName:', class: 'form-label' %>
+    <%= select_tag :course_names,
+                   options_from_collection_for_select(@course_names, :id, :name, params[:course_names]),
+                   include_blank: 'All',
+                   class: 'form-select' %>
+  </div>
+  
+
+    <!-- Status Checkbox -->
+    <div class="col-md-2">
+      <%= label_tag :status, 'Status:', class: 'form-label' %>
+      <div class="form-check">
+        <%= check_box_tag :status, 'completed', params[:status] == 'completed', class: 'form-check-input' %>
+        <%= label_tag :status, 'Completed', class: 'form-check-label' %>
+      </div>
+      <div class="form-check">
+        <%= check_box_tag :status, 'not_completed', params[:status] == 'not_completed', class: 'form-check-input' %>
+        <%= label_tag :status, 'Not Completed', class: 'form-check-label' %>
+      </div>
+    </div>
+
+    <!-- Filter Button -->
+    <div class="col-md-2">
+      <%= submit_tag 'Filter', class: 'btn btn-primary w-100' %>
     </div>
   <% end %>
-
-  <br>
-  <% @sessions.each do |sesh| %>
+</div>
+<div class="w-full lg:w-auto p-4">
+  <table class="sessions-table table-auto w-full text-center">
+    <thead class="bg-blue-100">
     <tr>
-      <td class="date-cell">
-        <%= sesh.created_at.strftime('%I:%M %p').downcase %>
-        <br>
-        <%= sesh.created_at.strftime('%b %e %Y').downcase %>
-      </td>
-
-      <td class="training-cell">
-        <%= sesh.training.name %>
-      </td>
-
-      <td class="trainer-cell" style="horizontal-alginment:center;">
-        <%= link_to sesh.user.name, user_url(sesh.user.username) %>
-      </td>
-
-      <td class="course-cell">
-        <%= sesh.course %>
-      </td>
-
-      <td class="status-cell">
-        <% if sesh.completed? %>
-          COMPLETED
-        <% else %>
-          NOT COMPLETED
-        <% end %>
-      </td>
-
-      <td class="users-cell">
-        <div
-          class="users-count"
-          style="display:inline">
-          <div class="count-holder" style="display:inline">
-            <%= sesh.users.length %>
-            <div id="sesh-users" style="display:inline">
-              <% sesh.users.each do |user| %>
-                <div class="clickable-username">
-                  <%= link_to user.name, user_url(user.username), class: 'user-link' %> <br>
-                </div>
-              <% end %>
+      <th class="py-2">Date <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
+      <th class="py-2">Training <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+      <th class="py-2">Trainer <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+      <th class="py-2">Course <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+      <th class="py-2">Status <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+      <th class="py-2">Users <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+      <th class="py-2 action-header">Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    <% @sessions.each do |sesh| %>
+      <tr>
+        <td class="py-2">
+          <%= sesh.created_at.strftime('%I:%M %p').downcase %><br>
+          <%= sesh.created_at.strftime('%b %e %Y').downcase %>
+        </td>
+        <td class="py-2"><%= sesh.training.name %></td>
+        <td class="py-2">
+          <%= link_to sesh.user.name, user_url(sesh.user.username), class: 'text-blue-500 hover:underline' %>
+        </td>
+        <td class="py-2"><%= sesh.course %></td>
+        <td class="py-2">
+          <% if sesh.completed? %>
+            COMPLETED
+          <% else %>
+            NOT COMPLETED
+          <% end %>
+        </td>
+        <td class="py-2">
+          <div class="inline-block">
+            <div class="inline-block">
+              <%= sesh.users.length %>
+              <div id="sesh-users" class="inline-block">
+                <% sesh.users.each do |user| %>
+                  <div class="clickable-username">
+                    <%= link_to user.name, user_url(user.username), class: 'text-blue-500 hover:underline' %><br>
+                  </div>
+                <% end %>
+              </div>
             </div>
           </div>
-        </div>
-      </td>
+        </td>
+        <td class="py-2">
+          <%= link_to 'Visit', staff_training_session_url(sesh), class: 'block bg-blue-500 text-white py-1 rounded mb-1' %>
+          <%= link_to 'Download', training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'), action: :training_report, class: 'block bg-blue-300 text-white py-1 rounded mb-1' %>
+          <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'block bg-red-500 text-white py-1 rounded' %>
+        </td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
 
-      <td class="action-cell">
-        <%= link_to 'Visit', staff_training_session_url(sesh), class: 'btn btn-primary d-block w-100 btn-sm' %>
-        <%= link_to 'Download',
-                    training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'),
-                    action: :training_report,
-                    class: 'btn btn-info d-block w-100 btn-sm my-2' %>
-        <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'btn btn-danger d-block w-100 btn-sm' %>
-        <br></br>
-      </td>
-
-    </tr>
-  <% end %>
-  </tbody>
-
-</table>
+  <div class="mt-4">
+    <%= page_entries_info @sessions %>
+    <%= will_paginate @sessions, container: false %>
+  </div>
+</div>

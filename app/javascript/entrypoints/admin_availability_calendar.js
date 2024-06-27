@@ -58,6 +58,11 @@ const endTimeInput = document.getElementById("end-time");
 const endDateInput = document.getElementById("end-date");
 const recurringInput = document.getElementById("recurring");
 const saveButton = document.getElementById("modal-save");
+const wholeDayCheckbox = document.getElementById("whole_day");
+const startTimeContainer = document.getElementById("start-time-container");
+const endTimeContainer = document.getElementById("end-time-container");
+const startDateContainer = document.getElementById("start-date-container");
+const endDateContainer = document.getElementById("end-date-container");
 
 const startTimePicker = startTimeInput.flatpickr({
   enableTime: true,
@@ -490,24 +495,25 @@ saveButton.addEventListener("click", () => createCalendarEvent());
 
 // Open modal with right values inside
 const openModal = (arg) => {
+  // Reset defaults
   modalTitle.innerText = "New Unavailability";
   modalDelete.style.display = "none";
   unavailabilityId.value = "";
+  wholeDayCheckbox.checked = false;  // Reset checkbox state
 
-  recurringInput.checked = true;
-  dayInput.parentElement.style.display = "block";
-  startDateInput.parentElement.parentElement.style.display = "none";
-  endDateInput.parentElement.parentElement.style.display = "none";
-
+  // Set default visibility based on whether the event is recurring or whole day
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.startStr));
     startDatePicker.setDate(Date.parse(arg.startStr));
     endTimePicker.setDate(Date.parse(arg.endStr));
     endDatePicker.setDate(Date.parse(arg.endStr));
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
+    wholeDayCheckbox.checked = (new Date(Date.parse(arg.endStr)).getHours() === 23 && new Date(Date.parse(arg.endStr)).getMinutes() === 59);
   }
 
-  checkDate();
+  // Apply the whole day settings if needed
+  wholeDayCheckbox.dispatchEvent(new Event('change'));
+
   unavailabilityModal.show();
 };
 
@@ -516,6 +522,7 @@ const editModal = (arg) => {
   modalDelete.style.display = "block";
 
   if (arg !== undefined && arg !== null) {
+
     startTimePicker.setDate(Date.parse(arg.event.startStr));
     startDatePicker.setDate(Date.parse(arg.event.startStr));
     endTimePicker.setDate(Date.parse(arg.event.endStr));
@@ -535,11 +542,43 @@ const editModal = (arg) => {
       startDateInput.parentElement.parentElement.style.display = "block";
       endDateInput.parentElement.parentElement.style.display = "block";
     }
+
+    let eventStart = new Date(Date.parse(arg.event.startStr));
+    let eventEnd = new Date(Date.parse(arg.event.endStr));
+    wholeDayCheckbox.checked = eventStart.getHours() === 0 && eventStart.getMinutes() === 0 &&
+                              eventEnd.getHours() === 23 && eventEnd.getMinutes() === 59;
+
+    recurringInput.dispatchEvent(new Event('change'));
+    wholeDayCheckbox.dispatchEvent(new Event('change'));
   }
 
   unavailabilityModal.show();
 };
 
+
 modalDelete.addEventListener("click", () => {
   removeEvent(parseInt(unavailabilityId.value), false);
+});
+
+
+
+wholeDayCheckbox.addEventListener("change", function() {
+  if (this.checked) {
+   
+    startTimeContainer.style.display = 'none';
+    endTimeContainer.style.display = 'none';
+    startTimeInput.value = "00:00";
+    endTimeInput.value = "23:59";
+
+
+  } else {
+  
+    startTimeContainer.style.display = 'block';
+    endTimeContainer.style.display = 'block';
+
+    
+    startTimeInput.value = "";
+    endTimeInput.value = "";
+
+  }
 });
