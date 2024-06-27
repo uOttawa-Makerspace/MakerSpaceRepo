@@ -1,20 +1,20 @@
 <div class="table-responsive">
-  <table class="table text-center m-0">
+  <table class="table text-center m-0 sessions-table">
     <thead class="table-primary">
-    <tr>
-      <th>Key Number</th>
-      <th>Key Type</th>
-      <th>Keycode</th>
-      <th>Space</th>
-      <th>User</th>
-      <th>Supervisor</th>
-      <th>Email</th>
-      <% if show_status %>
-        <th>Status</th>
-      <% end %>
-      <th>Certifications</th>
-      <th>Actions</th>
-    </tr>
+      <tr>
+        <th>Key Number<span onclick="sortTable('sessions-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Key Type<span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Keycode<span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Space<span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+        <th>User<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Supervisor<span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Email<span onclick="sortTable('sessions-table', 6)"><%= fa_icon('arrow-down') %></span></th>
+        <% if show_status %>
+          <th>Status<span onclick="sortTable('sessions-table', 7)"><%= fa_icon('arrow-down') %></span></th>
+        <% end %>
+        <th>Certifications<span onclick="sortTable('sessions-table', 8)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Actions</th>
+      </tr>
     </thead>
 
     <tbody>
