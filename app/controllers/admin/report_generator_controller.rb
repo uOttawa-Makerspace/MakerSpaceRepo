@@ -439,12 +439,10 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
     end
 
-    @lab_sessions
-      .pluck(:user_id)
-      .uniq
-      .each do |user_id|
-        user = User.find_by(id: user_id)
-
+    all_users = @lab_sessions.pluck(:user_id).uniq
+    User
+      .where(id: all_users)
+      .each do |user|
         unless user.nil?
           faculty = user.faculty
           identity = user.identity

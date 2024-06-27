@@ -19,11 +19,13 @@ class TrainingSession < ApplicationRecord
 
   scope :between_dates_picked,
         ->(start_date, end_date) {
+
           where(
             "training_sessions.created_at BETWEEN ? AND ?",
             start_date,
             end_date
           )
+
         }
 
   scope :filter_by_date_range,

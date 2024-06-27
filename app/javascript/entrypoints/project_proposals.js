@@ -148,12 +148,12 @@ if (document.getElementById("new-photo-input")) {
 if (document.getElementById("ignore_past_experiences")) {
   let urls = document
     .getElementById("ignore_past_experiences")
-    .value.split("|");
+    .value.split(/[\|,]/);
   console.log(urls);
   if (urls[0] != "") {
     for (let i = 1; i < urls.length; i++) {
       if (urls[i] == "") continue;
-      urls[i] = urls[i].split(",")[1];
+      //urls[i] = urls[i].split(",")[1];
       let listItem = document.createElement("li");
       let listDiv = document.createElement("div");
       let listInput = document.createElement("input");

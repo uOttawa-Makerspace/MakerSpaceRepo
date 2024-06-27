@@ -7,6 +7,7 @@ class Admin::TrainingSessionsController < AdminAreaController
 
   def index
     date_range = params[:date_range].presence || "30_days"
+    
     @sessions =
       TrainingSession.filter_by_date_range(date_range).left_outer_joins(
         :training,
