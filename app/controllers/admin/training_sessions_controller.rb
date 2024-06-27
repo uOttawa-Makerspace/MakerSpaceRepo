@@ -6,7 +6,7 @@ class Admin::TrainingSessionsController < AdminAreaController
   before_action :training_session, only: %i[update destroy]
 
   def index
-    date_range = params[:date_range].presence || '30_days'
+    date_range = params[:date_range].presence || "30_days"
 
     Rails.logger.debug "Date Range Param: #{date_range}"
 
@@ -47,6 +47,9 @@ class Admin::TrainingSessionsController < AdminAreaController
   end
 
   def training_session_params
-    params.require(:training_session).permit(:user_id).reject { |_, v| v.blank? }
+    params
+      .require(:training_session)
+      .permit(:user_id)
+      .reject { |_, v| v.blank? }
   end
 end
