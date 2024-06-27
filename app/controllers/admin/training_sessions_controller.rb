@@ -8,12 +8,7 @@ class Admin::TrainingSessionsController < AdminAreaController
   def index
     date_range = params[:date_range].presence || "30_days"
 
-    Rails.logger.debug "Date Range Param: #{date_range}"
-
     @sessions = TrainingSession.filter_by_date_range(date_range)
-
-    Rails.logger.debug "Sessions Count: #{@sessions.count}"
-    Rails.logger.debug "Generated SQL: #{@sessions.to_sql}"
 
     respond_to do |format|
       format.js

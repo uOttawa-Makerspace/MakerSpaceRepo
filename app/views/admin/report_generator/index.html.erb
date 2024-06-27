@@ -7,7 +7,7 @@
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
-          <%= radio_button_tag(:range_type, :semester, true, class: 'form-check-input', id: 'semester_radio') %>
+          <%= radio_button_tag(:range_type, :semester, (params[:range_type] == 'semester') || params[:range_type].nil?, class: 'form-check-input', id: 'semester_radio') %>
           <%= label_tag(:range_type_semester, 'Semester', class: 'form-check-label') %>
         </div>
       </div>
@@ -16,12 +16,12 @@
         <div class="row">
           <div class="mb-3 col-md-6">
             <%= label_tag(:term, 'Term', class: 'form-label') %>
-            <%= select_tag(:term, options_for_select([['Winter', :winter], ['Spring/Summer', :summer], ['Fall', :fall]]), class: %w[form-control form-select]) %>
+            <%= select_tag(:term, options_for_select([['Winter', :winter], ['Spring/Summer', :summer], ['Fall', :fall]], params[:term]), class: %w[form-control form-select]) %>
           </div>
 
           <div class="mb-3 col-md-6">
             <%= label_tag(:year, 'Year', class: 'form-label') %>
-            <%= number_field_tag(:year, DateTime.now.year, class: %w[form-control]) %>
+            <%= number_field_tag(:year, params[:range_type] == 'semester' ? params[:year].to_i : DateTime.now.year, class: %w[form-control]) %>
           </div>
         </div>
       </div>
@@ -30,7 +30,7 @@
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
-          <%= radio_button_tag(:range_type, :date_range, false, class: 'form-check-input', id: 'date_range_radio') %>
+          <%= radio_button_tag(:range_type, :date_range, params[:range_type] == 'date_range', class: 'form-check-input', id: 'date_range_radio') %>
           <%= label_tag(:range_type_date_range, 'Date Range', class: 'form-check-label') %>
         </div>
       </div>
@@ -39,12 +39,12 @@
         <div class="row">
           <div class="mb-3 col-md-6">
             <%= label_tag(:from_date, 'From', class: 'form-label') %>
-            <%= date_field_tag(:from_date, 1.week.ago.beginning_of_week.strftime('%Y-%m-%d'), class: %w[form-control]) %>
+            <%= date_field_tag(:from_date, params[:start_date] ? params[:start_date].to_date : 1.week.ago.beginning_of_week.strftime('%Y-%m-%d'), class: %w[form-control]) %>
           </div>
 
           <div class="mb-3 col-md-6">
             <%= label_tag(:to_date, 'To', class: 'form-label') %>
-            <%= date_field_tag(:to_date, 1.week.ago.end_of_week.strftime('%Y-%m-%d'), class: %w[form-control]) %>
+            <%= date_field_tag(:to_date, params[:end_date] ? params[:end_date].to_date : 1.week.ago.end_of_week.strftime('%Y-%m-%d'), class: %w[form-control]) %>
           </div>
         </div>
       </div>
@@ -52,7 +52,7 @@
     <div class="row align-items-center">
       <div class="mb-3 col-md-4">
         <div class="form-check">
-          <%= radio_button_tag(:range_type, :all_time, false, class: 'form-check-input', data: { 'radio-enable': '.range-type-date-range-fields' }) %>
+          <%= radio_button_tag(:range_type, :all_time, params[:range_type] == 'all_time', class: 'form-check-input', data: { 'radio-enable': '.range-type-date-range-fields' }) %>
           <%= label_tag(:range_type_all_time, 'All Time', class: 'form-check-label') %>
         </div>
       </div>
@@ -61,7 +61,7 @@
     <%= label_tag(:type, 'Report Type', class: 'form-label') %>
     <% @report_types.each_index do |report| %>
       <div class="form-check">
-        <%= radio_button_tag(:type, @report_types[report][1], false, class: 'form-check-input') %>
+        <%= radio_button_tag(:type, @report_types[report][1], (true if report == @report_parameter.index(params[:report_type])), class: 'form-check-input') %>
         <%= label_tag(:type, @report_types[report][0], class: 'form-check-label', style: 'font-size: 16px;') %>
         <br>
       </div>

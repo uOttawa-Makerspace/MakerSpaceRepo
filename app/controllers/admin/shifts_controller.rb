@@ -76,7 +76,7 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def confirm_current_week_shifts
-    end_of_week_param = DateTime.parse(params[:end_of_week])
+    end_of_week_param = Time.zone.parse(params[:end_of_week])
     start_of_week = end_of_week_param.beginning_of_week - 1.day
     end_of_week = end_of_week_param.end_of_week - 1.day
 
@@ -99,8 +99,8 @@ class Admin::ShiftsController < AdminAreaController
       params[:user_id].each { |user_id| @shift.users << User.find(user_id) }
     elsif params[:start_datetime].present? &&
           params[:start_datetime].present? && params[:user_id].present?
-      start_date = DateTime.parse(params[:start_datetime])
-      end_date = DateTime.parse(params[:start_datetime])
+      start_date = Time.zone.parse(params[:start_datetime])
+      end_date = Time.zone.parse(params[:start_datetime])
       @shift =
         Shift.new(
           space_id: @space_id,
@@ -148,7 +148,7 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def copy_to_next_week
-    end_of_week_param = DateTime.parse(params[:end_of_week])
+    end_of_week_param = Time.zone.parse(params[:end_of_week])
     start_of_week = end_of_week_param.beginning_of_week - 1.day
     end_of_week = end_of_week_param.end_of_week - 1.day
     new_shifts = []
@@ -196,8 +196,8 @@ class Admin::ShiftsController < AdminAreaController
         end
       end
     elsif params[:start_datetime].present? && params[:end_datetime].present?
-      start_date = DateTime.parse(params[:start_datetime])
-      end_date = DateTime.parse(params[:end_datetime])
+      start_date = Time.zone.parse(params[:start_datetime])
+      end_date = Time.zone.parse(params[:end_datetime])
 
       respond_to do |format|
         if @shift.update(start_time: start_date, end_time: end_date)
@@ -401,7 +401,7 @@ class Admin::ShiftsController < AdminAreaController
       .where(
         space_id: @space_id,
         start_datetime:
-          DateTime.parse(params[:start_date])..DateTime.parse(params[:end_date])
+          Time.zone.parse(params[:start_date])..Time.zone.parse(params[:end_date])
       )
       .each do |shift|
         duration = (shift.end_datetime - shift.start_datetime) / 3600
@@ -427,10 +427,10 @@ class Admin::ShiftsController < AdminAreaController
     end_time = params[:end]
     time_period_id = params[:time_period_id]
 
-    shift_start_date = DateTime.parse(start_time).strftime("%Y%m%d%H%M").to_i
-    shift_end_date = DateTime.parse(end_time).strftime("%Y%m%d%H%M").to_i
-    shift_start_time = Time.parse(start_time).strftime("%H%M").to_i
-    shift_end_time = Time.parse(end_time).strftime("%H%M").to_i
+    shift_start_date = Time.zone.parse(start_time).strftime("%Y%m%d%H%M").to_i
+    shift_end_date = Time.zone.parse(end_time).strftime("%Y%m%d%H%M").to_i
+    shift_start_time = Time.zone.parse(start_time).strftime("%H%M").to_i
+    shift_end_time = Time.zone.parse(end_time).strftime("%H%M").to_i
 
     time_period_id = @time_period.id if time_period_id.nil?
 
