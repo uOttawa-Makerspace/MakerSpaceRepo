@@ -24,7 +24,6 @@ class TrainingSession < ApplicationRecord
 
   scope :filter_by_date_range,
         ->(range) {
-          Rails.logger.debug "Selected Date Range: #{range}"
           case range
           when "30_days"
             where("created_at >= ?", 30.days.ago)
