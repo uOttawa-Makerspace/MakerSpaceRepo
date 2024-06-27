@@ -68,7 +68,7 @@
       <div class="mb-3">
         <%= f.label :faculty, t('settings.profile.faculty'), class: 'form-label profile-label' %>
         <%= tag.span(@user.errors[:faculty].first, class: 'form-error') %>
-        <%= f.select :faculty, %w[arts civil_law common_law education engineering health_sciences medicine science social_sciences telfer].map { |faculty| t("settings.profile.#{faculty}") }, { prompt: t('settings.profile.choose') }, { class: 'form-control form-select selectpicker' } %>
+        <%= f.select :faculty, %w[arts law education engineering health_sciences medicine science social_sciences telfer].map { |faculty| t("settings.profile.#{faculty}") }, { prompt: t('settings.profile.choose') }, { class: 'form-control form-select selectpicker' } %>
       </div>
 
       <div class="mb-3">

@@ -7,3 +7,12 @@ Try not to hard code or assume anything, since literally any changes to schema o
 look at https://api.rubyonrails.org/classes/ActiveRecord/QueryMethods.html
 
 lab_sessions tracks visits and taps on each card reader
+
+All programs and faculties are stored as strings, the only authority is the CSV located in `/lib/assets/programs.csv`.
+
+# University Program crash course
+
+There's a userscript in `/scripts` that fetches and attempts to create a csv of all programs, their study level, faculty, and engineering department if applicable. It can also make a JSON, if you uncomment out the appropriate code
+
+It returns duplicates, because some programs are listed under multiple faculties/levels. For example, the lettres francaise/education is listed under Arts and Education. A molecular biology double degree is listed under Bachelor's and PhD.
+The `ProgramList` class does not attempt to filter those out; either fix the CSV data to avoid duplicates, by dropping/merging unnecessary duplicates, or generate unique lists on the spot when needed.
