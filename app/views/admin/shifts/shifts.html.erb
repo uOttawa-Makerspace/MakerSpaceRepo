@@ -154,14 +154,14 @@
                     <div>
                       <h6 class="mb-1"><%= shift.reason %></h6> <!-- Display the reason for the shift prominently -->
                       <p class="mb-1">
-                        <strong>From:</strong> <%= shift.start_datetime.strftime("%d/%m/%Y %I:%M %p") %><br>
-                        <strong>To:</strong> <%= shift.end_datetime.strftime("%d/%m/%Y %I:%M %p") %>
+                        <strong>From:</strong> <%= shift.start_datetime.strftime('%d/%m/%Y %I:%M %p') %><br>
+                        <strong>To:</strong> <%= shift.end_datetime.strftime('%d/%m/%Y %I:%M %p') %>
                       </p>
                       <p class="mb-0"><strong>Participants:</strong> <%= shift.users.map(&:name).join(', ') %></p> <!-- Assuming users have a name attribute -->
                     </div>
                     <div class="form-check">
-                      <%= check_box_tag "shift_ids[]", shift.id, false, id: "shift_#{shift.id}", class: "form-check-input" %>
-                      <%= label_tag "shift_#{shift.id}", "Select", class: "form-check-label" %>
+                      <%= check_box_tag 'shift_ids[]', shift.id, false, id: "shift_#{shift.id}", class: 'form-check-input' %>
+                      <%= label_tag "shift_#{shift.id}", 'Select', class: 'form-check-label' %>
                     </div>
                   </div>
                 </li>
@@ -169,7 +169,7 @@
             </ul>
           </div>
           <div class="modal-footer">
-            <%= submit_tag "Confirm Selected Shifts", class: "btn btn-primary" %>
+            <%= submit_tag 'Confirm Selected Shifts', class: 'btn btn-primary' %>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         <% end %>
@@ -177,10 +177,6 @@
       </div>
     </div>
   </div>
-  
-  
-  
-
   <!-- Toasts -->
   <div class="toast-container position-fixed top-0 end-0 p-3">
     <div id="toast-color-update-success" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
