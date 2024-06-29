@@ -130,6 +130,7 @@ document.addEventListener("turbo:load", function () {
       }
     }
     function bookEvent(e) {
+      e.target.setAttribute("disabled", "");
       if (start_picker.selectedDates[0] >= end_picker.selectedDates[0]) {
         document
           .getElementById("end-date-validation")
