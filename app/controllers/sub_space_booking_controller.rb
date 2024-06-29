@@ -37,7 +37,9 @@ class SubSpaceBookingController < ApplicationController
     @bookings =
       SubSpaceBooking.where(user_id: current_user.id).order(:start_time)
     if current_user.admin?
-      space_booking_includes = { sub_space_booking: %i[approved_by user] }
+      space_booking_includes = {
+        sub_space_booking: %i[approved_by user sub_space]
+      }
       # Need to get the booking status from the sub space booking status table for the booking
       @pending_bookings =
         SubSpaceBookingStatus
@@ -521,6 +523,7 @@ class SubSpaceBookingController < ApplicationController
       BookingMailer.send_booking_approved(booking.id).deliver_now
     end
   end
+
   def edit
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
 
