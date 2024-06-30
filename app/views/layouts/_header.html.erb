@@ -1,20 +1,20 @@
-<nav class="navbar navbar-expand-xl navbar-light fixed-top <%= controller_name %> <%= action_name %> bg-light" id="header-navbar">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">Maker<strong>Repo</strong></a>
+<nav class="navbar navbar-expand-xl navbar-light fixed-top <%= controller_name %> <%= action_name %> bg-primary shadow-lg" id="header-navbar">
+  <div class="container-fluid m-2">
+    <a class="navbar-brand ms-5" href="/">Maker<strong>Repo</strong></a>
     <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <form class="w-auto d-inline-block form-search" action="/search" method="get">
-        <div class="input-group">
-          <input class="form-control" name="q" id="q" placeholder="<%= t('navbar.search') %>" aria-label="Search">
-          <button class="btn btn-primary" type="submit" style="height: auto" aria-label="Search">
-            <i class="fa fa-search"></i>
-          </button>
-        </div>
-      </form>
+      <!-- <form class="w-auto d-inline-block form-search" action="/search" method="get"> -->
+      <!--   <div class="input-group"> -->
+      <!--     <input class="form-control" name="q" id="q" placeholder="<%= t('navbar.search') %>" aria-label="Search"> -->
+      <!--     <button class="btn btn-primary" type="submit" style="height: auto" aria-label="Search"> -->
+      <!--       <i class="fa fa-search"></i> -->
+      <!--     </button> -->
+      <!--   </div> -->
+      <!-- </form> -->
 
-      <ul class="navbar-nav me-auto align-items-xl-baseline">
+      <ul class="navbar-nav ms-5 me-auto align-items-xl-baseline">
       <li class="nav-item">
         <a class="nav-link" href="/explore"><%= t('navbar.explore') %></a>
       </li>
@@ -87,7 +87,7 @@
       </li>
         <% end %>
 
-        <li class="navbar-divider"></li>
+        <li class="navbar-divider mx-5"></li>
 
         <% locales_change.each do |locale| %>
         <li class="nav-item">
