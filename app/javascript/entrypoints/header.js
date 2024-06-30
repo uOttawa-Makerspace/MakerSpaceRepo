@@ -13,6 +13,7 @@ import { Turbo } from "@hotwired/turbo-rails";
  */
 
 document.addEventListener("turbo:load", function () {
+  return; // TODO: remove this file
   const qa = document.getElementById("quick-access-bar");
   var nav = document.getElementById("header-navbar");
   var navToggler = document.getElementById("navbar-toggle-button");
