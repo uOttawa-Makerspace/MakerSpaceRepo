@@ -65,6 +65,33 @@ h1 {
   background-color: rgba(59, 147, 147, 0.2) !important;
 }
 
+// Add the triangle between the menu and the dropdown button
+// uses @extend to inherit from .d-none and .d-xl-block
+// to hide for screens below xl aka when navbar collapses
+// avoids having to have an empty div to every single dropdown
+// and add these classes to them. This is globally added to all
+// dropdowns sitewide.
+// NOTE: the left: 10% could cause issues if the dropdown button
+// is too small and might have the connection pointing to thin air.
+$dropdown-connection-size: 12px;
+.dropdown-menu:before {
+  @extend .d-none;
+  @extend .d-xl-block;
+  content: "";
+  display: block;
+  border-left: $dropdown-connection-size solid transparent;
+  border-right: $dropdown-connection-size solid transparent;
+  border-bottom: $dropdown-connection-size solid #fff; /* change color here, modified for a black arrow */
+  position: absolute;
+  top: -$dropdown-connection-size;
+  left: 10%;
+}
+
+.dropdown-menu {
+  border: none;
+  box-shadow: 4px blur;
+}
+
 h2 {
   font-size: 1.75rem;
 }
