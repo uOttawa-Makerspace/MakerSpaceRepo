@@ -12,7 +12,7 @@
   <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
   <td class="name-cell"><%= admin.name %></td>
   <td class="email-cell"><%= admin.email %></td>
-  <td class="spaces-cell"> <!-- New column data -->
+  <td class="spaces-cell">
     <div class="space-list">
       <% @space_list.each do |space| %>
         <% color = space.assigned_color %>

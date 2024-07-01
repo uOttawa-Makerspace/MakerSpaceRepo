@@ -3,6 +3,7 @@
         <th class="name-header">Username</th>
         <th class="name-header">Name</th>
         <th class="email-header">Email</th>
+        <th class="spaces-header">Spaces</th>
         <th class="email-header">Role</th>
       </tr>
       </thead>
@@ -11,6 +12,18 @@
           <td class="username-cell"><%= link_to staff.username, user_url(staff.username) %></td>
           <td class="name-cell"><%= staff.name %></td>
           <td class="email-cell"><%= staff.email %></td>
+          <td class="spaces-cell">
+          <div class="space-list">
+            <% @space_list.each do |space| %>
+              <% color = space.assigned_color %>
+              <% if @staff_spaces[staff.id].include?(space.id) %>
+                <div class="space-bubble" style="margin-right: 10px; border-color: <%= rgba(color, 1) %>; background-color: <%= rgba(color, 0.3) %>;">
+                  <%= space.name %>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        </td>
           <td class="w-auto">
             <%= form_tag set_role_admin_users_path(id: staff.id), method: :patch, format: 'js', remote: true do %>
               <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]] %>
